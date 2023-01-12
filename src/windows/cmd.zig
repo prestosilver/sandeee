@@ -1,0 +1,142 @@
+const std = @import("std");
+
+const win = @import("../drawers/window2d.zig");
+const rect = @import("../math/rects.zig");
+const vecs = @import("../math/vecs.zig");
+const col = @import("../math/colors.zig");
+const fnt = @import("../util/font.zig");
+const sb = @import("../spritebatch.zig");
+const allocator = @import("../util/allocator.zig");
+const shd = @import("../shader.zig");
+const shell = @import("../system/shell.zig");
+const c = @import("../c.zig");
+
+const ResetEvent = std.Thread.ResetEvent;
+
+const CMDData = struct {
+    bt: std.ArrayList(u8),
+    text: std.ArrayList(u8),
+};
+
+pub fn drawCmd(cself: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
+    var self = @ptrCast(*CMDData, cself);
+
+    var lines = std.ArrayList(std.ArrayList(u8)).init(allocator.alloc);
+    defer lines.deinit();
+    var line = std.ArrayList(u8).init(allocator.alloc);
+
+    for (self.bt.items) |char| {
+        switch (char) {
+            '\n' => {
+                if (line.items.len != 0) {
+                    lines.append(line) catch {};
+                    line.resize(0) catch {};
+                    line = std.ArrayList(u8).init(allocator.alloc);
+                }
+            },
+            else => {
+                line.append(char) catch {};
+            },
+        }
+    }
+    if (line.items.len != 0) {
+        lines.append(line) catch {};
+        line = std.ArrayList(u8).init(allocator.alloc);
+    }
+
+    line.appendSlice("$ ") catch {};
+    line.appendSlice(self.text.items) catch {};
+    line.appendSlice("_") catch {};
+
+    lines.append(line) catch {};
+
+    var height = font.size * @intToFloat(f32, lines.items.len);
+
+    if (bnds.h < height) {
+        height = bnds.h;
+    }
+
+    for (lines.items) |_, idx| {
+        var i = lines.items[lines.items.len - idx - 1];
+        var y = bnds.y + height - @intToFloat(f32, idx + 1) * font.size - 6;
+
+        font.draw(batch, shader, i.items, vecs.newVec2(bnds.x + 6, y), col.newColor(1, 1, 1, 1));
+
+        i.deinit();
+    }
+}
+
+pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
+    var self = @ptrCast(*CMDData, cself);
+
+    switch (key) {
+        c.GLFW_KEY_A...c.GLFW_KEY_Z => {
+            if ((mods & c.GLFW_MOD_SHIFT) != 0) {
+                self.text.append(@intCast(u8, key - c.GLFW_KEY_A) + 'A') catch {};
+            } else {
+                self.text.append(@intCast(u8, key - c.GLFW_KEY_A) + 'a') catch {};
+            }
+        },
+        c.GLFW_KEY_0...c.GLFW_KEY_9 => {
+            if ((mods & c.GLFW_MOD_SHIFT) != 0) {
+                self.text.append("!@#$%^&*()"[@intCast(u8, key - c.GLFW_KEY_0)]) catch {};
+            } else {
+                self.text.append(@intCast(u8, key - c.GLFW_KEY_0) + '0') catch {};
+            }
+        },
+        c.GLFW_KEY_SPACE => {
+            self.text.append(' ') catch {};
+        },
+        c.GLFW_KEY_PERIOD => {
+            self.text.append('.') catch {};
+        },
+        c.GLFW_KEY_ENTER => {
+            self.bt.appendSlice("\n$ ") catch {};
+            self.bt.appendSlice(self.text.items) catch {};
+
+            var command = std.ArrayList(u8).init(allocator.alloc);
+            defer command.deinit();
+
+            self.bt.appendSlice("\n") catch {};
+
+            for (self.text.items) |char| {
+                if (char == ' ') {
+                    break;
+                } else {
+                    command.append(char) catch {};
+                }
+            }
+
+            var al = shell.run(command.items, self.text.items);
+            if (al.clear) {
+                self.bt.resize(0) catch {};
+            } else {
+                self.bt.appendSlice(al.data.items) catch {};
+            }
+            al.data.deinit();
+
+            self.text.resize(0) catch {};
+        },
+        c.GLFW_KEY_BACKSPACE => {
+            _ = self.text.popOrNull();
+        },
+        else => {},
+    }
+}
+
+pub fn new() win.WindowContents {
+    const self = allocator.alloc.alloc(CMDData, 1) catch undefined;
+
+    self[0].text = std.ArrayList(u8).init(allocator.alloc);
+    self[0].bt = std.ArrayList(u8).init(allocator.alloc);
+
+    self[0].bt.appendSlice("Welcome to ShEEEl") catch {};
+
+    return win.WindowContents{
+        .self = @ptrCast(*[]u8, &self[0]),
+        .drawFn = drawCmd,
+        .keyFn = keyCmd,
+        .name = "CMD",
+        .clearColor = col.newColor(0, 0, 0, 1),
+    };
+}

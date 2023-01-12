@@ -1,0 +1,198 @@
+const std = @import("std");
+const allocator = @import("../util/allocator.zig");
+const files = @import("files.zig");
+
+const Result = struct {
+    data: std.ArrayList(u8),
+    code: u8,
+};
+
+fn echo(param: []const u8) Result {
+    var result: Result = undefined;
+    result.data = std.ArrayList(u8).init(allocator.alloc);
+
+    if (param.len > 5) result.data.appendSlice(param[5..]) catch {};
+
+    result.code = 0;
+
+    return result;
+}
+
+fn disp(param: []const u8) Result {
+    if (param.len > 5) {
+        var result: Result = undefined;
+        result.data = std.ArrayList(u8).init(allocator.alloc);
+        result.code = 1;
+
+        for (files.root.contents.items) |item| {
+            if (std.mem.eql(u8, item.name, param[5..])) {
+                result.data.appendSlice(item.name.contents) catch {};
+                result.code = 0;
+            }
+        }
+
+        if (result.code == 1) {
+            result.data.appendSlice("Error file not found") catch {};
+        }
+
+        return result;
+    } else {}
+    return todo(param);
+}
+
+fn ls(param: []const u8) Result {
+    if (param.len > 3) {} else {
+        var result: Result = undefined;
+        result.data = std.ArrayList(u8).init(allocator.alloc);
+
+        for (files.root.contents.items) |item| {
+            result.data.appendSlice(item.name) catch {};
+            result.data.append(' ') catch {};
+        }
+        result.code = 0;
+
+        return result;
+    }
+    return todo(param);
+}
+
+pub fn help(_: []const u8) Result {
+    var result: Result = undefined;
+    result.data = std.ArrayList(u8).init(allocator.alloc);
+
+    result.data.appendSlice("Sheeell Help:\n") catch {};
+    result.data.appendSlice("=============\n") catch {};
+    result.data.appendSlice("help - prints this\n") catch {};
+    result.data.appendSlice("run - runs a command\n") catch {};
+    result.data.appendSlice("$run - runs the output of a command\n") catch {};
+    result.data.appendSlice("echo - prints the value\n") catch {};
+
+    return result;
+}
+
+pub fn todo(_: []const u8) Result {
+    var result: Result = undefined;
+    result.data = std.ArrayList(u8).init(allocator.alloc);
+
+    result.data.appendSlice("Unimplemented") catch {};
+
+    result.code = 1;
+
+    return result;
+}
+
+pub fn check(cmd: []const u8, exp: []const u8) bool {
+    if (cmd.len != exp.len) return false;
+
+    for (cmd) |char, idx| {
+        if (char != exp[idx])
+            return false;
+    }
+    return true;
+}
+
+pub fn run(cmd: []const u8, params: []const u8) Result {
+    if (check(cmd, "help")) {
+        return help(params);
+    }
+
+    if (check(cmd, "echo")) {
+        return echo(params);
+    }
+
+    if (check(cmd, "cmd")) {
+        return todo(params);
+    }
+
+    if (check(cmd, "ls")) {
+        return ls(params);
+    }
+
+    if (check(cmd, "email")) {
+        return todo(params);
+    }
+
+    if (check(cmd, "$run")) {
+        if (params.len < 6) {
+            var result: Result = undefined;
+            result.data = std.ArrayList(u8).init(allocator.alloc);
+
+            result.data.appendSlice("$run expected parameter") catch {};
+
+            result.code = 2;
+
+            return result;
+        }
+
+        var out: Result = undefined;
+
+        {
+            var command = std.ArrayList(u8).init(allocator.alloc);
+            defer command.deinit();
+
+            for (params[5..]) |char| {
+                if (char == ' ') {
+                    break;
+                } else {
+                    command.append(char) catch {};
+                }
+            }
+            out = run(command.items, params[5..]);
+        }
+
+        if (out.code != 0) {
+            return out;
+        }
+
+        defer out.data.deinit();
+
+        var command = std.ArrayList(u8).init(allocator.alloc);
+        defer command.deinit();
+
+        for (out.data.items) |char| {
+            if (char == ' ') {
+                break;
+            } else {
+                command.append(char) catch {};
+            }
+        }
+        return run(command.items, out.data.items);
+    }
+
+    if (check(cmd, "run")) {
+        if (params.len < 5) {
+            var result: Result = undefined;
+            result.data = std.ArrayList(u8).init(allocator.alloc);
+
+            result.data.appendSlice("$run expected parameter") catch {};
+
+            result.code = 2;
+
+            return result;
+        }
+
+        var command = std.ArrayList(u8).init(allocator.alloc);
+        defer command.deinit();
+
+        for (params[4..]) |char| {
+            if (char == ' ') {
+                break;
+            } else {
+                command.append(char) catch {};
+            }
+        }
+
+        return run(command.items, params[4..]);
+    }
+
+    var result: Result = undefined;
+    result.data = std.ArrayList(u8).init(allocator.alloc);
+
+    result.data.appendSlice("Unknown Command: '") catch {};
+    result.data.appendSlice(params) catch {};
+    result.data.appendSlice("'") catch {};
+
+    result.code = 2;
+
+    return result;
+}
