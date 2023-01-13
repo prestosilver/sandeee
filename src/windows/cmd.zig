@@ -30,7 +30,6 @@ pub fn drawCmd(cself: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *
             '\n' => {
                 if (line.items.len != 0) {
                     lines.append(line) catch {};
-                    line.resize(0) catch {};
                     line = std.ArrayList(u8).init(allocator.alloc);
                 }
             },
@@ -90,6 +89,9 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
         c.GLFW_KEY_PERIOD => {
             self.text.append('.') catch {};
         },
+        c.GLFW_KEY_SLASH => {
+            self.text.append('/') catch {};
+        },
         c.GLFW_KEY_ENTER => {
             self.bt.appendSlice("\n$ ") catch {};
             self.bt.appendSlice(self.text.items) catch {};
@@ -109,13 +111,13 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
 
             var al = shell.run(command.items, self.text.items);
             if (al.clear) {
-                self.bt.resize(0) catch {};
+                self.bt.clearAndFree();
             } else {
                 self.bt.appendSlice(al.data.items) catch {};
             }
             al.data.deinit();
 
-            self.text.resize(0) catch {};
+            self.text.clearAndFree();
         },
         c.GLFW_KEY_BACKSPACE => {
             _ = self.text.popOrNull();
@@ -124,18 +126,26 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
     }
 }
 
+fn deleteCmd(cself: *[]u8) void {
+    var self = @ptrCast(*CMDData, cself);
+    self.bt.deinit();
+    self.text.deinit();
+    allocator.alloc.destroy(self);
+}
+
 pub fn new() win.WindowContents {
-    const self = allocator.alloc.alloc(CMDData, 1) catch undefined;
+    const self = allocator.alloc.create(CMDData) catch undefined;
 
-    self[0].text = std.ArrayList(u8).init(allocator.alloc);
-    self[0].bt = std.ArrayList(u8).init(allocator.alloc);
+    self.text = std.ArrayList(u8).init(allocator.alloc);
+    self.bt = std.ArrayList(u8).init(allocator.alloc);
 
-    self[0].bt.appendSlice("Welcome to ShEEEl") catch {};
+    self.bt.appendSlice("Welcome to ShEEEl") catch {};
 
     return win.WindowContents{
-        .self = @ptrCast(*[]u8, &self[0]),
+        .self = @ptrCast(*[]u8, self),
         .drawFn = drawCmd,
         .keyFn = keyCmd,
+        .deleteFn = deleteCmd,
         .name = "CMD",
         .clearColor = col.newColor(0, 0, 0, 1),
     };

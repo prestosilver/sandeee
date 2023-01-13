@@ -16,6 +16,7 @@ const fm = @import("util/files.zig");
 const files = @import("system/files.zig");
 const input = @import("util/input.zig");
 const allocator = @import("util/allocator.zig");
+const vm = @import("system/vm.zig");
 
 const wins = @import("windows/all.zig");
 const c = @import("c.zig");
@@ -94,7 +95,6 @@ pub fn mouseDown(event: input.EventMouseDown) bool {
 
     if (event.btn == 0) {
         if (bar.data.doClick(wintex, emailtex, editortex, shader, &windows, mousepos)) {
-
             return false;
         }
 
@@ -113,6 +113,7 @@ pub fn mouseDown(event: input.EventMouseDown) bool {
             var mode = swap.data.getDragMode(mousepos);
 
             if (mode == win.DragMode.Close) {
+                swap.data.deinit();
                 return false;
             }
             if (mode == win.DragMode.Full) {
@@ -251,15 +252,30 @@ pub fn main() anyerror!void {
 
     sb = batch.newSpritebatch();
 
-    wintex = tex.newTextureFile(fm.getContentPath("content/window.png"));
-    bartex = tex.newTextureFile(fm.getContentPath("content/bar.png"));
-    editortex = tex.newTextureFile(fm.getContentPath("content/editor.png"));
-    emailtex = tex.newTextureFile(fm.getContentPath("content/email.png"));
-    face = try font.Font.init(fm.getContentPath("content/font.ttf"), 22);
+    var path: std.ArrayList(u8) = undefined;
+    path = fm.getContentPath("content/window.png");
+    wintex = tex.newTextureFile(path.items);
+    path.deinit();
+
+    path = fm.getContentPath("content/bar.png");
+    bartex = tex.newTextureFile(path.items);
+    path.deinit();
+
+    path = fm.getContentPath("content/editor.png");
+    editortex = tex.newTextureFile(path.items);
+    path.deinit();
+
+    path = fm.getContentPath("content/email.png");
+    emailtex = tex.newTextureFile(path.items);
+    path.deinit();
+
+    path = fm.getContentPath("content/font.ttf");
+    face = try font.Font.init(path.items, 22);
+    path.deinit();
 
     input.setup(ctx.window);
 
-    files.Folder.init(allocator.alloc);
+    files.Folder.init();
 
     shader = shd.Shader.new(2, shader_files);
     font_shader = shd.Shader.new(2, font_shader_files);
@@ -284,9 +300,15 @@ pub fn main() anyerror!void {
         draw();
     }
 
-    sb.deinit();
+    for (windows.items) |_, idx| {
+        windows.items[idx].data.deinit();
+    }
+
     windows.deinit();
     gfx.close(ctx);
 
-    files.write();
+    files.write("disk.eee");
+    files.deinit();
+    sb.deinit();
+    input.em.deinit();
 }

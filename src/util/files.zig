@@ -1,7 +1,7 @@
 const std = @import("std");
 const allocator = @import("allocator.zig");
 
-pub fn getContentPath(file: []const u8) [*c]const u8 {
+pub fn getContentPath(file: []const u8) std.ArrayList(u8) {
     var result = std.ArrayList(u8).init(allocator.alloc);
 
     var args = std.process.ArgIterator.init();
@@ -23,5 +23,22 @@ pub fn getContentPath(file: []const u8) [*c]const u8 {
     std.ArrayList(u8).appendSlice(&result, file) catch {};
     std.ArrayList(u8).appendSlice(&result, "\x00") catch {};
 
-    return @ptrCast([*c]const u8, result.items);
+    return result;
+}
+
+pub fn getContentDir() []const u8 {
+    var args = std.process.ArgIterator.init();
+    var first = args.next().?;
+
+    var stop: usize = 0;
+
+    for (first) |item, idx| {
+        if (item == '/') {
+            stop = idx;
+        }
+    }
+
+    var result = first[0..stop];
+
+    return result;
 }

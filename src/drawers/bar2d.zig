@@ -10,7 +10,7 @@ const shd = @import("../shader.zig");
 const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
 
-const TOTAL_SPRITES: f32 = 9;
+const TOTAL_SPRITES: f32 = 10;
 const TEX_SIZE: f32 = 32;
 
 fn range(len: usize) []const void {
@@ -199,6 +199,9 @@ pub const BarData = struct {
                     },
                     3 => {
                         addQuad(&result, 6, iconpos, rect.newRect(0, 0, 1, 1));
+                    },
+                    4=> {
+                        addQuad(&result, 9, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     else => {},
                 }

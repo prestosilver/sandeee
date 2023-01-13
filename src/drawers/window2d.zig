@@ -29,6 +29,7 @@ pub const WindowContents = struct {
     drawFn: ?*const fn (*[]u8, *sb.SpriteBatch, shd.Shader, *rect.Rectangle, *fnt.Font) void = null,
     clickFn: ?*const fn (*[]u8, vecs.Vector2, vecs.Vector2, i32) bool = null,
     keyFn: ?*const fn (*[]u8, i32, i32) void = null,
+    deleteFn: *const fn (*[]u8) void,
     name: []const u8,
     clearColor: cols.Color,
 
@@ -45,6 +46,10 @@ pub const WindowContents = struct {
     pub fn click(self: *WindowContents, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
         if (self.clickFn == null) return true;
         return self.clickFn.?(self.self, size, mousepos, btn);
+    }
+
+    pub fn deinit(self: *WindowContents) void {
+        self.deleteFn(self.self);
     }
 };
 
@@ -64,6 +69,10 @@ pub const WindowData = struct {
             .source = source,
             .size = size,
         };
+    }
+
+    pub fn deinit(self: *WindowData) void {
+        self.contents.deinit();
     }
 
     fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) void {

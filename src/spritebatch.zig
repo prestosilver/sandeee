@@ -131,7 +131,7 @@ pub const SpriteBatch = struct {
 
             if (target < sb.buffers.items.len) {
                 c.glDeleteBuffers(@intCast(c.GLint, sb.buffers.items.len - target), &sb.buffers.items[target]);
-                sb.buffers.resize(target) catch {};
+                sb.buffers.shrinkAndFree(target);
             } else if (target > sb.buffers.items.len) {
                 var old = sb.buffers.items.len;
 
@@ -203,17 +203,30 @@ pub const SpriteBatch = struct {
         if (cscissor != null)
             c.glDisable(c.GL_SCISSOR_TEST);
 
-        for (sb.prevQueue.items) |_,idx| {
+        for (sb.prevQueue.items) |_, idx| {
             var e = sb.prevQueue.items[idx];
             e.verts.data.deinit();
         }
 
-        sb.prevQueue.resize(0) catch {};
+        sb.prevQueue.clearAndFree();
         std.ArrayList(QueueEntry).appendSlice(&sb.prevQueue, sb.queue.items) catch {};
-        sb.queue.resize(0) catch {};
+        for (sb.queue.items) |_, idx| {
+            var e = sb.queue.items[idx];
+            e.verts.data.deinit();
+        }
+        sb.queue.clearAndFree();
     }
 
     pub fn deinit(sb: SpriteBatch) void {
+        for (sb.prevQueue.items) |_, idx| {
+            var e = sb.prevQueue.items[idx];
+            e.verts.data.deinit();
+        }
+        for (sb.queue.items) |_, idx| {
+            var e = sb.queue.items[idx];
+            e.verts.data.deinit();
+        }
+
         sb.buffers.deinit();
         sb.queue.deinit();
         sb.prevQueue.deinit();

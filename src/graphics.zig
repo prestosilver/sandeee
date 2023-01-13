@@ -62,6 +62,7 @@ pub fn regShader(ctx: *Context, s: shd.Shader) void {
     ctx.shaders.append(s) catch {};
 
     var proj = mat4.Mat4.ortho(0, 640, 480, 0, 100, -1);
+    defer proj.deinit();
 
     s.setMat4("projection", proj);
 }
@@ -70,6 +71,7 @@ pub fn resize(w: i32, h: i32) void {
     c.glViewport(0, 0, w, h);
 
     var proj = mat4.Mat4.ortho(0, @intToFloat(f32, w), @intToFloat(f32, h), 0, 100, -1);
+    defer proj.deinit();
 
     for (gContext.shaders.items) |shader| {
         shader.setMat4("projection", proj);
@@ -77,6 +79,7 @@ pub fn resize(w: i32, h: i32) void {
 }
 
 pub fn close(ctx: Context) void {
+    ctx.shaders.deinit();
     c.glfwDestroyWindow(ctx.window);
     c.glfwTerminate();
 }

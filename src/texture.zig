@@ -18,7 +18,7 @@ pub fn newTextureSize(size: vecs.Vector2) Texture {
     return result;
 }
 
-pub fn newTextureFile(image: [*c]const u8) Texture {
+pub fn newTextureFile(image: []const u8) Texture {
     var width: c_int = 0;
     var height: c_int = 0;
     var channels: c_int = 0;
@@ -28,7 +28,7 @@ pub fn newTextureFile(image: [*c]const u8) Texture {
         .y = 0,
     } };
 
-    var data = c.stbi_load(image, &width, &height, &channels, 4);
+    var data = c.stbi_load(@ptrCast([*c]const u8, image), &width, &height, &channels, 4);
 
     if (data == null) {
         std.log.info("Error: Bad Image\n", .{});

@@ -102,14 +102,14 @@ pub fn drawEmail(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds
         for (email.contents) |char| {
             if (char == '\n') {
                 font.draw(batch, font_shader, line.items, vecs.newVec2(bnds.x + 112, y), col.newColor(0, 0, 0, 1));
-                line.resize(0) catch {};
+                line.clearAndFree();
                 y += font.size;
             } else {
                 line.append(char) catch {};
                 if (font.sizeText(line.items).x > bnds.w - 112.0) {
                     line.resize(line.items.len - 1) catch {};
                     font.draw(batch, font_shader, line.items, vecs.newVec2(bnds.x + 112, y), col.newColor(0, 0, 0, 1));
-                    line.resize(0) catch {};
+                    line.clearAndFree();
                     y += font.size;
 
                     line.append(char) catch {};
@@ -169,42 +169,48 @@ pub fn clickEmail(c: *[]u8, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32
     return true;
 }
 
-pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
-    var self = allocator.alloc.alloc(EmailData, 1) catch undefined;
+fn deleteEmail(cself: *[]u8) void {
+    var self = @ptrCast(*EmailData, cself);
+    self.emails.deinit();
+    allocator.alloc.destroy(self);
+}
 
-    self[0].divy = sprite.Sprite.new(texture, sprite.SpriteData.new(
+pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
+    var self = allocator.alloc.create(EmailData) catch undefined;
+
+    self.divy = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(0, 3.0 / 32.0, 3.0 / 32.0, 29.0 / 32.0),
         vecs.newVec2(6, 100),
     ));
-    self[0].divx = sprite.Sprite.new(texture, sprite.SpriteData.new(
+    self.divx = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(3.0 / 32.0, 0, 29.0 / 32.0, 3.0 / 32.0),
         vecs.newVec2(100, 6),
     ));
-    self[0].dive = sprite.Sprite.new(texture, sprite.SpriteData.new(
+    self.dive = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(16.0 / 32.0, 3.0 / 32.0, 16.0 / 32.0, 3.0 / 32.0),
         vecs.newVec2(100, 6),
     ));
-    self[0].sel = sprite.Sprite.new(texture, sprite.SpriteData.new(
+    self.sel = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(16.0 / 32.0, 6.0 / 32.0, 16.0 / 32.0, 3.0 / 32.0),
         vecs.newVec2(100, 6),
     ));
-    self[0].icon = sprite.Sprite.new(texture, sprite.SpriteData.new(
+    self.icon = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(3.0 / 32.0, 3.0 / 32.0, 13.0 / 32.0, 13.0 / 32.0),
         vecs.newVec2(100, 100),
     ));
-    self[0].shader = shader;
-    self[0].viewing = null;
-    self[0].box = 0;
+    self.shader = shader;
+    self.viewing = null;
+    self.box = 0;
 
-    self[0].emails = std.ArrayList(EmailData.Email).init(allocator.alloc);
-    self[0].emails.append(EmailData.Email{
+    self.emails = std.ArrayList(EmailData.Email).init(allocator.alloc);
+    self.emails.append(EmailData.Email{
         .from = "joe_m@eee.org",
         .subject = "I know where you live",
         .contents = "Hello\nI know where you live, if you dont want me releasing this, please program for me.\n\nJoe Moe",
         .box = 0,
     }) catch {};
     for (range(100)) |_, idx| {
-        self[0].emails.append(EmailData.Email{
+        self.emails.append(EmailData.Email{
             .from = "joe_m@eee.org",
             .subject = "Program for me",
             .contents = "Please?",
@@ -213,9 +219,10 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     }
 
     return win.WindowContents{
-        .self = @ptrCast(*[]u8, &self[0]),
+        .self = @ptrCast(*[]u8, self),
         .drawFn = drawEmail,
         .clickFn = clickEmail,
+        .deleteFn = deleteEmail,
         .name = "EEE MAIL",
         .clearColor = col.newColor(1, 1, 1, 1),
     };

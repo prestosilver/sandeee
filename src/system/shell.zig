@@ -4,13 +4,14 @@ const files = @import("files.zig");
 
 const Result = struct {
     data: std.ArrayList(u8),
-    code: u8,
+    code: u8 = 0,
     clear: bool = false,
 };
 
 fn echo(param: []const u8) Result {
-    var result: Result = undefined;
-    result.data = std.ArrayList(u8).init(allocator.alloc);
+    var result: Result = Result{
+        .data = std.ArrayList(u8).init(allocator.alloc),
+    };
 
     if (param.len > 5) result.data.appendSlice(param[5..]) catch {};
 
@@ -21,8 +22,9 @@ fn echo(param: []const u8) Result {
 
 fn disp(param: []const u8) Result {
     if (param.len > 5) {
-        var result: Result = undefined;
-        result.data = std.ArrayList(u8).init(allocator.alloc);
+        var result: Result = Result{
+            .data = std.ArrayList(u8).init(allocator.alloc),
+        };
         result.code = 1;
 
         for (files.root.contents.items) |item| {
@@ -45,8 +47,9 @@ fn disp(param: []const u8) Result {
 
 fn ls(param: []const u8) Result {
     if (param.len > 3) {} else {
-        var result: Result = undefined;
-        result.data = std.ArrayList(u8).init(allocator.alloc);
+        var result: Result = Result{
+            .data = std.ArrayList(u8).init(allocator.alloc),
+        };
 
         var rootlen = files.root.name.len;
 
@@ -67,8 +70,9 @@ fn ls(param: []const u8) Result {
 }
 
 pub fn runFile(cmd: []const u8, param: []const u8) Result {
-    var result: Result = undefined;
-    result.data = std.ArrayList(u8).init(allocator.alloc);
+    var result: Result = Result{
+        .data = std.ArrayList(u8).init(allocator.alloc),
+    };
 
     for (files.root.contents.items) |item| {
         var rootlen = files.root.name.len;
@@ -78,8 +82,13 @@ pub fn runFile(cmd: []const u8, param: []const u8) Result {
             for (item.contents) |char| {
                 if (char == '\n') {
                     var res = runLine(line.items);
+                    defer res.data.deinit();
                     if (res.code != 0) {
-                        return res;
+                        result.data.appendSlice(res.data.items) catch {};
+                        result.data.append('\n') catch {};
+                        result.code = res.code;
+
+                        return result;
                     }
                     result.data.appendSlice(res.data.items) catch {};
                     result.data.append('\n') catch {};
@@ -89,6 +98,7 @@ pub fn runFile(cmd: []const u8, param: []const u8) Result {
                 }
             }
             var res = runLine(line.items);
+            defer res.data.deinit();
             if (res.code != 0) {
                 return res;
             }
@@ -108,8 +118,9 @@ pub fn runFile(cmd: []const u8, param: []const u8) Result {
 }
 
 pub fn help(_: []const u8) Result {
-    var result: Result = undefined;
-    result.data = std.ArrayList(u8).init(allocator.alloc);
+    var result: Result = Result{
+        .data = std.ArrayList(u8).init(allocator.alloc),
+    };
 
     result.data.appendSlice("Sheeell Help:\n") catch {};
     result.data.appendSlice("=============\n") catch {};
@@ -121,12 +132,35 @@ pub fn help(_: []const u8) Result {
     result.data.appendSlice("$run - runs the output of a command\n") catch {};
     result.data.appendSlice("echo - prints the value") catch {};
 
+    result.code = 0;
+
+    return result;
+}
+
+pub fn new(param: []const u8) Result {
+    var result: Result = Result{
+        .data = std.ArrayList(u8).init(allocator.alloc),
+    };
+    result.code = 1;
+
+    if (param.len > 4) {
+        if (files.newFile(param[4..])) {
+            result.code = 0;
+            result.data.appendSlice("created") catch {};
+        } else {
+            result.data.appendSlice("Failed to create '") catch {};
+            result.data.appendSlice(param[4..]) catch {};
+            result.data.appendSlice("'") catch {};
+        }
+    }
+
     return result;
 }
 
 pub fn todo(_: []const u8) Result {
-    var result: Result = undefined;
-    result.data = std.ArrayList(u8).init(allocator.alloc);
+    var result: Result = Result{
+        .data = std.ArrayList(u8).init(allocator.alloc),
+    };
 
     result.data.appendSlice("Unimplemented") catch {};
 
@@ -146,6 +180,17 @@ pub fn check(cmd: []const u8, exp: []const u8) bool {
 }
 
 pub fn runLine(line: []const u8) Result {
+    std.log.info("{s}", .{line});
+
+    if (line.len == 0) {
+        var result: Result = Result{
+            .data = std.ArrayList(u8).init(allocator.alloc),
+        };
+        result.code = 0;
+
+        return result;
+    }
+
     var command = std.ArrayList(u8).init(allocator.alloc);
     defer command.deinit();
     for (line) |char| {
@@ -187,10 +232,15 @@ pub fn run(cmd: []const u8, params: []const u8) Result {
         return todo(params);
     }
 
+    if (check(cmd, "new")) {
+        return new(params);
+    }
+
     if (check(cmd, "$run")) {
         if (params.len < 6) {
-            var result: Result = undefined;
-            result.data = std.ArrayList(u8).init(allocator.alloc);
+            var result: Result = Result{
+                .data = std.ArrayList(u8).init(allocator.alloc),
+            };
 
             result.data.appendSlice("$run expected parameter") catch {};
 
@@ -234,8 +284,9 @@ pub fn run(cmd: []const u8, params: []const u8) Result {
         return run(command.items, out.data.items);
     }
     if (check(cmd, "cls")) {
-        var result: Result = undefined;
-        result.data = std.ArrayList(u8).init(allocator.alloc);
+        var result: Result = Result{
+            .data = std.ArrayList(u8).init(allocator.alloc),
+        };
         result.clear = true;
         result.code = 0;
 
@@ -243,8 +294,9 @@ pub fn run(cmd: []const u8, params: []const u8) Result {
     }
     if (check(cmd, "run")) {
         if (params.len < 5) {
-            var result: Result = undefined;
-            result.data = std.ArrayList(u8).init(allocator.alloc);
+            var result: Result = Result{
+                .data = std.ArrayList(u8).init(allocator.alloc),
+            };
 
             result.data.appendSlice("$run expected parameter") catch {};
 

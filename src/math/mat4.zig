@@ -112,6 +112,10 @@ pub const Mat4 = struct {
         return @as([*]void, undefined)[0..len];
     }
 
+    pub fn deinit(a: Mat4) void {
+        a.data.deinit();
+    }
+
     pub fn mul(a: Mat4, b: Mat4) Mat4 {
         var result: Mat4 = undefined;
 
@@ -123,6 +127,9 @@ pub const Mat4 = struct {
                 }
             }
         }
+
+        a.deinit();
+        b.deinit();
 
         return result;
     }

@@ -48,4 +48,8 @@ pub const EventManager = struct {
             }
         }
     }
+
+    pub fn deinit(self: *EventManager) void {
+        self.subs.deinit();
+    }
 };
