@@ -27,6 +27,7 @@ pub fn cursor_pos_callback(_: ?*c.GLFWwindow, x: f64, y: f64) callconv(.C) void 
 pub fn key_callback(_: ?*c.GLFWwindow, key: c_int, _: c_int, action: c_int, mods: c_int) callconv(.C) void {
     switch (action) {
         c.GLFW_PRESS => em.sendEvent(EventKeyDown, EventKeyDown{ .key = key, .mods = mods}),
+        c.GLFW_REPEAT => em.sendEvent(EventKeyDown, EventKeyDown{ .key = key, .mods = mods}),
         c.GLFW_RELEASE => em.sendEvent(EventKeyUp, EventKeyUp{ .key = key, .mods = mods }),
         else => {},
     }
@@ -41,7 +42,5 @@ pub fn mouse_button_callback(_: ?*c.GLFWwindow, btn: c_int, action: c_int, _: c_
 }
 
 pub fn framebuffer_size_callback(_: ?*c.GLFWwindow, width: c_int, height: c_int) callconv(.C) void {
-    std.log.debug("size", .{});
-
     em.sendEvent(EventWindowResize, EventWindowResize{ .w = width, .h = height });
 }

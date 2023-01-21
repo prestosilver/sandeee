@@ -29,6 +29,7 @@ pub const WindowContents = struct {
     drawFn: ?*const fn (*[]u8, *sb.SpriteBatch, shd.Shader, *rect.Rectangle, *fnt.Font) void = null,
     clickFn: ?*const fn (*[]u8, vecs.Vector2, vecs.Vector2, i32) bool = null,
     keyFn: ?*const fn (*[]u8, i32, i32) void = null,
+    focusFn: ?*const fn (*[]u8) void = null,
     deleteFn: *const fn (*[]u8) void,
     name: []const u8,
     clearColor: cols.Color,
@@ -46,6 +47,11 @@ pub const WindowContents = struct {
     pub fn click(self: *WindowContents, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
         if (self.clickFn == null) return true;
         return self.clickFn.?(self.self, size, mousepos, btn);
+    }
+
+    pub fn focus(self: *WindowContents) void {
+        if (self.focusFn == null) return;
+        self.focusFn.?(self.self);
     }
 
     pub fn deinit(self: *WindowContents) void {
@@ -141,15 +147,15 @@ pub const WindowData = struct {
         var bot = false;
 
         var bottom = self.pos;
-        bottom.y += bottom.h - 10;
-        bottom.h = 20;
+        bottom.y += bottom.h - 20;
+        bottom.h = 40;
         if (bottom.contains(mousepos)) {
             bot = true;
         }
 
         var left = self.pos;
-        left.w = 20;
-        left.x -= 10;
+        left.w = 40;
+        left.x -= 20;
         if (left.contains(mousepos)) {
             if (bot) {
                 return DragMode.ResizeLB;
@@ -159,8 +165,8 @@ pub const WindowData = struct {
         }
 
         var right = self.pos;
-        right.x += right.w - 10;
-        right.w = 20;
+        right.x += right.w - 20;
+        right.w = 40;
         if (right.contains(mousepos)) {
             if (bot) {
                 return DragMode.ResizeRB;

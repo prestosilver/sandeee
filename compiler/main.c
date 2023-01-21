@@ -1,0 +1,994 @@
+#include <stdlib.h>
+#include <string.h>
+#include <regex.h>
+#include <stdio.h>
+
+#define TOKEN_KINDS TOKEN_EOF
+
+typedef enum {
+    TOKEN_OPEN_BRACE,
+    TOKEN_CLOSE_BRACE,
+    TOKEN_OPEN_PAREN,
+    TOKEN_CLOSE_PAREN,
+    TOKEN_SEMI_COLON,
+    TOKEN_KEYWORD_INT,
+    TOKEN_KEYWORD_STRING,
+    TOKEN_KEYWORD_RETURN,
+    TOKEN_KEYWORD_SYS,
+    TOKEN_KEYWORD_IF,
+    TOKEN_KEYWORD_ELSE,
+
+    TOKEN_KEYWORD_FOR,
+    TOKEN_KEYWORD_WHILE,
+    TOKEN_KEYWORD_DO,
+    TOKEN_KEYWORD_BREAK,
+    TOKEN_KEYWORD_CONTINUE,
+
+    TOKEN_IDENT,
+    TOKEN_INT_LIT,
+    TOKEN_NEG,
+
+    TOKEN_BIT_NOT,
+    TOKEN_NOT,
+
+    TOKEN_ADD,
+    TOKEN_MUL,
+    TOKEN_DIV,
+
+    TOKEN_AND,
+    TOKEN_OR,
+    TOKEN_EQ,
+    TOKEN_NEQ,
+    TOKEN_LT,
+    TOKEN_LTE,
+    TOKEN_GT,
+    TOKEN_GTE,
+
+    TOKEN_COMMA,
+
+    TOKEN_ASSIGN,
+
+    TOKEN_EOF,
+} TokenKind;
+
+typedef enum {
+    STMT_INVALID,
+    STMT_RETURN,
+    STMT_SYS,
+    STMT_DECLARE,
+    STMT_EXP,
+    STMT_COND,
+    STMT_BREAK,
+    STMT_CONTINUE,
+    STMT_FOR,
+    STMT_FOR_DECL,
+    STMT_WHILE,
+    STMT_DO,
+    STMT_CALL,
+} StatementKind;
+
+typedef struct {
+    TokenKind kind;
+    char* value;
+} Token;
+
+typedef struct Expression {
+    struct Expression* a;
+    Token* value;
+    struct Expression* b;
+} Expression;
+
+typedef struct {
+    StatementKind kind;
+    void** data;
+} Statement;
+
+typedef struct {
+    char* kind;
+    char* name;
+} FunctionParam;
+
+typedef struct {
+    FunctionParam* params;
+    int pcount;
+    char* ret;
+    char* ident;
+    int stmtc;
+    Statement* stmtv;
+} FunctionDecl;
+
+typedef struct {
+    FunctionDecl* funcs;
+    int count;
+} Program;
+
+typedef struct Var {
+    char* name;
+    int stk_idx;
+} Var;
+
+typedef struct VarMap {
+    int max;
+    Var** vars;
+} VarMap;
+
+static int block_id;
+static regex_t regex[TOKEN_KINDS];
+
+void setup_regex() {
+    int idx = 0;
+    regcomp(&regex[idx++], "^{$", 0);
+    regcomp(&regex[idx++], "^}$", 0);
+    regcomp(&regex[idx++], "^($", 0);
+    regcomp(&regex[idx++], "^)$", 0);
+    regcomp(&regex[idx++], "^;$", 0);
+    regcomp(&regex[idx++], "^int$", 0);
+    regcomp(&regex[idx++], "^string$", 0);
+    regcomp(&regex[idx++], "^return$", 0);
+    regcomp(&regex[idx++], "^sys$", 0);
+    regcomp(&regex[idx++], "^if$", 0);
+    regcomp(&regex[idx++], "^else$", 0);
+    regcomp(&regex[idx++], "^for$", 0);
+    regcomp(&regex[idx++], "^while$", 0);
+    regcomp(&regex[idx++], "^do$", 0);
+    regcomp(&regex[idx++], "^break$", 0);
+    regcomp(&regex[idx++], "^continue$", 0);
+    regcomp(&regex[idx++], "^[a-zA-Z]\\w*$", 0);
+    regcomp(&regex[idx++], "^[0-9][0-9]*$", 0);
+    regcomp(&regex[idx++], "^-$", 0);
+    regcomp(&regex[idx++], "^~$", 0);
+    regcomp(&regex[idx++], "^!$", 0);
+    regcomp(&regex[idx++], "^+$", 0);
+    regcomp(&regex[idx++], "^*$", 0);
+    regcomp(&regex[idx++], "^/$", 0);
+    regcomp(&regex[idx++], "^&&$", 0);
+    regcomp(&regex[idx++], "^||$", 0);
+    regcomp(&regex[idx++], "^==$", 0);
+    regcomp(&regex[idx++], "^!=$", 0);
+    regcomp(&regex[idx++], "^<$", 0);
+    regcomp(&regex[idx++], "^<=$", 0);
+    regcomp(&regex[idx++], "^>$", 0);
+    regcomp(&regex[idx++], "^>=$", 0);
+    regcomp(&regex[idx++], "^,$", 0);
+    regcomp(&regex[idx++], "^=$", 0);
+
+    if (idx != TOKEN_KINDS) {
+        printf("wrong regex count");
+        exit(1);
+    }
+    return;
+}
+
+void asm_expr(Expression* s, VarMap* var_map, int* stk_idx) {
+
+    if (s->value && s->value->kind == TOKEN_OPEN_PAREN) {
+        int start = *stk_idx;
+        for (int i = 0; i < (int)s->b; i++) {
+            asm_expr(&((Expression*)s->a)[i], var_map, stk_idx);
+        }
+
+        *stk_idx = start + 1;
+
+        printf("    call %s\n", s->value->value);
+        return;
+    }
+    if (s->a) asm_expr(s->a, var_map, stk_idx);
+    if (s->b) asm_expr(s->b, var_map, stk_idx);
+    if (s->value) {
+        switch (s->value->kind) {
+            case TOKEN_INT_LIT:
+                printf("    push %s\n", s->value->value);
+                *stk_idx += 1;
+                break;
+            case TOKEN_NEG:
+                if (s->a) {
+                    printf("    sub\n");
+                    *stk_idx -= 1;
+                } else printf("    neg\n");
+                break;
+            case TOKEN_BIT_NOT:
+                printf("    not\n");
+                break;
+            case TOKEN_NOT:
+                printf("    push 1\n");
+                printf("    xor\n");
+                break;
+            case TOKEN_ADD:
+                printf("    add\n");
+                *stk_idx -= 1;
+                break;
+            case TOKEN_MUL:
+                printf("    mul\n");
+                *stk_idx -= 1;
+                break;
+            case TOKEN_DIV:
+                printf("    div\n");
+                *stk_idx -= 1;
+                break;
+            case TOKEN_ASSIGN:
+                printf("    set\n");
+                *stk_idx -= 1;
+                break;
+            case TOKEN_EQ:
+                printf("    eq\n");
+                *stk_idx -= 1;
+                break;
+            case TOKEN_AND:
+                printf("    and\n");
+                *stk_idx -= 1;
+                break;
+            case TOKEN_OR:
+                printf("    or\n");
+                *stk_idx -= 1;
+                break;
+            case TOKEN_IDENT:
+                for (int i = 0; i < var_map->max; i ++) {
+                    if (strcmp(var_map->vars[i]->name, s->value->value) == 0) {
+                        printf("    copy %d\n", *stk_idx - 1 - var_map->vars[i]->stk_idx);
+                        *stk_idx += 1;
+
+                        return;
+                    }
+                }
+
+                printf("ERROR, %s\n", s->value->value);
+                exit(0);
+
+                break;
+            default:
+                printf("; SOMETHING %d\n", s->value->kind);
+        }
+    }
+}
+
+void print_expr(Expression* s) {
+    if (s->value) printf("(");
+    if (s->a) print_expr(s->a);
+    if (s->value) printf("%s", s->value->value);
+    if (s->b) print_expr(s->b);
+    if (s->value) printf(")");
+}
+
+void asm_stmt(Statement* s, VarMap* var_map, int* stk_idx) {
+    switch (s->kind) {
+        case STMT_INVALID:
+            printf("    nop\n");
+            break;
+        case STMT_RETURN:
+            asm_expr(&s->data[0], var_map, stk_idx);
+            for (int i = *stk_idx; i > 1; i--) {
+                printf("    disc 1\n");
+            }
+            *stk_idx -= 1;
+            printf("    dup 0\n");
+            printf("    disc 1\n");
+            printf("    ret\n");
+            break;
+        case STMT_SYS:
+            asm_expr(&s->data[0], var_map, stk_idx);
+            printf("    sys %s\n", s->data[1]);
+            *stk_idx -= 1;
+            break;
+        case STMT_COND:
+            int start = *stk_idx;
+            int var_start = var_map->max;
+            int block = block_id;
+            block_id ++;
+            asm_expr(s->data[0], var_map, stk_idx);
+            printf("    jz block_%d_alt\n", block);
+            *stk_idx -= 1;
+
+            for (int i = 0; i < (int)s->data[1]; i++) {
+                asm_stmt(&((Statement**)s->data)[2][i], var_map, stk_idx);
+            }
+
+            for (int i = *stk_idx; i > start + 2; i--) {
+                printf("    disc 1\n");
+            }
+            *stk_idx = start;
+            var_map->max = var_start;
+            printf("    jmp block_%d_end\n", block);
+            printf("block_%d_alt:\n", block);
+
+            for (int i = 0; i < (int)s->data[3]; i++) {
+                asm_stmt(&((Statement**)s->data)[4][i], var_map, stk_idx);
+            }
+
+            for (int i = *stk_idx; i > start + 2; i--) {
+                printf("    disc 1\n");
+            }
+
+            printf("block_%d_end:\n", block);
+            *stk_idx = start;
+            var_map->max = var_start;
+            break;
+        case STMT_FOR:
+            int fstart = *stk_idx;
+            int fvar_start = var_map->max;
+            int fblock = block_id;
+            block_id++;
+
+            asm_expr(s->data[0], var_map, stk_idx);
+            printf("    disc 0\n");
+            *stk_idx -= 1;
+            printf("block_%d_loop:\n", fblock);
+            asm_expr(s->data[1], var_map, stk_idx);
+            printf("    jz block_%d_end\n", fblock);
+            *stk_idx -= 1;
+
+            for (int i = 0; i < (int)s->data[3]; i++) {
+                asm_stmt(&((Statement**)s->data)[4][i], var_map, stk_idx);
+            }
+
+            asm_expr(s->data[2], var_map, stk_idx);
+            printf("    disc 0\n");
+            *stk_idx -= 1;
+            printf("    jmp block_%d_loop\n", fblock);
+            printf("block_%d_end:\n", fblock);
+
+            for (int i = *stk_idx; i > fstart + 1; i--) {
+                printf("    disc 1\n");
+            }
+
+            *stk_idx = fstart;
+            var_map->max = fvar_start;
+            break;
+        case STMT_EXP:
+            asm_expr(s->data[0], var_map, stk_idx);
+            printf("    disc 0\n");
+            *stk_idx -= 1;
+            break;
+        case STMT_DECLARE:
+            if (s->data[1] != NULL) {
+                asm_expr(s->data[1], var_map, stk_idx);
+            } else {
+                printf("    push 0\n");
+                *stk_idx += 1;
+            }
+            var_map->max += 1;
+            var_map->vars = realloc(var_map->vars, sizeof(Var*) * var_map->max);
+            var_map->vars[var_map->max - 1] = malloc(sizeof(Var));
+            var_map->vars[var_map->max - 1]->name = ((Token*)s->data[0])->value;
+            var_map->vars[var_map->max - 1]->stk_idx = (*stk_idx) - 1;
+            break;
+        default:
+            printf("; UNIMPLEMENTED STATEMENT %d\n", s->kind);
+    }
+}
+
+void print_stmt(Statement* s) {
+    switch (s->kind) {
+        case STMT_INVALID:
+            printf("         INVALID\n");
+            break;
+        case STMT_RETURN:
+            printf("         RETURN ");
+            print_expr(s->data[0]);
+            printf("\n");
+            break;
+        case STMT_EXP:
+            printf("         EXP");
+            print_expr(s->data[0]);
+            printf("\n");
+            break;
+        case STMT_DECLARE:
+            printf("         DECL %s", ((Token*)s->data[0])->value);
+            if (s->data[1]) {
+                printf(" = ");
+                print_expr(s->data[1]);
+            }
+            printf("\n");
+            break;
+        case STMT_COND:
+            printf("         COND ");
+            print_expr(s->data[0]);
+            printf(":\n");
+            for (int i = 0; i < ((int)s->data[1]); i++) {
+                printf("    ");
+                print_stmt(&((Statement**)(s->data))[2][i]);
+            }
+            if (s->data[3] != 0) {
+                printf("         ELSE:\n");
+                for (int i = 0; i < ((int)s->data[3]); i++) {
+                    printf("    ");
+                    print_stmt(&((Statement**)(s->data))[4][i]);
+                }
+            }
+    }
+}
+
+void asm_func(FunctionDecl* f) {
+    printf("%s:\n", f->ident);
+    VarMap var_map = {0};
+    var_map.max = f->pcount;
+    var_map.vars = malloc((1 + f->pcount) * sizeof(Var*));
+    int stk_idx = 0;
+    for (int i = 0; i < f->pcount; i++) {
+        var_map.vars[i] = malloc(sizeof(Var));
+        var_map.vars[i]->name = f->params[i].name;
+        var_map.vars[i]->stk_idx = stk_idx;
+        stk_idx += 1;
+    }
+
+    for (int i = 0; i < f->stmtc; i++) {
+        asm_stmt(&(f->stmtv[i]), &var_map, &stk_idx);
+    }
+}
+
+void print_param(FunctionParam* p) {
+    printf("%s %s", p->kind, p->name);
+}
+
+void print_func(FunctionDecl* f) {
+    printf("FUN %s %s:\n", f->ret, f->ident);
+    printf("    params: (");
+    for (int i = 0; i < f->pcount; i++) {
+        print_param(&(f->params[i]));
+        if (i) printf(", ");
+    }
+    printf(")\n");
+    printf("    body:\n");
+    for (int i = 0; i < f->stmtc; i++) {
+        print_stmt(&(f->stmtv[i]));
+    }
+}
+
+void asm_program(Program* p) {
+    printf("    call main\n");
+    printf("    sys 1\n");
+    for (int i = 0; i < p->count; i++) {
+        asm_func(&(p->funcs[i]));
+    }
+}
+
+void print_program(Program* p) {
+    for (int i = 0; i < p->count; i++) {
+        print_func(&(p->funcs[i]));
+    }
+}
+
+Token* lex_file(char* filename) {
+    size_t max = 32;
+    size_t idx = 0;
+    Token* result = calloc(sizeof(Token), 32);
+
+    char* code = calloc(sizeof(char), 128);
+    char cur[2] = "\0\0";
+    char prev = '\n';
+
+    FILE* f = fopen(filename, "r");
+    do
+    {
+        cur[0] = fgetc(f);
+        cur[1] = '\0';
+
+        if (prev == '\n' && cur[0] == '#') {
+            char* stmt = calloc(sizeof(char), 256);
+
+            while ((cur[0] = fgetc(f)) != '\n') {
+                strcat(stmt, cur);
+            }
+
+            if (strncmp("include ", stmt, strlen("include ")) == 0) {
+                char* f = &stmt[9];
+
+                f[strlen(f) - 1] = '\0';
+
+                Token* toks = lex_file(f);
+                int tidx = 0;
+
+                while (1) {
+                    Token tok = toks[tidx++];
+
+                    if (tok.kind == TOKEN_EOF) break;
+
+                    if (idx >= max) {
+                        max += 32;
+                        result = realloc(result, sizeof(Token) * max);
+                    }
+
+                    result[idx].kind = tok.kind;
+                    result[idx++].value = tok.value;
+                }
+            }
+        }
+
+        if ((strchr(" {}();,\t\n-~![]", cur[0]) || strchr(" {}();,\t\n-~![]", code[strlen(code) - 1])) && code[0] != '\0') {
+            int broke = 0;
+
+            for (int i = 0; i < TOKEN_KINDS; i++) {
+                if (regexec(&regex[i], code, 0, NULL, 0) == 0) {
+                    if (idx >= max) {
+                        max += 32;
+                        result = realloc(result, sizeof(Token) * max);
+                    }
+
+                    result[idx].kind = i;
+                    result[idx++].value = code;
+
+                    code = calloc(sizeof(char), 128);
+                    broke = 1;
+                    break;
+                }
+            }
+            if (!broke) {
+                printf("ERROR: unknown word: '%s'\n", code);
+                exit(1);
+            }
+        }
+        if (!strchr(" \t\r\n", cur[0])) {
+            strcat(code, cur);
+        }
+
+        prev = cur[0];
+    } while(cur[0] != EOF);
+
+    if (idx >= max) {
+        max += 32;
+        result = realloc(result, sizeof(Token) * max);
+    }
+
+    result[idx++].kind = TOKEN_EOF;
+    result[idx++].value = "EOF";
+
+    return result;
+}
+
+int parse_factor(Token* toks, Expression* expr) {
+    int idx = 0;
+    if (toks[idx].kind == TOKEN_OPEN_PAREN) {
+        expr->a = malloc(sizeof(Expression));
+        expr->value = NULL;
+        expr->b = NULL;
+        idx++;
+
+        int change = parse_expression(&toks[idx], expr->a);
+        if (!change) return 0;
+        idx += change;
+
+        if (toks[idx++].kind != TOKEN_CLOSE_PAREN) return 0;
+
+        return idx;
+    } else if (toks[idx].kind == TOKEN_INT_LIT ||
+               toks[idx].kind == TOKEN_IDENT) {
+        if (toks[idx + 1].kind == TOKEN_MUL ||
+            toks[idx + 1].kind == TOKEN_DIV) {
+            expr->a = malloc(sizeof(Expression));
+            expr->value = &toks[idx + 1];
+            expr->b = malloc(sizeof(Expression));
+
+            expr->a->a = NULL;
+            expr->a->value = &toks[idx++];
+            expr->a->b = NULL;
+
+            idx ++;
+
+            int change = parse_factor(&toks[idx], expr->b);
+            if (!change) return 0;
+            idx += change;
+            return idx;
+        } else if (toks[idx + 1].kind == TOKEN_OPEN_PAREN) {
+            idx += 2;
+            expr->value = malloc(sizeof(Token));
+            expr->value->kind = TOKEN_OPEN_PAREN;
+            expr->value->value = toks[idx - 2].value;
+            if (toks[idx++].kind != TOKEN_CLOSE_PAREN) {
+                idx -= 1;
+                expr->a = malloc(sizeof(Expression));
+                int change;
+                int cnt = 0;
+
+                do {
+                    expr->a = realloc(expr->a, (cnt + 1) * sizeof(Expression));
+
+                    idx += change = parse_expression(&toks[idx], &expr->a[cnt]);
+
+                    cnt += 1;
+
+                    if (toks[idx].kind != TOKEN_COMMA) {
+                        break;
+                    }
+
+                    idx ++;
+                } while (change);
+
+                expr->b = cnt;
+
+                if (toks[idx++].kind != TOKEN_CLOSE_PAREN) return 0;
+            } else {
+                expr->b = 0;
+                expr->a = NULL;
+            }
+
+            return idx;
+        } else {
+            expr->a = NULL;
+            expr->value = &toks[idx++];
+            expr->b = NULL;
+        }
+    } else if (toks[idx].kind == TOKEN_NEG
+               || toks[idx].kind == TOKEN_BIT_NOT
+               || toks[idx].kind == TOKEN_NOT) {
+        expr->a = NULL;
+        expr->value = &toks[idx++];
+        expr->b = malloc(sizeof(Expression));
+        int change = parse_factor(&toks[idx], expr->b);
+        if (!change) return 0;
+        idx += change;
+    }
+
+    return idx;
+}
+
+int parse_sum(Token* toks, Expression* expr) {
+    int idx = 0;
+    Expression* a = malloc(sizeof(Expression));
+
+    int change = parse_factor(&toks[idx], a);
+    if (!change) return 0;
+
+    idx += change;
+
+    if (toks[idx].kind == TOKEN_ADD
+        || toks[idx].kind == TOKEN_ASSIGN
+        || toks[idx].kind == TOKEN_NEG) {
+        expr->a = a;
+        expr->value = &toks[idx++];
+        expr->b = malloc(sizeof(Expression));
+        change = parse_expression(&toks[idx], expr->b);
+        if (!change) return 0;
+        idx += change;
+    } else {
+        expr->a = a;
+        expr->value = NULL;
+        expr->b = NULL;
+        return idx;
+    }
+
+    return idx;
+}
+
+int parse_expression(Token* toks, Expression* expr) {
+    int idx = 0;
+    Expression* a = malloc(sizeof(Expression));
+
+    int change = parse_sum(&toks[idx], a);
+    if (!change) return 0;
+
+    idx += change;
+
+    if (toks[idx].kind == TOKEN_AND
+        || toks[idx].kind == TOKEN_OR
+        || toks[idx].kind == TOKEN_EQ) {
+        expr->a = a;
+        expr->value = &toks[idx++];
+        expr->b = malloc(sizeof(Expression));
+        change = parse_expression(&toks[idx], expr->b);
+        if (!change) return 0;
+        idx += change;
+    } else {
+        expr->a = a;
+        expr->value = NULL;
+        expr->b = NULL;
+        return idx;
+    }
+
+    return idx;
+}
+
+int parse_statement(Token* toks, Statement* stmt) {
+    int idx = 0;
+
+    if (toks[idx].kind == TOKEN_KEYWORD_INT
+        || toks[idx].kind == TOKEN_KEYWORD_STRING) {
+        stmt->kind = STMT_DECLARE;
+        idx++;
+        stmt->data = malloc(sizeof(void*) * 2);
+
+        if (toks[idx++].kind != TOKEN_IDENT) {
+            return 0;
+        }
+
+        stmt->data[0] = &toks[idx - 1];
+
+        if (toks[idx++].kind == TOKEN_ASSIGN) {
+            stmt->data[1] = calloc(sizeof(Expression), 1);
+            int count = parse_expression(&toks[idx], stmt->data[1]);
+            if (count == 0) {
+                return 0;
+            }
+
+            idx += count;
+
+            if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+
+            return idx;
+        }
+        idx--;
+        stmt->data[1] = NULL;
+
+        if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+
+        return idx;
+    } else if (toks[idx].kind == TOKEN_KEYWORD_RETURN) {
+        stmt->kind = STMT_RETURN;
+        idx++;
+        stmt->data = calloc(sizeof(void*), 1);
+        stmt->data[0] = malloc(sizeof(Expression));
+        idx += parse_expression(&toks[idx], stmt->data[0]);
+
+
+        if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+
+        return idx;
+    } else if (toks[idx].kind == TOKEN_KEYWORD_FOR) {
+        stmt->kind = STMT_FOR;
+        idx ++;
+
+        if (toks[idx++].kind != TOKEN_OPEN_PAREN) return 0;
+        int count;
+        stmt->data = calloc(sizeof(void*), 5);
+        stmt->data[0] = malloc(sizeof(Expression));
+        idx += count = parse_expression(&toks[idx], stmt->data[0]);
+
+        if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+
+        stmt->data[1] = malloc(sizeof(Expression));
+        idx += count = parse_expression(&toks[idx], stmt->data[1]);
+
+        if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+
+        stmt->data[2] = malloc(sizeof(Expression));
+        idx += count = parse_expression(&toks[idx], stmt->data[2]);
+
+        if (toks[idx++].kind != TOKEN_CLOSE_PAREN) return 0;
+
+        stmt->data[4] = malloc(sizeof(Statement));
+
+        count = parse_block(&toks[idx], &stmt->data[3], &stmt->data[4]);
+
+        idx += count;
+
+        return idx;
+    } else if (toks[idx].kind == TOKEN_KEYWORD_SYS) {
+        stmt->kind = STMT_SYS;
+        idx++;
+        if (toks[idx++].kind != TOKEN_INT_LIT) return 0;
+
+        stmt->data = calloc(sizeof(void*), 2);
+        stmt->data[1] = toks[idx - 1].value;
+
+        if (toks[idx++].kind != TOKEN_COMMA) return 0;
+
+        stmt->data[0] = malloc(sizeof(Expression));
+        idx += parse_expression(&toks[idx], stmt->data[0]);
+
+
+        if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+
+        return idx;
+    } else if (toks[idx].kind == TOKEN_KEYWORD_BREAK) {
+        stmt->kind = STMT_BREAK;
+        stmt->data = NULL;
+        idx ++;
+
+        if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+        return idx;
+    } else if (toks[idx].kind == TOKEN_KEYWORD_CONTINUE) {
+        stmt->kind = STMT_CONTINUE;
+        stmt->data = NULL;
+        idx ++;
+
+        if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+        return idx;
+    } else if (toks[idx].kind == TOKEN_KEYWORD_IF) {
+        stmt->kind = STMT_COND;
+
+        stmt->data = calloc(sizeof(void*), 5);
+        idx ++;
+        if (toks[idx++].kind != TOKEN_OPEN_PAREN) return 0;
+
+        stmt->data[0] = malloc(sizeof(Expression));
+
+        int count = parse_expression(&toks[idx], stmt->data[0]);
+
+        if (count == 0) return 0;
+        idx += count;
+
+        if (toks[idx++].kind != TOKEN_CLOSE_PAREN) return 0;
+
+        count = parse_block(&toks[idx], &stmt->data[1], &stmt->data[2]);
+
+        if (count == 0) return 0;
+        idx += count;
+
+        if (toks[idx].kind != TOKEN_KEYWORD_ELSE) {
+            stmt->data[3] = 0;
+            stmt->data[4] = NULL;
+        } else {
+            idx ++;
+
+            stmt->data[4] = malloc(sizeof(Statement));
+
+            count = parse_block(&toks[idx], &stmt->data[3], &stmt->data[4]);
+
+            if (count == 0){
+                printf("error");
+
+                return 0;
+            }
+            idx += count;
+        }
+
+        return idx;
+    } else {
+        idx = 0;
+
+        stmt->kind = STMT_EXP;
+        stmt->data = calloc(sizeof(void*), 1);
+        stmt->data[0] = malloc(sizeof(Expression));
+        int change = parse_expression(&toks[idx], stmt->data[0]);
+
+        if (change == 0) return 0;
+
+        idx += change;
+
+        if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
+
+        return idx;
+    }
+
+    stmt->kind = STMT_INVALID;
+
+    return 0;
+}
+
+int parse_block(Token* toks, int* count, Statement** stmts) {
+    int idx = 0;
+
+    if (toks[idx++].kind != TOKEN_OPEN_BRACE) {
+        *stmts = malloc(sizeof(Statement));
+
+        *count = 1;
+
+        int change = parse_statement(toks, &((*stmts)[0]));
+        if (change == 0) return 0;
+        idx = change;
+        return idx;
+    }
+
+    int cnt = 0;
+    int change;
+
+    *stmts = malloc(sizeof(Statement));
+
+    do {
+        *stmts = realloc(*stmts, (cnt + 2) * sizeof(Statement));
+
+        idx += change = parse_statement(&toks[idx], &((*stmts)[cnt]));
+
+        cnt += 1;
+    } while (change);
+
+    *count = cnt - 1;
+
+    if (toks[idx++].kind != TOKEN_CLOSE_BRACE) {
+        printf("not at end of block\n");
+
+        return 0;
+    }
+
+    return idx;
+}
+
+int parse_function_param(Token* toks, FunctionParam* param) {
+    int idx = 0;
+    if (toks[idx++].kind != TOKEN_KEYWORD_INT
+        && toks[idx - 1].kind != TOKEN_KEYWORD_STRING) return 0;
+    param->kind = toks[idx - 1].value;
+    if (toks[idx++].kind != TOKEN_IDENT) return 0;
+    param->name = toks[idx - 1].value;
+
+    return idx;
+}
+
+int parse_function_decl(Token* toks, FunctionDecl* decl) {
+    int idx = 0;
+    if (toks[idx++].kind != TOKEN_KEYWORD_INT
+        && toks[idx - 1].kind != TOKEN_KEYWORD_STRING) return 0;
+    decl->ret = toks[idx - 1].value;
+    if (toks[idx++].kind != TOKEN_IDENT) return 0;
+    decl->ident = toks[idx - 1].value;
+    if (toks[idx++].kind != TOKEN_OPEN_PAREN) return 0;
+    if (toks[idx++].kind != TOKEN_CLOSE_PAREN) {
+        idx -= 1;
+        decl->params = malloc(sizeof(FunctionParam));
+        int change;
+        int cnt = 0;
+
+        do {
+            decl->params = realloc(decl->params, (cnt + 1) * sizeof(FunctionDecl));
+
+            idx += change = parse_function_param(&toks[idx], &decl->params[cnt]);
+
+            cnt += 1;
+
+            if (toks[idx].kind != TOKEN_COMMA) {
+                break;
+            }
+
+            idx ++;
+        } while (change);
+
+        decl->pcount = cnt;
+
+        if (toks[idx++].kind != TOKEN_CLOSE_PAREN) return 0;
+    } else {
+        decl->pcount = 0;
+    }
+
+    int change = parse_block(&toks[idx], &decl->stmtc, &decl->stmtv);
+
+    if (change == 0) {
+        return 0;
+    }
+
+    idx += change;
+
+    return idx;
+}
+
+int parse_program(Token* toks, Program* prog) {
+    int idx = 0;
+
+    prog->funcs = malloc(sizeof(FunctionDecl));
+    int change;
+    int cnt = 0;
+
+    do {
+        prog->funcs = realloc(prog->funcs, (cnt + 1) * sizeof(FunctionDecl));
+
+        idx += change = parse_function_decl(&toks[idx], &prog->funcs[cnt]);
+
+        cnt += 1;
+    } while (change);
+
+    prog->count = cnt - 1;
+
+    if (toks[idx].kind != TOKEN_EOF) {
+        printf("%d", idx);
+
+        return 0;
+    }
+
+    return idx;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        printf("ERROR: expected file");
+
+        return 1;
+    }
+
+    setup_regex();
+
+    Token* tokens = lex_file(argv[1]);
+    Program* prog = malloc(sizeof(Program));
+
+    if (parse_program(tokens, prog) == 0) {
+        print_program(prog);
+
+        printf("failed to parse");
+
+        return 1;
+    }
+
+    //print_program(prog);
+
+    //printf("====\nCODE:\n====\n");
+
+    asm_program(prog);
+
+    return 0;
+}

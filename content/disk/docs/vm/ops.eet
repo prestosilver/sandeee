@@ -1,0 +1,10 @@
+- VM Op-Codes
+-- NOP
+
+nop does nothing
+
+-- SYS
+
+see vm/sys.eet
+
+-- PUSH

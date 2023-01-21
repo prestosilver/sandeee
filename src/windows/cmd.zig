@@ -9,17 +9,23 @@ const sb = @import("../spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../shader.zig");
 const shell = @import("../system/shell.zig");
+const files = @import("../system/files.zig");
 const c = @import("../c.zig");
 
-const ResetEvent = std.Thread.ResetEvent;
+const MAX_SIZE = 5000;
 
 const CMDData = struct {
     bt: std.ArrayList(u8),
     text: std.ArrayList(u8),
+    shell: shell.Shell,
 };
 
 pub fn drawCmd(cself: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
     var self = @ptrCast(*CMDData, cself);
+
+    while (self.bt.items.len > MAX_SIZE) {
+        _ = self.bt.orderedRemove(0);
+    }
 
     var lines = std.ArrayList(std.ArrayList(u8)).init(allocator.alloc);
     defer lines.deinit();
@@ -28,26 +34,34 @@ pub fn drawCmd(cself: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *
     for (self.bt.items) |char| {
         switch (char) {
             '\n' => {
-                if (line.items.len != 0) {
-                    lines.append(line) catch {};
-                    line = std.ArrayList(u8).init(allocator.alloc);
-                }
+                lines.append(line) catch {};
+                line = std.ArrayList(u8).init(allocator.alloc);
             },
             else => {
                 line.append(char) catch {};
             },
         }
     }
-    if (line.items.len != 0) {
-        lines.append(line) catch {};
-        line = std.ArrayList(u8).init(allocator.alloc);
-    }
-
-    line.appendSlice("$ ") catch {};
-    line.appendSlice(self.text.items) catch {};
-    line.appendSlice("_") catch {};
 
     lines.append(line) catch {};
+    if (self.shell.vm != null) {
+        var result = self.shell.updateVM();
+        if (result != null) {
+            self.bt.appendSlice(result.?.data.items) catch {};
+            result.?.data.deinit();
+        } else {
+            self.bt.appendSlice(self.shell.vm.?.out.items) catch {};
+            self.shell.vm.?.out.clearAndFree();
+        }
+    } else {
+        line = std.ArrayList(u8).init(allocator.alloc);
+
+        line.appendSlice("$ ") catch {};
+        line.appendSlice(self.text.items) catch {};
+        line.appendSlice("_") catch {};
+
+        lines.append(line) catch {};
+    }
 
     var height = font.size * @intToFloat(f32, lines.items.len);
 
@@ -78,7 +92,7 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
         },
         c.GLFW_KEY_0...c.GLFW_KEY_9 => {
             if ((mods & c.GLFW_MOD_SHIFT) != 0) {
-                self.text.append("!@#$%^&*()"[@intCast(u8, key - c.GLFW_KEY_0)]) catch {};
+                self.text.append(")!@#$%^&*("[@intCast(u8, key - c.GLFW_KEY_0)]) catch {};
             } else {
                 self.text.append(@intCast(u8, key - c.GLFW_KEY_0) + '0') catch {};
             }
@@ -88,6 +102,9 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
         },
         c.GLFW_KEY_PERIOD => {
             self.text.append('.') catch {};
+        },
+        c.GLFW_KEY_COMMA => {
+            self.text.append(',') catch {};
         },
         c.GLFW_KEY_SLASH => {
             self.text.append('/') catch {};
@@ -99,8 +116,6 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
             var command = std.ArrayList(u8).init(allocator.alloc);
             defer command.deinit();
 
-            self.bt.appendSlice("\n") catch {};
-
             for (self.text.items) |char| {
                 if (char == ' ') {
                     break;
@@ -109,10 +124,12 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
                 }
             }
 
-            var al = shell.run(command.items, self.text.items);
+            var al = self.shell.run(command.items, self.text.items);
             if (al.clear) {
                 self.bt.clearAndFree();
             } else {
+                if (al.data.items.len != 0 and self.bt.getLast() != '\n') self.bt.append('\n') catch {};
+
                 self.bt.appendSlice(al.data.items) catch {};
             }
             al.data.deinit();
@@ -130,6 +147,9 @@ fn deleteCmd(cself: *[]u8) void {
     var self = @ptrCast(*CMDData, cself);
     self.bt.deinit();
     self.text.deinit();
+    if (self.shell.vm != null) {
+        self.shell.vm.?.destroy();
+    }
     allocator.alloc.destroy(self);
 }
 
@@ -140,6 +160,8 @@ pub fn new() win.WindowContents {
     self.bt = std.ArrayList(u8).init(allocator.alloc);
 
     self.bt.appendSlice("Welcome to ShEEEl") catch {};
+    self.shell.root = files.root;
+    self.shell.vm = null;
 
     return win.WindowContents{
         .self = @ptrCast(*[]u8, self),

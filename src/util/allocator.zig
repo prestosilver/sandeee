@@ -1,4 +1,6 @@
 const std = @import("std");
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-pub const alloc = gpa.allocator();
+const builtin = @import("builtin");
+
+var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+pub const alloc = if(!builtin.link_libc) arena.allocator() else std.heap.c_allocator;

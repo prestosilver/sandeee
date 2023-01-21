@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const vecs = @import("math/vecs.zig");
 const mat4 = @import("math/mat4.zig");
@@ -17,7 +18,7 @@ const files = @import("system/files.zig");
 const input = @import("util/input.zig");
 const allocator = @import("util/allocator.zig");
 const vm = @import("system/vm.zig");
-
+const mail = @import("system/mail.zig");
 const wins = @import("windows/all.zig");
 const c = @import("c.zig");
 
@@ -26,12 +27,12 @@ var wintex: tex.Texture = undefined;
 var bartex: tex.Texture = undefined;
 var emailtex: tex.Texture = undefined;
 var editortex: tex.Texture = undefined;
+var explorertex: tex.Texture = undefined;
 var sprite: sp.Sprite = undefined;
 var sb: batch.SpriteBatch = undefined;
 var shader: shd.Shader = undefined;
 var font_shader: shd.Shader = undefined;
 var face: font.Font = undefined;
-
 var windows: std.ArrayList(win.Window) = undefined;
 var bar: bars.Bar = undefined;
 
@@ -94,13 +95,19 @@ pub fn mouseDown(event: input.EventMouseDown) bool {
     }
 
     if (event.btn == 0) {
-        if (bar.data.doClick(wintex, emailtex, editortex, shader, &windows, mousepos)) {
+        if (bar.data.doClick(wintex, emailtex, editortex, explorertex, shader, &windows, mousepos)) {
             return false;
         }
 
         var newTop: i32 = -1;
         for (windows.items) |_, idx| {
-            if (windows.items[idx].data.pos.contains(mousepos)) {
+            var pos = windows.items[idx].data.pos;
+            pos.x -= 20;
+            pos.y -= 20;
+            pos.w += 40;
+            pos.h += 40;
+
+            if (pos.contains(mousepos)) {
                 newTop = @intCast(i32, idx);
             }
 
@@ -110,6 +117,7 @@ pub fn mouseDown(event: input.EventMouseDown) bool {
         if (newTop != -1) {
             var swap = windows.orderedRemove(@intCast(usize, newTop));
             swap.data.active = true;
+            swap.data.contents.focus();
             var mode = swap.data.getDragMode(mousepos);
 
             if (mode == win.DragMode.Close) {
@@ -233,8 +241,6 @@ pub fn keyUp(event: input.EventKeyUp) bool {
 pub fn windowResize(event: input.EventWindowResize) bool {
     gfx.resize(event.w, event.h);
 
-    std.log.debug("lol", .{});
-
     var size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
 
     bar.data.screendims = size;
@@ -245,7 +251,11 @@ pub fn windowResize(event: input.EventWindowResize) bool {
 }
 
 pub fn main() anyerror!void {
-    defer std.debug.assert(!allocator.gpa.deinit());
+    //defer std.debug.assert(!allocator.gpa.deinit());
+    defer if(!builtin.link_libc) {
+        std.log.info("arena", .{});
+        allocator.arena.deinit();
+    };
 
     ctx = gfx.init("Programing Simulator");
     gfx.gContext = &ctx;
@@ -269,6 +279,10 @@ pub fn main() anyerror!void {
     emailtex = tex.newTextureFile(path.items);
     path.deinit();
 
+    path = fm.getContentPath("content/explorer.png");
+    explorertex = tex.newTextureFile(path.items);
+    path.deinit();
+
     path = fm.getContentPath("content/font.ttf");
     face = try font.Font.init(path.items, 22);
     path.deinit();
@@ -276,6 +290,9 @@ pub fn main() anyerror!void {
     input.setup(ctx.window);
 
     files.Folder.init();
+
+    mail.init();
+    mail.load() catch {};
 
     shader = shd.Shader.new(2, shader_files);
     font_shader = shd.Shader.new(2, font_shader_files);
@@ -296,19 +313,18 @@ pub fn main() anyerror!void {
         .screendims = vecs.newVec2(640, 480),
     });
 
-    while (gfx.poll(ctx)) {
-        draw();
-    }
+    while (gfx.poll(ctx)) draw();
 
     for (windows.items) |_, idx| {
         windows.items[idx].data.deinit();
     }
 
+    files.write("disk.eee");
+
     windows.deinit();
     gfx.close(ctx);
-
-    files.write("disk.eee");
     files.deinit();
     sb.deinit();
     input.em.deinit();
+    mail.deinit();
 }

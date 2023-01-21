@@ -1,3 +1,4 @@
 zig-out
-deps
 zig-cache
+disk.eee
+out.zip

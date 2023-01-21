@@ -29,6 +29,7 @@ pub fn init(name: [*c]const u8) Context {
     var win = c.glfwCreateWindow(640, 480, name, null, null);
 
     c.glfwMakeContextCurrent(win);
+    c.glfwSwapInterval(1);
 
     if (c.gladLoadGLLoader(@ptrCast(c.GLADloadproc, &c.glfwGetProcAddress)) == 0) {
         std.log.info("Failed to initialize GLAD\n", .{});

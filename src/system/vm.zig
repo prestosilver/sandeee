@@ -1,5 +1,11 @@
 const std = @import("std");
 
+const STACK_MAX = 2048;
+
+fn range(len: usize) []const void {
+    return @as([*]void, undefined)[0..len];
+}
+
 pub const VM = struct {
     const VMError = error{
         StackUnderflow,
@@ -11,21 +17,32 @@ pub const VM = struct {
 
     pub const StackEntry = struct {
         string: ?[]const u8 = null,
-        value: ?u64 = null,
+        value: ?*u64 = null,
     };
 
     allocator: std.mem.Allocator,
-    stack: [512]StackEntry,
-    rsp: u8 = 0,
+    stack: [STACK_MAX]StackEntry,
+    rsp: u64 = 0,
+
+    retStack: [512]u64 = undefined,
+    retRsp: u8 = 0,
+
     pc: u64 = 0,
+    code: []const Operation = undefined,
+    stopped: bool = false,
+
+    out: std.ArrayList(u8) = undefined,
 
     fn pushStack(self: *VM, entry: StackEntry) void {
         self.stack[self.rsp] = entry;
         self.rsp += 1;
     }
 
-    fn pushStackI(self: *VM, value: u64) void {
-        self.stack[self.rsp] = StackEntry{ .value = value };
+    fn pushStackI(self: *VM, value: u64) !void {
+        var val = try self.allocator.create(u64);
+        val.* = value;
+
+        self.stack[self.rsp] = StackEntry{ .value = val };
         self.rsp += 1;
     }
 
@@ -46,15 +63,44 @@ pub const VM = struct {
         return self.stack[self.rsp];
     }
 
+    fn findStack(self: *VM, idx: u64) VMError!StackEntry {
+        if (self.rsp <= idx) return error.StackUnderflow;
+        return self.stack[self.rsp - 1 - idx];
+    }
+
     pub const Operation = struct {
         pub const Code = enum(u8) {
-            Pushi,
-            Pushs,
+            Nop,
+            Sys,
+
+            Push,
             Add,
+            Sub,
             Copy,
-            Swap,
+
             Jmp,
-            Jmpz,
+            Jz,
+            Jnz,
+            Jmpf,
+
+            Mul,
+            Div,
+
+            And,
+            Or,
+            Not,
+            Eq,
+
+            Getb,
+
+            Ret,
+            Call,
+
+            Neg,
+            Xor,
+            Disc,
+            Asign,
+            Dup,
         };
 
         code: Code,
@@ -63,99 +109,412 @@ pub const VM = struct {
     };
 
     pub fn destroy(self: *VM) void {
-        for (self.stack[0..self.rsp]) |entry| {
+        while (self.rsp >= 1) {
+            self.rsp -= 1;
+            self.free(self.stack[self.rsp]);
+        }
+
+        for (self.code) |entry| {
             if (entry.string != null) {
                 self.allocator.free(entry.string.?);
             }
         }
+
+        self.allocator.free(self.code);
+        self.out.deinit();
+    }
+
+    pub fn freeValue(self: *VM, val: *u64) void {
+        for (self.stack[0..self.rsp]) |entry| {
+            if (entry.value != null and entry.value.? == val) {
+                return;
+            }
+        }
+        self.allocator.destroy(val);
+    }
+
+    pub fn freeString(self: *VM, val: []const u8) void {
+        for (self.stack[0..self.rsp]) |entry| {
+            if (entry.string != null and @ptrToInt(&entry.string.?) == @ptrToInt(&val)) {
+                return;
+            }
+        }
+        self.allocator.free(val);
+    }
+
+    pub fn free(self: *VM, val: StackEntry) void {
+        if (val.value != null) self.freeValue(val.value.?);
+        if (val.string != null) self.freeString(val.string.?);
     }
 
     pub fn runOp(self: *VM, op: Operation) !void {
         self.pc += 1;
+        //std.log.debug("{any}", .{op});
 
         switch (op.code) {
-            Operation.Code.Pushs => {
-                if (op.string == null) return error.ValueMissing;
-                self.pushStackS(op.string.?) catch {};
+            Operation.Code.Nop => {
                 return;
             },
-            Operation.Code.Pushi => {
-                if (op.value == null) return error.ValueMissing;
-                self.pushStackI(op.value.?);
-                return;
+            Operation.Code.Push => {
+                if (op.string != null) {
+                    self.pushStackS(op.string.?) catch {};
+                    return;
+                } else if (op.value != null) {
+                    try self.pushStackI(op.value.?);
+                    return;
+                } else return error.InvalidOp;
             },
             Operation.Code.Add => {
                 var a = try self.popStack();
+                defer self.free(a);
                 var b = try self.popStack();
+                defer self.free(b);
 
                 if (a.string != null) {
                     if (b.string != null) {
                         var comb = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ b.string.?, a.string.? });
-                        self.allocator.free(a.string.?);
-                        self.allocator.free(b.string.?);
                         try self.pushStackS(comb);
                         self.allocator.free(comb);
                         return;
                     } else if (b.value != null) {
-                        return error.InvalidOp;
+                        var comb = try std.fmt.allocPrint(self.allocator, "{}{s}", .{ b.value.?, a.string.? });
+                        try self.pushStackS(comb);
+                        self.allocator.free(comb);
+                        return;
                     } else return error.InvalidOp;
                 } else if (a.value != null) {
                     if (b.string != null) {
-                        try self.pushStackS(b.string.?[a.value.?..]);
-
-                        self.allocator.free(b.string.?);
-
+                        try self.pushStackS(b.string.?[a.value.?.*..]);
                         return;
                     } else if (b.value != null) {
-                        self.pushStackI(a.value.? + b.value.?);
+                        try self.pushStackI(a.value.?.* +% b.value.?.*);
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Sub => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.string != null) {
+                    return error.InvalidOp;
+                } else if (a.value != null) {
+                    if (b.string != null) {
+                        return error.InvalidOp;
+                    } else if (b.value != null) {
+                        try self.pushStackI(b.value.?.* -% a.value.?.*);
                         return;
                     } else return error.InvalidOp;
                 } else return error.InvalidOp;
             },
             Operation.Code.Copy => {
-                var a = try self.popStack();
+                if (op.value == null) return error.ValueMissing;
+
+                var a = try self.findStack(op.value.?);
+                self.pushStack(a);
+                return;
+            },
+            Operation.Code.Dup => {
+                if (op.value == null) return error.ValueMissing;
+
+                var a = try self.findStack(op.value.?);
                 if (a.string != null) {
                     try self.pushStackS(a.string.?);
-                    try self.pushStackS(a.string.?);
-                    self.allocator.free(a.string.?);
                     return;
                 } else if (a.value != null) {
-                    self.pushStackI(a.value.?);
-                    self.pushStackI(a.value.?);
+                    try self.pushStackI(a.value.?.*);
                     return;
                 } else return error.InvalidOp;
-            },
-            Operation.Code.Swap => {
-                var a = try self.popStack();
-                var b = try self.popStack();
-                self.pushStack(a);
-                self.pushStack(b);
-                return;
             },
             Operation.Code.Jmp => {
                 if (op.value == null) return error.ValueMissing;
                 self.pc = op.value.?;
                 return;
             },
-            Operation.Code.Jmpz => {
+            Operation.Code.Jz => {
                 var a = try self.popStack();
+                defer self.free(a);
+
                 if (a.string != null) {
                     return error.InvalidOp;
-                } else if (a.value != null and a.value.? == 0) {
-                    self.pc = op.value.?;
+                } else if (a.value != null) {
+                    if (a.value.?.* == 0) {
+                        self.pc = op.value.?;
+                    }
                     return;
                 } else return error.InvalidOp;
+            },
+            Operation.Code.Jnz => {
+                var a = try self.popStack();
+                defer self.free(a);
+
+                if (a.string != null) {
+                    return error.InvalidOp;
+                } else if (a.value != null) {
+                    if (a.value.?.* != 0) {
+                        self.pc = op.value.?;
+                    }
+                    return;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Sys => {
+                if (op.value != null) {
+                    switch (op.value.?) {
+                        0 => {
+                            var a = try self.popStack();
+                            defer self.free(a);
+                            if (a.string != null) {
+                                self.out.appendSlice(a.string.?) catch {};
+
+                                return;
+                            } else if (a.value != null) {
+                                var str = std.fmt.allocPrint(self.allocator, "{}", .{a.value.?.*}) catch "";
+                                defer self.allocator.free(str);
+
+                                self.out.appendSlice(str) catch {};
+
+                                return;
+                            } else return error.InvalidOp;
+                        },
+                        1 => {
+                            self.stopped = true;
+                            return;
+                        },
+                        else => {
+                            return error.InvalidOp;
+                        },
+                    }
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Jmpf => {
+                if (op.value == null) return error.ValueMissing;
+                self.pc += op.value.?;
+                return;
+            },
+            Operation.Code.Mul => {},
+            Operation.Code.Div => {},
+            Operation.Code.And => {},
+            Operation.Code.Or => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.value != null) {
+                    if (b.value != null) {
+                        try self.pushStackI(a.value.?.* | b.value.?.*);
+
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Neg => {
+                var a = try self.popStack();
+                defer self.free(a);
+
+                if (a.value != null) {
+                    try self.pushStackI(0 -% a.value.?.*);
+
+                    return;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Xor => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.value != null) {
+                    if (b.value != null) {
+                        try self.pushStackI(a.value.?.* ^ b.value.?.*);
+
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Not => {},
+            Operation.Code.Asign => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.findStack(0);
+
+                if (a.value != null) {
+                    if (b.value != null) {
+                        b.value.?.* = a.value.?.*;
+
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Disc => {
+                if (op.value == null) return error.ValueMissing;
+
+                var items = self.stack[self.rsp - op.value.? .. self.rsp];
+                self.rsp -= @intCast(u8, op.value.?);
+                var disc = try self.popStack();
+                defer self.free(disc);
+
+                for (items) |item| {
+                    self.pushStack(item);
+                }
+
+                return;
+            },
+            Operation.Code.Eq => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.string != null) {
+                    if (b.string != null) {
+                        return error.InvalidOp;
+                    } else if (b.value != null) {
+                        return error.InvalidOp;
+                    } else return error.InvalidOp;
+                } else if (a.value != null) {
+                    if (b.string != null) {
+                        return error.InvalidOp;
+                    } else if (b.value != null) {
+                        var val: u64 = 0;
+                        if (a.value.?.* == b.value.?.*) val = 1;
+                        try self.pushStackI(val);
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Getb => {
+                var a = try self.popStack();
+                defer self.free(a);
+
+                if (a.string != null) {
+                    var val = @intCast(u64, a.string.?[0]);
+                    self.allocator.free(a.string.?);
+                    try self.pushStackI(val);
+                    return;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Ret => {
+                self.retRsp -= 1;
+                self.pc = self.retStack[self.retRsp];
+                return;
+            },
+            Operation.Code.Call => {
+                if (op.value == null) return error.ValueMissing;
+
+                self.retStack[self.retRsp] = self.pc;
+                self.pc = op.value.?;
+                self.retRsp += 1;
+                return;
             },
         }
         return error.NotImplemented;
     }
 
-    pub fn run(self: *VM, ops: []Operation) !void {
-        while (self.pc < ops.len) {
-            var oper = ops[self.pc];
+    pub fn loadList(self: *VM, ops: []Operation) void {
+        var list = self.allocator.alloc(Operation, ops.len) catch null;
 
-            try self.runOp(oper);
+        self.out = std.ArrayList(u8).init(self.allocator);
+
+        for (ops) |_, idx| {
+            list.?[idx] = ops[idx];
+
+            if (ops[idx].string != null) {
+                var str = self.allocator.alloc(u8, ops[idx].string.?.len) catch null;
+
+                for (ops[idx].string.?) |_, jdx| {
+                    str.?[jdx] = ops[idx].string.?[jdx];
+                }
+
+                list.?[idx].string = str.?;
+            }
         }
+        self.code = list.?;
+    }
+
+    pub fn loadString(self: *VM, conts: []const u8) void {
+        var ops = std.ArrayList(Operation).init(self.allocator);
+        defer ops.deinit();
+
+        var parsePtr: usize = 0;
+        while (parsePtr < conts.len) {
+            var code: Operation.Code = @intToEnum(Operation.Code, conts[parsePtr]);
+            parsePtr += 1;
+            var kind = conts[parsePtr];
+            parsePtr += 1;
+
+            if (kind == 1) {
+                var value = @bitCast(u64, conts[parsePtr..][0..8].*);
+
+                parsePtr += 8;
+
+                ops.append(VM.Operation{ .code = code, .value = value }) catch {};
+            } else if (kind == 2) {
+                var buffPtr: usize = 0;
+                while (conts[parsePtr + buffPtr] != 0) {
+                    buffPtr += 1;
+                }
+                ops.append(VM.Operation{ .code = code, .string = conts[parsePtr .. parsePtr + buffPtr] }) catch {};
+                parsePtr += buffPtr + 1;
+            } else if (kind == 3) {
+                var value = conts[parsePtr];
+                parsePtr += 1;
+
+                ops.append(VM.Operation{ .code = code, .value = @intCast(u64, value) }) catch {};
+            } else if (kind == 0) {
+                ops.append(VM.Operation{ .code = code }) catch {};
+            }
+        }
+
+        self.loadList(ops.items);
+    }
+
+    pub fn runAll(self: *VM) !void {
+        while (!(self.runStep() catch |err| {
+            return err;
+        })) {}
+    }
+
+    pub fn done(self: *VM) bool {
+        return self.pc >= self.code.len or self.stopped;
+    }
+
+    pub fn runStep(self: *VM) !bool {
+        var oper = self.code[self.pc];
+
+        try self.runOp(oper);
+
+        return self.done();
+    }
+
+    pub fn runTime(self: *VM, ns: u64) !bool {
+        var timer = try std.time.Timer.start();
+
+        timer.reset();
+
+        while (timer.read() < ns) {
+            if (self.runStep() catch |err| {
+                return err;
+            }) {
+                return true;
+            }
+        }
+
+        return self.done();
+    }
+
+    pub fn runNum(self: *VM, num: u64) !bool {
+        for (range(num)) |_| {
+            if (self.runStep() catch |err| {
+                return err;
+            }) {
+                return true;
+            }
+        }
+
+        return self.done();
     }
 };
 
@@ -164,10 +523,11 @@ test "vm pushi" {
     defer vm.destroy();
 
     var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Pushi, .value = 10 },
+        VM.Operation{ .code = VM.Operation.Code.Push, .value = 10 },
     };
 
-    try vm.run(&ops);
+    vm.loadList(&ops);
+    try vm.runAll();
 
     try std.testing.expectEqual(vm.stack[0].value.?, 10);
 }
@@ -177,10 +537,11 @@ test "vm pushs" {
     defer vm.destroy();
 
     var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Pushs, .string = "Hello World!" },
+        VM.Operation{ .code = VM.Operation.Code.Push, .string = "Hello World!" },
     };
 
-    try vm.run(&ops);
+    vm.loadList(&ops);
+    try vm.runAll();
 
     try std.testing.expectEqualStrings(vm.stack[0].string.?, "Hello World!");
 }
@@ -190,12 +551,13 @@ test "vm add int int" {
     defer vm.destroy();
 
     var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Pushi, .value = 34 },
-        VM.Operation{ .code = VM.Operation.Code.Pushi, .value = 35 },
+        VM.Operation{ .code = VM.Operation.Code.Push, .value = 34 },
+        VM.Operation{ .code = VM.Operation.Code.Push, .value = 35 },
         VM.Operation{ .code = VM.Operation.Code.Add },
     };
 
-    try vm.run(&ops);
+    vm.loadList(&ops);
+    try vm.runAll();
 
     try std.testing.expectEqual(vm.stack[0].value.?, 69);
 }
@@ -204,12 +566,13 @@ test "vm add str str" {
     var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
 
     var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Pushs, .string = "Hello " },
-        VM.Operation{ .code = VM.Operation.Code.Pushs, .string = "World!" },
+        VM.Operation{ .code = VM.Operation.Code.Push, .string = "Hello " },
+        VM.Operation{ .code = VM.Operation.Code.Push, .string = "World!" },
         VM.Operation{ .code = VM.Operation.Code.Add },
     };
 
-    try vm.run(&ops);
+    vm.loadList(&ops);
+    try vm.runAll();
 
     try std.testing.expectEqualStrings(vm.stack[0].string.?, "Hello World!");
 
@@ -221,12 +584,13 @@ test "vm add str int" {
     defer vm.destroy();
 
     var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Pushs, .string = "Hello" },
-        VM.Operation{ .code = VM.Operation.Code.Pushi, .value = 2 },
+        VM.Operation{ .code = VM.Operation.Code.Push, .string = "Hello" },
+        VM.Operation{ .code = VM.Operation.Code.Push, .value = 2 },
         VM.Operation{ .code = VM.Operation.Code.Add },
     };
 
-    try vm.run(&ops);
+    vm.loadList(&ops);
+    try vm.runAll();
 
     try std.testing.expectEqualStrings(vm.stack[0].string.?, "llo");
 }
@@ -236,11 +600,12 @@ test "vm copy str" {
     defer vm.destroy();
 
     var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Pushs, .string = "foo" },
-        VM.Operation{ .code = VM.Operation.Code.Copy },
+        VM.Operation{ .code = VM.Operation.Code.Push, .string = "foo" },
+        VM.Operation{ .code = VM.Operation.Code.Copy, .value = 0 },
     };
 
-    try vm.run(&ops);
+    vm.loadList(&ops);
+    try vm.runAll();
 
     try std.testing.expectEqualStrings(vm.stack[0].string.?, "foo");
     try std.testing.expectEqualStrings(vm.stack[1].string.?, "foo");
@@ -248,34 +613,40 @@ test "vm copy str" {
     try std.testing.expect(&vm.stack[0].string.? != &vm.stack[1].string.?);
 }
 
-test "vm swap" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-    defer vm.destroy();
-
-    var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Pushi, .value = 34 },
-        VM.Operation{ .code = VM.Operation.Code.Pushi, .value = 35 },
-        VM.Operation{ .code = VM.Operation.Code.Swap },
-    };
-
-    try vm.run(&ops);
-
-    try std.testing.expectEqual(vm.stack[1].value.?, 34);
-    try std.testing.expectEqual(vm.stack[0].value.?, 35);
-}
-
 test "vm jnz" {
     var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
     defer vm.destroy();
 
     var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Pushi, .value = 34 },
-        VM.Operation{ .code = VM.Operation.Code.Pushi, .value = 35 },
-        VM.Operation{ .code = VM.Operation.Code.Swap },
+        VM.Operation{ .code = VM.Operation.Code.Push, .value = 34 },
+        VM.Operation{ .code = VM.Operation.Code.Push, .value = 1 },
+        VM.Operation{ .code = VM.Operation.Code.Sub },
+        VM.Operation{ .code = VM.Operation.Code.Copy, .value = 0 },
+        VM.Operation{ .code = VM.Operation.Code.Sys, .value = 0 },
+        VM.Operation{ .code = VM.Operation.Code.Push, .string = "\n" },
+        VM.Operation{ .code = VM.Operation.Code.Sys, .value = 0 },
+        VM.Operation{ .code = VM.Operation.Code.Copy, .value = 0 },
+        VM.Operation{ .code = VM.Operation.Code.Jz, .value = 11 },
+        VM.Operation{ .code = VM.Operation.Code.Jmp, .value = 1 },
+        VM.Operation{ .code = VM.Operation.Code.Sys, .value = 1 },
     };
 
-    try vm.run(&ops);
+    vm.loadList(&ops);
+    try vm.runAll();
 
-    try std.testing.expectEqual(vm.stack[1].value.?, 34);
-    try std.testing.expectEqual(vm.stack[0].value.?, 35);
+    try std.testing.expectEqual(vm.stack[0].value.?, 0);
+}
+
+test "vm loadstr" {
+    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
+    defer vm.destroy();
+
+    var ops =
+        "\x02\x02Hello\x00" ++
+        "\x01\x03\x00";
+
+    vm.loadString(ops);
+    try vm.runAll();
+
+    try std.testing.expectEqualStrings(vm.out.items, "Hello");
 }

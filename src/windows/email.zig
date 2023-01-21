@@ -10,6 +10,7 @@ const allocator = @import("../util/allocator.zig");
 const shd = @import("../shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../texture.zig");
+const mail = @import("../system/mail.zig");
 
 const boxes: u8 = 3;
 
@@ -18,14 +19,6 @@ fn range(len: usize) []const void {
 }
 
 const EmailData = struct {
-    const Email = struct {
-        from: []const u8,
-        subject: []const u8,
-        contents: []const u8,
-        solved: bool = false,
-        selected: bool = false,
-        box: u8 = 0,
-    };
 
     text: []const u8,
     icon: sprite.Sprite,
@@ -34,9 +27,8 @@ const EmailData = struct {
     dive: sprite.Sprite,
     sel: sprite.Sprite,
     shader: shd.Shader,
-    emails: std.ArrayList(Email),
     box: u8 = 0,
-    viewing: ?Email = null,
+    viewing: ?*mail.Email = null,
 };
 
 pub fn drawEmail(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
@@ -62,7 +54,7 @@ pub fn drawEmail(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds
 
         var y: f32 = bnds.y + 2.0;
 
-        for (self.emails.items) |email| {
+        for (mail.emails.items) |email| {
             if (email.box != self.box) continue;
 
             var text = std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject }) catch "";
@@ -128,7 +120,7 @@ pub fn clickEmail(c: *[]u8, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32
             if (contBnds.contains(mousepos)) {
                 var y: i32 = 0;
 
-                for (self.emails.items) |email, idx| {
+                for (mail.emails.items) |email, idx| {
                     if (email.box != self.box) continue;
 
                     var bnds = rect.newRect(106, @intToFloat(f32, y), size.x - 106, 28);
@@ -137,13 +129,13 @@ pub fn clickEmail(c: *[]u8, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32
 
                     if (bnds.contains(mousepos)) {
                         if (email.selected) {
-                            self.emails.items[idx].selected = false;
-                            self.viewing = email;
+                            mail.emails.items[idx].selected = false;
+                            self.viewing = &mail.emails.items[idx];
                         } else {
-                            self.emails.items[idx].selected = true;
+                            mail.emails.items[idx].selected = true;
                         }
                     } else {
-                        self.emails.items[idx].selected = false;
+                        mail.emails.items[idx].selected = false;
                     }
                 }
             } else {
@@ -171,7 +163,6 @@ pub fn clickEmail(c: *[]u8, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32
 
 fn deleteEmail(cself: *[]u8) void {
     var self = @ptrCast(*EmailData, cself);
-    self.emails.deinit();
     allocator.alloc.destroy(self);
 }
 
@@ -201,22 +192,6 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     self.shader = shader;
     self.viewing = null;
     self.box = 0;
-
-    self.emails = std.ArrayList(EmailData.Email).init(allocator.alloc);
-    self.emails.append(EmailData.Email{
-        .from = "joe_m@eee.org",
-        .subject = "I know where you live",
-        .contents = "Hello\nI know where you live, if you dont want me releasing this, please program for me.\n\nJoe Moe",
-        .box = 0,
-    }) catch {};
-    for (range(100)) |_, idx| {
-        self.emails.append(EmailData.Email{
-            .from = "joe_m@eee.org",
-            .subject = "Program for me",
-            .contents = "Please?",
-            .box = @intCast(u8, @mod(idx, 2) + 1),
-        }) catch {};
-    }
 
     return win.WindowContents{
         .self = @ptrCast(*[]u8, self),

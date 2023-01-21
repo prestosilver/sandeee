@@ -185,8 +185,7 @@ pub const SpriteBatch = struct {
                     var a = verts.array();
                     data.appendSlice(&a) catch {};
                 }
-
-                c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, data.items.len * @sizeOf(f32)), &(data.items[0]), c.GL_STREAM_DRAW);
+                c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, data.items.len * @sizeOf(f32)), &(data.items[0]), c.GL_DYNAMIC_DRAW);
 
                 data.deinit();
             }

@@ -1,6 +1,7 @@
 const std = @import("std");
-const freetype = @import("deps/zig-freetype/build.zig");
+const freetype = @import("deps/mach-freetype/build.zig");
 const files = @import("src/system/files.zig");
+const mail = @import("src/system/mail.zig");
 
 pub var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub const alloc = gpa.allocator();
@@ -27,6 +28,9 @@ pub fn disk(b: *std.build.Builder, path: []const u8) []const u8 {
 
                 std.debug.assert(files.writeFile(file.path, contents));
             },
+            std.fs.IterableDir.Entry.Kind.Directory => {
+                std.debug.assert(files.newFolder(file.path));
+            },
             else => {},
         }
     }
@@ -34,6 +38,35 @@ pub fn disk(b: *std.build.Builder, path: []const u8) []const u8 {
     std.log.info("generated disk", .{});
 
     return files.toStr().items;
+}
+
+pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
+    var root = std.fs.openDirAbsolute(b.pathFromRoot(path), .{ .access_sub_paths = true }) catch null;
+    var dir = std.fs.openIterableDirAbsolute(b.pathFromRoot(path), .{ .access_sub_paths = true }) catch null;
+    var walker = dir.?.walk(alloc) catch null;
+    var entry = walker.?.next() catch null;
+
+    mail.init();
+    defer mail.deinit();
+
+    while (entry) |file| : (entry = walker.?.next() catch null) {
+        switch (file.kind) {
+            std.fs.IterableDir.Entry.Kind.File => {
+                var f = root.?.openFile(file.path, .{}) catch {
+                    std.log.err("Failed to open {s}", .{file.path});
+                    return "";
+                };
+                defer f.close();
+                mail.append(mail.parseTxt(f) catch |err| {
+                    std.log.err("Failed to parse {s} {}", .{file.path, err});
+                    return "";
+                });
+            },
+            else => {},
+        }
+    }
+
+    return mail.toStr().items;
 }
 
 pub fn build(b: *std.build.Builder) void {
@@ -47,13 +80,20 @@ pub fn build(b: *std.build.Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const exe = b.addExecutable("programming-sim", "src/main.zig");
+    const exe = b.addExecutable("sandeee", "src/main.zig");
+    //const vm_exe = b.addExecutable("sandeee-vm", "src/main_vm.zig");
+
 
     // Includes
     exe.addIncludePath("deps/include");
-    exe.addLibraryPath("deps/lib");
+    if (target.os_tag != null and target.os_tag.? == .windows) {
+        exe.addLibraryPath("deps/lib");
+    }
+    exe.setTarget(target);
+    exe.setBuildMode(mode);
 
-    freetype.addFreetype(exe) catch {};
+    exe.addPackage(freetype.pkg);
+    freetype.link(b, exe, .{});
 
     // Sources
     exe.addCSourceFile("deps/src/stb_image_impl.c", &[_][]const u8{"-std=c99"});
@@ -62,17 +102,24 @@ pub fn build(b: *std.build.Builder) void {
     exe.linkSystemLibrary("glfw3");
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("c");
+    exe.linkLibC();
 
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
     exe.install();
 
+    //vm_exe.setTarget(target);
+    //vm_exe.setBuildMode(mode);
+    //vm_exe.install();
+
     var write_step = b.addWriteFile(b.pathFromRoot("content/default.eee"), disk(b, b.pathFromRoot("content/disk/")));
+    var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
 
     exe.step.dependOn(&write_step.step);
+    exe.step.dependOn(&email_step.step);
 
     const run_cmd = exe.run();
+    //const vm_run_cmd = vm_exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
+    //vm_run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
@@ -81,11 +128,19 @@ pub fn build(b: *std.build.Builder) void {
     b.installFile("content/images/bar.png", "bin/content/bar.png");
     b.installFile("content/images/email.png", "bin/content/email.png");
     b.installFile("content/images/editor.png", "bin/content/editor.png");
+    b.installFile("content/images/explorer.png", "bin/content/explorer.png");
     b.installFile("content/fonts/scientifica.ttf", "bin/content/font.ttf");
     b.installFile("content/default.eee", "bin/content/default.eee");
+    b.installFile("content/emails.eme", "bin/content/emails.eme");
+
+    b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");
+    b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+
+    //const run_vm = b.step("vm", "Run the app");
+    //run_vm.dependOn(&vm_run_cmd.step);
 
     const vm_tests = b.addTest("src/system/vm.zig");
     vm_tests.setTarget(target);

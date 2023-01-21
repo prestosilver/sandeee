@@ -10,7 +10,7 @@ const shd = @import("../shader.zig");
 const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
 
-const TOTAL_SPRITES: f32 = 10;
+const TOTAL_SPRITES: f32 = 12;
 const TEX_SIZE: f32 = 32;
 
 fn range(len: usize) []const void {
@@ -72,14 +72,14 @@ pub const BarData = struct {
         }
     }
 
-    pub fn doClick(self: *BarData, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, shader: shd.Shader, windows: *std.ArrayList(win.Window), pos: vecs.Vector2) bool {
+    pub fn doClick(self: *BarData, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, explorertex: tex.Texture, shader: shd.Shader, windows: *std.ArrayList(win.Window), pos: vecs.Vector2) bool {
         var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;
 
         if (self.btnActive) {
             for (range(10)) |_, i| {
-                var y = self.screendims.y - 402 - self.height + 67 * @intToFloat(f32, i);
+                var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
                 var item = rect.newRect(0, y, 200, 67);
                 if (item.contains(pos)) {
                     for (windows.items) |_, idx| {
@@ -147,6 +147,46 @@ pub const BarData = struct {
 
                             windows.append(window) catch {};
                         },
+                        4 => {
+                            var window = win.Window.new(wintex, win.WindowData{
+                                .pos = rect.Rectangle{
+                                    .x = 100,
+                                    .y = 100,
+                                    .w = 400,
+                                    .h = 300,
+                                },
+                                .source = rect.Rectangle{
+                                    .x = 0.0,
+                                    .y = 0.0,
+                                    .w = 1.0,
+                                    .h = 1.0,
+                                },
+                                .contents = wins.web.new(explorertex, shader),
+                                .active = true,
+                            });
+
+                            windows.append(window) catch {};
+                        },
+                        5 => {
+                            var window = win.Window.new(wintex, win.WindowData{
+                                .pos = rect.Rectangle{
+                                    .x = 100,
+                                    .y = 100,
+                                    .w = 400,
+                                    .h = 300,
+                                },
+                                .source = rect.Rectangle{
+                                    .x = 0.0,
+                                    .y = 0.0,
+                                    .w = 1.0,
+                                    .h = 1.0,
+                                },
+                                .contents = wins.settings.new(explorertex, shader),
+                                .active = true,
+                            });
+
+                            windows.append(window) catch {};
+                        },
                         else => {},
                     }
                 }
@@ -179,13 +219,13 @@ pub const BarData = struct {
         addQuad(&result, 3, icon, rect.newRect(0, 0, 1, 1));
 
         if (self.btnActive) {
-            var menu = rect.newRect(0, self.screendims.y - 402 - self.height, 200, 402);
+            var menu = rect.newRect(0, self.screendims.y - 466 - self.height, 300, 466);
 
             addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
 
             for (range(10)) |_, i| {
-                var y = self.screendims.y - 402 - self.height + 67 * @intToFloat(f32, i);
-                var iconpos = rect.newRect(2, y + 2, 64, 64);
+                var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
+                var iconpos = rect.newRect(34, y + 2, 64, 64);
 
                 switch (i) {
                     0 => {
@@ -200,8 +240,11 @@ pub const BarData = struct {
                     3 => {
                         addQuad(&result, 6, iconpos, rect.newRect(0, 0, 1, 1));
                     },
-                    4=> {
+                    4 => {
                         addQuad(&result, 9, iconpos, rect.newRect(0, 0, 1, 1));
+                    },
+                    5 => {
+                        addQuad(&result, 10, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     else => {},
                 }

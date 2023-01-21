@@ -1,0 +1,3 @@
+[submodule "deps/mach-freetype"]
+	path = deps/mach-freetype
+	url = git@github.com:hexops/mach-freetype

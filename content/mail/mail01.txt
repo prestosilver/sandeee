@@ -1,0 +1,8 @@
+id: 1
+box: 0
+from: joe_m@eee.org
+sub: Your first program.
+Hello,
+I heard you dont know how to write ShEEEl programs, so your first challenge is to write a simple Hello World program.
+
+Joe Moe

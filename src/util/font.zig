@@ -55,8 +55,6 @@ pub const Font = struct {
             return error.LoadFaceError;
         }
 
-        std.log.debug("I have created font", .{});
-
         err = ft.c.FT_Set_Pixel_Sizes(face, 0, size);
         if (err != 0) {
             return error.UnsupportedPixelSize;

@@ -1,0 +1,39 @@
+#+title: Plans
+
+* Programming game
+** Windows
+*** TODO [1/2] Settings
+**** DONE design
+
+problaby based of win95 ofc
+
+**** TODO implement
+***** DONE Setup drawing
+CLOSED: [2023-01-15 Sun 19:48]
+
+***** TODO Implement focus
+*** TODO [2/4] Email
+**** DONE start
+**** DONE write file creator
+**** DONE parser
+CLOSED: [2023-01-20 Fri 19:19]
+
+**** TODO Word wrap
+**** TODO cache x
+*** TODO [1/2] Editor
+*** DONE start
+**** TODO mouse
+** Multiple languages
+*** DONE scripting
+CLOSED: [2023-01-20 Fri 15:32]
+
+*** TODO vm
+** TODO Challenges
+*** DONE Hello World ofc
+** TODO Redo start menu
+** TODO C clone
+*** DONE Start
+*** DONE else statements
+CLOSED: [2023-01-20 Fri 15:32]
+
+*** TODO VM support
