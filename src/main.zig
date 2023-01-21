@@ -257,7 +257,7 @@ pub fn main() anyerror!void {
         allocator.arena.deinit();
     };
 
-    ctx = gfx.init("Programing Simulator");
+    ctx = gfx.init("Sandeee");
     gfx.gContext = &ctx;
 
     sb = batch.newSpritebatch();
