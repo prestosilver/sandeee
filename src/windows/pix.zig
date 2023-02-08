@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const qoi = @import("qoi");
 const win = @import("../drawers/window2d.zig");
 const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
@@ -13,121 +14,19 @@ const shd = @import("../shader.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const cc = @import("../c.zig");
 
-pub const EditorData = struct {
+const PixData = struct {
     file: ?*files.File,
-    buffer: std.ArrayList(u8),
-    menuTop: sp.Sprite,
-    menuDiv: sp.Sprite,
-    shader: shd.Shader,
-    numLeft: sp.Sprite,
-    numDiv: sp.Sprite,
-    icons: [2]sp.Sprite,
-    cursor: vecs.Vector2,
-    cursorIdx: usize,
-    prevIdx: usize,
-    modified: bool,
-
-    clickPos: ?vecs.Vector2,
 };
 
-pub fn drawEditor(c: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
-    var self = @ptrCast(*EditorData, c);
+pub fn drawPix(c: *[]u8, batch: *sb.SpriteBatch, _: shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font) void {
+    var self = @ptrCast(*PixData, c);
 
-    self.menuTop.data.size.x = bnds.w + 4;
-    self.menuDiv.data.size.x = bnds.w + 4;
-
-    self.numLeft.data.size.y = bnds.h - 36;
-    self.numDiv.data.size.y = bnds.h - 36;
-
-    batch.draw(sp.Sprite, &self.menuTop, self.shader, vecs.newVec3(bnds.x - 2, bnds.y - 2, 0));
-    batch.draw(sp.Sprite, &self.menuDiv, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 34, 0));
-    batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 36, 0));
-    batch.draw(sp.Sprite, &self.numDiv, self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 36, 0));
-
-    batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 34, bnds.y, 0));
-    batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
-
-    if (self.file == null) return;
-
-    var y = bnds.y + 32;
-    var line = std.ArrayList(u8).init(allocator.alloc);
-    var nr: i32 = 1;
-    defer line.deinit();
-
-    var cx: f32 = 0;
-    var cy: f32 = 0;
-
-    for (self.buffer.items) |char, idx| {
-        if (char == '\n') {
-            if (cy == self.cursor.y and cx <= self.cursor.x) {
-                var size = font.sizeText(line.items);
-                self.cursor.x = cx;
-
-                font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
-                self.cursorIdx = idx;
-            } else if (self.cursor.x <= 0 and self.cursor.y == cy) {
-                self.cursor.x = 0;
-
-                font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64, y), col.newColor(0, 0, 0, 1));
-                self.cursorIdx = idx - line.items.len;
-            }
-            font.draw(batch, shader, line.items, vecs.newVec2(bnds.x + 70, y), col.newColor(0, 0, 0, 1));
-            var linenr = std.fmt.allocPrint(allocator.alloc, "{}", .{nr}) catch "";
-            defer allocator.alloc.free(linenr);
-            font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1));
-            line.clearAndFree();
-            y += font.size;
-
-            nr += 1;
-            cy += 1;
-            if (cy == self.cursor.y) {
-                self.prevIdx = @floatToInt(usize, cx);
-            }
-            cx = 0;
-        } else {
-            if (cx == self.cursor.x and cy == self.cursor.y) {
-                var size = font.sizeText(line.items);
-
-                font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
-                self.cursorIdx = idx;
-            }
-            if (char < 32 or char == 255) {
-                if (char == '\n' or char == '\r') {
-                    line.append('\n') catch {};
-                } else {
-                    line.append('?') catch {};
-                }
-            } else {
-                line.append(char) catch {};
-            }
-
-            cx += 1;
-        }
-    }
-    if (cy < self.cursor.y) {
-        self.cursor.y = cy;
-    }
-    if (cy == self.cursor.y and cx <= self.cursor.x) {
-        var size = font.sizeText(line.items);
-        self.cursor.x = cx;
-
-        font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
-        self.cursorIdx = self.buffer.items.len;
-    }
-    if (self.cursor.x <= 0 and self.cursor.y == cy) {
-        self.cursor.x = 0;
-
-        font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64, y), col.newColor(0, 0, 0, 1));
-        self.cursorIdx = self.buffer.items.len - (line.items.len);
-    }
-    font.draw(batch, shader, line.items, vecs.newVec2(bnds.x + 70, y), col.newColor(0, 0, 0, 1));
-    var linenr = std.fmt.allocPrint(allocator.alloc, "{}", .{nr}) catch "";
-    defer allocator.alloc.free(linenr);
-    font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1));
+    _ = bnds;
+    _ = self;
 }
 
-pub fn clickEditor(c: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
-    var self = @ptrCast(*EditorData, c);
+pub fn clickPix(c: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
+    var self = @ptrCast(*PixData, c);
     switch (btn) {
         0 => {
             var open = rect.newRect(0, 0, 32, 32);
@@ -154,8 +53,8 @@ pub fn clickEditor(c: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) 
     return true;
 }
 
-fn focusEditor(c: *[]u8) void {
-    var self = @ptrCast(*EditorData, c);
+fn focusPix(c: *[]u8) void {
+    var self = @ptrCast(*PixData, c);
     if (!self.modified) {
         self.buffer.clearAndFree();
         self.buffer.appendSlice(self.file.?.contents) catch {};
@@ -163,14 +62,14 @@ fn focusEditor(c: *[]u8) void {
     }
 }
 
-fn deleteEditor(cself: *[]u8) void {
-    var self = @ptrCast(*EditorData, cself);
+fn deletePix(cself: *[]u8) void {
+    var self = @ptrCast(*PixData, cself);
     self.buffer.deinit();
     allocator.alloc.destroy(self);
 }
 
-pub fn keyEditor(cself: *[]u8, key: i32, mods: i32) void {
-    var self = @ptrCast(*EditorData, cself);
+pub fn keyPix(cself: *[]u8, key: i32, mods: i32) void {
+    var self = @ptrCast(*PixData, cself);
 
     switch (key) {
         cc.GLFW_KEY_A...cc.GLFW_KEY_Z => {
@@ -204,11 +103,6 @@ pub fn keyEditor(cself: *[]u8, key: i32, mods: i32) void {
         },
         cc.GLFW_KEY_PERIOD => {
             self.buffer.insert(self.cursorIdx, '.') catch {};
-            self.cursor.x += 1;
-            self.modified = true;
-        },
-        cc.GLFW_KEY_MINUS => {
-            self.buffer.insert(self.cursorIdx, '-') catch {};
             self.cursor.x += 1;
             self.modified = true;
         },
@@ -251,7 +145,7 @@ pub fn keyEditor(cself: *[]u8, key: i32, mods: i32) void {
 }
 
 pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
-    const self = allocator.alloc.create(EditorData) catch undefined;
+    const self = allocator.alloc.create(PixData) catch undefined;
 
     self.menuTop = sp.Sprite.new(texture, sp.SpriteData.new(
         rect.newRect(19.0 / 32.0, 0.0 / 32.0, 13.0 / 32.0, 2.0 / 32.0),
@@ -286,11 +180,11 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
 
     return win.WindowContents{
         .self = @ptrCast(*[]u8, self),
-        .drawFn = drawEditor,
-        .clickFn = clickEditor,
-        .keyFn = keyEditor,
-        .deleteFn = deleteEditor,
-        .focusFn = focusEditor,
+        .drawFn = drawPix,
+        .clickFn = clickPix,
+        .keyFn = keyPix,
+        .deleteFn = deletePix,
+        .focusFn = focusPix,
         .name = "EEEDT",
         .clearColor = col.newColor(1, 1, 1, 1),
     };

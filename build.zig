@@ -20,6 +20,8 @@ pub fn disk(b: *std.build.Builder, path: []const u8) []const u8 {
     files.root.subfolders = std.ArrayList(files.Folder).init(alloc);
     files.root.contents = std.ArrayList(files.File).init(alloc);
 
+    var count: usize = 0;
+
     while (entry) |file| : (entry = walker.?.next() catch null) {
         switch (file.kind) {
             std.fs.IterableDir.Entry.Kind.File => {
@@ -27,6 +29,7 @@ pub fn disk(b: *std.build.Builder, path: []const u8) []const u8 {
                 var contents = root.?.readFileAlloc(alloc, file.path, 100000) catch "";
 
                 std.debug.assert(files.writeFile(file.path, contents));
+                count += 1;
             },
             std.fs.IterableDir.Entry.Kind.Directory => {
                 std.debug.assert(files.newFolder(file.path));
@@ -35,7 +38,7 @@ pub fn disk(b: *std.build.Builder, path: []const u8) []const u8 {
         }
     }
 
-    std.log.info("generated disk", .{});
+    std.log.info("packed {} files", .{count});
 
     return files.toStr().items;
 }
@@ -49,6 +52,8 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
     mail.init();
     defer mail.deinit();
 
+    var count: usize = 0;
+
     while (entry) |file| : (entry = walker.?.next() catch null) {
         switch (file.kind) {
             std.fs.IterableDir.Entry.Kind.File => {
@@ -58,13 +63,16 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
                 };
                 defer f.close();
                 mail.append(mail.parseTxt(f) catch |err| {
-                    std.log.err("Failed to parse {s} {}", .{file.path, err});
+                    std.log.err("Failed to parse {s} {}", .{ file.path, err });
                     return "";
                 });
+                count += 1;
             },
             else => {},
         }
     }
+
+    std.log.info("packed {} emails", .{count});
 
     return mail.toStr().items;
 }
@@ -81,8 +89,7 @@ pub fn build(b: *std.build.Builder) void {
     const mode = b.standardReleaseOptions();
 
     const exe = b.addExecutable("sandeee", "src/main.zig");
-    //const vm_exe = b.addExecutable("sandeee-vm", "src/main_vm.zig");
-
+    const vm_exe = b.addExecutable("sandeee-vm", "src/main_vm.zig");
 
     // Includes
     exe.addIncludePath("deps/include");
@@ -93,6 +100,10 @@ pub fn build(b: *std.build.Builder) void {
     exe.setBuildMode(mode);
 
     exe.addPackage(freetype.pkg);
+    exe.addPackage(.{
+        .name = "qoi",
+        .source = .{ .path = "deps/zig-qoi/src/qoi.zig" },
+    });
     freetype.link(b, exe, .{});
 
     // Sources
@@ -106,9 +117,9 @@ pub fn build(b: *std.build.Builder) void {
 
     exe.install();
 
-    //vm_exe.setTarget(target);
-    //vm_exe.setBuildMode(mode);
-    //vm_exe.install();
+    vm_exe.setTarget(target);
+    vm_exe.setBuildMode(mode);
+    vm_exe.install();
 
     var write_step = b.addWriteFile(b.pathFromRoot("content/default.eee"), disk(b, b.pathFromRoot("content/disk/")));
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
@@ -117,9 +128,9 @@ pub fn build(b: *std.build.Builder) void {
     exe.step.dependOn(&email_step.step);
 
     const run_cmd = exe.run();
-    //const vm_run_cmd = vm_exe.run();
+    const vm_run_cmd = vm_exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
-    //vm_run_cmd.step.dependOn(b.getInstallStep());
+    vm_run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
@@ -139,8 +150,8 @@ pub fn build(b: *std.build.Builder) void {
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
 
-    //const run_vm = b.step("vm", "Run the app");
-    //run_vm.dependOn(&vm_run_cmd.step);
+    const run_vm = b.step("vm", "Run the app");
+    run_vm.dependOn(&vm_run_cmd.step);
 
     const vm_tests = b.addTest("src/system/vm.zig");
     vm_tests.setTarget(target);

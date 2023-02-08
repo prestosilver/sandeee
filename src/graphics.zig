@@ -28,6 +28,13 @@ pub fn init(name: [*c]const u8) Context {
 
     var win = c.glfwCreateWindow(640, 480, name, null, null);
 
+    var monitor = c.glfwGetPrimaryMonitor();
+
+    var mode = c.glfwGetVideoMode(monitor)[0];
+
+    c.glfwSetWindowMonitor(win, monitor, 0, 0, mode.width, mode.height, mode.refreshRate);
+
+
     c.glfwMakeContextCurrent(win);
     c.glfwSwapInterval(1);
 

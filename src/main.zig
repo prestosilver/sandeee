@@ -15,7 +15,12 @@ const bars = @import("drawers/bar2d.zig");
 const shd = @import("shader.zig");
 const fm = @import("util/files.zig");
 const files = @import("system/files.zig");
-const input = @import("util/input.zig");
+const events = @import("util/events.zig");
+const shell = @import("system/shell.zig");
+
+const inputEvs = @import("events/input.zig");
+const windowEvs = @import("events/window.zig");
+
 const allocator = @import("util/allocator.zig");
 const vm = @import("system/vm.zig");
 const mail = @import("system/mail.zig");
@@ -83,7 +88,7 @@ pub fn draw() void {
     gfx.swap(ctx);
 }
 
-pub fn mouseDown(event: input.EventMouseDown) bool {
+pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
     for (windows.items) |_, idx| {
         var i = windows.items.len - idx - 1;
 
@@ -95,12 +100,14 @@ pub fn mouseDown(event: input.EventMouseDown) bool {
     }
 
     if (event.btn == 0) {
-        if (bar.data.doClick(wintex, emailtex, editortex, explorertex, shader, &windows, mousepos)) {
+        if (bar.data.doClick(wintex, emailtex, editortex, explorertex, shader, mousepos)) {
             return false;
         }
 
         var newTop: i32 = -1;
         for (windows.items) |_, idx| {
+            if (windows.items[idx].data.min) continue;
+
             var pos = windows.items[idx].data.pos;
             pos.x -= 20;
             pos.y -= 20;
@@ -162,7 +169,7 @@ pub fn mouseDown(event: input.EventMouseDown) bool {
     return false;
 }
 
-pub fn mouseUp(event: input.EventMouseUp) bool {
+pub fn mouseUp(event: inputEvs.EventMouseUp) bool {
     _ = event;
 
     dragging = null;
@@ -170,7 +177,7 @@ pub fn mouseUp(event: input.EventMouseUp) bool {
     return false;
 }
 
-pub fn mouseMove(event: input.EventMouseMove) bool {
+pub fn mouseMove(event: inputEvs.EventMouseMove) bool {
     var pos = vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y));
 
     mousepos = pos;
@@ -220,7 +227,20 @@ pub fn mouseMove(event: input.EventMouseMove) bool {
     return false;
 }
 
-pub fn keyDown(event: input.EventKeyDown) bool {
+pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
+    for (windows.items) |_, idx| {
+        var i = windows.items.len - idx - 1;
+
+        if (!windows.items[i].data.active) continue;
+
+        windows.items[i].data.contents.scroll(event.x, event.y);
+
+        break;
+    }
+    return false;
+}
+
+pub fn keyDown(event: inputEvs.EventKeyDown) bool {
     for (windows.items) |_, idx| {
         var i = windows.items.len - idx - 1;
 
@@ -233,12 +253,12 @@ pub fn keyDown(event: input.EventKeyDown) bool {
     return false;
 }
 
-pub fn keyUp(event: input.EventKeyUp) bool {
+pub fn keyUp(event: inputEvs.EventKeyUp) bool {
     _ = event;
     return false;
 }
 
-pub fn windowResize(event: input.EventWindowResize) bool {
+pub fn windowResize(event: inputEvs.EventWindowResize) bool {
     gfx.resize(event.w, event.h);
 
     var size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
@@ -250,14 +270,27 @@ pub fn windowResize(event: input.EventWindowResize) bool {
     return false;
 }
 
+pub fn createWindow(event: windowEvs.EventCreateWindow) bool {
+    for (windows.items) |_, idx| {
+        windows.items[idx].data.active = false;
+    }
+
+    windows.append(event.window) catch {
+        std.log.err("couldnt create window!", .{});
+        return false;
+    };
+    return false;
+}
+
 pub fn main() anyerror!void {
-    //defer std.debug.assert(!allocator.gpa.deinit());
-    defer if(!builtin.link_libc) {
-        std.log.info("arena", .{});
+    defer if (!builtin.link_libc) {
+        std.log.info("deinit arena", .{});
         allocator.arena.deinit();
     };
 
     ctx = gfx.init("Sandeee");
+
+    events.init();
     gfx.gContext = &ctx;
 
     sb = batch.newSpritebatch();
@@ -267,6 +300,8 @@ pub fn main() anyerror!void {
     wintex = tex.newTextureFile(path.items);
     path.deinit();
 
+    shell.wintex = &wintex;
+
     path = fm.getContentPath("content/bar.png");
     bartex = tex.newTextureFile(path.items);
     path.deinit();
@@ -274,6 +309,8 @@ pub fn main() anyerror!void {
     path = fm.getContentPath("content/editor.png");
     editortex = tex.newTextureFile(path.items);
     path.deinit();
+
+    shell.edittex = &editortex;
 
     path = fm.getContentPath("content/email.png");
     emailtex = tex.newTextureFile(path.items);
@@ -287,26 +324,31 @@ pub fn main() anyerror!void {
     face = try font.Font.init(path.items, 22);
     path.deinit();
 
-    input.setup(ctx.window);
+    inputEvs.setup(ctx.window);
 
     files.Folder.init();
 
     mail.init();
-    mail.load() catch {};
+    try mail.load();
 
     shader = shd.Shader.new(2, shader_files);
     font_shader = shd.Shader.new(2, font_shader_files);
     gfx.regShader(&ctx, shader);
     gfx.regShader(&ctx, font_shader);
 
+    shell.shader = &shader;
+
     windows = std.ArrayList(win.Window).init(allocator.alloc);
 
-    input.em.registerListener(input.EventMouseMove, mouseMove);
-    input.em.registerListener(input.EventMouseDown, mouseDown);
-    input.em.registerListener(input.EventMouseUp, mouseUp);
-    input.em.registerListener(input.EventKeyDown, keyDown);
-    input.em.registerListener(input.EventKeyUp, keyUp);
-    input.em.registerListener(input.EventWindowResize, windowResize);
+    events.em.registerListener(inputEvs.EventMouseMove, mouseMove);
+    events.em.registerListener(inputEvs.EventMouseDown, mouseDown);
+    events.em.registerListener(inputEvs.EventMouseUp, mouseUp);
+    events.em.registerListener(inputEvs.EventMouseScroll, mouseScroll);
+    events.em.registerListener(inputEvs.EventKeyDown, keyDown);
+    events.em.registerListener(inputEvs.EventKeyUp, keyUp);
+    events.em.registerListener(inputEvs.EventWindowResize, windowResize);
+
+    events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
 
     bar = bars.Bar.new(bartex, bars.BarData{
         .height = 38,
@@ -325,6 +367,6 @@ pub fn main() anyerror!void {
     gfx.close(ctx);
     files.deinit();
     sb.deinit();
-    input.em.deinit();
+    events.deinit();
     mail.deinit();
 }

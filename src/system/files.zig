@@ -5,7 +5,6 @@ const fm = @import("../util/files.zig");
 pub var root: *Folder = undefined;
 
 pub const ROOT_NAME = "/";
-pub const SCRIPT = "echo lol\necho poop\necho no";
 
 pub const File = struct {
     name: []const u8,
@@ -227,6 +226,37 @@ pub const Folder = struct {
             }
         }
         return false;
+    }
+
+    pub fn getFile(self: *Folder, name: []const u8) ?*File {
+        var file = std.ArrayList(u8).init(allocator.alloc);
+        defer file.deinit();
+
+        for (name) |ch| {
+            if (ch == '/') {
+                if (check(file.items, ".")) return self.getFile(name[2..]);
+                if (check(file.items, "")) return self.getFile(name[1..]);
+
+                var fullname = std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items }) catch undefined;
+                defer allocator.alloc.free(fullname);
+                for (self.subfolders.items) |folder, idx| {
+                    if (check(folder.name, fullname)) {
+                        return self.subfolders.items[idx].getFile(name[file.items.len..]);
+                    }
+                }
+                return null;
+            } else {
+                file.append(ch) catch {};
+            }
+        }
+
+        var fullname = std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name }) catch undefined;
+        for (self.contents.items) |subfile, idx| {
+            if (check(subfile.name, fullname)) {
+                return &self.contents.items[idx];
+            }
+        }
+        return null;
     }
 
     pub fn deleteFile(self: *Folder, name: []const u8) bool {

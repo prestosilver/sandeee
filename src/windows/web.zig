@@ -9,17 +9,59 @@ const sb = @import("../spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
+const files = @import("../system/files.zig");
 const tex = @import("../texture.zig");
 
-const WebData = struct {
+pub const WebData = struct {
     shader: shd.Shader,
-    lol: u64 = 0,
+    file: ?*files.File,
+    scroll: f32,
 };
 
 pub fn drawWeb(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
-    _ = @ptrCast(*WebData, c);
+    var self = @ptrCast(*WebData, c);
 
-    font.draw(batch, font_shader, "WOAH WIKIPEDIA?", vecs.newVec2(bnds.x + 6, bnds.y + 6), col.newColor(0, 0, 0, 1));
+    var pos = vecs.newVec2(0, -self.scroll);
+
+    var iter = std.mem.split(u8, self.file.?.contents, "\n");
+
+    while (iter.next()) |line| {
+        var scale: f32 = 1;
+        var text = line;
+
+        if (line.len == 0) {
+            pos.x = 0;
+            pos.y += font.size;
+        }
+
+        if (std.mem.startsWith(u8, line, "- ") and std.mem.endsWith(u8, line, " -")) {
+            if (pos.x != 0) {
+                pos.x = 0;
+                pos.y += font.size;
+            }
+            scale = 3.0;
+            text = line[2..line.len - 2];
+        }
+
+        if (std.mem.startsWith(u8, line, "-- ") and std.mem.endsWith(u8, line, " --")) {
+            if (pos.x != 0) {
+                pos.x = 0;
+                pos.y += font.size;
+            }
+            scale = 2.0;
+            text = line[3..line.len - 3];
+        }
+
+        font.drawScale(batch, font_shader, text, vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y), col.newColor(0, 0, 0, 1), scale);
+
+        if (scale != 1.0) {
+            pos.x = 0;
+            pos.y += font.size * scale;
+        } else {
+            pos.x += font.sizeText(line).x;
+        }
+    }
+
 }
 
 fn deleteWeb(cself: *[]u8) void {
@@ -30,14 +72,15 @@ fn deleteWeb(cself: *[]u8) void {
 pub fn new(_: tex.Texture, shader: shd.Shader) win.WindowContents {
     var self = allocator.alloc.create(WebData) catch undefined;
 
-
     self.shader = shader;
+
+    self.file = files.root.getFile("/docs/vm/ops.eet");
 
     return win.WindowContents{
         .self = @ptrCast(*[]u8, self),
         .deleteFn = deleteWeb,
         .drawFn = drawWeb,
         .name = "Xplorer",
-        .clearColor = col.newColor(0.75, 0.75, 0.75, 1),
+        .clearColor = col.newColor(1, 1, 1, 1),
     };
 }

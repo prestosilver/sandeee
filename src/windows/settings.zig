@@ -18,7 +18,7 @@ const SettingPanel = struct {
 
 const SettingsData = struct {
     shader: shd.Shader,
-    icons: [3]sprite.Sprite,
+    icons: [5]sprite.Sprite,
     scroll: [3]sprite.Sprite,
     focus: sprite.Sprite,
     focused: ?u64,
@@ -41,7 +41,7 @@ pub fn drawSettings(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, b
     var x: f32 = 0;
     var y: f32 = 0;
 
-    for (SettingsData.panels) |panel| {
+    for (SettingsData.panels) |panel, idx| {
         var size = font.sizeText(panel.name);
         var xo = (128 - size.x) / 2;
 
@@ -49,8 +49,11 @@ pub fn drawSettings(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, b
 
         batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 32, bnds.y + y + 6, 0));
 
+        if (idx == 0)
+            batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 32, bnds.y + y + 2, 0));
+
         x += 128;
-        if (x + 128 + 16 > bnds.w) {
+        if (x + 128 > bnds.w) {
             y += 64 + font.size;
             x = 0;
         }
@@ -89,6 +92,11 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     self.scroll[2] = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(0 / 32.0, 10.0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
         vecs.newVec2(14.0, 12.0),
+    ));
+
+    self.focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
+        rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
+        vecs.newVec2(72.0, 72.0),
     ));
 
     self.shader = shader;

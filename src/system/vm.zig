@@ -1,4 +1,5 @@
 const std = @import("std");
+const streams = @import("stream.zig");
 
 const STACK_MAX = 2048;
 
@@ -101,6 +102,9 @@ pub const VM = struct {
             Disc,
             Asign,
             Dup,
+
+            Less,
+            Greater,
         };
 
         code: Code,
@@ -149,7 +153,6 @@ pub const VM = struct {
 
     pub fn runOp(self: *VM, op: Operation) !void {
         self.pc += 1;
-        //std.log.debug("{any}", .{op});
 
         switch (op.code) {
             Operation.Code.Nop => {
@@ -177,14 +180,20 @@ pub const VM = struct {
                         self.allocator.free(comb);
                         return;
                     } else if (b.value != null) {
-                        var comb = try std.fmt.allocPrint(self.allocator, "{}{s}", .{ b.value.?, a.string.? });
-                        try self.pushStackS(comb);
-                        self.allocator.free(comb);
+                        if (a.string.?.len <= b.value.?.*) {
+                            try (self.pushStackS(""));
+                        } else {
+                            try self.pushStackS(a.string.?[b.value.?.*..]);
+                        }
                         return;
                     } else return error.InvalidOp;
                 } else if (a.value != null) {
                     if (b.string != null) {
-                        try self.pushStackS(b.string.?[a.value.?.*..]);
+                        if (b.string.?.len <= a.value.?.*) {
+                            try (self.pushStackS(""));
+                        } else {
+                            try self.pushStackS(b.string.?[a.value.?.*..]);
+                        }
                         return;
                     } else if (b.value != null) {
                         try self.pushStackI(a.value.?.* +% b.value.?.*);
@@ -238,7 +247,10 @@ pub const VM = struct {
                 defer self.free(a);
 
                 if (a.string != null) {
-                    return error.InvalidOp;
+                    if (a.string.?.len == 0) {
+                        self.pc = op.value.?;
+                    }
+                    return;
                 } else if (a.value != null) {
                     if (a.value.?.* == 0) {
                         self.pc = op.value.?;
@@ -268,6 +280,8 @@ pub const VM = struct {
                             if (a.string != null) {
                                 self.out.appendSlice(a.string.?) catch {};
 
+                                //std.log.debug("{any}", .{a.string.?});
+
                                 return;
                             } else if (a.value != null) {
                                 var str = std.fmt.allocPrint(self.allocator, "{}", .{a.value.?.*}) catch "";
@@ -293,9 +307,48 @@ pub const VM = struct {
                 self.pc += op.value.?;
                 return;
             },
-            Operation.Code.Mul => {},
-            Operation.Code.Div => {},
-            Operation.Code.And => {},
+            Operation.Code.Mul => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.value != null) {
+                    if (b.value != null) {
+                        try self.pushStackI(a.value.?.* * b.value.?.*);
+
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Div => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.value != null) {
+                    if (b.value != null) {
+                        try self.pushStackI(a.value.?.* / b.value.?.*);
+
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.And => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.value != null) {
+                    if (b.value != null) {
+                        try self.pushStackI(a.value.?.* & b.value.?.*);
+
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
             Operation.Code.Or => {
                 var a = try self.popStack();
                 defer self.free(a);
@@ -334,15 +387,33 @@ pub const VM = struct {
                     } else return error.InvalidOp;
                 } else return error.InvalidOp;
             },
-            Operation.Code.Not => {},
-            Operation.Code.Asign => {
+            Operation.Code.Not => {
                 var a = try self.popStack();
                 defer self.free(a);
+
+                if (a.value != null) {
+                    var val: u64 = 0;
+                    if (a.value.?.* == 0) val = 1;
+
+                    try self.pushStackI(val);
+
+                    return;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Asign => {
+                var a = try self.popStack();
                 var b = try self.findStack(0);
 
                 if (a.value != null) {
                     if (b.value != null) {
                         b.value.?.* = a.value.?.*;
+                        self.free(a);
+
+                        return;
+                    } else return error.InvalidOp;
+                } else if (a.string != null) {
+                    if (b.string != null) {
+                        b.string.? = a.string.?;
 
                         return;
                     } else return error.InvalidOp;
@@ -372,6 +443,37 @@ pub const VM = struct {
                     if (b.string != null) {
                         return error.InvalidOp;
                     } else if (b.value != null) {
+                        var val: u64 = 0;
+                        if (a.string.?.len != 0 and a.string.?[0] == @intCast(u8, b.value.?.*)) val = 1;
+                        if (a.string.?.len == 0 and 0 == b.value.?.*) val = 1;
+                        try self.pushStackI(val);
+                        return;
+                    } else return error.InvalidOp;
+                } else if (a.value != null) {
+                    if (b.string != null) {
+                        var val: u64 = 0;
+                        if (b.string.?.len != 0 and b.string.?[0] == @intCast(u8, a.value.?.*)) val = 1;
+                        if (b.string.?.len == 0 and 0 == a.value.?.*) val = 1;
+                        try self.pushStackI(val);
+                        return;
+                    } else if (b.value != null) {
+                        var val: u64 = 0;
+                        if (a.value.?.* == b.value.?.*) val = 1;
+                        try self.pushStackI(val);
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Less => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.string != null) {
+                    if (b.string != null) {
+                        return error.InvalidOp;
+                    } else if (b.value != null) {
                         return error.InvalidOp;
                     } else return error.InvalidOp;
                 } else if (a.value != null) {
@@ -379,7 +481,30 @@ pub const VM = struct {
                         return error.InvalidOp;
                     } else if (b.value != null) {
                         var val: u64 = 0;
-                        if (a.value.?.* == b.value.?.*) val = 1;
+                        if (a.value.?.* > b.value.?.*) val = 1;
+                        try self.pushStackI(val);
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Greater => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.string != null) {
+                    if (b.string != null) {
+                        return error.InvalidOp;
+                    } else if (b.value != null) {
+                        return error.InvalidOp;
+                    } else return error.InvalidOp;
+                } else if (a.value != null) {
+                    if (b.string != null) {
+                        return error.InvalidOp;
+                    } else if (b.value != null) {
+                        var val: u64 = 0;
+                        if (a.value.?.* < b.value.?.*) val = 1;
                         try self.pushStackI(val);
                         return;
                     } else return error.InvalidOp;
@@ -529,7 +654,7 @@ test "vm pushi" {
     vm.loadList(&ops);
     try vm.runAll();
 
-    try std.testing.expectEqual(vm.stack[0].value.?, 10);
+    try std.testing.expectEqual(vm.stack[0].value.?.*, 10);
 }
 
 test "vm pushs" {
@@ -559,7 +684,7 @@ test "vm add int int" {
     vm.loadList(&ops);
     try vm.runAll();
 
-    try std.testing.expectEqual(vm.stack[0].value.?, 69);
+    try std.testing.expectEqual(vm.stack[0].value.?.*, 69);
 }
 
 test "vm add str str" {
@@ -601,7 +726,7 @@ test "vm copy str" {
 
     var ops = [_]VM.Operation{
         VM.Operation{ .code = VM.Operation.Code.Push, .string = "foo" },
-        VM.Operation{ .code = VM.Operation.Code.Copy, .value = 0 },
+        VM.Operation{ .code = VM.Operation.Code.Dup, .value = 0 },
     };
 
     vm.loadList(&ops);
@@ -634,7 +759,7 @@ test "vm jnz" {
     vm.loadList(&ops);
     try vm.runAll();
 
-    try std.testing.expectEqual(vm.stack[0].value.?, 0);
+    try std.testing.expectEqual(vm.stack[0].value.?.*, 0);
 }
 
 test "vm loadstr" {

@@ -121,6 +121,10 @@ pub const Font = struct {
     }
 
     pub fn draw(self: *Font, batch: *sb.SpriteBatch, shader: shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color) void {
+        self.drawScale(batch, shader, text, position, color, 1.0);
+    }
+
+    pub fn drawScale(self: *Font, batch: *sb.SpriteBatch, shader: shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, scale: f32) void {
         var pos = position;
 
         var srect = rect.newRect(0, 0, 1, 1);
@@ -131,10 +135,10 @@ pub const Font = struct {
             if (ch > 128) continue;
 
             var char = self.chars[ch];
-            var w = char.size.x;
-            var h = char.size.y;
-            var xpos = pos.x + char.bearing.x;
-            var ypos = pos.y - char.bearing.y + self.size;
+            var w = (char.size.x) * scale;
+            var h = (char.size.y) * scale;
+            var xpos = pos.x + (char.bearing.x) * scale;
+            var ypos = pos.y - (char.bearing.y - self.size) * scale;
             srect.x = char.tx;
             srect.w = char.tw;
             srect.h = char.th;
@@ -147,8 +151,8 @@ pub const Font = struct {
             vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
             vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
 
-            pos.x += char.ax;
-            pos.y += char.ay;
+            pos.x += char.ax * scale;
+            pos.y += char.ay * scale;
         }
 
         var entry = sb.QueueEntry{

@@ -1,10 +1,16 @@
-- VM Op-Codes
--- NOP
+- VM Op-Codes -
+-- 0x00 NOP --
 
-nop does nothing
+Does nothing
 
--- SYS
+-- 0x01 SYS --
 
-see vm/sys.eet
+See vm/sys.eet
 
--- PUSH
+-- 0x02 PUSH --
+
+Pushes a value to the stack.
+
+-- 0x03 ADD --
+
+Adds the top 2 values on the stack.

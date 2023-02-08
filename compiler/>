@@ -136,7 +136,7 @@ void setup_regex() {
     regcomp(&regex[idx++], "^continue$", 0);
     regcomp(&regex[idx++], "^[a-zA-Z]\\w*$", 0);
     regcomp(&regex[idx++], "^[0-9][0-9]*$", 0);
-    regcomp(&regex[idx++], "^\".*\"$", 0);
+    regcomp(&regex[idx++], "^\".*\"*$", 0);
     regcomp(&regex[idx++], "^-$", 0);
     regcomp(&regex[idx++], "^~$", 0);
     regcomp(&regex[idx++], "^!$", 0);
@@ -204,10 +204,8 @@ void asm_expr(Expression* s, VarMap* var_map, int* stk_idx) {
                 *stk_idx -= 1;
                 break;
             case TOKEN_MUL:
-                if (s->a) {
-                    printf("    mul\n");
-                    *stk_idx -= 1;
-                } else printf("    getb\n");
+                printf("    mul\n");
+                *stk_idx -= 1;
                 break;
             case TOKEN_DIV:
                 printf("    div\n");
@@ -219,14 +217,6 @@ void asm_expr(Expression* s, VarMap* var_map, int* stk_idx) {
                 break;
             case TOKEN_EQ:
                 printf("    eq\n");
-                *stk_idx -= 1;
-                break;
-            case TOKEN_LT:
-                printf("    lt\n");
-                *stk_idx -= 1;
-                break;
-            case TOKEN_GT:
-                printf("    gt\n");
                 *stk_idx -= 1;
                 break;
             case TOKEN_AND:
@@ -490,12 +480,10 @@ Token* lex_file(char* filename) {
         cur[1] = '\0';
 
         if (prev == '\\') {
-            if (cur[0] != '\\') {
-                code[strlen(code) - 1] = cur[0];
-                prev = cur[0];
-            } else {
-                prev = 'n';
-            }
+            if (cur[0] == 'n') cur[0] = '\n';
+
+            code[strlen(code) - 1] = cur[0];
+            prev = cur[0];
 
             continue;
         }
@@ -531,7 +519,7 @@ Token* lex_file(char* filename) {
             }
         }
 
-        if ((strchr(" \"{}();,\t\n-~![]", cur[0]) || strchr(" \"{}();,\t\n-~![]", code[strlen(code) - 1])) && code[0] != '\0') {
+        if ((strchr(" {}();,\t\n-~![]", cur[0]) || strchr(" {}();,\t\n-~![]", code[strlen(code) - 1])) && code[0] != '\0') {
             int broke = 0;
 
             for (int i = 0; i < TOKEN_KINDS; i++) {
@@ -562,7 +550,7 @@ Token* lex_file(char* filename) {
         }
 
 
-        if (!strchr(" \t\r\n", cur[0]) || code[0] == '"') {
+        if (!strchr(" \t\r\n", cur[0])) {
             strcat(code, cur);
         }
 
@@ -655,7 +643,6 @@ int parse_factor(Token* toks, Expression* expr) {
         }
     } else if (toks[idx].kind == TOKEN_NEG
                || toks[idx].kind == TOKEN_BIT_NOT
-               || toks[idx].kind == TOKEN_MUL
                || toks[idx].kind == TOKEN_NOT) {
         expr->a = NULL;
         expr->value = &toks[idx++];
@@ -707,8 +694,6 @@ int parse_expression(Token* toks, Expression* expr) {
 
     if (toks[idx].kind == TOKEN_AND
         || toks[idx].kind == TOKEN_OR
-        || toks[idx].kind == TOKEN_LT
-        || toks[idx].kind == TOKEN_GT
         || toks[idx].kind == TOKEN_EQ) {
         expr->a = a;
         expr->value = &toks[idx++];
@@ -1025,11 +1010,11 @@ int main(int argc, char* argv[]) {
 
     Token* tokens = lex_file(argv[1]);
 
-    //int i = -1;
-    //while (tokens[++i].kind != TOKEN_EOF) {
-    //    printf("%d %s\n", tokens[i].kind, tokens[i].value);
-    //}
-
+    int i = 0;
+    while (tokens[i].kind != TOKEN_EOF) {
+        
+    }
+    
     Program* prog = malloc(sizeof(Program));
 
     if (parse_program(tokens, prog) == 0) {

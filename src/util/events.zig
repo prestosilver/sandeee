@@ -1,6 +1,16 @@
 const std = @import("std");
 const allocator = @import("allocator.zig");
 
+pub var em: EventManager = undefined;
+
+pub fn init() void {
+    em = EventManager.init();
+}
+
+pub fn deinit() void {
+    em.deinit();
+}
+
 pub const EventManager = struct {
     fn Listener(comptime T: type) type {
         return struct {
@@ -17,6 +27,10 @@ pub const EventManager = struct {
         return EventManager{
             .subs = subs,
         };
+    }
+
+    pub fn deinit(self: *EventManager) void {
+        self.subs.deinit();
     }
 
     pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) bool) void {
@@ -39,7 +53,9 @@ pub const EventManager = struct {
         return true;
     }
 
-    pub fn sendEvent(self: *EventManager, comptime T: type, data: T) void {
+    pub fn sendEvent(self: *EventManager, data: anytype) void {
+        const T = @TypeOf(data);
+
         const name: []const u8 = @typeName(T);
         for (self.subs.items) |sub| {
             var call = @ptrCast(*const fn (T) bool, sub.calls);
@@ -47,9 +63,5 @@ pub const EventManager = struct {
                 break;
             }
         }
-    }
-
-    pub fn deinit(self: *EventManager) void {
-        self.subs.deinit();
     }
 };

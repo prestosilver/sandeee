@@ -1,15 +1,23 @@
-int fib(int n) {
-	if ((n == 0) || (n == 1)) {
-		return n;
-	} else {
-		return fib(n - 1) + fib(n - 2);
-	}
-}
+//#include "ministd.h"
 
 int main() {
-	int i;
-	for (i = 0; i - 10; i = i + 1) 
-		sys 0, fib(i);
+	//int code = "" +
+	//	"push 0\\n" +
+	//	"push 1\\n" +
+	//	"add\\n" +
+	//	"sys 0";
 
+	//sys 0, "code:\\n" + code;
+
+	//sys 0, "\\nlength: ";
+
+	//sys 0, getlen(code);
+
+	//// header
+	//sys 0, "EEEp";
+
+	//sys 0, getline(code);
+
+	sys 0, "Hello World!";
 	return 0;
 }

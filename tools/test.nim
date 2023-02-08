@@ -52,6 +52,8 @@ for line in file.readall().split("\n"):
     of "disc": 21
     of "set": 22
     of "dup": 23
+    of "lt": 24
+    of "gt": 25
     else: 255
   if code == 255: quit "Error parsing " & op
   output.write(cast[char](code))

@@ -10,6 +10,9 @@ const shd = @import("../shader.zig");
 const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
 
+const events = @import("../util/events.zig");
+const windowEvs = @import("../events/window.zig");
+
 const TOTAL_SPRITES: f32 = 12;
 const TEX_SIZE: f32 = 32;
 
@@ -72,7 +75,7 @@ pub const BarData = struct {
         }
     }
 
-    pub fn doClick(self: *BarData, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, explorertex: tex.Texture, shader: shd.Shader, windows: *std.ArrayList(win.Window), pos: vecs.Vector2) bool {
+    pub fn doClick(self: *BarData, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, explorertex: tex.Texture, shader: shd.Shader, pos: vecs.Vector2) bool {
         var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;
@@ -82,9 +85,6 @@ pub const BarData = struct {
                 var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
                 var item = rect.newRect(0, y, 200, 67);
                 if (item.contains(pos)) {
-                    for (windows.items) |_, idx| {
-                        windows.items[idx].data.active = false;
-                    }
                     added = true;
                     switch (i) {
                         0 => {
@@ -105,7 +105,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            windows.append(window) catch {};
+                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         1 => {
                             var window = win.Window.new(wintex, win.WindowData{
@@ -125,7 +125,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            windows.append(window) catch {};
+                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         2 => {
                             var window = win.Window.new(wintex, win.WindowData{
@@ -145,7 +145,27 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            windows.append(window) catch {};
+                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                        },
+                        3 => {
+                            var window = win.Window.new(wintex, win.WindowData{
+                                .pos = rect.Rectangle{
+                                    .x = 100,
+                                    .y = 100,
+                                    .w = 400,
+                                    .h = 300,
+                                },
+                                .source = rect.Rectangle{
+                                    .x = 0.0,
+                                    .y = 0.0,
+                                    .w = 1.0,
+                                    .h = 1.0,
+                                },
+                                .contents = wins.explorer.new(explorertex, shader),
+                                .active = true,
+                            });
+
+                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         4 => {
                             var window = win.Window.new(wintex, win.WindowData{
@@ -165,7 +185,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            windows.append(window) catch {};
+                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         5 => {
                             var window = win.Window.new(wintex, win.WindowData{
@@ -185,7 +205,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            windows.append(window) catch {};
+                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         else => {},
                     }
@@ -245,6 +265,9 @@ pub const BarData = struct {
                     },
                     5 => {
                         addQuad(&result, 10, iconpos, rect.newRect(0, 0, 1, 1));
+                    },
+                    6 => {
+                        addQuad(&result, 11, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     else => {},
                 }

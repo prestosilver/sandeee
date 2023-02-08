@@ -29,6 +29,7 @@ pub const WindowContents = struct {
     drawFn: ?*const fn (*[]u8, *sb.SpriteBatch, shd.Shader, *rect.Rectangle, *fnt.Font) void = null,
     clickFn: ?*const fn (*[]u8, vecs.Vector2, vecs.Vector2, i32) bool = null,
     keyFn: ?*const fn (*[]u8, i32, i32) void = null,
+    scrollFn: ?*const fn (*[]u8, f32, f32) void = null,
     focusFn: ?*const fn (*[]u8) void = null,
     deleteFn: *const fn (*[]u8) void,
     name: []const u8,
@@ -47,6 +48,11 @@ pub const WindowContents = struct {
     pub fn click(self: *WindowContents, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
         if (self.clickFn == null) return true;
         return self.clickFn.?(self.self, size, mousepos, btn);
+    }
+
+    pub fn scroll(self: *WindowContents, x: f32, y: f32) void {
+        if (self.scrollFn == null) return;
+        self.scrollFn.?(self.self, x, y);
     }
 
     pub fn focus(self: *WindowContents) void {
@@ -203,10 +209,10 @@ pub const WindowData = struct {
 
     pub fn scissor(self: WindowData) rect.Rectangle {
         var bnds = self.pos;
-        bnds.x += 4;
-        bnds.y += 32;
-        bnds.w -= 8;
-        bnds.h -= 36;
+        bnds.y += 34;
+        bnds.x += 6;
+        bnds.w -= 12;
+        bnds.h -= 40;
 
         return bnds;
     }
