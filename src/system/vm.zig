@@ -1,5 +1,6 @@
 const std = @import("std");
 const streams = @import("stream.zig");
+const files = @import("files.zig");
 
 const STACK_MAX = 2048;
 
@@ -13,6 +14,7 @@ pub const VM = struct {
         ValueMissing,
         StringMissing,
         InvalidOp,
+        InvalidSys,
         NotImplemented,
     };
 
@@ -32,7 +34,17 @@ pub const VM = struct {
     code: []const Operation = undefined,
     stopped: bool = false,
 
+    streams: std.ArrayList(*streams.FileStream),
+
     out: std.ArrayList(u8) = undefined,
+
+    pub fn init(alloc: std.mem.Allocator) VM {
+        return VM{
+            .stack = undefined,
+            .allocator = alloc,
+            .streams = std.ArrayList(*streams.FileStream).init(alloc),
+        };
+    }
 
     fn pushStack(self: *VM, entry: StackEntry) void {
         self.stack[self.rsp] = entry;
@@ -152,6 +164,8 @@ pub const VM = struct {
     }
 
     pub fn runOp(self: *VM, op: Operation) !void {
+        std.log.info("run op {}", .{op.code});
+
         self.pc += 1;
 
         switch (op.code) {
@@ -274,6 +288,7 @@ pub const VM = struct {
             Operation.Code.Sys => {
                 if (op.value != null) {
                     switch (op.value.?) {
+                        // print
                         0 => {
                             var a = try self.popStack();
                             defer self.free(a);
@@ -292,15 +307,99 @@ pub const VM = struct {
                                 return;
                             } else return error.InvalidOp;
                         },
+                        // quit
                         1 => {
                             self.stopped = true;
                             return;
                         },
+                        // create file
+                        2 => {
+                            var path = try self.popStack();
+                            defer self.free(path);
+                            if (path.value != null) {
+                                return error.StringMissing;
+                            } else if (path.string != null) {
+                                _ = files.newFile(path.string.?);
+
+                                return;
+                            } else return error.InvalidOp;
+                        },
+                        // open file
+                        3 => {
+                            var path = try self.popStack();
+                            defer self.free(path);
+                            if (path.value != null) {
+                                return error.StringMissing;
+                            } else if (path.string != null) {
+                                try self.streams.append(try streams.FileStream.Open(path.string.?));
+                                try self.pushStackI(self.streams.items.len - 1);
+
+                                return;
+                            } else return error.InvalidOp;
+                        },
+                        // read
+                        4 => {
+                            var len = try self.popStack();
+                            defer self.free(len);
+                            var idx = try self.popStack();
+                            defer self.free(idx);
+                            if (idx.value != null) {
+                                if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
+                                var fs = self.streams.items[idx.value.?.*];
+                                if (len.value != null) {
+                                    var cont = try fs.Read(@intCast(u32, len.value.?.*));
+
+                                    try self.pushStackS(cont);
+
+                                    return;
+                                } else if (len.string != null) {
+                                    return error.ValueMissing;
+                                } else return error.InvalidOp;
+                            } else if (idx.string != null) {
+                                return error.ValueMissing;
+                            } else return error.InvalidOp;
+                        },
+                        // write file
+                        5 => {
+                            var str = try self.popStack();
+                            defer self.free(str);
+                            var idx = try self.popStack();
+                            defer self.free(idx);
+                            if (idx.value != null) {
+                                if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
+                                var fs = self.streams.items[idx.value.?.*];
+                                if (str.string != null) {
+                                    try fs.Write(str.string.?);
+
+                                    return;
+                                } else if (str.value != null) {
+                                    return error.StringMissing;
+                                } else return error.InvalidOp;
+                            } else if (idx.string != null) {
+                                return error.ValueMissing;
+                            } else return error.InvalidOp;
+                        },
+                        // flush file
+                        6 => {
+                            var idx = try self.popStack();
+                            defer self.free(idx);
+
+                            if (idx.value != null) {
+                                if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
+                                var fs = self.streams.items[idx.value.?.*];
+                                try fs.Flush();
+
+                                return;
+                            } else if (idx.string != null) {
+                                return error.ValueMissing;
+                            } else return error.InvalidOp;
+                        },
+                        // misc
                         else => {
-                            return error.InvalidOp;
+                            return error.InvalidSys;
                         },
                     }
-                } else return error.InvalidOp;
+                } else return error.ValueMissing;
             },
             Operation.Code.Jmpf => {
                 if (op.value == null) return error.ValueMissing;

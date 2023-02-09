@@ -78,7 +78,7 @@ pub const Shell = struct {
         return self.todo(param);
     }
 
-    fn cd(self: *Shell, param: []const u8) Result {
+    pub fn cd(self: *Shell, param: []const u8) Result {
         if (param.len > 3) {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
@@ -113,7 +113,9 @@ pub const Shell = struct {
     }
 
     fn ls(self: *Shell, param: []const u8) Result {
-        if (param.len > 3) {} else {
+        if (param.len > 3) {
+            return self.todo(param);
+        } else {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
@@ -133,7 +135,6 @@ pub const Shell = struct {
 
             return result;
         }
-        return self.todo(param);
     }
 
     pub fn runCmd(_: *Shell, _: []const u8) Result {
@@ -356,7 +357,7 @@ pub const Shell = struct {
             var rootlen = self.root.name.len;
 
             if (std.mem.eql(u8, item.name[rootlen..], params)) {
-                self.vm = vm.VM{ .stack = undefined, .allocator = allocator.alloc };
+                self.vm = vm.VM.init(allocator.alloc);
                 vms += 1;
 
                 if (!check(item.contents[0..4], ASM_HEADER)) {

@@ -283,9 +283,9 @@ pub fn createWindow(event: windowEvs.EventCreateWindow) bool {
 }
 
 pub fn main() anyerror!void {
-    defer if (!builtin.link_libc) {
+    defer if (!builtin.link_libc or !allocator.useclib) {
         std.log.info("deinit arena", .{});
-        allocator.arena.deinit();
+        std.debug.assert(!allocator.arena.deinit());
     };
 
     ctx = gfx.init("Sandeee");

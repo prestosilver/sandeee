@@ -124,6 +124,10 @@ pub fn drawEditor(c: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *r
     var linenr = std.fmt.allocPrint(allocator.alloc, "{}", .{nr}) catch "";
     defer allocator.alloc.free(linenr);
     font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1));
+
+    if (self.buffer.items.len == 0) {
+        self.cursorIdx = 0;
+    }
 }
 
 pub fn clickEditor(c: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
@@ -156,7 +160,7 @@ pub fn clickEditor(c: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) 
 
 fn focusEditor(c: *[]u8) void {
     var self = @ptrCast(*EditorData, c);
-    if (!self.modified) {
+    if (!self.modified and self.file != null) {
         self.buffer.clearAndFree();
         self.buffer.appendSlice(self.file.?.contents) catch {};
         return;
@@ -278,9 +282,8 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
         vecs.newVec2(32, 32),
     ));
     self.shader = shader;
-    self.file = &files.root.contents.items[0];
+    self.file = null;
     self.buffer = std.ArrayList(u8).init(allocator.alloc);
-    self.buffer.appendSlice(self.file.?.contents) catch {};
     self.cursor.x = 0;
     self.cursor.y = 0;
 

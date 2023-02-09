@@ -163,6 +163,9 @@ pub fn new() win.WindowContents {
     self.shell.root = files.root;
     self.shell.vm = null;
 
+    //_ = self.shell.cd("cd prof");
+    //_ = self.shell.cd("cd programmer");
+
     return win.WindowContents{
         .self = @ptrCast(*[]u8, self),
         .drawFn = drawCmd,

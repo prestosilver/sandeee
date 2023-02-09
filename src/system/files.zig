@@ -3,12 +3,23 @@ const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 
 pub var root: *Folder = undefined;
+pub var home: *Folder = undefined;
 
 pub const ROOT_NAME = "/";
 
 pub const File = struct {
     name: []const u8,
     contents: []const u8,
+
+    pseudo: ?*fn([]const u8) bool = null,
+
+    pub fn write(self: *File, contents: []const u8) void {
+        if (self.pseudo != null) {
+            std.log.info("pseudo write", .{});
+        } else {
+            self.contents = contents;
+        }
+    }
 
     pub fn deinit(self: *File) void {
         allocator.alloc.free(self.name);
@@ -32,8 +43,8 @@ pub const Folder = struct {
         root.name = std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{}) catch ROOT_NAME;
         root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
         root.contents = std.ArrayList(File).init(allocator.alloc);
-
         root.parent = root;
+
         var f = std.fs.cwd().openFile("disk.eee", .{}) catch null;
         if (f == null) {
             var path = fm.getContentDir();
@@ -220,7 +231,8 @@ pub const Folder = struct {
         var fullname = std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name }) catch undefined;
         for (self.contents.items) |subfile, idx| {
             if (check(subfile.name, fullname)) {
-                self.contents.items[idx].contents = contents;
+                self.contents.items[idx].write(contents);
+                //self.contents.items[idx].contents = contents;
                 allocator.alloc.free(fullname);
                 return true;
             }
