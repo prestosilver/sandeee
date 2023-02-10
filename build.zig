@@ -2,6 +2,7 @@ const std = @import("std");
 const freetype = @import("deps/mach-freetype/build.zig");
 const files = @import("src/system/files.zig");
 const mail = @import("src/system/mail.zig");
+const comp = @import("tools/asm.zig");
 
 pub var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub const alloc = gpa.allocator();
@@ -90,6 +91,11 @@ pub fn build(b: *std.build.Builder) void {
 
     const exe = b.addExecutable("sandeee", "src/main.zig");
     const vm_exe = b.addExecutable("sandeee-vm", "src/main_vm.zig");
+
+    comp.compile("content/asm/window.asm", "content/disk/prof/tests/window.eep", b.allocator) catch {};
+    comp.compile("content/asm/read.asm", "content/disk/prof/tests/read.eep", b.allocator) catch {};
+    comp.compile("content/asm/hello.asm", "content/disk/prof/tests/hello.eep", b.allocator) catch {};
+    comp.compile("content/asm/write.asm", "content/disk/prof/tests/write.eep", b.allocator) catch {};
 
     // Includes
     exe.addIncludePath("deps/include");

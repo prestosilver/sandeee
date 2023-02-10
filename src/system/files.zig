@@ -11,13 +11,24 @@ pub const File = struct {
     name: []const u8,
     contents: []const u8,
 
-    pseudo: ?*fn([]const u8) bool = null,
+    pseudoWrite: ?*fn([]const u8) void = null,
+    pseudoRead: ?*fn() []const u8 = null,
 
     pub fn write(self: *File, contents: []const u8) void {
-        if (self.pseudo != null) {
+        if (self.pseudoWrite != null) {
             std.log.info("pseudo write", .{});
+            self.pseudoWrite.?(contents);
         } else {
             self.contents = contents;
+        }
+    }
+
+    pub fn read(self: *File) []const u8 {
+        if (self.pseudoRead != null) {
+            std.log.info("pseudo read", .{});
+            return self.pseudoRead.?(true);
+        } else {
+            return self.contents;
         }
     }
 

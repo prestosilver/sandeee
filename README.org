@@ -1,7 +1,7 @@
 #+TITLE: sandEEEos
 
 * What is sandeee
-Sandeee is a game 😮
+Sandeee is a game! :open_mouth:
 
 Actually though, sandeee is a programming game ment to be as emersive as possible.
 

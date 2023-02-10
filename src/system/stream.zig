@@ -56,8 +56,6 @@ pub const FileStream = struct {
     }
 
     pub fn Flush(self: *FileStream) !void {
-        std.log.info("flush: {s}, {s}", .{self.path, self.contents});
-
         if (!files.writeFile(self.path, self.contents))
             return error.UnknownError;
     }
