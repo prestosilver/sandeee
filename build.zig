@@ -143,13 +143,7 @@ pub fn build(b: *std.build.Builder) void {
         run_cmd.addArgs(args);
     }
 
-    b.installFile("content/images/window.png", "bin/content/window.png");
-    b.installFile("content/images/bar.png", "bin/content/bar.png");
-    b.installFile("content/images/email.png", "bin/content/email.png");
-    b.installFile("content/images/editor.png", "bin/content/editor.png");
-    b.installFile("content/images/explorer.png", "bin/content/explorer.png");
     b.installFile("content/fonts/scientifica.ttf", "bin/content/font.ttf");
-    //b.installFile("content/default.eee", "bin/content/default.eee");
     b.installFile("content/emails.eme", "bin/content/emails.eme");
 
     b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");
