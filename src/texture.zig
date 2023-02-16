@@ -1,8 +1,14 @@
 const std = @import("std");
 const vecs = @import("math/vecs.zig");
 const c = @import("c.zig");
+const files = @import("system/files.zig");
 
 pub const Texture = struct { tex: c.GLuint, size: vecs.Vector2 };
+
+pub const imageError = error{
+    WrongSize,
+    NotFound,
+};
 
 pub fn newTextureSize(size: vecs.Vector2) Texture {
     var result = Texture{
@@ -13,26 +19,28 @@ pub fn newTextureSize(size: vecs.Vector2) Texture {
     c.glGenTextures(1, &result.tex);
     c.glBindTexture(c.GL_TEXTURE_2D, result.tex);
 
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, size.x, size.y, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @floatToInt(c_int, size.x), @floatToInt(c_int, size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
 
     return result;
 }
 
-pub fn newTextureFile(image: []const u8) Texture {
-    var width: c_int = 0;
-    var height: c_int = 0;
-    var channels: c_int = 0;
+pub fn newTextureFile(file: []const u8) !Texture {
+    var image = files.root.getFile(file);
+
+    if (image == null) return error.NotFound;
+
+    var cont = image.?.read();
 
     var result = Texture{ .tex = 0, .size = vecs.Vector2{
         .x = 0,
         .y = 0,
     } };
 
-    var data = c.stbi_load(@ptrCast([*c]const u8, image), &width, &height, &channels, 4);
+    var width = @intCast(c_int, cont[4]) + @intCast(c_int, cont[5]) * 256;
+    var height = @intCast(c_int, cont[6]) + @intCast(c_int, cont[7]) * 256;
 
-    if (data == null) {
-        std.log.info("Error: Bad Image\n", .{});
-        std.c.exit(1);
+    if (cont.len / 4 - 2 != width * height) {
+        return error.WriongSize;
     }
 
     result.size.x = @intToFloat(f32, width);
@@ -44,11 +52,9 @@ pub fn newTextureFile(image: []const u8) Texture {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
 
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, data);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, &cont[8]);
 
     c.glGenerateMipmap(c.GL_TEXTURE_2D);
-
-    c.stbi_image_free(data);
 
     return result;
 }

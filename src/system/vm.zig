@@ -34,7 +34,7 @@ pub const VM = struct {
     code: []const Operation = undefined,
     stopped: bool = false,
 
-    streams: std.ArrayList(*streams.FileStream),
+    streams: std.ArrayList(?*streams.FileStream),
 
     out: std.ArrayList(u8) = undefined,
 
@@ -42,7 +42,7 @@ pub const VM = struct {
         return VM{
             .stack = undefined,
             .allocator = alloc,
-            .streams = std.ArrayList(*streams.FileStream).init(alloc),
+            .streams = std.ArrayList(?*streams.FileStream).init(alloc),
         };
     }
 
@@ -136,7 +136,15 @@ pub const VM = struct {
             }
         }
 
+        for (self.streams.items) |stream| {
+            if (stream != null)
+                stream.?.Close() catch |err| {
+                    std.log.err("{}", .{err});
+                };
+        }
+
         self.allocator.free(self.code);
+        self.streams.deinit();
         self.out.deinit();
     }
 
@@ -164,8 +172,6 @@ pub const VM = struct {
     }
 
     pub fn runOp(self: *VM, op: Operation) !void {
-        std.log.info("run op {}", .{op.code});
-
         self.pc += 1;
 
         switch (op.code) {
@@ -346,8 +352,10 @@ pub const VM = struct {
                             if (idx.value != null) {
                                 if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
                                 var fs = self.streams.items[idx.value.?.*];
+                                if (fs == null) return error.InvalidOp;
                                 if (len.value != null) {
-                                    var cont = try fs.Read(@intCast(u32, len.value.?.*));
+                                    var cont = try fs.?.Read(@intCast(u32, len.value.?.*));
+                                    defer self.allocator.free(cont);
 
                                     try self.pushStackS(cont);
 
@@ -368,8 +376,9 @@ pub const VM = struct {
                             if (idx.value != null) {
                                 if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
                                 var fs = self.streams.items[idx.value.?.*];
+                                if (fs == null) return error.InvalidOp;
                                 if (str.string != null) {
-                                    try fs.Write(str.string.?);
+                                    try fs.?.Write(str.string.?);
 
                                     return;
                                 } else if (str.value != null) {
@@ -387,7 +396,26 @@ pub const VM = struct {
                             if (idx.value != null) {
                                 if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
                                 var fs = self.streams.items[idx.value.?.*];
-                                try fs.Flush();
+                                if (fs == null) return error.InvalidOp;
+                                try fs.?.Flush();
+
+                                return;
+                            } else if (idx.string != null) {
+                                return error.ValueMissing;
+                            } else return error.InvalidOp;
+                        },
+                        // close file
+                        7 => {
+                            var idx = try self.popStack();
+                            defer self.free(idx);
+
+                            if (idx.value != null) {
+                                if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
+                                var fs = self.streams.items[idx.value.?.*];
+                                if (fs == null) return error.InvalidOp;
+                                try fs.?.Close();
+
+                                self.streams.items[idx.value.?.*] = null;
 
                                 return;
                             } else if (idx.string != null) {

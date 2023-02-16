@@ -106,6 +106,7 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
         .deleteFn = deleteSettings,
         .drawFn = drawSettings,
         .name = "Settings",
+        .kind = "settings",
         .clearColor = col.newColor(1, 1, 1, 1),
     };
 }

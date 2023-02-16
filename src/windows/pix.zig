@@ -185,7 +185,8 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
         .keyFn = keyPix,
         .deleteFn = deletePix,
         .focusFn = focusPix,
-        .name = "EEEDT",
+        .name = "PIX",
+        .kind = "pictures",
         .clearColor = col.newColor(1, 1, 1, 1),
     };
 }

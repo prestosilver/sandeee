@@ -1,0 +1,13 @@
+struct File {
+    u32 namelen;
+    u8 name[namelen];
+    u32 len;
+    u8 cont[len];
+};
+
+struct Disk {
+    u32 total;
+    File files[total];
+};
+
+Disk main @ 0x00;

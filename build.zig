@@ -1,48 +1,13 @@
 const std = @import("std");
 const freetype = @import("deps/mach-freetype/build.zig");
-const files = @import("src/system/files.zig");
 const mail = @import("src/system/mail.zig");
 const comp = @import("tools/asm.zig");
+const sound = @import("tools/sound.zig");
+const image = @import("tools/textures.zig");
+const diskStep = @import("tools/disk.zig");
 
 pub var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub const alloc = gpa.allocator();
-
-pub fn disk(b: *std.build.Builder, path: []const u8) []const u8 {
-    var root = std.fs.openDirAbsolute(b.pathFromRoot(path), .{ .access_sub_paths = true }) catch null;
-
-    var dir = std.fs.openIterableDirAbsolute(b.pathFromRoot(path), .{ .access_sub_paths = true }) catch null;
-
-    var walker = dir.?.walk(alloc) catch null;
-
-    var entry = walker.?.next() catch null;
-    files.root = alloc.create(files.Folder) catch undefined;
-
-    files.root.name = files.ROOT_NAME;
-    files.root.subfolders = std.ArrayList(files.Folder).init(alloc);
-    files.root.contents = std.ArrayList(files.File).init(alloc);
-
-    var count: usize = 0;
-
-    while (entry) |file| : (entry = walker.?.next() catch null) {
-        switch (file.kind) {
-            std.fs.IterableDir.Entry.Kind.File => {
-                std.debug.assert(files.newFile(file.path));
-                var contents = root.?.readFileAlloc(alloc, file.path, 100000) catch "";
-
-                std.debug.assert(files.writeFile(file.path, contents));
-                count += 1;
-            },
-            std.fs.IterableDir.Entry.Kind.Directory => {
-                std.debug.assert(files.newFolder(file.path));
-            },
-            else => {},
-        }
-    }
-
-    std.log.info("packed {} files", .{count});
-
-    return files.toStr().items;
-}
 
 pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
     var root = std.fs.openDirAbsolute(b.pathFromRoot(path), .{ .access_sub_paths = true }) catch null;
@@ -78,6 +43,22 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
     return mail.toStr().items;
 }
 
+pub fn convertStep(b: *std.build.Builder, converter: anytype, input: []const u8, diskpath: []const u8, inext: []const u8, outext: []const u8, file: []const u8) ?*std.build.WriteFileStep {
+    var in = std.fmt.allocPrint(b.allocator, "content/{s}/{s}.{s}", .{ input, file, inext }) catch "";
+    var out = std.fmt.allocPrint(b.allocator, "content/disk/{s}/{s}.{s}", .{ diskpath, file, outext }) catch "";
+
+    var cont = converter(in, b.allocator) catch |err| {
+        std.log.err("{}", .{err});
+        return null;
+    };
+
+    // TODO make dir
+
+    std.log.info("create /{s}/{s}.{s}", .{ diskpath, file, outext });
+
+    return b.addWriteFile(b.pathFromRoot(out), cont.items);
+}
+
 pub fn build(b: *std.build.Builder) void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
@@ -92,10 +73,8 @@ pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable("sandeee", "src/main.zig");
     const vm_exe = b.addExecutable("sandeee-vm", "src/main_vm.zig");
 
-    comp.compile("content/asm/window.asm", "content/disk/prof/tests/window.eep", b.allocator) catch {};
-    comp.compile("content/asm/read.asm", "content/disk/prof/tests/read.eep", b.allocator) catch {};
-    comp.compile("content/asm/hello.asm", "content/disk/prof/tests/hello.eep", b.allocator) catch {};
-    comp.compile("content/asm/write.asm", "content/disk/prof/tests/write.eep", b.allocator) catch {};
+    _ = b.exec(&[_][]const u8{ "rm", "-r", "content/disk" }) catch "";
+    _ = b.exec(&[_][]const u8{ "cp", "-r", "content/rawdisk", "content/disk" }) catch "";
 
     // Includes
     exe.addIncludePath("deps/include");
@@ -118,6 +97,7 @@ pub fn build(b: *std.build.Builder) void {
 
     exe.linkSystemLibrary("glfw3");
     exe.linkSystemLibrary("GL");
+    exe.linkSystemLibrary("OpenAL");
     exe.linkSystemLibrary("c");
     exe.linkLibC();
 
@@ -127,8 +107,30 @@ pub fn build(b: *std.build.Builder) void {
     vm_exe.setBuildMode(mode);
     vm_exe.install();
 
-    var write_step = b.addWriteFile(b.pathFromRoot("content/default.eee"), disk(b, b.pathFromRoot("content/disk/")));
+    var convert_steps = std.ArrayList(*std.build.WriteFileStep).init(b.allocator);
+
+    var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/default.eee");
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
+
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "hello").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "read").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "write").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "window").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "texture").?) catch {};
+
+    convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "login").?) catch {};
+    convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "message").?) catch {};
+
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "bar").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "editor").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "email").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "explorer").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "window").?) catch {};
+
+    for (convert_steps.items) |step| {
+        write_step.step.dependOn(&step.step);
+        exe.step.dependOn(&step.step);
+    }
 
     exe.step.dependOn(&write_step.step);
     exe.step.dependOn(&email_step.step);
@@ -147,7 +149,7 @@ pub fn build(b: *std.build.Builder) void {
     b.installFile("content/images/editor.png", "bin/content/editor.png");
     b.installFile("content/images/explorer.png", "bin/content/explorer.png");
     b.installFile("content/fonts/scientifica.ttf", "bin/content/font.ttf");
-    b.installFile("content/default.eee", "bin/content/default.eee");
+    //b.installFile("content/default.eee", "bin/content/default.eee");
     b.installFile("content/emails.eme", "bin/content/emails.eme");
 
     b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");

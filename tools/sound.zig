@@ -1,0 +1,65 @@
+const std = @import("std");
+
+const lol = error{
+    BadSection,
+};
+
+// Converts a wav file to a era file
+pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    var result = std.ArrayList(u8).init(alloc);
+
+    var inreader = try std.fs.cwd().openFile(in, .{});
+    defer inreader.close();
+
+    var buf_reader = std.io.bufferedReader(inreader.reader());
+    var reader_stream = buf_reader.reader();
+
+    var name: [4]u8 = undefined;
+
+    try reader_stream.skipBytes(12, .{});
+
+    var chanels: u16 = 0;
+    var sr: u16 = 0;
+
+    while (true) {
+        if (try reader_stream.read(&name) != 4) break;
+        var size = try reader_stream.readInt(u32, std.builtin.Endian.Little);
+        var section = try alloc.alloc(u8, size);
+        defer alloc.free(section);
+        if (size != try reader_stream.read(section)) return error.BadSection;
+
+        //std.log.info("{s}: {}b", .{&name, size});
+
+        if (std.mem.eql(u8, &name, "RIFF")) {
+            continue;
+        }
+        if (std.mem.eql(u8, &name, "fmt ")) {
+            chanels = @intCast(u8, section[10]); //HACK 99% of wavs have 2 chanels
+            sr = @intCast(u8, section[14] >> 3);
+
+            continue;
+        }
+        if (std.mem.eql(u8, &name, "LIST")) {
+            continue;
+        }
+        if (std.mem.eql(u8, &name, "data")) {
+            if (chanels == 1) {
+                try result.appendSlice(section);
+            } else {
+                for (section) |_, idx| {
+                    if (idx % (chanels * sr) == 0) {
+                        var tmp: i16 = @intCast(i16, @bitCast(i8, section[idx + sr - 1]));
+                        tmp += 128;
+
+                        try result.append(@intCast(u8, tmp));
+                    }
+                }
+            }
+
+            continue;
+        }
+        return error.BadSection;
+    }
+
+    return result;
+}

@@ -172,6 +172,7 @@ pub fn new() win.WindowContents {
         .keyFn = keyCmd,
         .deleteFn = deleteCmd,
         .name = "CMD",
+        .kind = "cmd",
         .clearColor = col.newColor(0, 0, 0, 1),
     };
 }

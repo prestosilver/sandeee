@@ -34,7 +34,6 @@ pub fn init(name: [*c]const u8) Context {
 
     c.glfwSetWindowMonitor(win, monitor, 0, 0, mode.width, mode.height, mode.refreshRate);
 
-
     c.glfwMakeContextCurrent(win);
     c.glfwSwapInterval(1);
 

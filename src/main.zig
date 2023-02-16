@@ -17,6 +17,8 @@ const fm = @import("util/files.zig");
 const files = @import("system/files.zig");
 const events = @import("util/events.zig");
 const shell = @import("system/shell.zig");
+const audio = @import("util/audio.zig");
+const pseudo = @import("system/pseudo/all.zig");
 
 const inputEvs = @import("events/input.zig");
 const windowEvs = @import("events/window.zig");
@@ -40,6 +42,7 @@ var font_shader: shd.Shader = undefined;
 var face: font.Font = undefined;
 var windows: std.ArrayList(win.Window) = undefined;
 var bar: bars.Bar = undefined;
+var audioMan: audio.Audio = undefined;
 
 var dragging: ?*win.Window = null;
 var draggingStart: vecs.Vector2 = vecs.newVec2(0, 0);
@@ -69,6 +72,8 @@ pub fn draw() void {
     gfx.clear(ctx);
 
     for (windows.items) |window, idx| {
+        if (idx >= windows.items.len) continue;
+
         sb.draw(win.Window, &windows.items[idx], shader, vecs.newVec3(0, 0, 0));
         windows.items[idx].data.drawName(font_shader, &face, &sb);
 
@@ -290,43 +295,33 @@ pub fn main() anyerror!void {
 
     ctx = gfx.init("Sandeee");
 
+    files.Folder.init();
+
     events.init();
     gfx.gContext = &ctx;
 
+    audioMan = try audio.Audio.init();
+
     sb = batch.newSpritebatch();
 
-    var path: std.ArrayList(u8) = undefined;
-    path = fm.getContentPath("content/window.png");
-    wintex = tex.newTextureFile(path.items);
-    path.deinit();
+    wintex = try tex.newTextureFile("/cont/imgs/window.eia");
+    bartex = try tex.newTextureFile("/cont/imgs/bar.eia");
+    editortex = try tex.newTextureFile("/cont/imgs/editor.eia");
+    emailtex = try tex.newTextureFile("/cont/imgs/email.eia");
+    explorertex = try tex.newTextureFile("/cont/imgs/explorer.eia");
 
     shell.wintex = &wintex;
-
-    path = fm.getContentPath("content/bar.png");
-    bartex = tex.newTextureFile(path.items);
-    path.deinit();
-
-    path = fm.getContentPath("content/editor.png");
-    editortex = tex.newTextureFile(path.items);
-    path.deinit();
-
+    pseudo.window.wintex = &wintex;
     shell.edittex = &editortex;
 
-    path = fm.getContentPath("content/email.png");
-    emailtex = tex.newTextureFile(path.items);
-    path.deinit();
-
-    path = fm.getContentPath("content/explorer.png");
-    explorertex = tex.newTextureFile(path.items);
-    path.deinit();
-
-    path = fm.getContentPath("content/font.ttf");
+    var path = fm.getContentPath("content/font.ttf");
     face = try font.Font.init(path.items, 22);
     path.deinit();
 
     inputEvs.setup(ctx.window);
 
-    files.Folder.init();
+    var loginSnd = audio.Sound.init(files.root.getFile("/cont/snds/login.era").?.read());
+    try audioMan.playSound(loginSnd);
 
     mail.init();
     try mail.load();
@@ -339,6 +334,7 @@ pub fn main() anyerror!void {
     shell.shader = &shader;
 
     windows = std.ArrayList(win.Window).init(allocator.alloc);
+    pseudo.window.windowsPtr = &windows;
 
     events.em.registerListener(inputEvs.EventMouseMove, mouseMove);
     events.em.registerListener(inputEvs.EventMouseDown, mouseDown);

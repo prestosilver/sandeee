@@ -1,6 +1,7 @@
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
+const fake = @import("pseudo/all.zig");
 
 pub var root: *Folder = undefined;
 pub var home: *Folder = undefined;
@@ -9,24 +10,23 @@ pub const ROOT_NAME = "/";
 
 pub const File = struct {
     name: []const u8,
-    contents: []const u8,
+    contents: []u8,
 
-    pseudoWrite: ?*fn([]const u8) void = null,
-    pseudoRead: ?*fn() []const u8 = null,
+    pseudoWrite: ?*const fn([]const u8) void = null,
+    pseudoRead: ?*const fn() []const u8 = null,
 
     pub fn write(self: *File, contents: []const u8) void {
         if (self.pseudoWrite != null) {
-            std.log.info("pseudo write", .{});
             self.pseudoWrite.?(contents);
         } else {
-            self.contents = contents;
+            self.contents = allocator.alloc.realloc(self.contents, contents.len) catch self.contents;
+            std.mem.copy(u8, self.contents, contents);
         }
     }
 
     pub fn read(self: *File) []const u8 {
         if (self.pseudoRead != null) {
-            std.log.info("pseudo read", .{});
-            return self.pseudoRead.?(true);
+            return self.pseudoRead.?();
         } else {
             return self.contents;
         }
@@ -56,6 +56,8 @@ pub const Folder = struct {
         root.contents = std.ArrayList(File).init(allocator.alloc);
         root.parent = root;
 
+        root.subfolders.append(fake.setupFake(root)) catch {};
+
         var f = std.fs.cwd().openFile("disk.eee", .{}) catch null;
         if (f == null) {
             var path = fm.getContentDir();
@@ -83,7 +85,10 @@ pub const Folder = struct {
             _ = file.read(contbuffer) catch 0;
             _ = root.newFile(namebuffer);
             _ = root.writeFile(namebuffer, contbuffer);
+            allocator.alloc.free(contbuffer);
         }
+
+        root.fixFolders();
     }
 
     pub fn write(self: *Folder, writer: std.fs.File) void {
@@ -104,9 +109,18 @@ pub const Folder = struct {
     }
 
     pub fn getfiles(self: *Folder, files: *std.ArrayList(File)) void {
+        if (std.mem.eql(u8, self.name, "/fake/")) return;
+
         files.appendSlice(self.contents.items) catch {};
         for (self.subfolders.items) |_, idx| {
             self.subfolders.items[idx].getfiles(files);
+        }
+    }
+
+    fn fixFolders(self: *Folder) void {
+        for (self.subfolders.items) |_, idx| {
+            self.subfolders.items[idx].parent = self;
+            self.subfolders.items[idx].fixFolders();
         }
     }
 
@@ -255,6 +269,7 @@ pub const Folder = struct {
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
 
+
         for (name) |ch| {
             if (ch == '/') {
                 if (check(file.items, ".")) return self.getFile(name[2..]);
@@ -274,6 +289,7 @@ pub const Folder = struct {
         }
 
         var fullname = std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name }) catch undefined;
+        defer allocator.alloc.free(fullname);
         for (self.contents.items) |subfile, idx| {
             if (check(subfile.name, fullname)) {
                 return &self.contents.items[idx];

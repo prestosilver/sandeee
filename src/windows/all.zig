@@ -4,3 +4,4 @@ pub const email = @import("email.zig");
 pub const editor = @import("editor.zig");
 pub const explorer = @import("explorer.zig");
 pub const settings = @import("settings.zig");
+pub const vm = @import("vm.zig");

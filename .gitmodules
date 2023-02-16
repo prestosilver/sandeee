@@ -1,6 +1,6 @@
 [submodule "deps/mach-freetype"]
 	path = deps/mach-freetype
 	url = git@github.com:hexops/mach-freetype
-[submodule "deps/zig-qoi"]
-	path = deps/zig-qoi
-	url = git@github.com:MasterQ32/zig-qoi
+[submodule "tools/deps/zigimg"]
+	path = tools/deps/zigimg
+	url = git@github.com:zigimg/zigimg

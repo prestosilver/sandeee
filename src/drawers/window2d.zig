@@ -32,6 +32,7 @@ pub const WindowContents = struct {
     scrollFn: ?*const fn (*[]u8, f32, f32) void = null,
     focusFn: ?*const fn (*[]u8) void = null,
     deleteFn: *const fn (*[]u8) void,
+    kind: []const u8,
     name: []const u8,
     clearColor: cols.Color,
 

@@ -1,0 +1,110 @@
+const std = @import("std");
+const allocator = @import("../../util/allocator.zig");
+const files = @import("../files.zig");
+const vmwin = @import("../../windows/vm.zig");
+const winev = @import("../../events/window.zig");
+const events = @import("../../util/events.zig");
+const win = @import("../../drawers/window2d.zig");
+const tex = @import("../../texture.zig");
+const rect = @import("../../math/rects.zig");
+
+pub var wintex: *tex.Texture = undefined;
+
+pub var vmIdx: u8 = 0;
+pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
+
+// /fake/win/new
+pub fn readWinNew() []const u8 {
+    var result: *u8 = allocator.alloc.create(u8) catch undefined;
+    var winDat = vmwin.new(vmIdx);
+
+    var window = win.Window.new(wintex.*, win.WindowData{
+        .pos = rect.Rectangle{
+            .x = 100,
+            .y = 100,
+            .w = 400,
+            .h = 300,
+        },
+        .source = rect.Rectangle{
+            .x = 0.0,
+            .y = 0.0,
+            .w = 1.0,
+            .h = 1.0,
+        },
+        .contents = winDat,
+        .active = true,
+    });
+
+    events.em.sendEvent(winev.EventCreateWindow{ .window = window });
+
+    result.* = vmIdx;
+    vmIdx = vmIdx +% 1;
+
+    return @ptrCast(*[1]u8, result);
+}
+
+pub fn writeWinNew(_: []const u8) void {
+    return;
+}
+
+// /fake/win/destroy
+
+pub fn readWinDestroy() []const u8 {
+    return allocator.alloc.alloc(u8, 0) catch undefined;
+}
+
+pub fn writeWinDestroy(id: []const u8) void {
+    if (id.len != 1) return;
+    var aid = id[0];
+
+    for (windowsPtr.*.items) |_, idx| {
+        var item = &windowsPtr.*.items[idx];
+        if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+            var self = @ptrCast(*vmwin.VMData, item.data.contents.self);
+
+            if (self.idx == aid) {
+                item.data.deinit();
+                _ = windowsPtr.*.orderedRemove(idx);
+                return;
+            }
+        }
+    }
+}
+
+// /fake/win/open
+
+pub fn readWinOpen() []const u8 {
+    return allocator.alloc.alloc(u8, 0) catch undefined;
+}
+
+pub fn writeWinOpen(_: []const u8) void {
+    return;
+}
+
+
+// /fake/win
+
+pub fn setupFakeWin(parent: *files.Folder) files.Folder {
+    var result = files.Folder{
+        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/", .{}) catch "",
+        .subfolders = std.ArrayList(files.Folder).init(allocator.alloc),
+        .contents = std.ArrayList(files.File).init(allocator.alloc),
+        .parent = parent,
+    };
+
+    result.contents.append(files.File{
+        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/new", .{}) catch "",
+        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+        .pseudoRead = readWinNew,
+        .pseudoWrite = writeWinNew,
+    }) catch {};
+
+    result.contents.append(files.File{
+        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/destroy", .{}) catch "",
+        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+        .pseudoRead = readWinDestroy,
+        .pseudoWrite = writeWinDestroy,
+    }) catch {};
+
+    return result;
+}

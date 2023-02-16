@@ -199,6 +199,7 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
         .clickFn = clickEmail,
         .deleteFn = deleteEmail,
         .name = "EEE MAIL",
+        .kind = "email",
         .clearColor = col.newColor(1, 1, 1, 1),
     };
 }

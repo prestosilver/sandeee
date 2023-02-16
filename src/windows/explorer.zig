@@ -154,6 +154,7 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
         .drawFn = drawExplorer,
         .scrollFn = scrollExplorer,
         .name = "Files",
+        .kind = "explorer",
         .clearColor = col.newColor(1, 1, 1, 1),
     };
 }

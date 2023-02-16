@@ -162,7 +162,7 @@ fn focusEditor(c: *[]u8) void {
     var self = @ptrCast(*EditorData, c);
     if (!self.modified and self.file != null) {
         self.buffer.clearAndFree();
-        self.buffer.appendSlice(self.file.?.contents) catch {};
+        self.buffer.appendSlice(self.file.?.read()) catch {};
         return;
     }
 }
@@ -295,6 +295,7 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
         .deleteFn = deleteEditor,
         .focusFn = focusEditor,
         .name = "EEEDT",
+        .kind = "editor",
         .clearColor = col.newColor(1, 1, 1, 1),
     };
 }

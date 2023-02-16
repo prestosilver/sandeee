@@ -50,21 +50,29 @@ pub const Shell = struct {
             };
             result.code = 1;
 
-            for (self.root.contents.items) |item| {
+            for (self.root.contents.items) |_, idx| {
                 var rootlen = self.root.name.len;
+                var item = &self.root.contents.items[idx];
 
                 if (std.mem.eql(u8, item.name[rootlen..], param[5..])) {
-                    for (item.contents) |ch| {
+                    result.code = 0;
+                    var cont = item.read();
+                    for (cont) |ch| {
                         if (ch < 32 or ch == 255) {
                             if (ch == '\n' or ch == '\r') {
                                 result.data.append('\n') catch {};
                             } else {
-                                result.data.append('?') catch {};
+                                result.data.appendSlice("\\") catch {};
+                                var next = std.fmt.allocPrint(allocator.alloc, "{}", .{ch}) catch undefined;
+                                defer allocator.alloc.free(next);
+                                result.data.appendSlice(next) catch {};
                             }
                         } else {
                             result.data.append(ch) catch {};
-                            result.code = 0;
                         }
+                    }
+                    if (item.pseudoRead != null) {
+                        allocator.alloc.free(cont);
                     }
                 }
             }
@@ -191,7 +199,8 @@ pub const Shell = struct {
 
             edself.file = self.root.getFile(param[5..]);
             edself.buffer.clearAndFree();
-            edself.buffer.appendSlice(edself.file.?.contents) catch {};
+            if (edself.file == null) return result;
+            edself.buffer.appendSlice(edself.file.?.read()) catch {};
         }
         events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
@@ -235,17 +244,19 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        for (self.root.contents.items) |item| {
+        for (self.root.contents.items) |_, idx| {
+            var item = self.root.contents.items[idx];
+
             var rootlen = self.root.name.len;
             if (check(cmd, item.name[rootlen..])) {
                 var line = std.ArrayList(u8).init(allocator.alloc);
                 defer line.deinit();
 
-                if (item.contents.len > 3 and check(item.contents[0..4], ASM_HEADER)) {
+                if (item.read().len > 3 and check(item.read()[0..4], ASM_HEADER)) {
                     return self.runAsm(param);
                 }
 
-                for (item.contents) |char| {
+                for (item.read()) |char| {
                     if (char == '\n') {
                         var res = self.runLine(line.items);
                         defer res.data.deinit();
@@ -353,21 +364,22 @@ pub const Shell = struct {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
-        for (self.root.contents.items) |item| {
+        for (self.root.contents.items) |_, idx| {
             var rootlen = self.root.name.len;
+            var item = &self.root.contents.items[idx];
 
             if (std.mem.eql(u8, item.name[rootlen..], params)) {
                 self.vm = vm.VM.init(allocator.alloc);
                 vms += 1;
 
-                if (!check(item.contents[0..4], ASM_HEADER)) {
+                if (!check(item.read()[0..4], ASM_HEADER)) {
                     result.code = 4;
                     result.data.appendSlice("Error not a asm file") catch {};
 
                     return result;
                 }
 
-                var ops = item.contents[4..];
+                var ops = item.read()[4..];
 
                 self.vm.?.loadString(ops);
 
@@ -390,7 +402,7 @@ pub const Shell = struct {
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
             result.code = 4;
-            result.data.appendSlice("ASM Error") catch {};
+            result.data.appendSlice("\nASM Error: ") catch {};
             result.data.appendSlice(@errorName(msg)) catch {};
 
             self.vm.?.destroy();

@@ -1,14 +1,14 @@
 const std = @import("std");
 
-const lol = error {
+const lol = error{
     UnknownOp,
+    UnknownConst,
 };
 
-pub fn compile(in: []const u8, out: []const u8, alloc: std.mem.Allocator) !void {
+pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var inreader = try std.fs.cwd().openFile(in, .{});
     defer inreader.close();
     var result = std.ArrayList(u8).init(alloc);
-    defer result.deinit();
 
     var buf_reader = std.io.bufferedReader(inreader.reader());
     var reader_stream = buf_reader.reader();
@@ -21,13 +21,18 @@ pub fn compile(in: []const u8, out: []const u8, alloc: std.mem.Allocator) !void 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         var lo = std.mem.split(u8, line, ";");
         var l = lo.first();
+        if (l.len == 0) continue;
         while (l[0] == ' ') l = l[1..];
-        while (l[l.len - 1] == ' ') l = l[0..l.len - 1];
+        while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
         if (l.len == 0) {
             continue;
         }
         if (l[l.len - 1] == ':') {
-            try consts.put(l[0 .. l.len - 2], idx);
+            var key = std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]}) catch "";
+
+            consts.put(key, idx) catch {
+                std.log.info("err add", .{});
+            };
         } else {
             idx += 1;
         }
@@ -43,8 +48,9 @@ pub fn compile(in: []const u8, out: []const u8, alloc: std.mem.Allocator) !void 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         var lo = std.mem.split(u8, line, ";");
         var l = lo.first();
+        if (l.len == 0) continue;
         while (l[0] == ' ') l = l[1..];
-        while (l[l.len - 1] == ' ') l = l[0..l.len - 1];
+        while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
         if (l.len == 0 or l[l.len - 1] == ':') {
             continue;
         }
@@ -90,17 +96,26 @@ pub fn compile(in: []const u8, out: []const u8, alloc: std.mem.Allocator) !void 
         if (std.mem.eql(u8, op, l)) {
             try result.appendSlice("\x00");
         } else {
-            var int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1..], 0) catch {
-                var target = l[op.len + 1..];
+            var int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
+                var target = l[op.len + 1 ..];
+                while (target[0] == ' ') target = target[1..];
+                while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
                 if (target[0] == '"' and target[target.len - 1] == '"') {
-                    var target_tmp = try alloc.alloc(u8, std.mem.replacementSize(u8, target[1..target.len - 1], "\\n", "\n"));
-                    _ = std.mem.replace(u8, target[1..target.len - 1], "\\n", "\n", target_tmp);
+                    var target_tmp = try alloc.alloc(u8, std.mem.replacementSize(u8, target[1 .. target.len - 1], "\\n", "\n"));
+                    _ = std.mem.replace(u8, target[1 .. target.len - 1], "\\n", "\n", target_tmp);
 
                     try result.appendSlice("\x02");
                     try result.appendSlice(target_tmp);
                     try result.appendSlice("\x00");
                 } else {
-                    return error.UnknownOp;
+                    if (!consts.contains(target)) {
+                        std.log.info("{any}", .{target});
+                        return error.UnknownConst;
+                    } else {
+                        var value = consts.get(target).?;
+                        try result.appendSlice("\x01");
+                        try result.appendSlice(&std.mem.toBytes(value));
+                    }
                 }
 
                 continue;
@@ -115,5 +130,5 @@ pub fn compile(in: []const u8, out: []const u8, alloc: std.mem.Allocator) !void 
         }
     }
 
-    try std.fs.cwd().writeFile(out, result.items);
+    return result;
 }

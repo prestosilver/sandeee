@@ -18,7 +18,7 @@ pub const WebData = struct {
     scroll: f32,
 };
 
-pub fn drawWeb(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
+fn drawWeb(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
     var self = @ptrCast(*WebData, c);
 
     var pos = vecs.newVec2(0, -self.scroll);
@@ -81,6 +81,7 @@ pub fn new(_: tex.Texture, shader: shd.Shader) win.WindowContents {
         .deleteFn = deleteWeb,
         .drawFn = drawWeb,
         .name = "Xplorer",
+        .kind = "web",
         .clearColor = col.newColor(1, 1, 1, 1),
     };
 }

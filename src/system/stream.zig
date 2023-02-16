@@ -17,15 +17,23 @@ pub const FileStream = struct {
 
         var file = files.root.getFile(path);
         if (file == null) {
+            allocator.alloc.destroy(result);
+
             return error.FileMissing;
         }
 
         result.path = try allocator.alloc.alloc(u8, path.len);
-        result.contents = try allocator.alloc.alloc(u8, file.?.contents.len);
-        std.mem.copy(u8, result.contents, file.?.contents);
+        var cont = file.?.read();
+        result.contents = try allocator.alloc.alloc(u8, cont.len);
+
+        std.mem.copy(u8, result.contents, cont);
         std.mem.copy(u8, result.path, path);
 
         result.offset = 0;
+
+        if (file.?.pseudoRead != null) {
+            allocator.alloc.free(cont);
+        }
 
         return result;
     }
@@ -37,8 +45,9 @@ pub const FileStream = struct {
         }
 
         var result = try allocator.alloc.alloc(u8, target);
+        var input = self.contents[self.offset..self.offset + target];
 
-        std.mem.copy(u8, result, self.contents[self.offset..self.offset + target]);
+        std.mem.copy(u8, result, input);
 
         self.offset += @intCast(u32, target);
 
@@ -60,8 +69,10 @@ pub const FileStream = struct {
             return error.UnknownError;
     }
 
-    //pub fn Close(self: *FileStream) !void {
-    //    self.Flush();
-    //    allocator.alloc.free(self);
-    //}
+    pub fn Close(self: *FileStream) !void {
+        try self.Flush();
+        allocator.alloc.free(self.contents);
+        allocator.alloc.free(self.path);
+        allocator.alloc.destroy(self);
+    }
 };
