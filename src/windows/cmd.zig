@@ -124,15 +124,21 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
                 }
             }
 
-            var al = self.shell.run(command.items, self.text.items);
-            if (al.clear) {
+            var al = self.shell.run(command.items, self.text.items) catch null;
+            if (al == null) {
+                self.bt.appendSlice("Misc Error") catch {};
+                self.text.clearAndFree();
+                return;
+            }
+
+            if (al.?.clear) {
                 self.bt.clearAndFree();
             } else {
-                if (al.data.items.len != 0 and self.bt.getLast() != '\n') self.bt.append('\n') catch {};
+                if (al.?.data.items.len != 0 and self.bt.getLast() != '\n') self.bt.append('\n') catch {};
 
-                self.bt.appendSlice(al.data.items) catch {};
+                self.bt.appendSlice(al.?.data.items) catch {};
             }
-            al.data.deinit();
+            al.?.data.deinit();
 
             self.text.clearAndFree();
         },

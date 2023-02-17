@@ -239,7 +239,7 @@ pub const Shell = struct {
         return result;
     }
 
-    pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) Result {
+    pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
@@ -253,12 +253,12 @@ pub const Shell = struct {
                 defer line.deinit();
 
                 if (item.read().len > 3 and check(item.read()[0..4], ASM_HEADER)) {
-                    return self.runAsm(param);
+                    return try self.runAsm(param);
                 }
 
                 for (item.read()) |char| {
                     if (char == '\n') {
-                        var res = self.runLine(line.items);
+                        var res = try self.runLine(line.items);
                         defer res.data.deinit();
                         if (res.code != 0) {
                             result.data.appendSlice(res.data.items) catch {};
@@ -274,7 +274,7 @@ pub const Shell = struct {
                         line.append(char) catch {};
                     }
                 }
-                var res = self.runLine(line.items);
+                var res = try self.runLine(line.items);
                 defer res.data.deinit();
                 if (res.code != 0) {
                     return res;
@@ -360,16 +360,19 @@ pub const Shell = struct {
         return true;
     }
 
-    pub fn runAsm(self: *Shell, params: []const u8) Result {
+    pub fn runAsm(self: *Shell, params: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
+        var iter = std.mem.split(u8, params, " ");
+        var file = iter.first();
+
         for (self.root.contents.items) |_, idx| {
             var rootlen = self.root.name.len;
             var item = &self.root.contents.items[idx];
 
-            if (std.mem.eql(u8, item.name[rootlen..], params)) {
-                self.vm = vm.VM.init(allocator.alloc);
+            if (std.mem.eql(u8, item.name[rootlen..], file)) {
+                self.vm = try vm.VM.init(allocator.alloc, params);
                 vms += 1;
 
                 if (!check(item.read()[0..4], ASM_HEADER)) {
@@ -428,7 +431,7 @@ pub const Shell = struct {
         return null;
     }
 
-    pub fn runLine(self: *Shell, line: []const u8) Result {
+    pub fn runLine(self: *Shell, line: []const u8) !Result {
         if (line.len == 0) {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
@@ -450,7 +453,7 @@ pub const Shell = struct {
         return self.run(command.items, line);
     }
 
-    pub fn run(self: *Shell, cmd: []const u8, params: []const u8) Result {
+    pub fn run(self: *Shell, cmd: []const u8, params: []const u8) !Result {
         if (check(cmd, "help")) return self.help(params);
         if (check(cmd, "echo")) return self.echo(params);
         if (check(cmd, "ls")) return self.ls(params);
@@ -488,7 +491,7 @@ pub const Shell = struct {
                         command.append(char) catch {};
                     }
                 }
-                out = self.run(command.items, params[5..]);
+                out = try self.run(command.items, params[5..]);
             }
 
             if (out.code != 0) {
@@ -544,7 +547,7 @@ pub const Shell = struct {
 
                 return result;
             }
-            return self.runAsm(params[4..]);
+            return try self.runAsm(params[4..]);
         }
         return self.runFile(cmd, params);
     }

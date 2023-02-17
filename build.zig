@@ -52,10 +52,6 @@ pub fn convertStep(b: *std.build.Builder, converter: anytype, input: []const u8,
         return null;
     };
 
-    // TODO make dir
-
-    std.log.info("create /{s}/{s}.{s}", .{ diskpath, file, outext });
-
     return b.addWriteFile(b.pathFromRoot(out), cont.items);
 }
 
@@ -85,10 +81,6 @@ pub fn build(b: *std.build.Builder) void {
     exe.setBuildMode(mode);
 
     exe.addPackage(freetype.pkg);
-    exe.addPackage(.{
-        .name = "qoi",
-        .source = .{ .path = "deps/zig-qoi/src/qoi.zig" },
-    });
     freetype.link(b, exe, .{});
 
     // Sources
@@ -117,6 +109,7 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "write").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "window").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "texture").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "dump").?) catch {};
 
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "login").?) catch {};
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "message").?) catch {};

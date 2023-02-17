@@ -7,7 +7,7 @@ pub fn main() anyerror!void {
 
     var contents = try std.fs.cwd().readFileAlloc(allocator.alloc, "test.eep", 100000);
 
-    var vm = vma.VM.init(allocator.alloc);
+    var vm = try vma.VM.init(allocator.alloc, "test.eep");
     defer vm.destroy();
 
     std.log.info("loading", .{});

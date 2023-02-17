@@ -132,7 +132,7 @@ pub const Font = struct {
         var vertarray = va.VertArray.init();
 
         for (text) |ch| {
-            if (ch > 128) continue;
+            if (ch > 127) continue;
 
             var char = self.chars[ch];
             var w = (char.size.x) * scale;
@@ -169,7 +169,7 @@ pub const Font = struct {
         var result = vec.newVec2(0, 0);
 
         for (text) |ch| {
-            if (ch > 128) continue;
+            if (ch > 127) continue;
 
             var char = self.chars[ch];
             result.x += char.ax;

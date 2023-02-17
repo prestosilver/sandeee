@@ -37,12 +37,26 @@ pub const VM = struct {
     streams: std.ArrayList(?*streams.FileStream),
 
     out: std.ArrayList(u8) = undefined,
+    args: [][]u8,
 
-    pub fn init(alloc: std.mem.Allocator) VM {
+    pub fn init(alloc: std.mem.Allocator, args: []const u8) !VM {
+        var splitIter = std.mem.split(u8, args, " ");
+
+        var tmpArgs = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
+
+        var idx: usize = 0;
+        while (splitIter.next()) |item| {
+            tmpArgs[idx] = try alloc.alloc(u8, item.len);
+            std.mem.copy(u8, tmpArgs[idx], item);
+            std.log.info("{s}", .{item});
+            idx += 1;
+        }
+
         return VM{
             .stack = undefined,
             .allocator = alloc,
             .streams = std.ArrayList(?*streams.FileStream).init(alloc),
+            .args = tmpArgs,
         };
     }
 
@@ -143,7 +157,12 @@ pub const VM = struct {
                 };
         }
 
+        for (self.args) |_, idx| {
+            self.allocator.free(self.args[idx]);
+        }
+
         self.allocator.free(self.code);
+        self.allocator.free(self.args);
         self.streams.deinit();
         self.out.deinit();
     }
@@ -283,7 +302,10 @@ pub const VM = struct {
                 defer self.free(a);
 
                 if (a.string != null) {
-                    return error.InvalidOp;
+                    if (a.string.?.len != 0) {
+                        self.pc = op.value.?;
+                    }
+                    return;
                 } else if (a.value != null) {
                     if (a.value.?.* != 0) {
                         self.pc = op.value.?;
@@ -416,6 +438,23 @@ pub const VM = struct {
                                 try fs.?.Close();
 
                                 self.streams.items[idx.value.?.*] = null;
+
+                                return;
+                            } else if (idx.string != null) {
+                                return error.ValueMissing;
+                            } else return error.InvalidOp;
+                        },
+                        // arg
+                        8 => {
+                            var idx = try self.popStack();
+                            defer self.free(idx);
+
+                            if (idx.value != null) {
+                                if (idx.value.?.* >= self.args.len) {
+                                    try self.pushStackS("");
+                                    return;
+                                }
+                                try self.pushStackS(self.args[idx.value.?.*]);
 
                                 return;
                             } else if (idx.string != null) {

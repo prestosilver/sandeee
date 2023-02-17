@@ -6,6 +6,7 @@ const lol = error{};
 //   u8: width,
 //   u8: advancex,
 //   u8: advancey,
+//   []const u8: data,
 // }
 //
 // struct FontFile {
