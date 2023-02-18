@@ -51,24 +51,24 @@ pub const QueueEntry = struct {
             hash.update(casted);
         }
 
-        for (entry.verts.data.items) |_, idx| {
-            var castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].x);
+        for (entry.verts.data) |_, idx| {
+            var castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].x);
             hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].y);
+            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].y);
             hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].z);
+            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].z);
             hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].u);
+            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].u);
             hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].v);
+            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].v);
             hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].r);
+            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].r);
             hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].g);
+            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].g);
             hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].b);
+            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].b);
             hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data.items[idx].a);
+            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].a);
             hash.update(castedItem);
         }
 
@@ -77,9 +77,9 @@ pub const QueueEntry = struct {
 };
 
 pub const SpriteBatch = struct {
-    prevQueue: std.ArrayList(QueueEntry),
-    queue: std.ArrayList(QueueEntry),
-    buffers: std.ArrayList(c.GLuint),
+    prevQueue: []QueueEntry,
+    queue: []QueueEntry,
+    buffers: []c.GLuint,
     scissor: ?rect.Rectangle = null,
     size: vecs.Vector2 = vecs.newVec2(640, 480),
 
@@ -97,47 +97,51 @@ pub const SpriteBatch = struct {
     pub fn addEntry(sb: *SpriteBatch, entry: *QueueEntry) void {
         entry.scissor = sb.scissor;
 
-        if (sb.queue.items.len == 0) {
-            sb.queue.append(entry.*) catch {};
+        if (sb.queue.len == 0) {
+            sb.queue = allocator.alloc.realloc(sb.queue, sb.queue.len + 1) catch sb.queue;
+            sb.queue[sb.queue.len - 1] = entry.*;
         } else {
-            var last = &sb.queue.items[sb.queue.items.len - 1];
+            var last = &sb.queue[sb.queue.len - 1];
             if (last.texture.tex == entry.texture.tex and
                 last.shader.id == entry.shader.id and
                 entry.scissor != null and last.scissor != null and
                 rect.Rectangle.equal(last.scissor.?, entry.scissor.?))
             {
-                std.ArrayList(va.Vert).appendSlice(&last.verts.data, entry.verts.data.items) catch {};
-                entry.verts.data.deinit();
+                var start = last.verts.data.len;
+                last.verts.data = allocator.alloc.realloc(last.verts.data, last.verts.data.len + entry.verts.data.len) catch last.verts.data;
+                std.mem.copy(va.Vert, last.verts.data[start..], entry.verts.data);
+                entry.verts.deinit();
             } else {
-                sb.queue.append(entry.*) catch {};
+                sb.queue = allocator.alloc.realloc(sb.queue, sb.queue.len + 1) catch sb.queue;
+                sb.queue[sb.queue.len - 1] = entry.*;
             }
         }
     }
 
     pub fn render(sb: *SpriteBatch) void {
-        if (sb.queue.items.len != 0) {
-            for (sb.queue.items) |_, idx| {
-                if (idx >= sb.prevQueue.items.len) break;
-                sb.queue.items[idx].hash = (&sb.queue.items[idx]).GetHash();
-                sb.queue.items[idx].update = (sb.queue.items[idx].hash != sb.prevQueue.items[idx].hash);
+        if (sb.queue.len != 0) {
+            for (sb.queue) |_, idx| {
+                if (idx >= sb.prevQueue.len) break;
+                sb.queue[idx].hash = (&sb.queue[idx]).GetHash();
+                sb.queue[idx].update = (sb.queue[idx].hash != sb.prevQueue[idx].hash);
             }
         }
 
         c.glEnable(c.GL_BLEND);
         c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
-        if (sb.buffers.items.len != sb.queue.items.len) {
-            var target = sb.queue.items.len;
+        if (sb.buffers.len != sb.queue.len) {
+            var target = sb.queue.len;
 
-            if (target < sb.buffers.items.len) {
-                c.glDeleteBuffers(@intCast(c.GLint, sb.buffers.items.len - target), &sb.buffers.items[target]);
-                sb.buffers.shrinkAndFree(target);
-            } else if (target > sb.buffers.items.len) {
-                var old = sb.buffers.items.len;
+            if (target < sb.buffers.len) {
+                c.glDeleteBuffers(@intCast(c.GLint, sb.buffers.len - target), &sb.buffers[target]);
+                sb.buffers = allocator.alloc.realloc(sb.buffers, target) catch sb.buffers;
+            } else if (target > sb.buffers.len) {
+                var old = sb.buffers.len;
 
-                sb.buffers.resize(target) catch {};
+                sb.buffers = allocator.alloc.realloc(sb.buffers, target) catch sb.buffers;
 
-                c.glGenBuffers(@intCast(c.GLint, target - old), &sb.buffers.items[old]);
+                c.glGenBuffers(@intCast(c.GLint, target - old), &sb.buffers[old]);
             }
         }
 
@@ -145,7 +149,7 @@ pub const SpriteBatch = struct {
         var cshader: c.GLuint = 0;
         var cscissor: ?rect.Rectangle = null;
 
-        for (sb.queue.items) |entry, idx| {
+        for (sb.queue) |entry, idx| {
             if (ctex != entry.texture.tex)
                 c.glBindTexture(c.GL_TEXTURE_2D, entry.texture.tex);
 
@@ -172,16 +176,16 @@ pub const SpriteBatch = struct {
                 c.glDisable(c.GL_SCISSOR_TEST);
             }
 
-            c.glBindBuffer(c.GL_ARRAY_BUFFER, sb.buffers.items[idx]);
+            c.glBindBuffer(c.GL_ARRAY_BUFFER, sb.buffers[idx]);
 
             ctex = entry.texture.tex;
             cshader = entry.shader.id;
             cscissor = entry.scissor;
 
-            if (entry.update and entry.verts.data.items.len != 0) {
+            if (entry.update and entry.verts.data.len != 0) {
                 var data = std.ArrayList(c.GLfloat).init(allocator.alloc);
 
-                for (entry.verts.data.items) |verts| {
+                for (entry.verts.data) |verts| {
                     var a = verts.array();
                     data.appendSlice(&a) catch {};
                 }
@@ -197,45 +201,41 @@ pub const SpriteBatch = struct {
             c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @intToPtr(*anyopaque, 5 * @sizeOf(f32)));
             c.glEnableVertexAttribArray(2);
 
-            c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c.GLsizei, entry.verts.data.items.len));
+            c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c.GLsizei, entry.verts.data.len));
         }
         if (cscissor != null)
             c.glDisable(c.GL_SCISSOR_TEST);
 
-        for (sb.prevQueue.items) |_, idx| {
-            var e = sb.prevQueue.items[idx];
-            e.verts.data.deinit();
+        for (sb.prevQueue) |_, idx| {
+            var e = sb.prevQueue[idx];
+            e.verts.deinit();
         }
 
-        sb.prevQueue.clearAndFree();
-        std.ArrayList(QueueEntry).appendSlice(&sb.prevQueue, sb.queue.items) catch {};
-        for (sb.queue.items) |_, idx| {
-            var e = sb.queue.items[idx];
-            e.verts.data.deinit();
-        }
-        sb.queue.clearAndFree();
+        allocator.alloc.free(sb.prevQueue);
+        sb.prevQueue = sb.queue;
+        sb.queue = allocator.alloc.alloc(QueueEntry, 0) catch undefined;
     }
 
     pub fn deinit(sb: SpriteBatch) void {
-        for (sb.prevQueue.items) |_, idx| {
-            var e = sb.prevQueue.items[idx];
-            e.verts.data.deinit();
+        for (sb.prevQueue) |_, idx| {
+            var e = sb.prevQueue[idx];
+            e.verts.deinit();
         }
-        for (sb.queue.items) |_, idx| {
-            var e = sb.queue.items[idx];
-            e.verts.data.deinit();
+        for (sb.queue) |_, idx| {
+            var e = sb.queue[idx];
+            e.verts.deinit();
         }
 
-        sb.buffers.deinit();
-        sb.queue.deinit();
-        sb.prevQueue.deinit();
+        allocator.alloc.free(sb.buffers);
+        allocator.alloc.free(sb.queue);
+        allocator.alloc.free(sb.prevQueue);
     }
 };
 
-pub fn newSpritebatch() SpriteBatch {
-    var buffer = std.ArrayList(c.GLuint).init(allocator.alloc);
-    var q = std.ArrayList(QueueEntry).init(allocator.alloc);
-    var pq = std.ArrayList(QueueEntry).init(allocator.alloc);
+pub fn newSpritebatch() !SpriteBatch {
+    var buffer = try allocator.alloc.alloc(c.GLuint, 0);
+    var q = try allocator.alloc.alloc(QueueEntry, 0);
+    var pq = try allocator.alloc.alloc(QueueEntry, 0);
 
     return SpriteBatch{ .prevQueue = pq, .queue = q, .buffers = buffer };
 }

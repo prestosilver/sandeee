@@ -40,7 +40,7 @@ pub fn newTextureFile(file: []const u8) !Texture {
     var height = @intCast(c_int, cont[6]) + @intCast(c_int, cont[7]) * 256;
 
     if (cont.len / 4 - 2 != width * height) {
-        return error.WriongSize;
+        return error.WrongSize;
     }
 
     result.size.x = @intToFloat(f32, width);

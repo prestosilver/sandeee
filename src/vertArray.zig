@@ -2,9 +2,7 @@ const std = @import("std");
 const vecs = @import("math/vecs.zig");
 const cols = @import("math/colors.zig");
 const c = @import("c.zig");
-
-var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-const allocator = arena.allocator();
+const allocator = @import("util/allocator.zig");
 
 pub const Vert = struct {
     x: c.GLfloat,
@@ -33,19 +31,23 @@ pub const Vert = struct {
 };
 
 pub const VertArray = struct {
-    data: std.ArrayList(Vert),
+    data: []Vert,
 
     pub fn init() VertArray {
-        var result = VertArray{ .data = std.ArrayList(Vert).init(allocator) };
+        var result = VertArray{
+            .data = allocator.alloc.alloc(Vert, 0) catch undefined,
+        };
         return result;
     }
 
     pub fn deinit(va: *VertArray) void {
-        va.data.deinit();
+        allocator.alloc.free(va.data);
     }
 
     pub fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) void {
-        va.data.append(Vert{
+        va.data = allocator.alloc.realloc(va.data, va.data.len + 1) catch va.data;
+
+        va.data[va.data.len - 1] = Vert{
             .x = pos.x,
             .y = pos.y,
             .z = pos.z,
@@ -55,6 +57,6 @@ pub const VertArray = struct {
             .g = color.g,
             .b = color.b,
             .a = color.a,
-        }) catch {};
+        };
     }
 };

@@ -7,20 +7,33 @@ const events = @import("../../util/events.zig");
 const win = @import("../../drawers/window2d.zig");
 const tex = @import("../../texture.zig");
 const rect = @import("../../math/rects.zig");
+const vecs = @import("../../math/vecs.zig");
 
 pub var texIdx: u8 = 0;
-pub var textures: *std.ArrayList(tex.Texture) = undefined;
+pub var textures: std.AutoHashMap(u8, tex.Texture) = undefined;
 
 pub fn readGfxNew() []const u8 {
     var result = allocator.alloc.alloc(u8, 1) catch undefined;
 
-    result[0] = 0;
+    result[0] = texIdx;
+
+    textures.put(texIdx, tex.newTextureSize(vecs.newVec2(0, 0))) catch {};
+
+    texIdx += 1;
 
     return result;
 }
 
 pub fn writeGfxNew(_: []const u8) void {
     return;
+}
+
+// /fake/gfx/destroy
+
+// /fake/gfx/upload
+
+pub fn writeGfxUpload(_: []const u8) void {
+
 }
 
 // /fake/gfx
@@ -32,6 +45,8 @@ pub fn setupFakeGfx(parent: *files.Folder) files.Folder {
         .contents = std.ArrayList(files.File).init(allocator.alloc),
         .parent = parent,
     };
+
+    textures = std.AutoHashMap(u8, tex.Texture).init(allocator.alloc);
 
     result.contents.append(files.File{
         .name = std.fmt.allocPrint(allocator.alloc, "/fake/gfx/new", .{}) catch "",

@@ -140,6 +140,7 @@ pub fn build(b: *std.build.Builder) void {
     b.installFile("content/emails.eme", "bin/content/emails.eme");
 
     b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");
+    b.installFile("deps/dll/openal.dll", "bin/OpenAL.dll");
     b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
 
     const run_step = b.step("run", "Run the app");

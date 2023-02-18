@@ -290,7 +290,8 @@ pub fn createWindow(event: windowEvs.EventCreateWindow) bool {
 pub fn main() anyerror!void {
     defer if (!builtin.link_libc or !allocator.useclib) {
         std.log.info("deinit arena", .{});
-        std.debug.assert(!allocator.arena.deinit());
+        allocator.arena.deinit();
+        std.debug.assert(!allocator.gpa.deinit());
     };
 
     ctx = gfx.init("Sandeee");
@@ -302,7 +303,7 @@ pub fn main() anyerror!void {
 
     audioMan = try audio.Audio.init();
 
-    sb = batch.newSpritebatch();
+    sb = try batch.newSpritebatch();
 
     wintex = try tex.newTextureFile("/cont/imgs/window.eia");
     bartex = try tex.newTextureFile("/cont/imgs/bar.eia");
