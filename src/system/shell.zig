@@ -12,7 +12,6 @@ const rect = @import("../math/rects.zig");
 
 const Result = struct {
     data: std.ArrayList(u8),
-    code: u8 = 0,
     exit: bool = false,
     clear: bool = false,
 };
@@ -25,78 +24,76 @@ pub var shader: *shd.Shader = undefined;
 const VM_TIME = 5000000; // nano seconds
 const ASM_HEADER = "EEEp";
 
+const ShellError = error{
+    FileNotFound,
+    MissingParameter,
+    BadASMFile,
+};
+
 pub const Shell = struct {
     root: *files.Folder,
     vm: ?vm.VM = null,
 
     var vms: usize = 0;
 
-    fn echo(_: *Shell, param: []const u8) Result {
+    fn echo(_: *Shell, param: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        if (param.len > 5) result.data.appendSlice(param[5..]) catch {};
-
-        result.code = 0;
+        if (param.len > 5) try result.data.appendSlice(param[5..]);
 
         return result;
     }
 
-    fn dump(self: *Shell, param: []const u8) Result {
+    fn dump(self: *Shell, param: []const u8) !Result {
         if (param.len > 5) {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
-            result.code = 1;
 
             for (self.root.contents.items) |_, idx| {
                 var rootlen = self.root.name.len;
                 var item = &self.root.contents.items[idx];
 
                 if (std.mem.eql(u8, item.name[rootlen..], param[5..])) {
-                    result.code = 0;
                     var cont = item.read();
                     for (cont) |ch| {
                         if (ch < 32 or ch == 255) {
                             if (ch == '\n' or ch == '\r') {
-                                result.data.append('\n') catch {};
+                                try result.data.append('\n');
                             } else {
-                                result.data.appendSlice("\\") catch {};
-                                var next = std.fmt.allocPrint(allocator.alloc, "{}", .{ch}) catch undefined;
+                                try result.data.appendSlice("\\");
+                                var next = try std.fmt.allocPrint(allocator.alloc, "{}", .{ch});
                                 defer allocator.alloc.free(next);
-                                result.data.appendSlice(next) catch {};
+                                try result.data.appendSlice(next);
                             }
                         } else {
-                            result.data.append(ch) catch {};
+                            try result.data.append(ch);
                         }
                     }
                     if (item.pseudoRead != null) {
                         allocator.alloc.free(cont);
                     }
+
+                    return result;
                 }
             }
 
-            if (result.code == 1) {
-                result.data.appendSlice("Error file not found") catch {};
-            }
-
-            return result;
+            return error.FileNotFound;
         } else {}
         return self.todo(param);
     }
 
-    pub fn cd(self: *Shell, param: []const u8) Result {
+    pub fn cd(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
-            result.code = 1;
 
             if (check(param[3..], "..")) {
                 self.root = self.root.parent;
 
-                result.code = 0;
                 return result;
             }
 
@@ -106,21 +103,16 @@ pub const Shell = struct {
                 if (std.mem.eql(u8, item.name[rootlen .. item.name.len - 1], param[3..])) {
                     self.root = &self.root.subfolders.items[idx];
 
-                    result.code = 0;
                     return result;
                 }
             }
 
-            if (result.code == 1) {
-                result.data.appendSlice("Error folder not found") catch {};
-            }
-
-            return result;
+            return error.FileNotFound;
         } else {}
         return self.todo(param);
     }
 
-    fn ls(self: *Shell, param: []const u8) Result {
+    fn ls(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
             return self.todo(param);
         } else {
@@ -131,21 +123,20 @@ pub const Shell = struct {
             var rootlen = self.root.name.len;
 
             for (self.root.subfolders.items) |item| {
-                result.data.appendSlice(item.name[rootlen..]) catch {};
-                result.data.append(' ') catch {};
+                try result.data.appendSlice(item.name[rootlen..]);
+                try result.data.append(' ');
             }
 
             for (self.root.contents.items) |item| {
-                result.data.appendSlice(item.name[rootlen..]) catch {};
-                result.data.append(' ') catch {};
+                try result.data.appendSlice(item.name[rootlen..]);
+                try result.data.append(' ');
             }
-            result.code = 0;
 
             return result;
         }
     }
 
-    pub fn runCmd(_: *Shell, _: []const u8) Result {
+    pub fn runCmd(_: *Shell, _: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
@@ -172,7 +163,7 @@ pub const Shell = struct {
         return result;
     }
 
-    pub fn runEdit(self: *Shell, param: []const u8) Result {
+    pub fn runEdit(self: *Shell, param: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
@@ -200,14 +191,14 @@ pub const Shell = struct {
             edself.file = self.root.getFile(param[5..]);
             edself.buffer.clearAndFree();
             if (edself.file == null) return result;
-            edself.buffer.appendSlice(edself.file.?.read()) catch {};
+            try edself.buffer.appendSlice(edself.file.?.read());
         }
         events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
         return result;
     }
 
-    pub fn runWeb(self: *Shell, param: []const u8) Result {
+    pub fn runWeb(self: *Shell, param: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
@@ -260,92 +251,70 @@ pub const Shell = struct {
                     if (char == '\n') {
                         var res = try self.runLine(line.items);
                         defer res.data.deinit();
-                        if (res.code != 0) {
-                            result.data.appendSlice(res.data.items) catch {};
-                            if (result.data.getLast() != '\n') result.data.append('\n') catch {};
-                            result.code = res.code;
-
-                            return result;
-                        }
-                        result.data.appendSlice(res.data.items) catch {};
-                        if (result.data.getLast() != '\n') result.data.append('\n') catch {};
-                        line.resize(0) catch {};
+                        try result.data.appendSlice(res.data.items);
+                        if (result.data.getLast() != '\n') try result.data.append('\n');
+                        try line.resize(0);
                     } else {
-                        line.append(char) catch {};
+                        try line.append(char);
                     }
                 }
                 var res = try self.runLine(line.items);
                 defer res.data.deinit();
-                if (res.code != 0) {
-                    return res;
-                }
-                result.data.appendSlice(res.data.items) catch {};
-                if (result.data.getLast() != '\n') result.data.append('\n') catch {};
-                result.code = 0;
+                try result.data.appendSlice(res.data.items);
+                if (result.data.getLast() != '\n') try result.data.append('\n');
 
                 return result;
             }
         }
-        result.code = 1;
-        result.data.appendSlice("Unknown command: '") catch {};
-        result.data.appendSlice(param) catch {};
-        result.data.appendSlice("'") catch {};
-
-        return result;
+        return error.FileNotFound;
     }
 
-    pub fn help(_: *Shell, _: []const u8) Result {
+    pub fn help(_: *Shell, _: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        result.data.appendSlice("Sheeell Help:\n") catch {};
-        result.data.appendSlice("=============\n") catch {};
-        result.data.appendSlice("help - prints this\n") catch {};
-        result.data.appendSlice("run - runs a command\n") catch {};
-        result.data.appendSlice("ls - lists the current folder\n") catch {};
-        result.data.appendSlice("cd - changes the current folder\n") catch {};
-        result.data.appendSlice("dump - displays a files contents\n") catch {};
-        result.data.appendSlice("$dump - runs a files contents\n") catch {};
-        result.data.appendSlice("$run - runs the output of a command\n") catch {};
-        result.data.appendSlice("asm - runs a file\n") catch {};
-        result.data.appendSlice("echo - prints the value\n") catch {};
-        result.data.appendSlice("edit - opens an editor with the file open\n") catch {};
-        result.data.appendSlice("cmd - opens cmd") catch {};
-
-        result.code = 0;
+        try result.data.appendSlice("Sheeell Help:\n");
+        try result.data.appendSlice("=============\n");
+        try result.data.appendSlice("help - prints this\n");
+        try result.data.appendSlice("run - runs a command\n");
+        try result.data.appendSlice("ls - lists the current folder\n");
+        try result.data.appendSlice("cd - changes the current folder\n");
+        try result.data.appendSlice("dump - displays a files contents\n");
+        try result.data.appendSlice("$dump - runs a files contents\n");
+        try result.data.appendSlice("$run - runs the output of a command\n");
+        try result.data.appendSlice("asm - runs a file\n");
+        try result.data.appendSlice("echo - prints the value\n");
+        try result.data.appendSlice("edit - opens an editor with the file open\n");
+        try result.data.appendSlice("cmd - opens cmd");
 
         return result;
     }
 
-    pub fn new(self: *Shell, param: []const u8) Result {
+    pub fn new(self: *Shell, param: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
-        result.code = 1;
 
         if (param.len > 4) {
             if (self.root.newFile(param[4..])) {
-                result.code = 0;
-                result.data.appendSlice("created") catch {};
+                try result.data.appendSlice("created");
+                return result;
             } else {
-                result.data.appendSlice("Failed to create '") catch {};
-                result.data.appendSlice(param[4..]) catch {};
-                result.data.appendSlice("'") catch {};
+                result.data.deinit();
+                return error.FileNotFound;
             }
         }
 
-        return result;
+        return self.todo(param);
     }
 
-    pub fn todo(_: *Shell, _: []const u8) Result {
+    pub fn todo(_: *Shell, _: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        result.data.appendSlice("Unimplemented") catch {};
-
-        result.code = 1;
+        try result.data.appendSlice("Unimplemented");
 
         return result;
     }
@@ -372,55 +341,45 @@ pub const Shell = struct {
             var item = &self.root.contents.items[idx];
 
             if (std.mem.eql(u8, item.name[rootlen..], file)) {
+                var cont = item.read();
+                if (cont.len < 4 or !check(item.read()[0..4], ASM_HEADER)) {
+                    result.data.deinit();
+
+                    return error.BadASMFile;
+                }
+
                 self.vm = try vm.VM.init(allocator.alloc, params);
                 vms += 1;
-
-                if (!check(item.read()[0..4], ASM_HEADER)) {
-                    result.code = 4;
-                    result.data.appendSlice("Error not a asm file") catch {};
-
-                    return result;
-                }
 
                 var ops = item.read()[4..];
 
                 self.vm.?.loadString(ops);
 
-                self.vm.?.out.append('\n') catch {};
+                try self.vm.?.out.append('\n');
 
                 return result;
             }
         }
 
-        result.data.appendSlice("File not found") catch {};
+        result.data.deinit();
 
-        result.code = 1;
-
-        return result;
+        return error.FileNotFound;
     }
 
-    pub fn updateVM(self: *Shell) ?Result {
-        if (self.vm.?.runTime(VM_TIME / vms) catch |msg| {
-            var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
-            };
-            result.code = 4;
-            result.data.appendSlice("\nASM Error: ") catch {};
-            result.data.appendSlice(@errorName(msg)) catch {};
-
+    pub fn updateVM(self: *Shell) !?Result {
+        if (self.vm.?.runTime(VM_TIME / vms) catch |err| {
             self.vm.?.destroy();
             self.vm = null;
             vms -= 1;
 
-            return result;
+            return err;
         }) {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
 
-            result.data.appendSlice(self.vm.?.out.items) catch {};
+            try result.data.appendSlice(self.vm.?.out.items);
 
-            result.code = 0;
             self.vm.?.destroy();
             self.vm = null;
             vms -= 1;
@@ -436,7 +395,6 @@ pub const Shell = struct {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
-            result.code = 0;
 
             return result;
         }
@@ -447,7 +405,7 @@ pub const Shell = struct {
             if (char == ' ') {
                 break;
             } else {
-                command.append(char) catch {};
+                try command.append(char);
             }
         }
         return self.run(command.items, line);
@@ -467,15 +425,7 @@ pub const Shell = struct {
 
         if (check(cmd, "$run")) {
             if (params.len < 6) {
-                var result: Result = Result{
-                    .data = std.ArrayList(u8).init(allocator.alloc),
-                };
-
-                result.data.appendSlice("$run expected parameter") catch {};
-
-                result.code = 2;
-
-                return result;
+                return error.ExpectedParameter;
             }
 
             var out: Result = undefined;
@@ -488,14 +438,10 @@ pub const Shell = struct {
                     if (char == ' ') {
                         break;
                     } else {
-                        command.append(char) catch {};
+                        try command.append(char);
                     }
                 }
                 out = try self.run(command.items, params[5..]);
-            }
-
-            if (out.code != 0) {
-                return out;
             }
 
             defer out.data.deinit();
@@ -507,7 +453,7 @@ pub const Shell = struct {
                 if (char == ' ') {
                     break;
                 } else {
-                    command.append(char) catch {};
+                    try command.append(char);
                 }
             }
             return self.run(command.items, out.data.items);
@@ -517,21 +463,12 @@ pub const Shell = struct {
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
             result.clear = true;
-            result.code = 0;
 
             return result;
         }
         if (check(cmd, "run")) {
             if (params.len < 5) {
-                var result: Result = Result{
-                    .data = std.ArrayList(u8).init(allocator.alloc),
-                };
-
-                result.data.appendSlice("$run expected parameter") catch {};
-
-                result.code = 2;
-
-                return result;
+                return error.ExpectedParameter;
             }
 
             return self.runLine(params[4..]);
@@ -541,9 +478,8 @@ pub const Shell = struct {
                 var result: Result = Result{
                     .data = std.ArrayList(u8).init(allocator.alloc),
                 };
-                result.code = 0;
 
-                result.data.appendSlice("Need a file name") catch {};
+                try result.data.appendSlice("Need a file name");
 
                 return result;
             }

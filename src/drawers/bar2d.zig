@@ -9,6 +9,8 @@ const va = @import("../vertArray.zig");
 const shd = @import("../shader.zig");
 const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
+const gfx = @import("../graphics.zig");
+const c = @import("../c.zig");
 
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
@@ -206,6 +208,9 @@ pub const BarData = struct {
                             });
 
                             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                        },
+                        6 => {
+                            c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
                         },
                         else => {},
                     }

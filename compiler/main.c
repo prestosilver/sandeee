@@ -11,8 +11,8 @@ typedef enum {
     TOKEN_OPEN_PAREN,
     TOKEN_CLOSE_PAREN,
     TOKEN_SEMI_COLON,
-    TOKEN_KEYWORD_INT,
-    TOKEN_KEYWORD_STRING,
+    TOKEN_KEYWORD_VALUE,
+    TOKEN_KEYWORD_VOID,
     TOKEN_KEYWORD_RETURN,
     TOKEN_KEYWORD_SYS,
     TOKEN_KEYWORD_IF,
@@ -123,8 +123,8 @@ void setup_regex() {
     regcomp(&regex[idx++], "^($", 0);
     regcomp(&regex[idx++], "^)$", 0);
     regcomp(&regex[idx++], "^;$", 0);
-    regcomp(&regex[idx++], "^int$", 0);
-    regcomp(&regex[idx++], "^string$", 0);
+    regcomp(&regex[idx++], "^value$", 0);
+    regcomp(&regex[idx++], "^void$", 0);
     regcomp(&regex[idx++], "^return$", 0);
     regcomp(&regex[idx++], "^sys$", 0);
     regcomp(&regex[idx++], "^if$", 0);
@@ -240,7 +240,7 @@ void asm_expr(Expression* s, VarMap* var_map, int* stk_idx) {
             case TOKEN_IDENT:
                 for (int i = 0; i < var_map->max; i ++) {
                     if (strcmp(var_map->vars[i]->name, s->value->value) == 0) {
-                        printf("    copy %d\n", *stk_idx - 1 - var_map->vars[i]->stk_idx);
+                        printf("    dup %d\n", *stk_idx - 1 - var_map->vars[i]->stk_idx);
                         *stk_idx += 1;
 
                         return;
@@ -729,8 +729,7 @@ int parse_expression(Token* toks, Expression* expr) {
 int parse_statement(Token* toks, Statement* stmt) {
     int idx = 0;
 
-    if (toks[idx].kind == TOKEN_KEYWORD_INT
-        || toks[idx].kind == TOKEN_KEYWORD_STRING) {
+    if (toks[idx].kind == TOKEN_KEYWORD_VALUE) {
         stmt->kind = STMT_DECLARE;
         idx++;
         stmt->data = malloc(sizeof(void*) * 2);
@@ -933,8 +932,7 @@ int parse_block(Token* toks, int* count, Statement** stmts) {
 
 int parse_function_param(Token* toks, FunctionParam* param) {
     int idx = 0;
-    if (toks[idx++].kind != TOKEN_KEYWORD_INT
-        && toks[idx - 1].kind != TOKEN_KEYWORD_STRING) return 0;
+    if (toks[idx++].kind != TOKEN_KEYWORD_VALUE) return 0;
     param->kind = toks[idx - 1].value;
     if (toks[idx++].kind != TOKEN_IDENT) return 0;
     param->name = toks[idx - 1].value;
@@ -944,8 +942,8 @@ int parse_function_param(Token* toks, FunctionParam* param) {
 
 int parse_function_decl(Token* toks, FunctionDecl* decl) {
     int idx = 0;
-    if (toks[idx++].kind != TOKEN_KEYWORD_INT
-        && toks[idx - 1].kind != TOKEN_KEYWORD_STRING) return 0;
+    if (toks[idx++].kind != TOKEN_KEYWORD_VALUE &&
+        toks[idx - 1].kind != TOKEN_KEYWORD_VOID) return 0;
     decl->ret = toks[idx - 1].value;
     if (toks[idx++].kind != TOKEN_IDENT) return 0;
     decl->ident = toks[idx - 1].value;

@@ -1,11 +1,13 @@
 main:
     call create_win             ; create window
 
-    push 10000                  ; loop x ticks
+    sys 9
+    push 10000
+    add
 loop:
-    push 1
-    sub
-    copy 0
+    sys 9
+    dup 1
+    lt
     jnz loop
     disc 0
 

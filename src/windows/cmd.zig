@@ -32,7 +32,6 @@ pub fn drawCmd(cself: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *
         self.bt = newbt;
     }
 
-    var lines = std.mem.splitBackwards(u8, self.bt, "\n");
     var idx: usize = 0;
 
     if (self.shell.vm == null) {
@@ -41,7 +40,7 @@ pub fn drawCmd(cself: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *
         font.draw(batch, shader, prompt, vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6), col.newColor(1, 1, 1, 1));
         idx += 1;
     } else {
-        var result = self.shell.updateVM();
+        var result = self.shell.updateVM() catch null;
         var start = self.bt.len;
         if (result != null) {
             self.bt = allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.items.len) catch self.bt;
@@ -53,6 +52,8 @@ pub fn drawCmd(cself: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *
             self.shell.vm.?.out.clearAndFree();
         }
     }
+
+    var lines = std.mem.splitBackwards(u8, self.bt, "\n");
 
     while (lines.next()) |line| {
         var y = bnds.y + bnds.h - @intToFloat(f32, idx + 1) * font.size - 6;
@@ -67,6 +68,8 @@ pub fn drawCmd(cself: *[]u8, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *
 
 pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
     var self = @ptrCast(*CMDData, cself);
+
+    if (self.shell.vm != null) return;
 
     switch (key) {
         c.GLFW_KEY_A...c.GLFW_KEY_Z => {
@@ -112,31 +115,35 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
                 }
             }
 
-            var al = self.shell.run(command.items, self.text.items) catch null;
-            if (al == null) {
+            var al = self.shell.run(command.items, self.text.items) catch |err| {
+                const msg = @errorName(err);
+
                 start = self.bt.len;
-                self.bt = allocator.alloc.realloc(self.bt, self.bt.len + 10) catch self.bt;
-                std.mem.copy(u8, self.bt[start..], "Misc Error");
+                self.bt = allocator.alloc.realloc(self.bt, self.bt.len + 8) catch self.bt;
+                std.mem.copy(u8, self.bt[start..], "\nError: ");
+                start = self.bt.len;
+                self.bt = allocator.alloc.realloc(self.bt, self.bt.len + msg.len) catch self.bt;
+                std.mem.copy(u8, self.bt[start..], msg);
 
                 self.text.clearAndFree();
                 return;
-            }
+            };
 
-            if (al.?.clear) {
+            if (al.clear) {
                 allocator.alloc.free(self.bt);
                 self.bt = allocator.alloc.alloc(u8, 0) catch undefined;
             } else {
-                if (al.?.data.items.len != 0 and self.bt[self.bt.len - 1] != '\n') {
+                if (al.data.items.len != 0 and self.bt[self.bt.len - 1] != '\n') {
                     self.bt = allocator.alloc.realloc(self.bt, self.bt.len + 1) catch self.bt;
                     self.bt[self.bt.len - 1] = '\n';
                 }
 
                 start = self.bt.len;
 
-                self.bt = allocator.alloc.realloc(self.bt, self.bt.len + al.?.data.items.len) catch self.bt;
-                std.mem.copy(u8, self.bt[start..], al.?.data.items);
+                self.bt = allocator.alloc.realloc(self.bt, self.bt.len + al.data.items.len) catch self.bt;
+                std.mem.copy(u8, self.bt[start..], al.data.items);
             }
-            al.?.data.deinit();
+            al.data.deinit();
 
             self.text.clearAndFree();
         },

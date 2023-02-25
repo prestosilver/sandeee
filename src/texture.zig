@@ -23,7 +23,6 @@ pub fn newTextureSize(size: vecs.Vector2) Texture {
 
     return result;
 }
-
 pub fn newTextureFile(file: []const u8) !Texture {
     var image = files.root.getFile(file);
 
@@ -31,15 +30,19 @@ pub fn newTextureFile(file: []const u8) !Texture {
 
     var cont = image.?.read();
 
+    return newTextureMem(cont);
+}
+
+pub fn newTextureMem(mem: []const u8) !Texture {
     var result = Texture{ .tex = 0, .size = vecs.Vector2{
         .x = 0,
         .y = 0,
     } };
 
-    var width = @intCast(c_int, cont[4]) + @intCast(c_int, cont[5]) * 256;
-    var height = @intCast(c_int, cont[6]) + @intCast(c_int, cont[7]) * 256;
+    var width = @intCast(c_int, mem[4]) + @intCast(c_int, mem[5]) * 256;
+    var height = @intCast(c_int, mem[6]) + @intCast(c_int, mem[7]) * 256;
 
-    if (cont.len / 4 - 2 != width * height) {
+    if (mem.len / 4 - 2 != width * height) {
         return error.WrongSize;
     }
 
@@ -52,7 +55,7 @@ pub fn newTextureFile(file: []const u8) !Texture {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
 
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, &cont[8]);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, &mem[8]);
 
     c.glGenerateMipmap(c.GL_TEXTURE_2D);
 

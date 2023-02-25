@@ -28,6 +28,7 @@ const vm = @import("system/vm.zig");
 const mail = @import("system/mail.zig");
 const wins = @import("windows/all.zig");
 const c = @import("c.zig");
+const worker = @import("loaders/worker.zig");
 
 var ctx: gfx.Context = undefined;
 var wintex: tex.Texture = undefined;
@@ -35,7 +36,6 @@ var bartex: tex.Texture = undefined;
 var emailtex: tex.Texture = undefined;
 var editortex: tex.Texture = undefined;
 var explorertex: tex.Texture = undefined;
-var sprite: sp.Sprite = undefined;
 var sb: batch.SpriteBatch = undefined;
 var shader: shd.Shader = undefined;
 var font_shader: shd.Shader = undefined;
@@ -43,16 +43,23 @@ var face: font.Font = undefined;
 var windows: std.ArrayList(win.Window) = undefined;
 var bar: bars.Bar = undefined;
 var audioMan: audio.Audio = undefined;
+var logoSprite: sp.Sprite = undefined;
 
 var dragging: ?*win.Window = null;
 var draggingStart: vecs.Vector2 = vecs.newVec2(0, 0);
 var dragmode: win.DragMode = win.DragMode.None;
 var mousepos: vecs.Vector2 = vecs.newVec2(0, 0);
 
+const GameState = enum { Loading, Game };
+var gameState: GameState = .Loading;
+
 const vertShader = @embedFile("shaders/vert.glsl");
 const fragShader = @embedFile("shaders/frag.glsl");
 const fontVertShader = @embedFile("shaders/fvert.glsl");
 const fontFragShader = @embedFile("shaders/ffrag.glsl");
+
+const logoImage = @embedFile("images/logo.eia");
+var logoOff: vecs.Vector2 = vecs.newVec2(0, 0);
 
 const shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fragShader, .kind = c.GL_FRAGMENT_SHADER },
@@ -68,24 +75,31 @@ fn range(len: usize) []const void {
     return @as([*]void, undefined)[0..len];
 }
 
-pub fn draw() void {
+pub fn draw() !void {
     gfx.clear(ctx);
 
-    for (windows.items) |window, idx| {
-        if (idx >= windows.items.len) continue;
+    switch (gameState) {
+        .Loading => {
+            sb.draw(sp.Sprite, &logoSprite, shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
+        },
+        .Game => {
+            for (windows.items) |window, idx| {
+                if (idx >= windows.items.len) continue;
 
-        sb.draw(win.Window, &windows.items[idx], shader, vecs.newVec3(0, 0, 0));
-        windows.items[idx].data.drawName(font_shader, &face, &sb);
+                sb.draw(win.Window, &windows.items[idx], shader, vecs.newVec3(0, 0, 0));
+                windows.items[idx].data.drawName(font_shader, &face, &sb);
 
-        sb.scissor = window.data.scissor();
-        windows.items[idx].data.drawContents(font_shader, &face, &sb);
-        sb.scissor = null;
+                sb.scissor = window.data.scissor();
+                windows.items[idx].data.drawContents(font_shader, &face, &sb);
+                sb.scissor = null;
+            }
+
+            sb.draw(bars.Bar, &bar, shader, vecs.newVec3(0, 0, 0));
+            bar.data.drawName(font_shader, &face, &sb, &windows);
+        },
     }
 
-    sb.draw(bars.Bar, &bar, shader, vecs.newVec3(0, 0, 0));
-    bar.data.drawName(font_shader, &face, &sb, &windows);
-
-    sb.render();
+    try sb.render();
 
     c.glFlush();
     c.glFinish();
@@ -264,7 +278,7 @@ pub fn keyUp(event: inputEvs.EventKeyUp) bool {
 }
 
 pub fn windowResize(event: inputEvs.EventWindowResize) bool {
-    gfx.resize(event.w, event.h);
+    gfx.resize(event.w, event.h) catch {};
 
     var size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
 
@@ -287,29 +301,76 @@ pub fn createWindow(event: windowEvs.EventCreateWindow) bool {
     return false;
 }
 
+pub fn drawLoading() void {
+    while (gameState != .Game) {
+        draw() catch { continue; };
+    }
+
+    return;
+}
+
 pub fn main() anyerror!void {
     defer if (!builtin.link_libc or !allocator.useclib) {
         std.log.info("deinit arena", .{});
-        allocator.arena.deinit();
         std.debug.assert(!allocator.gpa.deinit());
     };
 
-    ctx = gfx.init("Sandeee");
-
-    files.Folder.init();
-
-    events.init();
+    ctx = try gfx.init("Sandeee");
     gfx.gContext = &ctx;
+
+    try files.Folder.init();
+
+    var loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
+    var loader = worker.WorkerContext{
+        .queue = &loader_queue,
+    };
+
+    try loader.enqueue(&shader_files, &shader, worker.shader.loadShader);
+    try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
+    const winpath: []const u8 = "/cont/imgs/window.eia";
+    try loader.enqueue(&winpath, &wintex, worker.texture.loadTexture);
+    const barpath: []const u8 = "/cont/imgs/bar.eia";
+    try loader.enqueue(&barpath, &bartex, worker.texture.loadTexture);
+    const editorpath: []const u8 = "/cont/imgs/editor.eia";
+    try loader.enqueue(&editorpath, &editortex, worker.texture.loadTexture);
+    const emailpath: []const u8 = "/cont/imgs/email.eia";
+    try loader.enqueue(&emailpath, &emailtex, worker.texture.loadTexture);
+    const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
+    try loader.enqueue(&explorerpath, &explorertex, worker.texture.loadTexture);
+
+    var renderThread = try std.Thread.spawn(.{ .stack_size = 128 }, drawLoading, .{});
+
+    try loader.run();
+    events.init();
+    events.em.registerListener(inputEvs.EventWindowResize, windowResize);
+    inputEvs.setup(ctx.window);
 
     audioMan = try audio.Audio.init();
 
     sb = try batch.newSpritebatch();
 
-    wintex = try tex.newTextureFile("/cont/imgs/window.eia");
-    bartex = try tex.newTextureFile("/cont/imgs/bar.eia");
-    editortex = try tex.newTextureFile("/cont/imgs/editor.eia");
-    emailtex = try tex.newTextureFile("/cont/imgs/email.eia");
-    explorertex = try tex.newTextureFile("/cont/imgs/explorer.eia");
+    var w: c_int = 0;
+    var h: c_int = 0;
+
+    c.glfwGetWindowSize(ctx.window, &w, &h);
+
+    logoOff = vecs.newVec2(@intToFloat(f32, w - 320) / 2.0, @intToFloat(f32, h - 70) / 2.0);
+
+    logoSprite = sp.Sprite{
+        .texture = try tex.newTextureMem(logoImage),
+        .data = sp.SpriteData.new(
+            rect.newRect(0, 0, 1, 1),
+            vecs.newVec2(320, 70),
+        ),
+    };
+
+    _ = gfx.poll(ctx);
+    try draw();
+
+    bar = bars.Bar.new(bartex, bars.BarData{
+        .height = 38,
+        .screendims = vecs.newVec2(@intToFloat(f32, w), @intToFloat(f32, h)),
+    });
 
     shell.wintex = &wintex;
     pseudo.window.wintex = &wintex;
@@ -319,18 +380,10 @@ pub fn main() anyerror!void {
     face = try font.Font.init(path.items, 22);
     path.deinit();
 
-    inputEvs.setup(ctx.window);
-
     var loginSnd = audio.Sound.init(files.root.getFile("/cont/snds/login.era").?.read());
-    try audioMan.playSound(loginSnd);
 
     mail.init();
     try mail.load();
-
-    shader = shd.Shader.new(2, shader_files);
-    font_shader = shd.Shader.new(2, font_shader_files);
-    gfx.regShader(&ctx, shader);
-    gfx.regShader(&ctx, font_shader);
 
     shell.shader = &shader;
 
@@ -343,16 +396,17 @@ pub fn main() anyerror!void {
     events.em.registerListener(inputEvs.EventMouseScroll, mouseScroll);
     events.em.registerListener(inputEvs.EventKeyDown, keyDown);
     events.em.registerListener(inputEvs.EventKeyUp, keyUp);
-    events.em.registerListener(inputEvs.EventWindowResize, windowResize);
 
     events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
 
-    bar = bars.Bar.new(bartex, bars.BarData{
-        .height = 38,
-        .screendims = vecs.newVec2(640, 480),
-    });
+    try audioMan.playSound(loginSnd);
 
-    while (gfx.poll(ctx)) draw();
+    gameState = .Game;
+    ctx.color = cols.newColorRGBA(0, 128, 128, 255);
+
+    renderThread.join();
+
+    while (gfx.poll(ctx)) try draw();
 
     for (windows.items) |_, idx| {
         windows.items[idx].data.deinit();

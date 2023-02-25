@@ -131,6 +131,8 @@ pub const VM = struct {
 
             Less,
             Greater,
+
+            Cat,
         };
 
         code: Code,
@@ -461,6 +463,15 @@ pub const VM = struct {
                                 return error.ValueMissing;
                             } else return error.InvalidOp;
                         },
+                        // time
+                        9 => {
+                            try self.pushStackI(@intCast(u64, std.time.milliTimestamp()));
+
+                            return;
+                        },
+                        // runasm
+                        10 => {
+                        },
                         // misc
                         else => {
                             return error.InvalidSys;
@@ -699,6 +710,9 @@ pub const VM = struct {
                 self.pc = op.value.?;
                 self.retRsp += 1;
                 return;
+            },
+            Operation.Code.Cat => {
+
             },
         }
         return error.NotImplemented;

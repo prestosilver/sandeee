@@ -1,18 +1,19 @@
-int getlen(int val) {
+value getlen(value val) {
 	if (val == 0) return 0;
 
-	int i;
-	for (i = 0; val + i; i = i + 1) {
-	}
+	value i;
+	for (i = 0; val + i; i = i + 1) {}
+
+    sys 0, i;
 
 	return i;
 }
 
-int getline(int val) {
-	int result = "fdsa";
+value getline(value val) {
+	value result = "";
 
-	int i;
-	int tmp = val;
+	value i;
+	value tmp = val;
 	sys 0, tmp;
 
 	for (0; !(*(tmp) == 10); tmp = tmp + 1) {
@@ -24,7 +25,7 @@ int getline(int val) {
 	return result;
 }
 
-int startsWith(int a, int b) {
+value startsWith(value a, value b) {
 	if (getlen(a) < getlen(b)) return 0;
 
 	return 1;

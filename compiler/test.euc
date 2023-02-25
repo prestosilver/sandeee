@@ -1,0 +1,20 @@
+#include "ministd.euc"
+
+value fib(value idx) {
+	if (idx < 2) {
+		return idx;
+	}
+
+	return fib(idx - 1) + fib(idx - 2);
+}
+
+
+void main() {
+	//value i;
+	//for (i = 0; i < 10000; i = i + 1) {
+	//	sys 0, (fib(i));
+	//	sys 0, "\\n";
+	//}
+
+    sys 0, getlen("lol");
+}

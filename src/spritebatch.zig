@@ -118,7 +118,7 @@ pub const SpriteBatch = struct {
         }
     }
 
-    pub fn render(sb: *SpriteBatch) void {
+    pub fn render(sb: *SpriteBatch) !void {
         if (sb.queue.len != 0) {
             for (sb.queue) |_, idx| {
                 if (idx >= sb.prevQueue.len) break;
@@ -187,7 +187,7 @@ pub const SpriteBatch = struct {
 
                 for (entry.verts.data) |verts| {
                     var a = verts.array();
-                    data.appendSlice(&a) catch {};
+                    try data.appendSlice(&a);
                 }
                 c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, data.items.len * @sizeOf(f32)), &(data.items[0]), c.GL_DYNAMIC_DRAW);
 

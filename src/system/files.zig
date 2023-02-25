@@ -12,8 +12,8 @@ pub const File = struct {
     name: []const u8,
     contents: []u8,
 
-    pseudoWrite: ?*const fn([]const u8) void = null,
-    pseudoRead: ?*const fn() []const u8 = null,
+    pseudoWrite: ?*const fn ([]const u8) void = null,
+    pseudoRead: ?*const fn () []const u8 = null,
 
     pub fn write(self: *File, contents: []const u8) void {
         if (self.pseudoWrite != null) {
@@ -48,41 +48,41 @@ pub const Folder = struct {
     contents: std.ArrayList(File),
     parent: *Folder,
 
-    pub fn init() void {
-        root = allocator.alloc.create(Folder) catch undefined;
+    pub fn init() !void {
+        root = try allocator.alloc.create(Folder);
 
-        root.name = std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{}) catch ROOT_NAME;
+        root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
         root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
         root.contents = std.ArrayList(File).init(allocator.alloc);
         root.parent = root;
 
-        root.subfolders.append(fake.setupFake(root)) catch {};
+        try root.subfolders.append(fake.setupFake(root));
 
         var f = std.fs.cwd().openFile("disk.eee", .{}) catch null;
         if (f == null) {
             var path = fm.getContentDir();
-            var d = std.fs.cwd().openDir(path, .{ .access_sub_paths = true }) catch null;
+            var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
 
-            f = d.?.openFile("content/default.eee", .{}) catch null;
+            f = try d.openFile("content/default.eee", .{});
         }
         defer f.?.close();
 
         var file = f.?;
 
-        var lenbuffer: []u8 = allocator.alloc.alloc(u8, 4) catch undefined;
+        var lenbuffer: []u8 = try allocator.alloc.alloc(u8, 4);
         defer allocator.alloc.free(lenbuffer);
-        _ = file.read(lenbuffer) catch 0;
+        _ = try file.read(lenbuffer);
         var count = @bitCast(u32, lenbuffer[0..4].*);
         for (range(count)) |_| {
-            _ = file.read(lenbuffer) catch 0;
+            _ = try file.read(lenbuffer);
             var namesize = @bitCast(u32, lenbuffer[0..4].*);
-            var namebuffer: []u8 = allocator.alloc.alloc(u8, namesize) catch undefined;
+            var namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
             defer allocator.alloc.free(namebuffer);
-            _ = file.read(namebuffer) catch 0;
-            _ = file.read(lenbuffer) catch 0;
+            _ = try file.read(namebuffer);
+            _ = try file.read(lenbuffer);
             var contsize = @bitCast(u32, lenbuffer[0..4].*);
-            var contbuffer: []u8 = allocator.alloc.alloc(u8, contsize) catch undefined;
-            _ = file.read(contbuffer) catch 0;
+            var contbuffer: []u8 = try allocator.alloc.alloc(u8, contsize);
+            _ = try file.read(contbuffer);
             _ = root.newFile(namebuffer);
             _ = root.writeFile(namebuffer, contbuffer);
             allocator.alloc.free(contbuffer);
@@ -268,7 +268,6 @@ pub const Folder = struct {
     pub fn getFile(self: *Folder, name: []const u8) ?*File {
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
-
 
         for (name) |ch| {
             if (ch == '/') {

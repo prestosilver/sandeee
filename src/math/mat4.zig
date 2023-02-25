@@ -44,9 +44,9 @@ pub const Mat4 = struct {
         return result;
     }
 
-    pub fn perspective(fovy: f32, aspect: f32, n: f32, f: f32) Mat4 {
+    pub fn perspective(fovy: f32, aspect: f32, n: f32, f: f32) !Mat4 {
         var buffer = std.ArrayList(f32).init(allocator);
-        buffer.resize(16) catch {};
+        try buffer.resize(16);
 
         var result: Mat4 = Mat4{
             .data = buffer,
@@ -77,9 +77,9 @@ pub const Mat4 = struct {
         return result;
     }
 
-    pub fn ortho(l: f32, r: f32, b: f32, t: f32, n: f32, f: f32) Mat4 {
+    pub fn ortho(l: f32, r: f32, b: f32, t: f32, n: f32, f: f32) !Mat4 {
         var buffer = std.ArrayList(f32).init(allocator);
-        buffer.resize(16) catch {};
+        try buffer.resize(16);
 
         var result: Mat4 = Mat4{
             .data = buffer,

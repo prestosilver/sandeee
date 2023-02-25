@@ -110,6 +110,8 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "window").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "texture").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "dump").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "fib").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "libtest").?) catch {};
 
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "login").?) catch {};
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "message").?) catch {};
@@ -119,6 +121,7 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "email").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "explorer").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "window").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "logo").?) catch {};
 
     for (convert_steps.items) |step| {
         write_step.step.dependOn(&step.step);
@@ -140,7 +143,9 @@ pub fn build(b: *std.build.Builder) void {
     b.installFile("content/emails.eme", "bin/content/emails.eme");
 
     b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");
-    b.installFile("deps/dll/openal.dll", "bin/OpenAL.dll");
+    b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
+    b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
+    b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
     b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
 
     const run_step = b.step("run", "Run the app");
