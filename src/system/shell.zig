@@ -297,7 +297,7 @@ pub const Shell = struct {
         };
 
         if (param.len > 4) {
-            if (self.root.newFile(param[4..])) {
+            if (try self.root.newFile(param[4..])) {
                 try result.data.appendSlice("created");
                 return result;
             } else {

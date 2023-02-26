@@ -2,7 +2,7 @@ main:
     call create_win             ; create window
 
     sys 9
-    push 10000
+    push 1000                   ; 1 second
     add
 loop:
     sys 9

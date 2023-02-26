@@ -28,8 +28,6 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         defer alloc.free(section);
         if (size != try reader_stream.read(section)) return error.BadSection;
 
-        //std.log.info("{s}: {}b", .{&name, size});
-
         if (std.mem.eql(u8, &name, "RIFF")) {
             continue;
         }

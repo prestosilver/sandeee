@@ -215,27 +215,10 @@ pub const VM = struct {
                 defer self.free(b);
 
                 if (a.string != null) {
-                    if (b.string != null) {
-                        var comb = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ b.string.?, a.string.? });
-                        try self.pushStackS(comb);
-                        self.allocator.free(comb);
-                        return;
-                    } else if (b.value != null) {
-                        if (a.string.?.len <= b.value.?.*) {
-                            try (self.pushStackS(""));
-                        } else {
-                            try self.pushStackS(a.string.?[b.value.?.*..]);
-                        }
-                        return;
-                    } else return error.InvalidOp;
+                    return error.MissingValue;
                 } else if (a.value != null) {
                     if (b.string != null) {
-                        if (b.string.?.len <= a.value.?.*) {
-                            try (self.pushStackS(""));
-                        } else {
-                            try self.pushStackS(b.string.?[a.value.?.*..]);
-                        }
-                        return;
+                        return error.MissingValue;
                     } else if (b.value != null) {
                         try self.pushStackI(a.value.?.* +% b.value.?.*);
                         return;
@@ -349,7 +332,7 @@ pub const VM = struct {
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
-                                _ = files.newFile(path.string.?);
+                                _ = try files.newFile(path.string.?);
 
                                 return;
                             } else return error.InvalidOp;
@@ -712,7 +695,26 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Cat => {
+                var b = try self.popStack();
+                defer self.free(b);
+                var a = try self.popStack();
+                defer self.free(a);
 
+                if (a.string != null) {
+                    if (b.string != null) {
+                        var comb = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?, b.string.? });
+                        try self.pushStackS(comb);
+                        self.allocator.free(comb);
+                        return;
+                    } else if (b.value != null) {
+                        var comb = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?, std.mem.toBytes(b.value.?) });
+                        try self.pushStackS(comb);
+                        self.allocator.free(comb);
+                        return;
+                    } else return error.InvalidOp;
+                } else if (b.string != null) {
+                    return error.StringMissing;
+                } else return error.InvalidOp;
             },
         }
         return error.NotImplemented;

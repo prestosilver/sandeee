@@ -38,16 +38,16 @@ pub fn drawEmail(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds
 
     batch.draw(sprite.Sprite, &self.divy, self.shader, vecs.newVec3(bnds.x + 100, bnds.y - 2, 0));
 
-    self.divx.data.size.x = 134;
+    self.divx.data.size.x = 104;
 
     batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 100, 0));
 
     batch.draw(sprite.Sprite, &self.icon, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-    font.draw(batch, font_shader, "  Inbox", vecs.newVec2(bnds.x + 6, bnds.y + 136 + font.size * 0), col.newColor(0, 0, 0, 1));
-    font.draw(batch, font_shader, "  Trash", vecs.newVec2(bnds.x + 6, bnds.y + 136 + font.size * 1), col.newColor(0, 0, 0, 1));
-    font.draw(batch, font_shader, "  Spam", vecs.newVec2(bnds.x + 6, bnds.y + 136 + font.size * 2), col.newColor(0, 0, 0, 1));
-    font.draw(batch, font_shader, ">", vecs.newVec2(bnds.x + 6, bnds.y + 136 + @intToFloat(f32, self.box) * font.size), col.newColor(0, 0, 0, 1));
+    font.draw(batch, font_shader, "  Inbox", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 0), col.newColor(0, 0, 0, 1));
+    font.draw(batch, font_shader, "  Trash", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 1), col.newColor(0, 0, 0, 1));
+    font.draw(batch, font_shader, "  Spam", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 2), col.newColor(0, 0, 0, 1));
+    font.draw(batch, font_shader, ">", vecs.newVec2(bnds.x + 6, bnds.y + 106 + @intToFloat(f32, self.box) * font.size), col.newColor(0, 0, 0, 1));
 
     if (self.viewing == null) {
         self.dive.data.size.x = bnds.w - 118;
@@ -61,10 +61,10 @@ pub fn drawEmail(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds
             defer allocator.alloc.free(text);
 
             if (email.selected) {
-                self.sel.data.size.x = bnds.w - 136;
+                self.sel.data.size.x = bnds.w - 106;
                 self.sel.data.size.y = font.size + 4;
 
-                batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 136, y - 2, 0));
+                batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 106, y - 2, 0));
             }
 
             font.draw(batch, font_shader, text, vecs.newVec2(bnds.x + 112, y - 4), col.newColor(0, 0, 0, 1));
@@ -75,7 +75,7 @@ pub fn drawEmail(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds
         }
     } else {
         self.divx.data.size.x = bnds.w - 100;
-        batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 134, bnds.y + 2 + font.size * 2, 0));
+        batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 2 + font.size * 2, 0));
 
         var email = self.viewing.?;
 

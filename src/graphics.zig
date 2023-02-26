@@ -5,10 +5,22 @@ const shd = @import("shader.zig");
 const allocator = @import("util/allocator.zig");
 const c = @import("c.zig");
 
+
 pub const Context = struct {
     window: ?*c.GLFWwindow,
     color: col.Color,
     shaders: std.ArrayList(shd.Shader),
+    lock: std.Thread.Mutex = undefined,
+
+    pub fn makeCurrent(self: *Context) void {
+        self.lock.lock();
+        c.glfwMakeContextCurrent(self.window);
+    }
+
+    pub fn makeNotCurrent(self: *Context) void {
+        c.glfwMakeContextCurrent(null);
+        self.lock.unlock();
+    }
 };
 
 pub var gContext: *Context = undefined;
@@ -30,12 +42,11 @@ pub fn init(name: [*c]const u8) !Context {
         return error.GLFWInit;
     }
 
-    var win = c.glfwCreateWindow(640, 480, name, null, null);
-
     var monitor = c.glfwGetPrimaryMonitor();
 
     var mode = c.glfwGetVideoMode(monitor)[0];
 
+    var win = c.glfwCreateWindow(mode.width, mode.height, name, null, null);
     c.glfwSetWindowMonitor(win, monitor, 0, 0, mode.width, mode.height, mode.refreshRate);
 
     c.glfwMakeContextCurrent(win);
@@ -47,9 +58,11 @@ pub fn init(name: [*c]const u8) !Context {
 
     var shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
 
+    c.glfwMakeContextCurrent(null);
+
     return Context{
         .window = win,
-        .color = col.newColorRGBA(172, 50, 50, 255),
+        .color = col.newColorRGBA(0, 0, 0, 255),
         .shaders = shaders,
     };
 }

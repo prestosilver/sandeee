@@ -44,6 +44,7 @@ var windows: std.ArrayList(win.Window) = undefined;
 var bar: bars.Bar = undefined;
 var audioMan: audio.Audio = undefined;
 var logoSprite: sp.Sprite = undefined;
+var loadProgress: f32 = 0;
 
 var dragging: ?*win.Window = null;
 var draggingStart: vecs.Vector2 = vecs.newVec2(0, 0);
@@ -80,6 +81,8 @@ pub fn draw() !void {
 
     switch (gameState) {
         .Loading => {
+            ctx.color = ctx.color.mix(cols.newColorRGBA(172, 50, 50, 255), 0.05);
+            // TODO: progress bar
             sb.draw(sp.Sprite, &logoSprite, shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
         },
         .Game => {
@@ -302,8 +305,15 @@ pub fn createWindow(event: windowEvs.EventCreateWindow) bool {
 }
 
 pub fn drawLoading() void {
-    while (gameState != .Game) {
-        draw() catch { continue; };
+    while (gameState == .Loading) {
+        // get glfw access
+        ctx.makeCurrent();
+
+        // render loading screen
+        draw() catch {};
+
+        // release glfw access
+        ctx.makeNotCurrent();
     }
 
     return;
@@ -311,48 +321,36 @@ pub fn drawLoading() void {
 
 pub fn main() anyerror!void {
     defer if (!builtin.link_libc or !allocator.useclib) {
-        std.log.info("deinit arena", .{});
         std.debug.assert(!allocator.gpa.deinit());
+        std.log.info("no leaks! :)", .{});
     };
+
+    const winpath: []const u8 = "/cont/imgs/window.eia";
+    const barpath: []const u8 = "/cont/imgs/bar.eia";
+    const editorpath: []const u8 = "/cont/imgs/editor.eia";
+    const emailpath: []const u8 = "/cont/imgs/email.eia";
+    const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
+    const loginpath: []const u8 = "/cont/snds/login.era";
+    var fontpath = fm.getContentPath("content/font.ttf");
 
     ctx = try gfx.init("Sandeee");
     gfx.gContext = &ctx;
 
     try files.Folder.init();
 
-    var loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
-    var loader = worker.WorkerContext{
-        .queue = &loader_queue,
-    };
+    var w: c_int = 0;
+    var h: c_int = 0;
 
-    try loader.enqueue(&shader_files, &shader, worker.shader.loadShader);
-    try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
-    const winpath: []const u8 = "/cont/imgs/window.eia";
-    try loader.enqueue(&winpath, &wintex, worker.texture.loadTexture);
-    const barpath: []const u8 = "/cont/imgs/bar.eia";
-    try loader.enqueue(&barpath, &bartex, worker.texture.loadTexture);
-    const editorpath: []const u8 = "/cont/imgs/editor.eia";
-    try loader.enqueue(&editorpath, &editortex, worker.texture.loadTexture);
-    const emailpath: []const u8 = "/cont/imgs/email.eia";
-    try loader.enqueue(&emailpath, &emailtex, worker.texture.loadTexture);
-    const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
-    try loader.enqueue(&explorerpath, &explorertex, worker.texture.loadTexture);
+    ctx.makeCurrent();
 
-    var renderThread = try std.Thread.spawn(.{ .stack_size = 128 }, drawLoading, .{});
-
-    try loader.run();
+    // TODO: extract to another func
     events.init();
     events.em.registerListener(inputEvs.EventWindowResize, windowResize);
     inputEvs.setup(ctx.window);
 
-    audioMan = try audio.Audio.init();
-
-    sb = try batch.newSpritebatch();
-
-    var w: c_int = 0;
-    var h: c_int = 0;
-
     c.glfwGetWindowSize(ctx.window, &w, &h);
+
+    sb = try batch.newSpritebatch(@intToFloat(f32, w), @intToFloat(f32, h));
 
     logoOff = vecs.newVec2(@intToFloat(f32, w - 320) / 2.0, @intToFloat(f32, h - 70) / 2.0);
 
@@ -364,8 +362,36 @@ pub fn main() anyerror!void {
         ),
     };
 
-    _ = gfx.poll(ctx);
-    try draw();
+    ctx.makeNotCurrent();
+
+    audioMan = try audio.Audio.init();
+
+    var loginSnd: audio.Sound = undefined;
+
+    var loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
+    var loader = worker.WorkerContext{ .queue = &loader_queue };
+
+    // shaders
+    try loader.enqueue(&shader_files, &shader, worker.shader.loadShader);
+    try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
+
+    // textures
+    try loader.enqueue(&winpath, &wintex, worker.texture.loadTexture);
+    try loader.enqueue(&barpath, &bartex, worker.texture.loadTexture);
+    try loader.enqueue(&editorpath, &editortex, worker.texture.loadTexture);
+    try loader.enqueue(&emailpath, &emailtex, worker.texture.loadTexture);
+    try loader.enqueue(&explorerpath, &explorertex, worker.texture.loadTexture);
+
+    // sounds
+    try loader.enqueue(&loginpath, &loginSnd, worker.sound.loadSound);
+
+    // fonts
+    try loader.enqueue(&fontpath.items, &face, worker.font.loadFont);
+
+    var renderThread = try std.Thread.spawn(.{ .stack_size = 128 }, drawLoading, .{});
+    try loader.run(&loadProgress);
+
+    fontpath.deinit();
 
     bar = bars.Bar.new(bartex, bars.BarData{
         .height = 38,
@@ -375,12 +401,6 @@ pub fn main() anyerror!void {
     shell.wintex = &wintex;
     pseudo.window.wintex = &wintex;
     shell.edittex = &editortex;
-
-    var path = fm.getContentPath("content/font.ttf");
-    face = try font.Font.init(path.items, 22);
-    path.deinit();
-
-    var loginSnd = audio.Sound.init(files.root.getFile("/cont/snds/login.era").?.read());
 
     mail.init();
     try mail.load();
@@ -402,17 +422,20 @@ pub fn main() anyerror!void {
     try audioMan.playSound(loginSnd);
 
     gameState = .Game;
-    ctx.color = cols.newColorRGBA(0, 128, 128, 255);
 
     renderThread.join();
 
+    ctx.color = cols.newColorRGBA(0, 128, 128, 255);
+
+    ctx.makeCurrent();
     while (gfx.poll(ctx)) try draw();
+    ctx.makeNotCurrent();
 
     for (windows.items) |_, idx| {
         windows.items[idx].data.deinit();
     }
 
-    files.write("disk.eee");
+    try files.write("disk.eee");
 
     windows.deinit();
     gfx.close(ctx);

@@ -81,7 +81,7 @@ pub const SpriteBatch = struct {
     queue: []QueueEntry,
     buffers: []c.GLuint,
     scissor: ?rect.Rectangle = null,
-    size: vecs.Vector2 = vecs.newVec2(640, 480),
+    size: vecs.Vector2,
 
     pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: shd.Shader, pos: vecs.Vector3) void {
         var entry = QueueEntry{
@@ -232,10 +232,15 @@ pub const SpriteBatch = struct {
     }
 };
 
-pub fn newSpritebatch() !SpriteBatch {
+pub fn newSpritebatch(w: f32, h: f32) !SpriteBatch {
     var buffer = try allocator.alloc.alloc(c.GLuint, 0);
     var q = try allocator.alloc.alloc(QueueEntry, 0);
     var pq = try allocator.alloc.alloc(QueueEntry, 0);
 
-    return SpriteBatch{ .prevQueue = pq, .queue = q, .buffers = buffer };
+    return SpriteBatch{
+        .prevQueue = pq,
+        .queue = q,
+        .buffers = buffer,
+        .size = vecs.newVec2(w, h),
+    };
 }

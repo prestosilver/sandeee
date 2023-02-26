@@ -84,7 +84,7 @@ pub fn build(b: *std.build.Builder) void {
     freetype.link(b, exe, .{});
 
     // Sources
-    exe.addCSourceFile("deps/src/stb_image_impl.c", &[_][]const u8{"-std=c99"});
+    // exe.addCSourceFile("deps/src/stb_image_impl.c", &[_][]const u8{"-std=c99"});
     exe.addCSourceFile("deps/src/glad.c", &[_][]const u8{"-std=c99"});
 
     exe.linkSystemLibrary("glfw3");

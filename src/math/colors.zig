@@ -3,6 +3,17 @@ pub const Color = struct {
     g: f32,
     b: f32,
     a: f32,
+
+    pub fn mix(a: Color, b: Color, pc: f32) Color {
+        var result: Color = undefined;
+
+        result.r = a.r + (b.r - a.r) * pc;
+        result.g = a.g + (b.g - a.g) * pc;
+        result.b = a.b + (b.b - a.b) * pc;
+        result.a = a.a + (b.a - a.a) * pc;
+
+        return result;
+    }
 };
 
 pub fn newColor(r: f32, g: f32, b: f32, a: f32) Color {
