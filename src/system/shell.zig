@@ -46,45 +46,6 @@ pub const Shell = struct {
         return result;
     }
 
-    fn dump(self: *Shell, param: []const u8) !Result {
-        if (param.len > 5) {
-            var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
-            };
-
-            for (self.root.contents.items) |_, idx| {
-                var rootlen = self.root.name.len;
-                var item = &self.root.contents.items[idx];
-
-                if (std.mem.eql(u8, item.name[rootlen..], param[5..])) {
-                    var cont = item.read();
-                    for (cont) |ch| {
-                        if (ch < 32 or ch == 255) {
-                            if (ch == '\n' or ch == '\r') {
-                                try result.data.append('\n');
-                            } else {
-                                try result.data.appendSlice("\\");
-                                var next = try std.fmt.allocPrint(allocator.alloc, "{}", .{ch});
-                                defer allocator.alloc.free(next);
-                                try result.data.appendSlice(next);
-                            }
-                        } else {
-                            try result.data.append(ch);
-                        }
-                    }
-                    if (item.pseudoRead != null) {
-                        allocator.alloc.free(cont);
-                    }
-
-                    return result;
-                }
-            }
-
-            return error.FileNotFound;
-        } else {}
-        return self.todo(param);
-    }
-
     pub fn cd(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
             var result: Result = Result{
@@ -230,21 +191,51 @@ pub const Shell = struct {
         return result;
     }
 
-    pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) !Result {
+    pub fn runFileInFolder(self: *Shell, folder: *files.Folder, cmd: []const u8, param: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        for (self.root.contents.items) |_, idx| {
-            var item = self.root.contents.items[idx];
+        var folderlen = folder.name.len;
+        var cmdeep = try std.fmt.allocPrint(allocator.alloc, "{s}.eep", .{cmd});
+        std.log.info("{s}, {s}", .{cmd, cmdeep});
 
-            var rootlen = self.root.name.len;
-            if (check(cmd, item.name[rootlen..])) {
+        for (folder.contents.items) |_, idx| {
+            var item = folder.contents.items[idx];
+
+            if (check(cmd, item.name[folderlen..])) {
                 var line = std.ArrayList(u8).init(allocator.alloc);
                 defer line.deinit();
 
                 if (item.read().len > 3 and check(item.read()[0..4], ASM_HEADER)) {
-                    return try self.runAsm(param);
+                    return try self.runAsm(folder, cmd, param);
+                }
+
+                for (item.read()) |char| {
+                    if (char == '\n') {
+                        var res = try self.runLine(line.items);
+                        defer res.data.deinit();
+                        try result.data.appendSlice(res.data.items);
+                        if (result.data.getLast() != '\n') try result.data.append('\n');
+                        try line.resize(0);
+                    } else {
+                        try line.append(char);
+                    }
+                }
+                var res = try self.runLine(line.items);
+                defer res.data.deinit();
+                try result.data.appendSlice(res.data.items);
+                if (result.data.getLast() != '\n') try result.data.append('\n');
+
+                return result;
+            }
+
+            if (check(cmdeep, item.name[folderlen..])) {
+                var line = std.ArrayList(u8).init(allocator.alloc);
+                defer line.deinit();
+
+                if (item.read().len > 3 and check(item.read()[0..4], ASM_HEADER)) {
+                    return try self.runAsm(folder, cmdeep, param);
                 }
 
                 for (item.read()) |char| {
@@ -269,6 +260,11 @@ pub const Shell = struct {
         return error.FileNotFound;
     }
 
+    pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) !Result {
+        return self.runFileInFolder(files.exec, cmd, param) catch
+            self.runFileInFolder(self.root, cmd, param);
+    }
+
     pub fn help(_: *Shell, _: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
@@ -280,8 +276,6 @@ pub const Shell = struct {
         try result.data.appendSlice("run - runs a command\n");
         try result.data.appendSlice("ls - lists the current folder\n");
         try result.data.appendSlice("cd - changes the current folder\n");
-        try result.data.appendSlice("dump - displays a files contents\n");
-        try result.data.appendSlice("$dump - runs a files contents\n");
         try result.data.appendSlice("$run - runs the output of a command\n");
         try result.data.appendSlice("asm - runs a file\n");
         try result.data.appendSlice("echo - prints the value\n");
@@ -329,18 +323,16 @@ pub const Shell = struct {
         return true;
     }
 
-    pub fn runAsm(self: *Shell, params: []const u8) !Result {
+    pub fn runAsm(self: *Shell, folder: *files.Folder, cmd: []const u8, params: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
-        var iter = std.mem.split(u8, params, " ");
-        var file = iter.first();
 
-        for (self.root.contents.items) |_, idx| {
-            var rootlen = self.root.name.len;
-            var item = &self.root.contents.items[idx];
+        for (folder.contents.items) |_, idx| {
+            var rootlen = folder.name.len;
+            var item = &folder.contents.items[idx];
 
-            if (std.mem.eql(u8, item.name[rootlen..], file)) {
+            if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
                 var cont = item.read();
                 if (cont.len < 4 or !check(item.read()[0..4], ASM_HEADER)) {
                     result.data.deinit();
@@ -348,7 +340,7 @@ pub const Shell = struct {
                     return error.BadASMFile;
                 }
 
-                self.vm = try vm.VM.init(allocator.alloc, params);
+                self.vm = try vm.VM.init(allocator.alloc, self.root, params);
                 vms += 1;
 
                 var ops = item.read()[4..];
@@ -368,11 +360,20 @@ pub const Shell = struct {
 
     pub fn updateVM(self: *Shell) !?Result {
         if (self.vm.?.runTime(VM_TIME / vms) catch |err| {
+            var result: Result = Result{
+                .data = std.ArrayList(u8).init(allocator.alloc),
+            };
+
             self.vm.?.destroy();
             self.vm = null;
             vms -= 1;
 
-            return err;
+            var errString = try std.fmt.allocPrint(allocator.alloc, "{}", .{err});
+            defer allocator.alloc.free(errString);
+
+            try result.data.appendSlice(errString);
+
+            return result;
         }) {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
@@ -415,8 +416,6 @@ pub const Shell = struct {
         if (check(cmd, "help")) return self.help(params);
         if (check(cmd, "echo")) return self.echo(params);
         if (check(cmd, "ls")) return self.ls(params);
-        if (check(cmd, "dump")) return self.dump(params);
-        if (check(cmd, "$dump")) return self.todo(params);
         if (check(cmd, "cmd")) return self.runCmd(params);
         if (check(cmd, "edit")) return self.runEdit(params);
         if (check(cmd, "email")) return self.todo(params);
@@ -472,18 +471,6 @@ pub const Shell = struct {
             }
 
             return self.runLine(params[4..]);
-        }
-        if (check(cmd, "asm")) {
-            if (params.len < 5) {
-                var result: Result = Result{
-                    .data = std.ArrayList(u8).init(allocator.alloc),
-                };
-
-                try result.data.appendSlice("Need a file name");
-
-                return result;
-            }
-            return try self.runAsm(params[4..]);
         }
         return self.runFile(cmd, params);
     }

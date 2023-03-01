@@ -2,10 +2,13 @@ const std = @import("std");
 const mat4 = @import("math/mat4.zig");
 const c = @import("c.zig");
 
-pub const ShaderFile = struct { contents: [*c]const u8, kind: c.GLuint };
+pub const ShaderFile = struct {
+    contents: [*c]const u8,
+    kind: c.GLuint,
+};
 
 pub const Shader = struct {
-    id: c.GLuint,
+    id: c.GLuint = 0,
 
     pub fn new(comptime total: u32, files: [total]ShaderFile) Shader {
         var prog = c.glCreateProgram();
@@ -45,5 +48,13 @@ pub const Shader = struct {
         var loc = c.glGetUniformLocation(self.id, name);
 
         c.glUniformMatrix4fv(loc, 1, 0, &value.data.items[0]);
+    }
+
+    pub fn setInt(self: Shader, name: [*c]const u8, value: c_int) void {
+        c.glUseProgram(self.id);
+
+        var loc = c.glGetUniformLocation(self.id, name);
+
+        c.glUniform1i(loc, value);
     }
 };

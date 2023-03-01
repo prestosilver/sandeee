@@ -3,4 +3,5 @@ pub usingnamespace @cImport({
     @cInclude("GLFW/glfw3.h");
     @cInclude("AL/al.h");
     @cInclude("AL/alc.h");
+    @cInclude("signal.h");
 });

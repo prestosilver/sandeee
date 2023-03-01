@@ -19,8 +19,8 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var buf: [1024]u8 = undefined;
 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        var lo = std.mem.split(u8, line, ";");
-        var l = lo.first();
+        var no_comment = std.mem.split(u8, line, ";");
+        var l = no_comment.first();
         if (l.len == 0) continue;
         while (l[0] == ' ') l = l[1..];
         while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
@@ -46,8 +46,8 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     try result.appendSlice("EEEp");
 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        var lo = std.mem.split(u8, line, ";");
-        var l = lo.first();
+        var no_comment = std.mem.split(u8, line, ";");
+        var l = no_comment.first();
         if (l.len == 0) continue;
         while (l[0] == ' ') l = l[1..];
         while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
@@ -87,6 +87,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (std.mem.eql(u8, op, "dup")) code = 23;
         if (std.mem.eql(u8, op, "lt")) code = 24;
         if (std.mem.eql(u8, op, "gt")) code = 25;
+        if (std.mem.eql(u8, op, "cat")) code = 26;
 
         if (code == 255) {
             return error.UnknownOp;

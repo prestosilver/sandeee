@@ -2,9 +2,12 @@ const std = @import("std");
 const col = @import("math/colors.zig");
 const mat4 = @import("math/mat4.zig");
 const shd = @import("shader.zig");
+const tex = @import("texture.zig");
 const allocator = @import("util/allocator.zig");
 const c = @import("c.zig");
 
+pub var palette: tex.Texture = undefined;
+pub var gContext: *Context = undefined;
 
 pub const Context = struct {
     window: ?*c.GLFWwindow,
@@ -22,8 +25,6 @@ pub const Context = struct {
         self.lock.unlock();
     }
 };
-
-pub var gContext: *Context = undefined;
 
 export fn errorCallback(err: c_int, description: [*c]const u8) void {
     std.log.info("Error: {s}, {}\n", .{ description, err });
@@ -45,6 +46,9 @@ pub fn init(name: [*c]const u8) !Context {
     var monitor = c.glfwGetPrimaryMonitor();
 
     var mode = c.glfwGetVideoMode(monitor)[0];
+
+    //mode.width = 640;
+    //mode.height = 480;
 
     var win = c.glfwCreateWindow(mode.width, mode.height, name, null, null);
     c.glfwSetWindowMonitor(win, monitor, 0, 0, mode.width, mode.height, mode.refreshRate);
@@ -93,6 +97,7 @@ pub fn regShader(ctx: *Context, s: shd.Shader) !void {
     defer proj.deinit();
 
     s.setMat4("projection", proj);
+    s.setInt("palette", 1);
 }
 
 pub fn resize(w: i32, h: i32) !void {

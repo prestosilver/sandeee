@@ -6,6 +6,7 @@ in vec4 tintColor;
 out vec4 color;
 
 uniform sampler2D tex;
+uniform sampler2D palette;
 
 void main() {
   color = tintColor * texture(tex, texCoords).r;

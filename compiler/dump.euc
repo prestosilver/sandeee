@@ -1,0 +1,37 @@
+value get_arg(value i) {
+    asm "sys 8";
+    asm "ret";
+}
+
+void print(value str) {
+    asm "dup 0";
+    asm "sys 0";
+    asm "ret";
+}
+
+value open_file(value path) {
+    asm "sys 3";
+    asm "ret";
+}
+
+value read(value handle, value size) {
+    asm "sys 4";
+    asm "ret";
+}
+
+void main() {
+   value arg = get_arg(1);
+   if (arg == "") {
+      print("Error: expected file");
+      return;
+   }
+
+   value handle = open_file(arg);
+
+   value text = "";
+   for (text = read(handle, 128); text; text = read(handle, 128)) {
+       print(text);
+   }
+
+   return;
+}

@@ -7,6 +7,7 @@ pub const shader = @import("shader.zig");
 pub const texture = @import("texture.zig");
 pub const font = @import("font.zig");
 pub const sound = @import("sound.zig");
+pub const files = @import("files.zig");
 
 pub fn WorkerQueueEntry(comptime T: type, comptime U: type) type {
     return struct {

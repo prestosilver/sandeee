@@ -117,6 +117,8 @@ pub const Font = struct {
             return error.LoadFaceError;
         }
 
+        err = ft.c.FT_Done_FreeType(lib);
+
         return result;
     }
 

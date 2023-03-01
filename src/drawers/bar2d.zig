@@ -210,6 +210,7 @@ pub const BarData = struct {
                             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         6 => {
+                            // TODO confirmation
                             c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
                         },
                         else => {},
@@ -218,7 +219,10 @@ pub const BarData = struct {
             }
         }
 
-        self.btnActive = btn.contains(pos);
+        self.btnActive = !self.btnActive and btn.contains(pos);
+        if (!btn.contains(pos)) {
+            self.btnActive = false;
+        }
 
         var bnds = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
 

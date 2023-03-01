@@ -109,9 +109,11 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "write").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "window").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "texture").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "dump").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "dump2").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "fib").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "libtest").?) catch {};
+
+    convert_steps.append(convertStep(b, comp.compile, "asm", "exec", "asm", "eep", "dump").?) catch {};
 
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "login").?) catch {};
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "message").?) catch {};
@@ -121,7 +123,12 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "email").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "explorer").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "window").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "wall").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "dirt").?) catch {};
+
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "logo").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "load").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "palette").?) catch {};
 
     for (convert_steps.items) |step| {
         write_step.step.dependOn(&step.step);
@@ -147,6 +154,7 @@ pub fn build(b: *std.build.Builder) void {
     b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
     b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
     b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
+    b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);

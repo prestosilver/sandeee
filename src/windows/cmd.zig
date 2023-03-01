@@ -101,8 +101,8 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
         c.GLFW_KEY_ENTER => {
             var start = self.bt.len;
             self.bt = allocator.alloc.realloc(self.bt, self.bt.len + self.text.items.len + 3) catch self.bt;
-            std.mem.copy(u8, self.bt[start..start+3], "\n$ ");
-            std.mem.copy(u8, self.bt[start+3..], self.text.items);
+            std.mem.copy(u8, self.bt[start .. start + 3], "\n$ ");
+            std.mem.copy(u8, self.bt[start + 3 ..], self.text.items);
 
             var command = std.ArrayList(u8).init(allocator.alloc);
             defer command.deinit();

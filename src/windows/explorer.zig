@@ -11,6 +11,7 @@ const files = @import("../system/files.zig");
 const shd = @import("../shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../texture.zig");
+const c = @import("../c.zig");
 
 const SCROLL = 30;
 
@@ -20,14 +21,26 @@ const Icon = struct {
 };
 
 const ExplorerData = struct {
+    const ExplorerMouseActionType = enum {
+        SingleLeft,
+        DoubleLeft,
+    };
+    const ExplorerMouseAction = struct {
+        kind: ExplorerMouseActionType,
+        pos: vecs.Vector2,
+        time: f32,
+    };
+
     shader: shd.Shader,
     icons: [5]sprite.Sprite,
     scroll: [3]sprite.Sprite,
     scrollVal: f32,
     focus: sprite.Sprite,
     focused: ?u64,
+    selected: usize,
     path: *files.Folder,
     maxy: f32,
+    lastAction: ?ExplorerMouseAction,
 
     pub fn getIcons(self: *ExplorerData) []const Icon {
         var result = allocator.alloc.alloc(Icon, self.path.subfolders.items.len + self.path.contents.items.len) catch undefined;
@@ -35,7 +48,7 @@ const ExplorerData = struct {
 
         for (self.path.subfolders.items) |folder| {
             result[idx] = Icon{
-                .name = folder.name[self.path.name.len..folder.name.len - 1],
+                .name = folder.name[self.path.name.len .. folder.name.len - 1],
                 .icon = 3,
             };
             idx += 1;
@@ -53,8 +66,16 @@ const ExplorerData = struct {
     }
 };
 
-pub fn drawExplorer(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
-    var self = @ptrCast(*ExplorerData, c);
+pub fn drawExplorer(cself: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
+    var self = @ptrCast(*ExplorerData, cself);
+
+    if (self.lastAction != null) {
+        if (self.lastAction.?.time <= 0) {
+            self.lastAction = null;
+        } else {
+            self.lastAction.?.time -= 5;
+        }
+    }
 
     self.scroll[1].data.size.y = bnds.h - 20;
 
@@ -76,12 +97,30 @@ pub fn drawExplorer(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, b
 
         batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-        if (idx == 0)
+        if (idx + 1 == self.selected)
             batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
+
+        if (self.lastAction != null) {
+            if (rect.newRect(x + 2 + 16, y + 2 + 16, 64, 64).contains(self.lastAction.?.pos)) {
+                switch (self.lastAction.?.kind) {
+                    .SingleLeft => {
+                        self.selected = idx + 1;
+                    },
+                    .DoubleLeft => {
+                        var newPath = self.path.getFolder(icon.name);
+                        if (newPath != null) {
+                            self.path = newPath.?;
+                            self.selected = 0;
+                        }
+                        self.lastAction = null;
+                    },
+                }
+            }
+        }
 
         x += 128;
         if (x + 128 > bnds.w) {
-            y += 64 + font.size;
+            y += 72 + font.size;
             x = 0;
         }
     }
@@ -99,7 +138,7 @@ fn deleteExplorer(cself: *[]u8) void {
     allocator.alloc.destroy(self);
 }
 
-fn scrollExplorer(cself: *[]u8, _: f32, y: f32) void{
+fn scrollExplorer(cself: *[]u8, _: f32, y: f32) void {
     var self = @ptrCast(*ExplorerData, cself);
 
     self.scrollVal -= y * SCROLL;
@@ -108,6 +147,43 @@ fn scrollExplorer(cself: *[]u8, _: f32, y: f32) void{
         self.scrollVal = self.maxy;
     if (self.scrollVal < 0)
         self.scrollVal = 0;
+}
+
+pub fn clickExplorer(cself: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
+    var self = @ptrCast(*ExplorerData, cself);
+
+    switch (btn) {
+        0 => {
+            if (self.lastAction != null) {
+                self.lastAction = .{
+                    .kind = .DoubleLeft,
+                    .pos = mousepos,
+                    .time = 10,
+                };
+            } else {
+                self.lastAction = .{
+                    .kind = .SingleLeft,
+                    .pos = mousepos,
+                    .time = 40,
+                };
+            }
+        },
+        else => {},
+    }
+
+    return true;
+}
+
+pub fn keyExplorer(cself: *[]u8, key: i32, _: i32) void {
+    var self = @ptrCast(*ExplorerData, cself);
+
+    switch (key) {
+        c.GLFW_KEY_BACKSPACE => {
+            self.path = self.path.parent;
+            self.selected = 0;
+        },
+        else => {},
+    }
 }
 
 pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
@@ -145,6 +221,7 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     ));
 
     self.shader = shader;
+    self.selected = 0;
 
     self.path = files.root;
 
@@ -152,6 +229,8 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
         .self = @ptrCast(*[]u8, self),
         .deleteFn = deleteExplorer,
         .drawFn = drawExplorer,
+        .keyFn = keyExplorer,
+        .clickFn = clickExplorer,
         .scrollFn = scrollExplorer,
         .name = "Files",
         .kind = "explorer",

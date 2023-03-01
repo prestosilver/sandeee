@@ -38,8 +38,9 @@ pub const VM = struct {
 
     out: std.ArrayList(u8) = undefined,
     args: [][]u8,
+    root: *files.Folder,
 
-    pub fn init(alloc: std.mem.Allocator, args: []const u8) !VM {
+    pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8) !VM {
         var splitIter = std.mem.split(u8, args, " ");
 
         var tmpArgs = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
@@ -48,7 +49,6 @@ pub const VM = struct {
         while (splitIter.next()) |item| {
             tmpArgs[idx] = try alloc.alloc(u8, item.len);
             std.mem.copy(u8, tmpArgs[idx], item);
-            std.log.info("{s}", .{item});
             idx += 1;
         }
 
@@ -57,6 +57,7 @@ pub const VM = struct {
             .allocator = alloc,
             .streams = std.ArrayList(?*streams.FileStream).init(alloc),
             .args = tmpArgs,
+            .root = root,
         };
     }
 
@@ -170,8 +171,8 @@ pub const VM = struct {
     }
 
     pub fn freeValue(self: *VM, val: *u64) void {
-        for (self.stack[0..self.rsp]) |entry| {
-            if (entry.value != null and entry.value.? == val) {
+        for (self.stack[0..self.rsp + 1]) |entry| {
+            if (entry.value != null and @ptrToInt(entry.value.?) == @ptrToInt(val)) {
                 return;
             }
         }
@@ -179,8 +180,8 @@ pub const VM = struct {
     }
 
     pub fn freeString(self: *VM, val: []const u8) void {
-        for (self.stack[0..self.rsp]) |entry| {
-            if (entry.string != null and @ptrToInt(&entry.string.?) == @ptrToInt(&val)) {
+        for (self.stack[0..self.rsp + 1]) |entry| {
+            if (entry.string != null and @ptrToInt(entry.string.?.ptr) == @ptrToInt(val.ptr)) {
                 return;
             }
         }
@@ -193,6 +194,8 @@ pub const VM = struct {
     }
 
     pub fn runOp(self: *VM, op: Operation) !void {
+        //std.log.info("{}", .{op});
+
         self.pc += 1;
 
         switch (op.code) {
@@ -332,7 +335,7 @@ pub const VM = struct {
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
-                                _ = try files.newFile(path.string.?);
+                                _ = try self.root.newFile(path.string.?);
 
                                 return;
                             } else return error.InvalidOp;
@@ -344,7 +347,7 @@ pub const VM = struct {
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
-                                try self.streams.append(try streams.FileStream.Open(path.string.?));
+                                try self.streams.append(try streams.FileStream.Open(self.root, path.string.?));
                                 try self.pushStackI(self.streams.items.len - 1);
 
                                 return;
@@ -562,12 +565,12 @@ pub const VM = struct {
             },
             Operation.Code.Asign => {
                 var a = try self.popStack();
+                defer self.free(a);
                 var b = try self.findStack(0);
 
                 if (a.value != null) {
                     if (b.value != null) {
                         b.value.?.* = a.value.?.*;
-                        self.free(a);
 
                         return;
                     } else return error.InvalidOp;
@@ -601,7 +604,10 @@ pub const VM = struct {
 
                 if (a.string != null) {
                     if (b.string != null) {
-                        return error.InvalidOp;
+                        var val: u64 = 0;
+                        if (std.mem.eql(u8, a.string.?, b.string.?)) val = 1;
+                        try self.pushStackI(val);
+                        return;
                     } else if (b.value != null) {
                         var val: u64 = 0;
                         if (a.string.?.len != 0 and a.string.?[0] == @intCast(u8, b.value.?.*)) val = 1;
@@ -707,7 +713,7 @@ pub const VM = struct {
                         self.allocator.free(comb);
                         return;
                     } else if (b.value != null) {
-                        var comb = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?, std.mem.toBytes(b.value.?) });
+                        var comb = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?, std.mem.toBytes(b.value.?.*) });
                         try self.pushStackS(comb);
                         self.allocator.free(comb);
                         return;

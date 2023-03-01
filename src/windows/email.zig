@@ -19,7 +19,6 @@ fn range(len: usize) []const void {
 }
 
 const EmailData = struct {
-
     text: []const u8,
     icon: sprite.Sprite,
     divx: sprite.Sprite,

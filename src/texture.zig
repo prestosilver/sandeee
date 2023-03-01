@@ -61,3 +61,30 @@ pub fn newTextureMem(mem: []const u8) !Texture {
 
     return result;
 }
+
+pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
+    var width = @intCast(c_int, mem[4]) + @intCast(c_int, mem[5]) * 256;
+    var height = @intCast(c_int, mem[6]) + @intCast(c_int, mem[7]) * 256;
+
+    if (mem.len / 4 - 2 != width * height) {
+        return error.WrongSize;
+    }
+
+    tex.size.x = @intToFloat(f32, width);
+    tex.size.y = @intToFloat(f32, height);
+
+    c.glBindTexture(c.GL_TEXTURE_2D, tex.tex);
+
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
+
+
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, &mem[8]);
+
+    c.glGenerateMipmap(c.GL_TEXTURE_2D);
+
+}
+
+pub fn freeTexture(tex: *Texture) void {
+    c.glDeleteTextures(1, &tex.tex);
+}

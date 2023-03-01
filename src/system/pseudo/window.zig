@@ -6,9 +6,12 @@ const winev = @import("../../events/window.zig");
 const events = @import("../../util/events.zig");
 const win = @import("../../drawers/window2d.zig");
 const tex = @import("../../texture.zig");
+const gfx = @import("gfx.zig");
 const rect = @import("../../math/rects.zig");
+const shd = @import("../../shader.zig");
 
 pub var wintex: *tex.Texture = undefined;
+pub var shader: *shd.Shader = undefined;
 
 pub var vmIdx: u8 = 0;
 pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
@@ -16,7 +19,7 @@ pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
 // /fake/win/new
 pub fn readWinNew() []const u8 {
     var result: *u8 = allocator.alloc.create(u8) catch undefined;
-    var winDat = vmwin.new(vmIdx);
+    var winDat = vmwin.new(vmIdx, shader);
 
     var window = win.Window.new(wintex.*, win.WindowData{
         .pos = rect.Rectangle{
@@ -81,6 +84,48 @@ pub fn writeWinOpen(_: []const u8) void {
     return;
 }
 
+// /fake/win/render
+
+pub fn readWinRender() []const u8 {
+    return allocator.alloc.alloc(u8, 0) catch undefined;
+}
+
+pub fn writeWinRender(data: []const u8) void {
+    std.log.info("{any}", .{data});
+    if (data.len < 66) return;
+
+    var texture = gfx.textures.get(data[0]);
+    if (texture == null) return;
+
+    var aid = data[1];
+
+    var dst = rect.newRect(
+        @intToFloat(f32, std.mem.bytesToValue(u64, data[2..10])),
+        @intToFloat(f32, std.mem.bytesToValue(u64, data[10..18])),
+        @intToFloat(f32, std.mem.bytesToValue(u64, data[18..26])),
+        @intToFloat(f32, std.mem.bytesToValue(u64, data[26..34])),
+    );
+    var src = rect.newRect(
+        @intToFloat(f32, std.mem.bytesToValue(u64, data[34..42])) / 1024,
+        @intToFloat(f32, std.mem.bytesToValue(u64, data[42..50])) / 1024,
+        @intToFloat(f32, std.mem.bytesToValue(u64, data[50..58])) / 1024,
+        @intToFloat(f32, std.mem.bytesToValue(u64, data[58..66])) / 1024,
+    );
+
+    for (windowsPtr.*.items) |_, idx| {
+        var item = &windowsPtr.*.items[idx];
+        if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+            var self = @ptrCast(*vmwin.VMData, item.data.contents.self);
+
+            if (self.idx == aid) {
+                self.addRect(texture.?, src, dst);
+                return;
+            }
+        }
+    }
+
+    return;
+}
 
 // /fake/win
 
@@ -104,6 +149,13 @@ pub fn setupFakeWin(parent: *files.Folder) files.Folder {
         .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
         .pseudoRead = readWinDestroy,
         .pseudoWrite = writeWinDestroy,
+    }) catch {};
+
+    result.contents.append(files.File{
+        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/render", .{}) catch "",
+        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+        .pseudoRead = readWinRender,
+        .pseudoWrite = writeWinRender,
     }) catch {};
 
     return result;

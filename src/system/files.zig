@@ -5,12 +5,11 @@ const fake = @import("pseudo/all.zig");
 
 pub var root: *Folder = undefined;
 pub var home: *Folder = undefined;
+pub var exec: *Folder = undefined;
 
 pub const ROOT_NAME = "/";
 
-pub const filesError = error {
-
-};
+pub const filesError = error{};
 
 pub const File = struct {
     name: []const u8,
@@ -77,6 +76,7 @@ pub const Folder = struct {
         defer allocator.alloc.free(lenbuffer);
         _ = try file.read(lenbuffer);
         var count = @bitCast(u32, lenbuffer[0..4].*);
+
         for (range(count)) |_| {
             _ = try file.read(lenbuffer);
             var namesize = @bitCast(u32, lenbuffer[0..4].*);
@@ -93,6 +93,9 @@ pub const Folder = struct {
         }
 
         root.fixFolders();
+
+        home = root.getFolder("/prof").?;
+        exec = root.getFolder("/exec").?;
     }
 
     pub fn write(self: *Folder, writer: std.fs.File) !void {
@@ -301,6 +304,39 @@ pub const Folder = struct {
         return null;
     }
 
+    pub fn getFolder(self: *Folder, name: []const u8) ?*Folder {
+        var file = std.ArrayList(u8).init(allocator.alloc);
+        defer file.deinit();
+
+        for (name) |ch| {
+            if (ch == '/') {
+                if (check(file.items, ".")) return self.getFolder(name[2..]);
+                if (check(file.items, "")) return self.getFolder(name[1..]);
+
+                var fullname = std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items }) catch undefined;
+                defer allocator.alloc.free(fullname);
+                for (self.subfolders.items) |folder, idx| {
+                    if (check(folder.name, fullname)) {
+                        return self.subfolders.items[idx].getFolder(name[file.items.len..]);
+                    }
+                }
+                return null;
+            } else {
+                file.append(ch) catch {};
+            }
+        }
+
+        var fullname = std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, name }) catch undefined;
+        defer allocator.alloc.free(fullname);
+        for (self.subfolders.items) |subfolder, idx| {
+            if (check(subfolder.name, fullname)) {
+                return &self.subfolders.items[idx];
+            }
+        }
+        return null;
+    }
+
+
     pub fn deleteFile(self: *Folder, name: []const u8) bool {
         _ = name;
         _ = self;
@@ -363,17 +399,11 @@ pub fn toStr() !std.ArrayList(u8) {
 }
 
 pub fn write(path: []const u8) !void {
-    var file = std.fs.cwd().createFile(
-        path,
-        .{},
-    ) catch null;
-    if (file == null) {
-        std.c.exit(1);
-    }
+    var file = try std.fs.cwd().createFile(path, .{});
 
-    defer file.?.close();
+    defer file.close();
 
-    try root.write(file.?);
+    try root.write(file);
 }
 
 pub fn deinit() void {

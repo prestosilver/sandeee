@@ -14,7 +14,7 @@ typedef enum {
     TOKEN_KEYWORD_VALUE,
     TOKEN_KEYWORD_VOID,
     TOKEN_KEYWORD_RETURN,
-    TOKEN_KEYWORD_SYS,
+    TOKEN_KEYWORD_ASM,
     TOKEN_KEYWORD_IF,
     TOKEN_KEYWORD_ELSE,
 
@@ -35,6 +35,7 @@ typedef enum {
     TOKEN_ADD,
     TOKEN_MUL,
     TOKEN_DIV,
+    TOKEN_CAT,
 
     TOKEN_AND,
     TOKEN_OR,
@@ -55,7 +56,7 @@ typedef enum {
 typedef enum {
     STMT_INVALID,
     STMT_RETURN,
-    STMT_SYS,
+    STMT_ASM,
     STMT_DECLARE,
     STMT_EXP,
     STMT_COND,
@@ -126,7 +127,7 @@ void setup_regex() {
     regcomp(&regex[idx++], "^value$", 0);
     regcomp(&regex[idx++], "^void$", 0);
     regcomp(&regex[idx++], "^return$", 0);
-    regcomp(&regex[idx++], "^sys$", 0);
+    regcomp(&regex[idx++], "^asm$", 0);
     regcomp(&regex[idx++], "^if$", 0);
     regcomp(&regex[idx++], "^else$", 0);
     regcomp(&regex[idx++], "^for$", 0);
@@ -143,6 +144,7 @@ void setup_regex() {
     regcomp(&regex[idx++], "^+$", 0);
     regcomp(&regex[idx++], "^*$", 0);
     regcomp(&regex[idx++], "^/$", 0);
+    regcomp(&regex[idx++], "^&$", 0);
     regcomp(&regex[idx++], "^&&$", 0);
     regcomp(&regex[idx++], "^||$", 0);
     regcomp(&regex[idx++], "^==$", 0);
@@ -203,6 +205,12 @@ void asm_expr(Expression* s, VarMap* var_map, int* stk_idx) {
                 printf("    add\n");
                 *stk_idx -= 1;
                 break;
+            case TOKEN_CAT:
+                printf("    dup 1\n");
+                printf("    cat\n");
+                printf("    disc 1\n");
+                *stk_idx -= 1;
+                break;
             case TOKEN_MUL:
                 if (s->a) {
                     printf("    mul\n");
@@ -240,7 +248,7 @@ void asm_expr(Expression* s, VarMap* var_map, int* stk_idx) {
             case TOKEN_IDENT:
                 for (int i = 0; i < var_map->max; i ++) {
                     if (strcmp(var_map->vars[i]->name, s->value->value) == 0) {
-                        printf("    dup %d\n", *stk_idx - 1 - var_map->vars[i]->stk_idx);
+                        printf("    copy %d\n", *stk_idx - 1 - var_map->vars[i]->stk_idx);
                         *stk_idx += 1;
 
                         return;
@@ -291,10 +299,10 @@ void asm_stmt(Statement* s, VarMap* var_map, int* stk_idx) {
             printf("    disc 1\n");
             printf("    ret\n");
             break;
-        case STMT_SYS:
-            asm_expr(&s->data[0], var_map, stk_idx);
-            printf("    sys %s\n", s->data[1]);
-            *stk_idx -= 1;
+        case STMT_ASM:
+            char *str = s->data[1];
+            str[strlen(str) - 1] = 0;
+            printf("    %s\n", &str[1]);
             break;
         case STMT_COND:
             int start = *stk_idx;
@@ -678,6 +686,7 @@ int parse_sum(Token* toks, Expression* expr) {
     idx += change;
 
     if (toks[idx].kind == TOKEN_ADD
+        || toks[idx].kind == TOKEN_CAT
         || toks[idx].kind == TOKEN_ASSIGN
         || toks[idx].kind == TOKEN_NEG) {
         expr->a = a;
@@ -799,19 +808,13 @@ int parse_statement(Token* toks, Statement* stmt) {
         idx += count;
 
         return idx;
-    } else if (toks[idx].kind == TOKEN_KEYWORD_SYS) {
-        stmt->kind = STMT_SYS;
+    } else if (toks[idx].kind == TOKEN_KEYWORD_ASM) {
+        stmt->kind = STMT_ASM;
         idx++;
-        if (toks[idx++].kind != TOKEN_INT_LIT) return 0;
+        if (toks[idx++].kind != TOKEN_STRING_LIT) return 0;
 
         stmt->data = calloc(sizeof(void*), 2);
         stmt->data[1] = toks[idx - 1].value;
-
-        if (toks[idx++].kind != TOKEN_COMMA) return 0;
-
-        stmt->data[0] = malloc(sizeof(Expression));
-        idx += parse_expression(&toks[idx], stmt->data[0]);
-
 
         if (toks[idx++].kind != TOKEN_SEMI_COLON) return 0;
 

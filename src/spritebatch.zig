@@ -195,10 +195,10 @@ pub const SpriteBatch = struct {
             }
 
             c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
-            c.glEnableVertexAttribArray(0);
             c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @intToPtr(*anyopaque, 3 * @sizeOf(f32)));
-            c.glEnableVertexAttribArray(1);
             c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @intToPtr(*anyopaque, 5 * @sizeOf(f32)));
+            c.glEnableVertexAttribArray(0);
+            c.glEnableVertexAttribArray(1);
             c.glEnableVertexAttribArray(2);
 
             c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c.GLsizei, entry.verts.data.len));

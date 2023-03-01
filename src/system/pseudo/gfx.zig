@@ -34,9 +34,14 @@ pub fn readGfxDestroy() []const u8 {
     return allocator.alloc.alloc(u8, 0) catch undefined;
 }
 
+pub fn writeGfxDestroy(data: []const u8) void {
+    var idx = data[0];
+    var texture = textures.get(idx);
+    if (texture == null) return;
 
-pub fn writeGfxDestroy(_: []const u8) void {
-    return;
+    tex.freeTexture(&texture.?);
+
+    _ = textures.remove(idx);
 }
 
 // /fake/gfx/upload
@@ -45,9 +50,17 @@ pub fn readGfxUpload() []const u8 {
     return allocator.alloc.alloc(u8, 0) catch undefined;
 }
 
+pub fn writeGfxUpload(data: []const u8) void {
+    var idx = data[0];
+    var image = data[1..];
 
-pub fn writeGfxUpload(_: []const u8) void {
+    var texture = textures.get(idx);
+    if (texture == null) return;
 
+    tex.uploadTextureMem(&texture.?, image) catch |msg| {
+        std.log.info("upload err {}", .{msg});
+        return;
+    };
 }
 
 // /fake/gfx

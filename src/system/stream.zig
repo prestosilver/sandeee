@@ -12,10 +12,15 @@ pub const FileStream = struct {
     contents: []u8,
     offset: u32,
 
-    pub fn Open(path: []const u8) !*FileStream {
+    pub fn Open(root: *files.Folder, path: []const u8) !*FileStream {
         var result = try allocator.alloc.create(FileStream);
 
-        var file = files.root.getFile(path);
+        var folder = root;
+        if (path[0] == '/') {
+            folder = files.root;
+        }
+        var file = folder.getFile(path);
+
         if (file == null) {
             allocator.alloc.destroy(result);
 
