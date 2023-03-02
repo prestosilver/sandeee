@@ -359,7 +359,9 @@ pub fn keyUp(event: inputEvs.EventKeyUp) bool {
 }
 
 pub fn windowResize(event: inputEvs.EventWindowResize) bool {
+    ctx.makeCurrent();
     gfx.resize(event.w, event.h) catch {};
+    ctx.makeNotCurrent();
 
     var size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
 
@@ -544,8 +546,6 @@ pub fn main() anyerror!void {
     pseudo.window.wintex = &wintex;
     shell.edittex = &editortex;
     shell.shader = &shader;
-
-    std.time.sleep(100000000);
 
     // loading done
     gameState = .Game;

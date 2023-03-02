@@ -45,6 +45,7 @@ pub const WorkerContext = struct {
 
             progress.* = @intToFloat(f32, prog) / @intToFloat(f32, ctx.total);
         }
+        std.time.sleep(500 * 1000 * 1000);
     }
 
     pub fn enqueue(self: *WorkerContext, indata: anytype, outdata: anytype, loader: *const fn(*WorkerQueueEntry(@TypeOf(indata), @TypeOf(outdata))) bool) !void {
