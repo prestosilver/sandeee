@@ -335,7 +335,11 @@ pub const VM = struct {
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
-                                _ = try self.root.newFile(path.string.?);
+                                if (path.string.?[0] == '/') {
+                                    _ = try files.root.newFile(path.string.?);
+                                } else {
+                                    _ = try self.root.newFile(path.string.?);
+                                }
 
                                 return;
                             } else return error.InvalidOp;

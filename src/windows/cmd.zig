@@ -100,9 +100,10 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
         },
         c.GLFW_KEY_ENTER => {
             var start = self.bt.len;
-            self.bt = allocator.alloc.realloc(self.bt, self.bt.len + self.text.items.len + 3) catch self.bt;
+            self.bt = allocator.alloc.realloc(self.bt, self.bt.len + self.text.items.len + 4) catch self.bt;
             std.mem.copy(u8, self.bt[start .. start + 3], "\n$ ");
-            std.mem.copy(u8, self.bt[start + 3 ..], self.text.items);
+            std.mem.copy(u8, self.bt[start + 3 .. self.bt.len - 1], self.text.items);
+            self.bt[self.bt.len - 1] = '\n';
 
             var command = std.ArrayList(u8).init(allocator.alloc);
             defer command.deinit();
@@ -119,8 +120,9 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
                 const msg = @errorName(err);
 
                 start = self.bt.len;
-                self.bt = allocator.alloc.realloc(self.bt, self.bt.len + 8) catch self.bt;
-                std.mem.copy(u8, self.bt[start..], "\nError: ");
+                self.bt = allocator.alloc.realloc(self.bt, self.bt.len + 7) catch self.bt;
+                std.mem.copy(u8, self.bt[start..], "Error: ");
+
                 start = self.bt.len;
                 self.bt = allocator.alloc.realloc(self.bt, self.bt.len + msg.len) catch self.bt;
                 std.mem.copy(u8, self.bt[start..], msg);
@@ -133,11 +135,6 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
                 allocator.alloc.free(self.bt);
                 self.bt = allocator.alloc.alloc(u8, 0) catch undefined;
             } else {
-                if (al.data.items.len != 0 and self.bt[self.bt.len - 1] != '\n') {
-                    self.bt = allocator.alloc.realloc(self.bt, self.bt.len + 1) catch self.bt;
-                    self.bt[self.bt.len - 1] = '\n';
-                }
-
                 start = self.bt.len;
 
                 self.bt = allocator.alloc.realloc(self.bt, self.bt.len + al.data.items.len) catch self.bt;

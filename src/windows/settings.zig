@@ -17,11 +17,23 @@ const SettingPanel = struct {
 };
 
 const SettingsData = struct {
+    const SettingsMouseActionType = enum {
+        SingleLeft,
+        DoubleLeft,
+    };
+    const SettingsMouseAction = struct {
+        kind: SettingsMouseActionType,
+        pos: vecs.Vector2,
+        time: f32,
+    };
+
     shader: shd.Shader,
     icons: [5]sprite.Sprite,
     scroll: [3]sprite.Sprite,
     focus: sprite.Sprite,
     focused: ?u64,
+    selection: usize,
+    lastAction: ?SettingsMouseAction,
 
     const panels = [_]SettingPanel{
         SettingPanel{ .name = "Graphics", .icon = 1 },
@@ -31,6 +43,14 @@ const SettingsData = struct {
 
 pub fn drawSettings(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
     var self = @ptrCast(*SettingsData, c);
+
+    if (self.lastAction != null) {
+        if (self.lastAction.?.time <= 0) {
+            self.lastAction = null;
+        } else {
+            self.lastAction.?.time -= 5;
+        }
+    }
 
     self.scroll[1].data.size.y = bnds.h - 20;
 
@@ -45,19 +65,57 @@ pub fn drawSettings(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, b
         var size = font.sizeText(panel.name);
         var xo = (128 - size.x) / 2;
 
-        font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo + 6, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
+        font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
 
-        batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 32, bnds.y + y + 6, 0));
+        batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-        if (idx == 0)
-            batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 32, bnds.y + y + 2, 0));
+        if (idx + 1 == self.selection)
+            batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
+
+        if (self.lastAction != null) {
+            if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
+                switch (self.lastAction.?.kind) {
+                    .SingleLeft => {
+                        self.selection = idx + 1;
+                    },
+                    .DoubleLeft => {
+                        self.lastAction = null;
+                    },
+                }
+            }
+        }
 
         x += 128;
         if (x + 128 > bnds.w) {
-            y += 64 + font.size;
+            y += 72 + font.size;
             x = 0;
         }
     }
+}
+
+pub fn clickSettings(cself: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
+    var self = @ptrCast(*SettingsData, cself);
+
+    switch (btn) {
+        0 => {
+            if (self.lastAction != null) {
+                self.lastAction = .{
+                    .kind = .DoubleLeft,
+                    .pos = mousepos,
+                    .time = 10,
+                };
+            } else {
+                self.lastAction = .{
+                    .kind = .SingleLeft,
+                    .pos = mousepos,
+                    .time = 40,
+                };
+            }
+        },
+        else => {},
+    }
+
+    return true;
 }
 
 fn deleteSettings(cself: *[]u8) void {
@@ -105,6 +163,7 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
         .self = @ptrCast(*[]u8, self),
         .deleteFn = deleteSettings,
         .drawFn = drawSettings,
+        .clickFn = clickSettings,
         .name = "Settings",
         .kind = "settings",
         .clearColor = col.newColor(1, 1, 1, 1),

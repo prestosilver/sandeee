@@ -9,6 +9,7 @@ const win = @import("../drawers/window2d.zig");
 const tex = @import("../texture.zig");
 const shd = @import("../shader.zig");
 const rect = @import("../math/rects.zig");
+const opener = @import("opener.zig");
 
 const Result = struct {
     data: std.ArrayList(u8),
@@ -35,16 +36,6 @@ pub const Shell = struct {
     vm: ?vm.VM = null,
 
     var vms: usize = 0;
-
-    fn echo(_: *Shell, param: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
-
-        if (param.len > 5) try result.data.appendSlice(param[5..]);
-
-        return result;
-    }
 
     pub fn cd(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
@@ -182,9 +173,9 @@ pub const Shell = struct {
         });
 
         if (param.len > 4) {
-            var edself = @ptrCast(*wins.editor.EditorData, window.data.contents.self);
+            var webself = @ptrCast(*wins.web.WebData, window.data.contents.self);
 
-            edself.file = self.root.getFile(param[4..]);
+            webself.file = self.root.getFile(param[4..]);
         }
         events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
@@ -198,7 +189,6 @@ pub const Shell = struct {
 
         var folderlen = folder.name.len;
         var cmdeep = try std.fmt.allocPrint(allocator.alloc, "{s}.eep", .{cmd});
-        std.log.info("{s}, {s}", .{cmd, cmdeep});
 
         for (folder.contents.items) |_, idx| {
             var item = folder.contents.items[idx];
@@ -262,7 +252,17 @@ pub const Shell = struct {
 
     pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) !Result {
         return self.runFileInFolder(files.exec, cmd, param) catch
-            self.runFileInFolder(self.root, cmd, param);
+            self.runFileInFolder(self.root, cmd, param) catch {
+                if (self.root.getFile(cmd) != null) {
+                    var opens = try opener.openFile(cmd);
+                    var params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{opens, param});
+                    defer allocator.alloc.free(params);
+
+                    return self.run(opens, params);
+                } else {
+                    return error.FileNotFound;
+                }
+        };
     }
 
     pub fn help(_: *Shell, _: []const u8) !Result {
@@ -278,7 +278,6 @@ pub const Shell = struct {
         try result.data.appendSlice("cd - changes the current folder\n");
         try result.data.appendSlice("$run - runs the output of a command\n");
         try result.data.appendSlice("asm - runs a file\n");
-        try result.data.appendSlice("echo - prints the value\n");
         try result.data.appendSlice("edit - opens an editor with the file open\n");
         try result.data.appendSlice("cmd - opens cmd");
 
@@ -347,8 +346,6 @@ pub const Shell = struct {
 
                 self.vm.?.loadString(ops);
 
-                try self.vm.?.out.append('\n');
-
                 return result;
             }
         }
@@ -368,7 +365,7 @@ pub const Shell = struct {
             self.vm = null;
             vms -= 1;
 
-            var errString = try std.fmt.allocPrint(allocator.alloc, "{}", .{err});
+            var errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
             defer allocator.alloc.free(errString);
 
             try result.data.appendSlice(errString);
@@ -414,10 +411,10 @@ pub const Shell = struct {
 
     pub fn run(self: *Shell, cmd: []const u8, params: []const u8) !Result {
         if (check(cmd, "help")) return self.help(params);
-        if (check(cmd, "echo")) return self.echo(params);
         if (check(cmd, "ls")) return self.ls(params);
         if (check(cmd, "cmd")) return self.runCmd(params);
         if (check(cmd, "edit")) return self.runEdit(params);
+        if (check(cmd, "web")) return self.runWeb(params);
         if (check(cmd, "email")) return self.todo(params);
         if (check(cmd, "new")) return self.new(params);
         if (check(cmd, "cd")) return self.cd(params);

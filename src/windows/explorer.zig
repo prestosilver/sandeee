@@ -12,6 +12,7 @@ const shd = @import("../shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../texture.zig");
 const c = @import("../c.zig");
+const shell = @import("../system/shell.zig");
 
 const SCROLL = 30;
 
@@ -41,22 +42,23 @@ const ExplorerData = struct {
     path: *files.Folder,
     maxy: f32,
     lastAction: ?ExplorerMouseAction,
+    shell: shell.Shell,
 
     pub fn getIcons(self: *ExplorerData) []const Icon {
-        var result = allocator.alloc.alloc(Icon, self.path.subfolders.items.len + self.path.contents.items.len) catch undefined;
+        var result = allocator.alloc.alloc(Icon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len) catch undefined;
         var idx: usize = 0;
 
-        for (self.path.subfolders.items) |folder| {
+        for (self.shell.root.subfolders.items) |folder| {
             result[idx] = Icon{
-                .name = folder.name[self.path.name.len .. folder.name.len - 1],
+                .name = folder.name[self.shell.root.name.len .. folder.name.len - 1],
                 .icon = 3,
             };
             idx += 1;
         }
 
-        for (self.path.contents.items) |file| {
+        for (self.shell.root.contents.items) |file| {
             result[idx] = Icon{
-                .name = file.name[self.path.name.len..],
+                .name = file.name[self.shell.root.name.len..],
                 .icon = 4,
             };
             idx += 1;
@@ -74,6 +76,13 @@ pub fn drawExplorer(cself: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shade
             self.lastAction = null;
         } else {
             self.lastAction.?.time -= 5;
+        }
+    }
+
+    if (self.shell.vm != null) {
+        var result = self.shell.updateVM() catch null;
+        if (result != null) {
+            result.?.data.deinit();
         }
     }
 
@@ -101,16 +110,20 @@ pub fn drawExplorer(cself: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shade
             batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
 
         if (self.lastAction != null) {
-            if (rect.newRect(x + 2 + 16, y + 2 + 16, 64, 64).contains(self.lastAction.?.pos)) {
+            if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
                 switch (self.lastAction.?.kind) {
                     .SingleLeft => {
                         self.selected = idx + 1;
                     },
                     .DoubleLeft => {
-                        var newPath = self.path.getFolder(icon.name);
+                        var newPath = self.shell.root.getFolder(icon.name);
                         if (newPath != null) {
-                            self.path = newPath.?;
+                            self.shell.root = newPath.?;
                             self.selected = 0;
+                        } else {
+                            _ = self.shell.run(icon.name, icon.name) catch {
+                                //TODO: popup
+                            };
                         }
                         self.lastAction = null;
                     },
@@ -179,7 +192,7 @@ pub fn keyExplorer(cself: *[]u8, key: i32, _: i32) void {
 
     switch (key) {
         c.GLFW_KEY_BACKSPACE => {
-            self.path = self.path.parent;
+            self.shell.root = self.shell.root.parent;
             self.selected = 0;
         },
         else => {},
@@ -223,7 +236,8 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     self.shader = shader;
     self.selected = 0;
 
-    self.path = files.root;
+    self.shell.root = files.home;
+    self.shell.vm = null;
 
     return win.WindowContents{
         .self = @ptrCast(*[]u8, self),

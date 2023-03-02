@@ -60,7 +60,7 @@ make_rect:
     ret
 
 read_texture:
-    push "/cont/imgs/bar.eia"  ; path
+    push "/cont/imgs/bar.eia"   ; path
     sys 3                       ; open
     dup 0                       ; handle
     push 100000000

@@ -104,16 +104,17 @@ pub fn build(b: *std.build.Builder) void {
     var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/default.eee");
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
 
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "hello").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "read").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "write").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "window").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "texture").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "dump2").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "fib").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm", "prof/tests", "asm", "eep", "libtest").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "hello").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "read").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "write").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "window").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "texture").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "dump2").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "fib").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "libtest").?) catch {};
 
-    convert_steps.append(convertStep(b, comp.compile, "asm", "exec", "asm", "eep", "dump").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "dump").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "echo").?) catch {};
 
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "login").?) catch {};
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "message").?) catch {};

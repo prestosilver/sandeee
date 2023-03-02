@@ -38,7 +38,6 @@ fn drawVM(c: *[]u8, batch: *sb.SpriteBatch, _: shd.Shader, bnds: *rect.Rectangle
 
     for (self.rects.items) |_, idx| {
         batch.draw(spr.Sprite, &self.rects.items[idx].s, self.shd.*, vecs.newVec3(bnds.x, bnds.y, 0).add(self.rects.items[idx].loc));
-        std.log.info("{}", .{self.rects.items[idx]});
     }
 }
 
