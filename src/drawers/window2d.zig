@@ -30,6 +30,8 @@ pub const WindowContents = struct {
     clickFn: ?*const fn (*[]u8, vecs.Vector2, vecs.Vector2, i32) bool = null,
     keyFn: ?*const fn (*[]u8, i32, i32) void = null,
     scrollFn: ?*const fn (*[]u8, f32, f32) void = null,
+    moveFn: ?*const fn (*[]u8, f32, f32) void = null,
+
     focusFn: ?*const fn (*[]u8) void = null,
     deleteFn: *const fn (*[]u8) void,
     kind: []const u8,
@@ -55,6 +57,12 @@ pub const WindowContents = struct {
         if (self.scrollFn == null) return;
         self.scrollFn.?(self.self, x, y);
     }
+
+    pub fn move(self: *WindowContents, x: f32, y: f32) void {
+        if (self.moveFn == null) return;
+        self.moveFn.?(self.self, x, y);
+    }
+
 
     pub fn focus(self: *WindowContents) void {
         if (self.focusFn == null) return;

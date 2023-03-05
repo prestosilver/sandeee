@@ -1,0 +1,53 @@
+- SYS op codes -
+
+-- 0x010300 Print --
+
+Prints the top of the stack
+
+-- 0x010301 Quit --
+
+Exits the program
+
+-- 0x010302 Create file --
+
+TODO
+
+-- 0x010303 Open file handle --
+
+TODO
+
+-- 0x010304 Read from file handle --
+
+TODO
+
+-- 0x010305 Write to file handle --
+
+TODO
+
+-- 0x010306 Flush file handle buffer --
+
+TODO
+
+-- 0x010306 Flush file handle buffer --
+
+TODO
+
+-- 0x010307 Close file handle --
+
+TODO
+
+-- 0x010308 Get argument --
+
+TODO
+
+-- 0x010309 Get system time --
+
+TODO
+
+-- 0x01030A Run Asm --
+
+TODO
+
+-- 0x01030B Exec --
+
+TODO

@@ -1,8 +1,8 @@
 struct File {
     u32 namelen;
-    u8 name[namelen];
+    char name[namelen];
     u32 len;
-    u8 cont[len];
+    char cont[len];
 };
 
 struct Disk {
@@ -11,3 +11,4 @@ struct Disk {
 };
 
 Disk main @ 0x00;
+

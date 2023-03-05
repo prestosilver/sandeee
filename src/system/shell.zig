@@ -215,7 +215,7 @@ pub const Shell = struct {
                 var res = try self.runLine(line.items);
                 defer res.data.deinit();
                 try result.data.appendSlice(res.data.items);
-                if (result.data.getLast() != '\n') try result.data.append('\n');
+                if (result.data.items.len != 0 and result.data.getLast() != '\n') try result.data.append('\n');
 
                 return result;
             }

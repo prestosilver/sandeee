@@ -16,6 +16,7 @@ pub const VM = struct {
         InvalidOp,
         InvalidSys,
         NotImplemented,
+        UnknownFunction,
     };
 
     pub const StackEntry = struct {
@@ -23,11 +24,19 @@ pub const VM = struct {
         value: ?*u64 = null,
     };
 
+    pub const RetStackEntry = struct {
+        function: ?[]const u8,
+        location: u64,
+    };
+
     allocator: std.mem.Allocator,
     stack: [STACK_MAX]StackEntry,
     rsp: u64 = 0,
 
-    retStack: [512]u64 = undefined,
+    functions: std.StringArrayHashMap([]Operation),
+    inside_fn: ?[]const u8 = null,
+
+    retStack: [512]RetStackEntry = undefined,
     retRsp: u8 = 0,
 
     pc: u64 = 0,
@@ -56,6 +65,7 @@ pub const VM = struct {
             .stack = undefined,
             .allocator = alloc,
             .streams = std.ArrayList(?*streams.FileStream).init(alloc),
+            .functions = std.StringArrayHashMap([]Operation).init(alloc),
             .args = tmpArgs,
             .root = root,
         };
@@ -153,11 +163,15 @@ pub const VM = struct {
             }
         }
 
+        var iter = self.functions.iterator();
+
+        while (iter.next()) |entry| {
+            self.allocator.free(entry.value_ptr.*);
+        }
+
         for (self.streams.items) |stream| {
             if (stream != null)
-                stream.?.Close() catch |err| {
-                    std.log.err("{}", .{err});
-                };
+                stream.?.Close() catch {};
         }
 
         for (self.args) |_, idx| {
@@ -171,7 +185,7 @@ pub const VM = struct {
     }
 
     pub fn freeValue(self: *VM, val: *u64) void {
-        for (self.stack[0..self.rsp + 1]) |entry| {
+        for (self.stack[0 .. self.rsp + 1]) |entry| {
             if (entry.value != null and @ptrToInt(entry.value.?) == @ptrToInt(val)) {
                 return;
             }
@@ -180,7 +194,7 @@ pub const VM = struct {
     }
 
     pub fn freeString(self: *VM, val: []const u8) void {
-        for (self.stack[0..self.rsp + 1]) |entry| {
+        for (self.stack[0 .. self.rsp + 1]) |entry| {
             if (entry.string != null and @ptrToInt(entry.string.?.ptr) == @ptrToInt(val.ptr)) {
                 return;
             }
@@ -194,7 +208,7 @@ pub const VM = struct {
     }
 
     pub fn runOp(self: *VM, op: Operation) !void {
-        //std.log.info("{}", .{op});
+        //std.log.debug("{}", .{op});
 
         self.pc += 1;
 
@@ -221,7 +235,12 @@ pub const VM = struct {
                     return error.MissingValue;
                 } else if (a.value != null) {
                     if (b.string != null) {
-                        return error.MissingValue;
+                        if (b.string.?.len > a.value.?.*) {
+                            try self.pushStackS("");
+                        } else {
+                            try self.pushStackS(b.string.?[a.value.?.*..]);
+                        }
+                        return;
                     } else if (b.value != null) {
                         try self.pushStackI(a.value.?.* +% b.value.?.*);
                         return;
@@ -238,7 +257,12 @@ pub const VM = struct {
                     return error.InvalidOp;
                 } else if (a.value != null) {
                     if (b.string != null) {
-                        return error.InvalidOp;
+                        if (b.string.?.len > a.value.?.*) {
+                            try self.pushStackS("");
+                        } else {
+                            try self.pushStackS(b.string.?[0 .. b.string.?.len - a.value.?.*]);
+                        }
+                        return;
                     } else if (b.value != null) {
                         try self.pushStackI(b.value.?.* -% a.value.?.*);
                         return;
@@ -310,8 +334,6 @@ pub const VM = struct {
                             defer self.free(a);
                             if (a.string != null) {
                                 self.out.appendSlice(a.string.?) catch {};
-
-                                //std.log.debug("{any}", .{a.string.?});
 
                                 return;
                             } else if (a.value != null) {
@@ -460,7 +482,32 @@ pub const VM = struct {
                             return;
                         },
                         // runasm
-                        10 => {
+                        10 => {},
+                        // runcmd
+                        11 => {},
+                        // regfn
+                        12 => {
+                            var name = try self.popStack();
+                            defer self.free(name);
+                            var func = try self.popStack();
+                            defer self.free(func);
+                            if (func.string == null) return error.StringMissing;
+                            if (name.string == null) return error.StringMissing;
+
+                            var ops = self.stringToOps(func.string.?);
+                            defer ops.deinit();
+
+                            var finalOps = try self.allocator.alloc(Operation, ops.items.len);
+                            std.mem.copy(Operation, finalOps, ops.items);
+
+                            var nameStr = try self.allocator.alloc(u8, name.string.?.len);
+                            std.mem.copy(u8, nameStr, name.string.?);
+
+                            try self.functions.put(nameStr, finalOps);
+
+                            //std.log.info("Created: '{s}', {any}", .{name.string.?, finalOps});
+
+                            return;
                         },
                         // misc
                         else => {
@@ -482,7 +529,7 @@ pub const VM = struct {
 
                 if (a.value != null) {
                     if (b.value != null) {
-                        try self.pushStackI(a.value.?.* * b.value.?.*);
+                        try self.pushStackI(a.value.?.* *% b.value.?.*);
 
                         return;
                     } else return error.InvalidOp;
@@ -685,21 +732,36 @@ pub const VM = struct {
                 defer self.free(a);
 
                 if (a.string != null) {
-                    var val = @intCast(u64, a.string.?[0]);
-                    self.allocator.free(a.string.?);
-                    try self.pushStackI(val);
+                    if (a.string.?.len == 0) {
+                        self.allocator.free(a.string.?);
+                        try self.pushStackI(0);
+                    } else {
+                        var val = @intCast(u64, a.string.?[0]);
+                        self.allocator.free(a.string.?);
+                        try self.pushStackI(val);
+                    }
                     return;
                 } else return error.InvalidOp;
             },
             Operation.Code.Ret => {
                 self.retRsp -= 1;
-                self.pc = self.retStack[self.retRsp];
+                self.pc = self.retStack[self.retRsp].location;
+                self.inside_fn = self.retStack[self.retRsp].function;
                 return;
             },
             Operation.Code.Call => {
-                if (op.value == null) return error.ValueMissing;
+                if (op.string != null) {
+                    self.retStack[self.retRsp].location = self.pc;
+                    self.retStack[self.retRsp].function = self.inside_fn;
+                    self.pc = 0;
+                    self.inside_fn = op.string;
+                    self.retRsp += 1;
 
-                self.retStack[self.retRsp] = self.pc;
+                    return;
+                }
+
+                self.retStack[self.retRsp].location = self.pc;
+                self.retStack[self.retRsp].function = self.inside_fn;
                 self.pc = op.value.?;
                 self.retRsp += 1;
                 return;
@@ -751,9 +813,8 @@ pub const VM = struct {
         self.code = list.?;
     }
 
-    pub fn loadString(self: *VM, conts: []const u8) void {
+    pub fn stringToOps(self: *VM, conts: []const u8) std.ArrayList(Operation) {
         var ops = std.ArrayList(Operation).init(self.allocator);
-        defer ops.deinit();
 
         var parsePtr: usize = 0;
         while (parsePtr < conts.len) {
@@ -785,6 +846,13 @@ pub const VM = struct {
             }
         }
 
+        return ops;
+    }
+
+    pub fn loadString(self: *VM, conts: []const u8) void {
+        var ops = self.stringToOps(conts);
+        defer ops.deinit();
+
         self.loadList(ops.items);
     }
 
@@ -795,11 +863,21 @@ pub const VM = struct {
     }
 
     pub fn done(self: *VM) bool {
-        return self.pc >= self.code.len or self.stopped;
+        return (self.pc >= self.code.len and self.inside_fn == null) or self.stopped;
     }
 
     pub fn runStep(self: *VM) !bool {
-        var oper = self.code[self.pc];
+        var oper: Operation = undefined;
+        if (self.inside_fn) |inside| {
+            if (self.functions.getPtr(inside)) |func| {
+                oper = func.*[self.pc];
+            } else {
+                //std.log.err("'{s}', {any}", .{inside, self.functions.get(inside)});
+                return error.UnknownFunction;
+            }
+        } else {
+            oper = self.code[self.pc];
+        }
 
         try self.runOp(oper);
 

@@ -91,7 +91,6 @@ pub fn readWinRender() []const u8 {
 }
 
 pub fn writeWinRender(data: []const u8) void {
-    std.log.info("{any}", .{data});
     if (data.len < 66) return;
 
     var texture = gfx.textures.get(data[0]);
@@ -142,6 +141,7 @@ pub fn setupFakeWin(parent: *files.Folder) files.Folder {
         .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
         .pseudoRead = readWinNew,
         .pseudoWrite = writeWinNew,
+        .parent = undefined,
     }) catch {};
 
     result.contents.append(files.File{
@@ -149,6 +149,7 @@ pub fn setupFakeWin(parent: *files.Folder) files.Folder {
         .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
         .pseudoRead = readWinDestroy,
         .pseudoWrite = writeWinDestroy,
+        .parent = undefined,
     }) catch {};
 
     result.contents.append(files.File{
@@ -156,6 +157,7 @@ pub fn setupFakeWin(parent: *files.Folder) files.Folder {
         .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
         .pseudoRead = readWinRender,
         .pseudoWrite = writeWinRender,
+        .parent = undefined,
     }) catch {};
 
     return result;

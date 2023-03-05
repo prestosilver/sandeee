@@ -19,6 +19,10 @@ pub const Sound = struct {
 
         return result;
     }
+
+    pub fn deinit(self: *Sound) void {
+        c.alDeleteBuffers(1, &self.buffer);
+    }
 };
 
 pub const Audio = struct {

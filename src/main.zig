@@ -33,7 +33,9 @@ const worker = @import("loaders/worker.zig");
 
 var wallpaper: wall.Wallpaper = undefined;
 var ctx: gfx.Context = undefined;
+//TODO textureatlas ofc
 var wintex: tex.Texture = undefined;
+var webtex: tex.Texture = undefined;
 var bartex: tex.Texture = undefined;
 var walltex: tex.Texture = undefined;
 var emailtex: tex.Texture = undefined;
@@ -192,7 +194,7 @@ pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
     }
 
     if (event.btn == 0) {
-        if (bar.data.doClick(wintex, emailtex, editortex, explorertex, shader, mousepos)) {
+        if (bar.data.doClick(webtex, wintex, emailtex, editortex, explorertex, shader, mousepos)) {
             return false;
         }
 
@@ -314,6 +316,17 @@ pub fn mouseMove(event: inputEvs.EventMouseMove) bool {
             dragging.?.data.pos.y = old.y;
             dragging.?.data.pos.h = old.h;
         }
+    }
+
+    for (windows.items) |_, idx| {
+        var i = windows.items.len - idx - 1;
+        var window = &windows.items[i].data;
+
+        if (!window.active) continue;
+
+        window.contents.move(pos.x - window.pos.x, pos.y - window.pos.y - 36);
+
+        break;
     }
 
     return false;
@@ -480,6 +493,7 @@ pub fn main() anyerror!void {
 
     // consts for loader
     const winpath: []const u8 = "/cont/imgs/window.eia";
+    const webpath: []const u8 = "/cont/imgs/web.eia";
     const wallpath: []const u8 = "/cont/imgs/wall.eia";
     const barpath: []const u8 = "/cont/imgs/bar.eia";
     const editorpath: []const u8 = "/cont/imgs/editor.eia";
@@ -512,6 +526,7 @@ pub fn main() anyerror!void {
 
     // textures
     try loader.enqueue(&winpath, &wintex, worker.texture.loadTexture);
+    try loader.enqueue(&webpath, &webtex, worker.texture.loadTexture);
     try loader.enqueue(&barpath, &bartex, worker.texture.loadTexture);
     try loader.enqueue(&wallpath, &walltex, worker.texture.loadTexture);
     try loader.enqueue(&editorpath, &editortex, worker.texture.loadTexture);
@@ -540,10 +555,13 @@ pub fn main() anyerror!void {
     windows = std.ArrayList(win.Window).init(allocator.alloc);
 
     // setup some pointers
+    pseudo.snd.audioPtr = &audioMan;
     pseudo.window.windowsPtr = &windows;
     pseudo.window.shader = &shader;
-    shell.wintex = &wintex;
     pseudo.window.wintex = &wintex;
+
+    shell.wintex = &wintex;
+    shell.webtex = &webtex;
     shell.edittex = &editortex;
     shell.shader = &shader;
 

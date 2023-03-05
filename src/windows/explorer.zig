@@ -34,7 +34,7 @@ const ExplorerData = struct {
 
     shader: shd.Shader,
     icons: [5]sprite.Sprite,
-    scroll: [3]sprite.Sprite,
+    scroll: [4]sprite.Sprite,
     scrollVal: f32,
     focus: sprite.Sprite,
     focused: ?u64,
@@ -88,9 +88,12 @@ pub fn drawExplorer(cself: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shade
 
     self.scroll[1].data.size.y = bnds.h - 20;
 
+    var scrollPc = self.scrollVal / self.maxy;
+
     batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
     batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
     batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+    batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 48) * scrollPc + bnds.y + 10, 0));
 
     var x: f32 = 0;
     var y: f32 = -self.scrollVal;
@@ -226,6 +229,11 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     self.scroll[2] = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(0 / 32.0, 10.0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
         vecs.newVec2(14.0, 12.0),
+    ));
+
+    self.scroll[3] = sprite.Sprite.new(texture, sprite.SpriteData.new(
+        rect.newRect(10.0 / 32.0, 0.0 / 32.0 / ym, 7.0 / 32.0, 14.0 / 32.0 / ym),
+        vecs.newVec2(14.0, 28.0),
     ));
 
     self.focus = sprite.Sprite.new(texture, sprite.SpriteData.new(

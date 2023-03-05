@@ -77,7 +77,7 @@ pub const BarData = struct {
         }
     }
 
-    pub fn doClick(self: *BarData, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, explorertex: tex.Texture, shader: shd.Shader, pos: vecs.Vector2) bool {
+    pub fn doClick(self: *BarData, webtex: tex.Texture, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, explorertex: tex.Texture, shader: shd.Shader, pos: vecs.Vector2) bool {
         var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;
@@ -183,7 +183,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = wins.web.new(explorertex, shader),
+                                .contents = wins.web.new(webtex, shader),
                                 .active = true,
                             });
 

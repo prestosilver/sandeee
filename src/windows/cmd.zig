@@ -131,7 +131,7 @@ pub fn keyCmd(cself: *[]u8, key: i32, mods: i32) void {
                 return;
             };
 
-            if (al.data.items.len == 0)
+            if (al.data.items.len == 0 and self.shell.vm == null)
                 self.bt = allocator.alloc.realloc(self.bt, self.bt.len - 1) catch self.bt;
 
             if (al.clear) {

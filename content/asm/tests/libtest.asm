@@ -1,54 +1,20 @@
-    call main
+    call setup_load
+    push "/libs/hash.ell"
+    call "libload"
+    call "TEST_FN"
     sys 1
-fib:
-    copy 0
-    push 2
-    lt
-    jz block_0_alt
-    copy 0
-    disc 1
-    dup 0
-    disc 1
+
+setup_load:
+    push "/libs/libload.eep"    ; libload
+    sys 3                       ; handle
+    copy 0                      ; handle handle
+    push 4                      ; handle handle cont_size
+    sys 4                       ; handle cont
+    disc 0                      ; handle
+    copy 0                      ; handle handle
+    push 100000                 ; handle handle cont_size
+    sys 4                       ; handle cont
+    push "libload"              ; handle cont name
+    sys 12                      ; handle
+    sys 7
     ret
-    jmp block_0_end
-block_0_alt:
-block_0_end:
-    copy 0
-    push 1
-    sub
-    call fib
-    copy 1
-    push 2
-    sub
-    call fib
-    add
-    disc 1
-    dup 0
-    disc 1
-    ret
-main:
-    push 0
-    copy 0
-    push 0
-    set
-    disc 0
-block_1_loop:
-    copy 0
-    push 10000
-    lt
-    jz block_1_end
-    copy 0
-    call fib
-; SOMETHING 48
-    sys 0
-    push "\n"
-; SOMETHING 48
-    sys 0
-    copy 0
-    copy 1
-    push 1
-    add
-    set
-    disc 0
-    jmp block_1_loop
-block_1_end:

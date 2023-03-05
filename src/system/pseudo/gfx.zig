@@ -80,6 +80,7 @@ pub fn setupFakeGfx(parent: *files.Folder) files.Folder {
         .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
         .pseudoRead = readGfxNew,
         .pseudoWrite = writeGfxNew,
+        .parent = undefined,
     }) catch {};
 
     result.contents.append(files.File{
@@ -87,6 +88,7 @@ pub fn setupFakeGfx(parent: *files.Folder) files.Folder {
         .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
         .pseudoRead = readGfxDestroy,
         .pseudoWrite = writeGfxDestroy,
+        .parent = undefined,
     }) catch {};
 
     result.contents.append(files.File{
@@ -94,6 +96,7 @@ pub fn setupFakeGfx(parent: *files.Folder) files.Folder {
         .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
         .pseudoRead = readGfxUpload,
         .pseudoWrite = writeGfxUpload,
+        .parent = undefined,
     }) catch {};
 
     return result;

@@ -12,6 +12,7 @@ pub const ROOT_NAME = "/";
 pub const filesError = error{};
 
 pub const File = struct {
+    parent: *Folder,
     name: []const u8,
     contents: []u8,
 
@@ -129,6 +130,9 @@ pub const Folder = struct {
             self.subfolders.items[idx].parent = self;
             self.subfolders.items[idx].fixFolders();
         }
+        for (self.contents.items) |_, idx| {
+            self.contents.items[idx].parent = self;
+        }
     }
 
     fn check(cmd: []const u8, exp: []const u8) bool {
@@ -187,6 +191,7 @@ pub const Folder = struct {
         try self.contents.append(File{
             .name = fullname,
             .contents = cont,
+            .parent = self,
         });
 
         return true;

@@ -112,9 +112,14 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "dump2").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "fib").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "libtest").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "audiotest").?) catch {};
 
     convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "dump").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "echo").?) catch {};
+    convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "aplay").?) catch {};
+
+    convert_steps.append(convertStep(b, comp.compile, "asm/libs", "libs", "asm", "eep", "libload").?) catch {};
+    convert_steps.append(convertStep(b, comp.compileLib, "asm/libs", "libs", "asm", "ell", "hash").?) catch {};
 
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "login").?) catch {};
     convert_steps.append(convertStep(b, sound.convert, "audio", "cont/snds", "wav", "era", "message").?) catch {};
@@ -124,12 +129,13 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "email").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "explorer").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "window").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "web").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "wall").?) catch {};
-    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "dirt").?) catch {};
 
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "logo").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "load").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "palette").?) catch {};
+
 
     for (convert_steps.items) |step| {
         write_step.step.dependOn(&step.step);

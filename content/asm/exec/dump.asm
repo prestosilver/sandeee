@@ -7,9 +7,9 @@ main:
 
 loop:
     dup 0                       ; duplacte file handle
-    push 128                    ; read size
+    push 1000000                ; read size
     sys 4                       ; read
-    dup 0                       ; duplicate read
+    copy 0                      ; duplicate read
     sys 0                       ; print
     jnz loop                    ; reloop
     sys 1
