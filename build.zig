@@ -131,6 +131,7 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "window").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "web").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "wall").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "cont/imgs", "png", "eia", "barlogo").?) catch {};
 
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "logo").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "load").?) catch {};

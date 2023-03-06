@@ -17,5 +17,7 @@ A communication protocol for relaying text information.
 EEE Email Entrys
 -- ESH --
 EEE Shell Script
+-- Program Counter --
+Stores the index of the current instruction.
 -- SYSCALL --
-An assembly function that has full IO access
+An assembly function that has full IO access.

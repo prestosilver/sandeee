@@ -170,7 +170,7 @@ pub fn new() win.WindowContents {
     self.text = std.ArrayList(u8).init(allocator.alloc);
     self.bt = std.fmt.allocPrint(allocator.alloc, "Welcome to ShEEEl", .{}) catch undefined;
 
-    self.shell.root = files.root;
+    self.shell.root = files.home;
     self.shell.vm = null;
 
     return win.WindowContents{

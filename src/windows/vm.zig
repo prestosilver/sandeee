@@ -17,34 +17,50 @@ pub const VMData = struct {
         s: spr.Sprite,
     };
 
-    pub fn addRect(self: *VMData, texture: tex.Texture, src: rect.Rectangle, dst: rect.Rectangle) void {
+    pub fn addRect(self: *VMData, texture: *tex.Texture, src: rect.Rectangle, dst: rect.Rectangle) void {
         var appends: VMDataEntry = .{
             .loc = vecs.newVec3(dst.x, dst.y, 0),
             .s = spr.Sprite{
-                .texture = texture,
+                .texture = texture.*,
                 .data = spr.SpriteData.new(src, vecs.newVec2(dst.w, dst.h)),
-            }
+            },
         };
-        self.rects.append(appends) catch {};
+
+        if (self.back) self.rects[0].append(appends) catch {};
+        if (!self.back) self.rects[1].append(appends) catch {};
     }
 
-    rects: std.ArrayList(VMDataEntry),
+    pub fn flip(self: *VMData) void {
+        self.back = !self.back;
+    }
+
+    pub fn clear(self: *VMData) void {
+        var rects = self.rects[0];
+        if (!self.back) rects = self.rects[1];
+        rects.clearAndFree();
+    }
+
+    rects: [2]std.ArrayList(VMDataEntry),
+    back: bool,
     idx: u16,
     shd: *shd.Shader,
 };
 
 fn drawVM(c: *[]u8, batch: *sb.SpriteBatch, _: shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font) void {
     var self = @ptrCast(*VMData, c);
+    var rects = self.rects[0];
+    if (self.back) rects = self.rects[1];
 
-    for (self.rects.items) |_, idx| {
-        batch.draw(spr.Sprite, &self.rects.items[idx].s, self.shd.*, vecs.newVec3(bnds.x, bnds.y, 0).add(self.rects.items[idx].loc));
+    for (rects.items) |_, idx| {
+        batch.draw(spr.Sprite, &rects.items[idx].s, self.shd.*, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
     }
 }
 
 fn deleteVM(cself: *[]u8) void {
     var self = @ptrCast(*VMData, cself);
 
-    self.rects.deinit();
+    self.rects[0].deinit();
+    self.rects[1].deinit();
 
     allocator.alloc.destroy(self);
 }
@@ -54,7 +70,9 @@ pub fn new(idx: u16, shader: *shd.Shader) win.WindowContents {
 
     self.idx = idx;
     self.shd = shader;
-    self.rects = std.ArrayList(VMData.VMDataEntry).init(allocator.alloc);
+    self.back = true;
+    self.rects[0] = std.ArrayList(VMData.VMDataEntry).init(allocator.alloc);
+    self.rects[1] = std.ArrayList(VMData.VMDataEntry).init(allocator.alloc);
 
     return win.WindowContents{
         .self = @ptrCast(*[]u8, @alignCast(8, self)),

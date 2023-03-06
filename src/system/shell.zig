@@ -189,6 +189,7 @@ pub const Shell = struct {
 
         var folderlen = folder.name.len;
         var cmdeep = try std.fmt.allocPrint(allocator.alloc, "{s}.eep", .{cmd});
+        defer allocator.alloc.free(cmdeep);
 
         for (folder.contents.items) |_, idx| {
             var item = folder.contents.items[idx];
@@ -247,6 +248,8 @@ pub const Shell = struct {
                 return result;
             }
         }
+
+        result.data.deinit();
         return error.FileNotFound;
     }
 

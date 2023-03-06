@@ -10,6 +10,7 @@ const shd = @import("../shader.zig");
 const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
 const gfx = @import("../graphics.zig");
+const spr = @import("../drawers/sprite2d.zig");
 const c = @import("../c.zig");
 
 const events = @import("../util/events.zig");
@@ -60,20 +61,24 @@ pub const BarData = struct {
         addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE));
     }
 
-    pub fn drawName(self: *BarData, shader: shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) void {
+    pub fn drawName(self: *BarData, font_shader: shd.Shader, shader: shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) void {
         var pos = rect.newRect(self.height, self.screendims.y - self.height + 6, self.screendims.x + self.height, self.height);
 
         var color = cols.newColorRGBA(0, 0, 0, 255);
-        font.draw(batch, shader, "APPS", pos.location(), color);
+        font.draw(batch, font_shader, "APPS", pos.location(), color);
 
         pos.x = 3 * self.height + 10;
         self.btns = 0;
 
         for (windows.items) |window| {
-            font.draw(batch, shader, window.data.contents.name, pos.location(), color);
+            font.draw(batch, font_shader, window.data.contents.name, pos.location(), color);
 
             pos.x += 4 * self.height;
             self.btns += 1;
+        }
+
+        if (self.btnActive) {
+            batch.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
         }
     }
 
@@ -85,7 +90,7 @@ pub const BarData = struct {
         if (self.btnActive) {
             for (range(10)) |_, i| {
                 var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
-                var item = rect.newRect(0, y, 200, 67);
+                var item = rect.newRect(36, y, 160, 67);
                 if (item.contains(pos)) {
                     added = true;
                     switch (i) {
@@ -254,7 +259,7 @@ pub const BarData = struct {
 
             for (range(10)) |_, i| {
                 var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
-                var iconpos = rect.newRect(34, y + 2, 64, 64);
+                var iconpos = rect.newRect(36, y + 2, 64, 64);
 
                 switch (i) {
                     0 => {

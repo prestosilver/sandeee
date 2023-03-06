@@ -2,20 +2,20 @@
     sys 1
 
 sq_wave:
-    dup 0                      ; x x
-    push 128                    ; x x 128
-    lt                          ; x x
-    jz wave_test                ; x
-    push 256
-    jmp floor_end
-wave_test:                      ; x floor[x]
-    push 0
-floor_end:
-    disc 1
+    push 22050                  ; x x 128
+    div                         ; x x
+    dup 0
+    push 2
+    div
+    push 2
+    mul
+    eq
     ret
 
 play_sound:
-    push "/fake/snd/play"       ; cont path
+    push "/test.era"            ; cont path
+    dup 0
+    sys 2
     sys 3                       ; cont handle
     dup 0                       ; cont handle handle
     dup 2                       ; cont handle handle cont
@@ -35,25 +35,21 @@ loop:
     set
     disc 0
 
-    push ""                     ; idx wave ""
-    dup 2
-    push 1023
-    mul                         ; idx wave "" idx
-    call sq_wave                ; idx wave "" value
-    cat                         ; idx wave str_val
-    push 3                      ; idx wave str_val 3
-    sub                         ; idx wave str_val
+    dup 1
+    push 440
+    mul
+    call sq_wave                ; idx wave value
+    push 256
+    mul
+
+    getb
     cat
 
     copy 1
-    push 44100
+    push 30000
     gt
     jz loop
-    copy 1
-    sys 0
     disc 1
 
-    copy 0
-    sys 0
     call play_sound
     ret

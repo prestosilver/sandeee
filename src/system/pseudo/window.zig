@@ -84,6 +84,31 @@ pub fn writeWinOpen(_: []const u8) void {
     return;
 }
 
+// /fake/win/flip
+
+pub fn readWinFlip() []const u8 {
+    return allocator.alloc.alloc(u8, 0) catch undefined;
+}
+
+pub fn writeWinFlip(id: []const u8) void {
+    if (id.len != 1) return;
+    var aid = id[0];
+
+    for (windowsPtr.*.items) |_, idx| {
+        var item = &windowsPtr.*.items[idx];
+        if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+            var self = @ptrCast(*vmwin.VMData, item.data.contents.self);
+
+            if (self.idx == aid) {
+                self.flip();
+                return;
+            }
+        }
+    }
+
+    return;
+}
+
 // /fake/win/render
 
 pub fn readWinRender() []const u8 {
@@ -93,7 +118,7 @@ pub fn readWinRender() []const u8 {
 pub fn writeWinRender(data: []const u8) void {
     if (data.len < 66) return;
 
-    var texture = gfx.textures.get(data[0]);
+    var texture = gfx.textures.getPtr(data[0]);
     if (texture == null) return;
 
     var aid = data[1];
@@ -104,6 +129,7 @@ pub fn writeWinRender(data: []const u8) void {
         @intToFloat(f32, std.mem.bytesToValue(u64, data[18..26])),
         @intToFloat(f32, std.mem.bytesToValue(u64, data[26..34])),
     );
+
     var src = rect.newRect(
         @intToFloat(f32, std.mem.bytesToValue(u64, data[34..42])) / 1024,
         @intToFloat(f32, std.mem.bytesToValue(u64, data[42..50])) / 1024,
@@ -157,6 +183,14 @@ pub fn setupFakeWin(parent: *files.Folder) files.Folder {
         .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
         .pseudoRead = readWinRender,
         .pseudoWrite = writeWinRender,
+        .parent = undefined,
+    }) catch {};
+
+    result.contents.append(files.File{
+        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/flip", .{}) catch "",
+        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+        .pseudoRead = readWinFlip,
+        .pseudoWrite = writeWinFlip,
         .parent = undefined,
     }) catch {};
 

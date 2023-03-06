@@ -157,7 +157,7 @@ pub fn clickEmail(c: *[]u8, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32
         else => {},
     }
 
-    return true;
+    return false;
 }
 
 fn deleteEmail(cself: *[]u8) void {

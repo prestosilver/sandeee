@@ -40,6 +40,7 @@ var bartex: tex.Texture = undefined;
 var walltex: tex.Texture = undefined;
 var emailtex: tex.Texture = undefined;
 var editortex: tex.Texture = undefined;
+var barlogotex: tex.Texture = undefined;
 var explorertex: tex.Texture = undefined;
 var sb: batch.SpriteBatch = undefined;
 var shader: shd.Shader = shd.Shader{};
@@ -48,6 +49,7 @@ var face: font.Font = undefined;
 var windows: std.ArrayList(win.Window) = undefined;
 var bar: bars.Bar = undefined;
 var audioMan: audio.Audio = undefined;
+var barlogoSprite: sp.Sprite = undefined;
 var logoSprite: sp.Sprite = undefined;
 var loadSprite: sp.Sprite = undefined;
 var loadProgress: f32 = 0;
@@ -125,10 +127,9 @@ pub fn draw() !void {
 
             // draw the bar
             sb.draw(bars.Bar, &bar, shader, vecs.newVec3(0, 0, 0));
-            bar.data.drawName(font_shader, &face, &sb, &windows);
+            bar.data.drawName(font_shader, shader, &barlogoSprite, &face, &sb, &windows);
         },
-        .Crash => {
-        },
+        .Crash => {},
     }
 
     // actual gl calls start here
@@ -152,7 +153,7 @@ pub fn draw() !void {
 
 pub fn linuxCrashHandler(_: i32, info: *const std.os.siginfo_t, _: ?*const anyopaque) callconv(.C) noreturn {
     gameState = .Crash;
-    std.log.info("seg: {}, {any}", .{@ptrToInt(info.fields.sigfault.addr), info});
+    std.log.info("seg: {}, {any}", .{ @ptrToInt(info.fields.sigfault.addr), info });
     while (gfx.poll(ctx)) draw() catch {
         break;
     };
@@ -183,16 +184,6 @@ pub fn setupCrashHandler() !void {
 }
 
 pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
-    for (windows.items) |_, idx| {
-        var i = windows.items.len - idx - 1;
-
-        if (!windows.items[i].data.active) continue;
-
-        if (windows.items[i].data.click(mousepos, event.btn)) {
-            return false;
-        }
-    }
-
     if (event.btn == 0) {
         if (bar.data.doClick(webtex, wintex, emailtex, editortex, explorertex, shader, mousepos)) {
             return false;
@@ -257,6 +248,15 @@ pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
                     win.DragMode.ResizeLB => vecs.newVec2(start.w + start.x, start.h - mousepos.y),
                 };
             }
+        }
+    }
+    for (windows.items) |_, idx| {
+        var i = windows.items.len - idx - 1;
+
+        if (!windows.items[i].data.active) continue;
+
+        if (windows.items[i].data.click(mousepos, event.btn)) {
+            return false;
         }
     }
 
@@ -499,6 +499,7 @@ pub fn main() anyerror!void {
     const editorpath: []const u8 = "/cont/imgs/editor.eia";
     const emailpath: []const u8 = "/cont/imgs/email.eia";
     const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
+    const barlogopath: []const u8 = "/cont/imgs/barlogo.eia";
     const loginpath: []const u8 = "/cont/snds/login.era";
     const zero: u8 = 0;
     var fontpath = fm.getContentPath("content/font.ttf");
@@ -531,6 +532,7 @@ pub fn main() anyerror!void {
     try loader.enqueue(&wallpath, &walltex, worker.texture.loadTexture);
     try loader.enqueue(&editorpath, &editortex, worker.texture.loadTexture);
     try loader.enqueue(&emailpath, &emailtex, worker.texture.loadTexture);
+    try loader.enqueue(&barlogopath, &barlogotex, worker.texture.loadTexture);
     try loader.enqueue(&explorerpath, &explorertex, worker.texture.loadTexture);
 
     // sounds
@@ -578,9 +580,17 @@ pub fn main() anyerror!void {
     // play login sound
     try audioMan.playSound(loginSnd);
 
-    // main loop
-    //try setupCrashHandler();
+    barlogoSprite = sp.Sprite{
+        .texture = barlogotex,
+        .data = sp.SpriteData.new(
+            rect.newRect(0, 0, 1, 1),
+            vecs.newVec2(36, 464),
+        ),
+    };
 
+    try setupCrashHandler();
+
+    // main loop
     while (gfx.poll(ctx)) try draw();
 
     // save the current disk

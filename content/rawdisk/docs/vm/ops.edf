@@ -14,3 +14,98 @@ Pushes a value to the stack.
 -- 0x03 ADD --
 
 Adds the top 2 values on the stack.
+Shifts the beggining of a string.
+
+-- 0x04 SUB --
+
+Subtracts the top 2 values on the stack.
+Shifts the end of a string.
+
+-- 0x05 COPY --
+
+Copies a pointer on the stack.
+
+-- 0x06 JMP --
+
+Sets the program counter.
+
+-- 0x07 JZ --
+
+Sets the program counter if the top of the stack is zero.
+
+-- 0x08 JNZ --
+
+Sets the program counter if the top of the stack is not zero.
+
+-- 0x09 JMPF --
+
+Adds a value to the program counter.
+
+-- 0x0A MUL --
+
+Multiplies the top 2 values on the stack.
+
+-- 0x0B DIV --
+
+Divides the top 2 values on the stack.
+
+-- 0x0C AND --
+
+Bitwise and on the top 2 values on the stack.
+
+-- 0x0D OR --
+
+Bitwise or on the top 2 values on the stack.
+
+-- 0x0E Not --
+
+Pushes 1 if the top of the stack is 0 otherwise pushes 0.
+
+-- 0x0F EQ --
+
+Pushes 1 if the top 2 values on the stack are equal.
+
+-- 0x10 GETB --
+
+If the top of the stack is a string pushes the first char as a int.
+If the top of the stack is an int pushes it as a char in a string.
+
+-- 0x11 RET --
+
+Returns from a call.
+
+-- 0x12 CALL --
+
+Calls a function, if operand is a string calls a virtual function.
+
+-- 0x13 NEG --
+
+Subtracts the top of the stack from zero.
+
+-- 0x14 XOR --
+
+Bitwise xor on the top 2 values on the stack.
+
+-- 0x15 DISC --
+
+Discards the nth item on the stack.
+
+-- 0x16 ASIGN --
+
+Sets the 2nd item on the stack to the value of the first.
+
+-- 0x17 DUP --
+
+Duplicates a value on the stack by refrence.
+
+-- 0x18 LESS --
+
+Pushes 1 if the top 2nd value on the stack is less than the first.
+
+-- 0x19 GREATER --
+
+Pushes 1 if the top 2nd value on the stack is greater than the first.
+
+-- 0x1A CAT --
+
+Combines 2 strings, or appends a int as bytes to a string.

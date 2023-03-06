@@ -20,7 +20,7 @@ pub const VM = struct {
     };
 
     pub const StackEntry = struct {
-        string: ?[]const u8 = null,
+        string: ?[]u8 = null,
         value: ?*u64 = null,
     };
 
@@ -152,7 +152,7 @@ pub const VM = struct {
     };
 
     pub fn destroy(self: *VM) void {
-        while (self.rsp >= 1) {
+        while (self.rsp > 0) {
             self.rsp -= 1;
             self.free(self.stack[self.rsp]);
         }
@@ -185,7 +185,7 @@ pub const VM = struct {
     }
 
     pub fn freeValue(self: *VM, val: *u64) void {
-        for (self.stack[0 .. self.rsp + 1]) |entry| {
+        for (self.stack[0 .. self.rsp]) |entry| {
             if (entry.value != null and @ptrToInt(entry.value.?) == @ptrToInt(val)) {
                 return;
             }
@@ -194,12 +194,23 @@ pub const VM = struct {
     }
 
     pub fn freeString(self: *VM, val: []const u8) void {
-        for (self.stack[0 .. self.rsp + 1]) |entry| {
+        for (self.stack[0 .. self.rsp]) |entry| {
             if (entry.string != null and @ptrToInt(entry.string.?.ptr) == @ptrToInt(val.ptr)) {
                 return;
             }
         }
         self.allocator.free(val);
+    }
+
+    pub fn resizeString(self: *VM, val: []u8, size: u64) ![]u8 {
+        var new = try self.allocator.realloc(val, size);
+
+        for (self.stack[0 .. self.rsp + 1]) |entry, idx| {
+            if (entry.string != null and @ptrToInt(entry.string.?.ptr) == @ptrToInt(val.ptr)) {
+                self.stack[idx].string = new;
+            }
+        }
+        return new;
     }
 
     pub fn free(self: *VM, val: StackEntry) void {
@@ -505,8 +516,6 @@ pub const VM = struct {
 
                             try self.functions.put(nameStr, finalOps);
 
-                            //std.log.info("Created: '{s}', {any}", .{name.string.?, finalOps});
-
                             return;
                         },
                         // misc
@@ -543,7 +552,9 @@ pub const VM = struct {
 
                 if (a.value != null) {
                     if (b.value != null) {
-                        try self.pushStackI(a.value.?.* / b.value.?.*);
+                        if (a.value.?.* == 0) return error.DivZero;
+
+                        try self.pushStackI(b.value.?.* / a.value.?.*);
 
                         return;
                     } else return error.InvalidOp;
@@ -741,6 +752,10 @@ pub const VM = struct {
                         try self.pushStackI(val);
                     }
                     return;
+                } else if (a.value != null) {
+                    try self.pushStackS(std.mem.toBytes(a.value.?.*)[0..1]);
+
+                    return;
                 } else return error.InvalidOp;
             },
             Operation.Code.Ret => {
@@ -769,19 +784,24 @@ pub const VM = struct {
             Operation.Code.Cat => {
                 var b = try self.popStack();
                 defer self.free(b);
-                var a = try self.popStack();
-                defer self.free(a);
+                var a = try self.findStack(0);
 
                 if (a.string != null) {
                     if (b.string != null) {
-                        var comb = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?, b.string.? });
-                        try self.pushStackS(comb);
-                        self.allocator.free(comb);
+                        const start = a.string.?.len;
+                        const total = a.string.?.len + b.string.?.len;
+
+                        a.string.? = try self.resizeString(a.string.?, total);
+                        std.mem.copy(u8, a.string.?[start..], b.string.?);
+
                         return;
                     } else if (b.value != null) {
-                        var comb = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?, std.mem.toBytes(b.value.?.*) });
-                        try self.pushStackS(comb);
-                        self.allocator.free(comb);
+                        const start = a.string.?.len;
+                        const total = a.string.?.len + 8;
+
+                        a.string.? = try self.resizeString(a.string.?, total);
+                        std.mem.copy(u8, a.string.?[start..], &std.mem.toBytes(b.value.?.*));
+
                         return;
                     } else return error.InvalidOp;
                 } else if (b.string != null) {

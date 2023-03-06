@@ -2,9 +2,12 @@ main:
     call create_win             ; create window
     call create_tex             ; create a texture
     call read_texture
-    dup 2
+    dup 1
     call upload_tex
     call render
+
+    dup 1
+    call flip
 
     sys 9
     push 10000                  ; 10 seconds
@@ -19,6 +22,15 @@ loop:
     call destroy_tex
     call destroy_win
     sys 1
+
+flip:
+    push "/fake/win/flip"
+    sys 3
+    dup 0
+    dup 2
+    sys 5
+    sys 7
+    ret
 
 render:
     push "/fake/win/render"     ; win tex | path

@@ -35,11 +35,13 @@ const ExplorerData = struct {
     shader: shd.Shader,
     icons: [5]sprite.Sprite,
     scroll: [4]sprite.Sprite,
+    text_box: [2]sprite.Sprite,
+    menubar: sprite.Sprite,
+
     scrollVal: f32,
     focus: sprite.Sprite,
     focused: ?u64,
     selected: usize,
-    path: *files.Folder,
     maxy: f32,
     lastAction: ?ExplorerMouseAction,
     shell: shell.Shell,
@@ -86,17 +88,8 @@ pub fn drawExplorer(cself: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shade
         }
     }
 
-    self.scroll[1].data.size.y = bnds.h - 20;
-
-    var scrollPc = self.scrollVal / self.maxy;
-
-    batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
-    batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
-    batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-    batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 48) * scrollPc + bnds.y + 10, 0));
-
     var x: f32 = 0;
-    var y: f32 = -self.scrollVal;
+    var y: f32 = -self.scrollVal + 36;
 
     var icons = self.getIcons();
     defer allocator.alloc.free(icons);
@@ -147,6 +140,34 @@ pub fn drawExplorer(cself: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shade
         self.scrollVal = self.maxy;
     if (self.scrollVal < 0)
         self.scrollVal = 0;
+
+    // draw menubar
+    self.menubar.data.size.x = bnds.w;
+    batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+
+    batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
+    self.text_box[1].data.size.x = bnds.w - 4 - 34;
+
+    batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
+    batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 4, bnds.y + 2, 0));
+
+    var tmp = batch.scissor;
+    batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 4 - 34, 28);
+    font.drawScale(batch, font_shader, self.shell.root.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
+
+    batch.scissor = tmp;
+
+    batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
+
+    // draw scrollbar
+    var scrollPc = self.scrollVal / self.maxy;
+
+    self.scroll[1].data.size.y = bnds.h - 20 - 36;
+
+    batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
+    batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
+    batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+    batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
 }
 
 fn deleteExplorer(cself: *[]u8) void {
@@ -168,9 +189,18 @@ fn scrollExplorer(cself: *[]u8, _: f32, y: f32) void {
 pub fn clickExplorer(cself: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
     var self = @ptrCast(*ExplorerData, cself);
 
+    if (mousepos.y < 36) {
+        if (rect.newRect(0, 0, 28, 28).contains(mousepos)) {
+            self.shell.root = self.shell.root.parent;
+            self.selected = 0;
+        }
+
+        return false;
+    }
+
     switch (btn) {
         0 => {
-            if (self.lastAction != null) {
+            if (self.lastAction != null and vecs.distSq(mousepos, self.lastAction.?.pos) < 100) {
                 self.lastAction = .{
                     .kind = .DoubleLeft,
                     .pos = mousepos,
@@ -180,7 +210,7 @@ pub fn clickExplorer(cself: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn:
                 self.lastAction = .{
                     .kind = .SingleLeft,
                     .pos = mousepos,
-                    .time = 40,
+                    .time = 100,
                 };
             }
         },
@@ -239,6 +269,26 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     self.focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
         vecs.newVec2(72.0, 72.0),
+    ));
+
+    self.menubar = sprite.Sprite.new(texture, sprite.SpriteData.new(
+        rect.newRect(17.0 / 32.0, 0.0 / 32.0 / ym, 1.0 / 32.0, 18.0 / 32.0 / ym),
+        vecs.newVec2(0.0, 36.0),
+    ));
+
+    self.text_box[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
+        rect.newRect(18.0 / 32.0, 0.0 / 32.0 / ym, 0.0 / 32.0, 14.0 / 32.0 / ym),
+        vecs.newVec2(2.0, 28.0),
+    ));
+
+    self.text_box[1] = sprite.Sprite.new(texture, sprite.SpriteData.new(
+        rect.newRect(19.0 / 32.0, 0.0 / 32.0 / ym, 0.0 / 32.0, 14.0 / 32.0 / ym),
+        vecs.newVec2(2.0, 28.0),
+    ));
+
+    self.icons[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
+        rect.newRect(0.0 / 32.0, 21.0 / 32.0 / ym, 10.0 / 32.0, 11.0 / 32.0 / ym),
+        vecs.newVec2(20.0, 22.0),
     ));
 
     self.shader = shader;
