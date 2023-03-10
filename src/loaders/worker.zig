@@ -8,6 +8,8 @@ pub const texture = @import("texture.zig");
 pub const font = @import("font.zig");
 pub const sound = @import("sound.zig");
 pub const files = @import("files.zig");
+pub const settings = @import("settings.zig");
+pub const mail = @import("mail.zig");
 
 pub fn WorkerQueueEntry(comptime T: type, comptime U: type) type {
     return struct {

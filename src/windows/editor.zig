@@ -21,6 +21,7 @@ pub const EditorData = struct {
     shader: shd.Shader,
     numLeft: sp.Sprite,
     numDiv: sp.Sprite,
+    scroll: [3]sp.Sprite,
     icons: [2]sp.Sprite,
     cursor: vecs.Vector2,
     cursorIdx: usize,

@@ -1,5 +1,10 @@
 main:
-    call create_win             ; create window
+    call setup_load
+
+    push "/libs/window.ell"
+    call "libload"
+
+    call "WindowCreate"         ; create window
     call create_tex             ; create a texture
     call read_texture
     dup 1
@@ -7,10 +12,10 @@ main:
     call render
 
     dup 1
-    call flip
+    call "WindowFlip"
 
     sys 9
-    push 10000                  ; 10 seconds
+    push 1000                   ; 1 second
     add
 loop:
     sys 9
@@ -20,17 +25,8 @@ loop:
     disc 0
 
     call destroy_tex
-    call destroy_win
+    call "WindowDestroy"
     sys 1
-
-flip:
-    push "/fake/win/flip"
-    sys 3
-    dup 0
-    dup 2
-    sys 5
-    sys 7
-    ret
 
 render:
     push "/fake/win/render"     ; win tex | path
@@ -41,8 +37,8 @@ render:
     cat                         ; win tex | handle handle tex_win
     push 0
     push 0
-    push 500
-    push 500
+    push 100
+    push 700
     call make_rect              ; win tex | handle handle tex_win rect
     cat
     push 0
@@ -72,7 +68,7 @@ make_rect:
     ret
 
 read_texture:
-    push "/cont/imgs/bar.eia"   ; path
+    push "/cont/imgs/window.eia"   ; path
     sys 3                       ; open
     dup 0                       ; handle
     push 100000000
@@ -80,27 +76,6 @@ read_texture:
     dup 1
     sys 7
     disc 1
-    ret
-
-create_win:
-    push "/fake/win/new"        ; path
-    sys 3                       ; open
-    dup 0                       ; handle
-    push 1                      ; size
-    sys 4                       ; read
-    dup 1                       ; file handle
-    sys 7                       ; flush
-    disc 1                      ; file handle
-    ret
-
-destroy_win:
-    push "/fake/win/destroy"
-    sys 3
-    dup 0
-    dup 2
-    sys 5
-    sys 7
-    disc 0
     ret
 
 create_tex:
@@ -135,4 +110,19 @@ destroy_tex:
     sys 5                       ; write
     sys 7
     disc 0
+    ret
+
+setup_load:
+    push "/libs/libload.eep"
+    sys 3
+    copy 0
+    push 4
+    sys 4
+    disc 0
+    copy 0
+    push 100000
+    sys 4
+    push "libload"
+    sys 12
+    sys 7
     ret

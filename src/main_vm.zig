@@ -13,7 +13,7 @@ pub fn main() anyerror!void {
 
     std.log.info("loading", .{});
 
-    vm.loadString(contents[4..]);
+    try vm.loadString(contents[4..]);
 
     std.log.info("running...", .{});
 

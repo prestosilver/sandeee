@@ -12,6 +12,7 @@ const wins = @import("../windows/all.zig");
 const gfx = @import("../graphics.zig");
 const spr = @import("../drawers/sprite2d.zig");
 const c = @import("../c.zig");
+const allocator = @import("../util/allocator.zig");
 
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
@@ -61,11 +62,22 @@ pub const BarData = struct {
         addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE));
     }
 
-    pub fn drawName(self: *BarData, font_shader: shd.Shader, shader: shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) void {
+    pub fn drawName(self: *BarData, font_shader: shd.Shader, shader: shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) !void {
         var pos = rect.newRect(self.height, self.screendims.y - self.height + 6, self.screendims.x + self.height, self.height);
 
         var color = cols.newColorRGBA(0, 0, 0, 255);
         font.draw(batch, font_shader, "APPS", pos.location(), color);
+
+        var ts = std.time.timestamp();
+        var hours = @intCast(u64, ts) / std.time.s_per_hour % 12;
+        var mins = @intCast(u64, ts) / std.time.s_per_min % 60;
+        var clockString = try std.fmt.allocPrint(allocator.alloc, "{}:{}", .{ hours, mins });
+        defer allocator.alloc.free(clockString);
+
+        var clockSize = font.sizeText(clockString);
+        var clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
+
+        font.draw(batch, font_shader, clockString, clockPos, color);
 
         pos.x = 3 * self.height + 10;
         self.btns = 0;
@@ -79,6 +91,25 @@ pub const BarData = struct {
 
         if (self.btnActive) {
             batch.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
+
+            for (range(10)) |_, i| {
+                var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
+                var text: []const u8 = "";
+                switch (i) {
+                    0 => text = "Cmd",
+                    1 => text = "EEEMail",
+                    2 => text = "EEEdit",
+                    3 => text = "Files",
+                    4 => text = "Xplore",
+                    5 => text = "Settings",
+                    6 => text = "Log out",
+                    else => continue,
+                }
+                var height = font.size * 1;
+                y += std.math.floor((67 - height) / 2);
+                var textpos = vecs.newVec2(100, y);
+                font.drawScale(batch, font_shader, text, textpos, color, 1);
+            }
         }
     }
 

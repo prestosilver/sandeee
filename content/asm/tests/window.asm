@@ -1,5 +1,10 @@
 main:
-    call create_win             ; create window
+    call setup_load
+
+    push "/libs/window.ell"
+    call "libload"
+
+    call "WindowCreate"         ; create window
 
     sys 9
     push 1000                   ; 1 second
@@ -11,26 +16,20 @@ loop:
     jnz loop
     disc 0
 
-    call destroy_win
+    call "WindowDestroy"
     sys 1
 
-create_win:
-    push "/fake/win/new"        ; path
-    sys 3                       ; open
-    dup 0                       ; handle
-    push 1                      ; size
-    sys 4                       ; read
-    dup 1                       ; file handle
-    sys 7                       ; flush
-    disc 1                      ; file handle
-    ret
-
-destroy_win:
-    push "/fake/win/destroy"
+setup_load:
+    push "/libs/libload.eep"
     sys 3
-    dup 0
-    dup 2
-    sys 5
-    sys 7
+    copy 0
+    push 4
+    sys 4
     disc 0
+    copy 0
+    push 100000
+    sys 4
+    push "libload"
+    sys 12
+    sys 7
     ret

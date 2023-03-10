@@ -243,7 +243,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (std.mem.eql(u8, op, "lt")) code = 24;
         if (std.mem.eql(u8, op, "gt")) code = 25;
         if (std.mem.eql(u8, op, "cat")) code = 26;
-        if (std.mem.eql(u8, op, "tob")) code = 27;
+        if (std.mem.eql(u8, op, "mod")) code = 27;
 
         if (code == 255) {
             return error.UnknownOp;

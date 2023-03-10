@@ -29,18 +29,23 @@ pub const VM = struct {
         location: u64,
     };
 
+    pub const VMFunc = struct {
+        string: []const u8,
+        ops: []Operation,
+    };
+
     allocator: std.mem.Allocator,
     stack: [STACK_MAX]StackEntry,
     rsp: u64 = 0,
 
-    functions: std.StringArrayHashMap([]Operation),
+    functions: std.StringArrayHashMap(VMFunc),
     inside_fn: ?[]const u8 = null,
 
     retStack: [512]RetStackEntry = undefined,
     retRsp: u8 = 0,
 
     pc: u64 = 0,
-    code: []const Operation = undefined,
+    code: ?[]const Operation = null,
     stopped: bool = false,
 
     streams: std.ArrayList(?*streams.FileStream),
@@ -65,7 +70,8 @@ pub const VM = struct {
             .stack = undefined,
             .allocator = alloc,
             .streams = std.ArrayList(?*streams.FileStream).init(alloc),
-            .functions = std.StringArrayHashMap([]Operation).init(alloc),
+            .functions = std.StringArrayHashMap(VMFunc).init(alloc),
+            .out = std.ArrayList(u8).init(alloc),
             .args = tmpArgs,
             .root = root,
         };
@@ -144,6 +150,8 @@ pub const VM = struct {
             Greater,
 
             Cat,
+            Mod,
+            _,
         };
 
         code: Code,
@@ -157,16 +165,21 @@ pub const VM = struct {
             self.free(self.stack[self.rsp]);
         }
 
-        for (self.code) |entry| {
-            if (entry.string != null) {
-                self.allocator.free(entry.string.?);
+        if (self.code) |code| {
+            for (code) |entry| {
+                if (entry.string != null) {
+                    self.allocator.free(entry.string.?);
+                }
             }
+            self.allocator.free(code);
         }
 
         var iter = self.functions.iterator();
 
         while (iter.next()) |entry| {
-            self.allocator.free(entry.value_ptr.*);
+            self.allocator.free(entry.key_ptr.*);
+            self.allocator.free(entry.value_ptr.*.ops);
+            self.allocator.free(entry.value_ptr.*.string);
         }
 
         for (self.streams.items) |stream| {
@@ -178,14 +191,14 @@ pub const VM = struct {
             self.allocator.free(self.args[idx]);
         }
 
-        self.allocator.free(self.code);
         self.allocator.free(self.args);
+        self.functions.deinit();
         self.streams.deinit();
         self.out.deinit();
     }
 
     pub fn freeValue(self: *VM, val: *u64) void {
-        for (self.stack[0 .. self.rsp]) |entry| {
+        for (self.stack[0..self.rsp]) |entry| {
             if (entry.value != null and @ptrToInt(entry.value.?) == @ptrToInt(val)) {
                 return;
             }
@@ -194,7 +207,7 @@ pub const VM = struct {
     }
 
     pub fn freeString(self: *VM, val: []const u8) void {
-        for (self.stack[0 .. self.rsp]) |entry| {
+        for (self.stack[0..self.rsp]) |entry| {
             if (entry.string != null and @ptrToInt(entry.string.?.ptr) == @ptrToInt(val.ptr)) {
                 return;
             }
@@ -219,7 +232,7 @@ pub const VM = struct {
     }
 
     pub fn runOp(self: *VM, op: Operation) !void {
-        //std.log.debug("{}", .{op});
+        //std.log.debug("{?s}, {}", .{self.inside_fn, op});
 
         self.pc += 1;
 
@@ -246,7 +259,7 @@ pub const VM = struct {
                     return error.MissingValue;
                 } else if (a.value != null) {
                     if (b.string != null) {
-                        if (b.string.?.len > a.value.?.*) {
+                        if (b.string.?.len < a.value.?.*) {
                             try self.pushStackS("");
                         } else {
                             try self.pushStackS(b.string.?[a.value.?.*..]);
@@ -268,7 +281,7 @@ pub const VM = struct {
                     return error.InvalidOp;
                 } else if (a.value != null) {
                     if (b.string != null) {
-                        if (b.string.?.len > a.value.?.*) {
+                        if (b.string.?.len < a.value.?.*) {
                             try self.pushStackS("");
                         } else {
                             try self.pushStackS(b.string.?[0 .. b.string.?.len - a.value.?.*]);
@@ -505,7 +518,12 @@ pub const VM = struct {
                             if (func.string == null) return error.StringMissing;
                             if (name.string == null) return error.StringMissing;
 
-                            var ops = self.stringToOps(func.string.?);
+                            //std.log.info("reg: {s}", .{name.string.?});
+
+                            var dup = try self.allocator.alloc(u8, func.string.?.len);
+                            std.mem.copy(u8, dup, func.string.?);
+
+                            var ops = try self.stringToOps(dup);
                             defer ops.deinit();
 
                             var finalOps = try self.allocator.alloc(Operation, ops.items.len);
@@ -514,7 +532,10 @@ pub const VM = struct {
                             var nameStr = try self.allocator.alloc(u8, name.string.?.len);
                             std.mem.copy(u8, nameStr, name.string.?);
 
-                            try self.functions.put(nameStr, finalOps);
+                            try self.functions.put(nameStr, .{
+                                .string = dup,
+                                .ops = finalOps,
+                            });
 
                             return;
                         },
@@ -555,6 +576,22 @@ pub const VM = struct {
                         if (a.value.?.* == 0) return error.DivZero;
 
                         try self.pushStackI(b.value.?.* / a.value.?.*);
+
+                        return;
+                    } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Mod => {
+                var a = try self.popStack();
+                defer self.free(a);
+                var b = try self.popStack();
+                defer self.free(b);
+
+                if (a.value != null) {
+                    if (b.value != null) {
+                        if (a.value.?.* == 0) return error.DivZero;
+
+                        try self.pushStackI(b.value.?.* % a.value.?.*);
 
                         return;
                     } else return error.InvalidOp;
@@ -744,11 +781,9 @@ pub const VM = struct {
 
                 if (a.string != null) {
                     if (a.string.?.len == 0) {
-                        self.allocator.free(a.string.?);
                         try self.pushStackI(0);
                     } else {
                         var val = @intCast(u64, a.string.?[0]);
-                        self.allocator.free(a.string.?);
                         try self.pushStackI(val);
                     }
                     return;
@@ -808,14 +843,15 @@ pub const VM = struct {
                     return error.StringMissing;
                 } else return error.InvalidOp;
             },
+            _ => {
+                return error.InvalidOp;
+            },
         }
         return error.NotImplemented;
     }
 
     pub fn loadList(self: *VM, ops: []Operation) void {
         var list = self.allocator.alloc(Operation, ops.len) catch null;
-
-        self.out = std.ArrayList(u8).init(self.allocator);
 
         for (ops) |_, idx| {
             list.?[idx] = ops[idx];
@@ -833,13 +869,21 @@ pub const VM = struct {
         self.code = list.?;
     }
 
-    pub fn stringToOps(self: *VM, conts: []const u8) std.ArrayList(Operation) {
+    pub fn stringToOps(self: *VM, conts: []const u8) !std.ArrayList(Operation) {
         var ops = std.ArrayList(Operation).init(self.allocator);
 
         var parsePtr: usize = 0;
         while (parsePtr < conts.len) {
+            if (parsePtr >= conts.len) {
+                ops.deinit();
+                return error.InvalidAsm;
+            }
             var code: Operation.Code = @intToEnum(Operation.Code, conts[parsePtr]);
             parsePtr += 1;
+            if (parsePtr >= conts.len) {
+                ops.deinit();
+                return error.InvalidAsm;
+            }
             var kind = conts[parsePtr];
             parsePtr += 1;
 
@@ -863,14 +907,17 @@ pub const VM = struct {
                 ops.append(VM.Operation{ .code = code, .value = @intCast(u64, value) }) catch {};
             } else if (kind == 0) {
                 ops.append(VM.Operation{ .code = code }) catch {};
+            } else {
+                ops.deinit();
+                return error.InvalidAsm;
             }
         }
 
         return ops;
     }
 
-    pub fn loadString(self: *VM, conts: []const u8) void {
-        var ops = self.stringToOps(conts);
+    pub fn loadString(self: *VM, conts: []const u8) !void {
+        var ops = try self.stringToOps(conts);
         defer ops.deinit();
 
         self.loadList(ops.items);
@@ -883,20 +930,39 @@ pub const VM = struct {
     }
 
     pub fn done(self: *VM) bool {
-        return (self.pc >= self.code.len and self.inside_fn == null) or self.stopped;
+        return (self.pc >= self.code.?.len and self.inside_fn == null) or self.stopped;
+    }
+
+    pub fn getOp(self: *VM) ![]u8 {
+        var oper: Operation = undefined;
+        if (self.inside_fn) |inside| {
+            if (self.functions.getPtr(inside)) |func| {
+                oper = func.*.ops[self.pc];
+            } else {
+                var result = try std.fmt.allocPrint(self.allocator, "In function '?' @ {}:\nOperation: {}", .{ self.pc, oper.code });
+
+                return result;
+            }
+        } else {
+            oper = self.code.?[self.pc];
+        }
+
+        var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper.code });
+
+        return result;
     }
 
     pub fn runStep(self: *VM) !bool {
         var oper: Operation = undefined;
         if (self.inside_fn) |inside| {
             if (self.functions.getPtr(inside)) |func| {
-                oper = func.*[self.pc];
+                oper = func.*.ops[self.pc];
             } else {
                 //std.log.err("'{s}', {any}", .{inside, self.functions.get(inside)});
                 return error.UnknownFunction;
             }
         } else {
-            oper = self.code[self.pc];
+            oper = self.code.?[self.pc];
         }
 
         try self.runOp(oper);

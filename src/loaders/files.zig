@@ -10,7 +10,8 @@ const gfx = @import("../graphics.zig");
 pub fn loadFiles(_: *worker.WorkerQueueEntry(*const u8, *const u8)) bool {
     std.log.debug("load files", .{});
 
-    files.Folder.init() catch {
+    files.Folder.init() catch |msg| {
+        std.log.err("{}", .{msg});
         return false;
     };
 

@@ -256,15 +256,15 @@ pub const Shell = struct {
     pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) !Result {
         return self.runFileInFolder(files.exec, cmd, param) catch
             self.runFileInFolder(self.root, cmd, param) catch {
-                if (self.root.getFile(cmd) != null) {
-                    var opens = try opener.openFile(cmd);
-                    var params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{opens, param});
-                    defer allocator.alloc.free(params);
+            if (self.root.getFile(cmd) != null) {
+                var opens = try opener.openFile(cmd);
+                var params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ opens, param });
+                defer allocator.alloc.free(params);
 
-                    return self.run(opens, params);
-                } else {
-                    return error.FileNotFound;
-                }
+                return self.run(opens, params);
+            } else {
+                return error.FileNotFound;
+            }
         };
     }
 
@@ -347,7 +347,15 @@ pub const Shell = struct {
 
                 var ops = item.read()[4..];
 
-                self.vm.?.loadString(ops);
+                self.vm.?.loadString(ops) catch |err| {
+                    result.data.deinit();
+
+                    self.vm.?.destroy();
+                    self.vm = null;
+                    vms -= 1;
+
+                    return err;
+                };
 
                 return result;
             }
@@ -364,14 +372,21 @@ pub const Shell = struct {
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
 
-            self.vm.?.destroy();
-            self.vm = null;
-            vms -= 1;
+            try result.data.appendSlice(self.vm.?.out.items);
 
-            var errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+            var errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});
             defer allocator.alloc.free(errString);
 
             try result.data.appendSlice(errString);
+
+            var msgString = try self.vm.?.getOp();
+            defer allocator.alloc.free(msgString);
+
+            try result.data.appendSlice(msgString);
+
+            self.vm.?.destroy();
+            self.vm = null;
+            vms -= 1;
 
             return result;
         }) {
@@ -418,8 +433,8 @@ pub const Shell = struct {
         if (check(cmd, "cmd")) return self.runCmd(params);
         if (check(cmd, "edit")) return self.runEdit(params);
         if (check(cmd, "web")) return self.runWeb(params);
-        if (check(cmd, "email")) return self.todo(params);
         if (check(cmd, "new")) return self.new(params);
+        //if (check(cmd, "rem")) return self.rem(params);
         if (check(cmd, "cd")) return self.cd(params);
 
         if (check(cmd, "$run")) {

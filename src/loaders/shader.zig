@@ -10,7 +10,8 @@ pub fn loadShader(self: *worker.WorkerQueueEntry(*const [2]shd.ShaderFile, *shd.
 
     std.log.debug("load shader", .{});
     self.out.* = shd.Shader.new(2, self.indata.*);
-    gfx.regShader(gfx.gContext, self.out.*) catch {
+    gfx.regShader(gfx.gContext, self.out.*) catch |msg| {
+        std.log.err("{}", .{msg});
         return false;
     };
 

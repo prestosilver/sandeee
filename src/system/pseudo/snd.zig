@@ -36,6 +36,7 @@ pub fn setupFakeSnd(parent: *files.Folder) files.Folder {
         .subfolders = std.ArrayList(files.Folder).init(allocator.alloc),
         .contents = std.ArrayList(files.File).init(allocator.alloc),
         .parent = parent,
+        .protected = true,
     };
 
     result.contents.append(files.File{

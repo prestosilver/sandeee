@@ -39,18 +39,18 @@ pub const DiskStep = struct {
         while (entry) |file| : (entry = walker.?.next() catch null) {
             switch (file.kind) {
                 std.fs.IterableDir.Entry.Kind.File => {
-                    std.debug.assert(try files.newFile(file.path));
+                    std.debug.assert(try files.root.newFile(file.path));
                     var contents = root.?.readFileAlloc(self.alloc, file.path, 100000000) catch null;
                     if (contents == null) {
                         std.log.info("{s} empty", .{file.path});
                         continue;
                     }
 
-                    std.debug.assert(files.writeFile(file.path, contents.?));
+                    try files.root.writeFile(file.path, contents.?);
                     count += 1;
                 },
                 std.fs.IterableDir.Entry.Kind.Directory => {
-                    std.debug.assert(files.newFolder(file.path));
+                    std.debug.assert(try files.root.newFolder(file.path));
                 },
                 else => {},
             }

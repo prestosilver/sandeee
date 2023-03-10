@@ -13,6 +13,7 @@ const wall = @import("drawers/wall2d.zig");
 const sp = @import("drawers/sprite2d.zig");
 const win = @import("drawers/window2d.zig");
 const bars = @import("drawers/bar2d.zig");
+const csr = @import("drawers/cursor2d.zig");
 const shd = @import("shader.zig");
 const fm = @import("util/files.zig");
 const files = @import("system/files.zig");
@@ -20,6 +21,7 @@ const events = @import("util/events.zig");
 const shell = @import("system/shell.zig");
 const audio = @import("util/audio.zig");
 const pseudo = @import("system/pseudo/all.zig");
+const conf = @import("system/config.zig");
 
 const inputEvs = @import("events/input.zig");
 const windowEvs = @import("events/window.zig");
@@ -28,8 +30,9 @@ const allocator = @import("util/allocator.zig");
 const vm = @import("system/vm.zig");
 const mail = @import("system/mail.zig");
 const wins = @import("windows/all.zig");
-const c = @import("c.zig");
 const worker = @import("loaders/worker.zig");
+
+const c = @import("c.zig");
 
 var wallpaper: wall.Wallpaper = undefined;
 var ctx: gfx.Context = undefined;
@@ -42,6 +45,8 @@ var emailtex: tex.Texture = undefined;
 var editortex: tex.Texture = undefined;
 var barlogotex: tex.Texture = undefined;
 var explorertex: tex.Texture = undefined;
+var cursortex: tex.Texture = undefined;
+
 var sb: batch.SpriteBatch = undefined;
 var shader: shd.Shader = shd.Shader{};
 var font_shader: shd.Shader = shd.Shader{};
@@ -52,12 +57,17 @@ var audioMan: audio.Audio = undefined;
 var barlogoSprite: sp.Sprite = undefined;
 var logoSprite: sp.Sprite = undefined;
 var loadSprite: sp.Sprite = undefined;
+var sadSprite: sp.Sprite = undefined;
 var loadProgress: f32 = 0;
+var settingManager: conf.SettingManager = undefined;
 
 var dragging: ?*win.Window = null;
 var draggingStart: vecs.Vector2 = vecs.newVec2(0, 0);
 var dragmode: win.DragMode = win.DragMode.None;
 var mousepos: vecs.Vector2 = vecs.newVec2(0, 0);
+var size: vecs.Vector2 = vecs.newVec2(0, 0);
+
+var cursor: csr.Cursor = undefined;
 
 const GameState = enum { Loading, Game, Crash };
 var gameState: GameState = .Loading;
@@ -69,9 +79,12 @@ const fontFragShader = @embedFile("shaders/ffrag.glsl");
 
 const logoImage = @embedFile("images/logo.eia");
 const loadImage = @embedFile("images/load.eia");
+const sadImage = @embedFile("images/sad.eia");
 const paletteImage = @embedFile("images/palette.eia");
 
 var logoOff: vecs.Vector2 = vecs.newVec2(0, 0);
+
+var openWindow: vecs.Vector2 = vecs.newVec2(100, 100);
 
 const shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fragShader, .kind = c.GL_FRAGMENT_SHADER },
@@ -127,9 +140,14 @@ pub fn draw() !void {
 
             // draw the bar
             sb.draw(bars.Bar, &bar, shader, vecs.newVec3(0, 0, 0));
-            bar.data.drawName(font_shader, shader, &barlogoSprite, &face, &sb, &windows);
+            try bar.data.drawName(font_shader, shader, &barlogoSprite, &face, &sb, &windows);
+
+            // draw the cursor
+            //sb.draw(csr.Cursor, &cursor, shader, vecs.newVec3(mousepos.x, mousepos.y, 0));
         },
-        .Crash => {},
+        .Crash => {
+            sb.draw(sp.Sprite, &sadSprite, shader, vecs.newVec3(300, 300, 0));
+        },
     }
 
     // actual gl calls start here
@@ -151,18 +169,13 @@ pub fn draw() !void {
     ctx.makeNotCurrent();
 }
 
-pub fn linuxCrashHandler(_: i32, info: *const std.os.siginfo_t, _: ?*const anyopaque) callconv(.C) noreturn {
-    gameState = .Crash;
-    std.log.info("seg: {}, {any}", .{ @ptrToInt(info.fields.sigfault.addr), info });
-    while (gfx.poll(ctx)) draw() catch {
-        break;
-    };
-
-    std.os.exit(0);
+pub fn linuxCrashHandler(_: i32, _: *const std.os.siginfo_t, _: ?*const anyopaque) callconv(.C) noreturn {
+    @panic("segfault");
 }
 
-pub fn windowsCrashHandler(_: c_int) callconv(.C) noreturn {
+pub fn panic(msg: []const u8, st: ?*std.builtin.StackTrace, addr: ?usize) noreturn {
     gameState = .Crash;
+    std.log.err("crash: {s}, {?}, {?any}", .{ msg, addr, st });
     while (gfx.poll(ctx)) draw() catch {
         break;
     };
@@ -179,7 +192,7 @@ pub fn setupCrashHandler() !void {
         };
         try std.os.sigaction(c.SIGSEGV, &act, null);
     } else {
-        _ = c.signal(c.SIGABRT, windowsCrashHandler);
+        //_ = c.signal(c.SIGABRT, windowsCrashHandler);
     }
 }
 
@@ -194,10 +207,10 @@ pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
             if (windows.items[idx].data.min) continue;
 
             var pos = windows.items[idx].data.pos;
-            pos.x -= 20;
-            pos.y -= 20;
-            pos.w += 40;
-            pos.h += 40;
+            pos.x -= 10;
+            pos.y -= 10;
+            pos.w += 20;
+            pos.h += 20;
 
             if (pos.contains(mousepos)) {
                 newTop = @intCast(i32, idx);
@@ -353,6 +366,12 @@ pub fn keyDown(event: inputEvs.EventKeyDown) bool {
         return false;
     }
 
+    if (event.key == c.GLFW_KEY_F1) {
+        var lol: []const u8 = "";
+
+        std.log.info("{}", .{lol[0]});
+    }
+
     // send to active window
     for (windows.items) |_, idx| {
         var i = windows.items.len - idx - 1;
@@ -376,7 +395,7 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
     gfx.resize(event.w, event.h) catch {};
     ctx.makeNotCurrent();
 
-    var size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
+    size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
 
     bar.data.screendims = size;
     sb.size = size;
@@ -387,14 +406,27 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
 }
 
 pub fn createWindow(event: windowEvs.EventCreateWindow) bool {
+    var target = vecs.newVec2(100, 100);
+
     for (windows.items) |_, idx| {
         windows.items[idx].data.active = false;
+
+        if (windows.items[idx].data.pos.x == 100 or windows.items[idx].data.pos.y == 100)
+            target = openWindow;
     }
 
     windows.append(event.window) catch {
         std.log.err("couldnt create window!", .{});
         return false;
     };
+
+    windows.items[windows.items.len - 1].data.pos.x = target.x;
+    windows.items[windows.items.len - 1].data.pos.y = target.y;
+
+    openWindow.x = target.y + 25;
+    openWindow.y = target.x + 25;
+    if (openWindow.x > size.x - 500) openWindow.x = 100;
+    if (openWindow.y > size.y - 400) openWindow.y = 100;
     return false;
 }
 
@@ -431,10 +463,12 @@ pub fn setupForLoad() !void {
 
     c.glfwGetWindowSize(ctx.window, &w, &h);
 
-    sb = try batch.newSpritebatch(@intToFloat(f32, w), @intToFloat(f32, h));
-    win.deskSize = vecs.newVec2(@intToFloat(f32, w), @intToFloat(f32, h));
+    size = vecs.newVec2(@intToFloat(f32, w), @intToFloat(f32, h));
 
-    logoOff = vecs.newVec2(@intToFloat(f32, w - 320) / 2.0, @intToFloat(f32, h - 70) / 2.0);
+    sb = try batch.newSpritebatch(size.x, size.y);
+    win.deskSize = size;
+
+    logoOff = vecs.newVec2((size.x - 320) / 2.0, (size.y - 70) / 2.0);
 
     logoSprite = sp.Sprite{
         .texture = try tex.newTextureMem(logoImage),
@@ -452,6 +486,14 @@ pub fn setupForLoad() !void {
         ),
     };
 
+    sadSprite = sp.Sprite{
+        .texture = try tex.newTextureMem(sadImage),
+        .data = sp.SpriteData.new(
+            rect.newRect(0, 0, 1, 1),
+            vecs.newVec2(88, 88),
+        ),
+    };
+
     gfx.palette = try tex.newTextureMem(paletteImage);
 
     c.glActiveTexture(c.GL_TEXTURE1);
@@ -464,23 +506,33 @@ pub fn setupForLoad() !void {
 }
 
 pub fn setupBar() !void {
-    var w: c_int = 0;
-    var h: c_int = 0;
-
     ctx.makeCurrent();
-
-    c.glfwGetWindowSize(ctx.window, &w, &h);
 
     bar = bars.Bar.new(bartex, bars.BarData{
         .height = 38,
-        .screendims = vecs.newVec2(@intToFloat(f32, w), @intToFloat(f32, h)),
+        .screendims = size,
     });
 
     wallpaper = wall.Wallpaper.new(walltex, wall.WallData{
-        .dims = vecs.newVec2(@intToFloat(f32, w), @intToFloat(f32, h)),
+        .dims = size,
         .mode = .Center,
         .size = walltex.size,
     });
+
+    barlogoSprite = sp.Sprite{
+        .texture = barlogotex,
+        .data = sp.SpriteData.new(
+            rect.newRect(0, 0, 1, 1),
+            vecs.newVec2(36, 464),
+        ),
+    };
+
+    cursor = csr.Cursor{
+        .texture = cursortex,
+        .data = csr.CursorData.new(
+            rect.newRect(0, 0, 1, 1),
+        ),
+    };
 
     ctx.makeNotCurrent();
 }
@@ -499,8 +551,10 @@ pub fn main() anyerror!void {
     const editorpath: []const u8 = "/cont/imgs/editor.eia";
     const emailpath: []const u8 = "/cont/imgs/email.eia";
     const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
+    const cursorpath: []const u8 = "/cont/imgs/cursor.eia";
     const barlogopath: []const u8 = "/cont/imgs/barlogo.eia";
     const loginpath: []const u8 = "/cont/snds/login.era";
+    const settingspath: []const u8 = "/conf/system.cfg";
     const zero: u8 = 0;
     var fontpath = fm.getContentPath("content/font.ttf");
 
@@ -525,13 +579,17 @@ pub fn main() anyerror!void {
     // files
     try loader.enqueue(&zero, &zero, worker.files.loadFiles);
 
+    // settings
+    try loader.enqueue(&settingspath, &settingManager, worker.settings.loadSettings);
+
     // textures
     try loader.enqueue(&winpath, &wintex, worker.texture.loadTexture);
     try loader.enqueue(&webpath, &webtex, worker.texture.loadTexture);
     try loader.enqueue(&barpath, &bartex, worker.texture.loadTexture);
     try loader.enqueue(&wallpath, &walltex, worker.texture.loadTexture);
-    try loader.enqueue(&editorpath, &editortex, worker.texture.loadTexture);
     try loader.enqueue(&emailpath, &emailtex, worker.texture.loadTexture);
+    try loader.enqueue(&editorpath, &editortex, worker.texture.loadTexture);
+    try loader.enqueue(&cursorpath, &cursortex, worker.texture.loadTexture);
     try loader.enqueue(&barlogopath, &barlogotex, worker.texture.loadTexture);
     try loader.enqueue(&explorerpath, &explorertex, worker.texture.loadTexture);
 
@@ -541,17 +599,17 @@ pub fn main() anyerror!void {
     // fonts
     try loader.enqueue(&fontpath.items, &face, worker.font.loadFont);
 
-    var renderThread = try std.Thread.spawn(.{ .stack_size = 128 }, drawLoading, .{});
-    try loader.run(&loadProgress);
+    // mail
+    try loader.enqueue(&zero, &zero, worker.mail.loadMail);
+
+    _ = try std.Thread.spawn(.{ .stack_size = 128 }, drawLoading, .{});
+    loader.run(&loadProgress) catch {
+        @panic("Load Failed");
+    };
 
     // post main load
     try setupEvents();
     try setupBar();
-
-    // setup mail
-    // TODO make loader
-    mail.init();
-    try mail.load();
 
     // create windows list
     windows = std.ArrayList(win.Window).init(allocator.alloc);
@@ -562,6 +620,8 @@ pub fn main() anyerror!void {
     pseudo.window.shader = &shader;
     pseudo.window.wintex = &wintex;
 
+    wins.settings.settingManager = &settingManager;
+
     shell.wintex = &wintex;
     shell.webtex = &webtex;
     shell.edittex = &editortex;
@@ -569,7 +629,6 @@ pub fn main() anyerror!void {
 
     // loading done
     gameState = .Game;
-    renderThread.join();
 
     // cleanup load
     fontpath.deinit();
@@ -579,14 +638,6 @@ pub fn main() anyerror!void {
 
     // play login sound
     try audioMan.playSound(loginSnd);
-
-    barlogoSprite = sp.Sprite{
-        .texture = barlogotex,
-        .data = sp.SpriteData.new(
-            rect.newRect(0, 0, 1, 1),
-            vecs.newVec2(36, 464),
-        ),
-    };
 
     try setupCrashHandler();
 
@@ -601,6 +652,7 @@ pub fn main() anyerror!void {
         windows.items[idx].data.deinit();
     }
 
+    settingManager.deinit();
     windows.deinit();
     gfx.close(ctx);
     files.deinit();

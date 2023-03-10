@@ -9,8 +9,6 @@ pub var exec: *Folder = undefined;
 
 pub const ROOT_NAME = "/";
 
-pub const filesError = error{};
-
 pub const File = struct {
     parent: *Folder,
     name: []const u8,
@@ -51,28 +49,9 @@ pub const Folder = struct {
     subfolders: std.ArrayList(Folder),
     contents: std.ArrayList(File),
     parent: *Folder,
+    protected: bool = false,
 
-    pub fn init() !void {
-        root = try allocator.alloc.create(Folder);
-
-        root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
-        root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
-        root.contents = std.ArrayList(File).init(allocator.alloc);
-        root.parent = root;
-
-        try root.subfolders.append(fake.setupFake(root));
-
-        var f = std.fs.cwd().openFile("disk.eee", .{}) catch null;
-        if (f == null) {
-            var path = fm.getContentDir();
-            var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
-
-            f = try d.openFile("content/default.eee", .{});
-        }
-        defer f.?.close();
-
-        var file = f.?;
-
+    pub fn loadDisk(file: std.fs.File) !void {
         var lenbuffer: []u8 = try allocator.alloc.alloc(u8, 4);
         defer allocator.alloc.free(lenbuffer);
         _ = try file.read(lenbuffer);
@@ -89,8 +68,34 @@ pub const Folder = struct {
             var contbuffer: []u8 = try allocator.alloc.alloc(u8, contsize);
             _ = try file.read(contbuffer);
             _ = try root.newFile(namebuffer);
-            _ = root.writeFile(namebuffer, contbuffer);
+            try root.writeFile(namebuffer, contbuffer);
             allocator.alloc.free(contbuffer);
+        }
+    }
+
+    pub fn init() !void {
+        root = try allocator.alloc.create(Folder);
+
+        root.protected = false;
+
+        root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
+        root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
+        root.contents = std.ArrayList(File).init(allocator.alloc);
+        root.parent = root;
+
+        try root.subfolders.append(fake.setupFake(root));
+
+        var path = fm.getContentDir();
+        var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
+
+        var recovery = try d.openFile("content/recovery.eee", .{});
+        defer recovery.close();
+        try loadDisk(recovery);
+
+        var user = d.openFile("disk.eee", .{}) catch null;
+        if (user) |userdisk| {
+            defer userdisk.close();
+            try loadDisk(userdisk);
         }
 
         root.fixFolders();
@@ -117,7 +122,7 @@ pub const Folder = struct {
     }
 
     pub fn getfiles(self: *Folder, files: *std.ArrayList(File)) !void {
-        if (std.mem.eql(u8, self.name, "/fake/")) return;
+        if (self.protected) return;
 
         try files.appendSlice(self.contents.items);
         for (self.subfolders.items) |_, idx| {
@@ -146,6 +151,8 @@ pub const Folder = struct {
     }
 
     pub fn newFile(self: *Folder, name: []const u8) !bool {
+        if (self.protected) return error.FolderProtected;
+
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
 
@@ -197,7 +204,9 @@ pub const Folder = struct {
         return true;
     }
 
-    pub fn newFolder(self: *Folder, name: []const u8) bool {
+    pub fn newFolder(self: *Folder, name: []const u8) !bool {
+        if (self.protected) return error.FolderProtected;
+
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
 
@@ -218,10 +227,10 @@ pub const Folder = struct {
                     .subfolders = std.ArrayList(Folder).init(allocator.alloc),
                 };
                 var result = folder.newFolder(name[file.items.len..]);
-                self.subfolders.append(folder) catch {};
+                try self.subfolders.append(folder);
                 return result;
             } else {
-                file.append(ch) catch {};
+                try file.append(ch);
             }
         }
 
@@ -243,23 +252,23 @@ pub const Folder = struct {
         return true;
     }
 
-    pub fn writeFile(self: *Folder, name: []const u8, contents: []const u8) bool {
+    pub fn writeFile(self: *Folder, name: []const u8, contents: []const u8) !void {
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
 
         for (name) |ch| {
             if (ch == '/') {
-                if (check(file.items, ".")) return self.writeFile(name[2..], contents);
-                if (check(file.items, "")) return self.writeFile(name[1..], contents);
+                if (check(file.items, ".")) return try self.writeFile(name[2..], contents);
+                if (check(file.items, "")) return try self.writeFile(name[1..], contents);
 
                 var fullname = std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items }) catch undefined;
                 defer allocator.alloc.free(fullname);
                 for (self.subfolders.items) |folder, idx| {
                     if (check(folder.name, fullname)) {
-                        return self.subfolders.items[idx].writeFile(name[file.items.len..], contents);
+                        return try self.subfolders.items[idx].writeFile(name[file.items.len..], contents);
                     }
                 }
-                return false;
+                return error.FileNotFound;
             } else {
                 file.append(ch) catch {};
             }
@@ -268,13 +277,12 @@ pub const Folder = struct {
         var fullname = std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name }) catch undefined;
         for (self.contents.items) |subfile, idx| {
             if (check(subfile.name, fullname)) {
-                self.contents.items[idx].write(contents) catch {};
-                //self.contents.items[idx].contents = contents;
+                try self.contents.items[idx].write(contents);
                 allocator.alloc.free(fullname);
-                return true;
+                return;
             }
         }
-        return false;
+        return error.FileNotFound;
     }
 
     pub fn getFile(self: *Folder, name: []const u8) ?*File {
@@ -341,7 +349,6 @@ pub const Folder = struct {
         return null;
     }
 
-
     pub fn deleteFile(self: *Folder, name: []const u8) bool {
         _ = name;
         _ = self;
@@ -382,22 +389,6 @@ pub const Folder = struct {
         return result;
     }
 };
-
-pub fn newFile(name: []const u8) !bool {
-    return try root.newFile(name);
-}
-
-pub fn writeFile(name: []const u8, contents: []const u8) bool {
-    return root.writeFile(name, contents);
-}
-
-pub fn deleteFile(name: []const u8) bool {
-    return root.deleteFile(name);
-}
-
-pub fn newFolder(name: []const u8) bool {
-    return root.newFolder(name);
-}
 
 pub fn toStr() !std.ArrayList(u8) {
     return try root.toStr();

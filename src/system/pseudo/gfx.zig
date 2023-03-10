@@ -84,6 +84,7 @@ pub fn setupFakeGfx(parent: *files.Folder) files.Folder {
         .subfolders = std.ArrayList(files.Folder).init(allocator.alloc),
         .contents = std.ArrayList(files.File).init(allocator.alloc),
         .parent = parent,
+        .protected = true,
     };
 
     textures = std.AutoHashMap(u8, tex.Texture).init(allocator.alloc);

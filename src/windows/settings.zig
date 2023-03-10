@@ -10,6 +10,9 @@ const allocator = @import("../util/allocator.zig");
 const shd = @import("../shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../texture.zig");
+const config = @import("../system/config.zig");
+
+pub var settingManager: *config.SettingManager = undefined;
 
 const SettingPanel = struct {
     name: []const u8,
@@ -34,6 +37,7 @@ const SettingsData = struct {
     focused: ?u64,
     selection: usize,
     lastAction: ?SettingsMouseAction,
+    focusedPane: ?u64,
 
     const panels = [_]SettingPanel{
         SettingPanel{ .name = "Graphics", .icon = 1 },
@@ -41,8 +45,72 @@ const SettingsData = struct {
     };
 };
 
+const Setting = struct {
+    const Kind = enum(u8) { String, Dropdown };
+
+    kind: Kind,
+    kinddata: []const u8 = "",
+
+    setting: []const u8,
+    key: []const u8,
+};
+
 pub fn drawSettings(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
     var self = @ptrCast(*SettingsData, c);
+
+    if (self.focusedPane) |focused| {
+        var settings = std.ArrayList(Setting).init(allocator.alloc);
+        defer settings.deinit();
+
+        switch (focused) {
+            0 => {
+                settings.appendSlice(&[_]Setting{
+                    Setting{
+                        .kind = .String,
+                        .setting = "Wallpaper Color",
+                        .key = "wallpaper_color",
+                    },
+                    Setting{
+                        .kind = .Dropdown,
+                        .kinddata = "Color Tile Center Stretch",
+                        .setting = "Wallpaper Mode",
+                        .key = "wallpaper_mode",
+                    },
+                    Setting{
+                        .kind = .String,
+                        .setting = "Wallpaper Path",
+                        .key = "wallpaper_path",
+                    },
+                }) catch {};
+            },
+            else => {},
+        }
+
+        var pos = vecs.newVec2(0, 0);
+
+        for (settings.items) |item| {
+            // draw name
+            font.draw(batch, font_shader, item.setting, vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
+
+            // draw value
+            var value = settingManager.get(item.key);
+            if (value) |val| {
+                font.draw(batch, font_shader, val, vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
+            } else {
+                font.draw(batch, font_shader, "UNDEFINED", vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(1, 0, 0, 1));
+            }
+
+            pos.y += font.size;
+        }
+
+        self.scroll[1].data.size.y = bnds.h - 20;
+
+        batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
+        batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
+        batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+
+        return;
+    }
 
     if (self.lastAction != null) {
         if (self.lastAction.?.time <= 0) {
@@ -79,7 +147,7 @@ pub fn drawSettings(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, b
                         self.selection = idx + 1;
                     },
                     .DoubleLeft => {
-                        self.lastAction = null;
+                        self.focusedPane = idx;
                     },
                 }
             }
@@ -108,7 +176,7 @@ pub fn clickSettings(cself: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn:
                 self.lastAction = .{
                     .kind = .SingleLeft,
                     .pos = mousepos,
-                    .time = 40,
+                    .time = 100,
                 };
             }
         },
@@ -158,6 +226,7 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     ));
 
     self.shader = shader;
+    self.focusedPane = null;
 
     return win.WindowContents{
         .self = @ptrCast(*[]u8, self),

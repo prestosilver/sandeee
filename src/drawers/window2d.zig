@@ -8,6 +8,7 @@ const va = @import("../vertArray.zig");
 
 const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;
+const RESIZE_PAD: f32 = 10;
 
 pub var deskSize: vecs.Vector2 = vecs.newVec2(640, 480);
 
@@ -159,18 +160,17 @@ pub const WindowData = struct {
             return DragMode.Move;
         }
 
-        var bot = false;
-
         var bottom = self.pos;
-        bottom.y += bottom.h - 20;
-        bottom.h = 40;
-        if (bottom.contains(mousepos)) {
-            bot = true;
-        }
+        bottom.y += bottom.h - RESIZE_PAD;
+        bottom.h = RESIZE_PAD * 2;
+        bottom.x -= RESIZE_PAD;
+        bottom.w += RESIZE_PAD * 2;
+
+        var bot = bottom.contains(mousepos);
 
         var left = self.pos;
-        left.w = 40;
-        left.x -= 20;
+        left.w = RESIZE_PAD * 2;
+        left.x -= RESIZE_PAD;
         if (left.contains(mousepos)) {
             if (bot) {
                 return DragMode.ResizeLB;
@@ -180,8 +180,8 @@ pub const WindowData = struct {
         }
 
         var right = self.pos;
-        right.x += right.w - 20;
-        right.w = 40;
+        right.x += right.w - RESIZE_PAD;
+        right.w = RESIZE_PAD * 2;
         if (right.contains(mousepos)) {
             if (bot) {
                 return DragMode.ResizeRB;

@@ -47,9 +47,6 @@ pub fn init(name: [*c]const u8) !Context {
 
     var mode = c.glfwGetVideoMode(monitor)[0];
 
-    //mode.width = 640;
-    //mode.height = 480;
-
     var win = c.glfwCreateWindow(mode.width, mode.height, name, null, null);
     c.glfwSetWindowMonitor(win, monitor, 0, 0, mode.width, mode.height, mode.refreshRate);
 
@@ -61,6 +58,8 @@ pub fn init(name: [*c]const u8) !Context {
     }
 
     var shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
+
+    //c.glfwSetInputMode(win, c.GLFW_CURSOR, c.GLFW_CURSOR_HIDDEN);
 
     c.glfwMakeContextCurrent(null);
 

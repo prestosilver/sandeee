@@ -1,21 +1,8 @@
     call main
     sys 1
 
-sq_wave:
-    push 22050                  ; x x 128
-    div                         ; x x
-    dup 0
-    push 2
-    div
-    push 2
-    mul
-    eq
-    ret
-
 play_sound:
-    push "/test.era"            ; cont path
-    dup 0
-    sys 2
+    push "/fake/snd/play"       ; cont path
     sys 3                       ; cont handle
     dup 0                       ; cont handle handle
     dup 2                       ; cont handle handle cont
@@ -25,6 +12,11 @@ play_sound:
     ret
 
 main:
+    call setup_load
+
+    push "/libs/sound.ell"
+    call "libload"
+
     push 0                      ; idx
     push ""                     ; idx wave
 loop:
@@ -38,9 +30,9 @@ loop:
     dup 1
     push 440
     mul
-    call sq_wave                ; idx wave value
-    push 256
-    mul
+    call "SquareWave"
+    push 2
+    div
 
     getb
     cat
@@ -52,4 +44,19 @@ loop:
     disc 1
 
     call play_sound
+    ret
+
+setup_load:
+    push "/libs/libload.eep"
+    sys 3
+    copy 0
+    push 4
+    sys 4
+    disc 0
+    copy 0
+    push 100000
+    sys 4
+    push "libload"
+    sys 12
+    sys 7
     ret

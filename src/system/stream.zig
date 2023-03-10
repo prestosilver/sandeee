@@ -2,7 +2,7 @@ const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const files = @import("files.zig");
 
-pub const StreamError = error {
+pub const StreamError = error{
     FileMissing,
     UnknownError,
 };
@@ -27,12 +27,12 @@ pub const FileStream = struct {
             return error.FileMissing;
         }
 
-        result.path = try allocator.alloc.alloc(u8, path.len);
+        result.path = try allocator.alloc.alloc(u8, file.?.name.len);
         var cont = file.?.read();
         result.contents = try allocator.alloc.alloc(u8, cont.len);
 
         std.mem.copy(u8, result.contents, cont);
-        std.mem.copy(u8, result.path, path);
+        std.mem.copy(u8, result.path, file.?.name);
 
         result.offset = 0;
 
@@ -50,7 +50,7 @@ pub const FileStream = struct {
         }
 
         var result = try allocator.alloc.alloc(u8, target);
-        var input = self.contents[self.offset..self.offset + target];
+        var input = self.contents[self.offset .. self.offset + target];
 
         std.mem.copy(u8, result, input);
 
@@ -66,12 +66,13 @@ pub const FileStream = struct {
             self.contents = try allocator.alloc.realloc(self.contents, targetsize);
         }
 
-        std.mem.copy(u8, self.contents[self.offset..self.offset + data.len], data);
+        std.mem.copy(u8, self.contents[self.offset .. self.offset + data.len], data);
+
+        self.offset += @intCast(u32, data.len);
     }
 
     pub fn Flush(self: *FileStream) !void {
-        if (!files.writeFile(self.path, self.contents))
-            return error.UnknownError;
+        try files.root.writeFile(self.path, self.contents);
     }
 
     pub fn Close(self: *FileStream) !void {
