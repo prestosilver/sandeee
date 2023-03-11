@@ -1,0 +1,4 @@
+ls
+    cls
+    ad ~
+    c

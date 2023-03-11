@@ -7,6 +7,8 @@ pub var root: *Folder = undefined;
 pub var home: *Folder = undefined;
 pub var exec: *Folder = undefined;
 
+var rootOut: []const u8 = undefined;
+
 pub const ROOT_NAME = "/";
 
 pub const File = struct {
@@ -73,7 +75,7 @@ pub const Folder = struct {
         }
     }
 
-    pub fn init() !void {
+    pub fn init(diskPath: []const u8) !void {
         root = try allocator.alloc.create(Folder);
 
         root.protected = false;
@@ -88,11 +90,12 @@ pub const Folder = struct {
         var path = fm.getContentDir();
         var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
 
-        var recovery = try d.openFile("content/recovery.eee", .{});
+        var recovery = try d.openFile("disks/recovery.eee", .{});
         defer recovery.close();
         try loadDisk(recovery);
+        rootOut = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{path, diskPath});
 
-        var user = d.openFile("disk.eee", .{}) catch null;
+        var user = d.openFile(diskPath, .{}) catch null;
         if (user) |userdisk| {
             defer userdisk.close();
             try loadDisk(userdisk);
@@ -394,8 +397,8 @@ pub fn toStr() !std.ArrayList(u8) {
     return try root.toStr();
 }
 
-pub fn write(path: []const u8) !void {
-    var file = try std.fs.cwd().createFile(path, .{});
+pub fn write() !void {
+    var file = try std.fs.cwd().createFile(rootOut, .{});
 
     defer file.close();
 

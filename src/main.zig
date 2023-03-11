@@ -32,6 +32,8 @@ const mail = @import("system/mail.zig");
 const wins = @import("windows/all.zig");
 const worker = @import("loaders/worker.zig");
 
+const diskeee = @import("states/disks.zig");
+
 const c = @import("c.zig");
 
 var wallpaper: wall.Wallpaper = undefined;
@@ -57,6 +59,7 @@ var audioMan: audio.Audio = undefined;
 var barlogoSprite: sp.Sprite = undefined;
 var logoSprite: sp.Sprite = undefined;
 var loadSprite: sp.Sprite = undefined;
+var biosSprite: sp.Sprite = undefined;
 var sadSprite: sp.Sprite = undefined;
 var loadProgress: f32 = 0;
 var settingManager: conf.SettingManager = undefined;
@@ -67,10 +70,19 @@ var dragmode: win.DragMode = win.DragMode.None;
 var mousepos: vecs.Vector2 = vecs.newVec2(0, 0);
 var size: vecs.Vector2 = vecs.newVec2(0, 0);
 
+// create loader
+var loader_queue: std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)) = undefined;
+var loader = worker.WorkerContext{ .queue = &loader_queue };
+
 var cursor: csr.Cursor = undefined;
 
-const GameState = enum { Loading, Game, Crash };
-var gameState: GameState = .Loading;
+const GameState = enum {
+    Disks, // TODO
+    Loading,
+    Game,
+    Crash,
+};
+var gameState: GameState = .Disks;
 
 const vertShader = @embedFile("shaders/vert.glsl");
 const fragShader = @embedFile("shaders/frag.glsl");
@@ -79,6 +91,7 @@ const fontFragShader = @embedFile("shaders/ffrag.glsl");
 
 const logoImage = @embedFile("images/logo.eia");
 const loadImage = @embedFile("images/load.eia");
+const biosImage = @embedFile("images/bios.eia");
 const sadImage = @embedFile("images/sad.eia");
 const paletteImage = @embedFile("images/palette.eia");
 
@@ -100,8 +113,18 @@ fn range(len: usize) []const void {
     return @as([*]void, undefined)[0..len];
 }
 
+var timeout: f32 = 60 * 3;
+
 pub fn draw() !void {
     switch (gameState) {
+        .Disks => {
+            try diskeee.drawDisks(shader, font_shader, &sb, &biosSprite, timeout / 60);
+            if (diskeee.auto) timeout -= 1;
+
+            if (timeout <= 0) {
+                try loadSystem(diskeee.disks.items[diskeee.sel]);
+            }
+        },
         .Loading => {
             // make sure shader is loaded
             if (shader.id != 0) {
@@ -198,7 +221,7 @@ pub fn setupCrashHandler() !void {
 
 pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
     if (event.btn == 0) {
-        if (bar.data.doClick(webtex, wintex, emailtex, editortex, explorertex, shader, mousepos)) {
+        if (bar.data.doClick(&windows, webtex, wintex, emailtex, editortex, explorertex, shader, mousepos)) {
             return false;
         }
 
@@ -359,6 +382,25 @@ pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
 }
 
 pub fn keyDown(event: inputEvs.EventKeyDown) bool {
+    // if bios active process key
+    if (gameState == .Disks) {
+        diskeee.auto = false;
+
+        switch (event.key) {
+            c.GLFW_KEY_ENTER => {
+                timeout = 0;
+            },
+            c.GLFW_KEY_DOWN => {
+                diskeee.sel += 1;
+            },
+            c.GLFW_KEY_UP => {
+                if (diskeee.sel != 0)
+                    diskeee.sel -= 1;
+            },
+            else => {},
+        }
+    }
+
     // if the bar is open close & return
     if (bar.data.btnActive) {
         bar.data.btnActive = false;
@@ -423,8 +465,8 @@ pub fn createWindow(event: windowEvs.EventCreateWindow) bool {
     windows.items[windows.items.len - 1].data.pos.x = target.x;
     windows.items[windows.items.len - 1].data.pos.y = target.y;
 
-    openWindow.x = target.y + 25;
-    openWindow.y = target.x + 25;
+    openWindow.x = target.x + 25;
+    openWindow.y = target.y + 25;
     if (openWindow.x > size.x - 500) openWindow.x = 100;
     if (openWindow.y > size.y - 400) openWindow.y = 100;
     return false;
@@ -486,6 +528,14 @@ pub fn setupForLoad() !void {
         ),
     };
 
+    biosSprite = sp.Sprite{
+        .texture = try tex.newTextureMem(biosImage),
+        .data = sp.SpriteData.new(
+            rect.newRect(0, 0, 1, 1),
+            vecs.newVec2(168, 84),
+        ),
+    };
+
     sadSprite = sp.Sprite{
         .texture = try tex.newTextureMem(sadImage),
         .data = sp.SpriteData.new(
@@ -537,47 +587,32 @@ pub fn setupBar() !void {
     ctx.makeNotCurrent();
 }
 
-pub fn main() anyerror!void {
-    defer if (!builtin.link_libc or !allocator.useclib) {
-        std.debug.assert(!allocator.gpa.deinit());
-        std.log.info("no leaks! :)", .{});
-    };
+// consts for loader
+const winpath: []const u8 = "/cont/imgs/window.eia";
+const webpath: []const u8 = "/cont/imgs/web.eia";
+const wallpath: []const u8 = "/cont/imgs/wall.eia";
+const barpath: []const u8 = "/cont/imgs/bar.eia";
+const editorpath: []const u8 = "/cont/imgs/editor.eia";
+const emailpath: []const u8 = "/cont/imgs/email.eia";
+const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
+const cursorpath: []const u8 = "/cont/imgs/cursor.eia";
+const barlogopath: []const u8 = "/cont/imgs/barlogo.eia";
+const loginpath: []const u8 = "/cont/snds/login.era";
+const settingspath: []const u8 = "/conf/system.cfg";
+const zero: u8 = 0;
+const delay: u64 = 250;
 
-    // consts for loader
-    const winpath: []const u8 = "/cont/imgs/window.eia";
-    const webpath: []const u8 = "/cont/imgs/web.eia";
-    const wallpath: []const u8 = "/cont/imgs/wall.eia";
-    const barpath: []const u8 = "/cont/imgs/bar.eia";
-    const editorpath: []const u8 = "/cont/imgs/editor.eia";
-    const emailpath: []const u8 = "/cont/imgs/email.eia";
-    const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
-    const cursorpath: []const u8 = "/cont/imgs/cursor.eia";
-    const barlogopath: []const u8 = "/cont/imgs/barlogo.eia";
-    const loginpath: []const u8 = "/cont/snds/login.era";
-    const settingspath: []const u8 = "/conf/system.cfg";
-    const zero: u8 = 0;
+pub fn loadSystem(disk: []const u8) !void {
+    gameState = .Loading;
+
     var fontpath = fm.getContentPath("content/font.ttf");
-
-    // init graphics
-    ctx = try gfx.init("Sandeee");
-    gfx.gContext = &ctx;
-
-    // setup load textures and stuff
-    try setupForLoad();
+    defer fontpath.deinit();
 
     // create login sound
     var loginSnd: audio.Sound = undefined;
 
-    // create loader
-    var loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
-    var loader = worker.WorkerContext{ .queue = &loader_queue };
-
-    // shaders
-    try loader.enqueue(&shader_files, &shader, worker.shader.loadShader);
-    try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
-
     // files
-    try loader.enqueue(&zero, &zero, worker.files.loadFiles);
+    try loader.enqueue(&disk, &zero, worker.files.loadFiles);
 
     // settings
     try loader.enqueue(&settingspath, &settingManager, worker.settings.loadSettings);
@@ -593,14 +628,20 @@ pub fn main() anyerror!void {
     try loader.enqueue(&barlogopath, &barlogotex, worker.texture.loadTexture);
     try loader.enqueue(&explorerpath, &explorertex, worker.texture.loadTexture);
 
+    // delay
+    try loader.enqueue(&delay, &zero, worker.delay.loadDelay);
+
     // sounds
     try loader.enqueue(&loginpath, &loginSnd, worker.sound.loadSound);
+
+    // mail
+    try loader.enqueue(&zero, &zero, worker.mail.loadMail);
 
     // fonts
     try loader.enqueue(&fontpath.items, &face, worker.font.loadFont);
 
-    // mail
-    try loader.enqueue(&zero, &zero, worker.mail.loadMail);
+    // delay
+    try loader.enqueue(&delay, &zero, worker.delay.loadDelay);
 
     _ = try std.Thread.spawn(.{ .stack_size = 128 }, drawLoading, .{});
     loader.run(&loadProgress) catch {
@@ -608,7 +649,6 @@ pub fn main() anyerror!void {
     };
 
     // post main load
-    try setupEvents();
     try setupBar();
 
     // create windows list
@@ -627,36 +667,85 @@ pub fn main() anyerror!void {
     shell.edittex = &editortex;
     shell.shader = &shader;
 
-    // loading done
-    gameState = .Game;
-
-    // cleanup load
-    fontpath.deinit();
+    // play login sound
+    try audioMan.playSound(loginSnd);
 
     // set wallpaper color
     ctx.color = cols.newColorRGBA(0, 128, 128, 255);
 
-    // play login sound
-    try audioMan.playSound(loginSnd);
+    // loading done
+    gameState = .Game;
+
+    return;
+}
+
+pub fn main() anyerror!void {
+    defer if (!builtin.link_libc or !allocator.useclib) {
+        std.debug.assert(!allocator.gpa.deinit());
+        std.log.info("nio leaks! :)", .{});
+    };
+
+    var bigfontpath = fm.getContentPath("content/bios.ttf");
+
+    // init graphics
+    ctx = try gfx.init("Sandeee");
+    gfx.gContext = &ctx;
+
+    try diskeee.setupDisks();
+
+    // setup load textures and stuff
+    try setupForLoad();
+
+    loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
+
+    // shaders
+    try loader.enqueue(&shader_files, &shader, worker.shader.loadShader);
+    try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
+
+    // fonts
+    try loader.enqueue(&bigfontpath.items, &diskeee.biosFace, worker.font.loadFont);
+
+    // load bios
+    var prog: f32 = 0;
+    loader.run(&prog) catch {
+        @panic("BIOS Load Failed");
+    };
+
+    try setupEvents();
+
+    // cleanup load
+    bigfontpath.deinit();
 
     try setupCrashHandler();
 
     // main loop
     while (gfx.poll(ctx)) try draw();
 
-    // save the current disk
-    try files.write("disk.eee");
+    switch (gameState) {
+        .Game => {
 
-    // free everything
-    for (windows.items) |_, idx| {
-        windows.items[idx].data.deinit();
+            // save the current disk
+            try files.write();
+
+            // free everything
+            for (windows.items) |_, idx| {
+                windows.items[idx].data.deinit();
+            }
+
+            settingManager.deinit();
+            windows.deinit();
+            gfx.close(ctx);
+            files.deinit();
+            sb.deinit();
+            events.deinit();
+            mail.deinit();
+        },
+        .Disks => {
+            gfx.close(ctx);
+            sb.deinit();
+        },
+        else => {
+            return;
+        },
     }
-
-    settingManager.deinit();
-    windows.deinit();
-    gfx.close(ctx);
-    files.deinit();
-    sb.deinit();
-    events.deinit();
-    mail.deinit();
 }

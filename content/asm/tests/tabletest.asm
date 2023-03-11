@@ -1,40 +1,20 @@
     call setup_load
     push "/libs/string.ell"
     call "libload"
-    push "/libs/array.ell"
+    push "/libs/table.ell"
     call "libload"
 
-    disc "lol"
-
-    push "len of "
-    sys 0
-    push "lolol"
-    copy 0
-    sys 0
-    push " is: "
-    sys 0
-    call "StringLength"
-    sys 0
-    push "\n"
-    sys 0
-
-    push "Create array "
+    push "Create table "
     sys 0
     push 2
-    call "ArrayCreate"
-    push "Success!\nlength: "
+    push 2
+    call "TableCreate"
+    push "Success!\nPut table"
     sys 0
-    copy 0
-    call "ArrayGetLen"
-    sys 0
-    push "\nAppend array "
-    sys 0
+    dup 0
     push "lo"
-    call "ArrayAppend"
-    push "Success!\nlength: "
-    sys 0
-    call "ArrayGetLen"
-    sys 0
+    push "no"
+    call "TablePut"
     sys 1
 
 setup_load:

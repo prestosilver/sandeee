@@ -6,18 +6,24 @@ const allocator = @import("util/allocator.zig");
 pub fn main() anyerror!void {
     const stdout = std.io.getStdOut().writer();
 
-    var contents = try std.fs.cwd().readFileAlloc(allocator.alloc, "test.eep", 100000);
+    var args = std.process.args();
 
-    var vm = try vma.VM.init(allocator.alloc, files.root, "test.eep");
-    defer vm.destroy();
+    _ = args.next();
 
-    std.log.info("loading", .{});
+    if (args.next()) |file| {
+        var contents = try std.fs.cwd().readFileAlloc(allocator.alloc, file, 100000);
 
-    try vm.loadString(contents[4..]);
+        var vm = try vma.VM.init(allocator.alloc, files.root, file);
+        defer vm.destroy();
 
-    std.log.info("running...", .{});
+        std.log.info("loading", .{});
 
-    try vm.runAll();
+        try vm.loadString(contents[4..]);
 
-    try stdout.print("{s}", .{vm.out.items});
+        std.log.info("running...", .{});
+
+        try vm.runAll();
+
+        try stdout.print("{s}", .{vm.out.items});
+    }
 }

@@ -4,8 +4,6 @@
     push "/libs/array.ell"
     call "libload"
 
-    disc "lol"
-
     push "len of "
     sys 0
     push "lolol"

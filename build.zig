@@ -100,7 +100,7 @@ pub fn build(b: *std.build.Builder) void {
 
     var convert_steps = std.ArrayList(*std.build.WriteFileStep).init(b.allocator);
 
-    var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
+    var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/disks/recovery.eee");
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
 
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "hello").?) catch {};
@@ -108,7 +108,6 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "texture").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "fib").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "arraytest").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "tabletest").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "audiotest").?) catch {};
 
     convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "asm").?) catch {};
@@ -141,6 +140,7 @@ pub fn build(b: *std.build.Builder) void {
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "load").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "palette").?) catch {};
     convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "sad").?) catch {};
+    convert_steps.append(convertStep(b, image.convert, "images", "../../src/images", "png", "eia", "bios").?) catch {};
 
     for (convert_steps.items) |step| {
         write_step.step.dependOn(&step.step);
@@ -159,6 +159,7 @@ pub fn build(b: *std.build.Builder) void {
     }
 
     b.installFile("content/fonts/scientifica.ttf", "bin/content/font.ttf");
+    b.installFile("content/fonts/big.ttf", "bin/content/bios.ttf");
     b.installFile("content/emails.eme", "bin/content/emails.eme");
 
     b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");

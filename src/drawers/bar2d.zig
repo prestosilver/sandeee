@@ -113,10 +113,22 @@ pub const BarData = struct {
         }
     }
 
-    pub fn doClick(self: *BarData, webtex: tex.Texture, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, explorertex: tex.Texture, shader: shd.Shader, pos: vecs.Vector2) bool {
+    pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), webtex: tex.Texture, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, explorertex: tex.Texture, shader: shd.Shader, pos: vecs.Vector2) bool {
         var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;
+
+        var offset = 3 * self.height + 10;
+
+        for (windows.items) |*window| {
+            var btnBnds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
+
+            if (btnBnds.contains(pos)) {
+                window.data.min = !window.data.min;
+            }
+
+            offset += 4 * self.height;
+        }
 
         if (self.btnActive) {
             for (range(10)) |_, i| {

@@ -10,6 +10,7 @@ pub const sound = @import("sound.zig");
 pub const files = @import("files.zig");
 pub const settings = @import("settings.zig");
 pub const mail = @import("mail.zig");
+pub const delay = @import("delay.zig");
 
 pub fn WorkerQueueEntry(comptime T: type, comptime U: type) type {
     return struct {
@@ -47,7 +48,10 @@ pub const WorkerContext = struct {
 
             progress.* = @intToFloat(f32, prog) / @intToFloat(f32, ctx.total);
         }
-        std.time.sleep(500 * 1000 * 1000);
+
+        progress.* = 1;
+
+        ctx.total = 0;
     }
 
     pub fn enqueue(self: *WorkerContext, indata: anytype, outdata: anytype, loader: *const fn(*WorkerQueueEntry(@TypeOf(indata), @TypeOf(outdata))) bool) !void {

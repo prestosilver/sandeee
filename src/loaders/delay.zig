@@ -7,13 +7,8 @@ const c = @import("../c.zig");
 const gfx = @import("../graphics.zig");
 
 
-pub fn loadFiles(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)) bool {
-    std.log.debug("load files: {s}", .{self.indata.*});
-
-    files.Folder.init(self.indata.*) catch |msg| {
-        std.log.err("{}", .{msg});
-        return false;
-    };
+pub fn loadDelay(self: *worker.WorkerQueueEntry(*const u64, *const u8)) bool {
+    std.time.sleep(self.indata.* * 1000 * 1000);
 
     return true;
 }

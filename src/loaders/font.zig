@@ -5,12 +5,17 @@ const font = @import("../util/font.zig");
 const c = @import("../c.zig");
 const gfx = @import("../graphics.zig");
 
+var lol: bool = true;
 
 pub fn loadFont(self: *worker.WorkerQueueEntry(*[]u8, *font.Font)) bool {
     gfx.gContext.makeCurrent();
 
-    std.log.debug("load font", .{});
-    self.out.* = font.Font.init(self.indata.*, 22) catch {
+    std.log.debug("load font: {s}", .{self.indata.*});
+    var size: u32 = 22;
+    if (lol) size = 32;
+    lol = false;
+
+    self.out.* = font.Font.init(self.indata.*, size) catch {
         return false;
     };
 

@@ -135,7 +135,7 @@ pub const Font = struct {
 
         for (text) |ach| {
             var ch = ach;
-            if (ch > 127 or ch < 32) ch = '?';
+            if (ch > 127) ch = '?';
 
             var char = self.chars[ch];
             var w = (char.size.x) * scale;

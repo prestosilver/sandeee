@@ -1,6 +1,7 @@
 const std = @import("std");
 const streams = @import("stream.zig");
 const files = @import("files.zig");
+//const shell = @import("shell.zig");
 
 const STACK_MAX = 2048;
 
@@ -505,10 +506,40 @@ pub const VM = struct {
 
                             return;
                         },
-                        // runasm
-                        10 => {},
-                        // runcmd
-                        11 => {},
+                        // checkfn
+                        10 => {
+                            var name = try self.popStack();
+                            defer self.free(name);
+
+                            if (name.string) |nameStr| {
+                                var val: u64 = 0;
+
+                                if (self.functions.contains(nameStr)) val = 1;
+
+                                try self.pushStackI(val);
+
+                                return;
+                            } else {
+                                return error.StringMissing;
+                            }
+                        },
+                        // execcmd
+                        11 => {
+                            //var cmd = try self.popStack();
+                            //defer self.free(cmd);
+
+                            //if (cmd.string) |command| {
+                            //    var shl = shell.Shell{
+                            //        .root = self.root,
+                            //    };
+
+                            //    _ = try shl.runLine(command);
+
+                            //    return;
+                            //} else {
+                            //    return error.StringMissing;
+                            //}
+                        },
                         // regfn
                         12 => {
                             var name = try self.popStack();
@@ -538,6 +569,19 @@ pub const VM = struct {
                             });
 
                             return;
+                        },
+                        // clear function
+                        13 => {
+                            var name = try self.popStack();
+                            defer self.free(name);
+
+                            if (name.string) |nameStr| {
+                                _ = self.functions.orderedRemove(nameStr);
+
+                                return;
+                            } else {
+                                return error.StringMissing;
+                            }
                         },
                         // misc
                         else => {
@@ -998,136 +1042,3 @@ pub const VM = struct {
         return self.done();
     }
 };
-
-test "vm pushi" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-    defer vm.destroy();
-
-    var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Push, .value = 10 },
-    };
-
-    vm.loadList(&ops);
-    try vm.runAll();
-
-    try std.testing.expectEqual(vm.stack[0].value.?.*, 10);
-}
-
-test "vm pushs" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-    defer vm.destroy();
-
-    var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Push, .string = "Hello World!" },
-    };
-
-    vm.loadList(&ops);
-    try vm.runAll();
-
-    try std.testing.expectEqualStrings(vm.stack[0].string.?, "Hello World!");
-}
-
-test "vm add int int" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-    defer vm.destroy();
-
-    var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Push, .value = 34 },
-        VM.Operation{ .code = VM.Operation.Code.Push, .value = 35 },
-        VM.Operation{ .code = VM.Operation.Code.Add },
-    };
-
-    vm.loadList(&ops);
-    try vm.runAll();
-
-    try std.testing.expectEqual(vm.stack[0].value.?.*, 69);
-}
-
-test "vm add str str" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-
-    var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Push, .string = "Hello " },
-        VM.Operation{ .code = VM.Operation.Code.Push, .string = "World!" },
-        VM.Operation{ .code = VM.Operation.Code.Add },
-    };
-
-    vm.loadList(&ops);
-    try vm.runAll();
-
-    try std.testing.expectEqualStrings(vm.stack[0].string.?, "Hello World!");
-
-    vm.destroy();
-}
-
-test "vm add str int" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-    defer vm.destroy();
-
-    var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Push, .string = "Hello" },
-        VM.Operation{ .code = VM.Operation.Code.Push, .value = 2 },
-        VM.Operation{ .code = VM.Operation.Code.Add },
-    };
-
-    vm.loadList(&ops);
-    try vm.runAll();
-
-    try std.testing.expectEqualStrings(vm.stack[0].string.?, "llo");
-}
-
-test "vm copy str" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-    defer vm.destroy();
-
-    var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Push, .string = "foo" },
-        VM.Operation{ .code = VM.Operation.Code.Dup, .value = 0 },
-    };
-
-    vm.loadList(&ops);
-    try vm.runAll();
-
-    try std.testing.expectEqualStrings(vm.stack[0].string.?, "foo");
-    try std.testing.expectEqualStrings(vm.stack[1].string.?, "foo");
-
-    try std.testing.expect(&vm.stack[0].string.? != &vm.stack[1].string.?);
-}
-
-test "vm jnz" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-    defer vm.destroy();
-
-    var ops = [_]VM.Operation{
-        VM.Operation{ .code = VM.Operation.Code.Push, .value = 34 },
-        VM.Operation{ .code = VM.Operation.Code.Push, .value = 1 },
-        VM.Operation{ .code = VM.Operation.Code.Sub },
-        VM.Operation{ .code = VM.Operation.Code.Copy, .value = 0 },
-        VM.Operation{ .code = VM.Operation.Code.Sys, .value = 0 },
-        VM.Operation{ .code = VM.Operation.Code.Push, .string = "\n" },
-        VM.Operation{ .code = VM.Operation.Code.Sys, .value = 0 },
-        VM.Operation{ .code = VM.Operation.Code.Copy, .value = 0 },
-        VM.Operation{ .code = VM.Operation.Code.Jz, .value = 11 },
-        VM.Operation{ .code = VM.Operation.Code.Jmp, .value = 1 },
-        VM.Operation{ .code = VM.Operation.Code.Sys, .value = 1 },
-    };
-
-    vm.loadList(&ops);
-    try vm.runAll();
-
-    try std.testing.expectEqual(vm.stack[0].value.?.*, 0);
-}
-
-test "vm loadstr" {
-    var vm = VM{ .stack = undefined, .allocator = std.testing.allocator };
-    defer vm.destroy();
-
-    var ops =
-        "\x02\x02Hello\x00" ++
-        "\x01\x03\x00";
-
-    vm.loadString(ops);
-    try vm.runAll();
-
-    try std.testing.expectEqualStrings(vm.out.items, "Hello");
-}

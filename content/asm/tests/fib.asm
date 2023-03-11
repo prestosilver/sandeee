@@ -34,7 +34,7 @@ main:
     disc 0
 block_1_loop:
     copy 0
-    push 20
+    push 30
     lt
     jz block_1_end
     copy 0
