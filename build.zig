@@ -100,7 +100,7 @@ pub fn build(b: *std.build.Builder) void {
 
     var convert_steps = std.ArrayList(*std.build.WriteFileStep).init(b.allocator);
 
-    var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/disks/recovery.eee");
+    var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
 
     convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "hello").?) catch {};

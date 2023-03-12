@@ -75,36 +75,68 @@ pub const Folder = struct {
         }
     }
 
-    pub fn init(diskPath: []const u8) !void {
-        root = try allocator.alloc.create(Folder);
+    pub fn init(aDiskPath: ?[]const u8) !void {
+        if (aDiskPath) |diskPath| {
+            root = try allocator.alloc.create(Folder);
 
-        root.protected = false;
+            root.protected = false;
 
-        root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
-        root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
-        root.contents = std.ArrayList(File).init(allocator.alloc);
-        root.parent = root;
+            root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
+            root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
+            root.contents = std.ArrayList(File).init(allocator.alloc);
+            root.parent = root;
 
-        try root.subfolders.append(fake.setupFake(root));
+            try root.subfolders.append(fake.setupFake(root));
 
-        var path = fm.getContentDir();
-        var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
+            var path = fm.getContentDir();
+            var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
 
-        var recovery = try d.openFile("disks/recovery.eee", .{});
-        defer recovery.close();
-        try loadDisk(recovery);
-        rootOut = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{path, diskPath});
+            var recovery = try d.openFile("content/recovery.eee", .{});
+            defer recovery.close();
+            try loadDisk(recovery);
+            rootOut = try std.fmt.allocPrint(allocator.alloc, "{s}/disks/{s}", .{ path, diskPath });
 
-        var user = d.openFile(diskPath, .{}) catch null;
-        if (user) |userdisk| {
-            defer userdisk.close();
-            try loadDisk(userdisk);
+            var user = (try d.openDir("disks", .{})).openFile(diskPath, .{}) catch null;
+            if (user) |userdisk| {
+                defer userdisk.close();
+                try loadDisk(userdisk);
+            }
+
+            root.fixFolders();
+
+            home = root.getFolder("/prof").?;
+            exec = root.getFolder("/exec").?;
+        } else {
+            root = try allocator.alloc.create(Folder);
+
+            root.protected = false;
+
+            root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
+            root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
+            root.contents = std.ArrayList(File).init(allocator.alloc);
+            root.parent = root;
+
+            try root.subfolders.append(fake.setupFake(root));
+
+            var path = fm.getContentDir();
+            var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
+
+            var recovery = try d.openFile("content/recovery.eee", .{});
+            defer recovery.close();
+            try loadDisk(recovery);
+            rootOut = try std.fmt.allocPrint(allocator.alloc, "{s}/disks/disk.eee", .{ path });
+
+            var user = d.openFile("disks/disk.eee", .{}) catch null;
+            if (user) |userdisk| {
+                defer userdisk.close();
+                try loadDisk(userdisk);
+            }
+
+            root.fixFolders();
+
+            home = root.getFolder("/prof").?;
+            exec = root.getFolder("/exec").?;
         }
-
-        root.fixFolders();
-
-        home = root.getFolder("/prof").?;
-        exec = root.getFolder("/exec").?;
     }
 
     pub fn write(self: *Folder, writer: std.fs.File) !void {

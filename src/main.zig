@@ -113,7 +113,7 @@ fn range(len: usize) []const void {
     return @as([*]void, undefined)[0..len];
 }
 
-var timeout: f32 = 60 * 3;
+var timeout: f32 = 60 * 2;
 
 pub fn draw() !void {
     switch (gameState) {
@@ -122,7 +122,13 @@ pub fn draw() !void {
             if (diskeee.auto) timeout -= 1;
 
             if (timeout <= 0) {
-                try loadSystem(diskeee.disks.items[diskeee.sel]);
+                var disk: ?[]const u8 = null;
+
+                if (diskeee.disks.items.len != 0) {
+                    disk = diskeee.disks.items[diskeee.sel];
+                }
+
+                try loadSystem(disk);
             }
         },
         .Loading => {
@@ -602,7 +608,7 @@ const settingspath: []const u8 = "/conf/system.cfg";
 const zero: u8 = 0;
 const delay: u64 = 250;
 
-pub fn loadSystem(disk: []const u8) !void {
+pub fn loadSystem(disk: ?[]const u8) !void {
     gameState = .Loading;
 
     var fontpath = fm.getContentPath("content/font.ttf");

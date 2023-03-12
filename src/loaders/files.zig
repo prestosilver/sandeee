@@ -7,7 +7,7 @@ const c = @import("../c.zig");
 const gfx = @import("../graphics.zig");
 
 
-pub fn loadFiles(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)) bool {
+pub fn loadFiles(self: *worker.WorkerQueueEntry(*const ?[]const u8, *const u8)) bool {
     std.log.debug("load files: {s}", .{self.indata.*});
 
     files.Folder.init(self.indata.*) catch |msg| {
