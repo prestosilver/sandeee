@@ -7,67 +7,118 @@ const font = @import("../util/font.zig");
 const cols = @import("../math/colors.zig");
 const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
+const events = @import("../util/events.zig");
+const systemEvs = @import("../events/system.zig");
 
-pub var biosFace: font.Font = undefined;
+const c = @import("../c.zig");
 
-const VERSION = "0.0.1";
+pub const GSDisks = struct {
+    const Self = @This();
+    const VERSION = "0.0.1";
 
-pub var sel: usize = 0;
-pub var auto = true;
+    face: *font.Font,
+    font_shader: *shd.Shader,
+    shader: *shd.Shader,
+    sb: *sb.SpriteBatch,
+    logo_sprite: sp.Sprite,
+    disk: *?[]const u8,
 
-pub var disks: std.ArrayList([]const u8) = undefined;
+    remaining: f32 = 3,
+    sel: usize = 0,
+    auto: bool = true,
+    disks: std.ArrayList([]const u8) = undefined,
 
-pub fn setupDisks() !void {
-    disks = std.ArrayList([]const u8).init(allocator.alloc);
+    pub fn setup(self: *Self) !void {
+        self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
-    const path = fm.getContentDir();
+        const path = fm.getContentDir();
 
-    const dir = try (try std.fs.cwd().openDir(path, .{ .access_sub_paths = true })).openIterableDir("disks", .{});
+        const dir = try (try std.fs.cwd().openDir(path, .{ .access_sub_paths = true })).openIterableDir("disks", .{});
 
-    var iter = dir.iterate();
+        var iter = dir.iterate();
 
-    while (try iter.next()) |item| {
-        var entry = try allocator.alloc.alloc(u8, item.name.len);
+        while (try iter.next()) |item| {
+            var entry = try allocator.alloc.alloc(u8, item.name.len);
 
-        std.mem.copy(u8, entry, item.name);
+            std.mem.copy(u8, entry, item.name);
 
-        try disks.append(entry);
+            try self.disks.append(entry);
+        }
     }
-}
 
-pub fn drawDisks(shader: shd.Shader, font_shader: shd.Shader, batch: *sb.SpriteBatch, sprite: *sp.Sprite, remaining: f32) !void {
-    if (font_shader.id != 0) {
+    pub fn update(self: *Self, dt: f32) !void {
+        if (self.auto) self.remaining -= dt;
+
+        if (self.remaining <= 0) {
+            self.disk.* = null;
+
+            if (self.disks.items.len != 0) {
+                self.disk.* = self.disks.items[self.sel];
+            }
+
+            events.em.sendEvent(systemEvs.EventStateChange{
+                .targetState = 1,
+            });
+        }
+    }
+
+    pub fn draw(self: *Self, _: vecs.Vector2) !void {
         var pos = vecs.newVec2(20, 20);
 
         var line: []u8 = undefined;
 
-        batch.draw(sp.Sprite, sprite, shader, vecs.newVec3(20, 20, 0));
-        pos.y += sprite.data.size.y;
+        self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(20, 20, 0));
+        pos.y += self.logo_sprite.data.size.y;
 
-        if (auto) {
-            line = try std.fmt.allocPrint(allocator.alloc, "DiskEEE V_{s} Booting to disk.eee in {}s", .{ VERSION, @floatToInt(i32, remaining + 0.5) });
+        if (self.auto) {
+            line = try std.fmt.allocPrint(allocator.alloc, "DiskEEE V_{s} Booting to disk.eee in {}s", .{ VERSION, @floatToInt(i32, self.remaining + 0.5) });
         } else {
             line = try std.fmt.allocPrint(allocator.alloc, "DiskEEE V_{s}", .{VERSION});
         }
 
-        biosFace.drawScale(batch, font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
-        pos.y += biosFace.size * 2;
-        biosFace.drawScale(batch, font_shader, "Select a disk", pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
-        pos.y += biosFace.size * 1;
+        self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+        pos.y += self.face.size * 2;
+        self.face.drawScale(self.sb, self.font_shader, "Select a disk", pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+        pos.y += self.face.size * 1;
 
-        if (sel >= disks.items.len) sel = disks.items.len - 1;
+        if (self.disks.items.len != 0) {
+            for (self.disks.items) |disk, idx| {
+                allocator.alloc.free(line);
 
-        for (disks.items) |disk, idx| {
-            allocator.alloc.free(line);
+                line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{disk});
+                if (idx == self.sel) {
+                    line[0] = '>';
+                }
 
-            line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{disk});
-            if (idx == sel) {
-                line[0] = '>';
+                self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+                pos.y += self.face.size * 1;
             }
-
-            biosFace.drawScale(batch, font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
-            pos.y += biosFace.size * 1;
         }
         allocator.alloc.free(line);
     }
-}
+
+    pub fn keypress(self: *Self, key: c_int, _: c_int) !bool {
+        self.auto = false;
+        switch (key) {
+            c.GLFW_KEY_ENTER => {
+                self.remaining = 0;
+            },
+            c.GLFW_KEY_DOWN => {
+                if (self.sel < self.disks.items.len - 1)
+                    self.sel += 1;
+            },
+            c.GLFW_KEY_UP => {
+                if (self.sel != 0)
+                    self.sel -= 1;
+            },
+            else => {},
+        }
+
+        return false;
+    }
+
+    pub fn mousepress(_: *Self, _: c_int) !void {}
+    pub fn mouserelease(_: *Self) !void {}
+    pub fn mousemove(_: *Self, _: vecs.Vector2) !void {}
+    pub fn mousescroll(_: *Self, _: vecs.Vector2) !void {}
+};

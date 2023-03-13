@@ -2,12 +2,20 @@ const std = @import("std");
 const ev = @import("../util/events.zig");
 const c = @import("../c.zig");
 
-pub fn setup(win: ?*c.GLFWwindow) void {
-    _ = c.glfwSetCursorPosCallback(win, cursor_pos_callback);
-    _ = c.glfwSetKeyCallback(win, key_callback);
-    _ = c.glfwSetMouseButtonCallback(win, mouse_button_callback);
-    _ = c.glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
-    _ = c.glfwSetScrollCallback(win, scroll_callback);
+pub fn setup(win: ?*c.GLFWwindow, enabled: bool) void {
+    if (enabled) {
+        _ = c.glfwSetCursorPosCallback(win, cursor_pos_callback);
+        _ = c.glfwSetKeyCallback(win, key_callback);
+        _ = c.glfwSetMouseButtonCallback(win, mouse_button_callback);
+        _ = c.glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
+        _ = c.glfwSetScrollCallback(win, scroll_callback);
+    } else {
+        _ = c.glfwSetCursorPosCallback(win, null);
+        _ = c.glfwSetKeyCallback(win, null);
+        _ = c.glfwSetMouseButtonCallback(win, null);
+        _ = c.glfwSetFramebufferSizeCallback(win, null);
+        _ = c.glfwSetScrollCallback(win, null);
+    }
 }
 
 pub const EventMouseMove = struct { x: f64, y: f64 };
@@ -24,8 +32,8 @@ pub fn cursor_pos_callback(_: ?*c.GLFWwindow, x: f64, y: f64) callconv(.C) void 
 
 pub fn key_callback(_: ?*c.GLFWwindow, key: c_int, _: c_int, action: c_int, mods: c_int) callconv(.C) void {
     switch (action) {
-        c.GLFW_PRESS => ev.em.sendEvent(EventKeyDown{ .key = key, .mods = mods}),
-        c.GLFW_REPEAT => ev.em.sendEvent(EventKeyDown{ .key = key, .mods = mods}),
+        c.GLFW_PRESS => ev.em.sendEvent(EventKeyDown{ .key = key, .mods = mods }),
+        c.GLFW_REPEAT => ev.em.sendEvent(EventKeyDown{ .key = key, .mods = mods }),
         c.GLFW_RELEASE => ev.em.sendEvent(EventKeyUp{ .key = key, .mods = mods }),
         else => {},
     }

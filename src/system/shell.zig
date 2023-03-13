@@ -93,7 +93,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new(wintex.*, win.WindowData{
+        var window = win.Window.new(wintex, win.WindowData{
             .pos = rect.Rectangle{
                 .x = 100,
                 .y = 100,
@@ -120,7 +120,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new(wintex.*, win.WindowData{
+        var window = win.Window.new(wintex, win.WindowData{
             .pos = rect.Rectangle{
                 .x = 100,
                 .y = 100,
@@ -133,12 +133,13 @@ pub const Shell = struct {
                 .w = 1.0,
                 .h = 1.0,
             },
-            .contents = wins.editor.new(edittex.*, shader.*),
+            .contents = wins.editor.new(edittex, shader),
             .active = true,
         });
 
         if (param.len > 5) {
-            var edself = @ptrCast(*wins.editor.EditorData, window.data.contents.self);
+            const alignment = @typeInfo(*wins.editor.EditorData).Pointer.alignment;
+            var edself = @ptrCast(*wins.editor.EditorData, @alignCast(alignment, window.data.contents.ptr));
 
             edself.file = self.root.getFile(param[5..]);
             edself.buffer.clearAndFree();
@@ -155,7 +156,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new(wintex.*, win.WindowData{
+        var window = win.Window.new(wintex, win.WindowData{
             .pos = rect.Rectangle{
                 .x = 100,
                 .y = 100,
@@ -168,12 +169,13 @@ pub const Shell = struct {
                 .w = 1.0,
                 .h = 1.0,
             },
-            .contents = wins.web.new(webtex.*, shader.*),
+            .contents = wins.web.new(webtex, shader),
             .active = true,
         });
 
         if (param.len > 4) {
-            var webself = @ptrCast(*wins.web.WebData, window.data.contents.self);
+            const alignment = @typeInfo(*wins.web.WebData).Pointer.alignment;
+            var webself = @ptrCast(*wins.web.WebData, @alignCast(alignment, window.data.contents.ptr));
 
             webself.file = self.root.getFile(param[4..]);
         }

@@ -25,7 +25,7 @@ fn range(len: usize) []const void {
 }
 
 pub const BarData = struct {
-    screendims: vecs.Vector2,
+    screendims: *vecs.Vector2,
     height: f32,
     btnActive: bool = false,
     btns: i32 = 0,
@@ -62,7 +62,7 @@ pub const BarData = struct {
         addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE));
     }
 
-    pub fn drawName(self: *BarData, font_shader: shd.Shader, shader: shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) !void {
+    pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) !void {
         var pos = rect.newRect(self.height, self.screendims.y - self.height + 6, self.screendims.x + self.height, self.height);
 
         var color = cols.newColorRGBA(0, 0, 0, 255);
@@ -113,7 +113,7 @@ pub const BarData = struct {
         }
     }
 
-    pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), webtex: tex.Texture, wintex: tex.Texture, emailtex: tex.Texture, editortex: tex.Texture, explorertex: tex.Texture, shader: shd.Shader, pos: vecs.Vector2) bool {
+    pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), webtex: *tex.Texture, wintex: *tex.Texture, emailtex: *tex.Texture, editortex: *tex.Texture, explorertex: *tex.Texture, shader: *shd.Shader, pos: vecs.Vector2) bool {
         var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;

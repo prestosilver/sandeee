@@ -12,6 +12,8 @@ const spr = @import("../drawers/sprite2d.zig");
 const allocator = @import("../util/allocator.zig");
 
 pub const VMData = struct {
+    const Self = @This();
+
     const VMDataEntry = struct {
         loc: vecs.Vector3,
         s: spr.Sprite,
@@ -21,7 +23,7 @@ pub const VMData = struct {
         var appends: VMDataEntry = .{
             .loc = vecs.newVec3(dst.x, dst.y, 0),
             .s = spr.Sprite{
-                .texture = texture.*,
+                .texture = texture,
                 .data = spr.SpriteData.new(src, vecs.newVec2(dst.w, dst.h)),
             },
         };
@@ -44,26 +46,29 @@ pub const VMData = struct {
     back: bool,
     idx: u16,
     shd: *shd.Shader,
-};
 
-fn drawVM(c: *[]u8, batch: *sb.SpriteBatch, _: shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font) void {
-    var self = @ptrCast(*VMData, c);
-    var rects = self.rects[0];
-    if (self.back) rects = self.rects[1];
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, _: *shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font) void {
+        var rects = self.rects[0];
+        if (self.back) rects = self.rects[1];
 
-    for (rects.items) |_, idx| {
-        batch.draw(spr.Sprite, &rects.items[idx].s, self.shd.*, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
+        for (rects.items) |_, idx| {
+            batch.draw(spr.Sprite, &rects.items[idx].s, self.shd, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
+        }
     }
-}
 
-fn deleteVM(cself: *[]u8) void {
-    var self = @ptrCast(*VMData, cself);
+    pub fn key(_: *Self, _: i32, _: i32) !void {}
+    pub fn click(_: *Self, _: vecs.Vector2, _: vecs.Vector2, _: i32) !void {}
+    pub fn scroll(_: *Self, _: f32, _: f32) !void {}
+    pub fn move(_: *Self, _: f32, _: f32) !void {}
+    pub fn focus(_: *Self) !void {}
 
-    self.rects[0].deinit();
-    self.rects[1].deinit();
+    pub fn deinit(self: *Self) void {
+        self.rects[0].deinit();
+        self.rects[1].deinit();
 
-    allocator.alloc.destroy(self);
-}
+        allocator.alloc.destroy(self);
+    }
+};
 
 pub fn new(idx: u16, shader: *shd.Shader) win.WindowContents {
     var self = allocator.alloc.create(VMData) catch undefined;
@@ -74,12 +79,5 @@ pub fn new(idx: u16, shader: *shd.Shader) win.WindowContents {
     self.rects[0] = std.ArrayList(VMData.VMDataEntry).init(allocator.alloc);
     self.rects[1] = std.ArrayList(VMData.VMDataEntry).init(allocator.alloc);
 
-    return win.WindowContents{
-        .self = @ptrCast(*[]u8, @alignCast(8, self)),
-        .deleteFn = deleteVM,
-        .drawFn = drawVM,
-        .name = "VM Window",
-        .kind = "vm",
-        .clearColor = col.newColor(1, 1, 1, 1),
-    };
+    return win.WindowContents.init(self, "vm", "VM Window", col.newColor(1, 1, 1, 1));
 }

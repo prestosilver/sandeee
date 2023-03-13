@@ -1,0 +1,272 @@
+const std = @import("std");
+const vecs = @import("../math/vecs.zig");
+const win = @import("../drawers/window2d.zig");
+const allocator = @import("../util/allocator.zig");
+const wall = @import("../drawers/wall2d.zig");
+const bar = @import("../drawers/bar2d.zig");
+const sp = @import("../drawers/sprite2d.zig");
+const batch = @import("../spritebatch.zig");
+const shd = @import("../shader.zig");
+const font = @import("../util/font.zig");
+const tex = @import("../texture.zig");
+const events = @import("../util/events.zig");
+const windowEvs = @import("../events/window.zig");
+const pseudo = @import("../system/pseudo/all.zig");
+
+pub const GSWindowed = struct {
+    const Self = @This();
+
+    dragmode: win.DragMode = .None,
+    draggingStart: vecs.Vector2 = vecs.newVec2(0, 0),
+    dragging: ?*win.Window = null,
+
+    mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
+    windows: std.ArrayList(win.Window) = undefined,
+    openWindow: vecs.Vector2 = vecs.newVec2(0, 0),
+
+    wallpaper: wall.Wallpaper,
+    bar: bar.Bar,
+    sb: *batch.SpriteBatch,
+    shader: *shd.Shader,
+    font_shader: *shd.Shader,
+    face: *font.Font,
+    bar_logo_sprite: sp.Sprite,
+
+    webtex: *tex.Texture,
+    wintex: *tex.Texture,
+    emailtex: *tex.Texture,
+    editortex: *tex.Texture,
+    explorertex: *tex.Texture,
+
+    var globalSelf: *Self = undefined;
+
+    fn createWindow(event: windowEvs.EventCreateWindow) bool {
+        var target = vecs.newVec2(100, 100);
+        var self = globalSelf;
+
+        for (self.windows.items) |_, idx| {
+            self.windows.items[idx].data.active = false;
+
+            if (self.windows.items[idx].data.pos.x == 100 or self.windows.items[idx].data.pos.y == 100)
+                target = self.openWindow;
+        }
+
+        self.windows.append(event.window) catch {
+            std.log.err("couldnt create window!", .{});
+            return false;
+        };
+
+        self.windows.items[self.windows.items.len - 1].data.pos.x = target.x;
+        self.windows.items[self.windows.items.len - 1].data.pos.y = target.y;
+
+        self.openWindow.x = target.x + 25;
+        self.openWindow.y = target.y + 25;
+        return false;
+    }
+
+    pub fn setup(self: *Self) !void {
+        self.windows = std.ArrayList(win.Window).init(allocator.alloc);
+
+        pseudo.window.windowsPtr = &self.windows;
+
+        globalSelf = self;
+
+        events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
+    }
+
+    pub fn draw(self: *Self, size: vecs.Vector2) !void {
+        if (self.openWindow.x > size.x - 500) self.openWindow.x = 100;
+        if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
+
+        // draw wallpaper
+        self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
+
+        for (self.windows.items) |window, idx| {
+            // continue if window closed on update
+            if (idx >= self.windows.items.len) continue;
+
+            // draw the window border
+            self.sb.draw(win.Window, &self.windows.items[idx], self.shader, vecs.newVec3(0, 0, 0));
+
+            // draw the windows name
+            self.windows.items[idx].data.drawName(self.font_shader, self.face, self.sb);
+
+            // update scisor region
+            self.sb.scissor = window.data.scissor();
+
+            // draw the window contents
+            try self.windows.items[idx].data.drawContents(self.font_shader, self.face, self.sb);
+
+            // reset scisor jic
+            self.sb.scissor = null;
+        }
+
+        // draw bar
+        self.sb.draw(bar.Bar, &self.bar, self.shader, vecs.newVec3(0, 0, 0));
+        try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, self.sb, &self.windows);
+    }
+
+    pub fn update(self: *Self, _: f32) !void {
+        _ = self;
+    }
+
+    pub fn keypress(self: *Self, key: c_int, mods: c_int) !bool {
+        if (self.bar.data.btnActive) {
+            self.bar.data.btnActive = false;
+
+            return false;
+        }
+
+        for (self.windows.items) |*window| {
+            if (!window.data.active) continue;
+
+            return window.data.key(key, mods);
+        }
+
+        return false;
+    }
+
+    pub fn mousepress(self: *Self, btn: c_int) !void {
+        switch (btn) {
+            0 => {
+                if (self.bar.data.doClick(&self.windows, self.webtex, self.wintex, self.emailtex, self.editortex, self.explorertex, self.shader, self.mousepos)) {
+                    return;
+                }
+
+                var newTop: ?u32 = null;
+
+                for (self.windows.items) |_, idx| {
+                    if (self.windows.items[idx].data.min) continue;
+
+                    var pos = self.windows.items[idx].data.pos;
+                    pos.x -= 10;
+                    pos.y -= 10;
+                    pos.w += 20;
+                    pos.h += 20;
+
+                    if (pos.contains(self.mousepos)) {
+                        newTop = @intCast(u32, idx);
+                    }
+
+                    self.windows.items[idx].data.active = false;
+                }
+
+                if (newTop) |top| {
+                    var swap = self.windows.orderedRemove(@intCast(usize, top));
+                    swap.data.active = true;
+                    try swap.data.contents.focus();
+                    var mode = swap.data.getDragMode(self.mousepos);
+
+                    switch (mode) {
+                        .Close => {
+                            return swap.data.deinit();
+                        },
+                        .Full => {
+                            if (swap.data.full) {
+                                swap.data.pos = swap.data.oldpos;
+                            } else {
+                                swap.data.oldpos = swap.data.pos;
+                            }
+                            swap.data.full = !swap.data.full;
+                            try self.windows.append(swap);
+                        },
+                        .Min => {
+                            swap.data.min = !swap.data.min;
+                            try self.windows.append(swap);
+                        },
+                        else => {
+                            try self.windows.append(swap);
+                            if (swap.data.full) return;
+                            self.dragmode = mode;
+                            self.dragging = &self.windows.items[self.windows.items.len - 1];
+                            var start = self.dragging.?.data.pos;
+                            self.draggingStart = switch (self.dragmode) {
+                                win.DragMode.None => vecs.newVec2(0, 0),
+                                win.DragMode.Close => vecs.newVec2(0, 0),
+                                win.DragMode.Full => vecs.newVec2(0, 0),
+                                win.DragMode.Min => vecs.newVec2(0, 0),
+                                win.DragMode.Move => vecs.newVec2(start.x - self.mousepos.x, start.y - self.mousepos.y),
+                                win.DragMode.ResizeR => vecs.newVec2(start.w - self.mousepos.x, 0),
+                                win.DragMode.ResizeB => vecs.newVec2(0, start.h - self.mousepos.y),
+                                win.DragMode.ResizeL => vecs.newVec2(start.w + start.x, 0),
+                                win.DragMode.ResizeRB => vecs.newVec2(start.w - self.mousepos.x, start.h - self.mousepos.y),
+                                win.DragMode.ResizeLB => vecs.newVec2(start.w + start.x, start.h - self.mousepos.y),
+                            };
+                        },
+                    }
+                }
+            },
+            else => {},
+        }
+
+        for (self.windows.items) |*window| {
+            if (!window.data.active) continue;
+
+            return window.data.click(self.mousepos, btn);
+        }
+    }
+
+    pub fn mouserelease(self: *Self) !void {
+        self.dragging = null;
+    }
+
+    pub fn mousemove(self: *Self, pos: vecs.Vector2) !void {
+        self.mousepos = pos;
+
+        if (self.dragging) |dragging| {
+            var old = dragging.data.pos;
+            var winpos = vecs.add(pos, self.draggingStart);
+
+            switch (self.dragmode) {
+                win.DragMode.None => {},
+                win.DragMode.Close => {},
+                win.DragMode.Full => {},
+                win.DragMode.Min => {},
+                win.DragMode.Move => {
+                    dragging.data.pos.x = winpos.x;
+                    dragging.data.pos.y = winpos.y;
+                },
+                win.DragMode.ResizeR => {
+                    dragging.data.pos.w = winpos.x;
+                },
+                win.DragMode.ResizeL => {
+                    dragging.data.pos.x = pos.x;
+                    dragging.data.pos.w = self.draggingStart.x - pos.x;
+                },
+                win.DragMode.ResizeB => {
+                    dragging.data.pos.h = winpos.y;
+                },
+                win.DragMode.ResizeRB => {
+                    dragging.data.pos.w = winpos.x;
+                    dragging.data.pos.h = winpos.y;
+                },
+                win.DragMode.ResizeLB => {
+                    dragging.data.pos.x = pos.x;
+                    dragging.data.pos.w = self.draggingStart.x - pos.x;
+                    dragging.data.pos.h = winpos.y;
+                },
+            }
+            if (dragging.data.pos.w < 400) {
+                dragging.data.pos.x = old.x;
+                dragging.data.pos.w = old.w;
+            }
+            if (dragging.data.pos.h < 300) {
+                dragging.data.pos.y = old.y;
+                dragging.data.pos.h = old.h;
+            }
+        }
+
+        for (self.windows.items) |*window| {
+            if (!window.data.active) continue;
+            return window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
+        }
+    }
+
+    pub fn mousescroll(self: *Self, dir: vecs.Vector2) !void {
+        for (self.windows.items) |*window| {
+            if (!window.data.active) continue;
+
+            return window.data.contents.scroll(dir.x, dir.y);
+        }
+    }
+};

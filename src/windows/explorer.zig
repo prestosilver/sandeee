@@ -22,6 +22,8 @@ const Icon = struct {
 };
 
 const ExplorerData = struct {
+    const Self = @This();
+
     const ExplorerMouseActionType = enum {
         SingleLeft,
         DoubleLeft,
@@ -32,7 +34,7 @@ const ExplorerData = struct {
         time: f32,
     };
 
-    shader: shd.Shader,
+    shader: *shd.Shader,
     icons: [5]sprite.Sprite,
     scroll: [4]sprite.Sprite,
     text_box: [2]sprite.Sprite,
@@ -46,7 +48,7 @@ const ExplorerData = struct {
     lastAction: ?ExplorerMouseAction,
     shell: shell.Shell,
 
-    pub fn getIcons(self: *ExplorerData) []const Icon {
+    pub fn getIcons(self: *Self) []const Icon {
         var result = allocator.alloc.alloc(Icon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len) catch undefined;
         var idx: usize = 0;
 
@@ -68,171 +70,163 @@ const ExplorerData = struct {
 
         return result;
     }
-};
 
-pub fn drawExplorer(cself: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
-    var self = @ptrCast(*ExplorerData, cself);
-
-    if (self.lastAction != null) {
-        if (self.lastAction.?.time <= 0) {
-            self.lastAction = null;
-        } else {
-            self.lastAction.?.time -= 5;
-        }
-    }
-
-    if (self.shell.vm != null) {
-        var result = self.shell.updateVM() catch null;
-        if (result != null) {
-            result.?.data.deinit();
-        }
-    }
-
-    var x: f32 = 0;
-    var y: f32 = -self.scrollVal + 36;
-
-    var icons = self.getIcons();
-    defer allocator.alloc.free(icons);
-
-    for (icons) |icon, idx| {
-        var size = font.sizeText(icon.name);
-        var xo = (128 - size.x) / 2;
-
-        font.draw(batch, font_shader, icon.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
-
-        batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
-
-        if (idx + 1 == self.selected)
-            batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
-
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
         if (self.lastAction != null) {
-            if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
-                switch (self.lastAction.?.kind) {
-                    .SingleLeft => {
-                        self.selected = idx + 1;
-                    },
-                    .DoubleLeft => {
-                        var newPath = self.shell.root.getFolder(icon.name);
-                        if (newPath != null) {
-                            self.shell.root = newPath.?;
-                            self.selected = 0;
-                        } else {
-                            _ = self.shell.run(icon.name, icon.name) catch {
-                                //TODO: popup
-                            };
-                        }
-                        self.lastAction = null;
-                    },
+            if (self.lastAction.?.time <= 0) {
+                self.lastAction = null;
+            } else {
+                self.lastAction.?.time -= 5;
+            }
+        }
+
+        if (self.shell.vm != null) {
+            var result = self.shell.updateVM() catch null;
+            if (result != null) {
+                result.?.data.deinit();
+            }
+        }
+
+        var x: f32 = 0;
+        var y: f32 = -self.scrollVal + 36;
+
+        var icons = self.getIcons();
+        defer allocator.alloc.free(icons);
+
+        for (icons) |icon, idx| {
+            var size = font.sizeText(icon.name);
+            var xo = (128 - size.x) / 2;
+
+            font.draw(batch, font_shader, icon.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
+
+            batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+
+            if (idx + 1 == self.selected)
+                batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
+
+            if (self.lastAction != null) {
+                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
+                    switch (self.lastAction.?.kind) {
+                        .SingleLeft => {
+                            self.selected = idx + 1;
+                        },
+                        .DoubleLeft => {
+                            var newPath = self.shell.root.getFolder(icon.name);
+                            if (newPath != null) {
+                                self.shell.root = newPath.?;
+                                self.selected = 0;
+                            } else {
+                                _ = self.shell.run(icon.name, icon.name) catch {
+                                    //TODO: popup
+                                };
+                            }
+                            self.lastAction = null;
+                        },
+                    }
                 }
             }
-        }
 
-        x += 128;
-        if (x + 128 > bnds.w) {
-            y += 72 + font.size;
-            x = 0;
-        }
-    }
-
-    self.maxy = y + 64 + font.size + font.size + self.scrollVal - bnds.h;
-
-    if (self.scrollVal > self.maxy)
-        self.scrollVal = self.maxy;
-    if (self.scrollVal < 0)
-        self.scrollVal = 0;
-
-    // draw menubar
-    self.menubar.data.size.x = bnds.w;
-    batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
-
-    batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
-    self.text_box[1].data.size.x = bnds.w - 4 - 34;
-
-    batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
-    batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 4, bnds.y + 2, 0));
-
-    var tmp = batch.scissor;
-    batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 4 - 34, 28);
-    font.drawScale(batch, font_shader, self.shell.root.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
-
-    batch.scissor = tmp;
-
-    batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
-
-    // draw scrollbar
-    var scrollPc = self.scrollVal / self.maxy;
-
-    self.scroll[1].data.size.y = bnds.h - 20 - 36;
-
-    batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
-    batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
-    batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-    batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
-}
-
-fn deleteExplorer(cself: *[]u8) void {
-    var self = @ptrCast(*ExplorerData, cself);
-    allocator.alloc.destroy(self);
-}
-
-fn scrollExplorer(cself: *[]u8, _: f32, y: f32) void {
-    var self = @ptrCast(*ExplorerData, cself);
-
-    self.scrollVal -= y * SCROLL;
-
-    if (self.scrollVal > self.maxy)
-        self.scrollVal = self.maxy;
-    if (self.scrollVal < 0)
-        self.scrollVal = 0;
-}
-
-pub fn clickExplorer(cself: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
-    var self = @ptrCast(*ExplorerData, cself);
-
-    if (mousepos.y < 36) {
-        if (rect.newRect(0, 0, 28, 28).contains(mousepos)) {
-            self.shell.root = self.shell.root.parent;
-            self.selected = 0;
-        }
-
-        return false;
-    }
-
-    switch (btn) {
-        0 => {
-            if (self.lastAction != null and vecs.distSq(mousepos, self.lastAction.?.pos) < 100) {
-                self.lastAction = .{
-                    .kind = .DoubleLeft,
-                    .pos = mousepos,
-                    .time = 10,
-                };
-            } else {
-                self.lastAction = .{
-                    .kind = .SingleLeft,
-                    .pos = mousepos,
-                    .time = 100,
-                };
+            x += 128;
+            if (x + 128 > bnds.w) {
+                y += 72 + font.size;
+                x = 0;
             }
-        },
-        else => {},
+        }
+
+        self.maxy = y + 64 + font.size + font.size + self.scrollVal - bnds.h;
+
+        if (self.scrollVal > self.maxy)
+            self.scrollVal = self.maxy;
+        if (self.scrollVal < 0)
+            self.scrollVal = 0;
+
+        // draw menubar
+        self.menubar.data.size.x = bnds.w;
+        batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+
+        batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
+        self.text_box[1].data.size.x = bnds.w - 4 - 34;
+
+        batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
+        batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 4, bnds.y + 2, 0));
+
+        var tmp = batch.scissor;
+        batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 4 - 34, 28);
+        font.drawScale(batch, font_shader, self.shell.root.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
+
+        batch.scissor = tmp;
+
+        batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
+
+        // draw scrollbar
+        var scrollPc = self.scrollVal / self.maxy;
+
+        self.scroll[1].data.size.y = bnds.h - 20 - 36;
+
+        batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
+        batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
+        batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+        batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
     }
 
-    return true;
-}
-
-pub fn keyExplorer(cself: *[]u8, key: i32, _: i32) void {
-    var self = @ptrCast(*ExplorerData, cself);
-
-    switch (key) {
-        c.GLFW_KEY_BACKSPACE => {
-            self.shell.root = self.shell.root.parent;
-            self.selected = 0;
-        },
-        else => {},
+    pub fn deinit(self: *Self) void {
+        allocator.alloc.destroy(self);
     }
-}
 
-pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
+    pub fn scroll(self: *Self, _: f32, y: f32) void {
+        self.scrollVal -= y * SCROLL;
+
+        if (self.scrollVal > self.maxy)
+            self.scrollVal = self.maxy;
+        if (self.scrollVal < 0)
+            self.scrollVal = 0;
+    }
+
+    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
+        if (mousepos.y < 36) {
+            if (rect.newRect(0, 0, 28, 28).contains(mousepos)) {
+                self.shell.root = self.shell.root.parent;
+                self.selected = 0;
+            }
+
+            return;
+        }
+
+        switch (btn) {
+            0 => {
+                if (self.lastAction != null and vecs.distSq(mousepos, self.lastAction.?.pos) < 100) {
+                    self.lastAction = .{
+                        .kind = .DoubleLeft,
+                        .pos = mousepos,
+                        .time = 10,
+                    };
+                } else {
+                    self.lastAction = .{
+                        .kind = .SingleLeft,
+                        .pos = mousepos,
+                        .time = 100,
+                    };
+                }
+            },
+            else => {},
+        }
+    }
+
+    pub fn move(_: *Self, _: f32, _: f32) !void {}
+    pub fn focus(_: *Self) !void {}
+
+    pub fn key(self: *Self, keycode: i32, _: i32) void {
+        switch (keycode) {
+            c.GLFW_KEY_BACKSPACE => {
+                self.shell.root = self.shell.root.parent;
+                self.selected = 0;
+            },
+            else => {},
+        }
+    }
+};
+
+pub fn new(texture: *tex.Texture, shader: *shd.Shader) win.WindowContents {
     var self = allocator.alloc.create(ExplorerData) catch undefined;
 
     for (self.icons) |_, idx| {
@@ -297,15 +291,5 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     self.shell.root = files.home;
     self.shell.vm = null;
 
-    return win.WindowContents{
-        .self = @ptrCast(*[]u8, self),
-        .deleteFn = deleteExplorer,
-        .drawFn = drawExplorer,
-        .keyFn = keyExplorer,
-        .clickFn = clickExplorer,
-        .scrollFn = scrollExplorer,
-        .name = "Files",
-        .kind = "explorer",
-        .clearColor = col.newColor(1, 1, 1, 1),
-    };
+    return win.WindowContents.init(self, "explorer", "Files", col.newColor(1, 1, 1, 1));
 }

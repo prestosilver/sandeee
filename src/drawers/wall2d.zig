@@ -14,8 +14,8 @@ pub const WallData = struct {
         Stretch,
     };
 
-    dims: vecs.Vector2,
-    size: vecs.Vector2,
+    dims: *vecs.Vector2,
+    size: *vecs.Vector2,
     mode: Mode = .Center,
 
     fn addQuad(arr: *va.VertArray, pos: rect.Rectangle, src: rect.Rectangle) void {

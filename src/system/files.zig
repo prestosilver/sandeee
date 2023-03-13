@@ -119,12 +119,12 @@ pub const Folder = struct {
             try root.subfolders.append(fake.setupFake(root));
 
             var path = fm.getContentDir();
-            var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
+            var d = try std.fs.openDirAbsolute(path, .{ .access_sub_paths = true });
 
             var recovery = try d.openFile("content/recovery.eee", .{});
             defer recovery.close();
             try loadDisk(recovery);
-            rootOut = try std.fmt.allocPrint(allocator.alloc, "{s}/disks/disk.eee", .{ path });
+            rootOut = try std.fmt.allocPrint(allocator.alloc, "{s}/disks/disk.eee", .{path});
 
             var user = d.openFile("disks/disk.eee", .{}) catch null;
             if (user) |userdisk| {

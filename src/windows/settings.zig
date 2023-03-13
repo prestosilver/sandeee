@@ -20,17 +20,20 @@ const SettingPanel = struct {
 };
 
 const SettingsData = struct {
+    const Self = @This();
+
     const SettingsMouseActionType = enum {
         SingleLeft,
         DoubleLeft,
     };
+
     const SettingsMouseAction = struct {
         kind: SettingsMouseActionType,
         pos: vecs.Vector2,
         time: f32,
     };
 
-    shader: shd.Shader,
+    shader: *shd.Shader,
     icons: [5]sprite.Sprite,
     scroll: [3]sprite.Sprite,
     focus: sprite.Sprite,
@@ -43,64 +46,77 @@ const SettingsData = struct {
         SettingPanel{ .name = "Graphics", .icon = 1 },
         SettingPanel{ .name = "Sounds", .icon = 2 },
     };
-};
+    const Setting = struct {
+        const Kind = enum(u8) { String, Dropdown };
 
-const Setting = struct {
-    const Kind = enum(u8) { String, Dropdown };
+        kind: Kind,
+        kinddata: []const u8 = "",
 
-    kind: Kind,
-    kinddata: []const u8 = "",
+        setting: []const u8,
+        key: []const u8,
+    };
 
-    setting: []const u8,
-    key: []const u8,
-};
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
+        if (self.focusedPane) |focused| {
+            var settings = std.ArrayList(Setting).init(allocator.alloc);
+            defer settings.deinit();
 
-pub fn drawSettings(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
-    var self = @ptrCast(*SettingsData, c);
-
-    if (self.focusedPane) |focused| {
-        var settings = std.ArrayList(Setting).init(allocator.alloc);
-        defer settings.deinit();
-
-        switch (focused) {
-            0 => {
-                settings.appendSlice(&[_]Setting{
-                    Setting{
-                        .kind = .String,
-                        .setting = "Wallpaper Color",
-                        .key = "wallpaper_color",
-                    },
-                    Setting{
-                        .kind = .Dropdown,
-                        .kinddata = "Color Tile Center Stretch",
-                        .setting = "Wallpaper Mode",
-                        .key = "wallpaper_mode",
-                    },
-                    Setting{
-                        .kind = .String,
-                        .setting = "Wallpaper Path",
-                        .key = "wallpaper_path",
-                    },
-                }) catch {};
-            },
-            else => {},
-        }
-
-        var pos = vecs.newVec2(0, 0);
-
-        for (settings.items) |item| {
-            // draw name
-            font.draw(batch, font_shader, item.setting, vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
-
-            // draw value
-            var value = settingManager.get(item.key);
-            if (value) |val| {
-                font.draw(batch, font_shader, val, vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
-            } else {
-                font.draw(batch, font_shader, "UNDEFINED", vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(1, 0, 0, 1));
+            switch (focused) {
+                0 => {
+                    settings.appendSlice(&[_]Setting{
+                        Setting{
+                            .kind = .String,
+                            .setting = "Wallpaper Color",
+                            .key = "wallpaper_color",
+                        },
+                        Setting{
+                            .kind = .Dropdown,
+                            .kinddata = "Color Tile Center Stretch",
+                            .setting = "Wallpaper Mode",
+                            .key = "wallpaper_mode",
+                        },
+                        Setting{
+                            .kind = .String,
+                            .setting = "Wallpaper Path",
+                            .key = "wallpaper_path",
+                        },
+                    }) catch {};
+                },
+                else => {},
             }
 
-            pos.y += font.size;
+            var pos = vecs.newVec2(0, 0);
+
+            for (settings.items) |item| {
+                // draw name
+                font.draw(batch, font_shader, item.setting, vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
+
+                // draw value
+                var value = settingManager.get(item.key);
+                if (value) |val| {
+                    font.draw(batch, font_shader, val, vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
+                } else {
+                    font.draw(batch, font_shader, "UNDEFINED", vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(1, 0, 0, 1));
+                }
+
+                pos.y += font.size;
+            }
+
+            self.scroll[1].data.size.y = bnds.h - 20;
+
+            batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
+            batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
+            batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+
+            return;
+        }
+
+        if (self.lastAction != null) {
+            if (self.lastAction.?.time <= 0) {
+                self.lastAction = null;
+            } else {
+                self.lastAction.?.time -= 5;
+            }
         }
 
         self.scroll[1].data.size.y = bnds.h - 20;
@@ -109,89 +125,73 @@ pub fn drawSettings(c: *[]u8, batch: *sb.SpriteBatch, font_shader: shd.Shader, b
         batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
         batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
 
-        return;
-    }
+        var x: f32 = 0;
+        var y: f32 = 0;
 
-    if (self.lastAction != null) {
-        if (self.lastAction.?.time <= 0) {
-            self.lastAction = null;
-        } else {
-            self.lastAction.?.time -= 5;
-        }
-    }
+        for (SettingsData.panels) |panel, idx| {
+            var size = font.sizeText(panel.name);
+            var xo = (128 - size.x) / 2;
 
-    self.scroll[1].data.size.y = bnds.h - 20;
+            font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
 
-    batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
-    batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
-    batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+            batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-    var x: f32 = 0;
-    var y: f32 = 0;
+            if (idx + 1 == self.selection)
+                batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
 
-    for (SettingsData.panels) |panel, idx| {
-        var size = font.sizeText(panel.name);
-        var xo = (128 - size.x) / 2;
-
-        font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
-
-        batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
-
-        if (idx + 1 == self.selection)
-            batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
-
-        if (self.lastAction != null) {
-            if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
-                switch (self.lastAction.?.kind) {
-                    .SingleLeft => {
-                        self.selection = idx + 1;
-                    },
-                    .DoubleLeft => {
-                        self.focusedPane = idx;
-                    },
+            if (self.lastAction != null) {
+                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
+                    switch (self.lastAction.?.kind) {
+                        .SingleLeft => {
+                            self.selection = idx + 1;
+                        },
+                        .DoubleLeft => {
+                            self.focusedPane = idx;
+                        },
+                    }
                 }
             }
-        }
 
-        x += 128;
-        if (x + 128 > bnds.w) {
-            y += 72 + font.size;
-            x = 0;
-        }
-    }
-}
-
-pub fn clickSettings(cself: *[]u8, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
-    var self = @ptrCast(*SettingsData, cself);
-
-    switch (btn) {
-        0 => {
-            if (self.lastAction != null) {
-                self.lastAction = .{
-                    .kind = .DoubleLeft,
-                    .pos = mousepos,
-                    .time = 10,
-                };
-            } else {
-                self.lastAction = .{
-                    .kind = .SingleLeft,
-                    .pos = mousepos,
-                    .time = 100,
-                };
+            x += 128;
+            if (x + 128 > bnds.w) {
+                y += 72 + font.size;
+                x = 0;
             }
-        },
-        else => {},
+        }
     }
 
-    return true;
-}
+    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
+        switch (btn) {
+            0 => {
+                if (self.lastAction != null) {
+                    self.lastAction = .{
+                        .kind = .DoubleLeft,
+                        .pos = mousepos,
+                        .time = 10,
+                    };
+                } else {
+                    self.lastAction = .{
+                        .kind = .SingleLeft,
+                        .pos = mousepos,
+                        .time = 100,
+                    };
+                }
+            },
+            else => {},
+        }
+    }
 
-fn deleteSettings(cself: *[]u8) void {
-    var self = @ptrCast(*SettingsData, cself);
-    allocator.alloc.destroy(self);
-}
+    pub fn key(_: *Self, _: i32, _: i32) !void {}
+    pub fn scroll(_: *Self, _: f32, _: f32) !void {}
+    pub fn move(_: *Self, _: f32, _: f32) !void {}
+    pub fn focus(_: *Self) !void {}
 
-pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
+    pub fn deinit(self: *Self) void {
+        allocator.alloc.destroy(self);
+    }
+};
+
+pub fn new(texture: *tex.Texture, shader: *shd.Shader) win.WindowContents {
     var self = allocator.alloc.create(SettingsData) catch undefined;
 
     for (self.icons) |_, idx| {
@@ -228,13 +228,5 @@ pub fn new(texture: tex.Texture, shader: shd.Shader) win.WindowContents {
     self.shader = shader;
     self.focusedPane = null;
 
-    return win.WindowContents{
-        .self = @ptrCast(*[]u8, self),
-        .deleteFn = deleteSettings,
-        .drawFn = drawSettings,
-        .clickFn = clickSettings,
-        .name = "Settings",
-        .kind = "settings",
-        .clearColor = col.newColor(1, 1, 1, 1),
-    };
+    return win.WindowContents.init(self, "settings", "Settings", col.newColor(1, 1, 1, 1));
 }

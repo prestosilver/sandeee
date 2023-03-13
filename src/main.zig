@@ -1,103 +1,51 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const vecs = @import("math/vecs.zig");
-const mat4 = @import("math/mat4.zig");
-const cols = @import("math/colors.zig");
-const rect = @import("math/rects.zig");
-const gfx = @import("graphics.zig");
-const tex = @import("texture.zig");
-const batch = @import("spritebatch.zig");
-const font = @import("util/font.zig");
-const wall = @import("drawers/wall2d.zig");
-const sp = @import("drawers/sprite2d.zig");
-const win = @import("drawers/window2d.zig");
-const bars = @import("drawers/bar2d.zig");
-const csr = @import("drawers/cursor2d.zig");
-const shd = @import("shader.zig");
+const states = @import("states/manager.zig");
+const diskState = @import("states/disks.zig");
+const loadingState = @import("states/loading.zig");
+const windowedState = @import("states/windowed.zig");
+const crashState = @import("states/crash.zig");
+
 const fm = @import("util/files.zig");
-const files = @import("system/files.zig");
-const events = @import("util/events.zig");
-const shell = @import("system/shell.zig");
+const font = @import("util/font.zig");
 const audio = @import("util/audio.zig");
-const pseudo = @import("system/pseudo/all.zig");
-const conf = @import("system/config.zig");
+const events = @import("util/events.zig");
+const allocator = @import("util/allocator.zig");
 
 const inputEvs = @import("events/input.zig");
 const windowEvs = @import("events/window.zig");
+const systemEvs = @import("events/system.zig");
 
-const allocator = @import("util/allocator.zig");
-const vm = @import("system/vm.zig");
-const mail = @import("system/mail.zig");
-const wins = @import("windows/all.zig");
+const gfx = @import("graphics.zig");
+const shd = @import("shader.zig");
+const batch = @import("spritebatch.zig");
+const tex = @import("texture.zig");
+
 const worker = @import("loaders/worker.zig");
 
-const diskeee = @import("states/disks.zig");
+const vecs = @import("math/vecs.zig");
+const rect = @import("math/rects.zig");
+
+const wall = @import("drawers/wall2d.zig");
+const sprite = @import("drawers/sprite2d.zig");
+const bar = @import("drawers/bar2d.zig");
+
+const conf = @import("system/config.zig");
 
 const c = @import("c.zig");
 
-var wallpaper: wall.Wallpaper = undefined;
-var ctx: gfx.Context = undefined;
-//TODO textureatlas ofc
-var wintex: tex.Texture = undefined;
-var webtex: tex.Texture = undefined;
-var bartex: tex.Texture = undefined;
-var walltex: tex.Texture = undefined;
-var emailtex: tex.Texture = undefined;
-var editortex: tex.Texture = undefined;
-var barlogotex: tex.Texture = undefined;
-var explorertex: tex.Texture = undefined;
-var cursortex: tex.Texture = undefined;
-
-var sb: batch.SpriteBatch = undefined;
-var shader: shd.Shader = shd.Shader{};
-var font_shader: shd.Shader = shd.Shader{};
-var face: font.Font = undefined;
-var windows: std.ArrayList(win.Window) = undefined;
-var bar: bars.Bar = undefined;
-var audioMan: audio.Audio = undefined;
-var barlogoSprite: sp.Sprite = undefined;
-var logoSprite: sp.Sprite = undefined;
-var loadSprite: sp.Sprite = undefined;
-var biosSprite: sp.Sprite = undefined;
-var sadSprite: sp.Sprite = undefined;
-var loadProgress: f32 = 0;
-var settingManager: conf.SettingManager = undefined;
-
-var dragging: ?*win.Window = null;
-var draggingStart: vecs.Vector2 = vecs.newVec2(0, 0);
-var dragmode: win.DragMode = win.DragMode.None;
-var mousepos: vecs.Vector2 = vecs.newVec2(0, 0);
-var size: vecs.Vector2 = vecs.newVec2(0, 0);
-
-// create loader
-var loader_queue: std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)) = undefined;
-var loader = worker.WorkerContext{ .queue = &loader_queue };
-
-var cursor: csr.Cursor = undefined;
-
-const GameState = enum {
-    Disks, // TODO
-    Loading,
-    Game,
-    Crash,
-};
-var gameState: GameState = .Disks;
-
+// embed shaders
 const vertShader = @embedFile("shaders/vert.glsl");
 const fragShader = @embedFile("shaders/frag.glsl");
 const fontVertShader = @embedFile("shaders/fvert.glsl");
 const fontFragShader = @embedFile("shaders/ffrag.glsl");
 
+// embed images
 const logoImage = @embedFile("images/logo.eia");
 const loadImage = @embedFile("images/load.eia");
 const biosImage = @embedFile("images/bios.eia");
 const sadImage = @embedFile("images/sad.eia");
-const paletteImage = @embedFile("images/palette.eia");
-
-var logoOff: vecs.Vector2 = vecs.newVec2(0, 0);
-
-var openWindow: vecs.Vector2 = vecs.newVec2(100, 100);
 
 const shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fragShader, .kind = c.GL_FRAGMENT_SHADER },
@@ -109,81 +57,47 @@ const font_shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fontVertShader, .kind = c.GL_VERTEX_SHADER },
 };
 
-fn range(len: usize) []const void {
-    return @as([*]void, undefined)[0..len];
-}
+const STATES = 4;
+var gameStates: [STATES]states.GameState = undefined;
+var currentState: u8 = 0;
 
-var timeout: f32 = 60 * 2;
+// create loader
+var loader_queue: std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)) = undefined;
+var loader = worker.WorkerContext{ .queue = &loader_queue };
 
-pub fn draw() !void {
-    switch (gameState) {
-        .Disks => {
-            try diskeee.drawDisks(shader, font_shader, &sb, &biosSprite, timeout / 60);
-            if (diskeee.auto) timeout -= 1;
+// shaders
+var font_shader: shd.Shader = undefined;
+var shader: shd.Shader = undefined;
 
-            if (timeout <= 0) {
-                var disk: ?[]const u8 = null;
+// screen dims
+var size: vecs.Vector2 = vecs.newVec2(0, 0);
 
-                if (diskeee.disks.items.len != 0) {
-                    disk = diskeee.disks.items[diskeee.sel];
-                }
+// the selected disk
+var disk: ?[]u8 = null;
 
-                try loadSystem(disk);
-            }
-        },
-        .Loading => {
-            // make sure shader is loaded
-            if (shader.id != 0) {
-                // draw the logo
-                sb.draw(sp.Sprite, &logoSprite, shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
+//
+var settingManager: conf.SettingManager = undefined;
 
-                // progress bar
-                loadSprite.data.size.x = (loadProgress * 320 + loadSprite.data.size.x) / 2;
+var wintex: tex.Texture = undefined;
+var webtex: tex.Texture = undefined;
+var bartex: tex.Texture = undefined;
+var walltex: tex.Texture = undefined;
+var emailtex: tex.Texture = undefined;
+var editortex: tex.Texture = undefined;
+var barlogotex: tex.Texture = undefined;
+var explorertex: tex.Texture = undefined;
+var cursortex: tex.Texture = undefined;
 
-                sb.draw(sp.Sprite, &loadSprite, shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
-            }
-        },
-        .Game => {
-            sb.draw(wall.Wallpaper, &wallpaper, shader, vecs.newVec3(0, 0, 0));
+var ctx: gfx.Context = undefined;
+var sb: batch.SpriteBatch = undefined;
+var audioman: audio.Audio = undefined;
 
-            // render the windows in order
-            for (windows.items) |window, idx| {
-                // continue if window closed on update
-                if (idx >= windows.items.len) continue;
-
-                // draw the window border
-                sb.draw(win.Window, &windows.items[idx], shader, vecs.newVec3(0, 0, 0));
-
-                // draw the windows name
-                windows.items[idx].data.drawName(font_shader, &face, &sb);
-
-                // update scisor region
-                sb.scissor = window.data.scissor();
-
-                // draw the window contents
-                windows.items[idx].data.drawContents(font_shader, &face, &sb);
-
-                // reset scisor jic
-                sb.scissor = null;
-            }
-
-            // draw the bar
-            sb.draw(bars.Bar, &bar, shader, vecs.newVec3(0, 0, 0));
-            try bar.data.drawName(font_shader, shader, &barlogoSprite, &face, &sb, &windows);
-
-            // draw the cursor
-            //sb.draw(csr.Cursor, &cursor, shader, vecs.newVec3(mousepos.x, mousepos.y, 0));
-        },
-        .Crash => {
-            sb.draw(sp.Sprite, &sadSprite, shader, vecs.newVec3(300, 300, 0));
-        },
-    }
-
+pub fn blit() !void {
     // actual gl calls start here
     ctx.makeCurrent();
 
     // clear the window
-    gfx.clear(ctx);
+    gfx.clear(&ctx);
 
     // finish render
     try sb.render();
@@ -192,299 +106,44 @@ pub fn draw() !void {
     c.glFinish();
 
     // swap buffer
-    gfx.swap(ctx);
+    gfx.swap(&ctx);
 
     // actual gl calls done
     ctx.makeNotCurrent();
 }
 
-pub fn linuxCrashHandler(_: i32, _: *const std.os.siginfo_t, _: ?*const anyopaque) callconv(.C) noreturn {
-    @panic("segfault");
-}
+pub fn changeState(event: systemEvs.EventStateChange) bool {
+    currentState = event.targetState;
 
-pub fn panic(msg: []const u8, st: ?*std.builtin.StackTrace, addr: ?usize) noreturn {
-    gameState = .Crash;
-    std.log.err("crash: {s}, {?}, {?any}", .{ msg, addr, st });
-    while (gfx.poll(ctx)) draw() catch {
-        break;
-    };
-
-    std.os.exit(0);
-}
-
-pub fn setupCrashHandler() !void {
-    if (builtin.target.os.tag == .linux) {
-        var act = std.os.Sigaction{
-            .handler = .{ .sigaction = linuxCrashHandler },
-            .mask = std.os.empty_sigset,
-            .flags = (std.os.SA.SIGINFO | std.os.SA.RESTART | std.os.SA.RESETHAND),
-        };
-        try std.os.sigaction(c.SIGSEGV, &act, null);
-    } else {
-        //_ = c.signal(c.SIGABRT, windowsCrashHandler);
-    }
-}
-
-pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
-    if (event.btn == 0) {
-        if (bar.data.doClick(&windows, webtex, wintex, emailtex, editortex, explorertex, shader, mousepos)) {
-            return false;
-        }
-
-        var newTop: i32 = -1;
-        for (windows.items) |_, idx| {
-            if (windows.items[idx].data.min) continue;
-
-            var pos = windows.items[idx].data.pos;
-            pos.x -= 10;
-            pos.y -= 10;
-            pos.w += 20;
-            pos.h += 20;
-
-            if (pos.contains(mousepos)) {
-                newTop = @intCast(i32, idx);
-            }
-
-            windows.items[idx].data.active = false;
-        }
-
-        if (newTop != -1) {
-            var swap = windows.orderedRemove(@intCast(usize, newTop));
-            swap.data.active = true;
-            swap.data.contents.focus();
-            var mode = swap.data.getDragMode(mousepos);
-
-            if (mode == win.DragMode.Close) {
-                swap.data.deinit();
-                return false;
-            }
-            if (mode == win.DragMode.Full) {
-                if (swap.data.full) {
-                    swap.data.pos = swap.data.oldpos;
-                } else {
-                    swap.data.oldpos = swap.data.pos;
-                }
-                swap.data.full = !swap.data.full;
-            }
-            if (mode == win.DragMode.Min) {
-                swap.data.min = !swap.data.min;
-            }
-            windows.append(swap) catch {};
-
-            if (mode != win.DragMode.None) {
-                if (swap.data.full) return false;
-                dragmode = mode;
-                dragging = &windows.items[windows.items.len - 1];
-                var start = dragging.?.data.pos;
-
-                draggingStart = switch (dragmode) {
-                    win.DragMode.None => vecs.newVec2(0, 0),
-                    win.DragMode.Close => vecs.newVec2(0, 0),
-                    win.DragMode.Full => vecs.newVec2(0, 0),
-                    win.DragMode.Min => vecs.newVec2(0, 0),
-                    win.DragMode.Move => vecs.newVec2(start.x - mousepos.x, start.y - mousepos.y),
-                    win.DragMode.ResizeR => vecs.newVec2(start.w - mousepos.x, 0),
-                    win.DragMode.ResizeB => vecs.newVec2(0, start.h - mousepos.y),
-                    win.DragMode.ResizeL => vecs.newVec2(start.w + start.x, 0),
-                    win.DragMode.ResizeRB => vecs.newVec2(start.w - mousepos.x, start.h - mousepos.y),
-                    win.DragMode.ResizeLB => vecs.newVec2(start.w + start.x, start.h - mousepos.y),
-                };
-            }
-        }
-    }
-    for (windows.items) |_, idx| {
-        var i = windows.items.len - idx - 1;
-
-        if (!windows.items[i].data.active) continue;
-
-        if (windows.items[i].data.click(mousepos, event.btn)) {
-            return false;
-        }
-    }
-
-    return false;
-}
-
-pub fn mouseUp(event: inputEvs.EventMouseUp) bool {
-    _ = event;
-
-    dragging = null;
-
-    return false;
-}
-
-pub fn mouseMove(event: inputEvs.EventMouseMove) bool {
-    var pos = vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y));
-
-    mousepos = pos;
-
-    if (dragging != null) {
-        var old = dragging.?.data.pos;
-        var winpos = vecs.add(pos, draggingStart);
-        switch (dragmode) {
-            win.DragMode.None => {},
-            win.DragMode.Close => {},
-            win.DragMode.Full => {},
-            win.DragMode.Min => {},
-            win.DragMode.Move => {
-                dragging.?.data.pos.x = winpos.x;
-                dragging.?.data.pos.y = winpos.y;
-            },
-            win.DragMode.ResizeR => {
-                dragging.?.data.pos.w = winpos.x;
-            },
-            win.DragMode.ResizeL => {
-                dragging.?.data.pos.x = pos.x;
-                dragging.?.data.pos.w = draggingStart.x - pos.x;
-            },
-            win.DragMode.ResizeB => {
-                dragging.?.data.pos.h = winpos.y;
-            },
-            win.DragMode.ResizeRB => {
-                dragging.?.data.pos.w = winpos.x;
-                dragging.?.data.pos.h = winpos.y;
-            },
-            win.DragMode.ResizeLB => {
-                dragging.?.data.pos.x = pos.x;
-                dragging.?.data.pos.w = draggingStart.x - pos.x;
-                dragging.?.data.pos.h = winpos.y;
-            },
-        }
-        if (dragging.?.data.pos.w < 400) {
-            dragging.?.data.pos.x = old.x;
-            dragging.?.data.pos.w = old.w;
-        }
-        if (dragging.?.data.pos.h < 300) {
-            dragging.?.data.pos.y = old.y;
-            dragging.?.data.pos.h = old.h;
-        }
-    }
-
-    for (windows.items) |_, idx| {
-        var i = windows.items.len - idx - 1;
-        var window = &windows.items[i].data;
-
-        if (!window.active) continue;
-
-        window.contents.move(pos.x - window.pos.x, pos.y - window.pos.y - 36);
-
-        break;
-    }
-
-    return false;
-}
-
-pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
-    for (windows.items) |_, idx| {
-        var i = windows.items.len - idx - 1;
-
-        if (!windows.items[i].data.active) continue;
-
-        windows.items[i].data.contents.scroll(event.x, event.y);
-
-        break;
-    }
     return false;
 }
 
 pub fn keyDown(event: inputEvs.EventKeyDown) bool {
-    // if bios active process key
-    if (gameState == .Disks) {
-        diskeee.auto = false;
-
-        switch (event.key) {
-            c.GLFW_KEY_ENTER => {
-                timeout = 0;
-            },
-            c.GLFW_KEY_DOWN => {
-                diskeee.sel += 1;
-            },
-            c.GLFW_KEY_UP => {
-                if (diskeee.sel != 0)
-                    diskeee.sel -= 1;
-            },
-            else => {},
-        }
-    }
-
-    // if the bar is open close & return
-    if (bar.data.btnActive) {
-        bar.data.btnActive = false;
-
-        return false;
-    }
-
     if (event.key == c.GLFW_KEY_F1) {
-        var lol: []const u8 = "";
-
-        std.log.info("{}", .{lol[0]});
+        @panic("JorjeOp");
     }
 
-    // send to active window
-    for (windows.items) |_, idx| {
-        var i = windows.items.len - idx - 1;
+    return gameStates[currentState].keypress(event.key, event.mods) catch false;
+}
 
-        if (!windows.items[i].data.active) continue;
-
-        if (windows.items[i].data.key(event.key, event.mods)) {
-            return false;
-        }
-    }
+pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
+    gameStates[currentState].mousepress(event.btn) catch return false;
     return false;
 }
 
-pub fn keyUp(event: inputEvs.EventKeyUp) bool {
-    _ = event;
+pub fn mouseUp(_: inputEvs.EventMouseUp) bool {
+    gameStates[currentState].mouserelease() catch return false;
     return false;
 }
 
-pub fn windowResize(event: inputEvs.EventWindowResize) bool {
-    ctx.makeCurrent();
-    gfx.resize(event.w, event.h) catch {};
-    ctx.makeNotCurrent();
-
-    size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
-
-    bar.data.screendims = size;
-    sb.size = size;
-    win.deskSize = size;
-    wallpaper.data.dims = size;
-
+pub fn mouseMove(event: inputEvs.EventMouseMove) bool {
+    gameStates[currentState].mousemove(vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y))) catch return false;
     return false;
 }
 
-pub fn createWindow(event: windowEvs.EventCreateWindow) bool {
-    var target = vecs.newVec2(100, 100);
-
-    for (windows.items) |_, idx| {
-        windows.items[idx].data.active = false;
-
-        if (windows.items[idx].data.pos.x == 100 or windows.items[idx].data.pos.y == 100)
-            target = openWindow;
-    }
-
-    windows.append(event.window) catch {
-        std.log.err("couldnt create window!", .{});
-        return false;
-    };
-
-    windows.items[windows.items.len - 1].data.pos.x = target.x;
-    windows.items[windows.items.len - 1].data.pos.y = target.y;
-
-    openWindow.x = target.x + 25;
-    openWindow.y = target.y + 25;
-    if (openWindow.x > size.x - 500) openWindow.x = 100;
-    if (openWindow.y > size.y - 400) openWindow.y = 100;
+pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
+    gameStates[currentState].mousescroll(vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y))) catch return false;
     return false;
-}
-
-pub fn drawLoading() void {
-    while (gameState == .Loading) {
-        // render loading screen
-        draw() catch {};
-    }
-
-    return;
 }
 
 pub fn setupEvents() !void {
@@ -496,211 +155,64 @@ pub fn setupEvents() !void {
     events.em.registerListener(inputEvs.EventMouseUp, mouseUp);
     events.em.registerListener(inputEvs.EventMouseScroll, mouseScroll);
     events.em.registerListener(inputEvs.EventKeyDown, keyDown);
-    events.em.registerListener(inputEvs.EventKeyUp, keyUp);
 
-    events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
-
-    inputEvs.setup(ctx.window);
+    events.em.registerListener(systemEvs.EventStateChange, changeState);
 }
 
-pub fn setupForLoad() !void {
-    var w: c_int = 0;
-    var h: c_int = 0;
+pub fn drawLoading(self: *loadingState.GSLoading) void {
+    while (self.done == false) {
+        // render loading screen
+        self.draw(size) catch {};
 
-    ctx.makeCurrent();
-
-    c.glfwGetWindowSize(ctx.window, &w, &h);
-
-    size = vecs.newVec2(@intToFloat(f32, w), @intToFloat(f32, h));
-
-    sb = try batch.newSpritebatch(size.x, size.y);
-    win.deskSize = size;
-
-    logoOff = vecs.newVec2((size.x - 320) / 2.0, (size.y - 70) / 2.0);
-
-    logoSprite = sp.Sprite{
-        .texture = try tex.newTextureMem(logoImage),
-        .data = sp.SpriteData.new(
-            rect.newRect(0, 0, 1, 1),
-            vecs.newVec2(320, 70),
-        ),
-    };
-
-    loadSprite = sp.Sprite{
-        .texture = try tex.newTextureMem(loadImage),
-        .data = sp.SpriteData.new(
-            rect.newRect(0, 0, 1, 1),
-            vecs.newVec2(20, 20),
-        ),
-    };
-
-    biosSprite = sp.Sprite{
-        .texture = try tex.newTextureMem(biosImage),
-        .data = sp.SpriteData.new(
-            rect.newRect(0, 0, 1, 1),
-            vecs.newVec2(168, 84),
-        ),
-    };
-
-    sadSprite = sp.Sprite{
-        .texture = try tex.newTextureMem(sadImage),
-        .data = sp.SpriteData.new(
-            rect.newRect(0, 0, 1, 1),
-            vecs.newVec2(88, 88),
-        ),
-    };
-
-    gfx.palette = try tex.newTextureMem(paletteImage);
-
-    c.glActiveTexture(c.GL_TEXTURE1);
-    c.glBindTexture(c.GL_TEXTURE_2D, gfx.palette.tex);
-    c.glActiveTexture(c.GL_TEXTURE0);
-
-    ctx.makeNotCurrent();
-
-    audioMan = try audio.Audio.init();
-}
-
-pub fn setupBar() !void {
-    ctx.makeCurrent();
-
-    bar = bars.Bar.new(bartex, bars.BarData{
-        .height = 38,
-        .screendims = size,
-    });
-
-    wallpaper = wall.Wallpaper.new(walltex, wall.WallData{
-        .dims = size,
-        .mode = .Center,
-        .size = walltex.size,
-    });
-
-    barlogoSprite = sp.Sprite{
-        .texture = barlogotex,
-        .data = sp.SpriteData.new(
-            rect.newRect(0, 0, 1, 1),
-            vecs.newVec2(36, 464),
-        ),
-    };
-
-    cursor = csr.Cursor{
-        .texture = cursortex,
-        .data = csr.CursorData.new(
-            rect.newRect(0, 0, 1, 1),
-        ),
-    };
-
-    ctx.makeNotCurrent();
-}
-
-// consts for loader
-const winpath: []const u8 = "/cont/imgs/window.eia";
-const webpath: []const u8 = "/cont/imgs/web.eia";
-const wallpath: []const u8 = "/cont/imgs/wall.eia";
-const barpath: []const u8 = "/cont/imgs/bar.eia";
-const editorpath: []const u8 = "/cont/imgs/editor.eia";
-const emailpath: []const u8 = "/cont/imgs/email.eia";
-const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
-const cursorpath: []const u8 = "/cont/imgs/cursor.eia";
-const barlogopath: []const u8 = "/cont/imgs/barlogo.eia";
-const loginpath: []const u8 = "/cont/snds/login.era";
-const settingspath: []const u8 = "/conf/system.cfg";
-const zero: u8 = 0;
-const delay: u64 = 250;
-
-pub fn loadSystem(disk: ?[]const u8) !void {
-    gameState = .Loading;
-
-    var fontpath = fm.getContentPath("content/font.ttf");
-    defer fontpath.deinit();
-
-    // create login sound
-    var loginSnd: audio.Sound = undefined;
-
-    // files
-    try loader.enqueue(&disk, &zero, worker.files.loadFiles);
-
-    // settings
-    try loader.enqueue(&settingspath, &settingManager, worker.settings.loadSettings);
-
-    // textures
-    try loader.enqueue(&winpath, &wintex, worker.texture.loadTexture);
-    try loader.enqueue(&webpath, &webtex, worker.texture.loadTexture);
-    try loader.enqueue(&barpath, &bartex, worker.texture.loadTexture);
-    try loader.enqueue(&wallpath, &walltex, worker.texture.loadTexture);
-    try loader.enqueue(&emailpath, &emailtex, worker.texture.loadTexture);
-    try loader.enqueue(&editorpath, &editortex, worker.texture.loadTexture);
-    try loader.enqueue(&cursorpath, &cursortex, worker.texture.loadTexture);
-    try loader.enqueue(&barlogopath, &barlogotex, worker.texture.loadTexture);
-    try loader.enqueue(&explorerpath, &explorertex, worker.texture.loadTexture);
-
-    // delay
-    try loader.enqueue(&delay, &zero, worker.delay.loadDelay);
-
-    // sounds
-    try loader.enqueue(&loginpath, &loginSnd, worker.sound.loadSound);
-
-    // mail
-    try loader.enqueue(&zero, &zero, worker.mail.loadMail);
-
-    // fonts
-    try loader.enqueue(&fontpath.items, &face, worker.font.loadFont);
-
-    // delay
-    try loader.enqueue(&delay, &zero, worker.delay.loadDelay);
-
-    _ = try std.Thread.spawn(.{ .stack_size = 128 }, drawLoading, .{});
-    loader.run(&loadProgress) catch {
-        @panic("Load Failed");
-    };
-
-    // post main load
-    try setupBar();
-
-    // create windows list
-    windows = std.ArrayList(win.Window).init(allocator.alloc);
-
-    // setup some pointers
-    pseudo.snd.audioPtr = &audioMan;
-    pseudo.window.windowsPtr = &windows;
-    pseudo.window.shader = &shader;
-    pseudo.window.wintex = &wintex;
-
-    wins.settings.settingManager = &settingManager;
-
-    shell.wintex = &wintex;
-    shell.webtex = &webtex;
-    shell.edittex = &editortex;
-    shell.shader = &shader;
-
-    // play login sound
-    try audioMan.playSound(loginSnd);
-
-    // set wallpaper color
-    ctx.color = cols.newColorRGBA(0, 128, 128, 255);
-
-    // loading done
-    gameState = .Game;
+        blit() catch {};
+    }
 
     return;
+}
+
+pub fn windowResize(event: inputEvs.EventWindowResize) bool {
+    ctx.makeCurrent();
+    gfx.resize(event.w, event.h) catch {};
+    ctx.makeNotCurrent();
+
+    size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
+
+    return false;
+}
+
+pub fn panic(msg: []const u8, st: ?*std.builtin.StackTrace, addr: ?usize) noreturn {
+    currentState = 3;
+    std.log.err("crash: {s}, {?}, {?any}", .{ msg, addr, st });
+    while (gfx.poll(&ctx)) {
+        var state = currentState;
+
+        if (!gameStates[state].isSetup) {
+            inputEvs.setup(ctx.window, state != 1);
+            gameStates[state].setup() catch {};
+        }
+
+        gameStates[state].update(1.0 / 60.0) catch {};
+        gameStates[state].draw(size) catch {};
+
+        blit() catch {};
+    }
+    std.os.exit(0);
 }
 
 pub fn main() anyerror!void {
     defer if (!builtin.link_libc or !allocator.useclib) {
         std.debug.assert(!allocator.gpa.deinit());
-        std.log.info("nio leaks! :)", .{});
+        std.log.info("no leaks! :)", .{});
     };
-
-    var bigfontpath = fm.getContentPath("content/bios.ttf");
 
     // init graphics
     ctx = try gfx.init("Sandeee");
     gfx.gContext = &ctx;
+    size = ctx.size;
 
-    try diskeee.setupDisks();
-
-    // setup load textures and stuff
-    try setupForLoad();
+    var bigfontpath = fm.getContentPath("content/bios.ttf");
+    var biosFace: font.Font = undefined;
+    var mainFace: font.Font = undefined;
 
     loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
 
@@ -709,7 +221,9 @@ pub fn main() anyerror!void {
     try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
 
     // fonts
-    try loader.enqueue(&bigfontpath.items, &diskeee.biosFace, worker.font.loadFont);
+    try loader.enqueue(&bigfontpath.items, &biosFace, worker.font.loadFont);
+
+    audioman = try audio.Audio.init();
 
     // load bios
     var prog: f32 = 0;
@@ -717,41 +231,143 @@ pub fn main() anyerror!void {
         @panic("BIOS Load Failed");
     };
 
+    sb = try batch.newSpritebatch(&size);
+
+    // start setup states
+    ctx.makeCurrent();
+
+    // load some textures
+    var biosTex = try tex.newTextureMem(biosImage);
+    var logoTex = try tex.newTextureMem(logoImage);
+    var loadTex = try tex.newTextureMem(loadImage);
+    var sadTex = try tex.newTextureMem(sadImage);
+
+    // disks state
+    var gsDisks = diskState.GSDisks{
+        .sb = &sb,
+        .shader = &shader,
+        .font_shader = &font_shader,
+        .face = &biosFace,
+        .disk = &disk,
+        .logo_sprite = .{
+            .texture = &biosTex,
+            .data = sprite.SpriteData.new(
+                rect.newRect(0, 0, 1, 1),
+                vecs.newVec2(168, 84),
+            ),
+        },
+    };
+
+    // loading state
+    var gsLoading = loadingState.GSLoading{
+        .sb = &sb,
+        .wintex = &wintex,
+        .bartex = &bartex,
+        .webtex = &webtex,
+        .walltex = &walltex,
+        .emailtex = &emailtex,
+        .editortex = &editortex,
+        .cursortex = &cursortex,
+        .barlogotex = &barlogotex,
+        .explorertex = &explorertex,
+        .face = &mainFace,
+        .audio_man = &audioman,
+        .ctx = &ctx,
+        .loading = drawLoading,
+        .logo_sprite = .{
+            .texture = &logoTex,
+            .data = sprite.SpriteData.new(
+                rect.newRect(0, 0, 1, 1),
+                vecs.newVec2(320, 70),
+            ),
+        },
+        .load_sprite = .{
+            .texture = &loadTex,
+            .data = sprite.SpriteData.new(
+                rect.newRect(0, 0, 1, 1),
+                vecs.newVec2(20, 20),
+            ),
+        },
+        .shader = &shader,
+        .settingManager = &settingManager,
+        .disk = &disk,
+        .loader = &loader,
+    };
+
+    // windowed state
+    var gsWindowed = windowedState.GSWindowed{
+        .sb = &sb,
+        .shader = &shader,
+        .font_shader = &font_shader,
+        .face = &mainFace,
+        .webtex = &webtex,
+        .wintex = &wintex,
+        .emailtex = &emailtex,
+        .editortex = &editortex,
+        .explorertex = &explorertex,
+        .bar_logo_sprite = .{
+            .texture = &barlogotex,
+            .data = sprite.SpriteData.new(
+                rect.newRect(0, 0, 1, 1),
+                vecs.newVec2(36, 464),
+            ),
+        },
+        .wallpaper = wall.Wallpaper.new(&walltex, wall.WallData{
+            .dims = &size,
+            .mode = .Center,
+            .size = &walltex.size,
+        }),
+        .bar = bar.Bar.new(&bartex, bar.BarData{
+            .height = 38,
+            .screendims = &size,
+        }),
+    };
+
+    // crashed state
+    var gsCrash = crashState.GSCrash{
+        .shader = &shader,
+        .sb = &sb,
+        .sad_sprite = .{
+            .texture = &sadTex,
+            .data = sprite.SpriteData.new(
+                rect.newRect(0, 0, 1, 1),
+                vecs.newVec2(150, 150),
+            ),
+        },
+    };
+
+    // done states setup
+    ctx.makeNotCurrent();
+
+    // setup event system
     try setupEvents();
 
-    // cleanup load
-    bigfontpath.deinit();
-
-    try setupCrashHandler();
+    // setup game states
+    gameStates[0] = states.GameState.init(&gsDisks);
+    gameStates[1] = states.GameState.init(&gsLoading);
+    gameStates[2] = states.GameState.init(&gsWindowed);
+    gameStates[3] = states.GameState.init(&gsCrash);
 
     // main loop
-    while (gfx.poll(ctx)) try draw();
+    while (gfx.poll(&ctx)) {
+        var state = currentState;
 
-    switch (gameState) {
-        .Game => {
+        // setup the current state if not already
+        if (!gameStates[state].isSetup) {
+            // disable events on loading screen
+            inputEvs.setup(ctx.window, state != 1);
 
-            // save the current disk
-            try files.write();
+            // run setup
+            try gameStates[state].setup();
+        }
 
-            // free everything
-            for (windows.items) |_, idx| {
-                windows.items[idx].data.deinit();
-            }
+        // TODO: actual time?
+        try gameStates[state].update(1.0 / 60.0);
 
-            settingManager.deinit();
-            windows.deinit();
-            gfx.close(ctx);
-            files.deinit();
-            sb.deinit();
-            events.deinit();
-            mail.deinit();
-        },
-        .Disks => {
-            gfx.close(ctx);
-            sb.deinit();
-        },
-        else => {
-            return;
-        },
+        // get tris
+        try gameStates[state].draw(size);
+
+        // render
+        try blit();
     }
 }

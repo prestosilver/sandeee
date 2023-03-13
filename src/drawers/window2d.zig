@@ -26,52 +26,124 @@ pub const DragMode = enum {
 };
 
 pub const WindowContents = struct {
-    self: *[]u8,
-    drawFn: ?*const fn (*[]u8, *sb.SpriteBatch, shd.Shader, *rect.Rectangle, *fnt.Font) void = null,
-    clickFn: ?*const fn (*[]u8, vecs.Vector2, vecs.Vector2, i32) bool = null,
-    keyFn: ?*const fn (*[]u8, i32, i32) void = null,
-    scrollFn: ?*const fn (*[]u8, f32, f32) void = null,
-    moveFn: ?*const fn (*[]u8, f32, f32) void = null,
+    const Self = @This();
 
-    focusFn: ?*const fn (*[]u8) void = null,
-    deleteFn: *const fn (*[]u8) void,
+    const VTable = struct {
+        draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font) anyerror!void,
+        click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, i32) anyerror!void,
+        key: *const fn (*anyopaque, i32, i32) anyerror!void,
+        scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
+        move: *const fn (*anyopaque, f32, f32) anyerror!void,
+
+        focus: *const fn (*anyopaque) anyerror!void,
+        deinit: *const fn (*anyopaque) anyerror!void,
+    };
+
     kind: []const u8,
     name: []const u8,
     clearColor: cols.Color,
 
-    pub fn draw(self: *WindowContents, batch: *sb.SpriteBatch, shader: shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
-        if (self.drawFn == null) return;
-        self.drawFn.?(self.self, batch, shader, bnds, font);
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
+        return self.vtable.draw(self.ptr, batch, font_shader, bnds, font);
     }
 
-    pub fn key(self: *WindowContents, keycode: i32, mods: i32) void {
-        if (self.keyFn == null) return;
-        self.keyFn.?(self.self, keycode, mods);
+    pub fn key(self: *Self, keycode: i32, mods: i32) !void {
+        return self.vtable.key(self.ptr, keycode, mods);
     }
 
-    pub fn click(self: *WindowContents, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) bool {
-        if (self.clickFn == null) return true;
-        return self.clickFn.?(self.self, size, mousepos, btn);
+    pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
+        return self.vtable.click(self.ptr, size, mousepos, btn);
     }
 
-    pub fn scroll(self: *WindowContents, x: f32, y: f32) void {
-        if (self.scrollFn == null) return;
-        self.scrollFn.?(self.self, x, y);
+    pub fn scroll(self: *Self, x: f32, y: f32) !void {
+        return self.vtable.scroll(self.ptr, x, y);
     }
 
-    pub fn move(self: *WindowContents, x: f32, y: f32) void {
-        if (self.moveFn == null) return;
-        self.moveFn.?(self.self, x, y);
+    pub fn move(self: *Self, x: f32, y: f32) !void {
+        return self.vtable.move(self.ptr, x, y);
     }
 
-
-    pub fn focus(self: *WindowContents) void {
-        if (self.focusFn == null) return;
-        self.focusFn.?(self.self);
+    pub fn focus(self: *Self) !void {
+        return self.vtable.focus(self.ptr);
     }
 
-    pub fn deinit(self: *WindowContents) void {
-        self.deleteFn(self.self);
+    pub fn deinit(self: *Self) !void {
+        return self.vtable.deinit(self.ptr);
+    }
+
+    pub fn init(ptr: anytype, kind: []const u8, name: []const u8, clearColor: cols.Color) Self {
+        const Ptr = @TypeOf(ptr);
+        const ptr_info = @typeInfo(Ptr);
+
+        if (ptr_info != .Pointer) @compileError("ptr must be a pointer");
+        if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
+
+        const alignment = ptr_info.Pointer.alignment;
+
+        const gen = struct {
+            fn drawImpl(pointer: *anyopaque, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) anyerror!void {
+                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font });
+            }
+
+            fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32) !void {
+                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods });
+            }
+
+            fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: c_int) !void {
+                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.click, .{ self, size, pos, btn });
+            }
+
+            fn scrollImpl(pointer: *anyopaque, x: f32, y: f32) !void {
+                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.scroll, .{ self, x, y });
+            }
+
+            fn moveImpl(pointer: *anyopaque, x: f32, y: f32) !void {
+                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.move, .{ self, x, y });
+            }
+
+            fn focusImpl(pointer: *anyopaque) !void {
+                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.focus, .{self});
+            }
+
+            fn deinitImpl(pointer: *anyopaque) !void {
+                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.deinit, .{self});
+            }
+
+            const vtable = VTable{
+                .draw = drawImpl,
+                .key = keyImpl,
+                .click = clickImpl,
+                .scroll = scrollImpl,
+                .move = moveImpl,
+                .focus = focusImpl,
+                .deinit = deinitImpl,
+            };
+        };
+
+        return Self{
+            .ptr = ptr,
+            .kind = kind,
+            .name = name,
+            .vtable = &gen.vtable,
+            .clearColor = clearColor,
+        };
     }
 };
 
@@ -93,8 +165,8 @@ pub const WindowData = struct {
         };
     }
 
-    pub fn deinit(self: *WindowData) void {
-        self.contents.deinit();
+    pub fn deinit(self: *WindowData) !void {
+        try self.contents.deinit();
     }
 
     fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) void {
@@ -197,7 +269,7 @@ pub const WindowData = struct {
         }
     }
 
-    pub fn drawName(self: *WindowData, shader: shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) void {
+    pub fn drawName(self: *WindowData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) void {
         if (self.min) return;
 
         var color = cols.newColorRGBA(197, 197, 197, 255);
@@ -205,7 +277,7 @@ pub const WindowData = struct {
         font.draw(batch, shader, self.contents.name, vecs.newVec2(self.pos.x + 9, self.pos.y + 3), color);
     }
 
-    pub fn drawContents(self: *WindowData, shader: shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) void {
+    pub fn drawContents(self: *WindowData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
         if (self.min) return;
         var bnds = self.pos;
         bnds.x += 6;
@@ -213,7 +285,7 @@ pub const WindowData = struct {
         bnds.w -= 12;
         bnds.h -= 40;
 
-        self.contents.draw(batch, shader, &bnds, font);
+        try self.contents.draw(batch, shader, &bnds, font);
     }
 
     pub fn scissor(self: WindowData) rect.Rectangle {
@@ -226,8 +298,8 @@ pub const WindowData = struct {
         return bnds;
     }
 
-    pub fn click(self: *WindowData, mousepos: vecs.Vector2, btn: i32) bool {
-        if (self.min) return false;
+    pub fn click(self: *WindowData, mousepos: vecs.Vector2, btn: i32) !void {
+        if (self.min) return;
         var bnds = self.pos;
         bnds.x += 4;
         bnds.y += 32;
@@ -237,11 +309,9 @@ pub const WindowData = struct {
         if (bnds.contains(mousepos)) {
             return self.contents.click(vecs.newVec2(bnds.w, bnds.h), vecs.newVec2(mousepos.x - bnds.x, mousepos.y - bnds.y), btn);
         }
-
-        return false;
     }
 
-    pub fn key(self: *WindowData, keycode: i32, mods: i32) bool {
+    pub fn key(self: *WindowData, keycode: i32, mods: i32) !bool {
         if (self.min) return true;
 
         var bnds = self.pos;
@@ -250,7 +320,7 @@ pub const WindowData = struct {
         bnds.w -= 8;
         bnds.h -= 36;
 
-        self.contents.key(keycode, mods);
+        try self.contents.key(keycode, mods);
         return true;
     }
 

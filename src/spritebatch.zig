@@ -12,14 +12,14 @@ pub fn Drawer(comptime T: type) type {
     return struct {
         const Self = @This();
 
-        texture: tex.Texture,
+        texture: *tex.Texture,
         data: T,
 
         pub fn getVerts(self: *Self, pos: vecs.Vector3) va.VertArray {
             return self.data.getVerts(pos);
         }
 
-        pub fn new(texture: tex.Texture, self: T) Drawer(T) {
+        pub fn new(texture: *tex.Texture, self: T) Drawer(T) {
             return Self{
                 .texture = texture,
                 .data = self,
@@ -31,7 +31,7 @@ pub fn Drawer(comptime T: type) type {
 pub const QueueEntry = struct {
     update: bool,
     shader: shd.Shader,
-    texture: tex.Texture,
+    texture: *tex.Texture,
     verts: va.VertArray,
     scissor: ?rect.Rectangle = null,
     hash: u32 = 0,
@@ -81,14 +81,14 @@ pub const SpriteBatch = struct {
     queue: []QueueEntry,
     buffers: []c.GLuint,
     scissor: ?rect.Rectangle = null,
-    size: vecs.Vector2,
+    size: *vecs.Vector2,
 
-    pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: shd.Shader, pos: vecs.Vector3) void {
+    pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: *shd.Shader, pos: vecs.Vector3) void {
         var entry = QueueEntry{
             .update = true,
             .texture = drawer.texture,
             .verts = drawer.getVerts(pos),
-            .shader = shader,
+            .shader = shader.*,
         };
 
         sb.addEntry(&entry);
@@ -232,7 +232,7 @@ pub const SpriteBatch = struct {
     }
 };
 
-pub fn newSpritebatch(w: f32, h: f32) !SpriteBatch {
+pub fn newSpritebatch(size: *vecs.Vector2) !SpriteBatch {
     var buffer = try allocator.alloc.alloc(c.GLuint, 0);
     var q = try allocator.alloc.alloc(QueueEntry, 0);
     var pq = try allocator.alloc.alloc(QueueEntry, 0);
@@ -241,6 +241,6 @@ pub fn newSpritebatch(w: f32, h: f32) !SpriteBatch {
         .prevQueue = pq,
         .queue = q,
         .buffers = buffer,
-        .size = vecs.newVec2(w, h),
+        .size = size,
     };
 }

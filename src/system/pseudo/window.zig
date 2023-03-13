@@ -21,7 +21,7 @@ pub fn readWinNew() []const u8 {
     var result: *u8 = allocator.alloc.create(u8) catch undefined;
     var winDat = vmwin.new(vmIdx, shader);
 
-    var window = win.Window.new(wintex.*, win.WindowData{
+    var window = win.Window.new(wintex, win.WindowData{
         .pos = rect.Rectangle{
             .x = 100,
             .y = 100,
@@ -63,10 +63,11 @@ pub fn writeWinDestroy(id: []const u8) void {
     for (windowsPtr.*.items) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
-            var self = @ptrCast(*vmwin.VMData, item.data.contents.self);
+            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
             if (self.idx == aid) {
-                item.data.deinit();
+                item.data.deinit() catch {};
                 _ = windowsPtr.*.orderedRemove(idx);
                 return;
             }
@@ -97,7 +98,8 @@ pub fn writeWinFlip(id: []const u8) void {
     for (windowsPtr.*.items) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
-            var self = @ptrCast(*vmwin.VMData, item.data.contents.self);
+            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
             if (self.idx == aid) {
                 self.flip();
@@ -140,7 +142,8 @@ pub fn writeWinRender(data: []const u8) void {
     for (windowsPtr.*.items) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
-            var self = @ptrCast(*vmwin.VMData, item.data.contents.self);
+            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
             if (self.idx == aid) {
                 self.addRect(texture.?, src, dst);

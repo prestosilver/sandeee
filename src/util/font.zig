@@ -122,11 +122,11 @@ pub const Font = struct {
         return result;
     }
 
-    pub fn draw(self: *Font, batch: *sb.SpriteBatch, shader: shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color) void {
+    pub fn draw(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color) void {
         self.drawScale(batch, shader, text, position, color, 1.0);
     }
 
-    pub fn drawScale(self: *Font, batch: *sb.SpriteBatch, shader: shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, scale: f32) void {
+    pub fn drawScale(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, scale: f32) void {
         var pos = position;
 
         var srect = rect.newRect(0, 0, 1, 1);
@@ -160,9 +160,9 @@ pub const Font = struct {
 
         var entry = sb.QueueEntry{
             .update = true,
-            .texture = self.tex,
+            .texture = &self.tex,
             .verts = vertarray,
-            .shader = shader,
+            .shader = shader.*,
         };
 
         batch.addEntry(&entry);
