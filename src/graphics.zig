@@ -26,6 +26,10 @@ pub const Context = struct {
         c.glfwMakeContextCurrent(null);
         self.lock.unlock();
     }
+
+    pub fn cursorMode(ctx: *Context, val: c_int) void {
+        c.glfwSetInputMode(ctx.window, c.GLFW_CURSOR, val);
+    }
 };
 
 export fn errorCallback(err: c_int, description: [*c]const u8) void {
@@ -60,8 +64,6 @@ pub fn init(name: [*c]const u8) !Context {
     }
 
     var shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
-
-    //c.glfwSetInputMode(win, c.GLFW_CURSOR, c.GLFW_CURSOR_HIDDEN);
 
     var w: c_int = 0;
     var h: c_int = 0;

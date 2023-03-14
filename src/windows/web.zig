@@ -37,12 +37,12 @@ pub const WebData = struct {
     text_box: [2]sprite.Sprite,
     icons: [1]sprite.Sprite,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
         var pos = vecs.newVec2(0, -self.scrollVal + 36);
 
         var cont: []const u8 = "Error Loading File";
         if (self.file) |file| {
-            cont = file.read();
+            cont = try file.read();
         }
 
         var iter = std.mem.split(u8, cont, "\n");
@@ -89,10 +89,10 @@ pub const WebData = struct {
                 if (url) |path| {
                     var size = vecs.mul(font.sizeText(text), scale);
                     size.y = font.size * scale;
-                    var file = self.file.?.parent.getFile(path);
+                    var file = try self.file.?.parent.getFile(path);
 
                     if (path[0] == '/') {
-                        file = files.root.getFile(path);
+                        file = try files.root.getFile(path);
                     }
 
                     if (file == null) {
@@ -105,12 +105,12 @@ pub const WebData = struct {
                             .pos = rect.newRect(6 + pos.x, 6 + pos.y + self.scrollVal, size.x, size.y),
                             .color = color,
                         };
-                        self.links.append(link) catch {};
+                        try self.links.append(link);
                     }
                 }
             }
 
-            font.drawScale(batch, font_shader, text, vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y), color, scale);
+            try font.drawScale(batch, font_shader, text, vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y), color, scale);
 
             if (scale != 1.0) {
                 pos.x = 0;
@@ -131,39 +131,39 @@ pub const WebData = struct {
 
             self.highlight.data.color = self.links.items[self.highlight_idx - 1].color;
 
-            batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - self.scrollVal + 4, 0));
+            try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - self.scrollVal + 4, 0));
         }
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-        batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
         self.text_box[1].data.size.x = bnds.w - 150 - 34;
 
-        batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
-        batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 150, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 150, bnds.y + 2, 0));
 
         var tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 150 - 34, 28);
         if (self.file) |file| {
-            font.drawScale(batch, font_shader, file.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
+            try font.drawScale(batch, font_shader, file.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
         } else {
-            font.drawScale(batch, font_shader, "Error", vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
+            try font.drawScale(batch, font_shader, "Error", vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
         }
         batch.scissor = tmp;
 
-        batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
+        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
 
         // draw scrollbar
         var scrollPc = self.scrollVal / self.maxy;
 
         self.scroll[1].data.size.y = bnds.h - 20 - 36;
 
-        batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
-        batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
-        batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-        batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
     }
 
     pub fn scroll(self: *Self, _: f32, y: f32) void {
@@ -217,8 +217,8 @@ pub const WebData = struct {
     }
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) win.WindowContents {
-    var self = allocator.alloc.create(WebData) catch undefined;
+pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+    var self = try allocator.alloc.create(WebData);
 
     self.scroll[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(0 / 32.0, 0 / 32.0, 7.0 / 32.0, 6.0 / 32.0),
@@ -268,7 +268,7 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) win.WindowContents {
     self.shader = shader;
     self.highlight_idx = 0;
 
-    self.file = files.root.getFile("/docs/index.edf");
+    self.file = try files.root.getFile("/docs/index.edf");
     self.links = std.ArrayList(WebData.WebLink).init(allocator.alloc);
     self.hist = std.ArrayList(*files.File).init(allocator.alloc);
 

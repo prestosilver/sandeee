@@ -12,6 +12,11 @@ const tex = @import("../texture.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
 const pseudo = @import("../system/pseudo/all.zig");
+const files = @import("../system/files.zig");
+const emails = @import("../system/mail.zig");
+const conf = @import("../system/config.zig");
+const gfx = @import("../graphics.zig");
+const cols = @import("../math/colors.zig");
 
 pub const GSWindowed = struct {
     const Self = @This();
@@ -30,6 +35,7 @@ pub const GSWindowed = struct {
     shader: *shd.Shader,
     font_shader: *shd.Shader,
     face: *font.Font,
+    settingsManager: *conf.SettingManager,
     bar_logo_sprite: sp.Sprite,
 
     webtex: *tex.Texture,
@@ -65,6 +71,8 @@ pub const GSWindowed = struct {
     }
 
     pub fn setup(self: *Self) !void {
+        gfx.gContext.color = cols.newColor(0, 0.5, 0.5, 1);
+
         self.windows = std.ArrayList(win.Window).init(allocator.alloc);
 
         pseudo.window.windowsPtr = &self.windows;
@@ -74,22 +82,35 @@ pub const GSWindowed = struct {
         events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
     }
 
+    pub fn deinit(self: *Self) !void {
+        for (self.windows.items) |*window| {
+            try window.data.deinit();
+        }
+
+        try files.write();
+
+        self.settingsManager.deinit();
+        self.windows.deinit();
+        emails.deinit();
+        files.deinit();
+    }
+
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         if (self.openWindow.x > size.x - 500) self.openWindow.x = 100;
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
 
         // draw wallpaper
-        self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
+        try self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
 
         for (self.windows.items) |window, idx| {
             // continue if window closed on update
             if (idx >= self.windows.items.len) continue;
 
             // draw the window border
-            self.sb.draw(win.Window, &self.windows.items[idx], self.shader, vecs.newVec3(0, 0, 0));
+            try self.sb.draw(win.Window, &self.windows.items[idx], self.shader, vecs.newVec3(0, 0, 0));
 
             // draw the windows name
-            self.windows.items[idx].data.drawName(self.font_shader, self.face, self.sb);
+            try self.windows.items[idx].data.drawName(self.font_shader, self.face, self.sb);
 
             // update scisor region
             self.sb.scissor = window.data.scissor();
@@ -102,7 +123,7 @@ pub const GSWindowed = struct {
         }
 
         // draw bar
-        self.sb.draw(bar.Bar, &self.bar, self.shader, vecs.newVec3(0, 0, 0));
+        try self.sb.draw(bar.Bar, &self.bar, self.shader, vecs.newVec3(0, 0, 0));
         try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, self.sb, &self.windows);
     }
 
@@ -129,7 +150,7 @@ pub const GSWindowed = struct {
     pub fn mousepress(self: *Self, btn: c_int) !void {
         switch (btn) {
             0 => {
-                if (self.bar.data.doClick(&self.windows, self.webtex, self.wintex, self.emailtex, self.editortex, self.explorertex, self.shader, self.mousepos)) {
+                if (try self.bar.data.doClick(&self.windows, self.webtex, self.wintex, self.emailtex, self.editortex, self.explorertex, self.shader, self.mousepos)) {
                     return;
                 }
 

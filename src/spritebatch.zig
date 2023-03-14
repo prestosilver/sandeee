@@ -15,7 +15,7 @@ pub fn Drawer(comptime T: type) type {
         texture: *tex.Texture,
         data: T,
 
-        pub fn getVerts(self: *Self, pos: vecs.Vector3) va.VertArray {
+        pub fn getVerts(self: *Self, pos: vecs.Vector3) !va.VertArray {
             return self.data.getVerts(pos);
         }
 
@@ -83,22 +83,22 @@ pub const SpriteBatch = struct {
     scissor: ?rect.Rectangle = null,
     size: *vecs.Vector2,
 
-    pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: *shd.Shader, pos: vecs.Vector3) void {
+    pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: *shd.Shader, pos: vecs.Vector3) !void {
         var entry = QueueEntry{
             .update = true,
             .texture = drawer.texture,
-            .verts = drawer.getVerts(pos),
+            .verts = try drawer.getVerts(pos),
             .shader = shader.*,
         };
 
-        sb.addEntry(&entry);
+        try sb.addEntry(&entry);
     }
 
-    pub fn addEntry(sb: *SpriteBatch, entry: *QueueEntry) void {
+    pub fn addEntry(sb: *SpriteBatch, entry: *QueueEntry) !void {
         entry.scissor = sb.scissor;
 
         if (sb.queue.len == 0) {
-            sb.queue = allocator.alloc.realloc(sb.queue, sb.queue.len + 1) catch sb.queue;
+            sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
             sb.queue[sb.queue.len - 1] = entry.*;
         } else {
             var last = &sb.queue[sb.queue.len - 1];
@@ -108,11 +108,11 @@ pub const SpriteBatch = struct {
                 rect.Rectangle.equal(last.scissor.?, entry.scissor.?))
             {
                 var start = last.verts.data.len;
-                last.verts.data = allocator.alloc.realloc(last.verts.data, last.verts.data.len + entry.verts.data.len) catch last.verts.data;
+                last.verts.data = try allocator.alloc.realloc(last.verts.data, last.verts.data.len + entry.verts.data.len);
                 std.mem.copy(va.Vert, last.verts.data[start..], entry.verts.data);
                 entry.verts.deinit();
             } else {
-                sb.queue = allocator.alloc.realloc(sb.queue, sb.queue.len + 1) catch sb.queue;
+                sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
                 sb.queue[sb.queue.len - 1] = entry.*;
             }
         }
@@ -135,11 +135,11 @@ pub const SpriteBatch = struct {
 
             if (target < sb.buffers.len) {
                 c.glDeleteBuffers(@intCast(c.GLint, sb.buffers.len - target), &sb.buffers[target]);
-                sb.buffers = allocator.alloc.realloc(sb.buffers, target) catch sb.buffers;
+                sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
             } else if (target > sb.buffers.len) {
                 var old = sb.buffers.len;
 
-                sb.buffers = allocator.alloc.realloc(sb.buffers, target) catch sb.buffers;
+                sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
 
                 c.glGenBuffers(@intCast(c.GLint, target - old), &sb.buffers[old]);
             }
@@ -213,7 +213,7 @@ pub const SpriteBatch = struct {
 
         allocator.alloc.free(sb.prevQueue);
         sb.prevQueue = sb.queue;
-        sb.queue = allocator.alloc.alloc(QueueEntry, 0) catch undefined;
+        sb.queue = try allocator.alloc.alloc(QueueEntry, 0);
     }
 
     pub fn deinit(sb: SpriteBatch) void {

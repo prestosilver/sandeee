@@ -13,14 +13,14 @@ const gfx = @import("../../graphics.zig");
 pub var texIdx: u8 = 0;
 pub var textures: std.AutoHashMap(u8, tex.Texture) = undefined;
 
-pub fn readGfxNew() []const u8 {
-    var result = allocator.alloc.alloc(u8, 1) catch undefined;
+pub fn readGfxNew() ![]const u8 {
+    var result = try allocator.alloc.alloc(u8, 1);
 
     result[0] = texIdx;
 
     gfx.gContext.makeCurrent();
 
-    textures.put(texIdx, tex.newTextureSize(vecs.newVec2(0, 0))) catch {};
+    try textures.put(texIdx, tex.newTextureSize(vecs.newVec2(0, 0)));
 
     gfx.gContext.makeNotCurrent();
 
@@ -29,17 +29,17 @@ pub fn readGfxNew() []const u8 {
     return result;
 }
 
-pub fn writeGfxNew(_: []const u8) void {
+pub fn writeGfxNew(_: []const u8) !void {
     return;
 }
 
 // /fake/gfx/destroy
 
-pub fn readGfxDestroy() []const u8 {
-    return allocator.alloc.alloc(u8, 0) catch undefined;
+pub fn readGfxDestroy() ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxDestroy(data: []const u8) void {
+pub fn writeGfxDestroy(data: []const u8) !void {
     var idx = data[0];
     var texture = textures.get(idx);
     if (texture == null) return;
@@ -55,11 +55,11 @@ pub fn writeGfxDestroy(data: []const u8) void {
 
 // /fake/gfx/upload
 
-pub fn readGfxUpload() []const u8 {
-    return allocator.alloc.alloc(u8, 0) catch undefined;
+pub fn readGfxUpload() ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxUpload(data: []const u8) void {
+pub fn writeGfxUpload(data: []const u8) !void {
     var idx = data[0];
     var image = data[1..];
 
@@ -68,19 +68,16 @@ pub fn writeGfxUpload(data: []const u8) void {
 
     gfx.gContext.makeCurrent();
 
-    tex.uploadTextureMem(texture.?, image) catch |msg| {
-        std.log.info("upload err {}", .{msg});
-        return;
-    };
+    tex.uploadTextureMem(texture.?, image) catch return error.UploadError;
 
     gfx.gContext.makeNotCurrent();
 }
 
 // /fake/gfx
 
-pub fn setupFakeGfx(parent: *files.Folder) files.Folder {
+pub fn setupFakeGfx(parent: *files.Folder) !files.Folder {
     var result = files.Folder{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/gfx/", .{}) catch "",
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/", .{}),
         .subfolders = std.ArrayList(files.Folder).init(allocator.alloc),
         .contents = std.ArrayList(files.File).init(allocator.alloc),
         .parent = parent,
@@ -89,29 +86,29 @@ pub fn setupFakeGfx(parent: *files.Folder) files.Folder {
 
     textures = std.AutoHashMap(u8, tex.Texture).init(allocator.alloc);
 
-    result.contents.append(files.File{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/gfx/new", .{}) catch "",
-        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+    try result.contents.append(files.File{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/new", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxNew,
         .pseudoWrite = writeGfxNew,
         .parent = undefined,
-    }) catch {};
+    });
 
-    result.contents.append(files.File{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/gfx/destroy", .{}) catch "",
-        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+    try result.contents.append(files.File{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/destroy", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxDestroy,
         .pseudoWrite = writeGfxDestroy,
         .parent = undefined,
-    }) catch {};
+    });
 
-    result.contents.append(files.File{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/gfx/upload", .{}) catch "",
-        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+    try result.contents.append(files.File{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/upload", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxUpload,
         .pseudoWrite = writeGfxUpload,
         .parent = undefined,
-    }) catch {};
+    });
 
     return result;
 }

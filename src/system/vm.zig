@@ -160,7 +160,7 @@ pub const VM = struct {
         value: ?u64 = null,
     };
 
-    pub fn destroy(self: *VM) void {
+    pub fn deinit(self: *VM) !void {
         while (self.rsp > 0) {
             self.rsp -= 1;
             self.free(self.stack[self.rsp]);
@@ -185,7 +185,7 @@ pub const VM = struct {
 
         for (self.streams.items) |stream| {
             if (stream != null)
-                stream.?.Close() catch {};
+                try stream.?.Close();
         }
 
         for (self.args) |_, idx| {
@@ -243,7 +243,7 @@ pub const VM = struct {
             },
             Operation.Code.Push => {
                 if (op.string != null) {
-                    self.pushStackS(op.string.?) catch {};
+                    try self.pushStackS(op.string.?);
                     return;
                 } else if (op.value != null) {
                     try self.pushStackI(op.value.?);
@@ -358,14 +358,14 @@ pub const VM = struct {
                             var a = try self.popStack();
                             defer self.free(a);
                             if (a.string != null) {
-                                self.out.appendSlice(a.string.?) catch {};
+                                try self.out.appendSlice(a.string.?);
 
                                 return;
                             } else if (a.value != null) {
-                                var str = std.fmt.allocPrint(self.allocator, "{}", .{a.value.?.*}) catch "";
+                                var str = try std.fmt.allocPrint(self.allocator, "{}", .{a.value.?.*});
                                 defer self.allocator.free(str);
 
-                                self.out.appendSlice(str) catch {};
+                                try self.out.appendSlice(str);
 
                                 return;
                             } else return error.InvalidOp;
@@ -894,23 +894,23 @@ pub const VM = struct {
         return error.NotImplemented;
     }
 
-    pub fn loadList(self: *VM, ops: []Operation) void {
-        var list = self.allocator.alloc(Operation, ops.len) catch null;
+    pub fn loadList(self: *VM, ops: []Operation) !void {
+        var list = try self.allocator.alloc(Operation, ops.len);
 
         for (ops) |_, idx| {
-            list.?[idx] = ops[idx];
+            list[idx] = ops[idx];
 
             if (ops[idx].string != null) {
-                var str = self.allocator.alloc(u8, ops[idx].string.?.len) catch null;
+                var str = try self.allocator.alloc(u8, ops[idx].string.?.len);
 
                 for (ops[idx].string.?) |_, jdx| {
-                    str.?[jdx] = ops[idx].string.?[jdx];
+                    str[jdx] = ops[idx].string.?[jdx];
                 }
 
-                list.?[idx].string = str.?;
+                list[idx].string = str;
             }
         }
-        self.code = list.?;
+        self.code = list;
     }
 
     pub fn stringToOps(self: *VM, conts: []const u8) !std.ArrayList(Operation) {
@@ -936,21 +936,21 @@ pub const VM = struct {
 
                 parsePtr += 8;
 
-                ops.append(VM.Operation{ .code = code, .value = value }) catch {};
+                try ops.append(VM.Operation{ .code = code, .value = value });
             } else if (kind == 2) {
                 var buffPtr: usize = 0;
                 while (conts[parsePtr + buffPtr] != 0) {
                     buffPtr += 1;
                 }
-                ops.append(VM.Operation{ .code = code, .string = conts[parsePtr .. parsePtr + buffPtr] }) catch {};
+                try ops.append(VM.Operation{ .code = code, .string = conts[parsePtr .. parsePtr + buffPtr] });
                 parsePtr += buffPtr + 1;
             } else if (kind == 3) {
                 var value = conts[parsePtr];
                 parsePtr += 1;
 
-                ops.append(VM.Operation{ .code = code, .value = @intCast(u64, value) }) catch {};
+                try ops.append(VM.Operation{ .code = code, .value = @intCast(u64, value) });
             } else if (kind == 0) {
-                ops.append(VM.Operation{ .code = code }) catch {};
+                try ops.append(VM.Operation{ .code = code });
             } else {
                 ops.deinit();
                 return error.InvalidAsm;
@@ -964,7 +964,7 @@ pub const VM = struct {
         var ops = try self.stringToOps(conts);
         defer ops.deinit();
 
-        self.loadList(ops.items);
+        try self.loadList(ops.items);
     }
 
     pub fn runAll(self: *VM) !void {

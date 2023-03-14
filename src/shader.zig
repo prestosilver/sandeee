@@ -10,7 +10,7 @@ pub const ShaderFile = struct {
 pub const Shader = struct {
     id: c.GLuint = 0,
 
-    pub fn new(comptime total: u32, files: [total]ShaderFile) Shader {
+    pub fn new(comptime total: u32, files: [total]ShaderFile) !Shader {
         var prog = c.glCreateProgram();
         var success: c.GLint = 0;
 
@@ -25,11 +25,11 @@ pub const Shader = struct {
             c.glGetShaderiv(shader, c.GL_COMPILE_STATUS, &success);
 
             if (success == 0) {
-                var infoLog: [512]u8 = undefined;
+                var infoLog: [512]u8 = std.mem.zeroes([512]u8);
 
                 c.glGetShaderInfoLog(shader, 512, null, &infoLog);
-                std.log.info("shader error: {s}", .{infoLog});
-                std.c.exit(1);
+                std.log.err("{s}", .{infoLog});
+                return error.CompileError;
             }
 
             c.glAttachShader(prog, shader);

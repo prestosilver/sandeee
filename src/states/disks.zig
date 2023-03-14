@@ -4,11 +4,12 @@ const sb = @import("../spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
 const font = @import("../util/font.zig");
-const cols = @import("../math/colors.zig");
 const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
+const gfx = @import("../graphics.zig");
+const cols = @import("../math/colors.zig");
 
 const c = @import("../c.zig");
 
@@ -21,7 +22,7 @@ pub const GSDisks = struct {
     shader: *shd.Shader,
     sb: *sb.SpriteBatch,
     logo_sprite: sp.Sprite,
-    disk: *?[]const u8,
+    disk: *?[]u8,
 
     remaining: f32 = 3,
     sel: usize = 0,
@@ -29,6 +30,10 @@ pub const GSDisks = struct {
     disks: std.ArrayList([]const u8) = undefined,
 
     pub fn setup(self: *Self) !void {
+        gfx.gContext.color = cols.newColor(0, 0, 0, 1);
+
+        self.sel = 0;
+        self.remaining = 3;
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
         const path = fm.getContentDir();
@@ -44,6 +49,16 @@ pub const GSDisks = struct {
 
             try self.disks.append(entry);
         }
+
+        try self.disks.append("New Disk");
+    }
+
+    pub fn deinit(self: *Self) !void {
+        for (self.disks.items[0..self.disks.items.len - 1]) |item| {
+            allocator.alloc.free(item);
+        }
+
+        self.disks.deinit();
     }
 
     pub fn update(self: *Self, dt: f32) !void {
@@ -52,13 +67,22 @@ pub const GSDisks = struct {
         if (self.remaining <= 0) {
             self.disk.* = null;
 
-            if (self.disks.items.len != 0) {
-                self.disk.* = self.disks.items[self.sel];
+            if (self.sel != self.disks.items.len - 1) {
+                var sel = self.disks.items[self.sel];
+
+                self.disk.* = try allocator.alloc.alloc(u8, sel.len);
+                std.mem.copy(u8, self.disk.*.?, sel);
             }
 
-            events.em.sendEvent(systemEvs.EventStateChange{
-                .targetState = 1,
-            });
+            if (self.disk.* != null) {
+                events.em.sendEvent(systemEvs.EventStateChange{
+                    .targetState = .Loading,
+                });
+            } else {
+                events.em.sendEvent(systemEvs.EventStateChange{
+                    .targetState = .Installer,
+                });
+            }
         }
     }
 
@@ -67,18 +91,18 @@ pub const GSDisks = struct {
 
         var line: []u8 = undefined;
 
-        self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(20, 20, 0));
+        try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(20, 20, 0));
         pos.y += self.logo_sprite.data.size.y;
 
         if (self.auto) {
-            line = try std.fmt.allocPrint(allocator.alloc, "DiskEEE V_{s} Booting to disk.eee in {}s", .{ VERSION, @floatToInt(i32, self.remaining + 0.5) });
+            line = try std.fmt.allocPrint(allocator.alloc, "BootEEE V_{s} Booting to disk.eee in {}s", .{ VERSION, @floatToInt(i32, self.remaining + 0.5) });
         } else {
-            line = try std.fmt.allocPrint(allocator.alloc, "DiskEEE V_{s}", .{VERSION});
+            line = try std.fmt.allocPrint(allocator.alloc, "BootEEE V_{s}", .{VERSION});
         }
 
-        self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
         pos.y += self.face.size * 2;
-        self.face.drawScale(self.sb, self.font_shader, "Select a disk", pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, "Select a disk", pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
         pos.y += self.face.size * 1;
 
         if (self.disks.items.len != 0) {
@@ -90,7 +114,7 @@ pub const GSDisks = struct {
                     line[0] = '>';
                 }
 
-                self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+                try self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
                 pos.y += self.face.size * 1;
             }
         }

@@ -17,9 +17,9 @@ pub var vmIdx: u8 = 0;
 pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
 
 // /fake/win/new
-pub fn readWinNew() []const u8 {
-    var result: *u8 = allocator.alloc.create(u8) catch undefined;
-    var winDat = vmwin.new(vmIdx, shader);
+pub fn readWinNew() ![]const u8 {
+    var result: *u8 = try allocator.alloc.create(u8);
+    var winDat = try vmwin.new(vmIdx, shader);
 
     var window = win.Window.new(wintex, win.WindowData{
         .pos = rect.Rectangle{
@@ -46,17 +46,17 @@ pub fn readWinNew() []const u8 {
     return @ptrCast(*[1]u8, result);
 }
 
-pub fn writeWinNew(_: []const u8) void {
+pub fn writeWinNew(_: []const u8) !void {
     return;
 }
 
 // /fake/win/destroy
 
-pub fn readWinDestroy() []const u8 {
-    return allocator.alloc.alloc(u8, 0) catch undefined;
+pub fn readWinDestroy() ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinDestroy(id: []const u8) void {
+pub fn writeWinDestroy(id: []const u8) !void {
     if (id.len != 1) return;
     var aid = id[0];
 
@@ -67,7 +67,7 @@ pub fn writeWinDestroy(id: []const u8) void {
             var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
             if (self.idx == aid) {
-                item.data.deinit() catch {};
+                try item.data.deinit();
                 _ = windowsPtr.*.orderedRemove(idx);
                 return;
             }
@@ -77,21 +77,21 @@ pub fn writeWinDestroy(id: []const u8) void {
 
 // /fake/win/open
 
-pub fn readWinOpen() []const u8 {
-    return allocator.alloc.alloc(u8, 0) catch undefined;
+pub fn readWinOpen() ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinOpen(_: []const u8) void {
+pub fn writeWinOpen(_: []const u8) !void {
     return;
 }
 
 // /fake/win/flip
 
-pub fn readWinFlip() []const u8 {
-    return allocator.alloc.alloc(u8, 0) catch undefined;
+pub fn readWinFlip() ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinFlip(id: []const u8) void {
+pub fn writeWinFlip(id: []const u8) !void {
     if (id.len != 1) return;
     var aid = id[0];
 
@@ -113,11 +113,11 @@ pub fn writeWinFlip(id: []const u8) void {
 
 // /fake/win/render
 
-pub fn readWinRender() []const u8 {
-    return allocator.alloc.alloc(u8, 0) catch undefined;
+pub fn readWinRender() ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinRender(data: []const u8) void {
+pub fn writeWinRender(data: []const u8) !void {
     if (data.len < 66) return;
 
     var texture = gfx.textures.getPtr(data[0]);
@@ -146,8 +146,7 @@ pub fn writeWinRender(data: []const u8) void {
             var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
             if (self.idx == aid) {
-                self.addRect(texture.?, src, dst);
-                return;
+                return self.addRect(texture.?, src, dst);
             }
         }
     }
@@ -157,46 +156,46 @@ pub fn writeWinRender(data: []const u8) void {
 
 // /fake/win
 
-pub fn setupFakeWin(parent: *files.Folder) files.Folder {
+pub fn setupFakeWin(parent: *files.Folder) !files.Folder {
     var result = files.Folder{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/", .{}) catch "",
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/", .{}),
         .subfolders = std.ArrayList(files.Folder).init(allocator.alloc),
         .contents = std.ArrayList(files.File).init(allocator.alloc),
         .parent = parent,
         .protected = true,
     };
 
-    result.contents.append(files.File{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/new", .{}) catch "",
-        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+    try result.contents.append(files.File{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/new", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinNew,
         .pseudoWrite = writeWinNew,
         .parent = undefined,
-    }) catch {};
+    });
 
-    result.contents.append(files.File{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/destroy", .{}) catch "",
-        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+    try result.contents.append(files.File{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/destroy", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinDestroy,
         .pseudoWrite = writeWinDestroy,
         .parent = undefined,
-    }) catch {};
+    });
 
-    result.contents.append(files.File{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/render", .{}) catch "",
-        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+    try result.contents.append(files.File{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/render", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinRender,
         .pseudoWrite = writeWinRender,
         .parent = undefined,
-    }) catch {};
+    });
 
-    result.contents.append(files.File{
-        .name = std.fmt.allocPrint(allocator.alloc, "/fake/win/flip", .{}) catch "",
-        .contents = std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}) catch "",
+    try result.contents.append(files.File{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/flip", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinFlip,
         .pseudoWrite = writeWinFlip,
         .parent = undefined,
-    }) catch {};
+    });
 
     return result;
 }

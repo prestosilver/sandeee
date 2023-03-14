@@ -36,7 +36,7 @@ const CMDData = struct {
         if (self.shell.vm == null) {
             var prompt = try std.fmt.allocPrint(allocator.alloc, "$ {s}", .{self.text.items});
             defer allocator.alloc.free(prompt);
-            font.draw(batch, shader, prompt, vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6), col.newColor(1, 1, 1, 1));
+            try font.draw(batch, shader, prompt, vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6), col.newColor(1, 1, 1, 1));
             idx += 1;
         } else {
             var result = try self.shell.updateVM();
@@ -57,7 +57,7 @@ const CMDData = struct {
         while (lines.next()) |line| {
             var y = bnds.y + bnds.h - @intToFloat(f32, idx + 1) * font.size - 6;
 
-            font.draw(batch, shader, line, vecs.newVec2(bnds.x + 6, y), col.newColor(1, 1, 1, 1));
+            try font.draw(batch, shader, line, vecs.newVec2(bnds.x + 6, y), col.newColor(1, 1, 1, 1));
 
             idx += 1;
         }
@@ -84,20 +84,20 @@ const CMDData = struct {
                 }
             },
             c.GLFW_KEY_SPACE => {
-                self.text.append(' ') catch {};
+                try self.text.append(' ');
             },
             c.GLFW_KEY_PERIOD => {
-                self.text.append('.') catch {};
+                try self.text.append('.');
             },
             c.GLFW_KEY_COMMA => {
-                self.text.append(',') catch {};
+                try self.text.append(',');
             },
             c.GLFW_KEY_SLASH => {
-                self.text.append('/') catch {};
+                try self.text.append('/');
             },
             c.GLFW_KEY_ENTER => {
                 var start = self.bt.len;
-                self.bt = allocator.alloc.realloc(self.bt, self.bt.len + self.text.items.len + 4) catch self.bt;
+                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.text.items.len + 4);
                 std.mem.copy(u8, self.bt[start .. start + 3], "\n$ ");
                 std.mem.copy(u8, self.bt[start + 3 .. self.bt.len - 1], self.text.items);
                 self.bt[self.bt.len - 1] = '\n';
@@ -109,7 +109,7 @@ const CMDData = struct {
                     if (char == ' ') {
                         break;
                     } else {
-                        command.append(char) catch {};
+                        try command.append(char);
                     }
                 }
 
@@ -117,11 +117,11 @@ const CMDData = struct {
                     const msg = @errorName(err);
 
                     start = self.bt.len;
-                    self.bt = allocator.alloc.realloc(self.bt, self.bt.len + 7) catch self.bt;
+                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + 7);
                     std.mem.copy(u8, self.bt[start..], "Error: ");
 
                     start = self.bt.len;
-                    self.bt = allocator.alloc.realloc(self.bt, self.bt.len + msg.len) catch self.bt;
+                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + msg.len);
                     std.mem.copy(u8, self.bt[start..], msg);
 
                     self.text.clearAndFree();
@@ -129,15 +129,15 @@ const CMDData = struct {
                 };
 
                 if (al.data.items.len == 0 and self.shell.vm == null)
-                    self.bt = allocator.alloc.realloc(self.bt, self.bt.len - 1) catch self.bt;
+                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len - 1);
 
                 if (al.clear) {
                     allocator.alloc.free(self.bt);
-                    self.bt = allocator.alloc.alloc(u8, 0) catch undefined;
+                    self.bt = try allocator.alloc.alloc(u8, 0);
                 } else {
                     start = self.bt.len;
 
-                    self.bt = allocator.alloc.realloc(self.bt, self.bt.len + al.data.items.len) catch self.bt;
+                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + al.data.items.len);
                     std.mem.copy(u8, self.bt[start..], al.data.items);
                 }
                 al.data.deinit();
@@ -159,18 +159,18 @@ const CMDData = struct {
     pub fn deinit(self: *Self) !void {
         allocator.alloc.free(self.bt);
         self.text.deinit();
-        if (self.shell.vm != null) {
-            self.shell.vm.?.destroy();
+        if (self.shell.vm) |*vm| {
+            try vm.deinit();
         }
         allocator.alloc.destroy(self);
     }
 };
 
-pub fn new() win.WindowContents {
-    const self = allocator.alloc.create(CMDData) catch undefined;
+pub fn new() !win.WindowContents {
+    const self = try allocator.alloc.create(CMDData);
 
     self.text = std.ArrayList(u8).init(allocator.alloc);
-    self.bt = std.fmt.allocPrint(allocator.alloc, "Welcome to ShEEEl", .{}) catch undefined;
+    self.bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to ShEEEl", .{});
 
     self.shell.root = files.home;
     self.shell.vm = null;

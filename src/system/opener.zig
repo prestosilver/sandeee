@@ -8,10 +8,10 @@ const OpenError = error{
 pub fn openFile(file: []const u8) ![]const u8 {
     var back = std.mem.splitBackwards(u8, file, ".");
     var ext = back.first();
-    var fileo = files.root.getFile("/conf/opener.cfg");
+    var fileo = try files.root.getFile("/conf/opener.cfg");
 
     if (fileo) |filereal| {
-        var cont = filereal.read();
+        var cont = try filereal.read();
         var lines = std.mem.split(u8, cont, "\n");
 
         while (lines.next()) |line| {

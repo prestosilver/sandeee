@@ -6,7 +6,8 @@ const allocator = @import("util/allocator.zig");
 pub fn main() anyerror!void {
     const stdout = std.io.getStdOut().writer();
 
-    var args = std.process.args();
+    var args = try std.process.argsWithAllocator(allocator.alloc);
+    defer args.deinit();
 
     _ = args.next();
 
@@ -14,7 +15,6 @@ pub fn main() anyerror!void {
         var contents = try std.fs.cwd().readFileAlloc(allocator.alloc, file, 100000);
 
         var vm = try vma.VM.init(allocator.alloc, files.root, file);
-        defer vm.destroy();
 
         std.log.info("loading", .{});
 
@@ -25,5 +25,7 @@ pub fn main() anyerror!void {
         try vm.runAll();
 
         try stdout.print("{s}", .{vm.out.items});
+
+        try vm.deinit();
     }
 }

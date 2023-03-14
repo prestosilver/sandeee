@@ -48,8 +48,8 @@ const ExplorerData = struct {
     lastAction: ?ExplorerMouseAction,
     shell: shell.Shell,
 
-    pub fn getIcons(self: *Self) []const Icon {
-        var result = allocator.alloc.alloc(Icon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len) catch undefined;
+    pub fn getIcons(self: *Self) ![]const Icon {
+        var result = try allocator.alloc.alloc(Icon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len);
         var idx: usize = 0;
 
         for (self.shell.root.subfolders.items) |folder| {
@@ -71,7 +71,7 @@ const ExplorerData = struct {
         return result;
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
         if (self.lastAction != null) {
             if (self.lastAction.?.time <= 0) {
                 self.lastAction = null;
@@ -90,19 +90,19 @@ const ExplorerData = struct {
         var x: f32 = 0;
         var y: f32 = -self.scrollVal + 36;
 
-        var icons = self.getIcons();
+        var icons = try self.getIcons();
         defer allocator.alloc.free(icons);
 
         for (icons) |icon, idx| {
             var size = font.sizeText(icon.name);
             var xo = (128 - size.x) / 2;
 
-            font.draw(batch, font_shader, icon.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
+            try font.draw(batch, font_shader, icon.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
 
-            batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+            try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
             if (idx + 1 == self.selected)
-                batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
+                try batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
 
             if (self.lastAction != null) {
                 if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
@@ -111,7 +111,7 @@ const ExplorerData = struct {
                             self.selected = idx + 1;
                         },
                         .DoubleLeft => {
-                            var newPath = self.shell.root.getFolder(icon.name);
+                            var newPath = try self.shell.root.getFolder(icon.name);
                             if (newPath != null) {
                                 self.shell.root = newPath.?;
                                 self.selected = 0;
@@ -142,31 +142,31 @@ const ExplorerData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-        batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
         self.text_box[1].data.size.x = bnds.w - 4 - 34;
 
-        batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
-        batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 4, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 4, bnds.y + 2, 0));
 
         var tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 4 - 34, 28);
-        font.drawScale(batch, font_shader, self.shell.root.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
+        try font.drawScale(batch, font_shader, self.shell.root.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
 
         batch.scissor = tmp;
 
-        batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
+        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
 
         // draw scrollbar
         var scrollPc = self.scrollVal / self.maxy;
 
         self.scroll[1].data.size.y = bnds.h - 20 - 36;
 
-        batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
-        batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
-        batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-        batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
     }
 
     pub fn deinit(self: *Self) void {
@@ -226,8 +226,8 @@ const ExplorerData = struct {
     }
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) win.WindowContents {
-    var self = allocator.alloc.create(ExplorerData) catch undefined;
+pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+    var self = try allocator.alloc.create(ExplorerData);
 
     for (self.icons) |_, idx| {
         var i = @intToFloat(f32, idx);

@@ -30,7 +30,7 @@ pub const BarData = struct {
     btnActive: bool = false,
     btns: i32 = 0,
 
-    fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) void {
+    fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
         var source = src;
 
         source.y /= TOTAL_SPRITES;
@@ -38,35 +38,35 @@ pub const BarData = struct {
 
         source.y += 1.0 / TOTAL_SPRITES * @intToFloat(f32, sprite);
 
-        arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
-        arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        arr.append(vecs.newVec3(pos.x, pos.y, 0), vecs.newVec2(source.x, source.y), cols.newColor(1, 1, 1, 1));
-        arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
+        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
+        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), cols.newColor(1, 1, 1, 1));
+        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
+        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
+        try arr.append(vecs.newVec3(pos.x, pos.y, 0), vecs.newVec2(source.x, source.y), cols.newColor(1, 1, 1, 1));
+        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
     }
 
-    fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32) void {
+    fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32) !void {
         var sc = @intToFloat(f32, scale);
 
-        addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE));
-        addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE));
-        addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y, sc * r, sc * t), rect.newRect((TEX_SIZE - r) / TEX_SIZE, 0, r / TEX_SIZE, t / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y, sc * r, sc * t), rect.newRect((TEX_SIZE - r) / TEX_SIZE, 0, r / TEX_SIZE, t / TEX_SIZE));
 
-        addQuad(arr, sprite, rect.newRect(pos.x, pos.y + sc * t, sc * l, pos.h - sc * (t + b)), rect.newRect(0, t / TEX_SIZE, l / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
-        addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + sc * t, pos.w - sc * (l + r), pos.h - sc * (t + b)), rect.newRect(l / TEX_SIZE, t / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
-        addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + sc * t, sc * r, pos.h - sc * (t + b)), rect.newRect((TEX_SIZE - r) / TEX_SIZE, t / TEX_SIZE, r / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y + sc * t, sc * l, pos.h - sc * (t + b)), rect.newRect(0, t / TEX_SIZE, l / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + sc * t, pos.w - sc * (l + r), pos.h - sc * (t + b)), rect.newRect(l / TEX_SIZE, t / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + sc * t, sc * r, pos.h - sc * (t + b)), rect.newRect((TEX_SIZE - r) / TEX_SIZE, t / TEX_SIZE, r / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
 
-        addQuad(arr, sprite, rect.newRect(pos.x, pos.y + pos.h - sc * b, sc * l, sc * b), rect.newRect(0, (TEX_SIZE - b) / TEX_SIZE, l / TEX_SIZE, b / TEX_SIZE));
-        addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + pos.h - sc * b, pos.w - sc * (l + r), sc * b), rect.newRect(l / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, b / TEX_SIZE));
-        addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y + pos.h - sc * b, sc * l, sc * b), rect.newRect(0, (TEX_SIZE - b) / TEX_SIZE, l / TEX_SIZE, b / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + pos.h - sc * b, pos.w - sc * (l + r), sc * b), rect.newRect(l / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, b / TEX_SIZE));
+        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE));
     }
 
     pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) !void {
         var pos = rect.newRect(self.height, self.screendims.y - self.height + 6, self.screendims.x + self.height, self.height);
 
         var color = cols.newColorRGBA(0, 0, 0, 255);
-        font.draw(batch, font_shader, "APPS", pos.location(), color);
+        try font.draw(batch, font_shader, "APPS", pos.location(), color);
 
         var ts = std.time.timestamp();
         var hours = @intCast(u64, ts) / std.time.s_per_hour % 12;
@@ -77,20 +77,20 @@ pub const BarData = struct {
         var clockSize = font.sizeText(clockString);
         var clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
 
-        font.draw(batch, font_shader, clockString, clockPos, color);
+        try font.draw(batch, font_shader, clockString, clockPos, color);
 
         pos.x = 3 * self.height + 10;
         self.btns = 0;
 
         for (windows.items) |window| {
-            font.draw(batch, font_shader, window.data.contents.name, pos.location(), color);
+            try font.draw(batch, font_shader, window.data.contents.name, pos.location(), color);
 
             pos.x += 4 * self.height;
             self.btns += 1;
         }
 
         if (self.btnActive) {
-            batch.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
+            try batch.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
 
             for (range(10)) |_, i| {
                 var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
@@ -108,12 +108,12 @@ pub const BarData = struct {
                 var height = font.size * 1;
                 y += std.math.floor((67 - height) / 2);
                 var textpos = vecs.newVec2(100, y);
-                font.drawScale(batch, font_shader, text, textpos, color, 1);
+                try font.drawScale(batch, font_shader, text, textpos, color, 1);
             }
         }
     }
 
-    pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), webtex: *tex.Texture, wintex: *tex.Texture, emailtex: *tex.Texture, editortex: *tex.Texture, explorertex: *tex.Texture, shader: *shd.Shader, pos: vecs.Vector2) bool {
+    pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), webtex: *tex.Texture, wintex: *tex.Texture, emailtex: *tex.Texture, editortex: *tex.Texture, explorertex: *tex.Texture, shader: *shd.Shader, pos: vecs.Vector2) !bool {
         var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;
@@ -151,7 +151,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = wins.cmd.new(),
+                                .contents = try wins.cmd.new(),
                                 .active = true,
                             });
 
@@ -171,7 +171,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = wins.email.new(emailtex, shader),
+                                .contents = try wins.email.new(emailtex, shader),
                                 .active = true,
                             });
 
@@ -191,7 +191,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = wins.editor.new(editortex, shader),
+                                .contents = try wins.editor.new(editortex, shader),
                                 .active = true,
                             });
 
@@ -211,7 +211,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = wins.explorer.new(explorertex, shader),
+                                .contents = try wins.explorer.new(explorertex, shader),
                                 .active = true,
                             });
 
@@ -231,7 +231,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = wins.web.new(webtex, shader),
+                                .contents = try wins.web.new(webtex, shader),
                                 .active = true,
                             });
 
@@ -251,7 +251,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = wins.settings.new(explorertex, shader),
+                                .contents = try wins.settings.new(explorertex, shader),
                                 .active = true,
                             });
 
@@ -277,14 +277,14 @@ pub const BarData = struct {
         return bnds.contains(pos) or added;
     }
 
-    pub fn getVerts(self: *BarData, _: vecs.Vector3) va.VertArray {
-        var result = va.VertArray.init();
+    pub fn getVerts(self: *BarData, _: vecs.Vector3) !va.VertArray {
+        var result = try va.VertArray.init();
         var pos = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
 
-        addUiQuad(&result, 0, pos, 2, 3, 3, 3, 3);
+        try addUiQuad(&result, 0, pos, 2, 3, 3, 3, 3);
 
         var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
-        addUiQuad(&result, 1, btn, 2, 6, 6, 6, 6);
+        try addUiQuad(&result, 1, btn, 2, 6, 6, 6, 6);
 
         var icon = btn;
 
@@ -293,12 +293,12 @@ pub const BarData = struct {
         icon.x += 3;
         icon.y += 3;
 
-        addQuad(&result, 3, icon, rect.newRect(0, 0, 1, 1));
+        try addQuad(&result, 3, icon, rect.newRect(0, 0, 1, 1));
 
         if (self.btnActive) {
             var menu = rect.newRect(0, self.screendims.y - 466 - self.height, 300, 466);
 
-            addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
+            try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
 
             for (range(10)) |_, i| {
                 var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
@@ -306,25 +306,25 @@ pub const BarData = struct {
 
                 switch (i) {
                     0 => {
-                        addQuad(&result, 5, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 5, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     1 => {
-                        addQuad(&result, 7, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 7, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     2 => {
-                        addQuad(&result, 8, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 8, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     3 => {
-                        addQuad(&result, 6, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 6, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     4 => {
-                        addQuad(&result, 9, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 9, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     5 => {
-                        addQuad(&result, 10, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 10, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     6 => {
-                        addQuad(&result, 11, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 11, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     else => {},
                 }
@@ -333,7 +333,7 @@ pub const BarData = struct {
 
         for (range(@intCast(usize, self.btns))) |_, i| {
             var b = rect.newRect(self.height * @intToFloat(f32, i * 4 + 3), self.screendims.y - self.height, 4 * self.height, self.height);
-            addUiQuad(&result, 1, b, 2, 6, 6, 6, 6);
+            try addUiQuad(&result, 1, b, 2, 6, 6, 6, 6);
         }
 
         return result;

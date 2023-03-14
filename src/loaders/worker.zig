@@ -19,7 +19,7 @@ pub fn WorkerQueueEntry(comptime T: type, comptime U: type) type {
         indata: T,
         out: U,
 
-        loader: *const fn (*Self) bool,
+        loader: *const fn (*Self) anyerror!bool,
     };
 }
 
@@ -40,7 +40,7 @@ pub const WorkerContext = struct {
 
         // run all the loader funcs
         while (ctx.queue.get()) |work_node| {
-            if (!work_node.data.loader(&work_node.data)) {
+            if (!try work_node.data.loader(&work_node.data)) {
                 return error.LoadError;
             }
             allocator.alloc.destroy(work_node);
@@ -54,7 +54,7 @@ pub const WorkerContext = struct {
         ctx.total = 0;
     }
 
-    pub fn enqueue(self: *WorkerContext, indata: anytype, outdata: anytype, loader: *const fn(*WorkerQueueEntry(@TypeOf(indata), @TypeOf(outdata))) bool) !void {
+    pub fn enqueue(self: *WorkerContext, indata: anytype, outdata: anytype, loader: *const fn (*WorkerQueueEntry(@TypeOf(indata), @TypeOf(outdata))) anyerror!bool) !void {
         const node = try allocator.alloc.create(WorkerQueueNode(@TypeOf(indata), @TypeOf(outdata)));
 
         node.* = .{

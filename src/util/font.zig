@@ -122,16 +122,16 @@ pub const Font = struct {
         return result;
     }
 
-    pub fn draw(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color) void {
-        self.drawScale(batch, shader, text, position, color, 1.0);
+    pub fn draw(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color) !void {
+        return self.drawScale(batch, shader, text, position, color, 1.0);
     }
 
-    pub fn drawScale(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, scale: f32) void {
+    pub fn drawScale(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, scale: f32) !void {
         var pos = position;
 
         var srect = rect.newRect(0, 0, 1, 1);
 
-        var vertarray = va.VertArray.init();
+        var vertarray = try va.VertArray.init();
 
         for (text) |ach| {
             var ch = ach;
@@ -146,13 +146,13 @@ pub const Font = struct {
             srect.w = char.tw;
             srect.h = char.th;
 
-            vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-            vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-            vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
+            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
+            try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
 
-            vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-            vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-            vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
+            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
+            try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
 
             pos.x += char.ax * scale;
             pos.y += char.ay * scale;
@@ -165,7 +165,7 @@ pub const Font = struct {
             .shader = shader.*,
         };
 
-        batch.addEntry(&entry);
+        try batch.addEntry(&entry);
     }
 
     pub fn sizeText(self: *Font, text: []const u8) vec.Vector2 {

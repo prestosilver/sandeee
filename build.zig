@@ -31,7 +31,7 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
                 mail.append(mail.parseTxt(f) catch |err| {
                     std.log.err("Failed to parse {s} {}", .{ file.path, err });
                     return "";
-                });
+                }) catch {};
                 count += 1;
             },
             else => {},
@@ -40,7 +40,7 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
 
     std.log.info("packed {} emails", .{count});
 
-    return mail.toStr().items;
+    return mail.toStr() catch "";
 }
 
 pub fn convertStep(b: *std.build.Builder, converter: anytype, input: []const u8, diskpath: []const u8, inext: []const u8, outext: []const u8, file: []const u8) ?*std.build.WriteFileStep {

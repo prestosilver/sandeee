@@ -9,5 +9,5 @@ uniform sampler2D tex;
 uniform sampler2D palette;
 
 void main() {
-  color = tintColor * texture(tex, texCoords).r;
+    color = tintColor * texture(tex, texCoords).r;
 }

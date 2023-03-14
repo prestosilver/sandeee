@@ -36,7 +36,7 @@ pub const EditorData = struct {
 
     clickPos: ?vecs.Vector2,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
         self.menuTop.data.size.x = bnds.w + 4;
         self.menuDiv.data.size.x = bnds.w + 4;
 
@@ -61,18 +61,18 @@ pub const EditorData = struct {
                         var size = font.sizeText(line.items);
                         self.cursor.x = cx;
 
-                        font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
+                        try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
                         self.cursorIdx = idx;
                     } else if (self.cursor.x <= 0 and self.cursor.y == cy) {
                         self.cursor.x = 0;
 
-                        font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64, y), col.newColor(0, 0, 0, 1));
+                        try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64, y), col.newColor(0, 0, 0, 1));
                         self.cursorIdx = idx - line.items.len;
                     }
-                    font.draw(batch, shader, line.items, vecs.newVec2(bnds.x + 70, y), col.newColor(0, 0, 0, 1));
-                    var linenr = std.fmt.allocPrint(allocator.alloc, "{}", .{nr}) catch "";
+                    try font.draw(batch, shader, line.items, vecs.newVec2(bnds.x + 70, y), col.newColor(0, 0, 0, 1));
+                    var linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
                     defer allocator.alloc.free(linenr);
-                    font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1));
+                    try font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1));
                     line.clearAndFree();
                     y += font.size;
                     self.maxy += font.size;
@@ -87,17 +87,17 @@ pub const EditorData = struct {
                     if (cx == self.cursor.x and cy == self.cursor.y) {
                         var size = font.sizeText(line.items);
 
-                        font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
+                        try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
                         self.cursorIdx = idx;
                     }
                     if (char < 32 or char == 255) {
                         if (char == '\n' or char == '\r') {
-                            line.append('\n') catch {};
+                            try line.append('\n');
                         } else {
-                            line.append('?') catch {};
+                            try line.append('?');
                         }
                     } else {
-                        line.append(char) catch {};
+                        try line.append(char);
                     }
 
                     cx += 1;
@@ -110,19 +110,19 @@ pub const EditorData = struct {
                 var size = font.sizeText(line.items);
                 self.cursor.x = cx;
 
-                font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
+                try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1));
                 self.cursorIdx = self.buffer.items.len;
             }
             if (self.cursor.x <= 0 and self.cursor.y == cy) {
                 self.cursor.x = 0;
 
-                font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64, y), col.newColor(0, 0, 0, 1));
+                try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64, y), col.newColor(0, 0, 0, 1));
                 self.cursorIdx = self.buffer.items.len - (line.items.len);
             }
-            font.draw(batch, shader, line.items, vecs.newVec2(bnds.x + 70, y), col.newColor(0, 0, 0, 1));
-            var linenr = std.fmt.allocPrint(allocator.alloc, "{}", .{nr}) catch "";
+            try font.draw(batch, shader, line.items, vecs.newVec2(bnds.x + 70, y), col.newColor(0, 0, 0, 1));
+            var linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
             defer allocator.alloc.free(linenr);
-            font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1));
+            try font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1));
 
             if (self.buffer.items.len == 0) {
                 self.cursorIdx = 0;
@@ -134,13 +134,13 @@ pub const EditorData = struct {
         }
 
         // draw toolbar
-        batch.draw(sp.Sprite, &self.menuTop, self.shader, vecs.newVec3(bnds.x - 2, bnds.y - 2, 0));
-        batch.draw(sp.Sprite, &self.menuDiv, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 34, 0));
-        batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 36, 0));
-        batch.draw(sp.Sprite, &self.numDiv, self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 36, 0));
+        try batch.draw(sp.Sprite, &self.menuTop, self.shader, vecs.newVec3(bnds.x - 2, bnds.y - 2, 0));
+        try batch.draw(sp.Sprite, &self.menuDiv, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 34, 0));
+        try batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 36, 0));
+        try batch.draw(sp.Sprite, &self.numDiv, self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 36, 0));
 
-        batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 34, bnds.y, 0));
-        batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 34, bnds.y, 0));
+        try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
         // draw scrollbar
         if (self.maxy != 0) {
@@ -148,10 +148,10 @@ pub const EditorData = struct {
 
             self.scroll[1].data.size.y = bnds.h - 20 - 36;
 
-            batch.draw(sp.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
-            batch.draw(sp.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
-            batch.draw(sp.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-            batch.draw(sp.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 84) * scrollPc + bnds.y + 46, 0));
+            try batch.draw(sp.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
+            try batch.draw(sp.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
+            try batch.draw(sp.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+            try batch.draw(sp.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 84) * scrollPc + bnds.y + 46, 0));
         }
     }
 
@@ -166,7 +166,7 @@ pub const EditorData = struct {
                 if (save.contains(mousepos)) {
                     if (self.file != null) {
                         allocator.alloc.free(self.file.?.contents);
-                        var buff = allocator.alloc.alloc(u8, self.buffer.items.len) catch return;
+                        var buff = try allocator.alloc.alloc(u8, self.buffer.items.len);
                         std.mem.copy(u8, buff, self.buffer.items);
                         self.file.?.contents = buff;
                         std.log.info("saved", .{});
@@ -186,60 +186,60 @@ pub const EditorData = struct {
     pub fn focus(self: *Self) !void {
         if (!self.modified and self.file != null) {
             self.buffer.clearAndFree();
-            try self.buffer.appendSlice(self.file.?.read());
+            try self.buffer.appendSlice(try self.file.?.read());
 
             return;
         }
     }
 
-    pub fn deinit(self: *Self) void {
+    pub fn deinit(self: *Self) !void {
         self.buffer.deinit();
         allocator.alloc.destroy(self);
     }
 
-    pub fn key(self: *Self, keycode: i32, mods: i32) void {
+    pub fn key(self: *Self, keycode: i32, mods: i32) !void {
         switch (keycode) {
             cc.GLFW_KEY_A...cc.GLFW_KEY_Z => {
                 if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
-                    self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_A) + 'A') catch {};
+                    try self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_A) + 'A');
                 } else {
-                    self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_A) + 'a') catch {};
+                    try self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_A) + 'a');
                 }
                 self.cursor.x += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_0...cc.GLFW_KEY_9 => {
                 if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
-                    self.buffer.insert(self.cursorIdx, ")!@#$%^&*("[@intCast(u8, keycode - cc.GLFW_KEY_0)]) catch {};
+                    try self.buffer.insert(self.cursorIdx, ")!@#$%^&*("[@intCast(u8, keycode - cc.GLFW_KEY_0)]);
                 } else {
-                    self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_0) + '0') catch {};
+                    try self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_0) + '0');
                 }
                 self.cursor.x += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_ENTER => {
-                self.buffer.insert(self.cursorIdx, '\n') catch {};
+                try self.buffer.insert(self.cursorIdx, '\n');
                 self.cursor.x = 0;
                 self.cursor.y += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_COMMA => {
-                self.buffer.insert(self.cursorIdx, ',') catch {};
+                try self.buffer.insert(self.cursorIdx, ',');
                 self.cursor.x += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_PERIOD => {
-                self.buffer.insert(self.cursorIdx, '.') catch {};
+                try self.buffer.insert(self.cursorIdx, '.');
                 self.cursor.x += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_MINUS => {
-                self.buffer.insert(self.cursorIdx, '-') catch {};
+                try self.buffer.insert(self.cursorIdx, '-');
                 self.cursor.x += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_SPACE => {
-                self.buffer.insert(self.cursorIdx, ' ') catch {};
+                try self.buffer.insert(self.cursorIdx, ' ');
                 self.cursor.x += 1;
                 self.modified = true;
             },
@@ -286,8 +286,8 @@ pub const EditorData = struct {
     }
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) win.WindowContents {
-    const self = allocator.alloc.create(EditorData) catch undefined;
+pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+    const self = try allocator.alloc.create(EditorData);
 
     self.menuTop = sp.Sprite.new(texture, sp.SpriteData.new(
         rect.newRect(19.0 / 32.0, 0.0 / 32.0, 13.0 / 32.0, 2.0 / 32.0),

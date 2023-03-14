@@ -19,7 +19,7 @@ pub const FileStream = struct {
         if (path[0] == '/') {
             folder = files.root;
         }
-        var file = folder.getFile(path);
+        var file = try folder.getFile(path);
 
         if (file == null) {
             allocator.alloc.destroy(result);
@@ -28,7 +28,7 @@ pub const FileStream = struct {
         }
 
         result.path = try allocator.alloc.alloc(u8, file.?.name.len);
-        var cont = file.?.read();
+        var cont = try file.?.read();
         result.contents = try allocator.alloc.alloc(u8, cont.len);
 
         std.mem.copy(u8, result.contents, cont);

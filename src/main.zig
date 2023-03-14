@@ -6,6 +6,7 @@ const diskState = @import("states/disks.zig");
 const loadingState = @import("states/loading.zig");
 const windowedState = @import("states/windowed.zig");
 const crashState = @import("states/crash.zig");
+const installState = @import("states/installer.zig");
 
 const fm = @import("util/files.zig");
 const font = @import("util/font.zig");
@@ -32,6 +33,7 @@ const sprite = @import("drawers/sprite2d.zig");
 const bar = @import("drawers/bar2d.zig");
 
 const conf = @import("system/config.zig");
+const files = @import("system/files.zig");
 
 const c = @import("c.zig");
 
@@ -57,9 +59,8 @@ const font_shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fontVertShader, .kind = c.GL_VERTEX_SHADER },
 };
 
-const STATES = 4;
-var gameStates: [STATES]states.GameState = undefined;
-var currentState: u8 = 0;
+var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
+var currentState: systemEvs.State = .Disks;
 
 // create loader
 var loader_queue: std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)) = undefined;
@@ -92,6 +93,9 @@ var ctx: gfx.Context = undefined;
 var sb: batch.SpriteBatch = undefined;
 var audioman: audio.Audio = undefined;
 
+var errorMsg: []const u8 = "Error: Unknown";
+var errorState: u8 = 0;
+
 pub fn blit() !void {
     // actual gl calls start here
     ctx.makeCurrent();
@@ -113,36 +117,42 @@ pub fn blit() !void {
 }
 
 pub fn changeState(event: systemEvs.EventStateChange) bool {
+    std.log.debug("ChangeState: {}", .{event.targetState});
+
     currentState = event.targetState;
 
-    return false;
+    // disable events on loading screen
+    inputEvs.setup(ctx.window, currentState != .Loading);
+
+    // run setup
+    gameStates.getPtr(currentState).setup() catch |msg| {
+        @panic(@errorName(msg));
+    };
+
+    return true;
 }
 
 pub fn keyDown(event: inputEvs.EventKeyDown) bool {
-    if (event.key == c.GLFW_KEY_F1) {
-        @panic("JorjeOp");
-    }
-
-    return gameStates[currentState].keypress(event.key, event.mods) catch false;
+    return gameStates.getPtr(currentState).keypress(event.key, event.mods) catch false;
 }
 
 pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
-    gameStates[currentState].mousepress(event.btn) catch return false;
+    gameStates.getPtr(currentState).mousepress(event.btn) catch return false;
     return false;
 }
 
 pub fn mouseUp(_: inputEvs.EventMouseUp) bool {
-    gameStates[currentState].mouserelease() catch return false;
+    gameStates.getPtr(currentState).mouserelease() catch return false;
     return false;
 }
 
 pub fn mouseMove(event: inputEvs.EventMouseMove) bool {
-    gameStates[currentState].mousemove(vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y))) catch return false;
+    gameStates.getPtr(currentState).mousemove(vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y))) catch return false;
     return false;
 }
 
 pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
-    gameStates[currentState].mousescroll(vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y))) catch return false;
+    gameStates.getPtr(currentState).mousescroll(vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y))) catch return false;
     return false;
 }
 
@@ -160,7 +170,7 @@ pub fn setupEvents() !void {
 }
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {
-    while (self.done == false) {
+    while (!self.done) {
         // render loading screen
         self.draw(size) catch {};
 
@@ -180,21 +190,27 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
     return false;
 }
 
-pub fn panic(msg: []const u8, st: ?*std.builtin.StackTrace, addr: ?usize) noreturn {
-    currentState = 3;
-    std.log.err("crash: {s}, {?}, {?any}", .{ msg, addr, st });
+pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    errorMsg = msg;
+    errorState = @enumToInt(currentState);
+
+    gameStates.getPtr(currentState).deinit() catch {};
+
+    currentState = .Crash;
+
+    // disable events on loading screen
+    inputEvs.setup(ctx.window, currentState != .Loading);
+
+    // run setuip
+    gameStates.getPtr(currentState).setup() catch {};
+
     while (gfx.poll(&ctx)) {
-        var state = currentState;
+        var state = gameStates.getPtr(currentState);
 
-        if (!gameStates[state].isSetup) {
-            inputEvs.setup(ctx.window, state != 1);
-            gameStates[state].setup() catch {};
-        }
+        state.update(1.0 / 60.0) catch break;
+        state.draw(size) catch break;
 
-        gameStates[state].update(1.0 / 60.0) catch {};
-        gameStates[state].draw(size) catch {};
-
-        blit() catch {};
+        blit() catch break;
     }
     std.os.exit(0);
 }
@@ -202,7 +218,7 @@ pub fn panic(msg: []const u8, st: ?*std.builtin.StackTrace, addr: ?usize) noretu
 pub fn main() anyerror!void {
     defer if (!builtin.link_libc or !allocator.useclib) {
         std.debug.assert(!allocator.gpa.deinit());
-        std.log.info("no leaks! :)", .{});
+        std.log.debug("no leaks! :)", .{});
     };
 
     // init graphics
@@ -211,6 +227,8 @@ pub fn main() anyerror!void {
     size = ctx.size;
 
     var bigfontpath = fm.getContentPath("content/bios.ttf");
+    defer bigfontpath.deinit();
+
     var biosFace: font.Font = undefined;
     var mainFace: font.Font = undefined;
 
@@ -223,12 +241,10 @@ pub fn main() anyerror!void {
     // fonts
     try loader.enqueue(&bigfontpath.items, &biosFace, worker.font.loadFont);
 
-    audioman = try audio.Audio.init();
-
     // load bios
     var prog: f32 = 0;
     loader.run(&prog) catch {
-        @panic("BIOS Load Failed");
+        @panic("Preload Failed");
     };
 
     sb = try batch.newSpritebatch(&size);
@@ -305,6 +321,7 @@ pub fn main() anyerror!void {
         .emailtex = &emailtex,
         .editortex = &editortex,
         .explorertex = &explorertex,
+        .settingsManager = &settingManager,
         .bar_logo_sprite = .{
             .texture = &barlogotex,
             .data = sprite.SpriteData.new(
@@ -326,12 +343,31 @@ pub fn main() anyerror!void {
     // crashed state
     var gsCrash = crashState.GSCrash{
         .shader = &shader,
+        .font_shader = &font_shader,
+        .face = &biosFace,
         .sb = &sb,
+        .message = &errorMsg,
+        .prevState = &errorState,
         .sad_sprite = .{
             .texture = &sadTex,
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(150, 150),
+            ),
+        },
+    };
+
+    // crashed state
+    var gsInstall = installState.GSInstall{
+        .shader = &shader,
+        .sb = &sb,
+        .font_shader = &font_shader,
+        .face = &biosFace,
+        .load_sprite = .{
+            .texture = &loadTex,
+            .data = sprite.SpriteData.new(
+                rect.newRect(0, 0, 1, 1),
+                vecs.newVec2(20, 32),
             ),
         },
     };
@@ -343,31 +379,46 @@ pub fn main() anyerror!void {
     try setupEvents();
 
     // setup game states
-    gameStates[0] = states.GameState.init(&gsDisks);
-    gameStates[1] = states.GameState.init(&gsLoading);
-    gameStates[2] = states.GameState.init(&gsWindowed);
-    gameStates[3] = states.GameState.init(&gsCrash);
+    gameStates.set(.Disks, states.GameState.init(&gsDisks));
+    gameStates.set(.Loading, states.GameState.init(&gsLoading));
+    gameStates.set(.Windowed, states.GameState.init(&gsWindowed));
+    gameStates.set(.Crash, states.GameState.init(&gsCrash));
+    gameStates.set(.Installer, states.GameState.init(&gsInstall));
+
+    // run setup
+    try gameStates.getPtr(.Disks).setup();
+    inputEvs.setup(ctx.window, true);
 
     // main loop
     while (gfx.poll(&ctx)) {
-        var state = currentState;
-
-        // setup the current state if not already
-        if (!gameStates[state].isSetup) {
-            // disable events on loading screen
-            inputEvs.setup(ctx.window, state != 1);
-
-            // run setup
-            try gameStates[state].setup();
+        switch (currentState) {
+            .Windowed => ctx.cursorMode(c.GLFW_CURSOR_NORMAL),
+            else => ctx.cursorMode(c.GLFW_CURSOR_HIDDEN),
         }
 
+        var state = gameStates.getPtr(currentState);
+
         // TODO: actual time?
-        try gameStates[state].update(1.0 / 60.0);
+        try state.update(1.0 / 60.0);
 
         // get tris
-        try gameStates[state].draw(size);
+        try state.draw(size);
 
         // render
         try blit();
+
+        if (state != gameStates.getPtr(currentState)) {
+            try state.deinit();
+        }
     }
+
+    try gameStates.getPtr(currentState).deinit();
+
+    if (disk) |toFree| {
+        allocator.alloc.free(toFree);
+    }
+
+    gfx.close(ctx);
+    events.deinit();
+    sb.deinit();
 }

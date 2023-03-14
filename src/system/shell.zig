@@ -106,7 +106,7 @@ pub const Shell = struct {
                 .w = 1.0,
                 .h = 1.0,
             },
-            .contents = wins.cmd.new(),
+            .contents = try wins.cmd.new(),
             .active = true,
         });
 
@@ -133,7 +133,7 @@ pub const Shell = struct {
                 .w = 1.0,
                 .h = 1.0,
             },
-            .contents = wins.editor.new(edittex, shader),
+            .contents = try wins.editor.new(edittex, shader),
             .active = true,
         });
 
@@ -141,10 +141,10 @@ pub const Shell = struct {
             const alignment = @typeInfo(*wins.editor.EditorData).Pointer.alignment;
             var edself = @ptrCast(*wins.editor.EditorData, @alignCast(alignment, window.data.contents.ptr));
 
-            edself.file = self.root.getFile(param[5..]);
+            edself.file = try self.root.getFile(param[5..]);
             edself.buffer.clearAndFree();
             if (edself.file == null) return result;
-            try edself.buffer.appendSlice(edself.file.?.read());
+            try edself.buffer.appendSlice(try edself.file.?.read());
         }
         events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
@@ -169,7 +169,7 @@ pub const Shell = struct {
                 .w = 1.0,
                 .h = 1.0,
             },
-            .contents = wins.web.new(webtex, shader),
+            .contents = try wins.web.new(webtex, shader),
             .active = true,
         });
 
@@ -177,7 +177,7 @@ pub const Shell = struct {
             const alignment = @typeInfo(*wins.web.WebData).Pointer.alignment;
             var webself = @ptrCast(*wins.web.WebData, @alignCast(alignment, window.data.contents.ptr));
 
-            webself.file = self.root.getFile(param[4..]);
+            webself.file = try self.root.getFile(param[4..]);
         }
         events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
@@ -200,11 +200,11 @@ pub const Shell = struct {
                 var line = std.ArrayList(u8).init(allocator.alloc);
                 defer line.deinit();
 
-                if (item.read().len > 3 and check(item.read()[0..4], ASM_HEADER)) {
+                if ((try item.read()).len > 3 and check((try item.read())[0..4], ASM_HEADER)) {
                     return try self.runAsm(folder, cmd, param);
                 }
 
-                for (item.read()) |char| {
+                for (try item.read()) |char| {
                     if (char == '\n') {
                         var res = try self.runLine(line.items);
                         defer res.data.deinit();
@@ -227,11 +227,13 @@ pub const Shell = struct {
                 var line = std.ArrayList(u8).init(allocator.alloc);
                 defer line.deinit();
 
-                if (item.read().len > 3 and check(item.read()[0..4], ASM_HEADER)) {
+                var cont = try item.read();
+
+                if (cont.len > 3 and check(cont[0..4], ASM_HEADER)) {
                     return try self.runAsm(folder, cmdeep, param);
                 }
 
-                for (item.read()) |char| {
+                for (cont) |char| {
                     if (char == '\n') {
                         var res = try self.runLine(line.items);
                         defer res.data.deinit();
@@ -258,7 +260,7 @@ pub const Shell = struct {
     pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) !Result {
         return self.runFileInFolder(files.exec, cmd, param) catch
             self.runFileInFolder(self.root, cmd, param) catch {
-            if (self.root.getFile(cmd) != null) {
+            if (try self.root.getFile(cmd) != null) {
                 var opens = try opener.openFile(cmd);
                 var params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ opens, param });
                 defer allocator.alloc.free(params);
@@ -337,8 +339,8 @@ pub const Shell = struct {
             var item = &folder.contents.items[idx];
 
             if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
-                var cont = item.read();
-                if (cont.len < 4 or !check(item.read()[0..4], ASM_HEADER)) {
+                var cont = try item.read();
+                if (cont.len < 4 or !check(cont[0..4], ASM_HEADER)) {
                     result.data.deinit();
 
                     return error.BadASMFile;
@@ -347,12 +349,12 @@ pub const Shell = struct {
                 self.vm = try vm.VM.init(allocator.alloc, self.root, params);
                 vms += 1;
 
-                var ops = item.read()[4..];
+                var ops = cont[4..];
 
                 self.vm.?.loadString(ops) catch |err| {
                     result.data.deinit();
 
-                    self.vm.?.destroy();
+                    try self.vm.?.deinit();
                     self.vm = null;
                     vms -= 1;
 
@@ -386,7 +388,7 @@ pub const Shell = struct {
 
             try result.data.appendSlice(msgString);
 
-            self.vm.?.destroy();
+            try self.vm.?.deinit();
             self.vm = null;
             vms -= 1;
 
@@ -398,7 +400,7 @@ pub const Shell = struct {
 
             try result.data.appendSlice(self.vm.?.out.items);
 
-            self.vm.?.destroy();
+            try self.vm.?.deinit();
             self.vm = null;
             vms -= 1;
 

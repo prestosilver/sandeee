@@ -33,9 +33,9 @@ pub const Vert = struct {
 pub const VertArray = struct {
     data: []Vert,
 
-    pub fn init() VertArray {
+    pub fn init() !VertArray {
         var result = VertArray{
-            .data = allocator.alloc.alloc(Vert, 0) catch undefined,
+            .data = try allocator.alloc.alloc(Vert, 0),
         };
         return result;
     }
@@ -44,8 +44,8 @@ pub const VertArray = struct {
         allocator.alloc.free(va.data);
     }
 
-    pub fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) void {
-        va.data = allocator.alloc.realloc(va.data, va.data.len + 1) catch va.data;
+    pub fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {
+        va.data = try allocator.alloc.realloc(va.data, va.data.len + 1);
 
         va.data[va.data.len - 1] = Vert{
             .x = pos.x,

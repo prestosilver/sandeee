@@ -56,14 +56,14 @@ const SettingsData = struct {
         key: []const u8,
     };
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
         if (self.focusedPane) |focused| {
             var settings = std.ArrayList(Setting).init(allocator.alloc);
             defer settings.deinit();
 
             switch (focused) {
                 0 => {
-                    settings.appendSlice(&[_]Setting{
+                    try settings.appendSlice(&[_]Setting{
                         Setting{
                             .kind = .String,
                             .setting = "Wallpaper Color",
@@ -80,7 +80,7 @@ const SettingsData = struct {
                             .setting = "Wallpaper Path",
                             .key = "wallpaper_path",
                         },
-                    }) catch {};
+                    });
                 },
                 else => {},
             }
@@ -89,14 +89,14 @@ const SettingsData = struct {
 
             for (settings.items) |item| {
                 // draw name
-                font.draw(batch, font_shader, item.setting, vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
+                try font.draw(batch, font_shader, item.setting, vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
 
                 // draw value
                 var value = settingManager.get(item.key);
                 if (value) |val| {
-                    font.draw(batch, font_shader, val, vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
+                    try font.draw(batch, font_shader, val, vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
                 } else {
-                    font.draw(batch, font_shader, "UNDEFINED", vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(1, 0, 0, 1));
+                    try font.draw(batch, font_shader, "UNDEFINED", vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(1, 0, 0, 1));
                 }
 
                 pos.y += font.size;
@@ -104,9 +104,9 @@ const SettingsData = struct {
 
             self.scroll[1].data.size.y = bnds.h - 20;
 
-            batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
-            batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
-            batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+            try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
+            try batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
+            try batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
 
             return;
         }
@@ -121,9 +121,9 @@ const SettingsData = struct {
 
         self.scroll[1].data.size.y = bnds.h - 20;
 
-        batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
-        batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
-        batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
+        try batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
 
         var x: f32 = 0;
         var y: f32 = 0;
@@ -132,12 +132,12 @@ const SettingsData = struct {
             var size = font.sizeText(panel.name);
             var xo = (128 - size.x) / 2;
 
-            font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
+            try font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
 
-            batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+            try batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
             if (idx + 1 == self.selection)
-                batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
+                try batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
 
             if (self.lastAction != null) {
                 if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
@@ -191,8 +191,8 @@ const SettingsData = struct {
     }
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) win.WindowContents {
-    var self = allocator.alloc.create(SettingsData) catch undefined;
+pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+    var self = try allocator.alloc.create(SettingsData);
 
     for (self.icons) |_, idx| {
         var i = @intToFloat(f32, idx);

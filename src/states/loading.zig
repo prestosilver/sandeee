@@ -57,7 +57,7 @@ pub const GSLoading = struct {
     load_sprite: sp.Sprite,
     shader: *shd.Shader,
     settingManager: *conf.SettingManager,
-    disk: *const ?[]const u8,
+    disk: *?[]u8,
     audio_man: *audio.Audio,
 
     ctx: *gfx.Context,
@@ -69,6 +69,7 @@ pub const GSLoading = struct {
     }
 
     pub fn setup(self: *Self) !void {
+        self.done = false;
         var fontpath = fm.getContentPath("content/font.ttf");
         defer fontpath.deinit();
 
@@ -105,13 +106,10 @@ pub const GSLoading = struct {
         try self.loader.enqueue(&delay, &zero, worker.delay.loadDelay);
 
         _ = try std.Thread.spawn(.{ .stack_size = 128 }, Self.loadThread, .{self});
-        self.loader.run(&self.load_progress) catch {
-            @panic("Load Failed");
+        self.loader.run(&self.load_progress) catch |msg| {
+            //"BootEEE failed, Problaby missing file" ++
+            @panic(@errorName(msg));
         };
-        // setup the bar
-        self.ctx.makeCurrent();
-
-        self.ctx.makeNotCurrent();
 
         // setup some pointers
         pseudo.snd.audioPtr = self.audio_man;
@@ -125,18 +123,19 @@ pub const GSLoading = struct {
         shell.edittex = self.editortex;
         shell.shader = self.shader;
 
+        self.audio_man.* = try audio.Audio.init();
+
         // play login sound
         try self.audio_man.playSound(self.login_snd);
 
-        // set wallpaper color
-        self.ctx.color = cols.newColorRGBA(0, 128, 128, 255);
+        events.em.sendEvent(systemEvs.EventStateChange{
+            .targetState = .Windowed,
+        });
 
         self.done = true;
-
-        events.em.sendEvent(systemEvs.EventStateChange{
-            .targetState = 2,
-        });
     }
+
+    pub fn deinit(_: *Self) !void {}
 
     pub fn update(_: *Self, _: f32) !void {}
 
@@ -144,12 +143,12 @@ pub const GSLoading = struct {
         var logoOff = vecs.div(vecs.sub(size, self.logo_sprite.data.size), 2);
 
         // draw the logo
-        self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
+        try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
 
         // progress bar
         self.load_sprite.data.size.x = (self.load_progress * 320 + self.load_sprite.data.size.x) / 2;
 
-        self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
+        try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
     }
 
     pub fn keypress(_: *Self, _: c_int, _: c_int) !bool {

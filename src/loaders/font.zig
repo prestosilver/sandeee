@@ -7,7 +7,7 @@ const gfx = @import("../graphics.zig");
 
 var lol: bool = true;
 
-pub fn loadFont(self: *worker.WorkerQueueEntry(*[]u8, *font.Font)) bool {
+pub fn loadFont(self: *worker.WorkerQueueEntry(*[]u8, *font.Font)) !bool {
     gfx.gContext.makeCurrent();
 
     std.log.debug("load font: {s}", .{self.indata.*});
@@ -15,9 +15,7 @@ pub fn loadFont(self: *worker.WorkerQueueEntry(*[]u8, *font.Font)) bool {
     if (lol) size = 32;
     lol = false;
 
-    self.out.* = font.Font.init(self.indata.*, size) catch {
-        return false;
-    };
+    self.out.* = try font.Font.init(self.indata.*, size);
 
     gfx.gContext.makeNotCurrent();
 

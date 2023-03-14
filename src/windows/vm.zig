@@ -19,7 +19,7 @@ pub const VMData = struct {
         s: spr.Sprite,
     };
 
-    pub fn addRect(self: *VMData, texture: *tex.Texture, src: rect.Rectangle, dst: rect.Rectangle) void {
+    pub fn addRect(self: *VMData, texture: *tex.Texture, src: rect.Rectangle, dst: rect.Rectangle) !void {
         var appends: VMDataEntry = .{
             .loc = vecs.newVec3(dst.x, dst.y, 0),
             .s = spr.Sprite{
@@ -28,8 +28,8 @@ pub const VMData = struct {
             },
         };
 
-        if (self.back) self.rects[0].append(appends) catch {};
-        if (!self.back) self.rects[1].append(appends) catch {};
+        if (self.back) try self.rects[0].append(appends);
+        if (!self.back) try self.rects[1].append(appends);
     }
 
     pub fn flip(self: *VMData) void {
@@ -47,12 +47,12 @@ pub const VMData = struct {
     idx: u16,
     shd: *shd.Shader,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, _: *shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font) void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, _: *shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font) !void {
         var rects = self.rects[0];
         if (self.back) rects = self.rects[1];
 
         for (rects.items) |_, idx| {
-            batch.draw(spr.Sprite, &rects.items[idx].s, self.shd, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
+            try batch.draw(spr.Sprite, &rects.items[idx].s, self.shd, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
         }
     }
 
@@ -70,8 +70,8 @@ pub const VMData = struct {
     }
 };
 
-pub fn new(idx: u16, shader: *shd.Shader) win.WindowContents {
-    var self = allocator.alloc.create(VMData) catch undefined;
+pub fn new(idx: u16, shader: *shd.Shader) !win.WindowContents {
+    var self = try allocator.alloc.create(VMData);
 
     self.idx = idx;
     self.shd = shader;

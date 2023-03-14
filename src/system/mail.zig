@@ -17,27 +17,43 @@ pub fn checkLine(line: []const u8, start: []const u8) bool {
     return true;
 }
 
-pub fn append(e: Email) void {
-    emails.append(e) catch {};
+pub fn append(e: Email) !void {
+    try emails.append(e);
 }
 
-pub fn toStr() std.ArrayList(u8) {
-    var result = std.ArrayList(u8).init(allocator.alloc);
+pub fn toStr() ![]u8 {
+    var result = try allocator.alloc.alloc(u8, 4);
 
-    var len = @bitCast([4]u8, @intCast(u32, emails.items.len));
-    result.appendSlice(&len) catch {};
+    var len = std.mem.toBytes(emails.items.len)[0..4];
+    std.mem.copy(u8, result, len);
     for (emails.items) |email| {
-        result.append(email.id) catch {};
-        result.append(email.box) catch {};
-        len = @bitCast([4]u8, @intCast(u32, email.from.len));
-        result.appendSlice(&len) catch {};
-        result.appendSlice(email.from) catch {};
-        len = @bitCast([4]u8, @intCast(u32, email.subject.len));
-        result.appendSlice(&len) catch {};
-        result.appendSlice(email.subject) catch {};
-        len = @bitCast([4]u8, @intCast(u32, email.contents.len));
-        result.appendSlice(&len) catch {};
-        result.appendSlice(email.contents) catch {};
+        var start = result.len;
+
+        var idStr = std.mem.toBytes(email.id);
+        var boxStr = std.mem.toBytes(email.box);
+        var fromLen = std.mem.toBytes(email.from.len)[0..4];
+        var subjectLen = std.mem.toBytes(email.subject.len)[0..4];
+        var contentLen = std.mem.toBytes(email.contents.len)[0..4];
+
+        var appends = try std.fmt.allocPrint(
+            allocator.alloc,
+            "{s}{s}{s}{s}{s}{s}{s}{s}",
+            .{
+                idStr,
+                boxStr,
+                fromLen,
+                email.from,
+                subjectLen,
+                email.subject,
+                contentLen,
+                email.contents,
+            },
+        );
+        defer allocator.alloc.free(appends);
+
+        result = try allocator.alloc.realloc(result, start + appends.len);
+
+        std.mem.copy(u8, result[start..], appends);
     }
     return result;
 }
@@ -69,8 +85,8 @@ pub fn parseTxt(file: std.fs.File) !Email {
             std.mem.copy(u8, sub, line[5..]);
             result.subject = sub;
         } else {
-            contents.appendSlice(line) catch {};
-            contents.appendSlice("\n") catch {};
+            try contents.appendSlice(line);
+            try contents.appendSlice("\n");
         }
     }
 
@@ -102,37 +118,37 @@ pub fn load() !void {
 
     var file = try d.openFile("content/emails.eme", .{});
 
-    var lenbuffer: []u8 = allocator.alloc.alloc(u8, 4) catch undefined;
-    var bytebuffer: []u8 = allocator.alloc.alloc(u8, 1) catch undefined;
+    var lenbuffer: []u8 = try allocator.alloc.alloc(u8, 4);
+    var bytebuffer: []u8 = try allocator.alloc.alloc(u8, 1);
     defer allocator.alloc.free(bytebuffer);
 
     defer allocator.alloc.free(lenbuffer);
-    _ = file.read(lenbuffer) catch 0;
+    _ = try file.read(lenbuffer);
     var count = @bitCast(u32, lenbuffer[0..4].*);
     try emails.resize(count);
 
     for (range(count)) |_, idx| {
-        _ = file.read(bytebuffer) catch 0;
+        _ = try file.read(bytebuffer);
         emails.items[idx].id = bytebuffer[0];
-        _ = file.read(bytebuffer) catch 0;
+        _ = try file.read(bytebuffer);
         emails.items[idx].box = bytebuffer[0];
 
-        _ = file.read(lenbuffer) catch 0;
+        _ = try file.read(lenbuffer);
         var fromsize = @bitCast(u32, lenbuffer[0..4].*);
-        var frombuffer: []u8 = allocator.alloc.alloc(u8, fromsize) catch undefined;
-        _ = file.read(frombuffer) catch 0;
+        var frombuffer: []u8 = try allocator.alloc.alloc(u8, fromsize);
+        _ = try file.read(frombuffer);
         emails.items[idx].from = frombuffer;
 
-        _ = file.read(lenbuffer) catch 0;
+        _ = try file.read(lenbuffer);
         var subsize = @bitCast(u32, lenbuffer[0..4].*);
-        var subbuffer: []u8 = allocator.alloc.alloc(u8, subsize) catch undefined;
-        _ = file.read(subbuffer) catch 0;
+        var subbuffer: []u8 = try allocator.alloc.alloc(u8, subsize);
+        _ = try file.read(subbuffer);
         emails.items[idx].subject = subbuffer;
 
-        _ = file.read(lenbuffer) catch 0;
+        _ = try file.read(lenbuffer);
         var contentsize = @bitCast(u32, lenbuffer[0..4].*);
-        var contentbuffer: []u8 = allocator.alloc.alloc(u8, contentsize) catch undefined;
-        _ = file.read(contentbuffer) catch 0;
+        var contentbuffer: []u8 = try allocator.alloc.alloc(u8, contentsize);
+        _ = try file.read(contentbuffer);
         emails.items[idx].contents = contentbuffer;
     }
 }

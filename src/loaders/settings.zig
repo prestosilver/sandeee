@@ -8,15 +8,15 @@ const gfx = @import("../graphics.zig");
 const conf = @import("../system/config.zig");
 const files = @import("../system/files.zig");
 
-pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.SettingManager)) bool {
+pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.SettingManager)) !bool {
     std.log.debug("load settings", .{});
 
     self.out.init();
 
-    var ofile = files.root.getFile(self.indata.*);
+    var ofile = try files.root.getFile(self.indata.*);
 
     if (ofile) |file| {
-        var cont = file.read();
+        var cont = try file.read();
         var iter = std.mem.split(u8, cont, "\n");
 
         while (iter.next()) |line| {
@@ -30,7 +30,7 @@ pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.Sett
             var tvalue = std.mem.trim(u8, value, " ");
 
             if (tvalue.len > 1 and tvalue[0] == '"' and tvalue[tvalue.len - 1] == '"') {
-                self.out.set(tkey, tvalue[1..tvalue.len - 1]) catch return false;
+                try self.out.set(tkey, tvalue[1 .. tvalue.len - 1]);
             }
         }
     } else {
