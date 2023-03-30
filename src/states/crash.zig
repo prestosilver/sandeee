@@ -30,6 +30,8 @@ pub const GSCrash = struct {
     pub fn deinit(_: *Self) !void {}
 
     pub fn draw(self: *Self, _: vecs.Vector2) !void {
+        self.sb.scissor = null;
+
         try self.sb.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
 
         try self.face.drawScale(self.sb, self.font_shader, "ERROR:", vecs.newVec2(300, 100), cols.newColor(1, 1, 1, 1), 1);
