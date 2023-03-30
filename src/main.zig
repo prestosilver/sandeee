@@ -223,6 +223,20 @@ pub fn main() anyerror!void {
         std.log.debug("no leaks! :)", .{});
     };
 
+    var args = std.process.ArgIterator.initWithAllocator(allocator.alloc) catch {};
+    _ = args.next().?;
+
+    while (args.next()) |arg| {
+        if (std.mem.eql(u8, arg, "--cwd")) {
+            var path = args.next().?;
+            std.log.debug("chdir: {s}", .{path});
+
+            try std.process.changeCurDir(path);
+        }
+    }
+
+    args.deinit();
+
     // init graphics
     ctx = try gfx.init("Sandeee");
     gfx.gContext = &ctx;

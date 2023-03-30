@@ -40,7 +40,7 @@ pub const Font = struct {
         size: vec.Vector2,
     };
 
-    pub fn init(file: []const u8, size: u32) !Font {
+    pub fn init(file: [*c]const u8, size: u32) !Font {
         var face: ft.c.FT_Face = undefined;
 
         var err = ft.c.FT_Init_FreeType(&lib);
