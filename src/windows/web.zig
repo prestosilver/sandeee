@@ -213,6 +213,7 @@ pub const WebData = struct {
     pub fn focus(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
+        self.links.deinit();
         allocator.alloc.destroy(self);
     }
 };
