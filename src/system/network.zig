@@ -8,6 +8,28 @@ const ServeFileError = error{
 };
 
 pub var server: Server = undefined;
+const PORT = 33333;
+
+pub const Client = struct {
+    port: u8,
+    host: []const u8,
+
+    pub fn send(self: *Client, data: []const u8) ![]const u8 {
+        var stream = try std.net.tcpConnectToHost(allocator.alloc, self.host, PORT);
+        var toWrite = try std.fmt.allocPrint(allocator.alloc, "{s}{s}{s}", .{ @ptrCast(*const [1]u8, &self.port), @ptrCast(*const [1]u8, &data.len), data });
+
+        _ = try stream.write(toWrite);
+
+        var recv_buf = try allocator.alloc.alloc(u8, 100);
+        var len = try stream.readAll(recv_buf);
+        recv_buf.len = len;
+        std.log.info("recived: '{s}'", .{recv_buf});
+
+        allocator.alloc.free(toWrite);
+
+        return recv_buf;
+    }
+};
 
 pub const Server = struct {
     const BUFSIZ = 512;
@@ -18,7 +40,7 @@ pub const Server = struct {
     pub fn init() !Server {
         var listener = std.net.StreamServer.init(.{});
 
-        const self_addr = try std.net.Address.resolveIp("127.0.0.1", 33333);
+        const self_addr = std.net.Address.initIp4([_]u8{ 0, 0, 0, 0 }, PORT);
 
         try listener.listen(self_addr);
 

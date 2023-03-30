@@ -109,6 +109,7 @@ pub fn build(b: *std.build.Builder) void {
         convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "arraytest").?) catch {};
         convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "audiotest").?) catch {};
         convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "net").?) catch {};
+        convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "recv").?) catch {};
     }
 
     convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "asm").?) catch {};
@@ -153,6 +154,7 @@ pub fn build(b: *std.build.Builder) void {
 
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
+    run_cmd.addArgs(&[_][]const u8{"--cwd", "./zig-out/bin"});
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
