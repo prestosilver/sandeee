@@ -67,10 +67,12 @@ pub fn build(b: *std.build.Builder) void {
     const mode = b.standardReleaseOptions();
 
     const exe = b.addExecutable("sandeee", "src/main.zig");
-    const vm_exe = b.addExecutable("sandeee-vm", "src/main_vm.zig");
 
     _ = b.exec(&[_][]const u8{ "rm", "-r", "content/disk" }) catch "";
     _ = b.exec(&[_][]const u8{ "cp", "-r", "content/rawdisk", "content/disk" }) catch "";
+    if (mode == .Debug) {
+        _ = b.exec(&[_][]const u8{ "cp", "-r", "content/disk_debug/prof", "content/disk" }) catch "";
+    }
 
     // Includes
     exe.addIncludePath("deps/include");
@@ -94,21 +96,19 @@ pub fn build(b: *std.build.Builder) void {
 
     exe.install();
 
-    vm_exe.setTarget(target);
-    vm_exe.setBuildMode(mode);
-    vm_exe.install();
-
     var convert_steps = std.ArrayList(*std.build.WriteFileStep).init(b.allocator);
 
     var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
 
-    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "hello").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "window").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "texture").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "fib").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "arraytest").?) catch {};
-    convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "audiotest").?) catch {};
+    if (mode == .Debug) {
+        convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "hello").?) catch {};
+        convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "window").?) catch {};
+        convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "texture").?) catch {};
+        convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "fib").?) catch {};
+        convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "arraytest").?) catch {};
+        convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "audiotest").?) catch {};
+    }
 
     convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "asm").?) catch {};
     convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "eon").?) catch {};
@@ -151,9 +151,7 @@ pub fn build(b: *std.build.Builder) void {
     exe.step.dependOn(&email_step.step);
 
     const run_cmd = exe.run();
-    const vm_run_cmd = vm_exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
-    vm_run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
@@ -172,18 +170,10 @@ pub fn build(b: *std.build.Builder) void {
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
 
-    const run_vm = b.step("vm", "Run the app");
-    run_vm.dependOn(&vm_run_cmd.step);
-
-    const vm_tests = b.addTest("src/system/vm.zig");
-    vm_tests.setTarget(target);
-    vm_tests.setBuildMode(mode);
-
     const exe_tests = b.addTest("src/main.zig");
     exe_tests.setTarget(target);
     exe_tests.setBuildMode(mode);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
-    test_step.dependOn(&vm_tests.step);
 }
