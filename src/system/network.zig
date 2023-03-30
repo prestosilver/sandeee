@@ -45,7 +45,7 @@ pub const Server = struct {
 
         while (true) {
             var conn = try server.stream.accept();
-            std.log.info("recv on conn {}", .{conn.address});
+            std.log.debug("recv on conn {}", .{conn.address});
             while (conn.stream.read(recv_buf[recv_total..])) |recv_len| {
                 if (recv_len == 0)
                     break;
@@ -61,10 +61,10 @@ pub const Server = struct {
             }
 
             var port: u8 = recv_buf[0];
-            std.log.info("port active {}", .{port});
+            std.log.debug("port active {}", .{port});
 
             if (server.data.get(port)) |data| {
-                std.log.info("send on port {}", .{port});
+                std.log.debug("send on port {}", .{port});
                 try conn.stream.writeAll(data);
                 _ = server.data.remove(port);
             }
