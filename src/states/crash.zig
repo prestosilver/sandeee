@@ -2,11 +2,11 @@ const std = @import("std");
 const vecs = @import("../math/vecs.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const shd = @import("../shader.zig");
-const batch = @import("../spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const files = @import("../system/files.zig");
 const font = @import("../util/font.zig");
 const allocator = @import("../util/allocator.zig");
-const gfx = @import("../graphics.zig");
+const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 
 pub const GSCrash = struct {

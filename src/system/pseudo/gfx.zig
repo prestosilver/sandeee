@@ -8,7 +8,7 @@ const win = @import("../../drawers/window2d.zig");
 const tex = @import("../../texture.zig");
 const rect = @import("../../math/rects.zig");
 const vecs = @import("../../math/vecs.zig");
-const gfx = @import("../../graphics.zig");
+const gfx = @import("../../util/graphics.zig");
 
 pub var texIdx: u8 = 0;
 pub var textures: std.AutoHashMap(u8, tex.Texture) = undefined;

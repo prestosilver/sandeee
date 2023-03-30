@@ -362,7 +362,7 @@ main:
 
     call process_args
     call open_file              ; handle
-    push "a.eep"                ; handle out
+    push "out.eep"                ; handle out
     dup 0
     sys 2
     sys 3                       ; handle outhandle
@@ -371,7 +371,7 @@ main:
     sys 7
     push "Wrote '"
     sys 0
-    push "a.eep"
+    push "out.eep"
     sys 0
     push "'"
     sys 0

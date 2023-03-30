@@ -57,9 +57,19 @@ pub const Folder = struct {
         var lenbuffer: []u8 = try allocator.alloc.alloc(u8, 4);
         defer allocator.alloc.free(lenbuffer);
         _ = try file.read(lenbuffer);
-        var count = @bitCast(u32, lenbuffer[0..4].*);
+        var folderCount = @bitCast(u32, lenbuffer[0..4].*);
+        for (range(folderCount)) |_| {
+            _ = try file.read(lenbuffer);
+            var namesize = @bitCast(u32, lenbuffer[0..4].*);
+            var namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
+            defer allocator.alloc.free(namebuffer);
+            _ = try file.read(namebuffer);
+            _ = try root.newFolder(namebuffer);
+        }
 
-        for (range(count)) |_| {
+        _ = try file.read(lenbuffer);
+        var fileCount = @bitCast(u32, lenbuffer[0..4].*);
+        for (range(fileCount)) |_| {
             _ = try file.read(lenbuffer);
             var namesize = @bitCast(u32, lenbuffer[0..4].*);
             var namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
@@ -68,10 +78,10 @@ pub const Folder = struct {
             _ = try file.read(lenbuffer);
             var contsize = @bitCast(u32, lenbuffer[0..4].*);
             var contbuffer: []u8 = try allocator.alloc.alloc(u8, contsize);
+            defer allocator.alloc.free(contbuffer);
             _ = try file.read(contbuffer);
             _ = try root.newFile(namebuffer);
             try root.writeFile(namebuffer, contbuffer);
-            allocator.alloc.free(contbuffer);
         }
     }
 
@@ -132,20 +142,36 @@ pub const Folder = struct {
 
             root.fixFolders();
 
-            home = (try root.getFolder("/prof")).?;
-            exec = (try root.getFolder("/exec")).?;
+            if (try root.getFolder("/prof")) |folder| {
+                home = folder;
+            } else @panic("Disk has no prof folder");
+
+            if (try root.getFolder("/exec")) |folder| {
+                exec = folder;
+            } else @panic("Disk has no exec folder");
 
             return;
         }
-        return error.IDK;
     }
 
     pub fn write(self: *Folder, writer: std.fs.File) !void {
+        var folders = std.ArrayList(*Folder).init(allocator.alloc);
+        defer folders.deinit();
+        try self.getFolders(&folders);
+
+        var len = @bitCast([4]u8, @intCast(u32, folders.items.len));
+        _ = try writer.write(&len);
+        for (folders.items) |folder| {
+            len = @bitCast([4]u8, @intCast(u32, folder.name.len));
+            _ = try writer.write(&len);
+            _ = try writer.write(folder.name);
+        }
+
         var files = std.ArrayList(File).init(allocator.alloc);
         defer files.deinit();
-        try self.getfiles(&files);
+        try self.getFiles(&files);
 
-        var len = @bitCast([4]u8, @intCast(u32, files.items.len));
+        len = @bitCast([4]u8, @intCast(u32, files.items.len));
         _ = try writer.write(&len);
         for (files.items) |file| {
             len = @bitCast([4]u8, @intCast(u32, file.name.len));
@@ -157,12 +183,21 @@ pub const Folder = struct {
         }
     }
 
-    pub fn getfiles(self: *Folder, files: *std.ArrayList(File)) !void {
+    pub fn getFolders(self: *Folder, folders: *std.ArrayList(*Folder)) !void {
+        if (self.protected) return;
+
+        try folders.append(self);
+        for (self.subfolders.items) |_, idx| {
+            try self.subfolders.items[idx].getFolders(folders);
+        }
+    }
+
+    pub fn getFiles(self: *Folder, files: *std.ArrayList(File)) !void {
         if (self.protected) return;
 
         try files.appendSlice(self.contents.items);
         for (self.subfolders.items) |_, idx| {
-            try self.subfolders.items[idx].getfiles(files);
+            try self.subfolders.items[idx].getFiles(files);
         }
     }
 
@@ -242,7 +277,12 @@ pub const Folder = struct {
 
     pub fn newFolder(self: *Folder, name: []const u8) !bool {
         if (self.protected) return error.FolderProtected;
-
+        if (name.len == 0) return true;
+        if (name[name.len - 1] != '/') {
+            var newName = try std.fmt.allocPrint(allocator.alloc, "{s}/", .{name});
+            defer allocator.alloc.free(newName);
+            return self.newFolder(newName);
+        }
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
 
@@ -250,15 +290,17 @@ pub const Folder = struct {
             if (ch == '/') {
                 if (check(file.items, ".")) return self.newFolder(name[2..]);
                 if (check(file.items, "")) return self.newFolder(name[1..]);
+                var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
+                defer allocator.alloc.free(fullname);
 
                 for (self.subfolders.items) |folder, idx| {
-                    if (check(folder.name, file.items)) {
+                    if (check(folder.name, fullname)) {
                         return self.subfolders.items[idx].newFolder(name[file.items.len + 1 ..]);
                     }
                 }
                 var folder = Folder{
                     .parent = self,
-                    .name = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, name }),
+                    .name = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items }),
                     .contents = std.ArrayList(File).init(allocator.alloc),
                     .subfolders = std.ArrayList(Folder).init(allocator.alloc),
                 };
@@ -270,7 +312,7 @@ pub const Folder = struct {
             }
         }
 
-        var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, name });
+        var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
         for (self.subfolders.items) |subfile| {
             if (check(subfile.name, fullname)) {
                 allocator.alloc.free(fullname);
@@ -410,11 +452,23 @@ pub const Folder = struct {
     pub fn toStr(self: *Folder) !std.ArrayList(u8) {
         var result = std.ArrayList(u8).init(allocator.alloc);
 
+        var folders = std.ArrayList(*Folder).init(allocator.alloc);
+        defer folders.deinit();
+        try self.getFolders(&folders);
+
+        var len = @bitCast([4]u8, @intCast(u32, folders.items.len));
+        try result.appendSlice(&len);
+        for (folders.items) |folder| {
+            len = @bitCast([4]u8, @intCast(u32, folder.name.len));
+            try result.appendSlice(&len);
+            try result.appendSlice(folder.name);
+        }
+
         var files = std.ArrayList(File).init(allocator.alloc);
         defer files.deinit();
-        try self.getfiles(&files);
+        try self.getFiles(&files);
 
-        var len = @bitCast([4]u8, @intCast(u32, files.items.len));
+        len = @bitCast([4]u8, @intCast(u32, files.items.len));
         try result.appendSlice(&len);
         for (files.items) |file| {
             len = @bitCast([4]u8, @intCast(u32, file.name.len));

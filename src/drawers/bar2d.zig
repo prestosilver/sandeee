@@ -1,5 +1,5 @@
 const std = @import("std");
-const sb = @import("../spritebatch.zig");
+const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -9,7 +9,7 @@ const va = @import("../vertArray.zig");
 const shd = @import("../shader.zig");
 const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
-const gfx = @import("../graphics.zig");
+const gfx = @import("../util/graphics.zig");
 const spr = @import("../drawers/sprite2d.zig");
 const c = @import("../c.zig");
 const allocator = @import("../util/allocator.zig");

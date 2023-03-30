@@ -4,7 +4,7 @@ const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const ft = @import("freetype");
 const allocator = @import("allocator");
-const sb = @import("../spritebatch.zig");
+const sb = @import("../util/spritebatch.zig");
 const shd = @import("../shader.zig");
 const va = @import("../vertArray.zig");
 const tex = @import("../texture.zig");
@@ -162,6 +162,7 @@ pub const Font = struct {
             .update = true,
             .texture = &self.tex,
             .verts = vertarray,
+            .scissor = batch.scissor,
             .shader = shader.*,
         };
 

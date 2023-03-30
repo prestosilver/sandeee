@@ -5,7 +5,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const sb = @import("../spritebatch.zig");
+const sb = @import("../util/spritebatch.zig");
 const tex = @import("../texture.zig");
 const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
@@ -25,7 +25,7 @@ pub const EditorData = struct {
     shader: *shd.Shader,
     numLeft: sp.Sprite,
     numDiv: sp.Sprite,
-    scroll: [4]sp.Sprite,
+    scrollSp: [4]sp.Sprite,
     icons: [2]sp.Sprite,
     cursor: vecs.Vector2,
     cursorIdx: usize,
@@ -146,12 +146,12 @@ pub const EditorData = struct {
         if (self.maxy != 0) {
             var scrollPc = self.scrollVal / self.maxy;
 
-            self.scroll[1].data.size.y = bnds.h - 20 - 36;
+            self.scrollSp[1].data.size.y = bnds.h - 20 - 36;
 
-            try batch.draw(sp.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
-            try batch.draw(sp.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
-            try batch.draw(sp.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-            try batch.draw(sp.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 84) * scrollPc + bnds.y + 46, 0));
+            try batch.draw(sp.Sprite, &self.scrollSp[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
+            try batch.draw(sp.Sprite, &self.scrollSp[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
+            try batch.draw(sp.Sprite, &self.scrollSp[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+            try batch.draw(sp.Sprite, &self.scrollSp[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 84) * scrollPc + bnds.y + 46, 0));
         }
     }
 
@@ -180,7 +180,6 @@ pub const EditorData = struct {
         return;
     }
 
-    pub fn scroll(_: *Self, _: f32, _: f32) !void {}
     pub fn move(_: *Self, _: f32, _: f32) !void {}
 
     pub fn focus(self: *Self) !void {
@@ -198,6 +197,8 @@ pub const EditorData = struct {
     }
 
     pub fn key(self: *Self, keycode: i32, mods: i32) !void {
+        if (self.file == null) return;
+
         switch (keycode) {
             cc.GLFW_KEY_A...cc.GLFW_KEY_Z => {
                 if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
@@ -276,7 +277,7 @@ pub const EditorData = struct {
         }
     }
 
-    fn scrollEditor(self: *Self, _: f32, y: f32) void {
+    pub fn scroll(self: *Self, _: f32, y: f32) void {
         self.scrollVal -= y * SCROLL;
 
         if (self.scrollVal > self.maxy)
@@ -314,22 +315,22 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
         vecs.newVec2(32, 32),
     ));
 
-    self.scroll[0] = sp.Sprite.new(texture, sp.SpriteData.new(
+    self.scrollSp[0] = sp.Sprite.new(texture, sp.SpriteData.new(
         rect.newRect(16.0 / 32.0, 16.0 / 32.0, 7.0 / 32.0, 6.0 / 32.0),
         vecs.newVec2(14.0, 12.0),
     ));
 
-    self.scroll[1] = sp.Sprite.new(texture, sp.SpriteData.new(
+    self.scrollSp[1] = sp.Sprite.new(texture, sp.SpriteData.new(
         rect.newRect(16.0 / 32.0, 22.0 / 32.0, 7.0 / 32.0, 4.0 / 32.0),
         vecs.newVec2(14.0, 64),
     ));
 
-    self.scroll[2] = sp.Sprite.new(texture, sp.SpriteData.new(
+    self.scrollSp[2] = sp.Sprite.new(texture, sp.SpriteData.new(
         rect.newRect(16.0 / 32.0, 26.0 / 32.0, 7.0 / 32.0, 6.0 / 32.0),
         vecs.newVec2(14.0, 12.0),
     ));
 
-    self.scroll[3] = sp.Sprite.new(texture, sp.SpriteData.new(
+    self.scrollSp[3] = sp.Sprite.new(texture, sp.SpriteData.new(
         rect.newRect(23.0 / 32.0, 16.0 / 32.0, 7.0 / 32.0, 14.0 / 32.0),
         vecs.newVec2(14.0, 28.0),
     ));

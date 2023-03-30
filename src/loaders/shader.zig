@@ -1,7 +1,7 @@
 const std = @import("std");
 const worker = @import("worker.zig");
 const shd = @import("../shader.zig");
-const gfx = @import("../graphics.zig");
+const gfx = @import("../util/graphics.zig");
 const c = @import("../c.zig");
 
 pub fn loadShader(self: *worker.WorkerQueueEntry(*const [2]shd.ShaderFile, *shd.Shader)) !bool {

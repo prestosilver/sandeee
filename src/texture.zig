@@ -2,7 +2,7 @@ const std = @import("std");
 const vecs = @import("math/vecs.zig");
 const c = @import("c.zig");
 const files = @import("system/files.zig");
-const gfx = @import("graphics.zig");
+const gfx = @import("util/graphics.zig");
 
 pub const Texture = struct { tex: c.GLuint, size: vecs.Vector2 };
 

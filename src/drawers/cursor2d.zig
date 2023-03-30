@@ -1,4 +1,4 @@
-const sb = @import("../spritebatch.zig");
+const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");

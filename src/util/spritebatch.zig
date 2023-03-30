@@ -1,12 +1,12 @@
 const std = @import("std");
 const gfx = @import("graphics.zig");
-const vecs = @import("math/vecs.zig");
-const rect = @import("math/rects.zig");
-const tex = @import("texture.zig");
-const shd = @import("shader.zig");
-const va = @import("vertArray.zig");
-const allocator = @import("util/allocator.zig");
-const c = @import("c.zig");
+const vecs = @import("../math/vecs.zig");
+const rect = @import("../math/rects.zig");
+const tex = @import("../texture.zig");
+const shd = @import("../shader.zig");
+const va = @import("../vertArray.zig");
+const allocator = @import("allocator.zig");
+const c = @import("../c.zig");
 
 pub fn Drawer(comptime T: type) type {
     return struct {

@@ -13,14 +13,14 @@ const font = @import("util/font.zig");
 const audio = @import("util/audio.zig");
 const events = @import("util/events.zig");
 const allocator = @import("util/allocator.zig");
+const batch = @import("util/spritebatch.zig");
+const gfx = @import("util/graphics.zig");
 
 const inputEvs = @import("events/input.zig");
 const windowEvs = @import("events/window.zig");
 const systemEvs = @import("events/system.zig");
 
-const gfx = @import("graphics.zig");
 const shd = @import("shader.zig");
-const batch = @import("spritebatch.zig");
 const tex = @import("texture.zig");
 
 const worker = @import("loaders/worker.zig");
@@ -31,6 +31,7 @@ const rect = @import("math/rects.zig");
 const wall = @import("drawers/wall2d.zig");
 const sprite = @import("drawers/sprite2d.zig");
 const bar = @import("drawers/bar2d.zig");
+const win = @import("drawers/window2d.zig");
 
 const conf = @import("system/config.zig");
 const files = @import("system/files.zig");
@@ -389,6 +390,10 @@ pub fn main() anyerror!void {
     try gameStates.getPtr(.Disks).setup();
     inputEvs.setup(ctx.window, true);
 
+    win.deskSize = &size;
+
+    var lastFrameTime = c.glfwGetTime();
+
     // main loop
     while (gfx.poll(&ctx)) {
         switch (currentState) {
@@ -398,8 +403,10 @@ pub fn main() anyerror!void {
 
         var state = gameStates.getPtr(currentState);
 
-        // TODO: actual time?
-        try state.update(1.0 / 60.0);
+        // get the time & update
+        var currentTime = c.glfwGetTime();
+
+        try state.update(@floatCast(f32, currentTime - lastFrameTime));
 
         // get tris
         try state.draw(size);
@@ -410,6 +417,9 @@ pub fn main() anyerror!void {
         if (state != gameStates.getPtr(currentState)) {
             try state.deinit();
         }
+
+        // update the time
+        lastFrameTime = currentTime;
     }
 
     try gameStates.getPtr(currentState).deinit();

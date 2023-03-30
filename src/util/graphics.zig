@@ -1,11 +1,11 @@
 const std = @import("std");
-const col = @import("math/colors.zig");
-const mat4 = @import("math/mat4.zig");
-const vecs = @import("math/vecs.zig");
-const shd = @import("shader.zig");
-const tex = @import("texture.zig");
-const allocator = @import("util/allocator.zig");
-const c = @import("c.zig");
+const col = @import("../math/colors.zig");
+const mat4 = @import("../math/mat4.zig");
+const vecs = @import("../math/vecs.zig");
+const shd = @import("../shader.zig");
+const tex = @import("../texture.zig");
+const allocator = @import("allocator.zig");
+const c = @import("../c.zig");
 
 pub var palette: tex.Texture = undefined;
 pub var gContext: *Context = undefined;

@@ -1,4 +1,4 @@
-const sb = @import("../spritebatch.zig");
+const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -10,7 +10,7 @@ const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;
 const RESIZE_PAD: f32 = 10;
 
-pub var deskSize: vecs.Vector2 = vecs.newVec2(640, 480);
+pub var deskSize: *vecs.Vector2 = undefined;
 
 pub const DragMode = enum {
     None,

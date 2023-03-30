@@ -4,7 +4,6 @@ const shd = @import("../shader.zig");
 const font = @import("../util/font.zig");
 const settings = @import("../loaders/settings.zig");
 const c = @import("../c.zig");
-const gfx = @import("../graphics.zig");
 const conf = @import("../system/config.zig");
 const files = @import("../system/files.zig");
 

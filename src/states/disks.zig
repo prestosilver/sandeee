@@ -1,6 +1,6 @@
 const std = @import("std");
 const shd = @import("../shader.zig");
-const sb = @import("../spritebatch.zig");
+const sb = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
 const font = @import("../util/font.zig");
@@ -8,7 +8,7 @@ const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
-const gfx = @import("../graphics.zig");
+const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 
 const c = @import("../c.zig");
@@ -33,6 +33,7 @@ pub const GSDisks = struct {
         gfx.gContext.color = cols.newColor(0, 0, 0, 1);
 
         self.sel = 0;
+        self.auto = true;
         self.remaining = 3;
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
@@ -54,7 +55,7 @@ pub const GSDisks = struct {
     }
 
     pub fn deinit(self: *Self) !void {
-        for (self.disks.items[0..self.disks.items.len - 1]) |item| {
+        for (self.disks.items[0 .. self.disks.items.len - 1]) |item| {
             allocator.alloc.free(item);
         }
 
@@ -87,11 +88,11 @@ pub const GSDisks = struct {
     }
 
     pub fn draw(self: *Self, _: vecs.Vector2) !void {
-        var pos = vecs.newVec2(20, 20);
+        var pos = vecs.newVec2(100, 100);
 
         var line: []u8 = undefined;
 
-        try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(20, 20, 0));
+        try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(pos.x, pos.y, 0));
         pos.y += self.logo_sprite.data.size.y;
 
         if (self.auto) {

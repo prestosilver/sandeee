@@ -5,7 +5,7 @@ const allocator = @import("../util/allocator.zig");
 const wall = @import("../drawers/wall2d.zig");
 const bar = @import("../drawers/bar2d.zig");
 const sp = @import("../drawers/sprite2d.zig");
-const batch = @import("../spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const shd = @import("../shader.zig");
 const font = @import("../util/font.zig");
 const tex = @import("../texture.zig");
@@ -15,7 +15,7 @@ const pseudo = @import("../system/pseudo/all.zig");
 const files = @import("../system/files.zig");
 const emails = @import("../system/mail.zig");
 const conf = @import("../system/config.zig");
-const gfx = @import("../graphics.zig");
+const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 
 pub const GSWindowed = struct {

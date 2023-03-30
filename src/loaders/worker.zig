@@ -1,6 +1,6 @@
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
-const gfx = @import("../graphics.zig");
+const gfx = @import("../util/graphics.zig");
 const c = @import("../c.zig");
 
 pub const shader = @import("shader.zig");

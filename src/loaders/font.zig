@@ -3,7 +3,7 @@ const worker = @import("worker.zig");
 const shd = @import("../shader.zig");
 const font = @import("../util/font.zig");
 const c = @import("../c.zig");
-const gfx = @import("../graphics.zig");
+const gfx = @import("../util/graphics.zig");
 
 var lol: bool = true;
 
