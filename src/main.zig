@@ -35,6 +35,7 @@ const win = @import("drawers/window2d.zig");
 
 const conf = @import("system/config.zig");
 const files = @import("system/files.zig");
+const network = @import("system/network.zig");
 
 const c = @import("c.zig");
 
@@ -393,6 +394,9 @@ pub fn main() anyerror!void {
     win.deskSize = &size;
 
     var lastFrameTime = c.glfwGetTime();
+
+    network.server = try network.Server.init();
+    _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
 
     // main loop
     while (gfx.poll(&ctx)) {

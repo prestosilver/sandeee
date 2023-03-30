@@ -11,6 +11,7 @@ pub const FileStream = struct {
     path: []u8,
     contents: []u8,
     offset: u32,
+    updated: bool,
 
     pub fn Open(root: *files.Folder, path: []const u8) !*FileStream {
         var result = try allocator.alloc.create(FileStream);
@@ -30,6 +31,7 @@ pub const FileStream = struct {
         result.path = try allocator.alloc.alloc(u8, file.?.name.len);
         var cont = try file.?.read();
         result.contents = try allocator.alloc.alloc(u8, cont.len);
+        result.updated = false;
 
         std.mem.copy(u8, result.contents, cont);
         std.mem.copy(u8, result.path, file.?.name);
@@ -69,10 +71,13 @@ pub const FileStream = struct {
         std.mem.copy(u8, self.contents[self.offset .. self.offset + data.len], data);
 
         self.offset += @intCast(u32, data.len);
+        self.updated = true;
     }
 
     pub fn Flush(self: *FileStream) !void {
-        try files.root.writeFile(self.path, self.contents);
+        if (self.updated)
+            try files.root.writeFile(self.path, self.contents);
+        self.updated = false;
     }
 
     pub fn Close(self: *FileStream) !void {
