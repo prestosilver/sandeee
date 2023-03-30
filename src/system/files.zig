@@ -346,7 +346,7 @@ pub const Folder = struct {
                         return try self.subfolders.items[idx].writeFile(name[file.items.len..], contents);
                     }
                 }
-                return error.FileNotFound;
+                return error.FolderNotFound;
             } else {
                 try file.append(ch);
             }
