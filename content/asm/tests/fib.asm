@@ -23,15 +23,9 @@ block_0_end:
     call fib
     add
     disc 1
-    dup 0
-    disc 1
     ret
 main:
-    push 0
-    copy 0
-    push 0
-    set
-    disc 0
+    push 1
 block_1_loop:
     copy 0
     push 30
