@@ -193,6 +193,9 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    var trace = @errorReturnTrace();
+    std.log.info("{?}", .{trace});
+
     errorMsg = msg;
     errorState = @enumToInt(currentState);
 
