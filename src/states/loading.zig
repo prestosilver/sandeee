@@ -113,8 +113,8 @@ pub const GSLoading = struct {
 
         // setup some pointers
         pseudo.snd.audioPtr = self.audio_man;
-        pseudo.window.shader = self.shader;
-        pseudo.window.wintex = self.wintex;
+        pseudo.win.shader = self.shader;
+        pseudo.win.wintex = self.wintex;
 
         wins.settings.settingManager = self.settingManager;
 

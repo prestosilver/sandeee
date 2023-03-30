@@ -17,6 +17,7 @@ const emails = @import("../system/mail.zig");
 const conf = @import("../system/config.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
+const network = @import("../system/network.zig");
 
 pub const GSWindowed = struct {
     const Self = @This();
@@ -75,7 +76,7 @@ pub const GSWindowed = struct {
 
         self.windows = std.ArrayList(win.Window).init(allocator.alloc);
 
-        pseudo.window.windowsPtr = &self.windows;
+        pseudo.win.windowsPtr = &self.windows;
 
         globalSelf = self;
 
