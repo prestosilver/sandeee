@@ -108,6 +108,7 @@ pub fn build(b: *std.build.Builder) void {
         convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "fib").?) catch {};
         convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "arraytest").?) catch {};
         convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "audiotest").?) catch {};
+        convert_steps.append(convertStep(b, comp.compile, "asm/tests", "prof/tests", "asm", "eep", "net").?) catch {};
     }
 
     convert_steps.append(convertStep(b, comp.compile, "asm/exec", "exec", "asm", "eep", "asm").?) catch {};
