@@ -79,11 +79,9 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
 
-
     c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, &mem[8]);
 
     c.glGenerateMipmap(c.GL_TEXTURE_2D);
-
 }
 
 pub fn freeTexture(tex: *Texture) void {

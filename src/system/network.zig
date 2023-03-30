@@ -2,7 +2,7 @@ const std = @import("std");
 
 const Server = struct {
     stream: std.net.StreamServer,
-}
+};
 
 pub fn setupServer() Server {
     var listener = std.net.StreamServer.inti(.{});

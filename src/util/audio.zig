@@ -2,7 +2,7 @@ const std = @import("std");
 
 const c = @import("../c.zig");
 
-pub const AudioErrors = error {
+pub const AudioErrors = error{
     AudioInit,
 };
 
