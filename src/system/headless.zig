@@ -1,0 +1,73 @@
+const std = @import("std");
+const fm = @import("../util/files.zig");
+const files = @import("files.zig");
+const shell = @import("shell.zig");
+const network = @import("network.zig");
+
+const DISK = "headless.eee";
+
+pub fn headlessMain() anyerror!void {
+    var diskpath = fm.getContentPath("disks/headless.eee");
+    defer diskpath.deinit();
+
+    if (std.fs.cwd().access(diskpath.items, .{}) catch null == null) {
+        try files.Folder.setupDisk(DISK);
+    }
+
+    network.server = try network.Server.init();
+    _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
+
+    try files.Folder.init(DISK);
+
+    var mainShell = shell.Shell{ .root = files.home };
+    var stdin = std.io.getStdIn().reader();
+    var stdout = std.io.getStdOut();
+    var buffer: [512]u8 = undefined;
+
+    while (true) {
+        if (mainShell.vm != null) {
+            var result = try mainShell.updateVM();
+            if (result != null) {
+                _ = try stdout.write(result.?.data.items);
+                result.?.data.deinit();
+                _ = try stdout.write("\n");
+            } else {
+                _ = try stdout.write(mainShell.vm.?.out.items);
+                mainShell.vm.?.out.clearAndFree();
+            }
+
+            continue;
+        }
+
+        _ = try stdout.write("> ");
+
+        var data = try stdin.readUntilDelimiter(&buffer, '\n');
+        var command = std.mem.trim(u8, data, "\r\n ");
+        if (std.mem.indexOf(u8, command, " ")) |idx| {
+            command.len = idx;
+        }
+
+        var result = mainShell.run(command, data) catch |err| {
+            const msg = @errorName(err);
+
+            _ = try stdout.write("Error: ");
+            _ = try stdout.write(msg);
+            _ = try stdout.write("\n");
+
+            continue;
+        };
+
+        if (result.exit) {
+            break;
+        } else {
+            if (result.data.items.len != 0) {
+                _ = try stdout.write(result.data.items);
+                _ = try stdout.write("\n");
+            }
+        }
+
+        result.data.deinit();
+    }
+
+    return;
+}

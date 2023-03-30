@@ -36,6 +36,7 @@ const win = @import("drawers/window2d.zig");
 const conf = @import("system/config.zig");
 const files = @import("system/files.zig");
 const network = @import("system/network.zig");
+const headless = @import("system/headless.zig");
 
 const c = @import("c.zig");
 
@@ -199,6 +200,11 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     errorMsg = msg;
     errorState = @enumToInt(currentState);
 
+    if (isHeadless) {
+        std.log.info("{s}, {}", .{msg, errorState});
+        std.os.exit(0);
+    }
+
     gameStates.getPtr(currentState).deinit() catch {};
 
     currentState = .Crash;
@@ -220,13 +226,15 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     std.os.exit(0);
 }
 
+var isHeadless = false;
+
 pub fn main() anyerror!void {
     defer if (!builtin.link_libc or !allocator.useclib) {
         std.debug.assert(!allocator.gpa.deinit());
         std.log.debug("no leaks! :)", .{});
     };
 
-    var args = std.process.ArgIterator.initWithAllocator(allocator.alloc) catch {};
+    var args = try std.process.ArgIterator.initWithAllocator(allocator.alloc);
     _ = args.next().?;
 
     while (args.next()) |arg| {
@@ -236,9 +244,16 @@ pub fn main() anyerror!void {
 
             try std.process.changeCurDir(path);
         }
+        if (std.mem.eql(u8, arg, "--headless")) {
+            isHeadless = true;
+        }
     }
 
     args.deinit();
+
+    if (isHeadless) {
+        return headless.headlessMain();
+    }
 
     // init graphics
     ctx = try gfx.init("Sandeee");

@@ -43,7 +43,7 @@ pub const Shell = struct {
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
 
-            if (check(param[3..], "..")) {
+            if (std.mem.eql(u8, param[3..], "..")) {
                 self.root = self.root.parent;
 
                 return result;
@@ -60,8 +60,14 @@ pub const Shell = struct {
             }
 
             return error.FileNotFound;
-        } else {}
-        return self.todo(param);
+        } else {
+            var result: Result = Result{
+                .data = std.ArrayList(u8).init(allocator.alloc),
+            };
+            self.root = files.root;
+
+            return result;
+        }
     }
 
     fn ls(self: *Shell, param: []const u8) !Result {
@@ -196,11 +202,11 @@ pub const Shell = struct {
         for (folder.contents.items) |_, idx| {
             var item = folder.contents.items[idx];
 
-            if (check(cmd, item.name[folderlen..])) {
+            if (std.mem.eql(u8, cmd, item.name[folderlen..])) {
                 var line = std.ArrayList(u8).init(allocator.alloc);
                 defer line.deinit();
 
-                if ((try item.read()).len > 3 and check((try item.read())[0..4], ASM_HEADER)) {
+                if ((try item.read()).len > 3 and std.mem.eql(u8, (try item.read())[0..4], ASM_HEADER)) {
                     return try self.runAsm(folder, cmd, param);
                 }
 
@@ -223,13 +229,13 @@ pub const Shell = struct {
                 return result;
             }
 
-            if (check(cmdeep, item.name[folderlen..])) {
+            if (std.mem.eql(u8, cmdeep, item.name[folderlen..])) {
                 var line = std.ArrayList(u8).init(allocator.alloc);
                 defer line.deinit();
 
                 var cont = try item.read();
 
-                if (cont.len > 3 and check(cont[0..4], ASM_HEADER)) {
+                if (cont.len > 3 and std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
                     return try self.runAsm(folder, cmdeep, param);
                 }
 
@@ -319,16 +325,6 @@ pub const Shell = struct {
         return result;
     }
 
-    pub fn check(cmd: []const u8, exp: []const u8) bool {
-        if (cmd.len != exp.len) return false;
-
-        for (cmd) |char, idx| {
-            if (char != exp[idx])
-                return false;
-        }
-        return true;
-    }
-
     pub fn runAsm(self: *Shell, folder: *files.Folder, cmd: []const u8, params: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
@@ -340,7 +336,7 @@ pub const Shell = struct {
 
             if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
                 var cont = try item.read();
-                if (cont.len < 4 or !check(cont[0..4], ASM_HEADER)) {
+                if (cont.len < 4 or !std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
                     result.data.deinit();
 
                     return error.BadASMFile;
@@ -432,16 +428,16 @@ pub const Shell = struct {
     }
 
     pub fn run(self: *Shell, cmd: []const u8, params: []const u8) !Result {
-        if (check(cmd, "help")) return self.help(params);
-        if (check(cmd, "ls")) return self.ls(params);
-        if (check(cmd, "cmd")) return self.runCmd(params);
-        if (check(cmd, "edit")) return self.runEdit(params);
-        if (check(cmd, "web")) return self.runWeb(params);
-        if (check(cmd, "new")) return self.new(params);
-        //if (check(cmd, "rem")) return self.rem(params);
-        if (check(cmd, "cd")) return self.cd(params);
+        if (std.mem.eql(u8, cmd, "help")) return self.help(params);
+        if (std.mem.eql(u8, cmd, "ls")) return self.ls(params);
+        if (std.mem.eql(u8, cmd, "cmd")) return self.runCmd(params);
+        if (std.mem.eql(u8, cmd, "edit")) return self.runEdit(params);
+        if (std.mem.eql(u8, cmd, "web")) return self.runWeb(params);
+        if (std.mem.eql(u8, cmd, "new")) return self.new(params);
+        //if (std.mem.eql(u8, cmd, "rem")) return self.rem(params);
+        if (std.mem.eql(u8, cmd, "cd")) return self.cd(params);
 
-        if (check(cmd, "$run")) {
+        if (std.mem.eql(u8, cmd, "$run")) {
             if (params.len < 6) {
                 return error.ExpectedParameter;
             }
@@ -476,7 +472,7 @@ pub const Shell = struct {
             }
             return self.run(command.items, out.data.items);
         }
-        if (check(cmd, "cls")) {
+        if (std.mem.eql(u8, cmd, "cls")) {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
@@ -484,7 +480,15 @@ pub const Shell = struct {
 
             return result;
         }
-        if (check(cmd, "run")) {
+        if (std.mem.eql(u8, cmd, "exit")) {
+            var result: Result = Result{
+                .data = std.ArrayList(u8).init(allocator.alloc),
+            };
+            result.exit = true;
+
+            return result;
+        }
+        if (std.mem.eql(u8, cmd, "run")) {
             if (params.len < 5) {
                 return error.ExpectedParameter;
             }

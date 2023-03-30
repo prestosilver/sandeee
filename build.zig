@@ -154,9 +154,16 @@ pub fn build(b: *std.build.Builder) void {
 
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
-    run_cmd.addArgs(&[_][]const u8{"--cwd", "./zig-out/bin"});
+    run_cmd.addArgs(&[_][]const u8{ "--cwd", "./zig-out/bin" });
     if (b.args) |args| {
         run_cmd.addArgs(args);
+    }
+
+    const headless_cmd = exe.run();
+    headless_cmd.step.dependOn(b.getInstallStep());
+    headless_cmd.addArgs(&[_][]const u8{ "--cwd", "./zig-out/bin", "--headless" });
+    if (b.args) |args| {
+        headless_cmd.addArgs(args);
     }
 
     b.installFile("content/fonts/scientifica.ttf", "bin/content/font.ttf");
@@ -172,6 +179,9 @@ pub fn build(b: *std.build.Builder) void {
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+
+    const headless_step = b.step("headless", "Run the app headless");
+    headless_step.dependOn(&headless_cmd.step);
 
     const exe_tests = b.addTest("src/main.zig");
     exe_tests.setTarget(target);
