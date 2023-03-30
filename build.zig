@@ -77,6 +77,7 @@ pub fn build(b: *std.build.Builder) void {
     // Includes
     exe.addIncludePath("deps/include");
     if (target.os_tag != null and target.os_tag.? == .windows) {
+        exe.addObjectFile("content/app.res.obj");
         exe.addLibraryPath("deps/lib");
     }
     exe.setTarget(target);
