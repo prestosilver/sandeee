@@ -94,7 +94,7 @@ pub const VM = struct {
     fn pushStackS(self: *VM, string: []const u8) !void {
         var appendString = try self.allocator.alloc(u8, string.len);
 
-        for (string) |char, idx| {
+        for (string, 0..) |char, idx| {
             appendString[idx] = char;
         }
 
@@ -188,7 +188,7 @@ pub const VM = struct {
                 try stream.?.Close();
         }
 
-        for (self.args) |_, idx| {
+        for (self.args, 0..) |_, idx| {
             self.allocator.free(self.args[idx]);
         }
 
@@ -219,7 +219,7 @@ pub const VM = struct {
     pub fn resizeString(self: *VM, val: []u8, size: u64) ![]u8 {
         var new = try self.allocator.realloc(val, size);
 
-        for (self.stack[0 .. self.rsp + 1]) |entry, idx| {
+        for (self.stack[0 .. self.rsp + 1], 0..) |entry, idx| {
             if (entry.string != null and @ptrToInt(entry.string.?.ptr) == @ptrToInt(val.ptr)) {
                 self.stack[idx].string = new;
             }
@@ -897,13 +897,13 @@ pub const VM = struct {
     pub fn loadList(self: *VM, ops: []Operation) !void {
         var list = try self.allocator.alloc(Operation, ops.len);
 
-        for (ops) |_, idx| {
+        for (ops, 0..) |_, idx| {
             list[idx] = ops[idx];
 
             if (ops[idx].string != null) {
                 var str = try self.allocator.alloc(u8, ops[idx].string.?.len);
 
-                for (ops[idx].string.?) |_, jdx| {
+                for (ops[idx].string.?, 0..) |_, jdx| {
                     str[jdx] = ops[idx].string.?[jdx];
                 }
 

@@ -44,7 +44,7 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             if (chanels == 1) {
                 try result.appendSlice(section);
             } else {
-                for (section) |_, idx| {
+                for (0..section.len) |idx| {
                     if (idx % (chanels * sr) == 0) {
                         var tmp: i16 = @intCast(i16, @bitCast(i8, section[idx + sr - 1]));
                         tmp += 128;

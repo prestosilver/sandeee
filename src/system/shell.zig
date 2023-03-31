@@ -49,7 +49,7 @@ pub const Shell = struct {
                 return result;
             }
 
-            for (self.root.subfolders.items) |item, idx| {
+            for (self.root.subfolders.items, 0..) |item, idx| {
                 var rootlen = self.root.name.len;
 
                 if (std.mem.eql(u8, item.name[rootlen .. item.name.len - 1], param[3..])) {
@@ -199,7 +199,7 @@ pub const Shell = struct {
         var cmdeep = try std.fmt.allocPrint(allocator.alloc, "{s}.eep", .{cmd});
         defer allocator.alloc.free(cmdeep);
 
-        for (folder.contents.items) |_, idx| {
+        for (folder.contents.items, 0..) |_, idx| {
             var item = folder.contents.items[idx];
 
             if (std.mem.eql(u8, cmd, item.name[folderlen..])) {
@@ -330,7 +330,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        for (folder.contents.items) |_, idx| {
+        for (folder.contents.items, 0..) |_, idx| {
             var rootlen = folder.name.len;
             var item = &folder.contents.items[idx];
 

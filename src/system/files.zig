@@ -187,7 +187,7 @@ pub const Folder = struct {
         if (self.protected) return;
 
         try folders.append(self);
-        for (self.subfolders.items) |_, idx| {
+        for (self.subfolders.items, 0..) |_, idx| {
             try self.subfolders.items[idx].getFolders(folders);
         }
     }
@@ -196,17 +196,17 @@ pub const Folder = struct {
         if (self.protected) return;
 
         try files.appendSlice(self.contents.items);
-        for (self.subfolders.items) |_, idx| {
+        for (self.subfolders.items, 0..) |_, idx| {
             try self.subfolders.items[idx].getFiles(files);
         }
     }
 
     fn fixFolders(self: *Folder) void {
-        for (self.subfolders.items) |_, idx| {
+        for (self.subfolders.items, 0..) |_, idx| {
             self.subfolders.items[idx].parent = self;
             self.subfolders.items[idx].fixFolders();
         }
-        for (self.contents.items) |_, idx| {
+        for (self.contents.items, 0..) |_, idx| {
             self.contents.items[idx].parent = self;
         }
     }
@@ -214,7 +214,7 @@ pub const Folder = struct {
     fn check(cmd: []const u8, exp: []const u8) bool {
         if (cmd.len != exp.len) return false;
 
-        for (cmd) |char, idx| {
+        for (cmd, 0..) |char, idx| {
             if (char != exp[idx])
                 return false;
         }
@@ -234,7 +234,7 @@ pub const Folder = struct {
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
-                for (self.subfolders.items) |folder, idx| {
+                for (self.subfolders.items, 0..) |folder, idx| {
                     if (check(folder.name, fullname)) {
                         return self.subfolders.items[idx].newFile(name[file.items.len + 1 ..]);
                     }
@@ -293,7 +293,7 @@ pub const Folder = struct {
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
 
-                for (self.subfolders.items) |folder, idx| {
+                for (self.subfolders.items, 0..) |folder, idx| {
                     if (check(folder.name, fullname)) {
                         return self.subfolders.items[idx].newFolder(name[file.items.len + 1 ..]);
                     }
@@ -341,7 +341,7 @@ pub const Folder = struct {
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
-                for (self.subfolders.items) |folder, idx| {
+                for (self.subfolders.items, 0..) |folder, idx| {
                     if (check(folder.name, fullname)) {
                         return try self.subfolders.items[idx].writeFile(name[file.items.len..], contents);
                     }
@@ -353,7 +353,7 @@ pub const Folder = struct {
         }
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
-        for (self.contents.items) |subfile, idx| {
+        for (self.contents.items, 0..) |subfile, idx| {
             if (check(subfile.name, fullname)) {
                 try self.contents.items[idx].write(contents);
                 allocator.alloc.free(fullname);
@@ -374,7 +374,7 @@ pub const Folder = struct {
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
-                for (self.subfolders.items) |folder, idx| {
+                for (self.subfolders.items, 0..) |folder, idx| {
                     if (check(folder.name, fullname)) {
                         return self.subfolders.items[idx].getFile(name[file.items.len..]);
                     }
@@ -387,7 +387,7 @@ pub const Folder = struct {
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
         defer allocator.alloc.free(fullname);
-        for (self.contents.items) |subfile, idx| {
+        for (self.contents.items, 0..) |subfile, idx| {
             if (check(subfile.name, fullname)) {
                 return &self.contents.items[idx];
             }
@@ -406,7 +406,7 @@ pub const Folder = struct {
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
-                for (self.subfolders.items) |folder, idx| {
+                for (self.subfolders.items, 0..) |folder, idx| {
                     if (check(folder.name, fullname)) {
                         return self.subfolders.items[idx].getFolder(name[file.items.len..]);
                     }
@@ -419,7 +419,7 @@ pub const Folder = struct {
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, name });
         defer allocator.alloc.free(fullname);
-        for (self.subfolders.items) |subfolder, idx| {
+        for (self.subfolders.items, 0..) |subfolder, idx| {
             if (check(subfolder.name, fullname)) {
                 return &self.subfolders.items[idx];
             }

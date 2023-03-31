@@ -11,7 +11,7 @@ fn range(len: usize) []const void {
 pub fn checkLine(line: []const u8, start: []const u8) bool {
     if (line.len < start.len) return false;
 
-    for (start) |char, idx|
+    for (start, 0..) |char, idx|
         if (char != line[idx]) return false;
 
     return true;
@@ -127,7 +127,7 @@ pub fn load() !void {
     var count = @bitCast(u32, lenbuffer[0..4].*);
     try emails.resize(count);
 
-    for (range(count)) |_, idx| {
+    for (range(count), 0..) |_, idx| {
         _ = try file.read(bytebuffer);
         emails.items[idx].id = bytebuffer[0];
         _ = try file.read(bytebuffer);

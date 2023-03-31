@@ -128,7 +128,7 @@ const SettingsData = struct {
         var x: f32 = 0;
         var y: f32 = 0;
 
-        for (SettingsData.panels) |panel, idx| {
+        for (SettingsData.panels, 0..) |panel, idx| {
             var size = font.sizeText(panel.name);
             var xo = (128 - size.x) / 2;
 
@@ -194,7 +194,7 @@ const SettingsData = struct {
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(SettingsData);
 
-    for (self.icons) |_, idx| {
+    for (self.icons, 0..) |_, idx| {
         var i = @intToFloat(f32, idx);
 
         self.icons[idx] = sprite.Sprite.new(texture, sprite.SpriteData.new(

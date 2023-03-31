@@ -200,7 +200,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     errorState = @enumToInt(currentState);
 
     if (isHeadless) {
-        std.log.info("{s}, {}", .{msg, errorState});
+        std.log.info("{s}, {}", .{ msg, errorState });
         std.os.exit(0);
     }
 

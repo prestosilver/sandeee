@@ -55,7 +55,7 @@ pub const EditorData = struct {
             var cx: f32 = 0;
             var cy: f32 = 0;
 
-            for (self.buffer.items) |char, idx| {
+            for (self.buffer.items, 0..) |char, idx| {
                 if (char == '\n') {
                     if (cy == self.cursor.y and cx <= self.cursor.x) {
                         var size = font.sizeText(line.items);

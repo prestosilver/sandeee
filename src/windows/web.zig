@@ -176,7 +176,7 @@ pub const WebData = struct {
     }
 
     pub fn move(self: *Self, x: f32, y: f32) void {
-        for (self.links.items) |link, idx| {
+        for (self.links.items, 0..) |link, idx| {
             if (link.pos.contains(vecs.newVec2(x, y + self.scrollVal))) {
                 self.highlight_idx = idx + 1;
                 return;

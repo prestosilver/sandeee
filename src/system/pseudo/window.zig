@@ -60,7 +60,7 @@ pub fn writeWinDestroy(id: []const u8) !void {
     if (id.len != 1) return;
     var aid = id[0];
 
-    for (windowsPtr.*.items) |_, idx| {
+    for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
             const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
@@ -95,7 +95,7 @@ pub fn writeWinFlip(id: []const u8) !void {
     if (id.len != 1) return;
     var aid = id[0];
 
-    for (windowsPtr.*.items) |_, idx| {
+    for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
             const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
@@ -139,7 +139,7 @@ pub fn writeWinRender(data: []const u8) !void {
         @intToFloat(f32, std.mem.bytesToValue(u64, data[58..66])) / 1024,
     );
 
-    for (windowsPtr.*.items) |_, idx| {
+    for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
             const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;

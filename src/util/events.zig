@@ -46,7 +46,7 @@ pub const EventManager = struct {
     fn check(cmd: []const u8, exp: []const u8) bool {
         if (cmd.len != exp.len) return false;
 
-        for (cmd) |char, idx| {
+        for (cmd, 0..) |char, idx| {
             if (char != exp[idx])
                 return false;
         }

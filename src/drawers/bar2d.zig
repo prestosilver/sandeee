@@ -90,7 +90,7 @@ pub const BarData = struct {
         if (self.btnActive) {
             try batch.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
 
-            for (range(10)) |_, i| {
+            for (range(10), 0..) |_, i| {
                 var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
                 var text: []const u8 = "";
                 switch (i) {
@@ -129,7 +129,7 @@ pub const BarData = struct {
         }
 
         if (self.btnActive) {
-            for (range(10)) |_, i| {
+            for (range(10), 0..) |_, i| {
                 var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
                 var item = rect.newRect(36, y, 160, 67);
                 if (item.contains(pos)) {
@@ -298,7 +298,7 @@ pub const BarData = struct {
 
             try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
 
-            for (range(10)) |_, i| {
+            for (range(10), 0..) |_, i| {
                 var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
                 var iconpos = rect.newRect(36, y + 2, 64, 64);
 
@@ -329,7 +329,7 @@ pub const BarData = struct {
             }
         }
 
-        for (range(@intCast(usize, self.btns))) |_, i| {
+        for (range(@intCast(usize, self.btns)), 0..) |_, i| {
             var b = rect.newRect(self.height * @intToFloat(f32, i * 4 + 3), self.screendims.y - self.height, 4 * self.height, self.height);
             try addUiQuad(&result, 1, b, 2, 6, 6, 6, 6);
         }

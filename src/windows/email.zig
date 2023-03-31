@@ -119,7 +119,7 @@ const EmailData = struct {
                 if (contBnds.contains(mousepos)) {
                     var y: i32 = 0;
 
-                    for (mail.emails.items) |email, idx| {
+                    for (mail.emails.items, 0..) |email, idx| {
                         if (email.box != self.box) continue;
 
                         var bnds = rect.newRect(106, @intToFloat(f32, y), size.x - 106, 28);

@@ -7,10 +7,15 @@ pub const DiskStep = struct {
     input: []const u8,
     alloc: std.mem.Allocator,
 
-    pub fn create(b: *std.build.Builder, input: []const u8, output: []const u8) *DiskStep {
+    pub fn create(b: *std.Build, input: []const u8, output: []const u8) *DiskStep {
         const self = b.allocator.create(DiskStep) catch unreachable;
         self.* = .{
-            .step = std.build.Step.init(.run, "custom_step", b.allocator, DiskStep.doStep),
+            .step = std.build.Step.init(.{
+                .id = .run,
+                .name = std.fmt.allocPrint(b.allocator, "BuildDisk {s} -> {s}", .{ input, output }) catch "BuildDisk",
+                .makeFn = DiskStep.doStep,
+                .owner = b,
+            }),
             .input = input,
             .output = output,
             .alloc = b.allocator,
@@ -18,7 +23,7 @@ pub const DiskStep = struct {
         return self;
     }
 
-    fn doStep(step: *std.build.Step) !void {
+    fn doStep(step: *std.build.Step, _: *std.Progress.Node) !void {
         const self = @fieldParentPtr(DiskStep, "step", step);
 
         var root = std.fs.cwd().openDir(self.input, .{ .access_sub_paths = true }) catch null;

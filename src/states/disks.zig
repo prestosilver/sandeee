@@ -107,7 +107,7 @@ pub const GSDisks = struct {
         pos.y += self.face.size * 1;
 
         if (self.disks.items.len != 0) {
-            for (self.disks.items) |disk, idx| {
+            for (self.disks.items, 0..) |disk, idx| {
                 allocator.alloc.free(line);
 
                 line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{disk});

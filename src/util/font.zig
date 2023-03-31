@@ -61,7 +61,7 @@ pub const Font = struct {
         }
 
         var atlasSize = vec.newVec2(0, 0);
-        for (range(128)) |_, i| {
+        for (range(128), 0..) |_, i| {
             err = ft.c.FT_Load_Char(face, @intCast(c_ulong, i), ft.c.FT_LOAD_RENDER);
             if (err != 0) {
                 return error.UnsupportedPixelSize;
@@ -84,7 +84,7 @@ pub const Font = struct {
 
         var x: c_uint = 0;
 
-        for (range(128)) |_, i| {
+        for (range(128), 0..) |_, i| {
             err = ft.c.FT_Load_Char(face, @intCast(c_ulong, i), ft.c.FT_LOAD_RENDER);
             if (err != 0) {
                 continue;

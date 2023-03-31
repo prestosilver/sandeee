@@ -51,7 +51,7 @@ pub const VMData = struct {
         var rects = self.rects[0];
         if (self.back) rects = self.rects[1];
 
-        for (rects.items) |_, idx| {
+        for (rects.items, 0..) |_, idx| {
             try batch.draw(spr.Sprite, &rects.items[idx].s, self.shd, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
         }
     }

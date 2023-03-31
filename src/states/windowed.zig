@@ -51,7 +51,7 @@ pub const GSWindowed = struct {
         var target = vecs.newVec2(100, 100);
         var self = globalSelf;
 
-        for (self.windows.items) |_, idx| {
+        for (self.windows.items, 0..) |_, idx| {
             self.windows.items[idx].data.active = false;
 
             if (self.windows.items[idx].data.pos.x == 100 or self.windows.items[idx].data.pos.y == 100)
@@ -103,7 +103,7 @@ pub const GSWindowed = struct {
         // draw wallpaper
         try self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
 
-        for (self.windows.items) |window, idx| {
+        for (self.windows.items, 0..) |window, idx| {
             // continue if window closed on update
             if (idx >= self.windows.items.len) continue;
 
@@ -157,7 +157,7 @@ pub const GSWindowed = struct {
 
                 var newTop: ?u32 = null;
 
-                for (self.windows.items) |_, idx| {
+                for (self.windows.items, 0..) |_, idx| {
                     if (self.windows.items[idx].data.min) continue;
 
                     var pos = self.windows.items[idx].data.pos;

@@ -93,7 +93,7 @@ const ExplorerData = struct {
         var icons = try self.getIcons();
         defer allocator.alloc.free(icons);
 
-        for (icons) |icon, idx| {
+        for (icons, 0..) |icon, idx| {
             var size = font.sizeText(icon.name);
             var xo = (128 - size.x) / 2;
 
@@ -229,7 +229,7 @@ const ExplorerData = struct {
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(ExplorerData);
 
-    for (self.icons) |_, idx| {
+    for (self.icons, 0..) |_, idx| {
         var i = @intToFloat(f32, idx);
 
         self.icons[idx] = sprite.Sprite.new(texture, sprite.SpriteData.new(

@@ -49,7 +49,7 @@ pub const QueueEntry = struct {
                 hash = ((hash << 5) +% hash) +% ch;
         }
 
-        for (entry.verts.data) |_, idx| {
+        for (entry.verts.data, 0..) |_, idx| {
             casted = &std.mem.toBytes(entry.verts.data[idx]);
             for (casted) |ch|
                 hash = ((hash << 5) +% hash) +% ch;
@@ -103,7 +103,7 @@ pub const SpriteBatch = struct {
 
     pub fn render(sb: *SpriteBatch) !void {
         if (sb.queue.len != 0) {
-            for (sb.queue) |_, idx| {
+            for (sb.queue, 0..) |_, idx| {
                 if (idx >= sb.prevQueue.len) break;
                 sb.queue[idx].hash = (&sb.queue[idx]).GetHash();
                 sb.queue[idx].update = (sb.queue[idx].hash != sb.prevQueue[idx].hash);
@@ -132,7 +132,7 @@ pub const SpriteBatch = struct {
         var cshader: c.GLuint = 0;
         var cscissor: ?rect.Rectangle = null;
 
-        for (sb.queue) |entry, idx| {
+        for (sb.queue, 0..) |entry, idx| {
             if (ctex != entry.texture.tex)
                 c.glBindTexture(c.GL_TEXTURE_2D, entry.texture.tex);
 
@@ -189,7 +189,7 @@ pub const SpriteBatch = struct {
         if (cscissor != null)
             c.glDisable(c.GL_SCISSOR_TEST);
 
-        for (sb.prevQueue) |_, idx| {
+        for (sb.prevQueue, 0..) |_, idx| {
             var e = sb.prevQueue[idx];
             e.verts.deinit();
         }
@@ -200,11 +200,11 @@ pub const SpriteBatch = struct {
     }
 
     pub fn deinit(sb: SpriteBatch) void {
-        for (sb.prevQueue) |_, idx| {
+        for (sb.prevQueue, 0..) |_, idx| {
             var e = sb.prevQueue[idx];
             e.verts.deinit();
         }
-        for (sb.queue) |_, idx| {
+        for (sb.queue, 0..) |_, idx| {
             var e = sb.queue[idx];
             e.verts.deinit();
         }
