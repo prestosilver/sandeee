@@ -24,6 +24,8 @@ pub fn headlessMain() anyerror!void {
     var stdout = std.io.getStdOut();
     var buffer: [512]u8 = undefined;
 
+    _ = try stdout.write("Welcome To ShEEEl\n");
+
     while (true) {
         if (mainShell.vm != null) {
             var result = try mainShell.updateVM();
