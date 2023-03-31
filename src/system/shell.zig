@@ -64,7 +64,7 @@ pub const Shell = struct {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
-            self.root = files.root;
+            self.root = files.home;
 
             return result;
         }
