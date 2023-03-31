@@ -89,8 +89,7 @@ pub const Font = struct {
             if (err != 0) {
                 continue;
             }
-            if (face.*.glyph.*.bitmap.buffer != null)
-                c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @intCast(c_int, x), 0, @intCast(c_int, face.*.glyph.*.bitmap.width), @intCast(c_int, face.*.glyph.*.bitmap.rows), c.GL_RED, c.GL_UNSIGNED_BYTE, face.*.glyph.*.bitmap.buffer);
+            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @intCast(c_int, x), 0, @intCast(c_int, face.*.glyph.*.bitmap.width), @intCast(c_int, face.*.glyph.*.bitmap.rows), c.GL_RED, c.GL_UNSIGNED_BYTE, face.*.glyph.*.bitmap.buffer);
 
             result.chars[i] = Char{
                 .size = vec.newVec2(
@@ -148,7 +147,10 @@ pub const Font = struct {
             srect.h = char.th;
 
             try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
             try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
+
+            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
             try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
             try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
 

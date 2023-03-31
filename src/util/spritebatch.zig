@@ -37,17 +37,11 @@ pub const QueueEntry = struct {
     hash: u32 = 0,
 
     pub fn GetHash(entry: *QueueEntry) u32 {
-        var hash: u32 = 5381;
+        var hash: u32 = 1235;
 
-        var casted: []const u8 = &std.mem.toBytes(entry.texture.tex);
+        var casted: []const u8 = &std.mem.toBytes(entry.scissor);
         for (casted) |ch|
             hash = ((hash << 5) +% hash) +% ch;
-
-        if (entry.scissor != null) {
-            casted = &std.mem.toBytes(entry.scissor);
-            for (casted) |ch|
-                hash = ((hash << 5) +% hash) +% ch;
-        }
 
         for (entry.verts.data, 0..) |_, idx| {
             casted = &std.mem.toBytes(entry.verts.data[idx]);
@@ -185,7 +179,7 @@ pub const SpriteBatch = struct {
             c.glEnableVertexAttribArray(1);
             c.glEnableVertexAttribArray(2);
 
-            c.glDrawArrays(c.GL_QUADS, 0, @intCast(c.GLsizei, entry.verts.data.len));
+            c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c.GLsizei, entry.verts.data.len));
         }
         if (cscissor != null)
             c.glDisable(c.GL_SCISSOR_TEST);

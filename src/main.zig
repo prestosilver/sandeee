@@ -46,6 +46,8 @@ const fragShader = @embedFile("shaders/frag.glsl");
 const fontVertShader = @embedFile("shaders/fvert.glsl");
 const fontFragShader = @embedFile("shaders/ffrag.glsl");
 
+const crtShader = @embedFile("shaders/crt.glsl");
+
 // embed images
 const logoImage = @embedFile("images/logo.eia");
 const loadImage = @embedFile("images/load.eia");
@@ -62,6 +64,10 @@ const font_shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fontVertShader, .kind = c.GL_VERTEX_SHADER },
 };
 
+const crt_shader_files = [2]shd.ShaderFile{
+    shd.ShaderFile{ .contents = crtShader, .kind = c.GL_FRAGMENT_SHADER },
+};
+
 var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
 var currentState: systemEvs.State = .Disks;
 
@@ -71,6 +77,7 @@ var loader = worker.WorkerContext{ .queue = &loader_queue };
 
 // shaders
 var font_shader: shd.Shader = undefined;
+var crt_shader: shd.Shader = undefined;
 var shader: shd.Shader = undefined;
 
 // screen dims

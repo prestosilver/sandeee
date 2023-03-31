@@ -101,6 +101,7 @@ pub fn regShader(ctx: *Context, s: shd.Shader) !void {
     defer proj.deinit();
 
     s.setMat4("projection", proj);
+    s.setInt("palette", 1);
 }
 
 pub fn resize(w: i32, h: i32) !void {
