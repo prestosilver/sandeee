@@ -6,8 +6,8 @@ const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
 const wins = @import("../windows/all.zig");
 const win = @import("../drawers/window2d.zig");
-const tex = @import("../texture.zig");
-const shd = @import("../shader.zig");
+const tex = @import("../util/texture.zig");
+const shd = @import("../util/shader.zig");
 const rect = @import("../math/rects.zig");
 const opener = @import("opener.zig");
 

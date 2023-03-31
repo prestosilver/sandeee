@@ -4,10 +4,10 @@ const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const ft = @import("freetype");
 const allocator = @import("allocator");
-const sb = @import("../util/spritebatch.zig");
-const shd = @import("../shader.zig");
-const va = @import("../vertArray.zig");
-const tex = @import("../texture.zig");
+const sb = @import("spritebatch.zig");
+const shd = @import("shader.zig");
+const va = @import("vertArray.zig");
+const tex = @import("texture.zig");
 const c = @import("../c.zig");
 
 var lib: ft.c.FT_Library = undefined;

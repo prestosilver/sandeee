@@ -1,5 +1,5 @@
 const std = @import("std");
-const shd = @import("../shader.zig");
+const shd = @import("../util/shader.zig");
 const sb = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
@@ -8,7 +8,7 @@ const worker = @import("../loaders/worker.zig");
 const fm = @import("../util/files.zig");
 const audio = @import("../util/audio.zig");
 const conf = @import("../system/config.zig");
-const tex = @import("../texture.zig");
+const tex = @import("../util/texture.zig");
 const font = @import("../util/font.zig");
 const gfx = @import("../util/graphics.zig");
 const wins = @import("../windows/all.zig");

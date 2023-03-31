@@ -15,13 +15,12 @@ const events = @import("util/events.zig");
 const allocator = @import("util/allocator.zig");
 const batch = @import("util/spritebatch.zig");
 const gfx = @import("util/graphics.zig");
+const shd = @import("util/shader.zig");
+const tex = @import("util/texture.zig");
 
 const inputEvs = @import("events/input.zig");
 const windowEvs = @import("events/window.zig");
 const systemEvs = @import("events/system.zig");
-
-const shd = @import("shader.zig");
-const tex = @import("texture.zig");
 
 const worker = @import("loaders/worker.zig");
 

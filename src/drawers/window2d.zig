@@ -3,8 +3,8 @@ const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
 const fnt = @import("../util/font.zig");
-const shd = @import("../shader.zig");
-const va = @import("../vertArray.zig");
+const shd = @import("../util/shader.zig");
+const va = @import("../util/vertArray.zig");
 
 const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;

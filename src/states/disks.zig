@@ -1,5 +1,5 @@
 const std = @import("std");
-const shd = @import("../shader.zig");
+const shd = @import("../util/shader.zig");
 const sb = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");

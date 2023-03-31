@@ -5,10 +5,10 @@ const vmwin = @import("../../windows/vm.zig");
 const winev = @import("../../events/window.zig");
 const events = @import("../../util/events.zig");
 const win = @import("../../drawers/window2d.zig");
-const tex = @import("../../texture.zig");
+const tex = @import("../../util/texture.zig");
 const gfx = @import("gfx.zig");
 const rect = @import("../../math/rects.zig");
-const shd = @import("../../shader.zig");
+const shd = @import("../../util/shader.zig");
 const audio = @import("../../util/audio.zig");
 
 pub var audioPtr: *audio.Audio = undefined;

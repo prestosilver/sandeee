@@ -2,7 +2,7 @@ const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
-const va = @import("../vertArray.zig");
+const va = @import("../util/vertArray.zig");
 
 pub const SpriteData = struct {
     source: rect.Rectangle,

@@ -2,9 +2,9 @@ const std = @import("std");
 const gfx = @import("graphics.zig");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
-const tex = @import("../texture.zig");
-const shd = @import("../shader.zig");
-const va = @import("../vertArray.zig");
+const tex = @import("../util/texture.zig");
+const shd = @import("../util/shader.zig");
+const va = @import("../util/vertArray.zig");
 const allocator = @import("allocator.zig");
 const c = @import("../c.zig");
 

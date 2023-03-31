@@ -1,6 +1,5 @@
 const std = @import("std");
 const worker = @import("worker.zig");
-const shd = @import("../shader.zig");
 const font = @import("../util/font.zig");
 const mail = @import("../system/mail.zig");
 const c = @import("../c.zig");

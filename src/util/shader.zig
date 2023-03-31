@@ -1,6 +1,6 @@
 const std = @import("std");
-const mat4 = @import("math/mat4.zig");
-const c = @import("c.zig");
+const mat4 = @import("../math/mat4.zig");
+const c = @import("../c.zig");
 
 pub const ShaderFile = struct {
     contents: [*c]const u8,

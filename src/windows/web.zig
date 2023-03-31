@@ -7,10 +7,10 @@ const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
 const sb = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
-const shd = @import("../shader.zig");
+const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const files = @import("../system/files.zig");
-const tex = @import("../texture.zig");
+const tex = @import("../util/texture.zig");
 
 const SCROLL = 30;
 

@@ -1,8 +1,8 @@
 const std = @import("std");
-const vecs = @import("math/vecs.zig");
-const cols = @import("math/colors.zig");
-const c = @import("c.zig");
-const allocator = @import("util/allocator.zig");
+const vecs = @import("../math/vecs.zig");
+const cols = @import("../math/colors.zig");
+const c = @import("../c.zig");
+const allocator = @import("allocator.zig");
 
 pub const Vert = struct {
     x: c.GLfloat,
