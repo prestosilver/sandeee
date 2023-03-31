@@ -163,6 +163,7 @@ pub const SpriteBatch = struct {
 
             ctex = entry.texture.tex;
             cshader = entry.shader.id;
+            entry.shader.setFloat("time", @floatCast(f32, c.glfwGetTime()));
             cscissor = entry.scissor;
 
             if (entry.update and entry.verts.data.len != 0) {

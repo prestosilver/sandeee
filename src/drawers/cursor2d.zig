@@ -2,7 +2,9 @@ const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
-const va = @import("../vertArray.zig");
+const gfx = @import("../util/graphics.zig");
+const va = @import("../util/vertArray.zig");
+const c = @import("../c.zig");
 
 pub const CursorData = struct {
     source: rect.Rectangle,
@@ -19,6 +21,8 @@ pub const CursorData = struct {
 
     pub fn getVerts(self: *CursorData, pos: vecs.Vector3) !va.VertArray {
         var result = va.VertArray.init();
+
+        c.glfwGetCursorPos(gfx.gContext.win, pos.x, pos.y);
 
         result.append(vecs.Vector3.add(pos, vecs.newVec3(0, 0, 0)), vecs.newVec2(self.source.x, self.source.y), self.color);
         result.append(vecs.Vector3.add(pos, vecs.newVec3(0, self.size.y, 0)), vecs.newVec2(self.source.x, self.source.y + self.source.h), self.color);

@@ -18,6 +18,7 @@ const conf = @import("../system/config.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 const network = @import("../system/network.zig");
+const cursor = @import("../drawers/cursor2d.zig");
 
 pub const GSWindowed = struct {
     const Self = @This();
@@ -38,6 +39,7 @@ pub const GSWindowed = struct {
     face: *font.Font,
     settingsManager: *conf.SettingManager,
     bar_logo_sprite: sp.Sprite,
+    cursor: cursor.Cursor,
 
     webtex: *tex.Texture,
     wintex: *tex.Texture,
@@ -68,6 +70,7 @@ pub const GSWindowed = struct {
 
         self.openWindow.x = target.x + 25;
         self.openWindow.y = target.y + 25;
+
         return false;
     }
 

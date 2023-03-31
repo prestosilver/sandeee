@@ -168,8 +168,8 @@ pub const VM = struct {
 
         if (self.code) |code| {
             for (code) |entry| {
-                if (entry.string != null) {
-                    self.allocator.free(entry.string.?);
+                if (entry.string) |str| {
+                    self.allocator.free(str);
                 }
             }
             self.allocator.free(code);

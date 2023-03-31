@@ -57,4 +57,11 @@ pub const Shader = struct {
 
         c.glUniform1i(loc, value);
     }
+    pub fn setFloat(self: Shader, name: [*c]const u8, value: f32) void {
+        c.glUseProgram(self.id);
+
+        var loc = c.glGetUniformLocation(self.id, name);
+
+        c.glUniform1f(loc, value);
+    }
 };

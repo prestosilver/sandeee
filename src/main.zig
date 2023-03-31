@@ -31,6 +31,7 @@ const wall = @import("drawers/wall2d.zig");
 const sprite = @import("drawers/sprite2d.zig");
 const bar = @import("drawers/bar2d.zig");
 const win = @import("drawers/window2d.zig");
+const cursor = @import("drawers/cursor2d.zig");
 
 const conf = @import("system/config.zig");
 const files = @import("system/files.zig");
@@ -360,6 +361,12 @@ pub fn main() anyerror!void {
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(36, 464),
+            ),
+        },
+        .cursor = .{
+            .texture = &cursortex,
+            .data = cursor.CursorData.new(
+                rect.newRect(0, 0, 1, 1),
             ),
         },
         .wallpaper = wall.Wallpaper.new(&walltex, wall.WallData{
