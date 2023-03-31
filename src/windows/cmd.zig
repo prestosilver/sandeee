@@ -104,18 +104,12 @@ const CMDData = struct {
                 std.mem.copy(u8, self.bt[start + 3 .. self.bt.len - 1], self.text.items);
                 self.bt[self.bt.len - 1] = '\n';
 
-                var command = std.ArrayList(u8).init(allocator.alloc);
-                defer command.deinit();
-
-                for (self.text.items) |char| {
-                    if (char == ' ') {
-                        break;
-                    } else {
-                        try command.append(char);
-                    }
+                var command = self.text.items;
+                if (std.mem.indexOf(u8, self.text.items, " ")) |size| {
+                    command.len = size;
                 }
 
-                var al = self.shell.run(command.items, self.text.items) catch |err| {
+                var al = self.shell.run(command, self.text.items) catch |err| {
                     const msg = @errorName(err);
 
                     start = self.bt.len;
