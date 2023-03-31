@@ -37,42 +37,25 @@ pub const QueueEntry = struct {
     hash: u32 = 0,
 
     pub fn GetHash(entry: *QueueEntry) u32 {
-        var hash = std.hash.Adler32.init();
-        var casted = @ptrCast(*[4]u8, &entry.texture.tex);
-        hash.update(casted);
+        var hash: u32 = 5381;
+
+        var casted: []const u8 = &std.mem.toBytes(entry.texture.tex);
+        for (casted) |ch|
+            hash = ((hash << 5) +% hash) +% ch;
+
         if (entry.scissor != null) {
-            casted = @ptrCast(*[4]u8, &entry.scissor.?.x);
-            hash.update(casted);
-            casted = @ptrCast(*[4]u8, &entry.scissor.?.y);
-            hash.update(casted);
-            casted = @ptrCast(*[4]u8, &entry.scissor.?.w);
-            hash.update(casted);
-            casted = @ptrCast(*[4]u8, &entry.scissor.?.h);
-            hash.update(casted);
+            casted = &std.mem.toBytes(entry.scissor);
+            for (casted) |ch|
+                hash = ((hash << 5) +% hash) +% ch;
         }
 
         for (entry.verts.data) |_, idx| {
-            var castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].x);
-            hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].y);
-            hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].z);
-            hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].u);
-            hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].v);
-            hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].r);
-            hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].g);
-            hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].b);
-            hash.update(castedItem);
-            castedItem = @ptrCast(*[4]u8, &entry.verts.data[idx].a);
-            hash.update(castedItem);
+            casted = &std.mem.toBytes(entry.verts.data[idx]);
+            for (casted) |ch|
+                hash = ((hash << 5) +% hash) +% ch;
         }
 
-        return hash.final();
+        return hash;
     }
 };
 
@@ -201,7 +184,7 @@ pub const SpriteBatch = struct {
             c.glEnableVertexAttribArray(1);
             c.glEnableVertexAttribArray(2);
 
-            c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c.GLsizei, entry.verts.data.len));
+            c.glDrawArrays(c.GL_QUADS, 0, @intCast(c.GLsizei, entry.verts.data.len));
         }
         if (cscissor != null)
             c.glDisable(c.GL_SCISSOR_TEST);
