@@ -46,7 +46,8 @@ const fragShader = @embedFile("shaders/frag.glsl");
 const fontVertShader = @embedFile("shaders/fvert.glsl");
 const fontFragShader = @embedFile("shaders/ffrag.glsl");
 
-const crtShader = @embedFile("shaders/crt.glsl");
+const crtFragShader = @embedFile("shaders/crtfrag.glsl");
+const crtVertShader = @embedFile("shaders/crtvert.glsl");
 
 // embed images
 const logoImage = @embedFile("images/logo.eia");
@@ -65,7 +66,8 @@ const font_shader_files = [2]shd.ShaderFile{
 };
 
 const crt_shader_files = [2]shd.ShaderFile{
-    shd.ShaderFile{ .contents = crtShader, .kind = c.GL_FRAGMENT_SHADER },
+    shd.ShaderFile{ .contents = crtFragShader, .kind = c.GL_FRAGMENT_SHADER },
+    shd.ShaderFile{ .contents = crtVertShader, .kind = c.GL_VERTEX_SHADER },
 };
 
 var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
@@ -106,15 +108,62 @@ var audioman: audio.Audio = undefined;
 var errorMsg: []const u8 = "Error: Unknown";
 var errorState: u8 = 0;
 
+var framebufferName: c.GLuint = 0;
+var quad_VertexArrayID: c.GLuint = 0;
+var renderedTexture: c.GLuint = 0;
+var depthrenderbuffer: c.GLuint = 0;
+
+const full_quad = [_]c.GLfloat{
+    -1.0, -1.0, 0.0,
+    1.0,  -1.0, 0.0,
+    -1.0, 1.0,  0.0,
+    -1.0, 1.0,  0.0,
+    1.0,  -1.0, 0.0,
+    1.0,  1.0,  0.0,
+};
+
 pub fn blit() !void {
     // actual gl calls start here
     ctx.makeCurrent();
 
+    c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
+
     // clear the window
+    c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @floatToInt(i32, ctx.size.x), @floatToInt(i32, ctx.size.y), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+
+    // Poor filtering. Needed !
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
+
+    c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
+    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @floatToInt(i32, ctx.size.x), @floatToInt(i32, ctx.size.y));
+    c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
+
+    c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+    c.glDrawBuffers(1, &[_]c.GLenum{c.GL_COLOR_ATTACHMENT0});
+
+    if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
+        return error.FramebufferSetupFail;
+
+    c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
+
     gfx.clear(&ctx);
 
     // finish render
     try sb.render();
+
+    c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
+    c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
+
+    c.glUseProgram(crt_shader.id);
+    crt_shader.setFloat("time", @floatCast(f32, c.glfwGetTime()));
+
+    c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
+    c.glEnableVertexAttribArray(0);
+    c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
 
     c.glFlush();
     c.glFinish();
@@ -276,6 +325,7 @@ pub fn main() anyerror!void {
     loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
 
     // shaders
+    try loader.enqueue(&crt_shader_files, &crt_shader, worker.shader.loadShader);
     try loader.enqueue(&shader_files, &shader, worker.shader.loadShader);
     try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
 
@@ -292,6 +342,13 @@ pub fn main() anyerror!void {
 
     // start setup states
     ctx.makeCurrent();
+
+    c.glGenFramebuffers(1, &framebufferName);
+    c.glGenBuffers(1, &quad_VertexArrayID);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
+    c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, full_quad.len * @sizeOf(f32)), &full_quad, c.GL_DYNAMIC_DRAW);
+    c.glGenTextures(1, &renderedTexture);
+    c.glGenRenderbuffers(1, &depthrenderbuffer);
 
     // load some textures
     var biosTex = try tex.newTextureMem(biosImage);
