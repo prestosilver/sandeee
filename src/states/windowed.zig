@@ -129,6 +129,8 @@ pub const GSWindowed = struct {
         // draw bar
         try self.sb.draw(bar.Bar, &self.bar, self.shader, vecs.newVec3(0, 0, 0));
         try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, self.sb, &self.windows);
+
+        try self.sb.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
     }
 
     pub fn update(self: *Self, _: f32) !void {

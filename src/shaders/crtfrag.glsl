@@ -11,8 +11,6 @@ uniform float time = 0;
 uniform float screen_width = 1024;
 uniform float screen_height = 600;
 
-// Curvature
-uniform float BarrelPower =1.05;
 // Color bleeding
 uniform float color_bleeding = 1.2;
 uniform float bleeding_range_x = 1;
@@ -23,16 +21,22 @@ uniform float scan_size = 2.0;
 uniform float scanline_alpha = 0.95;
 uniform float lines_velocity = 30.0;
 
-vec2 distort(vec2 p)
+#define distortion 0.1
+
+vec2 distort(vec2 coord, const vec2 ratio)
 {
-    float angle = p.y / p.x;
-    float theta = atan(p.y,p.x);
-    float radius = pow(length(p), BarrelPower);
+	float offsety = 1.0 - ratio.y;
+	coord.y -= offsety;
+	coord /= ratio;
 
-    p.x = radius * cos(theta);
-    p.y = radius * sin(theta);
+	vec2 cc = coord - 0.5;
+	float dist = dot(cc, cc) * distortion;
+	vec2 result = coord + cc * (1.0 + dist) * dist;
 
-    return 0.5 * (p + vec2(1.0,1.0));
+	result *= ratio;
+	result.y += offsety;
+
+	return result;
 }
 
 void get_color_bleeding(inout vec4 current_color,inout vec4 color_left){
@@ -49,11 +53,11 @@ void get_color_scanline(vec2 uv,inout vec4 c,float time){
 
 void main()
 {
-    vec2 xy = SCREEN_UV.xy;
+    vec2 xy = (SCREEN_UV.xy + vec2(1)) / 2;
 
     float d = length(xy);
     if(d < 1.5){
-        xy = distort(xy);
+        xy = distort(xy, vec2(1));
     }
     else{
         xy = SCREEN_UV.xy;

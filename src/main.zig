@@ -502,10 +502,10 @@ pub fn main() anyerror!void {
 
     // main loop
     while (gfx.poll(&ctx)) {
-        switch (currentState) {
-            .Windowed => ctx.cursorMode(c.GLFW_CURSOR_NORMAL),
-            else => ctx.cursorMode(c.GLFW_CURSOR_HIDDEN),
-        }
+        //switch (currentState) {
+        //    .Windowed => ctx.cursorMode(c.GLFW_CURSOR_NORMAL),
+        //    else => ctx.cursorMode(c.GLFW_CURSOR_HIDDEN),
+        //}
 
         var state = gameStates.getPtr(currentState);
 

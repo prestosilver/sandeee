@@ -20,16 +20,23 @@ pub const CursorData = struct {
     }
 
     pub fn getVerts(self: *CursorData, pos: vecs.Vector3) !va.VertArray {
-        var result = va.VertArray.init();
+        var result = try va.VertArray.init();
 
-        c.glfwGetCursorPos(gfx.gContext.win, pos.x, pos.y);
-        result.append(vecs.Vector3.add(pos, vecs.newVec3(0, self.size.y, 0)), vecs.newVec2(self.source.x, self.source.y + self.source.h), self.color);
-        result.append(vecs.Vector3.add(pos, vecs.newVec3(self.size.x, self.size.y, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y + self.source.h), self.color);
-        result.append(vecs.Vector3.add(pos, vecs.newVec3(self.size.x, 0, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y), self.color);
+        var xo: f64 = 0;
+        var yo: f64 = 0;
 
-        result.append(vecs.Vector3.add(pos, vecs.newVec3(0, self.size.y, 0)), vecs.newVec2(self.source.x, self.source.y + self.source.h), self.color);
-        result.append(vecs.Vector3.add(pos, vecs.newVec3(0, 0, 0)), vecs.newVec2(self.source.x, self.source.y), self.color);
-        result.append(vecs.Vector3.add(pos, vecs.newVec3(self.size.x, 0, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y), self.color);
+        c.glfwGetCursorPos(gfx.gContext.window, &xo, &yo);
+
+        var x = @floatCast(f32, xo);
+        var y = @floatCast(f32, yo);
+
+        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(self.source.x, self.source.y + self.source.h), self.color);
+        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y + self.source.h), self.color);
+        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y), self.color);
+
+        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(self.source.x, self.source.y + self.source.h), self.color);
+        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y, 0)), vecs.newVec2(self.source.x, self.source.y), self.color);
+        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y), self.color);
 
         return result;
     }

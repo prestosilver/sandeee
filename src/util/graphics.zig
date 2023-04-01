@@ -57,11 +57,14 @@ pub fn init(name: [*c]const u8) !Context {
     c.glfwSetWindowMonitor(win, monitor, 0, 0, mode.width, mode.height, mode.refreshRate);
 
     c.glfwMakeContextCurrent(win);
+
     c.glfwSwapInterval(1);
 
     if (c.gladLoadGLLoader(@ptrCast(c.GLADloadproc, &c.glfwGetProcAddress)) == 0) {
         return error.GLADInit;
     }
+    c.glfwWindowHint(c.GLFW_SAMPLES, 4);
+    c.glEnable(c.GL_MULTISAMPLE);
 
     var shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
 
@@ -69,6 +72,8 @@ pub fn init(name: [*c]const u8) !Context {
     var h: c_int = 0;
 
     c.glfwGetFramebufferSize(win, &w, &h);
+
+    c.glfwSetInputMode(win, c.GLFW_CURSOR, c.GLFW_CURSOR_HIDDEN);
 
     c.glfwMakeContextCurrent(null);
 
