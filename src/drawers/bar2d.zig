@@ -66,24 +66,24 @@ pub const BarData = struct {
         var pos = rect.newRect(self.height, self.screendims.y - self.height + 6, self.screendims.x + self.height, self.height);
 
         var color = cols.newColorRGBA(0, 0, 0, 255);
-        try font.draw(batch, font_shader, "APPS", pos.location(), color);
+        try font.draw(batch, font_shader, "APPS", pos.location(), color, null);
 
         var ts = std.time.timestamp();
         var hours = @intCast(u64, ts) / std.time.s_per_hour % 12;
         var mins = @intCast(u64, ts) / std.time.s_per_min % 60;
-        var clockString = try std.fmt.allocPrint(allocator.alloc, "{}:{}", .{ hours, mins });
+        var clockString = try std.fmt.allocPrint(allocator.alloc, "{d:0>2}:{d:0>2}", .{ hours, mins });
         defer allocator.alloc.free(clockString);
 
         var clockSize = font.sizeText(clockString);
         var clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
 
-        try font.draw(batch, font_shader, clockString, clockPos, color);
+        try font.draw(batch, font_shader, clockString, clockPos, color, null);
 
         pos.x = 3 * self.height + 10;
         self.btns = 0;
 
         for (windows.items) |window| {
-            try font.draw(batch, font_shader, window.data.contents.name, pos.location(), color);
+            try font.draw(batch, font_shader, window.data.contents.name, pos.location(), color, null);
 
             pos.x += 4 * self.height;
             self.btns += 1;
@@ -108,7 +108,7 @@ pub const BarData = struct {
                 var height = font.size * 1;
                 y += std.math.floor((67 - height) / 2);
                 var textpos = vecs.newVec2(100, y);
-                try font.drawScale(batch, font_shader, text, textpos, color, 1);
+                try font.drawScale(batch, font_shader, text, textpos, color, 1, null);
             }
         }
     }

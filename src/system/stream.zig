@@ -1,6 +1,7 @@
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const files = @import("files.zig");
+const vm = @import("vm.zig");
 
 pub const StreamError = error{
     FileMissing,
@@ -12,8 +13,9 @@ pub const FileStream = struct {
     contents: []u8,
     offset: u32,
     updated: bool,
+    vmInstance: ?*vm.VM,
 
-    pub fn Open(root: *files.Folder, path: []const u8) !*FileStream {
+    pub fn Open(root: *files.Folder, path: []const u8, vmInstance: ?*vm.VM) !*FileStream {
         var result = try allocator.alloc.create(FileStream);
 
         var folder = root;
@@ -29,9 +31,10 @@ pub const FileStream = struct {
         }
 
         result.path = try allocator.alloc.alloc(u8, file.?.name.len);
-        var cont = try file.?.read();
+        var cont = try file.?.read(vmInstance);
         result.contents = try allocator.alloc.alloc(u8, cont.len);
         result.updated = false;
+        result.vmInstance = vmInstance;
 
         std.mem.copy(u8, result.contents, cont);
         std.mem.copy(u8, result.path, file.?.name);
@@ -76,7 +79,7 @@ pub const FileStream = struct {
 
     pub fn Flush(self: *FileStream) !void {
         if (self.updated)
-            try files.root.writeFile(self.path, self.contents);
+            try files.root.writeFile(self.path, self.contents, self.vmInstance);
         self.updated = false;
     }
 

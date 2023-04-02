@@ -2,33 +2,33 @@ const std = @import("std");
 const allocator = @import("../../util/allocator.zig");
 const files = @import("../files.zig");
 const network = @import("../network.zig");
+const vm = @import("../vm.zig");
 
-var recvData: ?[]const u8 = null;
-
-pub fn writeNetRecv(data: []const u8) !void {
+pub fn writeNetRecv(data: []const u8, vmInstance: ?*vm.VM) !void {
     var client = network.Client{
         .port = data[0],
         .host = data[1..],
     };
 
-    recvData = try client.send("");
-    std.log.info("{?s}", .{recvData});
+    var recvData = try client.send("");
+
+    try vmInstance.?.miscData.put("recvData", recvData);
 }
 
-pub fn readNetRecv() ![]const u8 {
-    if (recvData) |result| {
-        recvData = null;
+pub fn readNetRecv(vmInstance: ?*vm.VM) ![]const u8 {
+    if (vmInstance.?.miscData.get("recvData")) |result| {
+        _ = vmInstance.?.miscData.remove("recvData");
         return result;
     }
 
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeNetSend(data: []const u8) !void {
+pub fn writeNetSend(data: []const u8, _: ?*vm.VM) !void {
     try network.server.send(data[0], data[1..]);
 }
 
-pub fn readNetSend() ![]const u8 {
+pub fn readNetSend(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 

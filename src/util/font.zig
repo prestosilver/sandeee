@@ -3,7 +3,7 @@ const vec = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const ft = @import("freetype");
-const allocator = @import("allocator");
+const allocator = @import("allocator.zig");
 const sb = @import("spritebatch.zig");
 const shd = @import("shader.zig");
 const va = @import("vertArray.zig");
@@ -122,14 +122,39 @@ pub const Font = struct {
         return result;
     }
 
-    pub fn draw(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color) !void {
-        return self.drawScale(batch, shader, text, position, color, 1.0);
+    pub fn draw(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, wrap: ?f32) !void {
+        return self.drawScale(batch, shader, text, position, color, 1.0, wrap);
     }
 
-    pub fn drawScale(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, scale: f32) !void {
+    pub fn drawScale(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, scale: f32, wrap: ?f32) !void {
         var pos = position;
-
         var srect = rect.newRect(0, 0, 1, 1);
+
+        if (wrap) |maxSize| {
+            var iter = std.mem.split(u8, text, " ");
+
+            while (iter.next()) |word| {
+                var spaced = try std.fmt.allocPrint(allocator.alloc, "{s} ", .{word});
+                defer allocator.alloc.free(spaced);
+
+                var size = vec.mul(self.sizeText(spaced), scale);
+
+                if (pos.x - position.x + size.x > maxSize) {
+                    if (pos.x == position.x) {
+                        //todo: force wrap
+                    } else {
+                        pos.x = position.x;
+                        pos.y += scale * self.size;
+                    }
+                }
+
+                try self.drawScale(batch, shader, spaced, pos, color, scale, null);
+
+                pos.x += size.x;
+            }
+
+            return;
+        }
 
         var vertarray = try va.VertArray.init();
 

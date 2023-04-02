@@ -150,7 +150,7 @@ pub const Shell = struct {
             edself.file = try self.root.getFile(param[5..]);
             edself.buffer.clearAndFree();
             if (edself.file == null) return result;
-            try edself.buffer.appendSlice(try edself.file.?.read());
+            try edself.buffer.appendSlice(try edself.file.?.read(null));
         }
         events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
@@ -206,11 +206,11 @@ pub const Shell = struct {
                 var line = std.ArrayList(u8).init(allocator.alloc);
                 defer line.deinit();
 
-                if ((try item.read()).len > 3 and std.mem.eql(u8, (try item.read())[0..4], ASM_HEADER)) {
+                if ((try item.read(null)).len > 3 and std.mem.eql(u8, (try item.read(null))[0..4], ASM_HEADER)) {
                     return try self.runAsm(folder, cmd, param);
                 }
 
-                for (try item.read()) |char| {
+                for (try item.read(null)) |char| {
                     if (char == '\n') {
                         var res = try self.runLine(line.items);
                         defer res.data.deinit();
@@ -233,7 +233,7 @@ pub const Shell = struct {
                 var line = std.ArrayList(u8).init(allocator.alloc);
                 defer line.deinit();
 
-                var cont = try item.read();
+                var cont = try item.read(null);
 
                 if (cont.len > 3 and std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
                     return try self.runAsm(folder, cmdeep, param);
@@ -335,7 +335,7 @@ pub const Shell = struct {
             var item = &folder.contents.items[idx];
 
             if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
-                var cont = try item.read();
+                var cont = try item.read(null);
                 if (cont.len < 4 or !std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
                     result.data.deinit();
 

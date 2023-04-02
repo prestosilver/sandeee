@@ -48,6 +48,7 @@ pub const VM = struct {
     pc: u64 = 0,
     code: ?[]const Operation = null,
     stopped: bool = false,
+    miscData: std.StringHashMap([]const u8),
 
     streams: std.ArrayList(?*streams.FileStream),
 
@@ -72,6 +73,7 @@ pub const VM = struct {
             .allocator = alloc,
             .streams = std.ArrayList(?*streams.FileStream).init(alloc),
             .functions = std.StringArrayHashMap(VMFunc).init(alloc),
+            .miscData = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
             .args = tmpArgs,
             .root = root,
@@ -398,7 +400,7 @@ pub const VM = struct {
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
-                                try self.streams.append(try streams.FileStream.Open(self.root, path.string.?));
+                                try self.streams.append(try streams.FileStream.Open(self.root, path.string.?, self));
                                 try self.pushStackI(self.streams.items.len - 1);
 
                                 return;

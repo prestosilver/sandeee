@@ -42,10 +42,10 @@ const EmailData = struct {
 
         try batch.draw(sprite.Sprite, &self.icon, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-        try font.draw(batch, font_shader, "  Inbox", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 0), col.newColor(0, 0, 0, 1));
-        try font.draw(batch, font_shader, "  Trash", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 1), col.newColor(0, 0, 0, 1));
-        try font.draw(batch, font_shader, "  Spam", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 2), col.newColor(0, 0, 0, 1));
-        try font.draw(batch, font_shader, ">", vecs.newVec2(bnds.x + 6, bnds.y + 106 + @intToFloat(f32, self.box) * font.size), col.newColor(0, 0, 0, 1));
+        try font.draw(batch, font_shader, "  Inbox", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 0), col.newColor(0, 0, 0, 1), null);
+        try font.draw(batch, font_shader, "  Trash", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 1), col.newColor(0, 0, 0, 1), null);
+        try font.draw(batch, font_shader, "  Spam", vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 2), col.newColor(0, 0, 0, 1), null);
+        try font.draw(batch, font_shader, ">", vecs.newVec2(bnds.x + 6, bnds.y + 106 + @intToFloat(f32, self.box) * font.size), col.newColor(0, 0, 0, 1), null);
 
         if (self.viewing == null) {
             self.dive.data.size.x = bnds.w - 118;
@@ -65,7 +65,7 @@ const EmailData = struct {
                     try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 106, y - 2, 0));
                 }
 
-                try font.draw(batch, font_shader, text, vecs.newVec2(bnds.x + 112, y - 4), col.newColor(0, 0, 0, 1));
+                try font.draw(batch, font_shader, text, vecs.newVec2(bnds.x + 112, y - 4), col.newColor(0, 0, 0, 1), null);
 
                 try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 112, y + font.size, 0));
 
@@ -79,34 +79,15 @@ const EmailData = struct {
 
             var from = try std.fmt.allocPrint(allocator.alloc, "from: {s}", .{email.from});
             defer allocator.alloc.free(from);
-            try font.draw(batch, font_shader, from, vecs.newVec2(bnds.x + 112, bnds.y - 4), col.newColor(0, 0, 0, 1));
+            try font.draw(batch, font_shader, from, vecs.newVec2(bnds.x + 112, bnds.y - 4), col.newColor(0, 0, 0, 1), null);
 
             var text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
             defer allocator.alloc.free(text);
-            try font.draw(batch, font_shader, text, vecs.newVec2(bnds.x + 112, bnds.y - 4 + font.size), col.newColor(0, 0, 0, 1));
+            try font.draw(batch, font_shader, text, vecs.newVec2(bnds.x + 112, bnds.y - 4 + font.size), col.newColor(0, 0, 0, 1), null);
 
-            var line = std.ArrayList(u8).init(allocator.alloc);
-            defer line.deinit();
             var y = bnds.y + 8 + font.size * 2;
 
-            for (email.contents) |char| {
-                if (char == '\n') {
-                    try font.draw(batch, font_shader, line.items, vecs.newVec2(bnds.x + 112, y), col.newColor(0, 0, 0, 1));
-                    line.clearAndFree();
-                    y += font.size;
-                } else {
-                    try line.append(char);
-                    if (font.sizeText(line.items).x > bnds.w - 112.0) {
-                        try line.resize(line.items.len - 1);
-                        try font.draw(batch, font_shader, line.items, vecs.newVec2(bnds.x + 112, y), col.newColor(0, 0, 0, 1));
-                        line.clearAndFree();
-                        y += font.size;
-
-                        try line.append(char);
-                    }
-                }
-            }
-            try font.draw(batch, font_shader, line.items, vecs.newVec2(bnds.x + 112, y), col.newColor(0, 0, 0, 1));
+            try font.draw(batch, font_shader, email.contents, vecs.newVec2(bnds.x + 112, y), col.newColor(0, 0, 0, 1), bnds.w - 112.0);
         }
     }
 

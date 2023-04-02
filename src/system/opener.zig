@@ -11,7 +11,7 @@ pub fn openFile(file: []const u8) ![]const u8 {
     var fileo = try files.root.getFile("/conf/opener.cfg");
 
     if (fileo) |filereal| {
-        var cont = try filereal.read();
+        var cont = try filereal.read(null);
         var lines = std.mem.split(u8, cont, "\n");
 
         while (lines.next()) |line| {

@@ -89,14 +89,14 @@ const SettingsData = struct {
 
             for (settings.items) |item| {
                 // draw name
-                try font.draw(batch, font_shader, item.setting, vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
+                try font.draw(batch, font_shader, item.setting, vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y), col.newColor(0, 0, 0, 1), null);
 
                 // draw value
                 var value = settingManager.get(item.key);
                 if (value) |val| {
-                    try font.draw(batch, font_shader, val, vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(0, 0, 0, 1));
+                    try font.draw(batch, font_shader, val, vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(0, 0, 0, 1), null);
                 } else {
-                    try font.draw(batch, font_shader, "UNDEFINED", vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(1, 0, 0, 1));
+                    try font.draw(batch, font_shader, "UNDEFINED", vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y), col.newColor(1, 0, 0, 1), null);
                 }
 
                 pos.y += font.size;
@@ -132,7 +132,7 @@ const SettingsData = struct {
             var size = font.sizeText(panel.name);
             var xo = (128 - size.x) / 2;
 
-            try font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1));
+            try font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1), null);
 
             try batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 

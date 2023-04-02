@@ -52,17 +52,17 @@ pub const GSInstall = struct {
 
         var titleLine = try std.fmt.allocPrint(allocator.alloc, "SandEEE Installer v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
-        try self.face.drawScale(self.sb, self.font_shader, titleLine, vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, titleLine, vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1, null);
         y += self.face.size * 2;
 
-        try self.face.drawScale(self.sb, self.font_shader, "Please Enter new disk name:", vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, "Please Enter new disk name:", vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1, null);
         y += self.face.size * 1;
 
-        try self.face.drawScale(self.sb, self.font_shader, self.diskName.items, vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, self.diskName.items, vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1, null);
 
         if (self.status == .Naming) return;
         y += self.face.size * 2;
-        try self.face.drawScale(self.sb, self.font_shader, "Installing", vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, "Installing", vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1, null);
         y += self.face.size * 2;
 
         self.load_sprite.data.size.x = (size.x - 200);
@@ -71,13 +71,13 @@ pub const GSInstall = struct {
 
         if (self.status == .Installing) return;
         y += self.face.size * 2;
-        try self.face.drawScale(self.sb, self.font_shader, "Done!", vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, "Done!", vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1, null);
         y += self.face.size * 1;
 
         var rebootLine = try std.fmt.allocPrint(allocator.alloc, "Rebooting in {}", .{@floatToInt(u32, 0.5 + self.timer)});
         defer allocator.alloc.free(rebootLine);
 
-        try self.face.drawScale(self.sb, self.font_shader, rebootLine, vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, rebootLine, vecs.newVec2(100, y), cols.newColor(1, 1, 1, 1), 1, null);
     }
 
     pub fn update(self: *Self, dt: f32) !void {

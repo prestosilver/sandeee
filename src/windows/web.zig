@@ -42,7 +42,7 @@ pub const WebData = struct {
 
         var cont: []const u8 = "Error Loading File";
         if (self.file) |file| {
-            cont = try file.read();
+            cont = try file.read(null);
         }
 
         var iter = std.mem.split(u8, cont, "\n");
@@ -110,7 +110,7 @@ pub const WebData = struct {
                 }
             }
 
-            try font.drawScale(batch, font_shader, text, vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y), color, scale);
+            try font.drawScale(batch, font_shader, text, vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y), color, scale, bnds.w);
 
             if (scale != 1.0) {
                 pos.x = 0;
@@ -147,9 +147,9 @@ pub const WebData = struct {
         var tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 150 - 34, 28);
         if (self.file) |file| {
-            try font.drawScale(batch, font_shader, file.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
+            try font.drawScale(batch, font_shader, file.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0, bnds.w);
         } else {
-            try font.drawScale(batch, font_shader, "Error", vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0);
+            try font.drawScale(batch, font_shader, "Error", vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0, bnds.w);
         }
         batch.scissor = tmp;
 

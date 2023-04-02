@@ -101,9 +101,9 @@ pub const GSDisks = struct {
             line = try std.fmt.allocPrint(allocator.alloc, "BootEEE V_{s}", .{VERSION});
         }
 
-        try self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1, null);
         pos.y += self.face.size * 2;
-        try self.face.drawScale(self.sb, self.font_shader, "Select a disk", pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, "Select a disk", pos, cols.newColor(0.7, 0.7, 0.7, 1), 1, null);
         pos.y += self.face.size * 1;
 
         if (self.disks.items.len != 0) {
@@ -115,7 +115,7 @@ pub const GSDisks = struct {
                     line[0] = '>';
                 }
 
-                try self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1);
+                try self.face.drawScale(self.sb, self.font_shader, line, pos, cols.newColor(0.7, 0.7, 0.7, 1), 1, null);
                 pos.y += self.face.size * 1;
             }
         }

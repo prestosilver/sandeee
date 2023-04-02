@@ -34,14 +34,14 @@ pub const GSCrash = struct {
 
         try self.sb.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
 
-        try self.face.drawScale(self.sb, self.font_shader, "ERROR:", vecs.newVec2(300, 100), cols.newColor(1, 1, 1, 1), 1);
-        try self.face.drawScale(self.sb, self.font_shader, self.message.*, vecs.newVec2(300, 100 + self.face.size), cols.newColor(1, 1, 1, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, "ERROR:", vecs.newVec2(300, 100), cols.newColor(1, 1, 1, 1), 1, null);
+        try self.face.drawScale(self.sb, self.font_shader, self.message.*, vecs.newVec2(300, 100 + self.face.size), cols.newColor(1, 1, 1, 1), 1, null);
 
         var stateLine = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prevState.*});
         defer allocator.alloc.free(stateLine);
 
-        try self.face.drawScale(self.sb, self.font_shader, stateLine, vecs.newVec2(300, 100 + self.face.size * 2), cols.newColor(1, 1, 1, 1), 1);
-        try self.face.drawScale(self.sb, self.font_shader, "THIS IS NOT AN INTENTIONAL CRASH, PLEASE REPORT THIS", vecs.newVec2(300, 100 + self.face.size * 4), cols.newColor(1, 1, 1, 1), 1);
+        try self.face.drawScale(self.sb, self.font_shader, stateLine, vecs.newVec2(300, 100 + self.face.size * 2), cols.newColor(1, 1, 1, 1), 1, null);
+        try self.face.drawScale(self.sb, self.font_shader, "THIS IS NOT AN INTENTIONAL CRASH, PLEASE REPORT THIS", vecs.newVec2(300, 100 + self.face.size * 4), cols.newColor(1, 1, 1, 1), 1, null);
     }
 
     pub fn update(_: *Self, _: f32) !void {}

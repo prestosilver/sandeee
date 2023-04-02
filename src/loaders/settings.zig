@@ -15,7 +15,7 @@ pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.Sett
     var ofile = try files.root.getFile(self.indata.*);
 
     if (ofile) |file| {
-        var cont = try file.read();
+        var cont = try file.read(null);
         var iter = std.mem.split(u8, cont, "\n");
 
         while (iter.next()) |line| {

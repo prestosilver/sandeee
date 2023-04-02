@@ -10,16 +10,17 @@ const gfx = @import("gfx.zig");
 const rect = @import("../../math/rects.zig");
 const shd = @import("../../util/shader.zig");
 const audio = @import("../../util/audio.zig");
+const vm = @import("../vm.zig");
 
 pub var audioPtr: *audio.Audio = undefined;
 
 // snd play
 
-pub fn readSndPlay() ![]const u8 {
+pub fn readSndPlay(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeSndPlay(data: []const u8) !void {
+pub fn writeSndPlay(data: []const u8, _: ?*vm.VM) !void {
     if (data.len == 0) return;
 
     var snd = audio.Sound.init(data);

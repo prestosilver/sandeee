@@ -9,11 +9,12 @@ const tex = @import("../../util/texture.zig");
 const rect = @import("../../math/rects.zig");
 const vecs = @import("../../math/vecs.zig");
 const gfx = @import("../../util/graphics.zig");
+const vm = @import("../vm.zig");
 
 pub var texIdx: u8 = 0;
 pub var textures: std.AutoHashMap(u8, tex.Texture) = undefined;
 
-pub fn readGfxNew() ![]const u8 {
+pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
     var result = try allocator.alloc.alloc(u8, 1);
 
     result[0] = texIdx;
@@ -29,17 +30,17 @@ pub fn readGfxNew() ![]const u8 {
     return result;
 }
 
-pub fn writeGfxNew(_: []const u8) !void {
+pub fn writeGfxNew(_: []const u8, _: ?*vm.VM) !void {
     return;
 }
 
 // /fake/gfx/destroy
 
-pub fn readGfxDestroy() ![]const u8 {
+pub fn readGfxDestroy(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxDestroy(data: []const u8) !void {
+pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
     var idx = data[0];
     var texture = textures.get(idx);
     if (texture == null) return;
@@ -55,11 +56,11 @@ pub fn writeGfxDestroy(data: []const u8) !void {
 
 // /fake/gfx/upload
 
-pub fn readGfxUpload() ![]const u8 {
+pub fn readGfxUpload(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxUpload(data: []const u8) !void {
+pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
     var idx = data[0];
     var image = data[1..];
 

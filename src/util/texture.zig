@@ -24,12 +24,13 @@ pub fn newTextureSize(size: vecs.Vector2) Texture {
 
     return result;
 }
+
 pub fn newTextureFile(file: []const u8) !Texture {
     var image = try files.root.getFile(file);
 
     if (image == null) return error.NotFound;
 
-    var cont = try image.?.read();
+    var cont = try image.?.read(null);
 
     return newTextureMem(cont);
 }

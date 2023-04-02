@@ -2,6 +2,7 @@ const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const fake = @import("pseudo/all.zig");
+const vm = @import("vm.zig");
 
 pub var root: *Folder = undefined;
 pub var home: *Folder = undefined;
@@ -16,21 +17,21 @@ pub const File = struct {
     name: []const u8,
     contents: []u8,
 
-    pseudoWrite: ?*const fn ([]const u8) anyerror!void = null,
-    pseudoRead: ?*const fn () anyerror![]const u8 = null,
+    pseudoWrite: ?*const fn ([]const u8, ?*vm.VM) anyerror!void = null,
+    pseudoRead: ?*const fn (?*vm.VM) anyerror![]const u8 = null,
 
-    pub fn write(self: *File, contents: []const u8) !void {
+    pub fn write(self: *File, contents: []const u8, vmInstance: ?*vm.VM) !void {
         if (self.pseudoWrite != null) {
-            return self.pseudoWrite.?(contents);
+            return self.pseudoWrite.?(contents, vmInstance);
         } else {
             self.contents = try allocator.alloc.realloc(self.contents, contents.len);
             std.mem.copy(u8, self.contents, contents);
         }
     }
 
-    pub fn read(self: *File) ![]const u8 {
+    pub fn read(self: *File, vmInstance: ?*vm.VM) ![]const u8 {
         if (self.pseudoRead != null) {
-            return self.pseudoRead.?();
+            return self.pseudoRead.?(vmInstance);
         } else {
             return self.contents;
         }
@@ -81,7 +82,7 @@ pub const Folder = struct {
             defer allocator.alloc.free(contbuffer);
             _ = try file.read(contbuffer);
             _ = try root.newFile(namebuffer);
-            try root.writeFile(namebuffer, contbuffer);
+            try root.writeFile(namebuffer, contbuffer, null);
         }
     }
 
@@ -330,20 +331,20 @@ pub const Folder = struct {
         return true;
     }
 
-    pub fn writeFile(self: *Folder, name: []const u8, contents: []const u8) !void {
+    pub fn writeFile(self: *Folder, name: []const u8, contents: []const u8, vmInstance: ?*vm.VM) !void {
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
 
         for (name) |ch| {
             if (ch == '/') {
-                if (check(file.items, ".")) return try self.writeFile(name[2..], contents);
-                if (check(file.items, "")) return try self.writeFile(name[1..], contents);
+                if (check(file.items, ".")) return try self.writeFile(name[2..], contents, vmInstance);
+                if (check(file.items, "")) return try self.writeFile(name[1..], contents, vmInstance);
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
                 for (self.subfolders.items, 0..) |folder, idx| {
                     if (check(folder.name, fullname)) {
-                        return try self.subfolders.items[idx].writeFile(name[file.items.len..], contents);
+                        return try self.subfolders.items[idx].writeFile(name[file.items.len..], contents, vmInstance);
                     }
                 }
                 return error.FolderNotFound;
@@ -355,7 +356,7 @@ pub const Folder = struct {
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
         for (self.contents.items, 0..) |subfile, idx| {
             if (check(subfile.name, fullname)) {
-                try self.contents.items[idx].write(contents);
+                try self.contents.items[idx].write(contents, vmInstance);
                 allocator.alloc.free(fullname);
                 return;
             }

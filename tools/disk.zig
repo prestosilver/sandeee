@@ -51,7 +51,7 @@ pub const DiskStep = struct {
                         continue;
                     }
 
-                    try files.root.writeFile(file.path, contents.?);
+                    try files.root.writeFile(file.path, contents.?, null);
                     count += 1;
                 },
                 std.fs.IterableDir.Entry.Kind.Directory => {

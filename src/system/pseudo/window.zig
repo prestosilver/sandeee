@@ -9,6 +9,7 @@ const tex = @import("../../util/texture.zig");
 const gfx = @import("gfx.zig");
 const rect = @import("../../math/rects.zig");
 const shd = @import("../../util/shader.zig");
+const vm = @import("../vm.zig");
 
 pub var wintex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
@@ -17,7 +18,7 @@ pub var vmIdx: u8 = 0;
 pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
 
 // /fake/win/new
-pub fn readWinNew() ![]const u8 {
+pub fn readWinNew(_: ?*vm.VM) ![]const u8 {
     var result: *u8 = try allocator.alloc.create(u8);
     var winDat = try vmwin.new(vmIdx, shader);
 
@@ -46,17 +47,17 @@ pub fn readWinNew() ![]const u8 {
     return @ptrCast(*[1]u8, result);
 }
 
-pub fn writeWinNew(_: []const u8) !void {
+pub fn writeWinNew(_: []const u8, _: ?*vm.VM) !void {
     return;
 }
 
 // /fake/win/destroy
 
-pub fn readWinDestroy() ![]const u8 {
+pub fn readWinDestroy(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinDestroy(id: []const u8) !void {
+pub fn writeWinDestroy(id: []const u8, _: ?*vm.VM) !void {
     if (id.len != 1) return;
     var aid = id[0];
 
@@ -77,21 +78,21 @@ pub fn writeWinDestroy(id: []const u8) !void {
 
 // /fake/win/open
 
-pub fn readWinOpen() ![]const u8 {
+pub fn readWinOpen(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinOpen(_: []const u8) !void {
+pub fn writeWinOpen(_: []const u8, _: ?*vm.VM) !void {
     return;
 }
 
 // /fake/win/flip
 
-pub fn readWinFlip() ![]const u8 {
+pub fn readWinFlip(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinFlip(id: []const u8) !void {
+pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
     if (id.len != 1) return;
     var aid = id[0];
 
@@ -113,11 +114,11 @@ pub fn writeWinFlip(id: []const u8) !void {
 
 // /fake/win/render
 
-pub fn readWinRender() ![]const u8 {
+pub fn readWinRender(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinRender(data: []const u8) !void {
+pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
     if (data.len < 66) return;
 
     var texture = gfx.textures.getPtr(data[0]);
