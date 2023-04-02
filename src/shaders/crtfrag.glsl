@@ -18,8 +18,8 @@ uniform float bleeding_range_y = 1;
 // Scanline
 uniform float lines_distance = 4.0;
 uniform float scan_size = 2.0;
-uniform float scanline_alpha = 0.95;
-uniform float lines_velocity = 30.0;
+uniform float scanline_alpha = 0.85;
+uniform float lines_velocity = -2.0;
 
 uniform int crt_enable = 0;
 
@@ -95,7 +95,7 @@ void main()
 
     xy.x += displace(xy) * 0.5;
 
-    float bar = clamp(exp(1.0 - mod(xy.y + time*0.2, 1.)), 1.0, 1.2) - 0.2;
+    float bar = clamp(exp(1.0 - mod(((SCREEN_UV.y + 1) / 2) + time*0.2, 1.)), 1.0, 1.2) - 0.2;
 
     float pixel_size_x = 1.0/screen_width*bleeding_range_x;
     float pixel_size_y = 1.0/screen_height*bleeding_range_y;
