@@ -6,6 +6,7 @@ const sound = @import("tools/sound.zig");
 const image = @import("tools/textures.zig");
 const diskStep = @import("tools/disk.zig");
 const conv = @import("tools/convert.zig");
+const eon = @import("tools/eon.zig");
 
 pub var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub const alloc = gpa.allocator();
@@ -114,6 +115,22 @@ pub fn build(b: *std.build.Builder) void {
         convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/audiotest.asm", "content/disk/prof/tests/audiotest.eep")) catch {};
         convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/net.asm", "content/disk/prof/tests/send.eep")) catch {};
         convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/recv.asm", "content/disk/prof/tests/recv.eep")) catch {};
+
+        var eonFiles = [_][]const u8{"test"};
+
+        for (eonFiles) |file| {
+            var eonf = std.fmt.allocPrint(b.allocator, "content/eon/{s}.eon", .{file}) catch "";
+            var asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
+            var eepf = std.fmt.allocPrint(b.allocator, "content/disk/tests/eon/{s}.eep", .{file}) catch "";
+
+            var compStep = conv.ConvertStep.create(b, eon.compileEon, eonf, asmf);
+
+            var adds = conv.ConvertStep.create(b, comp.compile, asmf, eepf);
+
+            adds.step.dependOn(&compStep.step);
+
+            convert_steps.append(adds) catch {};
+        }
     }
 
     convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/exec/asm.asm", "content/disk/exec/asm.eep")) catch {};
