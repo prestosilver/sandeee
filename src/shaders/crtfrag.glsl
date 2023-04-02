@@ -12,7 +12,7 @@ uniform float screen_width = 1024;
 uniform float screen_height = 600;
 
 // Color bleeding
-uniform float color_bleeding = 1.2;
+uniform float color_bleeding = 1.1;
 uniform float bleeding_range_x = 1;
 uniform float bleeding_range_y = 1;
 // Scanline
@@ -20,6 +20,8 @@ uniform float lines_distance = 4.0;
 uniform float scan_size = 2.0;
 uniform float scanline_alpha = 0.95;
 uniform float lines_velocity = 30.0;
+
+uniform int crt_enable = 0;
 
 #define distortion 0.1
 
@@ -51,9 +53,27 @@ void get_color_scanline(vec2 uv,inout vec4 c,float time){
     c.a = 1.0;
 }
 
+
+float onOff(float a, float b, float c)
+{
+    return step(c, sin(time + a*cos(time*b)));
+}
+
+float displace(vec2 look)
+{
+    float y = (look.y-mod(time/4.,1.));
+    float window = 1./(1.+50.*y*y);
+    return sin(look.y*20. + time)/80.*onOff(4.,2.,.8)*(1.+cos(time*60.))*window;
+}
+
 void main()
 {
     vec2 xy = (SCREEN_UV.xy + vec2(1)) / 2;
+
+    if (crt_enable == 0) {
+        color = texture(tex, xy);
+        return;
+    }
 
     float d = length(xy);
     if(d < 1.5){
@@ -73,10 +93,14 @@ void main()
         return;
     }
 
+    xy.x += displace(xy) * 0.5;
+
+    float bar = clamp(exp(1.0 - mod(xy.y + time*0.2, 1.)), 1.0, 1.2) - 0.2;
+
     float pixel_size_x = 1.0/screen_width*bleeding_range_x;
     float pixel_size_y = 1.0/screen_height*bleeding_range_y;
-    vec4 color_left = texture(tex,xy - vec2(pixel_size_x, pixel_size_y));
-    vec4 current_color = texture(tex,xy);
+    vec4 color_left = texture(tex,xy - vec2(pixel_size_x, pixel_size_y)) * bar;
+    vec4 current_color = texture(tex,xy) * bar;
     get_color_bleeding(current_color,color_left);
     vec4 c = current_color+color_left;
     get_color_scanline(xy,c,time);
