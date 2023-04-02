@@ -45,6 +45,7 @@ const SettingsData = struct {
     const panels = [_]SettingPanel{
         SettingPanel{ .name = "Graphics", .icon = 1 },
         SettingPanel{ .name = "Sounds", .icon = 2 },
+        SettingPanel{ .name = "Explorer", .icon = 3 },
     };
     const Setting = struct {
         const Kind = enum(u8) { String, Dropdown };
@@ -79,6 +80,27 @@ const SettingsData = struct {
                             .kind = .String,
                             .setting = "Wallpaper Path",
                             .key = "wallpaper_path",
+                        },
+                        Setting{
+                            .kind = .Dropdown,
+                            .kinddata = "No Yes",
+                            .setting = "CRT Shader",
+                            .key = "crt_shader",
+                        },
+                    });
+                },
+                1 => {
+                    try settings.appendSlice(&[_]Setting{
+                        Setting{
+                            .kind = .String,
+                            .setting = "Sound Volume",
+                            .key = "sound_volume",
+                        },
+                        Setting{
+                            .kind = .Dropdown,
+                            .kinddata = "No Yes",
+                            .setting = "Sound Muted",
+                            .key = "sound_muted",
                         },
                     });
                 },

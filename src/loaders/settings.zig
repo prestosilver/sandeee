@@ -19,7 +19,7 @@ pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.Sett
         var iter = std.mem.split(u8, cont, "\n");
 
         while (iter.next()) |line| {
-            var comment = std.mem.split(u8, line, "%");
+            var comment = std.mem.split(u8, line, "#");
             var aline = comment.first();
 
             var eqls = std.mem.split(u8, aline, "=");
