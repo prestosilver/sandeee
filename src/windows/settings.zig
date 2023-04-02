@@ -129,7 +129,7 @@ const SettingsData = struct {
         var y: f32 = 0;
 
         for (SettingsData.panels, 0..) |panel, idx| {
-            var size = font.sizeText(panel.name);
+            var size = font.sizeText(panel.name, null);
             var xo = (128 - size.x) / 2;
 
             try font.draw(batch, font_shader, panel.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1), null);

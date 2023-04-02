@@ -56,12 +56,12 @@ const CMDData = struct {
 
         var lines = std.mem.splitBackwards(u8, self.bt, "\n");
 
+        var y = bnds.y + bnds.h - @intToFloat(f32, idx) * font.size - 6;
+
         while (lines.next()) |line| {
-            var y = bnds.y + bnds.h - @intToFloat(f32, idx + 1) * font.size - 6;
+            y -= font.sizeText(line, bnds.w).y;
 
             try font.draw(batch, shader, line, vecs.newVec2(bnds.x + 6, y), col.newColor(1, 1, 1, 1), bnds.w);
-
-            idx += 1;
         }
 
         return;

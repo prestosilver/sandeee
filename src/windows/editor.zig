@@ -58,7 +58,7 @@ pub const EditorData = struct {
             for (self.buffer.items, 0..) |char, idx| {
                 if (char == '\n') {
                     if (cy == self.cursor.y and cx <= self.cursor.x) {
-                        var size = font.sizeText(line.items);
+                        var size = font.sizeText(line.items, null);
                         self.cursor.x = cx;
 
                         try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1), null);
@@ -85,7 +85,7 @@ pub const EditorData = struct {
                     cx = 0;
                 } else {
                     if (cx == self.cursor.x and cy == self.cursor.y) {
-                        var size = font.sizeText(line.items);
+                        var size = font.sizeText(line.items, null);
 
                         try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1), null);
                         self.cursorIdx = idx;
@@ -107,7 +107,7 @@ pub const EditorData = struct {
                 self.cursor.y = cy;
             }
             if (cy == self.cursor.y and cx <= self.cursor.x) {
-                var size = font.sizeText(line.items);
+                var size = font.sizeText(line.items, null);
                 self.cursor.x = cx;
 
                 try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1), null);

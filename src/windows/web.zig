@@ -55,25 +55,12 @@ pub const WebData = struct {
             var text = line;
             var color = col.newColor(0, 0, 0, 1);
 
-            if (line.len == 0) {
-                pos.x = 0;
-                pos.y += font.size;
-            }
-
             if (std.mem.startsWith(u8, line, "- ") and std.mem.endsWith(u8, line, " -")) {
-                if (pos.x != 0) {
-                    pos.x = 0;
-                    pos.y += font.size;
-                }
                 scale = 3.0;
                 text = line[2 .. line.len - 2];
             }
 
             if (std.mem.startsWith(u8, line, "-- ") and std.mem.endsWith(u8, line, " --")) {
-                if (pos.x != 0) {
-                    pos.x = 0;
-                    pos.y += font.size;
-                }
                 scale = 2.0;
                 text = line[3 .. line.len - 3];
             }
@@ -87,7 +74,7 @@ pub const WebData = struct {
                 var url = linkiter.next();
                 url = std.mem.trim(u8, url.?, &std.ascii.whitespace);
                 if (url) |path| {
-                    var size = vecs.mul(font.sizeText(text), scale);
+                    var size = vecs.mul(font.sizeText(text, null), scale);
                     size.y = font.size * scale;
                     var file = try self.file.?.parent.getFile(path);
 
@@ -112,12 +99,8 @@ pub const WebData = struct {
 
             try font.drawScale(batch, font_shader, text, vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y), color, scale, bnds.w);
 
-            if (scale != 1.0) {
-                pos.x = 0;
-                pos.y += font.size * scale;
-            } else {
-                pos.x += font.sizeText(line).x;
-            }
+            pos.y += vecs.mul(font.sizeText(text, bnds.w / scale), scale).y;
+            pos.x = 0;
         }
 
         self.maxy = pos.y + 64 + font.size + self.scrollVal - bnds.h;

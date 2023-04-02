@@ -137,7 +137,7 @@ pub const Font = struct {
                 var spaced = try std.fmt.allocPrint(allocator.alloc, "{s} ", .{word});
                 defer allocator.alloc.free(spaced);
 
-                var size = vec.mul(self.sizeText(spaced), scale);
+                var size = vec.mul(self.sizeText(spaced, null), scale);
 
                 if (pos.x - position.x + size.x > maxSize) {
                     if (pos.x == position.x) {
@@ -194,8 +194,9 @@ pub const Font = struct {
         try batch.addEntry(&entry);
     }
 
-    pub fn sizeText(self: *Font, text: []const u8) vec.Vector2 {
+    pub fn sizeText(self: *Font, text: []const u8, wrap: ?f32) vec.Vector2 {
         var result = vec.newVec2(0, 0);
+        var wrapped = false;
 
         for (text) |ch| {
             if (ch > 127) continue;
@@ -203,7 +204,17 @@ pub const Font = struct {
             var char = self.chars[ch];
             result.x += char.ax;
             result.y += char.ay;
+
+            if (wrap != null and result.x > wrap.?) {
+                wrapped = true;
+                result.x = 0;
+                result.y += self.size;
+            }
         }
+
+        result.y += self.size;
+        if (wrapped)
+            result.x = wrap.?;
 
         return result;
     }
