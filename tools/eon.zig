@@ -168,6 +168,22 @@ const Expression = struct {
                     std.mem.copy(u8, result[start_res..], adds);
                     return result;
                 },
+                .TOKEN_CAT => {
+                    idx.* -= 1;
+                    var adds = "    cat\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
+                .TOKEN_ASSIGN => {
+                    idx.* -= 1;
+                    var adds = "    set\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
                 .TOKEN_GT => {
                     idx.* -= 1;
                     var adds = "    gt\n";
@@ -179,6 +195,14 @@ const Expression = struct {
                 .TOKEN_LT => {
                     idx.* -= 1;
                     var adds = "    lt\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
+                .TOKEN_EQ => {
+                    idx.* -= 1;
+                    var adds = "    eq\n";
                     var start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
@@ -623,9 +647,21 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "&")) {
+                try result.append(.{
+                    .kind = .TOKEN_CAT,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
             } else if (std.mem.eql(u8, code, "=")) {
                 try result.append(.{
                     .kind = .TOKEN_ASSIGN,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "==")) {
+                try result.append(.{
+                    .kind = .TOKEN_EQ,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
@@ -1014,6 +1050,8 @@ pub fn parseFunctionDecl(tokens: []Token, idx: *usize) !FunctionDecl {
         while (parseFunctionParam(tokens, idx) catch null) |param| {
             result.params = try allocator.realloc(result.params, result.params.len + 1);
             result.params[result.params.len - 1] = param;
+            if (tokens[idx.*].kind != .TOKEN_COMMA) break;
+            idx.* += 1;
         }
         if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
         idx.* += 1;
@@ -1039,11 +1077,14 @@ pub fn parseProgram(tokens: []Token) !Program {
         result.funcs[result.funcs.len - 1] = func;
     }
 
-    if (tokens[idx].kind != .TOKEN_EOF) return error.ExpectedEOF;
-    idx += 1;
+    if (tokens[idx].kind != .TOKEN_EOF) {
+        for (tokens[idx..]) |tok|
+            std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
 
-    for (tokens[idx..]) |tok|
-        std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
+        return error.ExpectedEOF;
+    }
+
+    idx += 1;
 
     return result;
 }
@@ -1054,15 +1095,14 @@ pub fn compileEon(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var tokens = try lex_file(in);
     defer tokens.deinit();
 
-    for (tokens.items) |tok|
-        std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
+    //for (tokens.items) |tok|
+    //    std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
 
     var prog = try parseProgram(tokens.items);
 
     var result = std.ArrayList(u8).init(alloc);
 
     var adds = try prog.toAsm();
-    std.log.info("\n{s}", .{adds});
     try result.appendSlice(adds);
 
     return result;
