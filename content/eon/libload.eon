@@ -1,0 +1,21 @@
+value setupLibLoad() {
+    asm "push \"/libs/libload.eep\"";
+    asm "sys 3";
+    asm "copy 0";
+    asm "push 4";
+    asm "sys 4";
+    asm "disc 0";
+    asm "copy 0";
+    asm "push 100000";
+    asm "sys 4";
+    asm "push \"libload\"";
+    asm "sys 12";
+    asm "sys 7";
+    return 0;
+}
+
+value loadLib(value name) {
+    asm "dup 0";
+    asm "call \"libload\"";
+    return 0;
+}

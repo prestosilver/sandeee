@@ -1,3 +1,4 @@
+
 #include "content/eon/libload.eon"
 
 void print(value str) {
@@ -14,7 +15,7 @@ value fib(value idx) {
 	return fib(idx - 1) + fib(idx - 2);
 }
 
-void printfib(value idx) {
+value printfib(value idx) {
     value val = fib(idx);
 
     print(idx);
@@ -22,12 +23,10 @@ void printfib(value idx) {
     print(val);
     print("\\n");
 
-    asm "ret";
+    return 0;
 }
 
 void main() {
-    setupLibLoad();
-    loadLib("/libs/string.ell");
-
+    printfib(23);
     asm "ret";
 }
