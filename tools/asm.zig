@@ -90,6 +90,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (std.mem.eql(u8, op, "cat")) code = 26;
 
         if (code == 255) {
+            std.log.info("{s}", .{op});
             return error.UnknownOp;
         }
         try result.appendSlice(&std.mem.toBytes(code));
@@ -110,7 +111,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                     try result.appendSlice("\x00");
                 } else {
                     if (!consts.contains(target)) {
-                        std.log.info("{any}", .{target});
+                        std.log.info("{s}", .{target});
                         return error.UnknownConst;
                     } else {
                         var value = consts.get(target).?;
@@ -172,7 +173,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
 
             var key = std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]}) catch "";
 
-            consts.put(key, idx) catch  {
+            consts.put(key, idx) catch {
                 std.log.info("err add", .{});
             };
         } else {
@@ -202,7 +203,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                     if (prev_toc != 0)
                         try toc.append(@intCast(u8, data.items.len - prev_toc + 1));
                     try toc.append(@intCast(u8, l.len - 2));
-                    try toc.appendSlice(l[1..l.len - 1]);
+                    try toc.appendSlice(l[1 .. l.len - 1]);
                     try toc.append(@intCast(u8, data.items.len));
                     prev_toc = data.items.len + 1;
                 }
@@ -246,6 +247,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (std.mem.eql(u8, op, "mod")) code = 27;
 
         if (code == 255) {
+            std.log.info("{s}", .{op});
             return error.UnknownOp;
         }
         try data.appendSlice(&std.mem.toBytes(code));
@@ -266,7 +268,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                     try data.appendSlice("\x00");
                 } else {
                     if (!consts.contains(target)) {
-                        std.log.info("{any}", .{target});
+                        std.log.info("{s}", .{target});
                         return error.UnknownConst;
                     } else {
                         var value = consts.get(target).?;
