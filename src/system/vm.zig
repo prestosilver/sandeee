@@ -413,9 +413,9 @@ pub const VM = struct {
                             var idx = try self.popStack();
                             defer self.free(idx);
                             if (idx.value != null) {
-                                if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
+                                if (idx.value.?.* >= self.streams.items.len) return error.StreamBad;
                                 var fs = self.streams.items[idx.value.?.*];
-                                if (fs == null) return error.InvalidOp;
+                                if (fs == null) return error.InvalidStream;
                                 if (len.value != null) {
                                     var cont = try fs.?.Read(@intCast(u32, len.value.?.*));
                                     defer self.allocator.free(cont);
@@ -714,17 +714,25 @@ pub const VM = struct {
                 var b = try self.findStack(0);
 
                 if (a.value != null) {
-                    if (b.value != null) {
-                        b.value.?.* = a.value.?.*;
+                    if (b.value == null) {
+                        self.free(b);
+                        b.string = null;
+                        b.value = try self.allocator.create(u64);
+                    }
+                    b.value.?.* = a.value.?.*;
 
-                        return;
-                    } else return error.InvalidOp;
+                    return;
                 } else if (a.string != null) {
-                    if (b.string != null) {
-                        b.string.? = a.string.?;
+                    if (b.string == null) {
+                        self.free(b);
+                        b.value = null;
+                        b.string = a.string.?;
+                    } else {
+                        b.string.? = try self.resizeString(b.string.?, a.string.?.len);
+                        std.mem.copy(u8, b.string.?, a.string.?);
+                    }
 
-                        return;
-                    } else return error.InvalidOp;
+                    return;
                 } else return error.InvalidOp;
             },
             Operation.Code.Disc => {
@@ -983,14 +991,14 @@ pub const VM = struct {
         var oper: Operation = undefined;
         if (self.inside_fn) |inside| {
             if (self.functions.getPtr(inside)) |func| {
-                oper = func.*.ops[self.pc];
+                oper = func.*.ops[self.pc - 1];
             } else {
                 var result = try std.fmt.allocPrint(self.allocator, "In function '?' @ {}:\nOperation: {}", .{ self.pc, oper.code });
 
                 return result;
             }
         } else {
-            oper = self.code.?[self.pc];
+            oper = self.code.?[self.pc - 1];
         }
 
         var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper.code });
