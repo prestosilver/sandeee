@@ -74,8 +74,10 @@ pub fn build(b: *std.build.Builder) void {
     exe.addModule("network", networkModule);
     exe.addModule("freetype", freetypeModule);
 
-    _ = b.exec(&[_][]const u8{ "rm", "-r", "content/disk" });
+    _ = b.exec(&[_][]const u8{ "rm", "-rf", "content/disk" });
     _ = b.exec(&[_][]const u8{ "cp", "-r", "content/rawdisk", "content/disk" });
+    _ = b.exec(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/content" });
+    _ = b.exec(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/disks" });
     if (exe.optimize == .Debug) {
         _ = b.exec(&[_][]const u8{ "cp", "-r", "content/disk_debug/prof", "content/disk" });
     }
@@ -190,17 +192,19 @@ pub fn build(b: *std.build.Builder) void {
     b.installFile("content/fonts/big.ttf", "bin/content/bios.ttf");
     b.installFile("content/emails.eme", "bin/content/emails.eme");
 
-    b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");
-    b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
-    b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
-    b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
-    b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dllcd");
-    b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
-    b.installFile("deps/dll/libfreetype-6.dll", "bin/libfreetype-6.dll");
-    b.installFile("deps/dll/libbz2-1.dll", "bin/libbz2-1.dll");
-    b.installFile("deps/dll/libbrotlidec.dll", "bin/libbrotlidec.dll");
-    b.installFile("deps/dll/libbrotlicommon.dll", "bin/libbrotlicommon.dll");
-    b.installFile("deps/dll/zlib1.dll", "bin/zlib1.dll");
+    if (exe.target.os_tag != null and exe.target.os_tag.? == .windows) {
+        b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");
+        b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
+        b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
+        b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
+        b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dllcd");
+        b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
+        b.installFile("deps/dll/libfreetype-6.dll", "bin/libfreetype-6.dll");
+        b.installFile("deps/dll/libbz2-1.dll", "bin/libbz2-1.dll");
+        b.installFile("deps/dll/libbrotlidec.dll", "bin/libbrotlidec.dll");
+        b.installFile("deps/dll/libbrotlicommon.dll", "bin/libbrotlicommon.dll");
+        b.installFile("deps/dll/zlib1.dll", "bin/zlib1.dll");
+    }
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
