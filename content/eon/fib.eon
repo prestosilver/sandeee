@@ -1,6 +1,3 @@
-
-#include "content/eon/libload.eon"
-
 void print(value str) {
     asm "dup 0";
     asm "sys 0";

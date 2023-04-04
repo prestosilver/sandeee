@@ -1,33 +1,115 @@
 #include "content/eon/libload.eon"
+#include "content/eon/sys.eon"
 
-void print(value str) {
-    asm "dup 0";
-    asm "sys 0";
-    asm "ret";
+void error(value msg) {
+    print("Error: " & msg);
+    quit();
 }
 
-value fib(value idx) {
-	if (idx < 2) {
-		return idx;
-	}
+value processArgs() {
+    value file = getArg(1);
 
-	return fib(idx - 1) + fib(idx - 2);
+    if (file == 0) {
+       error("Bad Argument");
+    }
+
+    return file;
 }
 
-void printfib(value idx) {
-    value val = fib(idx);
+value stripLine(value line) {
+    value char = 0;
+    for (char = @line; char == 32; char = @line) {
+        line = line + 1;
+    }
 
-    print(idx);
-    print(": ");
-    print(val);
-    print("\\n");
+    return line;
+}
 
-    asm "ret";
+value getLineEnum(value line) {
+    if ("StringStartsWith"(line, "nop")) {
+        return 0;
+    } else if ("StringStartsWith"(line, "sys")) {
+        return 1;
+    } else if ("StringStartsWith"(line, "push")) {
+        return 2;
+    } else if ("StringStartsWith"(line, "add")) {
+        return 3;
+    } else if ("StringStartsWith"(line, "sub")) {
+        return 4;
+    } else if ("StringStartsWith"(line, "copy")) {
+        return 5;
+    } else if ("StringStartsWith"(line, "jmp")) {
+        return 6;
+    }
+
+    return 255;
+}
+
+value getLineData(value line) {
+    value char = 0;
+    for (char = @line; char != 32; char = @line) {
+        line = line + 1;
+    }
+
+    if (@line == 34 && "StringLast"(line) == 34) {
+       line = line + 1;
+       line = line - 1;
+       return @2 & line;
+    }
+
+    return @1 & "StringToNum"(line);
+}
+
+value processLine(value line) {
+    value stripped = stripLine(line);
+    value enum = getLineEnum(stripped);
+
+    if (enum == 255) {
+       error("Invalid Instruction " & stripped);
+    }
+
+    value data = getLineData(stripped);
+
+    return @enum & data;
+}
+
+value processFile(value infile, value outfile) {
+    write(outfile, "EEEp");
+
+    value line = "";
+
+    value char = read(infile, 1);
+    for (char = char; char != ""; char = read(infile, 1)) {
+        if (@char == 10) {
+            write(outfile, processLine(line));
+
+            line = "";
+        } else {
+            line = line & char;
+        }
+    }
+
+    return 0;
 }
 
 void main() {
+    // load libs
     setupLibLoad();
     loadLib("/libs/string.ell");
+
+    // open output
+    value outfile = "out.eep";
+    value outhandle = createOpen(outfile);
+
+    // open input
+    value infile = processArgs();
+    value inhandle = open(infile);
+    print("EON: " & infile & "\\n");
+
+    // create out file
+    processFile(inhandle, outhandle);
+
+    print("Wrote: '" & outfile & "'\\n");
 
     asm "ret";
 }
