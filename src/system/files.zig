@@ -131,6 +131,8 @@ pub const Folder = struct {
             try root.subfolders.append(try fake.setupFake(root));
 
             var path = fm.getContentDir();
+            defer allocator.alloc.free(path);
+
             var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
 
             rootOut = try std.fmt.allocPrint(allocator.alloc, "{s}/disks/{s}", .{ path, diskPath });
@@ -265,7 +267,7 @@ pub const Folder = struct {
             }
         }
 
-        var cont = try std.fmt.allocPrint(allocator.alloc, "", .{});
+        var cont = try allocator.alloc.alloc(u8, 0);
 
         try self.contents.append(File{
             .name = fullname,

@@ -114,6 +114,8 @@ pub fn deinit() void {
 
 pub fn load() !void {
     var path = fm.getContentDir();
+    defer allocator.alloc.free(path);
+
     var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
 
     var file = try d.openFile("content/emails.eme", .{});

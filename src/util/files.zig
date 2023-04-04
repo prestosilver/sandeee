@@ -13,6 +13,7 @@ pub fn getContentPath(file: []const u8) std.ArrayList(u8) {
     }
 
     var first = std.process.getCwdAlloc(allocator.alloc) catch "";
+    defer allocator.alloc.free(first);
 
     result.appendSlice(first) catch {};
 
