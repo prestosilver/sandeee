@@ -38,8 +38,49 @@ value getLineEnum(value line) {
         return 4;
     } else if ("StringStartsWith"(line, "copy")) {
         return 5;
+    // jmpf early bc reasons
+    } else if ("StringStartsWith"(line, "jmpf")) {
+        return 9;
     } else if ("StringStartsWith"(line, "jmp")) {
         return 6;
+    } else if ("StringStartsWith"(line, "jz")) {
+        return 7;
+    } else if ("StringStartsWith"(line, "jnz")) {
+        return 8;
+    } else if ("StringStartsWith"(line, "mul")) {
+        return 10;
+    } else if ("StringStartsWith"(line, "div")) {
+        return 11;
+    } else if ("StringStartsWith"(line, "and")) {
+        return 12;
+    } else if ("StringStartsWith"(line, "or")) {
+        return 13;
+    } else if ("StringStartsWith"(line, "not")) {
+        return 14;
+    } else if ("StringStartsWith"(line, "eq")) {
+        return 15;
+    } else if ("StringStartsWith"(line, "getb")) {
+        return 16;
+    } else if ("StringStartsWith"(line, "ret")) {
+        return 17;
+    } else if ("StringStartsWith"(line, "call")) {
+        return 18;
+    } else if ("StringStartsWith"(line, "neg")) {
+        return 19;
+    } else if ("StringStartsWith"(line, "xor")) {
+        return 20;
+    } else if ("StringStartsWith"(line, "disc")) {
+        return 21;
+    } else if ("StringStartsWith"(line, "set")) {
+        return 22;
+    } else if ("StringStartsWith"(line, "dup")) {
+        return 23;
+    } else if ("StringStartsWith"(line, "lt")) {
+        return 24;
+    } else if ("StringStartsWith"(line, "gt")) {
+        return 25;
+    } else if ("StringStartsWith"(line, "cat")) {
+        return 26;
     }
 
     return 255;
@@ -51,13 +92,24 @@ value getLineData(value line) {
         line = line + 1;
     }
 
-    if (@line == 34 && "StringLast"(line) == 34) {
+    line = line + 1;
+
+    value starts = @line == 34;
+    value ends = "StringLast"(line) == 34;
+
+    if (starts && ends) {
        line = line + 1;
        line = line - 1;
-       return @2 & line;
+       return @2 & line & @0;
     }
 
-    return @1 & "StringToNum"(line);
+    value num = "StringToNum"(line);
+
+    if (num < 256) {
+       return @3 & @num;
+    }
+
+    return @1 & num;
 }
 
 value processLine(value line) {
@@ -104,12 +156,15 @@ void main() {
     // open input
     value infile = processArgs();
     value inhandle = open(infile);
-    print("EON: " & infile & "\\n");
+    print("ASM: " & infile & "\\n");
 
     // create out file
     processFile(inhandle, outhandle);
 
     print("Wrote: '" & outfile & "'\\n");
+
+    close(inhandle);
+    close(outhandle);
 
     asm "ret";
 }

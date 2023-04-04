@@ -25,6 +25,12 @@ value createOpen(value path) {
     asm "ret";
 }
 
+value close(value file) {
+    asm "sys 7";
+    asm "push 0";
+    asm "ret";
+}
+
 value write(value file, value text) {
     asm "sys 5";
     asm "push 0";
