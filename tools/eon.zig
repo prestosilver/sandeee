@@ -33,6 +33,7 @@ const TokenKind = enum {
     TOKEN_MUL,
     TOKEN_DIV,
     TOKEN_CAT,
+    TOKEN_AT,
 
     TOKEN_AND,
     TOKEN_OR,
@@ -160,9 +161,32 @@ const Expression = struct {
                     std.mem.copy(u8, result[start_res..], adds);
                     return result;
                 },
+                .TOKEN_AT => {
+                    var adds = "    getb\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
                 .TOKEN_ADD => {
                     idx.* -= 1;
                     var adds = "    add\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
+                .TOKEN_AND => {
+                    idx.* -= 1;
+                    var adds = "    and\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
+                .TOKEN_OR => {
+                    idx.* -= 1;
+                    var adds = "    or\n";
                     var start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
@@ -195,6 +219,14 @@ const Expression = struct {
                 .TOKEN_LT => {
                     idx.* -= 1;
                     var adds = "    lt\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
+                .TOKEN_NEQ => {
+                    idx.* -= 1;
+                    var adds = "    eq\n    not\n";
                     var start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
@@ -366,6 +398,74 @@ const Statement = struct {
                 std.mem.copy(u8, result[start_res..], adds);
                 return result;
             },
+            .STMT_FOR => {
+                var start = idx.*;
+                var map_start = map.max;
+                var block = block_id;
+                block_id += 1;
+
+                var result = try allocator.alloc(u8, 0);
+
+                var adds = try self.exprs.?[0].toAsm(map, idx);
+                defer allocator.free(adds);
+                var start_res = result.len;
+                result = try allocator.realloc(result, result.len + adds.len);
+                std.mem.copy(u8, result[start_res..], adds);
+
+                allocator.free(adds);
+                adds = try std.fmt.allocPrint(allocator, "    disc 0\nblock_{}_loop:\n", .{block});
+                start_res = result.len;
+                result = try allocator.realloc(result, result.len + adds.len);
+                std.mem.copy(u8, result[start_res..], adds);
+                idx.* -= 1;
+
+                allocator.free(adds);
+                adds = try self.exprs.?[1].toAsm(map, idx);
+                start_res = result.len;
+                result = try allocator.realloc(result, result.len + adds.len);
+                std.mem.copy(u8, result[start_res..], adds);
+
+                allocator.free(adds);
+                adds = try std.fmt.allocPrint(allocator, "    jz block_{}_end\n", .{block});
+                start_res = result.len;
+                result = try allocator.realloc(result, result.len + adds.len);
+                std.mem.copy(u8, result[start_res..], adds);
+                idx.* -= 1;
+
+                for (self.blks.?[0]) |*stmt| {
+                    allocator.free(adds);
+                    adds = try stmt.toAsm(map, idx);
+                    start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                }
+
+                allocator.free(adds);
+                adds = try self.exprs.?[2].toAsm(map, idx);
+                start_res = result.len;
+                result = try allocator.realloc(result, result.len + adds.len);
+                std.mem.copy(u8, result[start_res..], adds);
+
+                allocator.free(adds);
+                adds = try std.fmt.allocPrint(allocator, "    disc 0\n    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
+                start_res = result.len;
+                result = try allocator.realloc(result, result.len + adds.len);
+                std.mem.copy(u8, result[start_res..], adds);
+                idx.* -= 1;
+
+                for (start..idx.*) |_| {
+                    allocator.free(adds);
+                    adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
+                    start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    idx.* -= 1;
+                }
+
+                map.max = map_start;
+
+                return result;
+            },
             .STMT_ASM => {
                 var result = std.fmt.allocPrint(allocator, "    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
                 return result;
@@ -508,7 +608,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             continue;
         }
 
-        if (code.len != 0 and (std.mem.indexOf(u8, " {}();,\t\n-~![]", charStr) != null or std.mem.indexOf(u8, " {}();,\t\n-~![]", code[code.len - 1 ..]) != null)) {
+        if (code.len != 0 and (std.mem.indexOf(u8, " @{}();,\t\n-~![]", charStr) != null or std.mem.indexOf(u8, " @{}();,\t\n-~![]", code[code.len - 1 ..]) != null)) {
             if (std.mem.eql(u8, code, "{")) {
                 try result.append(.{
                     .kind = .TOKEN_OPEN_BRACE,
@@ -605,6 +705,18 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "&&")) {
+                try result.append(.{
+                    .kind = .TOKEN_AND,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "||")) {
+                try result.append(.{
+                    .kind = .TOKEN_OR,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
             } else if (std.mem.eql(u8, code, "+")) {
                 try result.append(.{
                     .kind = .TOKEN_ADD,
@@ -653,6 +765,12 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "@")) {
+                try result.append(.{
+                    .kind = .TOKEN_AT,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
             } else if (std.mem.eql(u8, code, "=")) {
                 try result.append(.{
                     .kind = .TOKEN_ASSIGN,
@@ -662,6 +780,12 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             } else if (std.mem.eql(u8, code, "==")) {
                 try result.append(.{
                     .kind = .TOKEN_EQ,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "!=")) {
+                try result.append(.{
+                    .kind = .TOKEN_NEQ,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
@@ -810,6 +934,18 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
             idx.* += 1;
             return result;
         }
+    } else if (tokens[idx.*].kind == .TOKEN_AT) {
+        var ident = &tokens[idx.*];
+        idx.* += 1;
+        var b = try allocator.alloc(Expression, 1);
+        b[0] = try parseFactor(tokens, idx);
+
+        result = .{
+            .a = &emptyExpr,
+            .op = ident,
+            .b = b,
+        };
+        return result;
     }
     return error.NoFactor;
 }
@@ -863,7 +999,8 @@ pub fn parseExpression(tokens: []Token, idx: *usize) anyerror!Expression {
         tokens[idx.*].kind == .TOKEN_OR or
         tokens[idx.*].kind == .TOKEN_LT or
         tokens[idx.*].kind == .TOKEN_GT or
-        tokens[idx.*].kind == .TOKEN_EQ)
+        tokens[idx.*].kind == .TOKEN_EQ or
+        tokens[idx.*].kind == .TOKEN_NEQ)
     {
         var op = &tokens[idx.*];
         idx.* += 1;
@@ -945,6 +1082,31 @@ pub fn parseStatement(tokens: []Token, idx: *usize) !Statement {
         idx.* += 1;
         if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.ExpectedSC;
         idx.* += 1;
+
+        return result;
+    } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_FOR) {
+        idx.* += 1;
+        if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
+        idx.* += 1;
+        var exprs = try allocator.alloc(Expression, 3);
+        exprs[0] = try parseExpression(tokens, idx);
+        if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.Semi;
+        idx.* += 1;
+        exprs[1] = try parseExpression(tokens, idx);
+        if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.Semi;
+        idx.* += 1;
+        exprs[2] = try parseExpression(tokens, idx);
+        if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
+        idx.* += 1;
+        var blks = try allocator.alloc([]Statement, 1);
+        blks[0] = try parseBlock(tokens, idx);
+
+        result = .{
+            .kind = .STMT_FOR,
+            .name = null,
+            .exprs = exprs,
+            .blks = blks,
+        };
 
         return result;
     } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_IF) {
