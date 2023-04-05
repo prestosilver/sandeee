@@ -13,11 +13,11 @@ uniform float screen_height = 600;
 
 // Color bleeding
 uniform float color_bleeding = 1.1;
-uniform float bleeding_range_x = 1;
-uniform float bleeding_range_y = 1;
+uniform float bleeding_range_x = 3;
+uniform float bleeding_range_y = 3;
 // Scanline
 uniform float lines_distance = 4.0;
-uniform float scan_size = 2.0;
+uniform float scan_size = 3.0;
 uniform float scanline_alpha = 0.85;
 uniform float lines_velocity = -2.0;
 
@@ -47,7 +47,7 @@ void get_color_bleeding(inout vec4 current_color,inout vec4 color_left){
 }
 
 void get_color_scanline(vec2 uv,inout vec4 c,float time){
-    float line_row = floor((uv.y * screen_height/scan_size) + mod(time*lines_velocity, lines_distance));
+    float line_row = floor((uv.y * screen_height/2/scan_size) + mod(time*lines_velocity, lines_distance));
     float n = 1.0 - ceil((mod(line_row,lines_distance)/lines_distance));
     c = c - n*c*(1.0 - scanline_alpha);
     c.a = 1.0;
@@ -65,6 +65,8 @@ float displace(vec2 look)
     float window = 1./(1.+50.*y*y);
     return sin(look.y*20. + time)/80.*onOff(4.,2.,.8)*(1.+cos(time*60.))*window;
 }
+
+#define GAMMA 2.2
 
 void main()
 {
@@ -97,12 +99,16 @@ void main()
 
     float bar = clamp(exp(1.0 - mod(((SCREEN_UV.y + 1) / 2) + time*0.2, 1.)), 1.0, 1.2) - 0.2;
 
-    float pixel_size_x = 1.0/screen_width*bleeding_range_x;
-    float pixel_size_y = 1.0/screen_height*bleeding_range_y;
+    float pixel_size_x = 0.5/screen_width*bleeding_range_x;
+    float pixel_size_y = 0.5/screen_height*bleeding_range_y;
     vec4 color_left = texture(tex,xy - vec2(pixel_size_x, pixel_size_y)) * bar;
     vec4 current_color = texture(tex,xy) * bar;
+    color_left = pow(color_left, vec4(GAMMA));
+    current_color = pow(current_color, vec4(GAMMA));
     get_color_bleeding(current_color,color_left);
     vec4 c = current_color+color_left;
-    get_color_scanline(xy,c,time);
+    get_color_scanline(SCREEN_UV.xy,c,time);
+
     color = c;
+    color = pow(color, vec4(1.0 / GAMMA));
 }

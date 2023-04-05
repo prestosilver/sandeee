@@ -106,7 +106,8 @@ pub fn regShader(ctx: *Context, s: shd.Shader) !void {
     defer proj.deinit();
 
     s.setMat4("projection", proj);
-    s.setInt("palette", 1);
+    s.setFloat("screen_width", ctx.size.x);
+    s.setFloat("screen_height", ctx.size.y);
 }
 
 pub fn resize(w: i32, h: i32) !void {
@@ -119,6 +120,8 @@ pub fn resize(w: i32, h: i32) !void {
 
     for (gContext.shaders.items) |shader| {
         shader.setMat4("projection", proj);
+        shader.setFloat("screen_width", @intToFloat(f32, w));
+        shader.setFloat("screen_height", @intToFloat(f32, h));
     }
 }
 
