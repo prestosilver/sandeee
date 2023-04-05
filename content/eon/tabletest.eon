@@ -1,0 +1,19 @@
+#include "content/eon/libload.eon"
+#include "content/eon/table.eon"
+#include "content/eon/sys.eon"
+
+value main() {
+    // load libs
+    setupLibLoad();
+    loadLib("/libs/string.ell");
+
+    value table = tableCreate(2, 2);
+
+    print(tablePut(table, "lo", "ls"));
+
+    print(table);
+
+    print(tableGet(table, "lo"));
+
+    asm "ret";
+}

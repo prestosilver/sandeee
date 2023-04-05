@@ -1,3 +1,4 @@
+#include "content/eon/tabletest.eon"
 #include "content/eon/libload.eon"
 #include "content/eon/sys.eon"
 

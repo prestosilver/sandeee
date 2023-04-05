@@ -1,0 +1,112 @@
+value tableCreate(value keysize, value valsize) {
+    return @keysize & @valsize & @0;
+}
+
+value tableLen(value table) {
+    value lenoffset = table + 2;
+
+    return @lenoffset;
+}
+
+value tableValueSize(value table) {
+    value sizeoffset = table + 1;
+
+    return @sizeoffset;
+}
+
+value tableKeySize(value table) {
+    value sizeoffset = table + 0;
+
+    return @sizeoffset;
+}
+
+value tableEntrySize(value table) {
+    return tableKeySize(table) + tableValueSize(table);
+}
+
+value setSize(value table, value size) {
+    value length = "StringLength"(table) - 2;
+
+    value end = table + 3;
+    value start = table - length;
+
+    table = start & @size & end;
+
+    return 0;
+}
+
+value tableGetEntry(value table, value idx) {
+    value size = tableEntrySize(table);
+    value offset = size * idx + 3;
+    value start = table + offset;
+    value startLen = "StringLength"(start);
+
+    value removes = startLen - size;
+
+    return start - removes;
+}
+
+value tableRemoveEntry(value table, value idx) {
+    value length = "StringLength"(table);
+    value size = tableValueSize(table) + tableKeySize(table);
+    value startOffset = size * idx + 3;
+    value startReverse = length - startOffset;
+    value start = table - startReverse;
+
+    value endOffset = size * idx + 3 + size;
+    value endReverse = length - endOffset;
+    value end = table + endReverse;
+
+    return start & end;
+}
+
+value tablePut(value table, value key, value val) {
+    if (tableKeySize(table) != "StringLength"(key)) return 0;
+    if (tableValueSize(table) != "StringLength"(val)) return 0;
+
+
+    value total = tableLen(table);
+    value valueSize = tableValueSize(table);
+    value keySize = tableKeySize(table);
+
+    value idx = 0;
+    value tEntry = "";
+    value tKey = "";
+
+    for (idx = 0; idx < total; idx = idx + 1) {
+        tEntry = tableGetEntry(table, idx);
+        tKey = tEntry - valueSize;
+
+        if (tKey == key) {
+           tableRemoveEntry(idx);
+           table = table & key & val;
+           return 1;
+        }
+    }
+    setSize(table, total + 1);
+
+    table = table & key & val;
+    return 1;
+}
+
+value tableGet(value table, value key) {
+    if (tableKeySize(table) != "StringLength"(key)) return 0;
+
+    value total = tableLen(table);
+    value valueSize = tableValueSize(table);
+    value keySize = tableKeySize(table);
+
+    value idx = 0;
+    value tEntry = "";
+    value tKey = "";
+
+    for (idx = 0; idx < total; idx = idx + 1) {
+        tEntry = tableGetEntry(table, idx);
+        tKey = tEntry - valueSize;
+
+        if (tKey == key) {
+           return tEntry + keySize;
+        }
+    }
+    return 0;
+}
