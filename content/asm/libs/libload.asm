@@ -22,8 +22,13 @@ loop:
     copy 2                      ; handle | libhandle count name libhandle
     copy 4                      ; handle | libhandle count name libhandle handle
     call readb                  ; handle | libhandle count name libhandle datastart
-    copy 5                      ; handle | libhandle count name libhandle datastart handle
+    copy 5                      ; handle | libhandle count name libhandle datastart
     call readb                  ; handle | libhandle count name libhandle datastart datalen
+    push 256                    ; handle | libhandle count name libhandle datastart datalen 256
+    mul                         ; handle | libhandle count name libhandle datastart datalen
+    copy 6                      ; handle | libhandle count name libhandle datastart datalen handle
+    call readb                  ; handle | libhandle count name libhandle datastart datalen datalensub
+    add                         ; handle | libhandle count name libhandle datastart datalen
     disc 1                      ; handle | libhandle count name libhandle datalen
     sys 4                       ; handle | libhandle count name data
     copy 1                      ; handle | libhandle count name data name

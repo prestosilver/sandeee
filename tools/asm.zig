@@ -200,11 +200,14 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (l.len == 0 or l[l.len - 1] == ':') {
             if (l.len != 0) {
                 if (l[0] == '_') {
-                    if (prev_toc != 0)
-                        try toc.append(@intCast(u8, data.items.len - prev_toc + 1));
+                    if (prev_toc != 0) {
+                        var len = data.items.len - prev_toc + 1;
+                        try toc.append(@intCast(u8, len / 256));
+                        try toc.append(@intCast(u8, len % 256));
+                    }
                     try toc.append(@intCast(u8, l.len - 2));
                     try toc.appendSlice(l[1 .. l.len - 1]);
-                    try toc.append(@intCast(u8, data.items.len));
+                    try toc.append(0);
                     prev_toc = data.items.len + 1;
                 }
             }
