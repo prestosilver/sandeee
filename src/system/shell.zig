@@ -37,26 +37,19 @@ pub const Shell = struct {
 
     var vms: usize = 0;
 
+    pub fn getPrompt(self: *Shell) []const u8 {
+        return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{self.root.name[0..self.root.name.len - 1]}) catch "> ";
+    }
+
     pub fn cd(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
 
-            if (std.mem.eql(u8, param[3..], "..")) {
-                self.root = self.root.parent;
-
+            if (try self.root.getFolder(param[3..])) |folder| {
+                self.root = folder;
                 return result;
-            }
-
-            for (self.root.subfolders.items, 0..) |item, idx| {
-                var rootlen = self.root.name.len;
-
-                if (std.mem.eql(u8, item.name[rootlen .. item.name.len - 1], param[3..])) {
-                    self.root = &self.root.subfolders.items[idx];
-
-                    return result;
-                }
             }
 
             return error.FileNotFound;

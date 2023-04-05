@@ -36,7 +36,9 @@ const CMDData = struct {
         var idx: usize = 0;
 
         if (self.shell.vm == null) {
-            var prompt = try std.fmt.allocPrint(allocator.alloc, "$ {s}", .{self.text.items});
+            var shellPrompt = self.shell.getPrompt();
+            defer allocator.alloc.free(shellPrompt);
+            var prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.text.items });
             defer allocator.alloc.free(prompt);
             try font.draw(batch, shader, prompt, vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6), col.newColor(1, 1, 1, 1), null);
             idx += 1;
@@ -59,9 +61,11 @@ const CMDData = struct {
         var y = bnds.y + bnds.h - @intToFloat(f32, idx) * font.size - 6;
 
         while (lines.next()) |line| {
-            y -= font.sizeText(line, bnds.w).y;
+            y -= font.sizeText(line, bnds.w - 12).y;
 
-            try font.draw(batch, shader, line, vecs.newVec2(bnds.x + 6, y), col.newColor(1, 1, 1, 1), bnds.w);
+            try font.draw(batch, shader, line, vecs.newVec2(bnds.x + 6, y), col.newColor(1, 1, 1, 1), bnds.w - 12);
+
+            if (y < bnds.y) return;
         }
 
         return;
@@ -98,11 +102,13 @@ const CMDData = struct {
                 try self.text.append('/');
             },
             c.GLFW_KEY_ENTER => {
+                var shellPrompt = self.shell.getPrompt();
+                defer allocator.alloc.free(shellPrompt);
+                var prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shellPrompt, self.text.items });
+                defer allocator.alloc.free(prompt);
                 var start = self.bt.len;
-                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.text.items.len + 4);
-                std.mem.copy(u8, self.bt[start .. start + 3], "\n$ ");
-                std.mem.copy(u8, self.bt[start + 3 .. self.bt.len - 1], self.text.items);
-                self.bt[self.bt.len - 1] = '\n';
+                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + prompt.len);
+                std.mem.copy(u8, self.bt[start .. start + prompt.len], prompt);
 
                 var command = self.text.items;
                 if (std.mem.indexOf(u8, self.text.items, " ")) |size| {

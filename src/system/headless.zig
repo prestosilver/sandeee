@@ -3,6 +3,7 @@ const fm = @import("../util/files.zig");
 const files = @import("files.zig");
 const shell = @import("shell.zig");
 const network = @import("network.zig");
+const allocator = @import("../util/allocator.zig");
 
 const DISK = "headless.eee";
 
@@ -41,7 +42,11 @@ pub fn headlessMain() anyerror!void {
             continue;
         }
 
-        _ = try stdout.write("> ");
+        var prompt = mainShell.getPrompt();
+
+        _ = try stdout.write(prompt);
+
+        allocator.alloc.free(prompt);
 
         var data = try stdin.readUntilDelimiter(&buffer, '\n');
         var command = std.mem.trim(u8, data, "\r\n ");
