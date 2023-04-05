@@ -31,23 +31,23 @@ pub const Vert = struct {
 };
 
 pub const VertArray = struct {
-    data: []Vert,
+    items: []Vert,
 
     pub fn init() !VertArray {
         var result = VertArray{
-            .data = try allocator.alloc.alloc(Vert, 0),
+            .items = try allocator.alloc.alloc(Vert, 0),
         };
         return result;
     }
 
     pub fn deinit(va: *VertArray) void {
-        allocator.alloc.free(va.data);
+        allocator.alloc.free(va.items);
     }
 
     pub fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {
-        va.data = try allocator.alloc.realloc(va.data, va.data.len + 1);
+        va.items = try allocator.alloc.realloc(va.items, va.items.len + 1);
 
-        va.data[va.data.len - 1] = Vert{
+        va.items[va.items.len - 1] = Vert{
             .x = pos.x,
             .y = pos.y,
             .z = pos.z,
