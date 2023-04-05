@@ -15,6 +15,10 @@
     push "lo"
     push "no"
     call "TablePut"
+    dup 0
+    push "lo"
+    call "TableGet"
+    sys 1
     sys 1
 
 setup_load:

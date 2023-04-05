@@ -74,3 +74,23 @@ putErr:
     push "Error adding entry to table"
     push 0
     ret
+
+_TableGet:
+    copy 0                      ; table key key
+    copy 2                      ; table key key table
+    call "TableKeySize"         ; table key key valuesize
+    eq                          ; table key test
+    jz                          ; table key
+    push 0                      ; table key idx
+getLoop:
+    copy 3                      ; table key value idx table
+    copy 1                      ; table key value idx table idx
+    call "TableGetEntry"        ; table key value idx entry
+    sys 0
+
+    push 1
+    ret
+putErr:
+    push "Error getting entry from table"
+    push 0
+    ret
