@@ -176,6 +176,14 @@ const Expression = struct {
                     std.mem.copy(u8, result[start_res..], adds);
                     return result;
                 },
+                .TOKEN_MUL => {
+                    idx.* -= 1;
+                    var adds = "    mul\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
                 .TOKEN_AND => {
                     idx.* -= 1;
                     var adds = "    and\n";
@@ -252,7 +260,6 @@ const Expression = struct {
                             return result;
                         }
                     }
-                    std.log.info("{s}", .{self.op.?.value});
                     return error.UnknownIdent;
                 },
                 else => {
@@ -329,7 +336,7 @@ const Statement = struct {
                     std.mem.copy(u8, result[start_res..], adds);
                 }
 
-                for (start..idx.*) |_| {
+                while (start != idx.*) {
                     allocator.free(adds);
                     adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
                     start_res = result.len;
@@ -453,7 +460,7 @@ const Statement = struct {
                 std.mem.copy(u8, result[start_res..], adds);
                 idx.* -= 1;
 
-                for (start..idx.*) |_| {
+                while (start != idx.*) {
                     allocator.free(adds);
                     adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
                     start_res = result.len;
@@ -897,7 +904,7 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
 
             idx.* += 2;
             var b = try allocator.alloc(Expression, 1);
-            a[0] = try parseFactor(tokens, idx);
+            b[0] = try parseFactor(tokens, idx);
             result = .{
                 .a = a,
                 .op = op,
