@@ -291,6 +291,7 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
+                if (check(file.items, "..")) return self.parent.newFolder(name[3..]);
                 if (check(file.items, ".")) return self.newFolder(name[2..]);
                 if (check(file.items, "")) return self.newFolder(name[1..]);
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
@@ -339,6 +340,7 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
+                if (check(file.items, "..")) return try self.parent.writeFile(name[3..], contents, vmInstance);
                 if (check(file.items, ".")) return try self.writeFile(name[2..], contents, vmInstance);
                 if (check(file.items, "")) return try self.writeFile(name[1..], contents, vmInstance);
 
@@ -372,6 +374,7 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
+                if (check(file.items, "..")) return self.parent.getFile(name[3..]);
                 if (check(file.items, ".")) return self.getFile(name[2..]);
                 if (check(file.items, "")) return self.getFile(name[1..]);
 
@@ -399,11 +402,14 @@ pub const Folder = struct {
     }
 
     pub fn getFolder(self: *Folder, name: []const u8) !?*Folder {
+        if (std.mem.eql(u8, name, "..")) return self.parent;
+
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
 
         for (name) |ch| {
             if (ch == '/') {
+                if (check(file.items, "..")) return self.parent.getFolder(name[3..]);
                 if (check(file.items, ".")) return self.getFolder(name[2..]);
                 if (check(file.items, "")) return self.getFolder(name[1..]);
 
