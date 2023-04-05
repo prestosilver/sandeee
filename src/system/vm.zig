@@ -163,10 +163,7 @@ pub const VM = struct {
     };
 
     pub fn deinit(self: *VM) !void {
-        while (self.rsp > 0) {
-            self.rsp -= 1;
-            self.free(self.stack[self.rsp]);
-        }
+        self.free(self.stack[0..self.rsp]);
 
         if (self.code) |code| {
             for (code) |entry| {
@@ -229,9 +226,32 @@ pub const VM = struct {
         return new;
     }
 
-    pub fn free(self: *VM, val: StackEntry) void {
-        if (val.value != null) self.freeValue(val.value.?);
-        if (val.string != null) self.freeString(val.string.?);
+    pub fn free(self: *VM, vals: []StackEntry) void {
+        var toFree = std.ArrayList(StackEntry).init(self.allocator);
+        defer toFree.deinit();
+
+        for (vals) |val| {
+            var add = true;
+            for (toFree.items) |item| {
+                if (val.string != null and item.string != null) {
+                    if (std.mem.eql(u8, val.string.?, item.string.?)) {
+                        add = false;
+                        break;
+                    }
+                }
+                if ((val.string == null) and (item.string == null)) add = false;
+                if (val.value == item.value)
+                    add = false;
+            }
+            if (add) {
+                toFree.append(val) catch {};
+            }
+        }
+
+        for (toFree.items) |val| {
+            if (val.value != null) self.freeValue(val.value.?);
+            if (val.string != null) self.freeString(val.string.?);
+        }
     }
 
     pub fn runOp(self: *VM, op: Operation) !void {
@@ -254,9 +274,8 @@ pub const VM = struct {
             },
             Operation.Code.Add => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ b, a });
 
                 if (a.string != null) {
                     return error.MissingValue;
@@ -276,12 +295,11 @@ pub const VM = struct {
             },
             Operation.Code.Sub => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ b, a });
 
                 if (a.string != null) {
-                    return error.InvalidOp;
+                    return error.MissingValue;
                 } else if (a.value != null) {
                     if (b.string != null) {
                         if (b.string.?.len < a.value.?.*) {
@@ -322,7 +340,7 @@ pub const VM = struct {
             },
             Operation.Code.Jz => {
                 var a = try self.popStack();
-                defer self.free(a);
+                defer self.free(&[_]StackEntry{a});
 
                 if (a.string != null) {
                     if (a.string.?.len == 0) {
@@ -338,7 +356,7 @@ pub const VM = struct {
             },
             Operation.Code.Jnz => {
                 var a = try self.popStack();
-                defer self.free(a);
+                defer self.free(&[_]StackEntry{a});
 
                 if (a.string != null) {
                     if (a.string.?.len != 0) {
@@ -358,7 +376,7 @@ pub const VM = struct {
                         // print
                         0 => {
                             var a = try self.popStack();
-                            defer self.free(a);
+                            defer self.free(&[_]StackEntry{a});
                             if (a.string != null) {
                                 try self.out.appendSlice(a.string.?);
 
@@ -380,7 +398,7 @@ pub const VM = struct {
                         // create file
                         2 => {
                             var path = try self.popStack();
-                            defer self.free(path);
+                            defer self.free(&[_]StackEntry{path});
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
@@ -396,7 +414,7 @@ pub const VM = struct {
                         // open file
                         3 => {
                             var path = try self.popStack();
-                            defer self.free(path);
+                            defer self.free(&[_]StackEntry{path});
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
@@ -409,9 +427,8 @@ pub const VM = struct {
                         // read
                         4 => {
                             var len = try self.popStack();
-                            defer self.free(len);
                             var idx = try self.popStack();
-                            defer self.free(idx);
+                            defer self.free(&[_]StackEntry{ len, idx });
                             if (idx.value != null) {
                                 if (idx.value.?.* >= self.streams.items.len) return error.StreamBad;
                                 var fs = self.streams.items[idx.value.?.*];
@@ -433,9 +450,8 @@ pub const VM = struct {
                         // write file
                         5 => {
                             var str = try self.popStack();
-                            defer self.free(str);
                             var idx = try self.popStack();
-                            defer self.free(idx);
+                            defer self.free(&[_]StackEntry{ str, idx });
                             if (idx.value != null) {
                                 if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
                                 var fs = self.streams.items[idx.value.?.*];
@@ -454,7 +470,7 @@ pub const VM = struct {
                         // flush file
                         6 => {
                             var idx = try self.popStack();
-                            defer self.free(idx);
+                            defer self.free(&[_]StackEntry{idx});
 
                             if (idx.value != null) {
                                 if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
@@ -470,7 +486,7 @@ pub const VM = struct {
                         // close file
                         7 => {
                             var idx = try self.popStack();
-                            defer self.free(idx);
+                            defer self.free(&[_]StackEntry{idx});
 
                             if (idx.value != null) {
                                 if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
@@ -488,7 +504,7 @@ pub const VM = struct {
                         // arg
                         8 => {
                             var idx = try self.popStack();
-                            defer self.free(idx);
+                            defer self.free(&[_]StackEntry{idx});
 
                             if (idx.value != null) {
                                 if (idx.value.?.* >= self.args.len) {
@@ -511,7 +527,7 @@ pub const VM = struct {
                         // checkfn
                         10 => {
                             var name = try self.popStack();
-                            defer self.free(name);
+                            defer self.free(&[_]StackEntry{name});
 
                             if (name.string) |nameStr| {
                                 var val: u64 = 0;
@@ -525,29 +541,22 @@ pub const VM = struct {
                                 return error.StringMissing;
                             }
                         },
-                        // execcmd
+                        // allocate
                         11 => {
-                            //var cmd = try self.popStack();
-                            //defer self.free(cmd);
+                            var len = try self.popStack();
+                            defer self.free(&[_]StackEntry{len});
+                            if (len.value == null) return error.ValueMissing;
 
-                            //if (cmd.string) |command| {
-                            //    var shl = shell.Shell{
-                            //        .root = self.root,
-                            //    };
-
-                            //    _ = try shl.runLine(command);
-
-                            //    return;
-                            //} else {
-                            //    return error.StringMissing;
-                            //}
+                            var adds = try self.allocator.alloc(u8, len.value.?.*);
+                            self.stack[self.rsp] = StackEntry{ .string = adds };
+                            self.rsp += 1;
+                            return;
                         },
                         // regfn
                         12 => {
                             var name = try self.popStack();
-                            defer self.free(name);
                             var func = try self.popStack();
-                            defer self.free(func);
+                            defer self.free(&[_]StackEntry{ name, func });
                             if (func.string == null) return error.StringMissing;
                             if (name.string == null) return error.StringMissing;
 
@@ -575,7 +584,7 @@ pub const VM = struct {
                         // clear function
                         13 => {
                             var name = try self.popStack();
-                            defer self.free(name);
+                            defer self.free(&[_]StackEntry{name});
 
                             if (name.string) |nameStr| {
                                 _ = self.functions.orderedRemove(nameStr);
@@ -584,6 +593,9 @@ pub const VM = struct {
                             } else {
                                 return error.StringMissing;
                             }
+                        },
+                        128 => {
+                            @panic("VM Crash Called");
                         },
                         // misc
                         else => {
@@ -599,9 +611,8 @@ pub const VM = struct {
             },
             Operation.Code.Mul => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.value != null) {
                     if (b.value != null) {
@@ -613,9 +624,8 @@ pub const VM = struct {
             },
             Operation.Code.Div => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.value != null) {
                     if (b.value != null) {
@@ -629,9 +639,8 @@ pub const VM = struct {
             },
             Operation.Code.Mod => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.value != null) {
                     if (b.value != null) {
@@ -645,9 +654,8 @@ pub const VM = struct {
             },
             Operation.Code.And => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.value != null) {
                     if (b.value != null) {
@@ -659,9 +667,8 @@ pub const VM = struct {
             },
             Operation.Code.Or => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.value != null) {
                     if (b.value != null) {
@@ -673,7 +680,7 @@ pub const VM = struct {
             },
             Operation.Code.Neg => {
                 var a = try self.popStack();
-                defer self.free(a);
+                defer self.free(&[_]StackEntry{a});
 
                 if (a.value != null) {
                     try self.pushStackI(0 -% a.value.?.*);
@@ -683,9 +690,8 @@ pub const VM = struct {
             },
             Operation.Code.Xor => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.value != null) {
                     if (b.value != null) {
@@ -697,7 +703,7 @@ pub const VM = struct {
             },
             Operation.Code.Not => {
                 var a = try self.popStack();
-                defer self.free(a);
+                defer self.free(&[_]StackEntry{a});
 
                 if (a.value != null) {
                     var val: u64 = 0;
@@ -710,12 +716,12 @@ pub const VM = struct {
             },
             Operation.Code.Asign => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.findStack(0);
+                defer self.free(&[_]StackEntry{a});
 
                 if (a.value != null) {
                     if (b.value == null) {
-                        self.free(b);
+                        self.free(&[_]StackEntry{b});
                         b.string = null;
                         b.value = try self.allocator.create(u64);
                     }
@@ -724,7 +730,7 @@ pub const VM = struct {
                     return;
                 } else if (a.string != null) {
                     if (b.string == null) {
-                        self.free(b);
+                        defer self.free(&[_]StackEntry{b});
                         b.value = null;
                         b.string = a.string.?;
                     } else {
@@ -741,7 +747,7 @@ pub const VM = struct {
                 var items = self.stack[self.rsp - op.value.? .. self.rsp];
                 self.rsp -= @intCast(u8, op.value.?);
                 var disc = try self.popStack();
-                defer self.free(disc);
+                defer self.free(&[_]StackEntry{disc});
 
                 for (items) |item| {
                     self.pushStack(item);
@@ -751,9 +757,8 @@ pub const VM = struct {
             },
             Operation.Code.Eq => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.string != null) {
                     if (b.string != null) {
@@ -785,9 +790,8 @@ pub const VM = struct {
             },
             Operation.Code.Less => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.string != null) {
                     if (b.string != null) {
@@ -808,9 +812,8 @@ pub const VM = struct {
             },
             Operation.Code.Greater => {
                 var a = try self.popStack();
-                defer self.free(a);
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.string != null) {
                     if (b.string != null) {
@@ -831,7 +834,7 @@ pub const VM = struct {
             },
             Operation.Code.Getb => {
                 var a = try self.popStack();
-                defer self.free(a);
+                defer self.free(&[_]StackEntry{a});
 
                 if (a.string != null) {
                     if (a.string.?.len == 0) {
@@ -872,7 +875,7 @@ pub const VM = struct {
             },
             Operation.Code.Cat => {
                 var b = try self.popStack();
-                defer self.free(b);
+                defer self.free(&[_]StackEntry{b});
                 var a = try self.findStack(0);
 
                 if (a.string != null) {
