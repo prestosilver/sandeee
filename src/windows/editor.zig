@@ -61,18 +61,38 @@ pub const EditorData = struct {
                         var size = font.sizeText(line.items, null);
                         self.cursor.x = cx;
 
-                        try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1), null);
+                        try font.draw(.{
+                            .batch = batch,
+                            .shader = shader,
+                            .text = "|",
+                            .pos = vecs.newVec2(bnds.x + 64 + size.x, y),
+                        });
                         self.cursorIdx = idx;
                     } else if (self.cursor.x <= 0 and self.cursor.y == cy) {
                         self.cursor.x = 0;
 
-                        try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64, y), col.newColor(0, 0, 0, 1), null);
+                        try font.draw(.{
+                            .batch = batch,
+                            .shader = shader,
+                            .text = "|",
+                            .pos = vecs.newVec2(bnds.x + 64, y),
+                        });
                         self.cursorIdx = idx - line.items.len;
                     }
-                    try font.draw(batch, shader, line.items, vecs.newVec2(bnds.x + 70, y), col.newColor(0, 0, 0, 1), null);
+                    try font.draw(.{
+                        .batch = batch,
+                        .shader = shader,
+                        .text = line.items,
+                        .pos = vecs.newVec2(bnds.x + 70, y),
+                    });
                     var linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
                     defer allocator.alloc.free(linenr);
-                    try font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1), null);
+                    try font.draw(.{
+                        .batch = batch,
+                        .shader = shader,
+                        .text = linenr,
+                        .pos = vecs.newVec2(bnds.x + 6, y),
+                    });
                     line.clearAndFree();
                     y += font.size;
                     self.maxy += font.size;
@@ -87,7 +107,12 @@ pub const EditorData = struct {
                     if (cx == self.cursor.x and cy == self.cursor.y) {
                         var size = font.sizeText(line.items, null);
 
-                        try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1), null);
+                        try font.draw(.{
+                            .batch = batch,
+                            .shader = shader,
+                            .text = "|",
+                            .pos = vecs.newVec2(bnds.x + 64 + size.x, y),
+                        });
                         self.cursorIdx = idx;
                     }
                     if (char < 32 or char == 255) {
@@ -110,19 +135,39 @@ pub const EditorData = struct {
                 var size = font.sizeText(line.items, null);
                 self.cursor.x = cx;
 
-                try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64 + size.x, y), col.newColor(0, 0, 0, 1), null);
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = shader,
+                    .text = "|",
+                    .pos = vecs.newVec2(bnds.x + 64 + size.x, y),
+                });
                 self.cursorIdx = self.buffer.items.len;
             }
             if (self.cursor.x <= 0 and self.cursor.y == cy) {
                 self.cursor.x = 0;
 
-                try font.draw(batch, shader, "|", vecs.newVec2(bnds.x + 64, y), col.newColor(0, 0, 0, 1), null);
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = shader,
+                    .text = "|",
+                    .pos = vecs.newVec2(bnds.x + 64, y),
+                });
                 self.cursorIdx = self.buffer.items.len - (line.items.len);
             }
-            try font.draw(batch, shader, line.items, vecs.newVec2(bnds.x + 70, y), col.newColor(0, 0, 0, 1), null);
+            try font.draw(.{
+                .batch = batch,
+                .shader = shader,
+                .text = line.items,
+                .pos = vecs.newVec2(bnds.x + 70, y),
+            });
             var linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
             defer allocator.alloc.free(linenr);
-            try font.draw(batch, shader, linenr, vecs.newVec2(bnds.x + 6, y), col.newColor(0, 0, 0, 1), null);
+            try font.draw(.{
+                .batch = batch,
+                .shader = shader,
+                .text = linenr,
+                .pos = vecs.newVec2(bnds.x + 6, y),
+            });
 
             if (self.buffer.items.len == 0) {
                 self.cursorIdx = 0;

@@ -97,7 +97,14 @@ const ExplorerData = struct {
             var size = @min(60, font.sizeText(icon.name, null).x);
             var xo = (128 - size) / 2;
 
-            try font.draw(batch, font_shader, icon.name, vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6), col.newColor(0, 0, 0, 1), 60);
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = icon.name,
+                .pos = vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6),
+                .color = col.newColor(0, 0, 0, 1),
+                .wrap = 60,
+            });
 
             try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
@@ -152,7 +159,13 @@ const ExplorerData = struct {
 
         var tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 4 - 34, 28);
-        try font.drawScale(batch, font_shader, self.shell.root.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0, null);
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = self.shell.root.name,
+            .pos = vecs.newVec2(bnds.x + 36, bnds.y + 2),
+            .color = col.newColor(0, 0, 0, 1),
+        });
 
         batch.scissor = tmp;
 

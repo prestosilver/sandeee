@@ -97,7 +97,15 @@ pub const WebData = struct {
                 }
             }
 
-            try font.drawScale(batch, font_shader, text, vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y), color, scale, bnds.w);
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = text,
+                .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
+                .color = color,
+                .scale = scale,
+                .wrap = bnds.w,
+            });
 
             pos.y += vecs.mul(font.sizeText(text, bnds.w / scale), scale).y;
             pos.x = 0;
@@ -130,9 +138,21 @@ pub const WebData = struct {
         var tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 150 - 34, 28);
         if (self.file) |file| {
-            try font.drawScale(batch, font_shader, file.name, vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0, bnds.w);
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = file.name,
+                .pos = vecs.newVec2(bnds.x + 36, bnds.y + 2),
+                .wrap = bnds.w,
+            });
         } else {
-            try font.drawScale(batch, font_shader, "Error", vecs.newVec2(bnds.x + 36, bnds.y + 2), col.newColor(0, 0, 0, 1), 1.0, bnds.w);
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = "Error",
+                .pos = vecs.newVec2(bnds.x + 36, bnds.y + 2),
+                .wrap = bnds.w,
+            });
         }
         batch.scissor = tmp;
 

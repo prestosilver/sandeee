@@ -122,35 +122,80 @@ pub const Font = struct {
         return result;
     }
 
-    pub fn draw(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, wrap: ?f32) !void {
-        return self.drawScale(batch, shader, text, position, color, 1.0, wrap);
-    }
+    pub const drawParams = struct {
+        batch: *sb.SpriteBatch,
+        shader: *shd.Shader,
+        pos: vec.Vector2,
+        text: []const u8,
+        scale: f32 = 1,
+        color: col.Color = col.newColor(0, 0, 0, 1),
+        wrap: ?f32 = null,
+    };
 
-    pub fn drawScale(self: *Font, batch: *sb.SpriteBatch, shader: *shd.Shader, text: []const u8, position: vec.Vector2, color: col.Color, scale: f32, wrap: ?f32) !void {
-        var pos = position;
+    pub fn draw(self: *Font, params: drawParams) !void {
+        var pos = params.pos;
         var srect = rect.newRect(0, 0, 1, 1);
 
-        if (wrap) |maxSize| {
-            var iter = std.mem.split(u8, text, " ");
+        if (params.wrap) |maxSize| {
+            var iter = std.mem.split(u8, params.text, " ");
+            var spaceSize = self.sizeText(" ", null).x * params.scale;
 
             while (iter.next()) |word| {
-                var spaced = try std.fmt.allocPrint(allocator.alloc, "{s} ", .{word});
-                defer allocator.alloc.free(spaced);
+                var size = vec.mul(self.sizeText(word, null), params.scale);
 
-                var size = vec.mul(self.sizeText(spaced, null), scale);
+                if (pos.x - params.pos.x + size.x > maxSize) {
+                    if (pos.x == params.pos.x) {
+                        var spaced = word;
+                        while (size.x > maxSize) {
+                            var split: usize = 0;
+                            while (self.sizeText(spaced[0..split], null).x * params.scale < maxSize) {
+                                split += 1;
+                            }
 
-                if (pos.x - position.x + size.x > maxSize) {
-                    if (pos.x == position.x) {
-                        //todo: force wrap
+                            try self.draw(.{
+                                .batch = params.batch,
+                                .shader = params.shader,
+                                .text = spaced[0 .. split - 1],
+                                .pos = pos,
+                                .color = params.color,
+                                .scale = params.scale,
+                                .wrap = null,
+                            });
+
+                            spaced = spaced[split - 1 ..];
+                            pos.y += params.scale * self.size;
+
+                            size = vec.mul(self.sizeText(spaced, null), params.scale);
+                        }
+                        try self.draw(.{
+                            .batch = params.batch,
+                            .shader = params.shader,
+                            .text = spaced,
+                            .pos = pos,
+                            .color = params.color,
+                            .scale = params.scale,
+                            .wrap = null,
+                        });
+                        pos.x += size.x;
+                        pos.x += spaceSize;
+                        continue;
                     } else {
-                        pos.x = position.x;
-                        pos.y += scale * self.size;
+                        pos.x = params.pos.x;
+                        pos.y += params.scale * self.size;
                     }
                 }
 
-                try self.drawScale(batch, shader, spaced, pos, color, scale, null);
-
+                try self.draw(.{
+                    .batch = params.batch,
+                    .shader = params.shader,
+                    .text = word,
+                    .pos = pos,
+                    .color = params.color,
+                    .scale = params.scale,
+                    .wrap = null,
+                });
                 pos.x += size.x;
+                pos.x += spaceSize;
             }
 
             return;
@@ -158,49 +203,52 @@ pub const Font = struct {
 
         var vertarray = try va.VertArray.init();
 
-        for (text) |ach| {
+        for (params.text) |ach| {
             var ch = ach;
             if (ch > 127) ch = '?';
             if (ch < 32) ch = '?';
 
             var char = self.chars[ch];
-            var w = (char.size.x) * scale;
-            var h = (char.size.y) * scale;
-            var xpos = pos.x + (char.bearing.x) * scale;
-            var ypos = pos.y - (char.bearing.y - self.size) * scale;
+            var w = char.size.x * params.scale;
+            var h = char.size.y * params.scale;
+            var xpos = pos.x + char.bearing.x * params.scale;
+            var ypos = pos.y - (char.bearing.y - self.size) * params.scale;
             srect.x = char.tx;
             srect.w = char.tw;
             srect.h = char.th;
 
-            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-            try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
+            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), params.color);
+            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), params.color);
+            try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), params.color);
 
-            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-            try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
+            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), params.color);
+            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), params.color);
+            try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), params.color);
 
-            pos.x += char.ax * scale;
-            pos.y += char.ay * scale;
+            pos.x += char.ax * params.scale;
+            pos.y += char.ay * params.scale;
         }
 
         var entry = sb.QueueEntry{
             .update = true,
             .texture = &self.tex,
             .verts = vertarray,
-            .scissor = batch.scissor,
-            .shader = shader.*,
+            .scissor = params.batch.scissor,
+            .shader = params.shader.*,
         };
 
-        try batch.addEntry(&entry);
+        try params.batch.addEntry(&entry);
     }
 
     pub fn sizeText(self: *Font, text: []const u8, wrap: ?f32) vec.Vector2 {
         var result = vec.newVec2(0, 0);
         var wrapped = false;
 
-        for (text) |ch| {
-            if (ch > 127) continue;
+        for (text) |ach| {
+            var ch = ach;
+
+            if (ch > 127) ch = '?';
+            if (ch < 32) ch = '?';
 
             var char = self.chars[ch];
             result.x += char.ax;

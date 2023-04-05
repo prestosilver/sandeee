@@ -65,8 +65,12 @@ pub const BarData = struct {
     pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) !void {
         var pos = rect.newRect(self.height, self.screendims.y - self.height + 6, self.screendims.x + self.height, self.height);
 
-        var color = cols.newColorRGBA(0, 0, 0, 255);
-        try font.draw(batch, font_shader, "APPS", pos.location(), color, null);
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = "APPS",
+            .pos = pos.location(),
+        });
 
         var ts = std.time.timestamp();
         var hours = @intCast(u64, ts) / std.time.s_per_hour % 12;
@@ -77,13 +81,23 @@ pub const BarData = struct {
         var clockSize = font.sizeText(clockString, null);
         var clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
 
-        try font.draw(batch, font_shader, clockString, clockPos, color, null);
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = clockString,
+            .pos = clockPos,
+        });
 
         pos.x = 3 * self.height + 10;
         self.btns = 0;
 
         for (windows.items) |window| {
-            try font.draw(batch, font_shader, window.data.contents.name, pos.location(), color, null);
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = window.data.contents.name,
+                .pos = pos.location(),
+            });
 
             pos.x += 4 * self.height;
             self.btns += 1;
@@ -108,7 +122,12 @@ pub const BarData = struct {
                 var height = font.size * 1;
                 y += std.math.floor((67 - height) / 2);
                 var textpos = vecs.newVec2(100, y);
-                try font.drawScale(batch, font_shader, text, textpos, color, 1, null);
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = font_shader,
+                    .text = text,
+                    .pos = textpos,
+                });
             }
         }
     }

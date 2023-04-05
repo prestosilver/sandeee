@@ -40,7 +40,13 @@ const CMDData = struct {
             defer allocator.alloc.free(shellPrompt);
             var prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.text.items });
             defer allocator.alloc.free(prompt);
-            try font.draw(batch, shader, prompt, vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6), col.newColor(1, 1, 1, 1), null);
+            try font.draw(.{
+                .batch = batch,
+                .shader = shader,
+                .text = prompt,
+                .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6),
+                .color = col.newColor(1, 1, 1, 1),
+            });
             idx += 1;
         } else {
             var result = try self.shell.updateVM();
@@ -63,7 +69,14 @@ const CMDData = struct {
         while (lines.next()) |line| {
             y -= font.sizeText(line, bnds.w - 12).y;
 
-            try font.draw(batch, shader, line, vecs.newVec2(bnds.x + 6, y), col.newColor(1, 1, 1, 1), bnds.w - 12);
+            try font.draw(.{
+                .batch = batch,
+                .shader = shader,
+                .text = line,
+                .pos = vecs.newVec2(bnds.x + 6, y),
+                .color = col.newColor(1, 1, 1, 1),
+                .wrap = bnds.w - 12,
+            });
 
             if (y < bnds.y) return;
         }

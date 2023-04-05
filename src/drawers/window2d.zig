@@ -274,7 +274,13 @@ pub const WindowData = struct {
 
         var color = cols.newColorRGBA(197, 197, 197, 255);
         if (self.active) color = cols.newColorRGBA(255, 255, 255, 255);
-        try font.draw(batch, shader, self.contents.name, vecs.newVec2(self.pos.x + 9, self.pos.y + 3), color, null);
+        try font.draw(.{
+            .batch = batch,
+            .shader = shader,
+            .text = self.contents.name,
+            .pos = vecs.newVec2(self.pos.x + 9, self.pos.y + 3),
+            .color = color,
+        });
     }
 
     pub fn drawContents(self: *WindowData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
