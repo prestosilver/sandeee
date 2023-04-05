@@ -109,18 +109,18 @@ pub fn build(b: *std.build.Builder) void {
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
 
     if (exe.optimize == .Debug) {
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/hello.asm", "content/disk/prof/tests/hello.eep")) catch {};
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/window.asm", "content/disk/prof/tests/window.eep")) catch {};
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/texture.asm", "content/disk/prof/tests/texture.eep")) catch {};
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/fib.asm", "content/disk/prof/tests/fib.eep")) catch {};
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/arraytest.asm", "content/disk/prof/tests/arraytest.eep")) catch {};
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/audiotest.asm", "content/disk/prof/tests/audiotest.eep")) catch {};
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/net.asm", "content/disk/prof/tests/send.eep")) catch {};
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/tests/recv.asm", "content/disk/prof/tests/recv.eep")) catch {};
+        const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest", "send", "recv" };
 
-        const eonFiles = [_][]const u8{ "test", "fib" };
+        for (asmTestsFiles) |file| {
+            var asmf = std.fmt.allocPrint(b.allocator, "content/asm/tests/{s}.asm", .{file}) catch "";
+            var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/asm/{s}.eep", .{file}) catch "";
 
-        for (eonFiles) |file| {
+            convert_steps.append(conv.ConvertStep.create(b, comp.compile, asmf, eepf)) catch {};
+        }
+
+        const eonTestsFiles = [_][]const u8{ "test", "fib", "tabletest" };
+
+        for (eonTestsFiles) |file| {
             var eonf = std.fmt.allocPrint(b.allocator, "content/eon/{s}.eon", .{file}) catch "";
             var asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
             var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/eon/{s}.eep", .{file}) catch "";
@@ -135,11 +135,14 @@ pub fn build(b: *std.build.Builder) void {
         }
     }
 
-    convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/exec/asm.asm", "content/disk/exec/asm.eep")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/exec/eon.asm", "content/disk/exec/eon.eep")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/exec/dump.asm", "content/disk/exec/dump.eep")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/exec/echo.asm", "content/disk/exec/echo.eep")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/exec/aplay.asm", "content/disk/exec/aplay.eep")) catch {};
+    const asmExecFiles = [_][]const u8{ "asm", "eon", "dump", "echo", "aplay" };
+
+    for (asmExecFiles) |file| {
+        var asmf = std.fmt.allocPrint(b.allocator, "content/asm/exec/{s}.asm", .{file}) catch "";
+        var eepf = std.fmt.allocPrint(b.allocator, "content/disk/exec/{s}.eep", .{file}) catch "";
+
+        convert_steps.append(conv.ConvertStep.create(b, comp.compile, asmf, eepf)) catch {};
+    }
 
     convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/libs/libload.asm", "content/disk/libs/libload.eep")) catch {};
 
