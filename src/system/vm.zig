@@ -604,7 +604,11 @@ pub const VM = struct {
                             defer self.free(&[_]StackEntry{size});
 
                             if (size.value) |sizeVal| {
+                                var start = self.heap.len;
                                 self.heap = try self.allocator.realloc(self.heap, sizeVal.*);
+
+                                if (start < self.heap.len)
+                                    std.mem.set(u8, self.heap[start..], 0);
 
                                 return;
                             } else {
