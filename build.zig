@@ -118,10 +118,10 @@ pub fn build(b: *std.build.Builder) void {
             convert_steps.append(conv.ConvertStep.create(b, comp.compile, asmf, eepf)) catch {};
         }
 
-        const eonTestsFiles = [_][]const u8{ "test", "fib", "tabletest" };
+        const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest" };
 
         for (eonTestsFiles) |file| {
-            var eonf = std.fmt.allocPrint(b.allocator, "content/eon/{s}.eon", .{file}) catch "";
+            var eonf = std.fmt.allocPrint(b.allocator, "content/eon/tests/{s}.eon", .{file}) catch "";
             var asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
             var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/eon/{s}.eep", .{file}) catch "";
 
@@ -135,13 +135,29 @@ pub fn build(b: *std.build.Builder) void {
         }
     }
 
-    const asmExecFiles = [_][]const u8{ "asm", "eon", "dump", "echo", "aplay" };
+    const asmExecFiles = [_][]const u8{ "eon", "dump", "echo", "aplay" };
 
     for (asmExecFiles) |file| {
         var asmf = std.fmt.allocPrint(b.allocator, "content/asm/exec/{s}.asm", .{file}) catch "";
         var eepf = std.fmt.allocPrint(b.allocator, "content/disk/exec/{s}.eep", .{file}) catch "";
 
         convert_steps.append(conv.ConvertStep.create(b, comp.compile, asmf, eepf)) catch {};
+    }
+
+    const eonExecFiles = [_][]const u8{"asm"};
+
+    for (eonExecFiles) |file| {
+        var eonf = std.fmt.allocPrint(b.allocator, "content/eon/exec/{s}.eon", .{file}) catch "";
+        var asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
+        var eepf = std.fmt.allocPrint(b.allocator, "content/disk/exec/{s}.eep", .{file}) catch "";
+
+        var compStep = conv.ConvertStep.create(b, eon.compileEon, eonf, asmf);
+
+        var adds = conv.ConvertStep.create(b, comp.compile, asmf, eepf);
+
+        adds.step.dependOn(&compStep.step);
+
+        convert_steps.append(adds) catch {};
     }
 
     convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/libs/libload.asm", "content/disk/libs/libload.eep")) catch {};
