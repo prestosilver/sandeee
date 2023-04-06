@@ -139,17 +139,17 @@ pub const Font = struct {
 
         if (params.wrap) |maxSize| {
             var iter = std.mem.split(u8, params.text, " ");
-            var spaceSize = self.sizeText(" ", null).x * params.scale;
+            var spaceSize = self.sizeText(.{ .text = " ", .scale = params.scale }).x;
 
             while (iter.next()) |word| {
-                var size = self.sizeText(word, null).mul(params.scale);
+                var size = self.sizeText(.{ .text = word, .scale = params.scale });
 
                 if (pos.x - params.pos.x + size.x > maxSize) {
                     if (pos.x == params.pos.x) {
                         var spaced = word;
                         while (size.x > maxSize) {
                             var split: usize = 0;
-                            while (self.sizeText(spaced[0..split], null).x * params.scale < maxSize) {
+                            while (self.sizeText(.{ .text = spaced[0..split], .scale = params.scale }).x < maxSize) {
                                 split += 1;
                             }
 
@@ -166,7 +166,7 @@ pub const Font = struct {
                             spaced = spaced[split - 1 ..];
                             pos.y += params.scale * self.size;
 
-                            size = self.sizeText(spaced, null).mul(params.scale);
+                            size = self.sizeText(.{ .text = spaced, .scale = params.scale });
                         }
                         try self.draw(.{
                             .batch = params.batch,
@@ -241,11 +241,59 @@ pub const Font = struct {
         try params.batch.addEntry(&entry);
     }
 
-    pub fn sizeText(self: *Font, text: []const u8, wrap: ?f32) vec.Vector2 {
-        var result = vec.newVec2(0, 0);
-        var wrapped = false;
+    pub const sizeParams = struct {
+        text: []const u8,
+        scale: f32 = 1,
+        wrap: ?f32 = null,
+        // TODO: turnicate: bool = false,
+    };
 
-        for (text) |ach| {
+    pub fn sizeText(self: *Font, params: sizeParams) vec.Vector2 {
+        var result = vec.newVec2(0, 0);
+
+        if (params.wrap) |maxSize| {
+            var iter = std.mem.split(u8, params.text, " ");
+            var spaceSize = self.sizeText(.{
+                .text = " ",
+                .scale = params.scale,
+            }).x;
+
+            while (iter.next()) |word| {
+                var size = self.sizeText(.{ .text = word, .scale = params.scale });
+                if (result.x + size.x > maxSize) {
+                    if (result.x == 0) {
+                        var spaced = word;
+                        while (size.x > maxSize) {
+                            var split: usize = 0;
+                            while (self.sizeText(.{
+                                .text = spaced[0..split],
+                                .scale = params.scale,
+                            }).x * params.scale < maxSize) {
+                                split += 1;
+                            }
+
+                            spaced = spaced[split - 1 ..];
+                            result.y += params.scale * self.size;
+
+                            size = self.sizeText(.{ .text = spaced, .scale = params.scale });
+                        }
+                        result.x += size.x;
+                        result.x += spaceSize;
+                        continue;
+                    } else {
+                        result.x = 0;
+                        result.y += params.scale * self.size;
+                    }
+                }
+                result.x += size.x;
+                result.x += spaceSize;
+            }
+            result.y += self.size * params.scale;
+
+            return result;
+        }
+
+        for (params.text) |ach| {
             var ch = ach;
 
             if (ch > 127) ch = '?';
@@ -254,17 +302,9 @@ pub const Font = struct {
             var char = self.chars[ch];
             result.x += char.ax;
             result.y += char.ay;
-
-            if (wrap != null and result.x > wrap.?) {
-                wrapped = true;
-                result.x = 0;
-                result.y += self.size;
-            }
         }
 
         result.y += self.size;
-        if (wrapped)
-            result.x = wrap.?;
 
         return result;
     }

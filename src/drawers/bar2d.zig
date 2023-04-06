@@ -78,7 +78,7 @@ pub const BarData = struct {
         var clockString = try std.fmt.allocPrint(allocator.alloc, "{d:0>2}:{d:0>2}", .{ hours, mins });
         defer allocator.alloc.free(clockString);
 
-        var clockSize = font.sizeText(clockString, null);
+        var clockSize = font.sizeText(.{ .text = clockString });
         var clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
 
         try font.draw(.{

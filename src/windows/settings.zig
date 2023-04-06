@@ -167,7 +167,7 @@ const SettingsData = struct {
         var y: f32 = 0;
 
         for (SettingsData.panels, 0..) |panel, idx| {
-            var size = font.sizeText(panel.name, null);
+            var size = font.sizeText(.{ .text = panel.name });
             var xo = (128 - size.x) / 2;
 
             try font.draw(.{

@@ -94,7 +94,7 @@ const ExplorerData = struct {
         defer allocator.alloc.free(icons);
 
         for (icons, 0..) |icon, idx| {
-            var size = @min(60, font.sizeText(icon.name, null).x);
+            var size = @min(60, font.sizeText(.{ .text = icon.name }).x);
             var xo = (128 - size) / 2;
 
             try font.draw(.{

@@ -67,7 +67,7 @@ const CMDData = struct {
         var y = bnds.y + bnds.h - @intToFloat(f32, idx) * font.size - 6;
 
         while (lines.next()) |line| {
-            y -= font.sizeText(line, bnds.w - 12).y;
+            y -= font.sizeText(.{ .text = line, .wrap = bnds.w - 12 }).y;
 
             try font.draw(.{
                 .batch = batch,

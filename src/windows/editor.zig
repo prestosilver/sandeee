@@ -58,7 +58,7 @@ pub const EditorData = struct {
             for (self.buffer.items, 0..) |char, idx| {
                 if (char == '\n') {
                     if (cy == self.cursor.y and cx <= self.cursor.x) {
-                        var size = font.sizeText(line.items, null);
+                        var size = font.sizeText(.{ .text = line.items });
                         self.cursor.x = cx;
 
                         try font.draw(.{
@@ -105,7 +105,7 @@ pub const EditorData = struct {
                     cx = 0;
                 } else {
                     if (cx == self.cursor.x and cy == self.cursor.y) {
-                        var size = font.sizeText(line.items, null);
+                        var size = font.sizeText(.{ .text = line.items });
 
                         try font.draw(.{
                             .batch = batch,
@@ -132,7 +132,7 @@ pub const EditorData = struct {
                 self.cursor.y = cy;
             }
             if (cy == self.cursor.y and cx <= self.cursor.x) {
-                var size = font.sizeText(line.items, null);
+                var size = font.sizeText(.{ .text = line.items });
                 self.cursor.x = cx;
 
                 try font.draw(.{
