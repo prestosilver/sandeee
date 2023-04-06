@@ -140,7 +140,7 @@ pub const GSLoading = struct {
     pub fn update(_: *Self, _: f32) !void {}
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        var logoOff = vecs.div(vecs.sub(size, self.logo_sprite.data.size), 2);
+        var logoOff = size.sub(self.logo_sprite.data.size).div(2);
 
         // draw the logo
         try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));

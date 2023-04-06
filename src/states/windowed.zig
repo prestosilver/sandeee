@@ -243,7 +243,7 @@ pub const GSWindowed = struct {
 
         if (self.dragging) |dragging| {
             var old = dragging.data.pos;
-            var winpos = vecs.add(pos, self.draggingStart);
+            var winpos = pos.add(self.draggingStart);
 
             switch (self.dragmode) {
                 win.DragMode.None => {},

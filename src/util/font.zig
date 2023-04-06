@@ -130,6 +130,7 @@ pub const Font = struct {
         scale: f32 = 1,
         color: col.Color = col.newColor(0, 0, 0, 1),
         wrap: ?f32 = null,
+        // TODO: turnicate: bool = false,
     };
 
     pub fn draw(self: *Font, params: drawParams) !void {
@@ -141,7 +142,7 @@ pub const Font = struct {
             var spaceSize = self.sizeText(" ", null).x * params.scale;
 
             while (iter.next()) |word| {
-                var size = vec.mul(self.sizeText(word, null), params.scale);
+                var size = self.sizeText(word, null).mul(params.scale);
 
                 if (pos.x - params.pos.x + size.x > maxSize) {
                     if (pos.x == params.pos.x) {
@@ -165,7 +166,7 @@ pub const Font = struct {
                             spaced = spaced[split - 1 ..];
                             pos.y += params.scale * self.size;
 
-                            size = vec.mul(self.sizeText(spaced, null), params.scale);
+                            size = self.sizeText(spaced, null).mul(params.scale);
                         }
                         try self.draw(.{
                             .batch = params.batch,

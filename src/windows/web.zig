@@ -74,7 +74,7 @@ pub const WebData = struct {
                 var url = linkiter.next();
                 url = std.mem.trim(u8, url.?, &std.ascii.whitespace);
                 if (url) |path| {
-                    var size = vecs.mul(font.sizeText(text, null), scale);
+                    var size = font.sizeText(text, null).mul(scale);
                     size.y = font.size * scale;
                     var file = try self.file.?.parent.getFile(path);
 
@@ -107,7 +107,7 @@ pub const WebData = struct {
                 .wrap = bnds.w,
             });
 
-            pos.y += vecs.mul(font.sizeText(text, bnds.w / scale), scale).y;
+            pos.y += font.sizeText(text, bnds.w / scale).mul(scale).y;
             pos.x = 0;
         }
 

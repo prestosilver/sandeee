@@ -207,7 +207,7 @@ const ExplorerData = struct {
 
         switch (btn) {
             0 => {
-                if (self.lastAction != null and vecs.distSq(mousepos, self.lastAction.?.pos) < 100) {
+                if (self.lastAction != null and mousepos.distSq(self.lastAction.?.pos) < 100) {
                     self.lastAction = .{
                         .kind = .DoubleLeft,
                         .pos = mousepos,
