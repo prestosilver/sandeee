@@ -300,11 +300,11 @@ pub const Font = struct {
             if (ch < 32) ch = '?';
 
             var char = self.chars[ch];
-            result.x += char.ax;
-            result.y += char.ay;
+            result.x += char.ax * params.scale;
+            result.y += char.ay * params.scale;
         }
 
-        result.y += self.size;
+        result.y += self.size * params.scale;
 
         return result;
     }
