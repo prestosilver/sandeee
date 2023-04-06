@@ -34,7 +34,6 @@ value growHeap() {
     value size = heapSize();
     asm "sys 14";
     asm "push 0";
-    asm "push 0";
     asm "ret";
 }
 
@@ -42,44 +41,84 @@ value getWord(value idx) {
     asm "push 2";
     asm "sys 15";
     asm "dup 0";
+    asm "push 1";
+    asm "add";
     asm "getb";
     asm "dup 1";
     asm "getb";
-    asm "mul 256";
+    asm "push 256";
+    asm "mul";
     asm "add";
     asm "disc 1";
     asm "ret";
 }
 
-value round(value a) {
-    asm "push 20";
+value toWord(value v) {
+    asm "dup 0";
+    asm "push 256";
     asm "div";
-    asm "push 20";
+    asm "getb";
+    asm "dup 1";
+    asm "disc 2";
+    asm "getb";
+    asm "cat";
+    asm "ret";
+}
+
+value putWord(value pos, value v) {
+    asm "call toWord";
+    asm "sys 16";
+    asm "push 0";
+    asm "ret";
+}
+
+value round(value a) {
+    asm "push 3";
+    asm "add";
+    asm "push 4";
+    asm "div";
+    asm "push 4";
     asm "mul";
     asm "ret";
 }
 
+value dup(value v) {
+    asm "dup 0";
+    asm "disc 1";
+    asm "ret";
+}
+
 value alloc(value size) {
-    value target = round(size); 
+    value target = round(size);
     value start = 1;
     value current = 1;
     value cont = 1;
     value size = 0;
 
     for (cont = 1; cont; cont = 1) {
-        current = current + 4;
         size = current - start;
 
-        if (size > target) {
+        if (current > heapSize()) {
+            growHeap();
+        } else if (getWord(current) == current) {
+            current = current + getWord(dup(current) + 2);
+            start = dup(current);
+        } else if (size > target) {
             cont = 0;
 
-            print(size);
-            print("\\n");
+            putWord(dup(start), dup(start));
+            putWord(dup(start) + 2, dup(target));
 
-            return start;
+            return start + 4;
+        } else {
+            current = current + 4;
         }
     }
 
     return 0;
 }
 
+value free(value addr) {
+    putWord(dup(addr), 0);
+    putWord(dup(addr) + 2, 0);
+}

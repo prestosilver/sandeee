@@ -1,9 +1,17 @@
 #include "content/eon/libs/heap.eon"
 
+value reada(value addr) {
+    asm "push 128";
+    asm "sys 15";
+    asm "ret";
+}
+
 value main() {
     setupHeap();
-    growHeap();
-    print(alloc(123));
+    value a = alloc(128);
 
-    asm "ret";
+    print(a);
+    print(reada(a));
+
+    return 0;
 }
