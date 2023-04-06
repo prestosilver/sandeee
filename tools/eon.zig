@@ -184,6 +184,14 @@ const Expression = struct {
                     std.mem.copy(u8, result[start_res..], adds);
                     return result;
                 },
+                .TOKEN_DIV => {
+                    idx.* -= 1;
+                    var adds = "    div\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
                 .TOKEN_AND => {
                     idx.* -= 1;
                     var adds = "    and\n";
