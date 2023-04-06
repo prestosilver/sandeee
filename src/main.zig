@@ -292,6 +292,7 @@ pub fn main() anyerror!void {
 
     var args = try std.process.ArgIterator.initWithAllocator(allocator.alloc);
     _ = args.next().?;
+    var headlessCmd: ?[]const u8 = null;
 
     while (args.next()) |arg| {
         if (std.mem.eql(u8, arg, "--cwd")) {
@@ -303,12 +304,23 @@ pub fn main() anyerror!void {
         if (std.mem.eql(u8, arg, "--headless")) {
             isHeadless = true;
         }
+        if (std.mem.eql(u8, arg, "--headless-cmd")) {
+            var script = args.next().?;
+            var buff = try allocator.alloc.alloc(u8, 1024);
+            var file = try std.fs.cwd().openFile(script, .{});
+
+            var len = try file.readAll(buff);
+            headlessCmd = buff[0..len];
+            file.close();
+
+            isHeadless = true;
+        }
     }
 
     args.deinit();
 
     if (isHeadless) {
-        return headless.headlessMain();
+        return headless.headlessMain(headlessCmd);
     }
 
     // init graphics

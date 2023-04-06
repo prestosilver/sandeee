@@ -38,7 +38,7 @@ pub const Shell = struct {
     var vms: usize = 0;
 
     pub fn getPrompt(self: *Shell) []const u8 {
-        return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{self.root.name[0..self.root.name.len - 1]}) catch "> ";
+        return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{self.root.name[0 .. self.root.name.len - 1]}) catch "> ";
     }
 
     pub fn cd(self: *Shell, param: []const u8) !Result {

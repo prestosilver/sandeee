@@ -7,7 +7,7 @@ const allocator = @import("../util/allocator.zig");
 
 const DISK = "headless.eee";
 
-pub fn headlessMain() anyerror!void {
+pub fn headlessMain(cmd: ?[]const u8) anyerror!void {
     var diskpath = fm.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
 
@@ -26,6 +26,8 @@ pub fn headlessMain() anyerror!void {
     var buffer: [512]u8 = undefined;
 
     _ = try stdout.write("Welcome To ShEEEl\n");
+
+    var toRun = cmd;
 
     while (true) {
         if (mainShell.vm != null) {
@@ -48,7 +50,23 @@ pub fn headlessMain() anyerror!void {
 
         allocator.alloc.free(prompt);
 
-        var data = try stdin.readUntilDelimiter(&buffer, '\n');
+        var data: []const u8 = undefined;
+
+        if (toRun != null) {
+            var idx = std.mem.indexOf(u8, toRun.?, "\n");
+            if (idx) |index| {
+                data = toRun.?[0..index];
+                toRun = toRun.?[index + 1 ..];
+            } else {
+                data = toRun.?;
+                toRun = null;
+            }
+            _ = try stdout.write(data);
+            _ = try stdout.write("\n");
+        } else {
+            data = try stdin.readUntilDelimiter(&buffer, '\n');
+        }
+
         var command = std.mem.trim(u8, data, "\r\n ");
         if (std.mem.indexOf(u8, command, " ")) |idx| {
             command.len = idx;

@@ -207,6 +207,13 @@ pub fn build(b: *std.build.Builder) void {
         headless_cmd.addArgs(args);
     }
 
+    const test_cmd = exe.run();
+    test_cmd.step.dependOn(b.getInstallStep());
+    test_cmd.addArgs(&[_][]const u8{ "--headless-cmd", "test.esh", "--cwd", "./zig-out/bin" });
+    if (b.args) |args| {
+        test_cmd.addArgs(args);
+    }
+
     b.installFile("content/fonts/scientifica.ttf", "bin/content/font.ttf");
     b.installFile("content/fonts/big.ttf", "bin/content/bios.ttf");
     b.installFile("content/emails.eme", "bin/content/emails.eme");
@@ -240,4 +247,5 @@ pub fn build(b: *std.build.Builder) void {
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
+    test_step.dependOn(&test_cmd.step);
 }
