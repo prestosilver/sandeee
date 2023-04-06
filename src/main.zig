@@ -343,6 +343,7 @@ pub fn main() anyerror!void {
     // start setup states
     ctx.makeCurrent();
 
+    // setup double buffer rendering
     c.glGenFramebuffers(1, &framebufferName);
     c.glGenBuffers(1, &quad_VertexArrayID);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
@@ -494,20 +495,19 @@ pub fn main() anyerror!void {
     try gameStates.getPtr(.Disks).setup();
     inputEvs.setup(ctx.window, true);
 
+    //TODO: ???
     win.deskSize = &size;
 
+    // update the frame timer
     var lastFrameTime = c.glfwGetTime();
 
+    // networking :O
     network.server = try network.Server.init();
     _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
 
     // main loop
     while (gfx.poll(&ctx)) {
-        //switch (currentState) {
-        //    .Windowed => ctx.cursorMode(c.GLFW_CURSOR_NORMAL),
-        //    else => ctx.cursorMode(c.GLFW_CURSOR_HIDDEN),
-        //}
-
+        // get the current state
         var state = gameStates.getPtr(currentState);
 
         // get the time & update
@@ -521,6 +521,7 @@ pub fn main() anyerror!void {
         // render
         try blit();
 
+        // the state changed
         if (state != gameStates.getPtr(currentState)) {
             try state.deinit();
         }
@@ -529,8 +530,10 @@ pub fn main() anyerror!void {
         lastFrameTime = currentTime;
     }
 
+    // deinit the current state
     try gameStates.getPtr(currentState).deinit();
 
+    // free the disk if allocated
     if (disk) |toFree| {
         allocator.alloc.free(toFree);
     }
