@@ -56,6 +56,8 @@ pub const VM = struct {
     args: [][]u8,
     root: *files.Folder,
 
+    heap: []u8,
+
     pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8) !VM {
         var splitIter = std.mem.split(u8, args, " ");
 
@@ -75,17 +77,20 @@ pub const VM = struct {
             .functions = std.StringArrayHashMap(VMFunc).init(alloc),
             .miscData = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
+            .heap = try alloc.alloc(u8, 0),
             .args = tmpArgs,
             .root = root,
         };
     }
 
-    fn pushStack(self: *VM, entry: StackEntry) void {
+    fn pushStack(self: *VM, entry: StackEntry) !void {
+        if (self.rsp == STACK_MAX) return error.StackOverflow;
         self.stack[self.rsp] = entry;
         self.rsp += 1;
     }
 
     fn pushStackI(self: *VM, value: u64) !void {
+        if (self.rsp == STACK_MAX) return error.StackOverflow;
         var val = try self.allocator.create(u64);
         val.* = value;
 
@@ -94,11 +99,10 @@ pub const VM = struct {
     }
 
     fn pushStackS(self: *VM, string: []const u8) !void {
+        if (self.rsp == STACK_MAX) return error.StackOverflow;
         var appendString = try self.allocator.alloc(u8, string.len);
 
-        for (string, 0..) |char, idx| {
-            appendString[idx] = char;
-        }
+        std.mem.copy(u8, appendString, string);
 
         self.stack[self.rsp] = StackEntry{ .string = appendString };
         self.rsp += 1;
@@ -318,7 +322,7 @@ pub const VM = struct {
                 if (op.value == null) return error.ValueMissing;
 
                 var a = try self.findStack(op.value.?);
-                self.pushStack(a);
+                try self.pushStack(a);
                 return;
             },
             Operation.Code.Dup => {
@@ -594,7 +598,46 @@ pub const VM = struct {
                                 return error.StringMissing;
                             }
                         },
+                        // resize heap
+                        14 => {
+                            var size = try self.popStack();
+                            defer self.free(&[_]StackEntry{size});
+
+                            if (size.value) |sizeVal| {
+                                self.heap = try self.allocator.realloc(self.heap, sizeVal.*);
+
+                                return;
+                            } else {
+                                return error.ValueMissing;
+                            }
+                        },
+                        // read heap
+                        15 => {
+                            var size = try self.popStack();
+                            var start = try self.popStack();
+                            defer self.free(&[_]StackEntry{ start, size });
+                            if (start.value == null) return error.ValueMissing;
+                            if (size.value == null) return error.ValueMissing;
+
+                            try self.pushStackS(self.heap[start.value.?.* .. start.value.?.* + size.value.?.*]);
+
+                            return;
+                        },
+                        // write heap
+                        16 => {
+                            var data = try self.popStack();
+                            var start = try self.popStack();
+                            defer self.free(&[_]StackEntry{ start, data });
+                            if (start.value == null) return error.ValueMissing;
+                            if (data.string == null) return error.StringMissing;
+
+                            std.mem.copy(u8, self.heap[start.value.?.* .. start.value.?.* + data.string.?.len], data.string.?);
+
+                            return;
+                        },
+                        // panic
                         128 => {
+                            std.log.info("{any}", .{self.heap});
                             @panic("VM Crash Called");
                         },
                         // misc
@@ -744,13 +787,15 @@ pub const VM = struct {
             Operation.Code.Disc => {
                 if (op.value == null) return error.ValueMissing;
 
+                if (op.value.? > self.rsp) return error.StackUnderflow;
+
                 var items = self.stack[self.rsp - op.value.? .. self.rsp];
                 self.rsp -= @intCast(u8, op.value.?);
                 var disc = try self.popStack();
                 defer self.free(&[_]StackEntry{disc});
 
                 for (items) |item| {
-                    self.pushStack(item);
+                    try self.pushStack(item);
                 }
 
                 return;
