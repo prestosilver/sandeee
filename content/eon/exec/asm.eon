@@ -1,6 +1,6 @@
-#include "content/eon/tabletest.eon"
-#include "content/eon/libload.eon"
-#include "content/eon/sys.eon"
+#include "content/eon/libs/table.eon"
+#include "content/eon/libs/libload.eon"
+#include "content/eon/libs/sys.eon"
 
 void error(value msg) {
     print("Error: " & msg);

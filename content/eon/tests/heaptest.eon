@@ -1,0 +1,9 @@
+#include "content/eon/libs/heap.eon"
+
+value main() {
+    setupHeap();
+    growHeap();
+    print(alloc(123));
+
+    asm "ret";
+}

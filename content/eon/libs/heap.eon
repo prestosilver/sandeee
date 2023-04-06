@@ -1,0 +1,85 @@
+#include "content/eon/libs/sys.eon"
+
+value setupHeap() {
+    asm "push 1";
+    asm "sys 14";
+    asm "push 0";
+    asm "push 0";
+    asm "getb";
+    asm "sys 16";
+
+    return 0;
+}
+
+value heapSize() {
+    asm "push 0";
+    asm "push 1";
+    asm "sys 15";
+    asm "getb";
+    asm "push 1024";
+    asm "mul";
+    asm "ret";
+}
+
+value growHeap() {
+    asm "push 0";
+    asm "push 0";
+    asm "push 1";
+    asm "sys 15";
+    asm "getb";
+    asm "push 1";
+    asm "add";
+    asm "getb";
+    asm "sys 16";
+    value size = heapSize();
+    asm "sys 14";
+    asm "push 0";
+    asm "push 0";
+    asm "ret";
+}
+
+value getWord(value idx) {
+    asm "push 2";
+    asm "sys 15";
+    asm "dup 0";
+    asm "getb";
+    asm "dup 1";
+    asm "getb";
+    asm "mul 256";
+    asm "add";
+    asm "disc 1";
+    asm "ret";
+}
+
+value round(value a) {
+    asm "push 20";
+    asm "div";
+    asm "push 20";
+    asm "mul";
+    asm "ret";
+}
+
+value alloc(value size) {
+    value target = round(size); 
+    value start = 1;
+    value current = 1;
+    value cont = 1;
+    value size = 0;
+
+    for (cont = 1; cont; cont = 1) {
+        current = current + 4;
+        size = current - start;
+
+        if (size > target) {
+            cont = 0;
+
+            print(size);
+            print("\\n");
+
+            return start;
+        }
+    }
+
+    return 0;
+}
+
