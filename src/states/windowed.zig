@@ -135,7 +135,33 @@ pub const GSWindowed = struct {
     }
 
     pub fn update(self: *Self, _: f32) !void {
-        _ = self;
+        self.cursor.data.index = 0;
+        for (self.windows.items, 0..) |_, idx| {
+            if (self.windows.items[idx].data.min) continue;
+
+            var pos = self.windows.items[idx].data.pos;
+            pos.x -= 10;
+            pos.y -= 10;
+            pos.w += 20;
+            pos.h += 20;
+
+            if (pos.contains(self.mousepos)) {
+                var mode = self.windows.items[idx].data.getDragMode(self.mousepos);
+                self.cursor.data.index = switch (mode) {
+                    .None => 0,
+                    .Move => 3,
+                    .Close => 0,
+                    .Full => 0,
+                    .Min => 0,
+                    .ResizeL => 1,
+                    .ResizeR => 1,
+                    .ResizeB => 2,
+                    .ResizeLB => 3,
+                    .ResizeRB => 3,
+                };
+                break;
+            }
+        }
     }
 
     pub fn keypress(self: *Self, key: c_int, mods: c_int) !bool {

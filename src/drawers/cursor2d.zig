@@ -31,6 +31,11 @@ pub const CursorData = struct {
 
         c.glfwGetCursorPos(gfx.gContext.window, &xo, &yo);
 
+        if (self.index != 0) {
+            xo -= self.size.x / 2;
+            yo -= self.size.y / 2;
+        }
+
         var x = @floatCast(f32, xo);
         var y = @floatCast(f32, yo);
 
