@@ -41,9 +41,3 @@ value read(value file, value len) {
     asm "sys 4";
     asm "ret";
 }
-
-value dup(value v) {
-    asm "dup 0";
-    asm "disc 1";
-    asm "ret";
-}

@@ -82,12 +82,6 @@ value round(value a) {
     asm "ret";
 }
 
-value dup(value v) {
-    asm "dup 0";
-    asm "disc 1";
-    asm "ret";
-}
-
 value alloc(value size) {
     value target = round(size);
     value start = 1;
@@ -121,4 +115,6 @@ value alloc(value size) {
 value free(value addr) {
     putWord(dup(addr), 0);
     putWord(dup(addr) + 2, 0);
+
+    return 0;
 }

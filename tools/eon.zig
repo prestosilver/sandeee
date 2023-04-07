@@ -90,7 +90,12 @@ const Expression = struct {
 
             idx.* = start + 1;
 
-            var adds = try std.fmt.allocPrint(allocator, "    call {s}\n", .{self.op.?.value});
+            var adds: []const u8 = undefined;
+            if (std.mem.eql(u8, self.op.?.value, "dup")) {
+                adds = try std.fmt.allocPrint(allocator, "    dup 0\n    disc 1\n", .{});
+            } else {
+                adds = try std.fmt.allocPrint(allocator, "    call {s}\n", .{self.op.?.value});
+            }
             defer allocator.free(adds);
             var start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
@@ -527,8 +532,9 @@ const FunctionDecl = struct {
     ident: []const u8,
     stmts: []Statement,
 
-    fn toAsm(self: *FunctionDecl) ![]const u8 {
-        var result = try std.fmt.allocPrint(allocator, "{s}:\n", .{self.ident});
+    fn toAsm(self: *FunctionDecl, lib: bool) ![]const u8 {
+        var prefix = if (lib) "_" else "";
+        var result = try std.fmt.allocPrint(allocator, "{s}{s}:\n", .{ prefix, self.ident });
         var map = VarMap{ .max = self.params.len, .vars = try allocator.alloc(Var, self.params.len) };
         for (self.params, 0..) |param, idx| {
             map.vars[idx] = .{
@@ -554,11 +560,12 @@ const FunctionDecl = struct {
 const Program = struct {
     funcs: []FunctionDecl,
 
-    fn toAsm(self: *Program) ![]const u8 {
-        var result = try std.fmt.allocPrint(allocator, "    call main\n    sys 1\n", .{});
+    fn toAsm(self: *Program, lib: bool) ![]const u8 {
+        var result =
+            if (!lib) try std.fmt.allocPrint(allocator, "    call main\n    sys 1\n", .{}) else try std.fmt.allocPrint(allocator, "", .{});
 
         for (self.funcs) |*func| {
-            var adds = try func.toAsm();
+            var adds = try func.toAsm(lib);
             defer allocator.free(adds);
             var start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
@@ -1281,7 +1288,26 @@ pub fn compileEon(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
 
     var result = std.ArrayList(u8).init(alloc);
 
-    var adds = try prog.toAsm();
+    var adds = try prog.toAsm(false);
+    try result.appendSlice(adds);
+
+    return result;
+}
+
+pub fn compileEonLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    allocator = alloc;
+
+    var tokens = try lex_file(in);
+    defer tokens.deinit();
+
+    //for (tokens.items) |tok|
+    //    std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
+
+    var prog = try parseProgram(tokens.items);
+
+    var result = std.ArrayList(u8).init(alloc);
+
+    var adds = try prog.toAsm(true);
     try result.appendSlice(adds);
 
     return result;

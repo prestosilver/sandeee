@@ -59,9 +59,10 @@ pub fn convertStep(b: *std.build.Builder, converter: anytype, input: []const u8,
 
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest", "send", "recv" };
 const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest" };
-const asmExecFiles = [_][]const u8{ "eon", "dump", "echo", "aplay" };
+const asmExecFiles = [_][]const u8{ "eon", "dump", "echo", "aplay", "libdump" };
 const eonExecFiles = [_][]const u8{"asm"};
-const asmLibFiles = [_][]const u8{ "string", "window", "sound", "array", "table" };
+const asmLibFiles = [_][]const u8{ "string", "window", "sound", "array" };
+const eonLibFiles = [_][]const u8{ "heap", "table" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
 const pngImageFiles = [_][]const u8{ "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios" };
@@ -171,6 +172,20 @@ pub fn build(b: *std.build.Builder) void {
         var step = conv.ConvertStep.create(b, comp.compileLib, asmf, ellf);
 
         write_step.step.dependOn(&step.step);
+    }
+
+    for (eonLibFiles) |file| {
+        var eonf = std.fmt.allocPrint(b.allocator, "content/eon/libs/{s}.eon", .{file}) catch "";
+        var asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
+        var ellf = std.fmt.allocPrint(b.allocator, "content/disk/libs/{s}.ell", .{file}) catch "";
+
+        var compStep = conv.ConvertStep.create(b, eon.compileEonLib, eonf, asmf);
+
+        var adds = conv.ConvertStep.create(b, comp.compileLib, asmf, ellf);
+
+        adds.step.dependOn(&compStep.step);
+
+        write_step.step.dependOn(&adds.step);
     }
 
     for (wavSoundFiles) |file| {

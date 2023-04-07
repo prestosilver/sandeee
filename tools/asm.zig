@@ -146,6 +146,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var result = std.ArrayList(u8).init(alloc);
     var toc = std.ArrayList(u8).init(alloc);
     var data = std.ArrayList(u8).init(alloc);
+    var funcs = std.ArrayList([]const u8).init(alloc);
 
     var buf_reader = std.io.bufferedReader(inreader.reader());
     var reader_stream = buf_reader.reader();
@@ -169,6 +170,8 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             if (l[0] == '_') {
                 idx = 0;
                 toc_count += 1;
+                var key = std.fmt.allocPrint(alloc, "{s}", .{l[1 .. l.len - 1]}) catch "";
+                try funcs.append(key);
             }
 
             var key = std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]}) catch "";
@@ -271,8 +274,20 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                     try data.appendSlice("\x00");
                 } else {
                     if (!consts.contains(target)) {
-                        std.log.info("{s}", .{target});
-                        return error.UnknownConst;
+                        var good = false;
+                        for (funcs.items) |item| {
+                            if (std.mem.eql(u8, item, target)) {
+                                try data.appendSlice("\x02");
+                                try data.appendSlice(target);
+                                try data.appendSlice("\x00");
+                                good = true;
+                                break;
+                            }
+                        }
+                        if (!good) {
+                            std.log.info("{s}", .{target});
+                            return error.UnknownConst;
+                        }
                     } else {
                         var value = consts.get(target).?;
                         if (value > 255) {
@@ -296,8 +311,9 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             }
         }
     }
-
-    try toc.append(@intCast(u8, data.items.len - prev_toc + 1));
+    var len = data.items.len - prev_toc + 1;
+    try toc.append(@intCast(u8, len / 256));
+    try toc.append(@intCast(u8, len % 256));
 
     try result.append(@intCast(u8, toc.items.len + 5));
     try result.appendSlice(toc.items);
