@@ -209,7 +209,7 @@ pub fn build(b: *std.build.Builder) void {
 
     const test_cmd = exe.run();
     test_cmd.step.dependOn(b.getInstallStep());
-    test_cmd.addArgs(&[_][]const u8{ "--headless-cmd", "test.esh", "--cwd", "./zig-out/bin" });
+    test_cmd.addArgs(&[_][]const u8{ "--headless-cmd", "tests/heap.esh", "--cwd", "./zig-out/bin" });
     if (b.args) |args| {
         test_cmd.addArgs(args);
     }

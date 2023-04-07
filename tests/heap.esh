@@ -1,0 +1,6 @@
+cd tests/eon
+heaptest
+tabletest
+asm hello.asm
+out.eep
+exit
