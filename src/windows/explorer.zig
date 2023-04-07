@@ -94,16 +94,21 @@ const ExplorerData = struct {
         defer allocator.alloc.free(icons);
 
         for (icons, 0..) |icon, idx| {
-            var size = @min(60, font.sizeText(.{ .text = icon.name }).x);
+            var size = font.sizeText(.{
+                .text = icon.name,
+                .wrap = 100,
+                .turnicate = true,
+            }).x;
             var xo = (128 - size) / 2;
 
             try font.draw(.{
                 .batch = batch,
                 .shader = font_shader,
                 .text = icon.name,
-                .pos = vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6),
+                .pos = vecs.newVec2(bnds.x + x + xo - 5, bnds.y + 64 + y + 6),
                 .color = col.newColor(0, 0, 0, 1),
-                .wrap = 60,
+                .wrap = 100,
+                .turnicate = true,
             });
 
             try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));

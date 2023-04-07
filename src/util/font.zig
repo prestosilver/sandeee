@@ -130,7 +130,7 @@ pub const Font = struct {
         scale: f32 = 1,
         color: col.Color = col.newColor(0, 0, 0, 1),
         wrap: ?f32 = null,
-        // TODO: turnicate: bool = false,
+        turnicate: bool = false,
     };
 
     pub fn draw(self: *Font, params: drawParams) !void {
@@ -153,6 +153,10 @@ pub const Font = struct {
                                 split += 1;
                             }
 
+                            if (pos.y != params.pos.y and params.turnicate) {
+                                return;
+                            }
+
                             try self.draw(.{
                                 .batch = params.batch,
                                 .shader = params.shader,
@@ -167,6 +171,9 @@ pub const Font = struct {
                             pos.y += params.scale * self.size;
 
                             size = self.sizeText(.{ .text = spaced, .scale = params.scale });
+                        }
+                        if (pos.y != params.pos.y and params.turnicate) {
+                            return;
                         }
                         try self.draw(.{
                             .batch = params.batch,
@@ -184,6 +191,10 @@ pub const Font = struct {
                         pos.x = params.pos.x;
                         pos.y += params.scale * self.size;
                     }
+                }
+
+                if (pos.y != params.pos.y and params.turnicate) {
+                    return;
                 }
 
                 try self.draw(.{
@@ -206,6 +217,11 @@ pub const Font = struct {
 
         for (params.text) |ach| {
             var ch = ach;
+            if (ch == '\n') {
+                pos.y += self.size * params.scale;
+                pos.x = params.pos.x;
+                continue;
+            }
             if (ch > 127) ch = '?';
             if (ch < 32) ch = '?';
 
@@ -245,7 +261,7 @@ pub const Font = struct {
         text: []const u8,
         scale: f32 = 1,
         wrap: ?f32 = null,
-        // TODO: turnicate: bool = false,
+        turnicate: bool = false,
     };
 
     pub fn sizeText(self: *Font, params: sizeParams) vec.Vector2 {
@@ -259,6 +275,12 @@ pub const Font = struct {
             }).x;
 
             while (iter.next()) |word| {
+                if (result.y != 0 and params.turnicate) {
+                    result.y = params.scale * self.size;
+                    result.x = maxSize;
+                    return result;
+                }
+
                 var size = self.sizeText(.{ .text = word, .scale = params.scale });
                 if (result.x + size.x > maxSize) {
                     if (result.x == 0) {
@@ -268,12 +290,17 @@ pub const Font = struct {
                             while (self.sizeText(.{
                                 .text = spaced[0..split],
                                 .scale = params.scale,
-                            }).x * params.scale < maxSize) {
+                            }).x < maxSize) {
                                 split += 1;
                             }
 
                             spaced = spaced[split - 1 ..];
                             result.y += params.scale * self.size;
+                            if (params.turnicate) {
+                                result.y = params.scale * self.size;
+                                result.x = maxSize;
+                                return result;
+                            }
 
                             size = self.sizeText(.{ .text = spaced, .scale = params.scale });
                         }
@@ -293,8 +320,16 @@ pub const Font = struct {
             return result;
         }
 
+        var maxx: f32 = 0;
+
         for (params.text) |ach| {
             var ch = ach;
+            if (ch == '\n') {
+                maxx = @max(result.x, maxx);
+                result.y += self.size * params.scale;
+                result.x = 0;
+                continue;
+            }
 
             if (ch > 127) ch = '?';
             if (ch < 32) ch = '?';
@@ -305,6 +340,7 @@ pub const Font = struct {
         }
 
         result.y += self.size * params.scale;
+        result.x = @max(result.x, maxx);
 
         return result;
     }
