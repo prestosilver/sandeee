@@ -99,3 +99,17 @@ tonum_loop:
     jnz tonum_loop              ; str result
     disc 1
     ret
+
+_StringSub:                     ; str start len
+    copy 2                      ; str start len result
+    copy 2                      ; str start len result start
+    add                         ; str start len result
+    disc 2                      ; str len result
+    disc 2                      ; len result
+    dup 1                       ; len result len
+    dup 1                       ; len result len result
+    call "StringLength"         ; len result len resultlen
+    sub                         ; len result resultextra
+    sub                         ; len result
+    disc 1                      ; result
+    ret
