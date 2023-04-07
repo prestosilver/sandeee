@@ -43,46 +43,26 @@ pub const EditorData = struct {
         self.numLeft.data.size.y = bnds.h - 36;
         self.numDiv.data.size.y = bnds.h - 36;
 
+        // draw number sidebar
+        try batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 36, 0));
+        try batch.draw(sp.Sprite, &self.numDiv, self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 36, 0));
+
+        // draw file text
         if (self.file != null) {
             // draw lines
             var y = bnds.y + 32 - self.scrollVal;
-            var line = std.ArrayList(u8).init(allocator.alloc);
             var nr: i32 = 1;
-            defer line.deinit();
 
             self.maxy = -bnds.h + 36;
 
-            var cx: f32 = 0;
-            var cy: f32 = 0;
+            var splitIter = std.mem.split(u8, self.buffer.items, "\n");
 
-            for (self.buffer.items, 0..) |char, idx| {
-                if (char == '\n') {
-                    if (cy == self.cursor.y and cx <= self.cursor.x) {
-                        var size = font.sizeText(.{ .text = line.items });
-                        self.cursor.x = cx;
-
-                        try font.draw(.{
-                            .batch = batch,
-                            .shader = shader,
-                            .text = "|",
-                            .pos = vecs.newVec2(bnds.x + 64 + size.x, y),
-                        });
-                        self.cursorIdx = idx;
-                    } else if (self.cursor.x <= 0 and self.cursor.y == cy) {
-                        self.cursor.x = 0;
-
-                        try font.draw(.{
-                            .batch = batch,
-                            .shader = shader,
-                            .text = "|",
-                            .pos = vecs.newVec2(bnds.x + 64, y),
-                        });
-                        self.cursorIdx = idx - line.items.len;
-                    }
+            while (splitIter.next()) |line| {
+                if (y > bnds.y - font.size and y < bnds.y + bnds.h) {
                     try font.draw(.{
                         .batch = batch,
                         .shader = shader,
-                        .text = line.items,
+                        .text = line,
                         .pos = vecs.newVec2(bnds.x + 70, y),
                     });
                     var linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
@@ -93,97 +73,31 @@ pub const EditorData = struct {
                         .text = linenr,
                         .pos = vecs.newVec2(bnds.x + 6, y),
                     });
-                    line.clearAndFree();
-                    y += font.size;
-                    self.maxy += font.size;
 
-                    nr += 1;
-                    cy += 1;
-                    if (cy == self.cursor.y) {
-                        self.prevIdx = @floatToInt(usize, cx);
-                    }
-                    cx = 0;
-                } else {
-                    if (cx == self.cursor.x and cy == self.cursor.y) {
-                        var size = font.sizeText(.{ .text = line.items });
-
+                    if (nr - 1 == @floatToInt(i32, self.cursor.y)) {
+                        var posx = font.sizeText(.{
+                            .text = line[0..@floatToInt(usize, self.cursor.x)],
+                        }).x;
                         try font.draw(.{
                             .batch = batch,
                             .shader = shader,
                             .text = "|",
-                            .pos = vecs.newVec2(bnds.x + 64 + size.x, y),
+                            .pos = vecs.newVec2(bnds.x + 70 + posx - 6, y),
                         });
-                        self.cursorIdx = idx;
                     }
-                    if (char < 32 or char == 255) {
-                        if (char == '\n' or char == '\r') {
-                            try line.append('\n');
-                        } else {
-                            try line.append('?');
-                        }
-                    } else {
-                        try line.append(char);
-                    }
-
-                    cx += 1;
                 }
-            }
-            if (cy < self.cursor.y) {
-                self.cursor.y = cy;
-            }
-            if (cy == self.cursor.y and cx <= self.cursor.x) {
-                var size = font.sizeText(.{ .text = line.items });
-                self.cursor.x = cx;
+                y += font.size;
+                self.maxy += font.size;
 
-                try font.draw(.{
-                    .batch = batch,
-                    .shader = shader,
-                    .text = "|",
-                    .pos = vecs.newVec2(bnds.x + 64 + size.x, y),
-                });
-                self.cursorIdx = self.buffer.items.len;
-            }
-            if (self.cursor.x <= 0 and self.cursor.y == cy) {
-                self.cursor.x = 0;
-
-                try font.draw(.{
-                    .batch = batch,
-                    .shader = shader,
-                    .text = "|",
-                    .pos = vecs.newVec2(bnds.x + 64, y),
-                });
-                self.cursorIdx = self.buffer.items.len - (line.items.len);
-            }
-            try font.draw(.{
-                .batch = batch,
-                .shader = shader,
-                .text = line.items,
-                .pos = vecs.newVec2(bnds.x + 70, y),
-            });
-            var linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
-            defer allocator.alloc.free(linenr);
-            try font.draw(.{
-                .batch = batch,
-                .shader = shader,
-                .text = linenr,
-                .pos = vecs.newVec2(bnds.x + 6, y),
-            });
-
-            if (self.buffer.items.len == 0) {
-                self.cursorIdx = 0;
-            }
-
-            if (self.maxy < 0) {
-                self.maxy = 0;
+                nr += 1;
             }
         }
 
         // draw toolbar
         try batch.draw(sp.Sprite, &self.menuTop, self.shader, vecs.newVec3(bnds.x - 2, bnds.y - 2, 0));
         try batch.draw(sp.Sprite, &self.menuDiv, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 34, 0));
-        try batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 36, 0));
-        try batch.draw(sp.Sprite, &self.numDiv, self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 36, 0));
 
+        // draw toolbar icons
         try batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 34, bnds.y, 0));
         try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
@@ -308,6 +222,7 @@ pub const EditorData = struct {
             },
             cc.GLFW_KEY_LEFT => {
                 self.cursor.x -= 1;
+                if (self.cursor.x < 0) self.cursor.x = 0;
             },
             cc.GLFW_KEY_RIGHT => {
                 self.cursor.x += 1;
