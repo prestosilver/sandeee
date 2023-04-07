@@ -14,5 +14,7 @@ const lol = error{};
 // }
 
 pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    _ = in;
     var result = std.ArrayList(u8).init(alloc);
+    _ = result;
 }
