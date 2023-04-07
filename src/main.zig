@@ -530,16 +530,16 @@ pub fn main() anyerror!void {
         // get tris
         try state.draw(size);
 
-        // render
-        try blit();
-
         // the state changed
         if (state != gameStates.getPtr(currentState)) {
             try state.deinit();
-        }
+        } else {
+            // render this is in else to fix single frame bugs
+            try blit();
 
-        // update the time
-        lastFrameTime = currentTime;
+            // update the time
+            lastFrameTime = currentTime;
+        }
     }
 
     // deinit the current state
