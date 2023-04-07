@@ -11,3 +11,4 @@ content/app.res.obj
 **/\>
 **/*.mgc
 content/asm/eon/
+.vscode/
