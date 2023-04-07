@@ -368,6 +368,40 @@ pub const Folder = struct {
         return error.FileNotFound;
     }
 
+    pub fn removeFile(self: *Folder, name: []const u8, vmInstance: ?*vm.VM) !void {
+        var file = std.ArrayList(u8).init(allocator.alloc);
+        defer file.deinit();
+
+        for (name) |ch| {
+            if (ch == '/') {
+                if (check(file.items, "..")) return try self.parent.removeFile(name[3..], vmInstance);
+                if (check(file.items, ".")) return try self.removeFile(name[2..], vmInstance);
+                if (check(file.items, "")) return try self.removeFile(name[1..], vmInstance);
+
+                var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
+                defer allocator.alloc.free(fullname);
+                for (self.subfolders.items, 0..) |folder, idx| {
+                    if (check(folder.name, fullname)) {
+                        return try self.subfolders.items[idx].removeFile(name[file.items.len..], vmInstance);
+                    }
+                }
+                return error.FolderNotFound;
+            } else {
+                try file.append(ch);
+            }
+        }
+
+        var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
+        for (self.contents.items, 0..) |subfile, idx| {
+            if (check(subfile.name, fullname)) {
+                _ = self.contents.orderedRemove(idx);
+                allocator.alloc.free(fullname);
+                return;
+            }
+        }
+        return error.FileNotFound;
+    }
+
     pub fn getFile(self: *Folder, name: []const u8) !?*File {
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();

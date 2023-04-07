@@ -420,6 +420,23 @@ pub const Shell = struct {
         return self.run(command.items, line);
     }
 
+    pub fn rem(self: *Shell, params: []const u8) !Result {
+        var result: Result = Result{
+            .data = std.ArrayList(u8).init(allocator.alloc),
+        };
+
+        if (params.len > 4) {
+            self.root.removeFile(params[4..], null) catch {
+                result.data.deinit();
+                return error.FileNotFound;
+            };
+            try result.data.appendSlice("removed");
+            return result;
+        }
+
+        return self.todo(params);
+    }
+
     pub fn run(self: *Shell, cmd: []const u8, params: []const u8) !Result {
         if (std.mem.eql(u8, cmd, "help")) return self.help(params);
         if (std.mem.eql(u8, cmd, "ls")) return self.ls(params);
@@ -427,7 +444,7 @@ pub const Shell = struct {
         if (std.mem.eql(u8, cmd, "edit")) return self.runEdit(params);
         if (std.mem.eql(u8, cmd, "web")) return self.runWeb(params);
         if (std.mem.eql(u8, cmd, "new")) return self.new(params);
-        //if (std.mem.eql(u8, cmd, "rem")) return self.rem(params);
+        if (std.mem.eql(u8, cmd, "rem")) return self.rem(params);
         if (std.mem.eql(u8, cmd, "cd")) return self.cd(params);
 
         if (std.mem.eql(u8, cmd, "$run")) {
