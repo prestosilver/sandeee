@@ -15,7 +15,7 @@ const c = @import("../c.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
-    const VERSION = "0.0.1";
+    const VERSION = "0.0.2";
 
     face: *font.Font,
     font_shader: *shd.Shader,
@@ -28,6 +28,20 @@ pub const GSDisks = struct {
     sel: usize = 0,
     auto: bool = true,
     disks: std.ArrayList([]const u8) = undefined,
+
+    pub fn getDate(name: []const u8) i128 {
+        var path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;
+        defer allocator.alloc.free(path);
+        var file = std.fs.cwd().openFile(path, .{}) catch return 0;
+        defer file.close();
+        return (file.metadata() catch return 0).modified();
+    }
+
+    pub fn sortDisksLt(_: u8, a: []const u8, b: []const u8) bool {
+        return getDate(a) < getDate(b);
+    }
+
+    const DISK_LIST = "0123456789ABCDEF";
 
     pub fn setup(self: *Self) !void {
         gfx.gContext.color = cols.newColor(0, 0, 0, 1);
@@ -49,7 +63,20 @@ pub const GSDisks = struct {
             try self.disks.append(entry);
         }
 
-        try self.disks.append("New Disk");
+        var und: u8 = undefined;
+
+        std.sort.sort([]const u8, self.disks.items, und, sortDisksLt);
+
+        for (self.disks.items, 0..) |_, idx| {
+            var copy = self.disks.items[idx];
+            defer allocator.alloc.free(copy);
+
+            self.disks.items[idx] = try std.fmt.allocPrint(allocator.alloc, "{c} {s}", .{ DISK_LIST[idx], copy });
+        }
+
+        try self.disks.append("+ New Disk");
+
+        self.disks.items.len = @min(self.disks.items.len, DISK_LIST.len);
     }
 
     pub fn deinit(self: *Self) !void {
@@ -69,8 +96,8 @@ pub const GSDisks = struct {
             if (self.sel != self.disks.items.len - 1) {
                 var sel = self.disks.items[self.sel];
 
-                self.disk.* = try allocator.alloc.alloc(u8, sel.len);
-                std.mem.copy(u8, self.disk.*.?, sel);
+                self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
+                std.mem.copy(u8, self.disk.*.?, sel[2..]);
             }
 
             if (self.disk.* != null) {
@@ -152,7 +179,14 @@ pub const GSDisks = struct {
                 if (self.sel != 0)
                     self.sel -= 1;
             },
-            else => {},
+            else => {
+                for (self.disks.items, 0..) |disk, idx| {
+                    if (c.glfwGetKeyName(key, 0)[0] == disk[0]) {
+                        self.sel = idx;
+                        self.remaining = 0;
+                    }
+                }
+            },
         }
 
         return false;
