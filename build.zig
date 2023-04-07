@@ -57,6 +57,15 @@ pub fn convertStep(b: *std.build.Builder, converter: anytype, input: []const u8,
     return b.addWriteFile(b.pathFromRoot(out), cont.items);
 }
 
+const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest", "send", "recv" };
+const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest" };
+const asmExecFiles = [_][]const u8{ "eon", "dump", "echo", "aplay" };
+const eonExecFiles = [_][]const u8{"asm"};
+const asmLibFiles = [_][]const u8{ "string", "window", "sound", "array", "table" };
+const wavSoundFiles = [_][]const u8{ "login", "message" };
+const pngImageFiles = [_][]const u8{ "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor" };
+const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios" };
+
 pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable(.{
         .name = "sandeee",
@@ -103,48 +112,40 @@ pub fn build(b: *std.build.Builder) void {
 
     exe.install();
 
-    var convert_steps = std.ArrayList(*conv.ConvertStep).init(b.allocator);
-
     var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
 
     if (exe.optimize == .Debug) {
-        const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest", "send", "recv" };
-
         for (asmTestsFiles) |file| {
             var asmf = std.fmt.allocPrint(b.allocator, "content/asm/tests/{s}.asm", .{file}) catch "";
             var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/asm/{s}.eep", .{file}) catch "";
 
-            convert_steps.append(conv.ConvertStep.create(b, comp.compile, asmf, eepf)) catch {};
+            var step = conv.ConvertStep.create(b, comp.compile, asmf, eepf);
+            write_step.step.dependOn(&step.step);
         }
-
-        const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest" };
 
         for (eonTestsFiles) |file| {
             var eonf = std.fmt.allocPrint(b.allocator, "content/eon/tests/{s}.eon", .{file}) catch "";
             var asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
             var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/eon/{s}.eep", .{file}) catch "";
 
+            var step = conv.ConvertStep.create(b, comp.compile, asmf, eepf);
             var compStep = conv.ConvertStep.create(b, eon.compileEon, eonf, asmf);
 
-            var adds = conv.ConvertStep.create(b, comp.compile, asmf, eepf);
+            step.step.dependOn(&compStep.step);
 
-            adds.step.dependOn(&compStep.step);
-
-            convert_steps.append(adds) catch {};
+            write_step.step.dependOn(&step.step);
         }
     }
-
-    const asmExecFiles = [_][]const u8{ "eon", "dump", "echo", "aplay" };
 
     for (asmExecFiles) |file| {
         var asmf = std.fmt.allocPrint(b.allocator, "content/asm/exec/{s}.asm", .{file}) catch "";
         var eepf = std.fmt.allocPrint(b.allocator, "content/disk/exec/{s}.eep", .{file}) catch "";
 
-        convert_steps.append(conv.ConvertStep.create(b, comp.compile, asmf, eepf)) catch {};
-    }
+        var step = conv.ConvertStep.create(b, comp.compile, asmf, eepf);
 
-    const eonExecFiles = [_][]const u8{"asm"};
+        write_step.step.dependOn(&step.step);
+    }
 
     for (eonExecFiles) |file| {
         var eonf = std.fmt.allocPrint(b.allocator, "content/eon/exec/{s}.eon", .{file}) catch "";
@@ -157,36 +158,45 @@ pub fn build(b: *std.build.Builder) void {
 
         adds.step.dependOn(&compStep.step);
 
-        convert_steps.append(adds) catch {};
+        write_step.step.dependOn(&adds.step);
     }
 
-    convert_steps.append(conv.ConvertStep.create(b, comp.compile, "content/asm/libs/libload.asm", "content/disk/libs/libload.eep")) catch {};
+    var libLoadStep = conv.ConvertStep.create(b, comp.compile, "content/asm/libs/libload.asm", "content/disk/libs/libload.eep");
+    write_step.step.dependOn(&libLoadStep.step);
 
-    convert_steps.append(conv.ConvertStep.create(b, comp.compileLib, "content/asm/libs/string.asm", "content/disk/libs/string.ell")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, comp.compileLib, "content/asm/libs/window.asm", "content/disk/libs/window.ell")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, comp.compileLib, "content/asm/libs/sound.asm", "content/disk/libs/sound.ell")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, comp.compileLib, "content/asm/libs/array.asm", "content/disk/libs/array.ell")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, comp.compileLib, "content/asm/libs/table.asm", "content/disk/libs/table.ell")) catch {};
+    for (asmLibFiles) |file| {
+        var asmf = std.fmt.allocPrint(b.allocator, "content/asm/libs/{s}.asm", .{file}) catch "";
+        var ellf = std.fmt.allocPrint(b.allocator, "content/disk/libs/{s}.ell", .{file}) catch "";
 
-    convert_steps.append(conv.ConvertStep.create(b, sound.convert, "content/audio/login.wav", "content/disk/cont/snds/login.era")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, sound.convert, "content/audio/message.wav", "content/disk/cont/snds/message.era")) catch {};
+        var step = conv.ConvertStep.create(b, comp.compileLib, asmf, ellf);
 
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/bar.png", "content/disk/cont/imgs/bar.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/editor.png", "content/disk/cont/imgs/editor.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/email.png", "content/disk/cont/imgs/email.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/explorer.png", "content/disk/cont/imgs/explorer.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/window.png", "content/disk/cont/imgs/window.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/web.png", "content/disk/cont/imgs/web.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/wall.png", "content/disk/cont/imgs/wall.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/barlogo.png", "content/disk/cont/imgs/barlogo.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/cursor.png", "content/disk/cont/imgs/cursor.eia")) catch {};
+        write_step.step.dependOn(&step.step);
+    }
 
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/logo.png", "src/images/logo.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/load.png", "src/images/load.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/sad.png", "src/images/sad.eia")) catch {};
-    convert_steps.append(conv.ConvertStep.create(b, image.convert, "content/images/bios.png", "src/images/bios.eia")) catch {};
+    for (wavSoundFiles) |file| {
+        var wavf = std.fmt.allocPrint(b.allocator, "content/audio/{s}.wav", .{file}) catch "";
+        var eraf = std.fmt.allocPrint(b.allocator, "content/disk/cont/snds/{s}.era", .{file}) catch "";
 
-    for (convert_steps.items) |step| {
+        var step = conv.ConvertStep.create(b, sound.convert, wavf, eraf);
+
+        write_step.step.dependOn(&step.step);
+    }
+
+    for (pngImageFiles) |file| {
+        var pngf = std.fmt.allocPrint(b.allocator, "content/images/{s}.png", .{file}) catch "";
+        var eraf = std.fmt.allocPrint(b.allocator, "content/disk/cont/imgs/{s}.eia", .{file}) catch "";
+
+        var step = conv.ConvertStep.create(b, image.convert, pngf, eraf);
+
+        write_step.step.dependOn(&step.step);
+    }
+
+    for (internalImageFiles) |file| {
+        var pngf = std.fmt.allocPrint(b.allocator, "content/images/{s}.png", .{file}) catch "";
+        var eraf = std.fmt.allocPrint(b.allocator, "src/images/{s}.eia", .{file}) catch "";
+
+        var step = conv.ConvertStep.create(b, image.convert, pngf, eraf);
+
         write_step.step.dependOn(&step.step);
     }
 
