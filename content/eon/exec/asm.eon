@@ -1,5 +1,5 @@
-#include "content/eon/libs/table.eon"
 #include "content/eon/libs/libload.eon"
+#include "content/eon/libs/table.eon"
 #include "content/eon/libs/sys.eon"
 
 void error(value msg) {
@@ -87,10 +87,13 @@ value getLineEnum(value line) {
     return 255;
 }
 
-value getLineData(value line) {
+value getLineData(value table, value line) {
     value char = 0;
     for (char = @line; char != 32; char = @line) {
         line = line + 1;
+        if ("StringLength"(line) == 0) {
+            return @0;
+        }
     }
 
     line = line + 1;
@@ -106,6 +109,16 @@ value getLineData(value line) {
 
     value num = "StringToNum"(line);
 
+    value name = "";
+
+    for (name = dup(line); "StringLength"(name) < 20; 0) {
+        name = name & @0;
+    }
+    
+    if (tableGet(table, name)) {
+        num = @tableGet(table, name);
+    }
+
     if (num < 256) {
        return @3 & @num;
     }
@@ -113,7 +126,7 @@ value getLineData(value line) {
     return @1 & num;
 }
 
-value processLine(value line) {
+value processLine(value table, value line) {
     value stripped = stripLine(line);
     value enum = getLineEnum(stripped);
 
@@ -121,20 +134,62 @@ value processLine(value line) {
        error("Invalid Instruction " & stripped);
     }
 
-    value data = getLineData(stripped);
+    value data = getLineData(table, stripped);
 
     return @enum & data;
 }
 
-value processFile(value infile, value outfile) {
+value processFile(value table, value infile, value outfile) {
     write(outfile, "EEEp");
 
     value line = "";
 
     value char = read(infile, 1);
     for (char = char; char != ""; char = read(infile, 1)) {
-        if (@char == 10) {
-            write(outfile, processLine(line));
+        if (@char == 92) {
+            char = read(infile, 1);
+            if (@char == 110) {
+                line = line & @10;
+            } else {
+                line = line & char;
+            }
+        } else if (@char == 10) {
+            if ("StringLast"(line) != 58) {
+                write(outfile, processLine(table, line));
+            }
+
+            line = "";
+        } else {
+            line = line & char;
+        }
+    }
+
+    return 0;
+}
+
+value processConsts(value table, value infile) {
+    value line = "";
+
+    value char = read(infile, 1);
+    value name = "";
+    value idx = 0;
+    for (char = char; char != ""; char = read(infile, 1)) {
+        if (@char == 92) {
+            char = read(infile, 1);
+            if (@char == 78) {
+                line = line & @10;
+            } else {
+                line = line & char;
+            }
+        } else if (@char == 10) {
+            if ("StringLast"(line) == 58) {
+                for (name = dup(line) - 1; "StringLength"(name) < 20; 0) {
+                    name = name & @0;
+                }
+                tablePut(table, name, @idx);
+            } else {
+                idx = idx + 1;
+            }
 
             line = "";
         } else {
@@ -150,21 +205,29 @@ void main() {
     setupLibLoad();
     loadLib("/libs/string.ell");
 
+    value table = tableCreate(20, 1);
+
     // open output
     value outfile = "out.eep";
     value outhandle = createOpen(outfile);
 
     // open input
     value infile = processArgs();
-    value inhandle = open(infile);
-    print("ASM: " & infile & "\\n");
+    value inhandlea = open(infile);
+    value inhandleb = open(infile);
+
+    // get consts
+    print("READ: " & infile & "\\n");
+    processConsts(table, inhandlea);
+    close(inhandlea);
 
     // create out file
-    processFile(inhandle, outhandle);
+    print("ASM: " & infile & "\\n");
+    processFile(table, inhandleb, outhandle);
 
     print("Wrote: '" & outfile & "'\\n");
 
-    close(inhandle);
+    close(inhandleb);
     close(outhandle);
 
     asm "ret";

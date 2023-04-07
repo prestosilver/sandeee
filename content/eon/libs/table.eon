@@ -21,7 +21,7 @@ value tableKeySize(value table) {
 }
 
 value tableEntrySize(value table) {
-    return tableKeySize(table) + tableValueSize(table);
+    return tableKeySize(dup(table)) + tableValueSize(dup(table));
 }
 
 value setSize(value table, value size) {
@@ -36,12 +36,10 @@ value setSize(value table, value size) {
 }
 
 value tableGetEntry(value table, value idx) {
-    value size = tableEntrySize(table);
-    value offset = size * idx + 3;
-    value start = table + offset;
-    value startLen = "StringLength"(start);
-
-    value removes = startLen - size;
+    value size = tableEntrySize(dup(table));
+    value offset = size * idx;
+    value start = table + offset + 3;
+    value removes = "StringLength"(start) - size;
 
     return start - removes;
 }
@@ -61,13 +59,13 @@ value tableRemoveEntry(value table, value idx) {
 }
 
 value tablePut(value table, value key, value val) {
-    if (tableKeySize(table) != "StringLength"(key)) return 0;
-    if (tableValueSize(table) != "StringLength"(val)) return 0;
+    if (tableKeySize(dup(table)) != "StringLength"(key)) return 0;
+    if (tableValueSize(dup(table)) != "StringLength"(val)) return 0;
 
 
-    value total = tableLen(table);
-    value valueSize = tableValueSize(table);
-    value keySize = tableKeySize(table);
+    value total = tableLen(dup(table));
+    value valueSize = tableValueSize(dup(table));
+    value keySize = tableKeySize(dup(table));
 
     value idx = 0;
     value tEntry = "";
@@ -78,7 +76,7 @@ value tablePut(value table, value key, value val) {
         tKey = tEntry - valueSize;
 
         if (tKey == key) {
-           tableRemoveEntry(idx);
+           tableRemoveEntry(table, idx);
            table = table & key & val;
            return 1;
         }
@@ -90,22 +88,23 @@ value tablePut(value table, value key, value val) {
 }
 
 value tableGet(value table, value key) {
-    if (tableKeySize(table) != "StringLength"(key)) return 0;
+    if (tableKeySize(dup(table)) != "StringLength"(key)) return 0;
 
-    value total = tableLen(table);
-    value valueSize = tableValueSize(table);
-    value keySize = tableKeySize(table);
+    value total = tableLen(dup(table));
+    value valueSize = tableValueSize(dup(table));
+    value keySize = tableKeySize(dup(table));
 
     value idx = 0;
     value tEntry = "";
     value tKey = "";
 
     for (idx = 0; idx < total; idx = idx + 1) {
-        tEntry = tableGetEntry(table, idx);
-        tKey = tEntry - valueSize;
+        tEntry = tableGetEntry(dup(table), idx);
+        tKey = dup(tEntry) - valueSize;
 
         if (tKey == key) {
-           return tEntry + keySize;
+            tEntry = tableGetEntry(dup(table), idx);
+            return dup(tEntry) + keySize;
         }
     }
     return 0;

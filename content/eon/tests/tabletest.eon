@@ -7,11 +7,9 @@ value main() {
     setupLibLoad();
     loadLib("/libs/string.ell");
 
-    value table = tableCreate(2, 2);
+    value table = tableCreate(2, 3);
 
-    print(tablePut(table, "lo", "ls"));
-
-    print(table);
+    tablePut(table, "lo", "lol");
 
     print(tableGet(table, "lo"));
 
