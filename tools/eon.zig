@@ -268,6 +268,8 @@ const Expression = struct {
                             return result;
                         }
                     }
+
+                    std.log.info("{s}", .{self.op.?.value});
                     return error.UnknownIdent;
                 },
                 else => {
@@ -906,7 +908,7 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
             var a = try allocator.alloc(Expression, 1);
             a[0] = .{
                 .a = &emptyExpr,
-                .op = &tokens[idx.* + 1],
+                .op = &tokens[idx.*],
                 .b = &emptyExpr,
             };
 
