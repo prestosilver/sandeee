@@ -16,6 +16,7 @@ const c = @import("../c.zig");
 pub const GSDisks = struct {
     const Self = @This();
     const VERSION = "0.0.2";
+    const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
 
     face: *font.Font,
     font_shader: *shd.Shader,
@@ -131,7 +132,7 @@ pub const GSDisks = struct {
             .shader = self.font_shader,
             .text = line,
             .pos = pos,
-            .color = cols.newColor(0.7, 0.7, 0.7, 1),
+            .color = TEXT_COLOR,
         });
         pos.y += self.face.size * 2;
         try self.face.draw(.{
@@ -139,7 +140,7 @@ pub const GSDisks = struct {
             .shader = self.font_shader,
             .text = "Select a disk",
             .pos = pos,
-            .color = cols.newColor(0.7, 0.7, 0.7, 1),
+            .color = TEXT_COLOR,
         });
         pos.y += self.face.size * 1;
 
@@ -157,7 +158,7 @@ pub const GSDisks = struct {
                     .shader = self.font_shader,
                     .text = line,
                     .pos = pos,
-                    .color = cols.newColor(0.7, 0.7, 0.7, 1),
+                    .color = TEXT_COLOR,
                 });
                 pos.y += self.face.size * 1;
             }
@@ -180,6 +181,7 @@ pub const GSDisks = struct {
                     self.sel -= 1;
             },
             else => {
+                if (c.glfwGetKeyName(key, 0) == null) return false;
                 for (self.disks.items, 0..) |disk, idx| {
                     if (c.glfwGetKeyName(key, 0)[0] == disk[0]) {
                         self.sel = idx;
