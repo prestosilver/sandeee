@@ -7,13 +7,12 @@ const va = @import("../util/vertArray.zig");
 pub const SpriteData = struct {
     source: rect.Rectangle,
     size: vecs.Vector2,
-    color: cols.Color,
+    color: cols.Color = cols.newColor(1, 1, 1, 1),
 
     pub fn new(source: rect.Rectangle, size: vecs.Vector2) SpriteData {
         return SpriteData{
             .source = source,
             .size = size,
-            .color = cols.newColor(1, 1, 1, 1),
         };
     }
 
