@@ -68,6 +68,44 @@ float displace(vec2 look)
 
 #define GAMMA 2.2
 
+float luma(vec3 color) {
+    return (0.2126*color.r + 0.7152*color.g + 0.0722*color.b);
+}
+
+#define STEPS 8.0
+
+vec4 get_color_pos(vec2 pos) {
+    int x = int(mod(pos.x * screen_width / 2, 2.0)); 
+    int y = int(mod(pos.y * screen_height / 2, 2.0)); 
+    int index = x + y * 2;
+    float limit = 0.0;
+
+    if (x < 8) {
+        if (index == 0) limit = 0.25;
+        if (index == 1) limit = 0.75;
+        if (index == 2) limit = 1.00;
+        if (index == 3) limit = 0.50;
+    }
+    vec3 result = texture(tex, pos).rgb;
+
+    vec3 act = round(result * STEPS) / STEPS;
+    vec3 other;
+    other.r = act.r < result.r ? act.r + 1.0 / STEPS : act.r - 1.0 / STEPS;
+    other.g = act.g < result.g ? act.g + 1.0 / STEPS : act.g - 1.0 / STEPS;
+    other.b = act.b < result.b ? act.b + 1.0 / STEPS : act.b - 1.0 / STEPS;
+
+    vec3 mul;
+
+    mul.r = abs((result - act) / (act - other)).r < limit ? 0 : 1.0;
+    mul.g = abs((result - act) / (act - other)).g < limit ? 0 : 1.0;
+    mul.b = abs((result - act) / (act - other)).b < limit ? 0 : 1.0;
+
+    result = mix(act, other, mul);
+
+    //return vec4(abs((result - act) / -(act - other)), 1.0);
+    return vec4(result, 1.0);
+}
+
 void main()
 {
     vec2 xy = (SCREEN_UV.xy + vec2(1)) / 2;
@@ -101,8 +139,8 @@ void main()
 
     float pixel_size_x = 0.5/screen_width*bleeding_range_x;
     float pixel_size_y = 0.5/screen_height*bleeding_range_y;
-    vec4 color_left = texture(tex,xy - vec2(pixel_size_x, pixel_size_y)) * bar;
-    vec4 current_color = texture(tex,xy) * bar;
+    vec4 color_left = get_color_pos(xy - vec2(pixel_size_x, pixel_size_y)) * bar;
+    vec4 current_color = get_color_pos(xy) * bar;
     color_left = pow(color_left, vec4(GAMMA));
     current_color = pow(current_color, vec4(GAMMA));
     get_color_bleeding(current_color,color_left);
