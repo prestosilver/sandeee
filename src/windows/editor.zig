@@ -25,35 +25,38 @@ pub const EditorData = struct {
     shader: *shd.Shader,
     numLeft: sp.Sprite,
     numDiv: sp.Sprite,
-    scrollSp: [4]sp.Sprite,
     icons: [2]sp.Sprite,
     cursor: vecs.Vector2,
     cursorIdx: usize,
     prevIdx: usize,
     modified: bool,
-    scrollVal: f32,
-    maxy: f32,
 
     clickPos: ?vecs.Vector2,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
+        if (scrollData.* == null) {
+            scrollData.* = .{
+                .offsetStart = 34,
+            };
+        }
+
         self.menuTop.data.size.x = bnds.w + 4;
         self.menuDiv.data.size.x = bnds.w + 4;
 
-        self.numLeft.data.size.y = bnds.h - 36;
-        self.numDiv.data.size.y = bnds.h - 36;
+        self.numLeft.data.size.y = bnds.h - 34;
+        self.numDiv.data.size.y = bnds.h - 34;
 
         // draw number sidebar
-        try batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 36, 0));
-        try batch.draw(sp.Sprite, &self.numDiv, self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 36, 0));
+        try batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 34, 0));
+        try batch.draw(sp.Sprite, &self.numDiv, self.shader, vecs.newVec3(bnds.x + 62, bnds.y + 34, 0));
 
         // draw file text
         if (self.file != null) {
             // draw lines
-            var y = bnds.y + 32 - self.scrollVal;
+            var y = bnds.y + 32 - scrollData.*.?.value;
             var nr: i32 = 1;
 
-            self.maxy = -bnds.h + 36;
+            scrollData.*.?.maxy = -bnds.h + 36;
 
             var splitIter = std.mem.split(u8, self.buffer.items, "\n");
 
@@ -87,7 +90,7 @@ pub const EditorData = struct {
                     }
                 }
                 y += font.size;
-                self.maxy += font.size;
+                scrollData.*.?.maxy += font.size;
 
                 nr += 1;
             }
@@ -95,23 +98,11 @@ pub const EditorData = struct {
 
         // draw toolbar
         try batch.draw(sp.Sprite, &self.menuTop, self.shader, vecs.newVec3(bnds.x - 2, bnds.y - 2, 0));
-        try batch.draw(sp.Sprite, &self.menuDiv, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 34, 0));
+        try batch.draw(sp.Sprite, &self.menuDiv, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 32, 0));
 
         // draw toolbar icons
         try batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 34, bnds.y, 0));
         try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
-
-        // draw scrollbar
-        if (self.maxy != 0) {
-            var scrollPc = self.scrollVal / self.maxy;
-
-            self.scrollSp[1].data.size.y = bnds.h - 20 - 36;
-
-            try batch.draw(sp.Sprite, &self.scrollSp[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
-            try batch.draw(sp.Sprite, &self.scrollSp[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
-            try batch.draw(sp.Sprite, &self.scrollSp[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-            try batch.draw(sp.Sprite, &self.scrollSp[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 84) * scrollPc + bnds.y + 46, 0));
-        }
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
@@ -237,14 +228,7 @@ pub const EditorData = struct {
         }
     }
 
-    pub fn scroll(self: *Self, _: f32, y: f32) void {
-        self.scrollVal -= y * SCROLL;
-
-        if (self.scrollVal > self.maxy)
-            self.scrollVal = self.maxy;
-        if (self.scrollVal < 0)
-            self.scrollVal = 0;
-    }
+    pub fn scroll(_: *Self, _: f32, _: f32) void {}
 };
 
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
@@ -252,7 +236,7 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
 
     self.menuTop = sp.Sprite.new(texture, sp.SpriteData.new(
         rect.newRect(19.0 / 32.0, 0.0 / 32.0, 13.0 / 32.0, 2.0 / 32.0),
-        vecs.newVec2(100, 36),
+        vecs.newVec2(100, 34),
     ));
     self.menuDiv = sp.Sprite.new(texture, sp.SpriteData.new(
         rect.newRect(19.0 / 32.0, 2.0 / 32.0, 13.0 / 32.0, 1.0 / 32.0),
@@ -275,32 +259,11 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
         vecs.newVec2(32, 32),
     ));
 
-    self.scrollSp[0] = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(16.0 / 32.0, 16.0 / 32.0, 7.0 / 32.0, 6.0 / 32.0),
-        vecs.newVec2(14.0, 12.0),
-    ));
-
-    self.scrollSp[1] = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(16.0 / 32.0, 22.0 / 32.0, 7.0 / 32.0, 4.0 / 32.0),
-        vecs.newVec2(14.0, 64),
-    ));
-
-    self.scrollSp[2] = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(16.0 / 32.0, 26.0 / 32.0, 7.0 / 32.0, 6.0 / 32.0),
-        vecs.newVec2(14.0, 12.0),
-    ));
-
-    self.scrollSp[3] = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(23.0 / 32.0, 16.0 / 32.0, 7.0 / 32.0, 14.0 / 32.0),
-        vecs.newVec2(14.0, 28.0),
-    ));
     self.shader = shader;
     self.file = null;
     self.buffer = std.ArrayList(u8).init(allocator.alloc);
     self.cursor.x = 0;
     self.cursor.y = 0;
-    self.scrollVal = 0;
-    self.maxy = 0;
 
     return win.WindowContents.init(self, "editor", "EEEDT", col.newColor(1, 1, 1, 1));
 }

@@ -100,6 +100,7 @@ var editortex: tex.Texture = undefined;
 var barlogotex: tex.Texture = undefined;
 var explorertex: tex.Texture = undefined;
 var cursortex: tex.Texture = undefined;
+var scrolltex: tex.Texture = undefined;
 
 var ctx: gfx.Context = undefined;
 var sb: batch.SpriteBatch = undefined;
@@ -394,6 +395,7 @@ pub fn main() anyerror!void {
         .walltex = &walltex,
         .emailtex = &emailtex,
         .editortex = &editortex,
+        .scrolltex = &scrolltex,
         .cursortex = &cursortex,
         .barlogotex = &barlogotex,
         .explorertex = &explorertex,
@@ -430,6 +432,7 @@ pub fn main() anyerror!void {
         .webtex = &webtex,
         .wintex = &wintex,
         .emailtex = &emailtex,
+        .scrolltex = &scrolltex,
         .editortex = &editortex,
         .explorertex = &explorertex,
         .settingsManager = &settingManager,
@@ -533,6 +536,8 @@ pub fn main() anyerror!void {
         // the state changed
         if (state != gameStates.getPtr(currentState)) {
             try state.deinit();
+
+            try sb.clear();
         } else {
             // render this is in else to fix single frame bugs
             try blit();

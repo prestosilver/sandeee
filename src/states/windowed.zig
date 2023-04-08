@@ -1,5 +1,6 @@
 const std = @import("std");
 const vecs = @import("../math/vecs.zig");
+const rect = @import("../math/rects.zig");
 const win = @import("../drawers/window2d.zig");
 const allocator = @import("../util/allocator.zig");
 const wall = @import("../drawers/wall2d.zig");
@@ -45,6 +46,7 @@ pub const GSWindowed = struct {
     wintex: *tex.Texture,
     emailtex: *tex.Texture,
     editortex: *tex.Texture,
+    scrolltex: *tex.Texture,
     explorertex: *tex.Texture,
 
     var globalSelf: *Self = undefined;
@@ -82,6 +84,40 @@ pub const GSWindowed = struct {
         pseudo.win.windowsPtr = &self.windows;
 
         globalSelf = self;
+
+        win.WindowContents.scrollSp[0] = .{
+            .texture = self.scrolltex,
+            .data = .{
+                .source = rect.newRect(0, 0, 7.0 / 16.0, 6.0 / 16.0),
+                .size = vecs.newVec2(14, 12),
+            },
+        };
+
+        win.WindowContents.scrollSp[1] = .{
+            .texture = self.scrolltex,
+            .data = .{
+                .source = rect.newRect(0, 6.0 / 16.0, 7.0 / 16.0, 4.0 / 16.0),
+                .size = vecs.newVec2(14, 64),
+            },
+        };
+
+        win.WindowContents.scrollSp[2] = .{
+            .texture = self.scrolltex,
+            .data = .{
+                .source = rect.newRect(0, 10.0 / 16.0, 7.0 / 16.0, 6.0 / 16.0),
+                .size = vecs.newVec2(14, 12),
+            },
+        };
+
+        win.WindowContents.scrollSp[3] = .{
+            .texture = self.scrolltex,
+            .data = .{
+                .source = rect.newRect(7.0 / 16.0, 0.0 / 16.0, 7.0 / 16.0, 14.0 / 16.0),
+                .size = vecs.newVec2(14, 28),
+            },
+        };
+
+        win.WindowContents.shader = self.shader;
 
         events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
     }
@@ -159,7 +195,6 @@ pub const GSWindowed = struct {
                     .ResizeLB => 3,
                     .ResizeRB => 3,
                 };
-                break;
             }
         }
     }

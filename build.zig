@@ -64,7 +64,7 @@ const eonExecFiles = [_][]const u8{"asm"};
 const asmLibFiles = [_][]const u8{ "string", "window", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "heap", "table" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
-const pngImageFiles = [_][]const u8{ "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor" };
+const pngImageFiles = [_][]const u8{ "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios" };
 
 pub fn build(b: *std.build.Builder) void {

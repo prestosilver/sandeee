@@ -25,6 +25,7 @@ pub const GSLoading = struct {
     const wallpath: []const u8 = "/cont/imgs/wall.eia";
     const barpath: []const u8 = "/cont/imgs/bar.eia";
     const editorpath: []const u8 = "/cont/imgs/editor.eia";
+    const scrollpath: []const u8 = "/cont/imgs/scroll.eia";
     const emailpath: []const u8 = "/cont/imgs/email.eia";
     const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
     const cursorpath: []const u8 = "/cont/imgs/cursor.eia";
@@ -48,6 +49,7 @@ pub const GSLoading = struct {
     walltex: *tex.Texture,
     emailtex: *tex.Texture,
     editortex: *tex.Texture,
+    scrolltex: *tex.Texture,
     cursortex: *tex.Texture,
     barlogotex: *tex.Texture,
     explorertex: *tex.Texture,
@@ -85,6 +87,7 @@ pub const GSLoading = struct {
         try self.loader.enqueue(&barpath, self.bartex, worker.texture.loadTexture);
         try self.loader.enqueue(&wallpath, self.walltex, worker.texture.loadTexture);
         try self.loader.enqueue(&emailpath, self.emailtex, worker.texture.loadTexture);
+        try self.loader.enqueue(&scrollpath, self.scrolltex, worker.texture.loadTexture);
         try self.loader.enqueue(&editorpath, self.editortex, worker.texture.loadTexture);
         try self.loader.enqueue(&cursorpath, self.cursortex, worker.texture.loadTexture);
         try self.loader.enqueue(&barlogopath, self.barlogotex, worker.texture.loadTexture);

@@ -5,6 +5,8 @@ const rect = @import("../math/rects.zig");
 const fnt = @import("../util/font.zig");
 const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
+const allocator = @import("../util/allocator.zig");
+const spr = @import("sprite2d.zig");
 
 const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;
@@ -25,11 +27,19 @@ pub const DragMode = enum {
     ResizeRB,
 };
 
+const SCROLL_MUL = 30;
+
 pub const WindowContents = struct {
     const Self = @This();
 
+    pub const ScrollData = struct {
+        offsetStart: f32 = 0,
+        value: f32 = 0,
+        maxy: f32 = 0,
+    };
+
     const VTable = struct {
-        draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font) anyerror!void,
+        draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font, *?ScrollData) anyerror!void,
         click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, i32) anyerror!void,
         key: *const fn (*anyopaque, i32, i32) anyerror!void,
         scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
@@ -39,15 +49,40 @@ pub const WindowContents = struct {
         deinit: *const fn (*anyopaque) anyerror!void,
     };
 
+    pub var scrollSp: [4]spr.Sprite = undefined;
+    pub var shader: *shd.Shader = undefined;
+
     kind: []const u8,
     name: []const u8,
     clearColor: cols.Color,
+    scrollData: ?ScrollData = null,
 
     ptr: *anyopaque,
     vtable: *const VTable,
 
+    pub fn drawScroll(self: *Self, batch: *sb.SpriteBatch, bnds: *rect.Rectangle) !void {
+        if (self.scrollData) |scrolldat| {
+            var scrollPc = scrolldat.value / scrolldat.maxy;
+
+            scrollSp[1].data.size.y = bnds.h - scrolldat.offsetStart - (12 * 2) + 2;
+
+            try batch.draw(spr.Sprite, &scrollSp[0], shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + scrolldat.offsetStart, 0));
+            try batch.draw(spr.Sprite, &scrollSp[1], shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + scrolldat.offsetStart + 12, 0));
+            try batch.draw(spr.Sprite, &scrollSp[2], shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
+            try batch.draw(spr.Sprite, &scrollSp[3], shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - scrolldat.offsetStart - (10 * 2) - 26) * scrollPc + bnds.y + scrolldat.offsetStart + 10, 0));
+        }
+    }
+
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
-        return self.vtable.draw(self.ptr, batch, font_shader, bnds, font);
+        if (self.scrollData != null) {
+            if (self.scrollData.?.value > self.scrollData.?.maxy)
+                self.scrollData.?.value = self.scrollData.?.maxy;
+            if (self.scrollData.?.value < 0)
+                self.scrollData.?.value = 0;
+        }
+
+        try self.vtable.draw(self.ptr, batch, font_shader, bnds, font, &self.scrollData);
+        try self.drawScroll(batch, bnds);
     }
 
     pub fn key(self: *Self, keycode: i32, mods: i32) !void {
@@ -59,10 +94,15 @@ pub const WindowContents = struct {
     }
 
     pub fn scroll(self: *Self, x: f32, y: f32) !void {
+        if (self.scrollData != null) {
+            self.scrollData.?.value -= y * SCROLL_MUL;
+        }
         return self.vtable.scroll(self.ptr, x, y);
     }
 
     pub fn move(self: *Self, x: f32, y: f32) !void {
+        if (self.scrollData != null)
+            return self.vtable.move(self.ptr, x, y + self.scrollData.?.value);
         return self.vtable.move(self.ptr, x, y);
     }
 
@@ -84,10 +124,17 @@ pub const WindowContents = struct {
         const alignment = ptr_info.Pointer.alignment;
 
         const gen = struct {
-            fn drawImpl(pointer: *anyopaque, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) anyerror!void {
+            fn drawImpl(
+                pointer: *anyopaque,
+                batch: *sb.SpriteBatch,
+                font_shader: *shd.Shader,
+                bnds: *rect.Rectangle,
+                font: *fnt.Font,
+                scrolldat: *?ScrollData,
+            ) anyerror!void {
                 const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font });
+                return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font, scrolldat });
             }
 
             fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32) !void {

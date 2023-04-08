@@ -25,20 +25,23 @@ pub const WebData = struct {
 
     shader: *shd.Shader,
     file: ?*files.File,
-    maxy: f32,
-    scrollVal: f32,
     links: std.ArrayList(WebLink),
     hist: std.ArrayList(*files.File),
     highlight_idx: usize,
 
-    scroll: [4]sprite.Sprite,
     highlight: sprite.Sprite,
     menubar: sprite.Sprite,
     text_box: [2]sprite.Sprite,
     icons: [1]sprite.Sprite,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
-        var pos = vecs.newVec2(0, -self.scrollVal + 36);
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
+        if (scrollData.* == null) {
+            scrollData.* = .{
+                .offsetStart = 34,
+            };
+        }
+
+        var pos = vecs.newVec2(0, -scrollData.*.?.value + 36);
 
         var cont: []const u8 = "Error Loading File";
         if (self.file) |file| {
@@ -88,7 +91,7 @@ pub const WebData = struct {
                     if (add_links) {
                         var link = WebData.WebLink{
                             .url = file,
-                            .pos = rect.newRect(6 + pos.x, 6 + pos.y + self.scrollVal, size.x, size.y),
+                            .pos = rect.newRect(6 + pos.x, 6 + pos.y + scrollData.*.?.value, size.x, size.y),
                             .color = color,
                         };
                         try self.links.append(link);
@@ -110,7 +113,7 @@ pub const WebData = struct {
             pos.x = 0;
         }
 
-        self.maxy = pos.y + 64 + font.size + self.scrollVal - bnds.h;
+        scrollData.*.?.maxy = pos.y + 64 + font.size + scrollData.*.?.value - bnds.h;
 
         // draw highlight for url
         if (self.highlight_idx != 0) {
@@ -121,7 +124,7 @@ pub const WebData = struct {
 
             self.highlight.data.color = self.links.items[self.highlight_idx - 1].color;
 
-            try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - self.scrollVal + 4, 0));
+            try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - scrollData.*.?.value + 4, 0));
         }
 
         // draw menubar
@@ -156,30 +159,13 @@ pub const WebData = struct {
         batch.scissor = tmp;
 
         try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
-
-        // draw scrollbar
-        var scrollPc = self.scrollVal / self.maxy;
-
-        self.scroll[1].data.size.y = bnds.h - 20 - 36;
-
-        try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
-        try batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
-        try batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-        try batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
     }
 
-    pub fn scroll(self: *Self, _: f32, y: f32) void {
-        self.scrollVal -= y * SCROLL;
-
-        if (self.scrollVal > self.maxy)
-            self.scrollVal = self.maxy;
-        if (self.scrollVal < 0)
-            self.scrollVal = 0;
-    }
+    pub fn scroll(_: *Self, _: f32, _: f32) void {}
 
     pub fn move(self: *Self, x: f32, y: f32) void {
         for (self.links.items, 0..) |link, idx| {
-            if (link.pos.contains(vecs.newVec2(x, y + self.scrollVal))) {
+            if (link.pos.contains(vecs.newVec2(x, y))) {
                 self.highlight_idx = idx + 1;
                 return;
             }
@@ -194,7 +180,7 @@ pub const WebData = struct {
                     self.file = last;
                     self.links.clearAndFree();
                     self.highlight_idx = 0;
-                    self.scrollVal = 0;
+                    // self.scrollVal = 0;
                 }
             }
 
@@ -208,7 +194,7 @@ pub const WebData = struct {
         self.file = self.links.items[self.highlight_idx - 1].url;
         self.links.clearAndFree();
         self.highlight_idx = 0;
-        self.scrollVal = 0;
+        // self.scrollVal = 0;
     }
 
     pub fn key(_: *Self, _: i32, _: i32) !void {}
@@ -222,26 +208,6 @@ pub const WebData = struct {
 
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(WebData);
-
-    self.scroll[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 0 / 32.0, 7.0 / 32.0, 6.0 / 32.0),
-        vecs.newVec2(14.0, 12.0),
-    ));
-
-    self.scroll[1] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 6.0 / 32.0, 7.0 / 32.0, 4.0 / 32.0),
-        vecs.newVec2(14.0, 64),
-    ));
-
-    self.scroll[2] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 10.0 / 32.0, 7.0 / 32.0, 6.0 / 32.0),
-        vecs.newVec2(14.0, 12.0),
-    ));
-
-    self.scroll[3] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(7.0 / 32.0, 7.0 / 32.0, 7.0 / 32.0, 14.0 / 32.0),
-        vecs.newVec2(14.0, 28.0),
-    ));
 
     self.highlight = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(15.0 / 32.0, 7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0),

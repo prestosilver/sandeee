@@ -183,6 +183,10 @@ pub const SpriteBatch = struct {
         if (cscissor != null)
             c.glDisable(c.GL_SCISSOR_TEST);
 
+        try sb.clear();
+    }
+
+    pub fn clear(sb: *SpriteBatch) !void {
         for (sb.prevQueue, 0..) |_, idx| {
             var e = sb.prevQueue[idx];
             e.verts.deinit();

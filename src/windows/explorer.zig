@@ -36,15 +36,12 @@ const ExplorerData = struct {
 
     shader: *shd.Shader,
     icons: [5]sprite.Sprite,
-    scroll: [4]sprite.Sprite,
     text_box: [2]sprite.Sprite,
     menubar: sprite.Sprite,
 
-    scrollVal: f32,
     focus: sprite.Sprite,
     focused: ?u64,
     selected: usize,
-    maxy: f32,
     lastAction: ?ExplorerMouseAction,
     shell: shell.Shell,
 
@@ -71,7 +68,12 @@ const ExplorerData = struct {
         return result;
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
+        if (scrollData.* == null) {
+            scrollData.* = .{
+                .offsetStart = 34,
+            };
+        }
         if (self.lastAction != null) {
             if (self.lastAction.?.time <= 0) {
                 self.lastAction = null;
@@ -88,7 +90,7 @@ const ExplorerData = struct {
         }
 
         var x: f32 = 0;
-        var y: f32 = -self.scrollVal + 36;
+        var y: f32 = -scrollData.*.?.value + 36;
 
         var icons = try self.getIcons();
         defer allocator.alloc.free(icons);
@@ -145,12 +147,7 @@ const ExplorerData = struct {
             }
         }
 
-        self.maxy = y + 64 + font.size + font.size + self.scrollVal - bnds.h;
-
-        if (self.scrollVal > self.maxy)
-            self.scrollVal = self.maxy;
-        if (self.scrollVal < 0)
-            self.scrollVal = 0;
+        scrollData.*.?.maxy = y + 64 + font.size + font.size + scrollData.*.?.value - bnds.h;
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
@@ -175,30 +172,13 @@ const ExplorerData = struct {
         batch.scissor = tmp;
 
         try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
-
-        // draw scrollbar
-        var scrollPc = self.scrollVal / self.maxy;
-
-        self.scroll[1].data.size.y = bnds.h - 20 - 36;
-
-        try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 34, 0));
-        try batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 46, 0));
-        try batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-        try batch.draw(sprite.Sprite, &self.scroll[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - 82) * scrollPc + bnds.y + 46, 0));
     }
 
     pub fn deinit(self: *Self) void {
         allocator.alloc.destroy(self);
     }
 
-    pub fn scroll(self: *Self, _: f32, y: f32) void {
-        self.scrollVal -= y * SCROLL;
-
-        if (self.scrollVal > self.maxy)
-            self.scrollVal = self.maxy;
-        if (self.scrollVal < 0)
-            self.scrollVal = 0;
-    }
+    pub fn scroll(_: *Self, _: f32, _: f32) void {}
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
         if (mousepos.y < 36) {
@@ -257,26 +237,6 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     }
 
     var ym = @intToFloat(f32, self.icons.len);
-
-    self.scroll[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
-        vecs.newVec2(14.0, 12.0),
-    ));
-
-    self.scroll[1] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 6.0 / 32.0 / ym, 7.0 / 32.0, 4.0 / 32.0 / ym),
-        vecs.newVec2(14.0, 64),
-    ));
-
-    self.scroll[2] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 10.0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
-        vecs.newVec2(14.0, 12.0),
-    ));
-
-    self.scroll[3] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(10.0 / 32.0, 0.0 / 32.0 / ym, 7.0 / 32.0, 14.0 / 32.0 / ym),
-        vecs.newVec2(14.0, 28.0),
-    ));
 
     self.focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),

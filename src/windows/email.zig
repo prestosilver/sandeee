@@ -31,7 +31,8 @@ const EmailData = struct {
     box: u8 = 0,
     viewing: ?*mail.Email = null,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
+        _ = scrollData;
         self.divy.data.size.y = bnds.h + 4;
 
         try batch.draw(sprite.Sprite, &self.divy, self.shader, vecs.newVec3(bnds.x + 100, bnds.y - 2, 0));
