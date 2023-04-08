@@ -317,10 +317,24 @@ pub const GSWindowed = struct {
     }
 
     pub fn mousescroll(self: *Self, dir: vecs.Vector2) !void {
-        for (self.windows.items) |*window| {
-            if (!window.data.active) continue;
+        var newTop: ?u32 = null;
 
-            return window.data.contents.scroll(dir.x, dir.y);
+        for (self.windows.items, 0..) |_, idx| {
+            if (self.windows.items[idx].data.min) continue;
+
+            var pos = self.windows.items[idx].data.pos;
+            pos.x -= 10;
+            pos.y -= 10;
+            pos.w += 20;
+            pos.h += 20;
+
+            if (pos.contains(self.mousepos)) {
+                newTop = @intCast(u32, idx);
+            }
+        }
+
+        if (newTop) |top| {
+            try self.windows.items[top].data.contents.scroll(dir.x, dir.y);
         }
     }
 };
