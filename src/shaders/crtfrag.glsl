@@ -22,6 +22,7 @@ uniform float scanline_alpha = 0.85;
 uniform float lines_velocity = -2.0;
 
 uniform int crt_enable = 0;
+uniform int dither_enable = 1;
 
 #define distortion 0.1
 
@@ -75,6 +76,12 @@ float luma(vec3 color) {
 #define STEPS 8.0
 
 vec4 get_color_pos(vec2 pos) {
+    vec3 result = texture(tex, pos).rgb;
+
+    if (dither_enable == 0) {
+        return vec4(result, 1.0);
+    }
+
     int x = int(mod(pos.x * screen_width / 2, 2.0)); 
     int y = int(mod(pos.y * screen_height / 2, 2.0)); 
     int index = x + y * 2;
@@ -86,7 +93,6 @@ vec4 get_color_pos(vec2 pos) {
         if (index == 2) limit = 1.00;
         if (index == 3) limit = 0.50;
     }
-    vec3 result = texture(tex, pos).rgb;
 
     vec3 act = round(result * STEPS) / STEPS;
     vec3 other;
@@ -102,7 +108,6 @@ vec4 get_color_pos(vec2 pos) {
 
     result = mix(act, other, mul);
 
-    //return vec4(abs((result - act) / -(act - other)), 1.0);
     return vec4(result, 1.0);
 }
 
@@ -111,7 +116,7 @@ void main()
     vec2 xy = (SCREEN_UV.xy + vec2(1)) / 2;
 
     if (crt_enable == 0) {
-        color = texture(tex, xy);
+        color = get_color_pos(xy);
         return;
     }
 
