@@ -251,9 +251,6 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
-    var trace = @errorReturnTrace();
-    std.log.info("{?}", .{trace});
-
     errorMsg = msg;
     errorState = @enumToInt(currentState);
 
@@ -264,16 +261,14 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
     gameStates.getPtr(currentState).deinit() catch {};
 
-    currentState = .Crash;
-
     // disable events on loading screen
-    inputEvs.setup(ctx.window, currentState != .Loading);
+    inputEvs.setup(ctx.window, false);
 
-    // run setuip
-    gameStates.getPtr(currentState).setup() catch {};
+    // run setup
+    gameStates.getPtr(.Crash).setup() catch {};
 
     while (gfx.poll(&ctx)) {
-        var state = gameStates.getPtr(currentState);
+        var state = gameStates.getPtr(.Crash);
 
         state.update(1.0 / 60.0) catch break;
         state.draw(size) catch break;
@@ -478,7 +473,7 @@ pub fn main() anyerror!void {
         },
     };
 
-    // crashed state
+    // install state
     var gsInstall = installState.GSInstall{
         .shader = &shader,
         .sb = &sb,
@@ -487,7 +482,7 @@ pub fn main() anyerror!void {
         .load_sprite = .{
             .texture = &loadTex,
             .data = sprite.SpriteData.new(
-                rect.newRect(0, 0, 1, 1),
+                rect.newRect(1.0 / 5.0, 1.0 / 5.0, 1.0 / 5.0, 1.0 / 5.0),
                 vecs.newVec2(20, 32),
             ),
         },
