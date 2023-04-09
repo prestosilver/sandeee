@@ -53,8 +53,12 @@ pub fn init(name: [*c]const u8) !Context {
 
     var mode = c.glfwGetVideoMode(monitor)[0];
 
-    var win = c.glfwCreateWindow(mode.width, mode.height, name, null, null);
-    c.glfwSetWindowMonitor(win, monitor, 0, 0, mode.width, mode.height, mode.refreshRate);
+    c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
+    c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
+    c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
+    c.glfwWindowHint(c.GLFW_REFRESH_RATE, mode.refreshRate);
+
+    var win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
 
     c.glfwMakeContextCurrent(win);
 
