@@ -204,6 +204,10 @@ pub const Folder = struct {
         }
     }
 
+    fn sortList(comptime T: type, a: T, b: T) bool {
+        return std.mem.lessThan(u8, a.name, b.name);
+    }
+
     fn fixFolders(self: *Folder) void {
         for (self.subfolders.items, 0..) |_, idx| {
             self.subfolders.items[idx].parent = self;
@@ -212,6 +216,9 @@ pub const Folder = struct {
         for (self.contents.items, 0..) |_, idx| {
             self.contents.items[idx].parent = self;
         }
+
+        std.sort.sort(Folder, self.subfolders.items, Folder, sortList);
+        std.sort.sort(File, self.contents.items, File, sortList);
     }
 
     fn check(cmd: []const u8, exp: []const u8) bool {
@@ -275,6 +282,8 @@ pub const Folder = struct {
             .parent = self,
         });
 
+        std.sort.sort(File, self.contents.items, File, sortList);
+
         return true;
     }
 
@@ -330,6 +339,8 @@ pub const Folder = struct {
             .contents = std.ArrayList(File).init(allocator.alloc),
             .subfolders = std.ArrayList(Folder).init(allocator.alloc),
         });
+
+        std.sort.sort(Folder, self.subfolders.items, Folder, sortList);
 
         return true;
     }
