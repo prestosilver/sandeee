@@ -54,13 +54,24 @@ pub const EditorData = struct {
         if (self.file != null) {
             // draw lines
             var y = bnds.y + 32 - scrollData.*.?.value;
-            var nr: i32 = 1;
+            var nr: usize = 1;
+            self.cursorIdx = @floatToInt(usize, self.cursor.x);
+            self.prevIdx = 0;
 
             scrollData.*.?.maxy = -bnds.h + 36;
 
             var splitIter = std.mem.split(u8, self.buffer.items, "\n");
 
             while (splitIter.next()) |line| {
+                if (nr - 1 < @floatToInt(usize, self.cursor.y)) {
+                    self.cursorIdx += line.len + 1;
+                    self.prevIdx += line.len + 1;
+                }
+
+                if (nr - 1 == @floatToInt(usize, self.cursor.y)) {
+                    self.cursor.x = @min(self.cursor.x, @intToFloat(f32, line.len));
+                }
+
                 if (y > bnds.y - font.size and y < bnds.y + bnds.h) {
                     try font.draw(.{
                         .batch = batch,
@@ -89,6 +100,7 @@ pub const EditorData = struct {
                         });
                     }
                 }
+
                 y += font.size;
                 scrollData.*.?.maxy += font.size;
 
@@ -206,9 +218,27 @@ pub const EditorData = struct {
                     self.cursor.x -= 1;
                     if (char == '\n') {
                         self.cursor.y -= 1;
-                        self.cursor.x = @intToFloat(f32, self.prevIdx);
+                        self.cursor.x = @intToFloat(f32, self.prevIdx - 1);
                     }
                 }
+                self.modified = true;
+            },
+            cc.GLFW_KEY_SEMICOLON => {
+                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
+                    try self.buffer.insert(self.cursorIdx, ':');
+                } else {
+                    try self.buffer.insert(self.cursorIdx, ';');
+                }
+                self.cursor.x += 1;
+                self.modified = true;
+            },
+            cc.GLFW_KEY_APOSTROPHE => {
+                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
+                    try self.buffer.insert(self.cursorIdx, '"');
+                } else {
+                    try self.buffer.insert(self.cursorIdx, '\'');
+                }
+                self.cursor.x += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_LEFT => {
@@ -264,6 +294,7 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     self.buffer = std.ArrayList(u8).init(allocator.alloc);
     self.cursor.x = 0;
     self.cursor.y = 0;
+    self.cursorIdx = 0;
 
     return win.WindowContents.init(self, "editor", "EEEDT", col.newColor(1, 1, 1, 1));
 }
