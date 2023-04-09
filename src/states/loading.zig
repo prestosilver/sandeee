@@ -33,7 +33,7 @@ pub const GSLoading = struct {
     const loginpath: []const u8 = "/cont/snds/login.era";
     const settingspath: []const u8 = "/conf/system.cfg";
     const zero: u8 = 0;
-    const delay: u64 = 250;
+    const delay: u64 = 300;
 
     load_progress: f32 = 0,
     login_snd: audio.Sound = undefined,
@@ -108,10 +108,9 @@ pub const GSLoading = struct {
         // delay
         try self.loader.enqueue(&delay, &zero, worker.delay.loadDelay);
 
-        _ = try std.Thread.spawn(.{ .stack_size = 128 }, Self.loadThread, .{self});
-        self.loader.run(&self.load_progress) catch |msg| {
-            //"BootEEE failed, Problaby missing file" ++
-            @panic(@errorName(msg));
+        _ = try std.Thread.spawn(.{}, Self.loadThread, .{self});
+        self.loader.run(&self.load_progress) catch {
+            @panic("BootEEE failed, Problaby missing file");
         };
 
         // setup some pointers
@@ -149,9 +148,11 @@ pub const GSLoading = struct {
         try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
 
         // progress bar
-        self.load_sprite.data.size.x = (self.load_progress * 320 + self.load_sprite.data.size.x) / 2;
+        // self.load_sprite.data.size.x = (self.load_progress * 320 + self.load_sprite.data.size.x) / 2;
 
-        try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
+        for (0..@floatToInt(usize, self.load_progress * 32)) |idx| {
+            try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x + @intToFloat(f32, 10 * idx), logoOff.y + 100, 0));
+        }
     }
 
     pub fn keypress(_: *Self, _: c_int, _: c_int) !bool {

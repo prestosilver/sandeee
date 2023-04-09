@@ -407,14 +407,14 @@ pub fn main() anyerror!void {
             .texture = &logoTex,
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(320, 70),
+                vecs.newVec2(320, 64),
             ),
         },
         .load_sprite = .{
             .texture = &loadTex,
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(20, 20),
+                vecs.newVec2(10, 10),
             ),
         },
         .shader = &shader,
