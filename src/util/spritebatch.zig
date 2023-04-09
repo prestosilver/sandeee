@@ -45,10 +45,8 @@ pub const QueueEntry = struct {
         for (casted) |ch|
             hash = ((hash << 5) +% hash) +% ch;
 
-        for (entry.verts.items, 0..) |_, idx| {
-            casted = std.mem.asBytes(&entry.verts.items[idx]);
-            for (casted) |ch|
-                hash = ((hash << 5) +% hash) +% ch;
+        for (entry.verts.items()) |*item| {
+            hash = ((hash << 5) +% hash) +% item.getHash();
         }
 
         entry.hash = hash;
@@ -86,9 +84,7 @@ pub const SpriteBatch = struct {
                 entry.scissor != null and last.scissor != null and
                 rect.Rectangle.equal(last.scissor.?, entry.scissor.?))
             {
-                var start = last.verts.items.len;
-                last.verts.items = try allocator.alloc.realloc(last.verts.items, last.verts.items.len + entry.verts.items.len);
-                std.mem.copy(va.Vert, last.verts.items[start..], entry.verts.items);
+                try last.verts.array.appendSlice(entry.verts.items());
                 entry.verts.deinit();
             } else {
                 sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
@@ -101,7 +97,7 @@ pub const SpriteBatch = struct {
         if (sb.queue.len != 0) {
             for (sb.queue, 0..) |_, idx| {
                 if (idx >= sb.prevQueue.len) break;
-                if (sb.queue[idx].verts.items.len == sb.prevQueue[idx].verts.items.len) {
+                if (sb.queue[idx].verts.items().len == sb.prevQueue[idx].verts.items().len) {
                     sb.queue[idx].GetHash();
                     sb.prevQueue[idx].GetHash();
                     sb.queue[idx].update = (sb.queue[idx].hash != sb.prevQueue[idx].hash);
@@ -167,8 +163,8 @@ pub const SpriteBatch = struct {
             entry.shader.setFloat("time", @floatCast(f32, c.glfwGetTime()));
             cscissor = entry.scissor;
 
-            if (entry.update and entry.verts.items.len != 0) {
-                c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, entry.verts.items.len * @sizeOf(va.Vert)), entry.verts.items.ptr, c.GL_DYNAMIC_DRAW);
+            if (entry.update and entry.verts.items().len != 0) {
+                c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, entry.verts.items().len * @sizeOf(va.Vert)), entry.verts.items().ptr, c.GL_DYNAMIC_DRAW);
             }
 
             c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
@@ -178,7 +174,7 @@ pub const SpriteBatch = struct {
             c.glEnableVertexAttribArray(1);
             c.glEnableVertexAttribArray(2);
 
-            c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c.GLsizei, entry.verts.items.len));
+            c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c.GLsizei, entry.verts.items().len));
         }
         if (cscissor != null)
             c.glDisable(c.GL_SCISSOR_TEST);

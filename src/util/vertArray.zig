@@ -28,26 +28,37 @@ pub const Vert = struct {
             v.a,
         };
     }
+
+    pub fn getHash(v: Vert) u32 {
+        var casted = std.mem.asBytes(&[_]f32{ v.x, v.y });
+        var hash: u32 = 1235;
+        for (casted) |ch|
+            hash = ((hash << 5) +% hash) +% ch;
+
+        return hash;
+    }
 };
 
 pub const VertArray = struct {
-    items: []Vert,
+    array: std.ArrayList(Vert),
 
     pub fn init() !VertArray {
         var result = VertArray{
-            .items = try allocator.alloc.alloc(Vert, 0),
+            .array = std.ArrayList(Vert).init(allocator.alloc),
         };
         return result;
     }
 
     pub fn deinit(va: *VertArray) void {
-        allocator.alloc.free(va.items);
+        va.array.deinit();
+    }
+
+    pub fn items(va: VertArray) []const Vert {
+        return va.array.items;
     }
 
     pub fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {
-        va.items = try allocator.alloc.realloc(va.items, va.items.len + 1);
-
-        va.items[va.items.len - 1] = Vert{
+        try va.array.append(Vert{
             .x = pos.x,
             .y = pos.y,
             .z = pos.z,
@@ -57,6 +68,6 @@ pub const VertArray = struct {
             .g = color.g,
             .b = color.b,
             .a = color.a,
-        };
+        });
     }
 };
