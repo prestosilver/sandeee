@@ -57,7 +57,7 @@ const SettingsData = struct {
         key: []const u8,
     };
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *win.WindowContents.WindowProps) !void {
         _ = scrollData;
         if (self.focusedPane) |focused| {
             var settings = std.ArrayList(Setting).init(allocator.alloc);

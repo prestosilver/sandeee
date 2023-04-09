@@ -23,8 +23,8 @@ const CMDData = struct {
     text: std.ArrayList(u8),
     shell: shell.Shell,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
-        _ = scrollData;
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        _ = props;
         if (self.bt.len > MAX_SIZE) {
             self.bt = try allocator.alloc.realloc(self.bt, MAX_SIZE);
         }

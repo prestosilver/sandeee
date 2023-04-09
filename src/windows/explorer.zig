@@ -68,9 +68,9 @@ const ExplorerData = struct {
         return result;
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
-        if (scrollData.* == null) {
-            scrollData.* = .{
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        if (props.scroll == null) {
+            props.scroll = .{
                 .offsetStart = 34,
             };
         }
@@ -90,7 +90,7 @@ const ExplorerData = struct {
         }
 
         var x: f32 = 0;
-        var y: f32 = -scrollData.*.?.value + 36;
+        var y: f32 = -props.scroll.?.value + 36;
 
         var icons = try self.getIcons();
         defer allocator.alloc.free(icons);
@@ -147,7 +147,7 @@ const ExplorerData = struct {
             }
         }
 
-        scrollData.*.?.maxy = y + 64 + font.size + font.size + scrollData.*.?.value - bnds.h;
+        props.scroll.?.maxy = y + 64 + font.size + font.size + props.scroll.?.value - bnds.h;
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;

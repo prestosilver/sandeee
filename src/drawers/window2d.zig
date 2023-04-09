@@ -32,14 +32,23 @@ const SCROLL_MUL = 30;
 pub const WindowContents = struct {
     const Self = @This();
 
-    pub const ScrollData = struct {
-        offsetStart: f32 = 0,
-        value: f32 = 0,
-        maxy: f32 = 0,
+    pub const WindowProps = struct {
+        const ScrollData = struct {
+            offsetStart: f32 = 0,
+            value: f32 = 0,
+            maxy: f32 = 0,
+        };
+        const InfoData = struct {
+            kind: []const u8,
+            name: []const u8,
+        };
+
+        scroll: ?ScrollData = null,
+        info: InfoData,
     };
 
     const VTable = struct {
-        draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font, *?ScrollData) anyerror!void,
+        draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font, *WindowProps) anyerror!void,
         click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, i32) anyerror!void,
         key: *const fn (*anyopaque, i32, i32) anyerror!void,
         scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
@@ -52,16 +61,16 @@ pub const WindowContents = struct {
     pub var scrollSp: [4]spr.Sprite = undefined;
     pub var shader: *shd.Shader = undefined;
 
-    kind: []const u8,
-    name: []const u8,
     clearColor: cols.Color,
-    scrollData: ?ScrollData = null,
+    props: WindowProps,
 
     ptr: *anyopaque,
     vtable: *const VTable,
 
     pub fn drawScroll(self: *Self, batch: *sb.SpriteBatch, bnds: *rect.Rectangle) !void {
-        if (self.scrollData) |scrolldat| {
+        if (self.props.scroll) |scrolldat| {
+            if (scrolldat.maxy <= 0) return;
+
             var scrollPc = scrolldat.value / scrolldat.maxy;
 
             scrollSp[1].data.size.y = bnds.h - scrolldat.offsetStart - (12 * 2) + 2;
@@ -74,14 +83,14 @@ pub const WindowContents = struct {
     }
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
-        if (self.scrollData != null) {
-            if (self.scrollData.?.value > self.scrollData.?.maxy)
-                self.scrollData.?.value = self.scrollData.?.maxy;
-            if (self.scrollData.?.value < 0)
-                self.scrollData.?.value = 0;
+        if (self.props.scroll) |*scrollData| {
+            if (scrollData.value > scrollData.maxy)
+                scrollData.value = scrollData.maxy;
+            if (scrollData.value < 0)
+                scrollData.value = 0;
         }
 
-        try self.vtable.draw(self.ptr, batch, font_shader, bnds, font, &self.scrollData);
+        try self.vtable.draw(self.ptr, batch, font_shader, bnds, font, &self.props);
         try self.drawScroll(batch, bnds);
     }
 
@@ -94,15 +103,15 @@ pub const WindowContents = struct {
     }
 
     pub fn scroll(self: *Self, x: f32, y: f32) !void {
-        if (self.scrollData != null) {
-            self.scrollData.?.value -= y * SCROLL_MUL;
+        if (self.props.scroll != null) {
+            self.props.scroll.?.value -= y * SCROLL_MUL;
         }
         return self.vtable.scroll(self.ptr, x, y);
     }
 
     pub fn move(self: *Self, x: f32, y: f32) !void {
-        if (self.scrollData != null)
-            return self.vtable.move(self.ptr, x, y + self.scrollData.?.value);
+        if (self.props.scroll != null)
+            return self.vtable.move(self.ptr, x, y + self.props.scroll.?.value);
         return self.vtable.move(self.ptr, x, y);
     }
 
@@ -130,11 +139,11 @@ pub const WindowContents = struct {
                 font_shader: *shd.Shader,
                 bnds: *rect.Rectangle,
                 font: *fnt.Font,
-                scrolldat: *?ScrollData,
+                props: *WindowProps,
             ) anyerror!void {
                 const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font, scrolldat });
+                return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font, props });
             }
 
             fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32) !void {
@@ -186,8 +195,12 @@ pub const WindowContents = struct {
 
         return Self{
             .ptr = ptr,
-            .kind = kind,
-            .name = name,
+            .props = .{
+                .info = .{
+                    .kind = kind,
+                    .name = name,
+                },
+            },
             .vtable = &gen.vtable,
             .clearColor = clearColor,
         };
@@ -324,7 +337,7 @@ pub const WindowData = struct {
         try font.draw(.{
             .batch = batch,
             .shader = shader,
-            .text = self.contents.name,
+            .text = self.contents.props.info.name,
             .pos = vecs.newVec2(self.pos.x + 9, self.pos.y + 3),
             .color = color,
         });

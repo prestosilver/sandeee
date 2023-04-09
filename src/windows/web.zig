@@ -34,14 +34,14 @@ pub const WebData = struct {
     text_box: [2]sprite.Sprite,
     icons: [1]sprite.Sprite,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
-        if (scrollData.* == null) {
-            scrollData.* = .{
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        if (props.scroll == null) {
+            props.scroll = .{
                 .offsetStart = 34,
             };
         }
 
-        var pos = vecs.newVec2(0, -scrollData.*.?.value + 36);
+        var pos = vecs.newVec2(0, -props.scroll.?.value + 36);
 
         var cont: []const u8 = "Error Loading File";
         if (self.file) |file| {
@@ -91,7 +91,7 @@ pub const WebData = struct {
                     if (add_links) {
                         var link = WebData.WebLink{
                             .url = file,
-                            .pos = rect.newRect(6 + pos.x, 6 + pos.y + scrollData.*.?.value, size.x, size.y),
+                            .pos = rect.newRect(6 + pos.x, 6 + pos.y + props.scroll.?.value, size.x, size.y),
                             .color = color,
                         };
                         try self.links.append(link);
@@ -113,7 +113,7 @@ pub const WebData = struct {
             pos.x = 0;
         }
 
-        scrollData.*.?.maxy = pos.y + 64 + font.size + scrollData.*.?.value - bnds.h;
+        props.scroll.?.maxy = pos.y + 64 + font.size + props.scroll.?.value - bnds.h;
 
         // draw highlight for url
         if (self.highlight_idx != 0) {
@@ -124,7 +124,7 @@ pub const WebData = struct {
 
             self.highlight.data.color = self.links.items[self.highlight_idx - 1].color;
 
-            try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - scrollData.*.?.value + 4, 0));
+            try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - props.scroll.?.value + 4, 0));
         }
 
         // draw menubar

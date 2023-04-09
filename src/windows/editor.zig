@@ -33,11 +33,19 @@ pub const EditorData = struct {
 
     clickPos: ?vecs.Vector2,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
-        if (scrollData.* == null) {
-            scrollData.* = .{
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        if (props.scroll == null) {
+            props.scroll = .{
                 .offsetStart = 34,
             };
+        }
+
+        if (self.file) |file| {
+            if (!std.mem.eql(u8, props.info.name, "EEEDT")) {
+                allocator.alloc.free(props.info.name);
+            }
+            var idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
+            props.info.name = try std.fmt.allocPrint(allocator.alloc, "EEEDT - {s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
         }
 
         self.menuTop.data.size.x = bnds.w + 4;
@@ -53,12 +61,12 @@ pub const EditorData = struct {
         // draw file text
         if (self.file != null) {
             // draw lines
-            var y = bnds.y + 32 - scrollData.*.?.value;
+            var y = bnds.y + 32 - props.scroll.?.value;
             var nr: usize = 1;
             self.cursorIdx = @floatToInt(usize, self.cursor.x);
             self.prevIdx = 0;
 
-            scrollData.*.?.maxy = -bnds.h + 36;
+            props.scroll.?.maxy = -bnds.h + 36;
 
             var splitIter = std.mem.split(u8, self.buffer.items, "\n");
 
@@ -102,7 +110,7 @@ pub const EditorData = struct {
                 }
 
                 y += font.size;
-                scrollData.*.?.maxy += font.size;
+                props.scroll.?.maxy += font.size;
 
                 nr += 1;
             }
@@ -145,12 +153,13 @@ pub const EditorData = struct {
     pub fn move(_: *Self, _: f32, _: f32) !void {}
 
     pub fn focus(self: *Self) !void {
-        if (!self.modified and self.file != null) {
-            self.buffer.clearAndFree();
-            try self.buffer.appendSlice(try self.file.?.read(null));
+        _ = self;
+        // if (!self.modified and self.file != null) {
+        //     self.buffer.clearAndFree();
+        //     try self.buffer.appendSlice(try self.file.?.read(null));
 
-            return;
-        }
+        //     return;
+        // }
     }
 
     pub fn deinit(self: *Self) !void {

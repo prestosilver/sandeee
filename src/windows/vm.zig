@@ -47,8 +47,8 @@ pub const VMData = struct {
     idx: u16,
     shd: *shd.Shader,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, _: *shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font, scrollData: *?win.WindowContents.ScrollData) !void {
-        _ = scrollData;
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, _: *shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        _ = props;
         var rects = self.rects[0];
         if (self.back) rects = self.rects[1];
 

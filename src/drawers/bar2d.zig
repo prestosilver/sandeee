@@ -95,7 +95,7 @@ pub const BarData = struct {
             try font.draw(.{
                 .batch = batch,
                 .shader = font_shader,
-                .text = window.data.contents.name,
+                .text = window.data.contents.props.info.name,
                 .pos = pos.location(),
             });
 

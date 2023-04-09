@@ -68,7 +68,7 @@ pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) !void {
 
         for (windowsPtr.*.items, 0..) |_, idx| {
             var item = &windowsPtr.*.items[idx];
-            if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
                 const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
                 var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
@@ -91,7 +91,7 @@ pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (windowsPtr.*.items, 0..) |_, idx| {
             var item = &windowsPtr.*.items[idx];
-            if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
                 const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
                 var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
@@ -122,7 +122,7 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
 
     for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
-        if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+        if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
             const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
             var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
@@ -166,7 +166,7 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
 
     for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
-        if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+        if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
             const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
             var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
