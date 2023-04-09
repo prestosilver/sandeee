@@ -30,7 +30,7 @@ pub const Vert = struct {
     }
 
     pub fn getHash(v: Vert) u32 {
-        var casted = std.mem.asBytes(&[_]f32{ v.x, v.y });
+        var casted = std.mem.asBytes(&[_]f32{ v.x, v.y, v.u, v.v });
         var hash: u32 = 1235;
         for (casted) |ch|
             hash = ((hash << 5) +% hash) +% ch;
