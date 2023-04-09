@@ -248,7 +248,7 @@ pub fn build(b: *std.build.Builder) void {
         b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
         b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
         b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
-        b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dllcd");
+        b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
         b.installFile("deps/dll/libfreetype-6.dll", "bin/libfreetype-6.dll");
         b.installFile("deps/dll/libbz2-1.dll", "bin/libbz2-1.dll");
