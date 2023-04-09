@@ -18,7 +18,7 @@ pub var vmIdx: u8 = 0;
 pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
 
 // /fake/win/new
-pub fn readWinNew(_: ?*vm.VM) ![]const u8 {
+pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
     var result: *u8 = try allocator.alloc.create(u8);
     var winDat = try vmwin.new(vmIdx, shader);
 
@@ -44,6 +44,8 @@ pub fn readWinNew(_: ?*vm.VM) ![]const u8 {
     result.* = vmIdx;
     vmIdx = vmIdx +% 1;
 
+    try vmInstance.?.miscData.put("window", @ptrCast(*[1]u8, result));
+
     return @ptrCast(*[1]u8, result);
 }
 
@@ -57,20 +59,24 @@ pub fn readWinDestroy(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinDestroy(id: []const u8, _: ?*vm.VM) !void {
+pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) !void {
     if (id.len != 1) return;
     var aid = id[0];
 
-    for (windowsPtr.*.items, 0..) |_, idx| {
-        var item = &windowsPtr.*.items[idx];
-        if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
-            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+    if (vmInstance.?.miscData.get("window")) |aaid| {
+        if (aid != aaid[0]) return;
 
-            if (self.idx == aid) {
-                try item.data.deinit();
-                _ = windowsPtr.*.orderedRemove(idx);
-                return;
+        for (windowsPtr.*.items, 0..) |_, idx| {
+            var item = &windowsPtr.*.items[idx];
+            if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+
+                if (self.idx == aid) {
+                    try item.data.deinit();
+                    _ = windowsPtr.*.orderedRemove(idx);
+                    return;
+                }
             }
         }
     }
@@ -78,8 +84,26 @@ pub fn writeWinDestroy(id: []const u8, _: ?*vm.VM) !void {
 
 // /fake/win/open
 
-pub fn readWinOpen(_: ?*vm.VM) ![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
+    var result = allocator.alloc.create(u8, 1);
+    result[0] = 0;
+
+    if (vmInstance.?.miscData.get("window")) |aid| {
+        for (windowsPtr.*.items, 0..) |_, idx| {
+            var item = &windowsPtr.*.items[idx];
+            if (std.mem.eql(u8, item.data.contents.kind, "vm")) {
+                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+
+                if (self.idx == aid) {
+                    result[0] = 1;
+                    return result;
+                }
+            }
+        }
+    }
+
+    return result;
 }
 
 pub fn writeWinOpen(_: []const u8, _: ?*vm.VM) !void {
