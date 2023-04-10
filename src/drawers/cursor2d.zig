@@ -11,7 +11,8 @@ pub const CursorData = struct {
     size: vecs.Vector2,
     color: cols.Color,
     total: usize,
-    index: usize,
+    index: usize = 0,
+    flip: bool = false,
 
     pub fn new(source: rect.Rectangle, total: usize) CursorData {
         return CursorData{
@@ -19,7 +20,6 @@ pub const CursorData = struct {
             .size = vecs.newVec2(32, 32),
             .color = cols.newColor(1, 1, 1, 1),
             .total = total,
-            .index = 0,
         };
     }
 
@@ -43,13 +43,23 @@ pub const CursorData = struct {
         source.w /= @intToFloat(f32, self.total);
         source.x += source.w * @intToFloat(f32, self.index);
 
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(source.x + source.w, source.y + source.h), self.color);
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+        if (self.flip) {
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(source.x + source.w, source.y + source.h), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
 
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y, 0)), vecs.newVec2(source.x, source.y), self.color);
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(source.x, source.y), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+        } else {
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(source.x + source.w, source.y + source.h), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y, 0)), vecs.newVec2(source.x, source.y), self.color);
+            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+        }
 
         return result;
     }

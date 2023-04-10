@@ -183,6 +183,18 @@ pub const GSWindowed = struct {
 
             if (pos.contains(self.mousepos)) {
                 var mode = self.windows.items[idx].data.getDragMode(self.mousepos);
+                self.cursor.data.flip = switch (mode) {
+                    .None => false,
+                    .Move => false,
+                    .Close => false,
+                    .Full => false,
+                    .Min => false,
+                    .ResizeL => false,
+                    .ResizeR => false,
+                    .ResizeB => false,
+                    .ResizeLB => false,
+                    .ResizeRB => true,
+                };
                 self.cursor.data.index = switch (mode) {
                     .None => 0,
                     .Move => 3,
@@ -192,8 +204,8 @@ pub const GSWindowed = struct {
                     .ResizeL => 1,
                     .ResizeR => 1,
                     .ResizeB => 2,
-                    .ResizeLB => 3,
-                    .ResizeRB => 3,
+                    .ResizeLB => 4,
+                    .ResizeRB => 4,
                 };
             }
         }
