@@ -136,6 +136,8 @@ pub const Font = struct {
     pub fn draw(self: *Font, params: drawParams) !void {
         var pos = params.pos;
         var srect = rect.newRect(0, 0, 1, 1);
+        pos.x = std.math.round(pos.x);
+        pos.y = std.math.round(pos.y);
 
         if (params.wrap) |maxSize| {
             var iter = std.mem.split(u8, params.text, " ");
