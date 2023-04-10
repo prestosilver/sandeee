@@ -60,8 +60,8 @@ pub fn convertStep(b: *std.build.Builder, converter: anytype, input: []const u8,
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest", "send", "recv" };
 const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest" };
 const asmExecFiles = [_][]const u8{ "eon", "dump", "echo", "aplay", "libdump" };
-const eonExecFiles = [_][]const u8{"asm"};
-const asmLibFiles = [_][]const u8{ "string", "window", "sound", "array" };
+const eonExecFiles = [_][]const u8{ "asm", "pix" };
+const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "heap", "table" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
 const pngImageFiles = [_][]const u8{ "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll" };
