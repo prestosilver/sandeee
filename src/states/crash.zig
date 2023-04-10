@@ -62,7 +62,7 @@ pub const GSCrash = struct {
         try self.face.draw(.{
             .batch = self.sb,
             .shader = self.font_shader,
-            .text = "THIS IS NOT AN INTENTIONAL CRASH, PLEASE REPORT THIS",
+            .text = "THIS IS NOT AN INTENTIONAL CRASH, PLEASE REPORT THIS\n\nIF YOU SEE THIS YOUR FILES WERE SAVED :)",
             .pos = vecs.newVec2(300, 100 + self.face.size * 4),
             .color = cols.newColor(1, 1, 1, 1),
         });
