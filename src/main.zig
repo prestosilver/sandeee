@@ -442,7 +442,7 @@ pub fn main() anyerror!void {
             .texture = &cursortex,
             .data = cursor.CursorData.new(
                 rect.newRect(0, 0, 1, 1),
-                4,
+                5,
             ),
         },
         .wallpaper = wall.Wallpaper.new(&walltex, wall.WallData{

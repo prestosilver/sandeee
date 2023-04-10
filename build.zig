@@ -119,7 +119,7 @@ pub fn build(b: *std.build.Builder) void {
     if (exe.optimize == .Debug) {
         for (asmTestsFiles) |file| {
             var asmf = std.fmt.allocPrint(b.allocator, "content/asm/tests/{s}.asm", .{file}) catch "";
-            var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/Tests/asm/{s}.eep", .{file}) catch "";
+            var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/asm/{s}.eep", .{file}) catch "";
 
             var step = conv.ConvertStep.create(b, comp.compile, asmf, eepf);
             write_step.step.dependOn(&step.step);
@@ -128,7 +128,7 @@ pub fn build(b: *std.build.Builder) void {
         for (eonTestsFiles) |file| {
             var eonf = std.fmt.allocPrint(b.allocator, "content/eon/tests/{s}.eon", .{file}) catch "";
             var asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
-            var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/Tests/eon/{s}.eep", .{file}) catch "";
+            var eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/eon/{s}.eep", .{file}) catch "";
 
             var step = conv.ConvertStep.create(b, comp.compile, asmf, eepf);
             var compStep = conv.ConvertStep.create(b, eon.compileEon, eonf, asmf);
