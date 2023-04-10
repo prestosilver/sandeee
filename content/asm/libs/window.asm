@@ -22,6 +22,18 @@ _WindowDestroy:
 _WindowRender:
     ret
 
+_WindowOpen:
+    push "/fake/win/open"       ; path
+    sys 3                       ; open
+    dup 0                       ; handle
+    push 1                      ; size
+    sys 4                       ; read
+    dup 1                       ; file handle
+    sys 7                       ; flush
+    disc 1                      ; file handle
+    getb
+    ret
+
 _WindowFlip:
     push "/fake/win/flip"
     sys 3

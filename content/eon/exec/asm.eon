@@ -18,8 +18,8 @@ value processArgs() {
 }
 
 value stripLine(value line) {
-    value char = 0;
-    for (char = @line; char == 32; char = @line) {
+    value chr = 0;
+    for (chr = @line; chr == 32; chr = @line) {
         line = line + 1;
     }
 
@@ -88,8 +88,8 @@ value getLineEnum(value line) {
 }
 
 value getLineData(value table, value line) {
-    value char = 0;
-    for (char = @line; char != 32; char = @line) {
+    value chr = 0;
+    for (chr = @line; chr != 32; chr = @line) {
         line = line + 1;
         if ("StringLength"(line) == 0) {
             return @0;
@@ -144,23 +144,23 @@ value processFile(value table, value infile, value outfile) {
 
     value line = "";
 
-    value char = read(infile, 1);
-    for (char = char; char != ""; char = read(infile, 1)) {
-        if (@char == 92) {
-            char = read(infile, 1);
-            if (@char == 110) {
+    value chr = read(infile, 1);
+    for (chr = chr; chr != ""; chr = read(infile, 1)) {
+        if (@chr == 92) {
+            chr = read(infile, 1);
+            if (@chr == 110) {
                 line = line & @10;
             } else {
-                line = line & char;
+                line = line & chr;
             }
-        } else if (@char == 10) {
+        } else if (@chr == 10) {
             if ("StringLast"(line) != 58) {
                 write(outfile, processLine(table, line));
             }
 
             line = "";
         } else {
-            line = line & char;
+            line = line & chr;
         }
     }
 
@@ -170,18 +170,18 @@ value processFile(value table, value infile, value outfile) {
 value processConsts(value table, value infile) {
     value line = "";
 
-    value char = read(infile, 1);
+    value chr = read(infile, 1);
     value name = "";
     value idx = 0;
-    for (char = char; char != ""; char = read(infile, 1)) {
-        if (@char == 92) {
-            char = read(infile, 1);
-            if (@char == 78) {
+    for (chr = chr; chr != ""; chr = read(infile, 1)) {
+        if (@chr == 92) {
+            chr = read(infile, 1);
+            if (@chr == 78) {
                 line = line & @10;
             } else {
-                line = line & char;
+                line = line & chr;
             }
-        } else if (@char == 10) {
+        } else if (@chr == 10) {
             if ("StringLast"(line) == 58) {
                 for (name = dup(line) - 1; "StringLength"(name) < 20; 0) {
                     name = name & @0;
@@ -193,7 +193,7 @@ value processConsts(value table, value infile) {
 
             line = "";
         } else {
-            line = line & char;
+            line = line & chr;
         }
     }
 
