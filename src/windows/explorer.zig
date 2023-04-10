@@ -40,6 +40,7 @@ const ExplorerData = struct {
     menubar: sprite.Sprite,
 
     focus: sprite.Sprite,
+    gray: sprite.Sprite,
     focused: ?u64,
     selected: usize,
     lastAction: ?ExplorerMouseAction,
@@ -149,6 +150,25 @@ const ExplorerData = struct {
 
         props.scroll.?.maxy = y + 64 + font.size + font.size + props.scroll.?.value - bnds.h;
 
+        if (self.shell.vm != null) {
+            self.gray.data.size.x = bnds.w;
+            self.gray.data.size.y = bnds.h;
+
+            try batch.draw(sprite.Sprite, &self.gray, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+
+            var size = font.sizeText(.{
+                .text = "Running VM",
+            });
+
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = "Running VM",
+                .pos = vecs.newVec2(bnds.x + (bnds.w - size.x) / 2, bnds.y + (bnds.h - size.y) / 2),
+                .color = col.newColor(1, 1, 1, 1),
+            });
+        }
+
         // draw menubar
         self.menubar.data.size.x = bnds.w;
         try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
@@ -181,6 +201,8 @@ const ExplorerData = struct {
     pub fn scroll(_: *Self, _: f32, _: f32) void {}
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
+        if (self.shell.vm != null) return;
+
         if (mousepos.y < 36) {
             if (rect.newRect(0, 0, 28, 28).contains(mousepos)) {
                 self.shell.root = self.shell.root.parent;
@@ -214,6 +236,8 @@ const ExplorerData = struct {
     pub fn focus(_: *Self) !void {}
 
     pub fn key(self: *Self, keycode: i32, _: i32) void {
+        if (self.shell.vm != null) return;
+
         switch (keycode) {
             c.GLFW_KEY_BACKSPACE => {
                 self.shell.root = self.shell.root.parent;
@@ -240,6 +264,11 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
 
     self.focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
+        vecs.newVec2(72.0, 72.0),
+    ));
+
+    self.gray = sprite.Sprite.new(texture, sprite.SpriteData.new(
+        rect.newRect(7.0 / 32.0, 6.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
         vecs.newVec2(72.0, 72.0),
     ));
 
