@@ -1,4 +1,5 @@
-#include "content/eon/libs/heap.eon"
+#include "content/eon/libs/libload.eon"
+#include "content/eon/libs/sys.eon"
 
 value reada(value addr) {
     asm "push 128";
@@ -7,11 +8,14 @@ value reada(value addr) {
 }
 
 value main() {
-    setupHeap();
-    value a = alloc(128);
+    setupLibLoad();
+    loadLib("/libs/heap.ell");
+
+    value a = "HeapAlloc"(128);
 
     print(a);
     print(reada(a));
 
     return 0;
 }
+

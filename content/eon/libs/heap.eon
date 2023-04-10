@@ -1,17 +1,16 @@
 #include "content/eon/libs/sys.eon"
 
-value setupHeap() {
+value libInit() {
     asm "push 1";
     asm "sys 14";
     asm "push 0";
     asm "push 0";
     asm "getb";
     asm "sys 16";
-
-    return 0;
+    asm "ret";
 }
 
-value heapSize() {
+value HeapSize() {
     asm "push 0";
     asm "push 1";
     asm "sys 15";
@@ -21,7 +20,7 @@ value heapSize() {
     asm "ret";
 }
 
-value growHeap() {
+value HeapGrow() {
     asm "push 0";
     asm "push 0";
     asm "push 1";
@@ -31,7 +30,7 @@ value growHeap() {
     asm "add";
     asm "getb";
     asm "sys 16";
-    value size = heapSize();
+    value size = HeapSize();
     asm "sys 14";
     asm "push 0";
     asm "ret";
@@ -82,7 +81,13 @@ value round(value a) {
     asm "ret";
 }
 
-value alloc(value size) {
+value HeapPut(value pos, value data) {
+    asm "disc 0";
+    asm "disc 0";
+    asm "ret";
+}
+
+value HeapAlloc(value size) {
     value target = round(size);
     value start = 1;
     value current = 1;
@@ -92,8 +97,8 @@ value alloc(value size) {
     for (cont = 1; cont; cont = 1) {
         size = current - start;
 
-        if (current > heapSize()) {
-            growHeap();
+        if (current > HeapSize()) {
+            HeapGrow();
         } else if (getWord(current) == current) {
             current = current + getWord(dup(current) + 2);
             start = dup(current);
@@ -112,7 +117,7 @@ value alloc(value size) {
     return 0;
 }
 
-value free(value addr) {
+value HeapFree(value addr) {
     putWord(dup(addr), 0);
     putWord(dup(addr) + 2, 0);
 
