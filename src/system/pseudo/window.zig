@@ -19,7 +19,7 @@ pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
 
 // /fake/win/new
 pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
-    var result: *u8 = try allocator.alloc.create(u8);
+    var result = try allocator.alloc.alloc(u8, 1);
     var winDat = try vmwin.new(vmIdx, shader);
 
     var window = win.Window.new(wintex, win.WindowData{
@@ -41,12 +41,13 @@ pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
 
     events.em.sendEvent(winev.EventCreateWindow{ .window = window });
 
-    result.* = vmIdx;
+    result[0] = vmIdx;
     vmIdx = vmIdx +% 1;
 
-    try vmInstance.?.miscData.put("window", @ptrCast(*[1]u8, result));
+    var windowId = try allocator.alloc.dupe(u8, result);
+    try vmInstance.?.miscData.put("window", windowId);
 
-    return @ptrCast(*[1]u8, result);
+    return result;
 }
 
 pub fn writeWinNew(_: []const u8, _: ?*vm.VM) !void {
@@ -85,7 +86,7 @@ pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) !void {
 // /fake/win/open
 
 pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
-    var result = allocator.alloc.create(u8, 1);
+    var result = try allocator.alloc.alloc(u8, 1);
     result[0] = 0;
 
     if (vmInstance.?.miscData.get("window")) |aid| {
@@ -95,7 +96,7 @@ pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
                 const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
                 var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
-                if (self.idx == aid) {
+                if (self.idx == aid[0]) {
                     result[0] = 1;
                     return result;
                 }
@@ -195,6 +196,14 @@ pub fn setupFakeWin(parent: *files.Folder) !files.Folder {
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinNew,
         .pseudoWrite = writeWinNew,
+        .parent = undefined,
+    });
+
+    try result.contents.append(files.File{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/open", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
+        .pseudoRead = readWinOpen,
+        .pseudoWrite = writeWinOpen,
         .parent = undefined,
     });
 

@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const win = @import("../drawers/window2d.zig");
 const rect = @import("../math/rects.zig");
@@ -13,6 +14,14 @@ const allocator = @import("../util/allocator.zig");
 
 pub const VMData = struct {
     const Self = @This();
+
+    rects: [2]std.ArrayList(VMDataEntry),
+    back: bool,
+    idx: u8,
+    shd: *shd.Shader,
+    frameCounter: f32,
+    time: f32,
+    fps: f32,
 
     const VMDataEntry = struct {
         loc: vecs.Vector3,
@@ -33,27 +42,43 @@ pub const VMData = struct {
     }
 
     pub fn flip(self: *VMData) void {
+        self.frameCounter += 1;
         self.back = !self.back;
+        self.clear();
     }
 
     pub fn clear(self: *VMData) void {
-        var rects = self.rects[0];
-        if (!self.back) rects = self.rects[1];
-        rects.clearAndFree();
+        var rects = &self.rects[0];
+        if (!self.back) rects = &self.rects[1];
+        rects.*.clearAndFree();
     }
 
-    rects: [2]std.ArrayList(VMDataEntry),
-    back: bool,
-    idx: u16,
-    shd: *shd.Shader,
-
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, _: *shd.Shader, bnds: *rect.Rectangle, _: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
         var rects = self.rects[0];
         if (self.back) rects = self.rects[1];
 
         for (rects.items, 0..) |_, idx| {
             try batch.draw(spr.Sprite, &rects.items[idx].s, self.shd, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
+        }
+
+        if (builtin.mode == .Debug) {
+            self.time += 1.0 / 60.0;
+            if (self.time > 1.0) {
+                self.fps = self.frameCounter / self.time;
+                self.frameCounter = 0;
+                self.time = 0;
+            }
+
+            var val = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{@floatToInt(i32, self.fps)});
+            defer allocator.alloc.free(val);
+
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = val,
+                .pos = bnds.location(),
+            });
         }
     }
 
@@ -71,7 +96,7 @@ pub const VMData = struct {
     }
 };
 
-pub fn new(idx: u16, shader: *shd.Shader) !win.WindowContents {
+pub fn new(idx: u8, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(VMData);
 
     self.idx = idx;
