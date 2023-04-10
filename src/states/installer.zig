@@ -13,7 +13,7 @@ const systemEvs = @import("../events/system.zig");
 const files = @import("../system/files.zig");
 
 const VERSION = "0.0.1";
-const INSTALL_TIME = 3;
+const INSTALL_TIME = 1.5;
 
 pub const GSInstall = struct {
     const Self = @This();
