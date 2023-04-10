@@ -209,6 +209,8 @@ pub const Folder = struct {
     }
 
     fn fixFolders(self: *Folder) void {
+        std.sort.sort(Folder, self.subfolders.items, Folder, sortList);
+        std.sort.sort(File, self.contents.items, File, sortList);
         for (self.subfolders.items, 0..) |_, idx| {
             self.subfolders.items[idx].parent = self;
             self.subfolders.items[idx].fixFolders();
@@ -216,9 +218,6 @@ pub const Folder = struct {
         for (self.contents.items, 0..) |_, idx| {
             self.contents.items[idx].parent = self;
         }
-
-        std.sort.sort(Folder, self.subfolders.items, Folder, sortList);
-        std.sort.sort(File, self.contents.items, File, sortList);
     }
 
     fn check(cmd: []const u8, exp: []const u8) bool {
@@ -282,7 +281,7 @@ pub const Folder = struct {
             .parent = self,
         });
 
-        std.sort.sort(File, self.contents.items, File, sortList);
+        self.fixFolders();
 
         return true;
     }
@@ -307,7 +306,7 @@ pub const Folder = struct {
                 defer allocator.alloc.free(fullname);
 
                 for (self.subfolders.items, 0..) |folder, idx| {
-                    if (check(folder.name, fullname)) {
+                    if (std.ascii.eqlIgnoreCase(folder.name, fullname)) {
                         return self.subfolders.items[idx].newFolder(name[file.items.len + 1 ..]);
                     }
                 }
@@ -327,7 +326,7 @@ pub const Folder = struct {
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
         for (self.subfolders.items) |subfile| {
-            if (check(subfile.name, fullname)) {
+            if (std.ascii.eqlIgnoreCase(subfile.name, fullname)) {
                 allocator.alloc.free(fullname);
                 return false;
             }
@@ -340,7 +339,7 @@ pub const Folder = struct {
             .subfolders = std.ArrayList(Folder).init(allocator.alloc),
         });
 
-        std.sort.sort(Folder, self.subfolders.items, Folder, sortList);
+        self.fixFolders();
 
         return true;
     }
@@ -461,7 +460,7 @@ pub const Folder = struct {
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
                 for (self.subfolders.items, 0..) |folder, idx| {
-                    if (check(folder.name, fullname)) {
+                    if (std.ascii.eqlIgnoreCase(folder.name, fullname)) {
                         return self.subfolders.items[idx].getFolder(name[file.items.len..]);
                     }
                 }
@@ -474,7 +473,7 @@ pub const Folder = struct {
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, name });
         defer allocator.alloc.free(fullname);
         for (self.subfolders.items, 0..) |subfolder, idx| {
-            if (check(subfolder.name, fullname)) {
+            if (std.ascii.eqlIgnoreCase(subfolder.name, fullname)) {
                 return &self.subfolders.items[idx];
             }
         }
