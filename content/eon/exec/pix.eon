@@ -1,0 +1,49 @@
+#include "content/eon/libs/libload.eon"
+#include "content/eon/libs/sys.eon"
+
+void error(value msg) {
+    print("Error: " & msg);
+    quit();
+}
+
+value processArgs() {
+    value file = getArg(1);
+
+    if (file == 0) {
+       error("Missing File");
+    }
+
+    return file;
+}
+
+value render(value win, value tex) {
+    value source = "MakeRect"(0, 0, 1024, 1024);
+    value dest = "MakeRect"(0, 0, 400, 200);
+
+    "WindowRender"(dup(win), tex, dest, source);
+    "WindowFlip"(dup(win));
+
+    return 0;
+}
+
+value main() {
+    setupLibLoad();
+    loadLib("/libs/window.ell");
+    loadLib("/libs/texture.ell");
+
+    value input = processArgs();
+    value window = "WindowCreate"();
+    value texture = "TextureCreate"();
+
+    "TextureUpload"("TextureRead"(input), texture);
+
+    for (0; "WindowOpen"(); 1) {
+        render(dup(window), texture);
+    }
+
+    "TextureDestroy"(texture);
+    "WindowDestroy"(window);
+
+    asm "ret";
+}
+

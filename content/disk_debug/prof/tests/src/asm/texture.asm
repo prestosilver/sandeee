@@ -3,12 +3,15 @@ main:
 
     push "/libs/window.ell"
     call "libload"
+    push "/libs/texture.ell"
+    call "libload"
 
     call "WindowCreate"         ; create window
-    call create_tex             ; create a texture
-    call read_texture
+    call "TextureCreate"        ; create a texture
+    push "/cont/imgs/wall.eia"  ; path
+    call "TextureRead"
     dup 1
-    call upload_tex
+    call "TextureUpload"
     call render
 
     dup 1
@@ -33,7 +36,7 @@ loop:
     jnz loop
     disc 0
 
-    call destroy_tex
+    call "TextureDestroy"
     call "WindowDestroy"
     sys 1
 
@@ -82,51 +85,6 @@ make_rect:
     dup 1
     cat
     disc 1
-    ret
-
-read_texture:
-    push "/cont/imgs/wall.eia"   ; path
-    sys 3                       ; open
-    dup 0                       ; handle
-    push 100000000
-    sys 4                       ; read
-    dup 1
-    sys 7
-    disc 1
-    ret
-
-create_tex:
-    push "/fake/gfx/new"        ; path
-    sys 3                       ; open
-    dup 0                       ; handle
-    push 1                      ; size
-    sys 4                       ; read
-    dup 1                       ; file handle
-    sys 7                       ; flush
-    disc 1                      ; file handle
-    ret
-
-upload_tex:
-    push "/fake/gfx/upload"     ; path
-    sys 3                       ; open
-    dup 0                       ; handle
-    dup 2                       ; idx
-    dup 4                       ; data
-    cat
-    sys 5                       ; write
-    sys 7
-    disc 0
-    disc 0
-    ret
-
-destroy_tex:
-    push "/fake/gfx/destroy"
-    sys 3
-    dup 0
-    dup 2
-    sys 5                       ; write
-    sys 7
-    disc 0
     ret
 
 setup_load:
