@@ -48,6 +48,11 @@ const CMDData = struct {
             var result = try self.shell.updateVM();
             var start = self.bt.len;
             if (result != null) {
+                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.shell.vm.?.out.items.len);
+                std.mem.copy(u8, self.bt[start..], self.shell.vm.?.out.items);
+                self.shell.vm.?.out.clearAndFree();
+
+                start = self.bt.len;
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.items.len);
                 std.mem.copy(u8, self.bt[start..], result.?.data.items);
                 result.?.data.deinit();
