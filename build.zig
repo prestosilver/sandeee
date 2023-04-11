@@ -7,6 +7,7 @@ const image = @import("tools/textures.zig");
 const diskStep = @import("tools/disk.zig");
 const conv = @import("tools/convert.zig");
 const eon = @import("tools/eon.zig");
+const butler = @import("tools/butler.zig");
 
 pub var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub const alloc = gpa.allocator();
@@ -59,12 +60,12 @@ pub fn convertStep(b: *std.build.Builder, converter: anytype, input: []const u8,
 
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest", "send", "recv" };
 const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest" };
-const asmExecFiles = [_][]const u8{ "eon", "dump", "echo", "aplay", "libdump" };
-const eonExecFiles = [_][]const u8{ "asm", "pix" };
+const asmExecFiles = [_][]const u8{ "dump", "echo", "aplay", "libdump" };
+const eonExecFiles = [_][]const u8{ "asm", "pix", "connectris" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "heap", "table" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
-const pngImageFiles = [_][]const u8{ "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll" };
+const pngImageFiles = [_][]const u8{ "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios" };
 
 pub fn build(b: *std.build.Builder) void {
@@ -269,6 +270,29 @@ pub fn build(b: *std.build.Builder) void {
             .path = "src/main.zig",
         },
     });
+
+    const platform = if (exe.target.os_tag) |tag|
+        switch (tag) {
+            .windows => "win",
+            .linux => "linux",
+            else => "",
+        }
+    else
+        "linux";
+
+    const suffix = switch (exe.optimize) {
+        .Debug => "-dbg",
+        else => "",
+    };
+
+    const branch = std.fmt.allocPrint(b.allocator, "prestosilver/sandeee-os:{s}{s}", .{ platform, suffix }) catch "";
+
+    const butler_step = butler.ButlerStep.create(b, "zig-out/bin", branch);
+    butler_step.step.dependOn(&exe.step);
+    butler_step.step.dependOn(b.getInstallStep());
+
+    const upload_step = b.step("upload", "Upload to itch");
+    upload_step.dependOn(&butler_step.step);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
