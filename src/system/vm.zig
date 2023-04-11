@@ -158,6 +158,7 @@ pub const VM = struct {
 
             Cat,
             Mod,
+            Create,
             _,
         };
 
@@ -681,8 +682,8 @@ pub const VM = struct {
                         try self.pushStackI(b.value.?.* / a.value.?.*);
 
                         return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                    } else return error.ValueMissing;
+                } else return error.ValueMissing;
             },
             Operation.Code.Mod => {
                 var a = try self.popStack();
@@ -948,6 +949,19 @@ pub const VM = struct {
                 } else if (b.string != null) {
                     return error.StringMissing;
                 } else return error.InvalidOp;
+            },
+            Operation.Code.Create => {
+                var b = try self.popStack();
+                defer self.free(&[_]StackEntry{b});
+
+                if (b.value) |length| {
+                    var adds = try self.allocator.alloc(u8, length.*);
+                    defer self.allocator.free(adds);
+                    std.mem.set(u8, adds, 0);
+                    try self.pushStackS(adds);
+
+                    return;
+                } else return error.ValueMissing;
             },
             _ => {
                 return error.InvalidOp;
