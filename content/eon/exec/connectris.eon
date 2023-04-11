@@ -1,0 +1,88 @@
+#include "content/eon/libs/libload.eon"
+#include "content/eon/libs/sys.eon"
+
+value createMap() {
+    // tileSize, width, height
+    value size = 1 * 8 * 24;
+
+    return new size;
+}
+
+value getTile(value map, value pos) {
+    value subs = 192 - pos - 1;
+    value tile = map - subs;
+    tile = tile + pos;
+    value tilev = @tile;
+
+    value id = tilev + 65;
+
+    print(@id);
+
+    value x = tilev / 4;
+    value y = tilev % 4;
+
+    return _MakeRect(256 * x, 256 * y, 256, 256);
+}
+
+value renderMap(value map, value win, value tex) {
+    value x;
+    value y;
+    value pos = 0;
+    value source = _MakeRect(256, 0, 256, 256);
+    value dest = _MakeRect(0, 0, 16, 16);
+
+    for (y = 0; y < 24; y = y + 1) {
+        for (x = 0; x < 8; x = x + 1) {
+            pos = y * 8;
+            pos = pos + x;
+            source = getTile(dup(map), dup(pos));
+            dest = _MakeRect(16 * x, 16 * y, 16, 16);
+
+            _WindowRender(dup(win), dup(tex), dup(dest), dup(source));
+        }
+
+        print("\\n");
+    }
+    print("========\\n");
+
+    return 0;
+}
+
+value main() {
+    setupLibLoad();
+    loadLib("/libs/window.ell");
+    loadLib("/libs/texture.ell");
+    loadLib("/libs/string.ell");
+
+    value map = createMap();
+    value newmap = "";
+    value window = _WindowCreate();
+    value texture = _TextureCreate();
+    value lastTime = time();
+    value dt = 0;
+
+    _TextureUpload(_TextureRead("/cont/imgs/connectris.eia"), texture);
+
+    for (0; _WindowOpen(); 1) {
+        dt = time() - lastTime;
+
+        newmap = dup(map);
+
+        newmap = dup(newmap) & @10;
+        newmap = dup(newmap) + 1;
+
+        map = dup(newmap);
+
+        renderMap(dup(newmap), dup(window), texture);
+        
+        _WindowFlip(dup(window));
+
+        lastTime = time();
+    }
+
+    _TextureDestroy(texture);
+    _WindowDestroy(window);
+
+    asm "ret";
+}
+
