@@ -41,3 +41,8 @@ value read(value file, value len) {
     asm "sys 4";
     asm "ret";
 }
+
+value time(value file, value len) {
+    asm "sys 9";
+    asm "ret";
+}

@@ -11,7 +11,7 @@ value main() {
     setupLibLoad();
     loadLib("/libs/heap.ell");
 
-    value a = "HeapAlloc"(128);
+    value a = _HeapAlloc(128);
 
     print(a);
     print(reada(a));

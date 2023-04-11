@@ -1,6 +1,6 @@
 value createToken(value kind, value val) {
-    value size = "StringLength"(val) + 2;
-    value result = "HeapAlloc"(size);
+    value size = _StringLength(val) + 2;
+    value result = _HeapAlloc(size);
     value result = @kind & @(size - 2) & val;
 }
 

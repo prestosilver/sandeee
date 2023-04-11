@@ -20,6 +20,7 @@ const TokenKind = enum {
     TOKEN_KEYWORD_DO,
     TOKEN_KEYWORD_BREAK,
     TOKEN_KEYWORD_CONTINUE,
+    TOKEN_KEYWORD_NEW,
 
     TOKEN_IDENT,
     TOKEN_INT_LIT,
@@ -32,6 +33,7 @@ const TokenKind = enum {
     TOKEN_ADD,
     TOKEN_MUL,
     TOKEN_DIV,
+    TOKEN_MOD,
     TOKEN_CAT,
     TOKEN_AT,
 
@@ -94,7 +96,11 @@ const Expression = struct {
             if (std.mem.eql(u8, self.op.?.value, "dup")) {
                 adds = try std.fmt.allocPrint(allocator, "    dup 0\n    disc 1\n", .{});
             } else {
-                adds = try std.fmt.allocPrint(allocator, "    call {s}\n", .{self.op.?.value});
+                if (self.op.?.value[0] == '_') {
+                    adds = try std.fmt.allocPrint(allocator, "    call \"{s}\"\n", .{self.op.?.value[1..]});
+                } else {
+                    adds = try std.fmt.allocPrint(allocator, "    call {s}\n", .{self.op.?.value});
+                }
             }
             defer allocator.free(adds);
             var start_res = result.len;
@@ -197,6 +203,14 @@ const Expression = struct {
                     std.mem.copy(u8, result[start_res..], adds);
                     return result;
                 },
+                .TOKEN_MOD => {
+                    idx.* -= 1;
+                    var adds = "    mod\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
                 .TOKEN_AND => {
                     idx.* -= 1;
                     var adds = "    and\n";
@@ -256,6 +270,13 @@ const Expression = struct {
                 .TOKEN_EQ => {
                     idx.* -= 1;
                     var adds = "    eq\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
+                .TOKEN_KEYWORD_NEW => {
+                    var adds = "    create\n";
                     var start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
@@ -414,7 +435,7 @@ const Statement = struct {
                 }
 
                 allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    dup 0\n    disc 1\n    ret\n", .{});
+                adds = try std.fmt.allocPrint(allocator, "    ret\n", .{});
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 std.mem.copy(u8, result[start_res..], adds);
@@ -729,6 +750,12 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "new")) {
+                try result.append(.{
+                    .kind = .TOKEN_KEYWORD_NEW,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
             } else if (std.mem.eql(u8, code, "&&")) {
                 try result.append(.{
                     .kind = .TOKEN_AND,
@@ -762,6 +789,12 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             } else if (std.mem.eql(u8, code, "/")) {
                 try result.append(.{
                     .kind = .TOKEN_DIV,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "%")) {
+                try result.append(.{
+                    .kind = .TOKEN_MOD,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
@@ -823,7 +856,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                 var isIdent = true;
 
                 for (code) |ch| {
-                    if (!std.ascii.isAlphabetic(ch)) {
+                    if (!std.ascii.isAlphabetic(ch) and ch != '_') {
                         isIdent = false;
                         break;
                     }
@@ -909,7 +942,8 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
         tokens[idx.*].kind == .TOKEN_IDENT)
     {
         if (tokens[idx.* + 1].kind == .TOKEN_MUL or
-            tokens[idx.* + 1].kind == .TOKEN_DIV)
+            tokens[idx.* + 1].kind == .TOKEN_DIV or
+            tokens[idx.* + 1].kind == .TOKEN_MOD)
         {
             var op = &tokens[idx.* + 1];
             var a = try allocator.alloc(Expression, 1);
@@ -929,6 +963,7 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
             };
             return result;
         } else if (tokens[idx.* + 1].kind == .TOKEN_OPEN_PAREN) {
+            if (tokens[idx.*].kind != .TOKEN_IDENT) return error.NoIdent;
             var ident = &tokens[idx.*];
             idx.* += 2;
             var b = try allocator.alloc(Expression, 0);
@@ -958,7 +993,9 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
             idx.* += 1;
             return result;
         }
-    } else if (tokens[idx.*].kind == .TOKEN_AT) {
+    } else if (tokens[idx.*].kind == .TOKEN_AT or
+        tokens[idx.*].kind == .TOKEN_KEYWORD_NEW)
+    {
         var ident = &tokens[idx.*];
         idx.* += 1;
         var b = try allocator.alloc(Expression, 1);

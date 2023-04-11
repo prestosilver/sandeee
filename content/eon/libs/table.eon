@@ -25,7 +25,7 @@ value tableEntrySize(value table) {
 }
 
 value setSize(value table, value size) {
-    value length = "StringLength"(table) - 2;
+    value length = _StringLength(table) - 2;
 
     value end = table + 3;
     value start = table - length;
@@ -39,13 +39,13 @@ value tableGetEntry(value table, value idx) {
     value size = tableEntrySize(dup(table));
     value offset = size * idx;
     value start = table + offset + 3;
-    value removes = "StringLength"(start) - size;
+    value removes = _StringLength(start) - size;
 
     return start - removes;
 }
 
 value tableRemoveEntry(value table, value idx) {
-    value length = "StringLength"(table);
+    value length = _StringLength(table);
     value size = tableValueSize(table) + tableKeySize(table);
     value startOffset = size * idx + 3;
     value startReverse = length - startOffset;
@@ -59,8 +59,8 @@ value tableRemoveEntry(value table, value idx) {
 }
 
 value tablePut(value table, value key, value val) {
-    if (tableKeySize(dup(table)) != "StringLength"(key)) return 0;
-    if (tableValueSize(dup(table)) != "StringLength"(val)) return 0;
+    if (tableKeySize(dup(table)) != _StringLength(key)) return 0;
+    if (tableValueSize(dup(table)) != _StringLength(val)) return 0;
 
 
     value total = tableLen(dup(table));
@@ -88,7 +88,7 @@ value tablePut(value table, value key, value val) {
 }
 
 value tableGet(value table, value key) {
-    if (tableKeySize(dup(table)) != "StringLength"(key)) return 0;
+    if (tableKeySize(dup(table)) != _StringLength(key)) return 0;
 
     value total = tableLen(dup(table));
     value valueSize = tableValueSize(dup(table));
