@@ -259,6 +259,7 @@ pub const EditorData = struct {
             },
             cc.GLFW_KEY_UP => {
                 self.cursor.y -= 1;
+                if (self.cursor.y < 0) self.cursor.y = 0;
             },
             cc.GLFW_KEY_DOWN => {
                 self.cursor.y += 1;
