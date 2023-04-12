@@ -1,3 +1,4 @@
+const std = @import("std");
 const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
@@ -99,7 +100,26 @@ pub const WindowContents = struct {
     }
 
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
+        if (self.props.scroll) |*scrollData| {
+            if (mousepos.x > size.x - 28 and mousepos.x < size.x) {
+                var pc = (mousepos.y - 14) / (size.y - 28);
+                scrollData.value = std.math.round(scrollData.maxy * pc);
+
+                return;
+            }
+        }
         return self.vtable.click(self.ptr, size, mousepos, btn);
+    }
+
+    pub fn drag(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2) !void {
+        if (self.props.scroll) |*scrollData| {
+            if (mousepos.x > size.x - 28 and mousepos.x < size.x) {
+                var pc = (mousepos.y - 14) / (size.y - 28);
+                scrollData.value = std.math.round(scrollData.maxy * pc);
+
+                return;
+            }
+        }
     }
 
     pub fn scroll(self: *Self, x: f32, y: f32) !void {

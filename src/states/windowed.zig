@@ -27,6 +27,7 @@ pub const GSWindowed = struct {
     dragmode: win.DragMode = .None,
     draggingStart: vecs.Vector2 = vecs.newVec2(0, 0),
     dragging: ?*win.Window = null,
+    down: bool = false,
 
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
     windows: std.ArrayList(win.Window) = undefined,
@@ -228,6 +229,7 @@ pub const GSWindowed = struct {
     }
 
     pub fn mousepress(self: *Self, btn: c_int) !void {
+        self.down = true;
         switch (btn) {
             0 => {
                 if (try self.bar.data.doClick(&self.windows, self.webtex, self.wintex, self.emailtex, self.editortex, self.explorertex, self.shader, self.mousepos)) {
@@ -309,6 +311,7 @@ pub const GSWindowed = struct {
 
     pub fn mouserelease(self: *Self) !void {
         self.dragging = null;
+        self.down = false;
     }
 
     pub fn mousemove(self: *Self, pos: vecs.Vector2) !void {
@@ -319,29 +322,29 @@ pub const GSWindowed = struct {
             var winpos = pos.add(self.draggingStart);
 
             switch (self.dragmode) {
-                win.DragMode.None => {},
-                win.DragMode.Close => {},
-                win.DragMode.Full => {},
-                win.DragMode.Min => {},
-                win.DragMode.Move => {
+                .None => {},
+                .Close => {},
+                .Full => {},
+                .Min => {},
+                .Move => {
                     dragging.data.pos.x = winpos.x;
                     dragging.data.pos.y = winpos.y;
                 },
-                win.DragMode.ResizeR => {
+                .ResizeR => {
                     dragging.data.pos.w = winpos.x;
                 },
-                win.DragMode.ResizeL => {
+                .ResizeL => {
                     dragging.data.pos.x = pos.x;
                     dragging.data.pos.w = self.draggingStart.x - pos.x;
                 },
-                win.DragMode.ResizeB => {
+                .ResizeB => {
                     dragging.data.pos.h = winpos.y;
                 },
-                win.DragMode.ResizeRB => {
+                .ResizeRB => {
                     dragging.data.pos.w = winpos.x;
                     dragging.data.pos.h = winpos.y;
                 },
-                win.DragMode.ResizeLB => {
+                .ResizeLB => {
                     dragging.data.pos.x = pos.x;
                     dragging.data.pos.w = self.draggingStart.x - pos.x;
                     dragging.data.pos.h = winpos.y;
@@ -355,11 +358,23 @@ pub const GSWindowed = struct {
                 dragging.data.pos.y = old.y;
                 dragging.data.pos.h = old.h;
             }
+            for (self.windows.items) |*window| {
+                if (!window.data.active) continue;
+                try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
+            }
         }
+        if (self.down and self.dragmode == .None) {
+            for (self.windows.items) |*window| {
+                if (!window.data.active) continue;
 
-        for (self.windows.items) |*window| {
-            if (!window.data.active) continue;
-            return window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
+                try window.data.contents.drag(.{
+                    .x = window.data.pos.w,
+                    .y = window.data.pos.h - 36,
+                }, vecs.Vector2.sub(self.mousepos, .{
+                    .x = window.data.pos.x,
+                    .y = window.data.pos.y + 36,
+                }));
+            }
         }
     }
 

@@ -22,14 +22,25 @@ const CMDData = struct {
     bt: []u8,
     text: std.ArrayList(u8),
     shell: shell.Shell,
+    bot: bool,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
-        _ = props;
+        if (props.scroll == null) {
+            props.scroll = .{
+                .offsetStart = 0,
+            };
+        }
+
         if (self.bt.len > MAX_SIZE) {
-            self.bt = try allocator.alloc.realloc(self.bt, MAX_SIZE);
+            var newbt = try allocator.alloc.dupe(u8, self.bt[self.bt.len - MAX_SIZE ..]);
+            allocator.alloc.free(self.bt);
+            self.bt = newbt;
         }
 
         var idx: usize = 0;
+        var offset = props.scroll.?.maxy - props.scroll.?.value;
+
+        if (self.bot) offset = 0;
 
         if (self.shell.vm == null) {
             var shellPrompt = self.shell.getPrompt();
@@ -40,7 +51,7 @@ const CMDData = struct {
                 .batch = batch,
                 .shader = shader,
                 .text = prompt,
-                .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6),
+                .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6 + offset),
                 .color = col.newColor(1, 1, 1, 1),
             });
             idx += 1;
@@ -48,26 +59,27 @@ const CMDData = struct {
             var result = try self.shell.updateVM();
             var start = self.bt.len;
             if (result != null) {
-                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.shell.vm.?.out.items.len);
-                std.mem.copy(u8, self.bt[start..], self.shell.vm.?.out.items);
-                self.shell.vm.?.out.clearAndFree();
-
-                start = self.bt.len;
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.items.len);
                 std.mem.copy(u8, self.bt[start..], result.?.data.items);
                 result.?.data.deinit();
+                idx += 1;
             } else {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.shell.vm.?.out.items.len);
                 std.mem.copy(u8, self.bt[start..], self.shell.vm.?.out.items);
                 self.shell.vm.?.out.clearAndFree();
             }
+            self.bot = true;
         }
 
         var lines = std.mem.splitBackwards(u8, self.bt, "\n");
 
-        var y = bnds.y + bnds.h - @intToFloat(f32, idx) * font.size - 6;
+        var y = bnds.y + bnds.h - @intToFloat(f32, idx) * font.size - 6 + offset;
+
+        var height: f32 = @intToFloat(f32, idx) * font.size;
 
         while (lines.next()) |line| {
+            height += font.sizeText(.{ .text = line, .wrap = bnds.w - 12 }).y;
+            if (y < bnds.y) continue;
             y -= font.sizeText(.{ .text = line, .wrap = bnds.w - 12 }).y;
 
             try font.draw(.{
@@ -78,8 +90,12 @@ const CMDData = struct {
                 .color = col.newColor(1, 1, 1, 1),
                 .wrap = bnds.w - 12,
             });
+        }
 
-            if (y < bnds.y) return;
+        props.scroll.?.maxy = @max(height, bnds.h) - bnds.h;
+        if (self.bot) {
+            self.bot = false;
+            props.scroll.?.value = props.scroll.?.maxy;
         }
 
         return;
@@ -87,6 +103,8 @@ const CMDData = struct {
 
     pub fn key(self: *Self, code: i32, mods: i32) !void {
         if (self.shell.vm != null) return;
+
+        self.bot = true;
 
         switch (code) {
             c.GLFW_KEY_A...c.GLFW_KEY_Z => {

@@ -20,6 +20,10 @@ pub const Rectangle = struct {
     pub fn location(self: Rectangle) vec.Vector2 {
         return vec.newVec2(self.x, self.y);
     }
+
+    pub fn size(self: Rectangle) vec.Vector2 {
+        return vec.newVec2(self.w, self.h);
+    }
 };
 
 pub fn newRect(x: f32, y: f32, w: f32, h: f32) Rectangle {
