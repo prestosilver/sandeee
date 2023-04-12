@@ -1008,7 +1008,7 @@ pub const VM = struct {
             parsePtr += 1;
 
             if (kind == 1) {
-                if (parsePtr + 8 >= conts.len) {
+                if (parsePtr + 7 >= conts.len) {
                     ops.deinit();
                     return error.InvalidAsm;
                 }
@@ -1029,6 +1029,10 @@ pub const VM = struct {
                 try ops.append(VM.Operation{ .code = code, .string = conts[parsePtr .. parsePtr + buffPtr] });
                 parsePtr += buffPtr + 1;
             } else if (kind == 3) {
+                if (parsePtr >= conts.len) {
+                    ops.deinit();
+                    return error.InvalidAsm;
+                }
                 var value = conts[parsePtr];
                 parsePtr += 1;
 
