@@ -15,6 +15,7 @@ uniform float screen_height = 600;
 uniform float color_bleeding = 1.1;
 uniform float bleeding_range_x = 3;
 uniform float bleeding_range_y = 3;
+
 // Scanline
 uniform float lines_distance = 4.0;
 uniform float scan_size = 3.0;
@@ -22,8 +23,10 @@ uniform float scanline_alpha = 0.85;
 uniform float lines_velocity = -2.0;
 
 uniform int crt_enable = 0;
-uniform int dither_enable = 1;
+uniform int dither_enable = 0;
 
+#define COLOR_STEPS 8.0
+#define GAMMA 2.5
 #define distortion 0.1
 
 vec2 distort(vec2 coord, const vec2 ratio)
@@ -67,13 +70,9 @@ float displace(vec2 look)
     return sin(look.y*20. + time)/80.*onOff(4.,2.,.8)*(1.+cos(time*60.))*window;
 }
 
-#define GAMMA 2.2
-
 float luma(vec3 color) {
     return (0.2126*color.r + 0.7152*color.g + 0.0722*color.b);
 }
-
-#define STEPS 8.0
 
 vec4 get_color_pos(vec2 pos) {
     vec3 result = texture(tex, pos).rgb;
@@ -94,11 +93,11 @@ vec4 get_color_pos(vec2 pos) {
         if (index == 3) limit = 0.50;
     }
 
-    vec3 act = round(result * STEPS) / STEPS;
+    vec3 act = round(result * COLOR_STEPS) / COLOR_STEPS;
     vec3 other;
-    other.r = act.r < result.r ? act.r + 1.0 / STEPS : act.r - 1.0 / STEPS;
-    other.g = act.g < result.g ? act.g + 1.0 / STEPS : act.g - 1.0 / STEPS;
-    other.b = act.b < result.b ? act.b + 1.0 / STEPS : act.b - 1.0 / STEPS;
+    other.r = act.r < result.r ? act.r + 1.0 / COLOR_STEPS : act.r - 1.0 / COLOR_STEPS;
+    other.g = act.g < result.g ? act.g + 1.0 / COLOR_STEPS : act.g - 1.0 / COLOR_STEPS;
+    other.b = act.b < result.b ? act.b + 1.0 / COLOR_STEPS : act.b - 1.0 / COLOR_STEPS;
 
     vec3 mul;
 
@@ -140,7 +139,7 @@ void main()
 
     xy.x += displace(xy) * 0.125;
 
-    float bar = clamp(exp(1.0 - mod(((SCREEN_UV.y + 1) / 2) + time*0.2, 1.)), 1.0, 1.2) - 0.2;
+    float bar = clamp(exp(1.0 - mod(((xy.y + 1) / 2) + time*0.2, 1.)), 1.0, 1.2) - 0.2;
 
     float pixel_size_x = 0.5/screen_width*bleeding_range_x;
     float pixel_size_y = 0.5/screen_height*bleeding_range_y;
