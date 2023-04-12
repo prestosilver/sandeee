@@ -46,18 +46,6 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
     return mail.toStr() catch "";
 }
 
-pub fn convertStep(b: *std.build.Builder, converter: anytype, input: []const u8, diskpath: []const u8, inext: []const u8, outext: []const u8, file: []const u8) ?*std.build.WriteFileStep {
-    var in = std.fmt.allocPrint(b.allocator, "content/{s}/{s}.{s}", .{ input, file, inext }) catch "";
-    var out = std.fmt.allocPrint(b.allocator, "content/disk/{s}/{s}.{s}", .{ diskpath, file, outext }) catch "";
-
-    var cont = converter(in, b.allocator) catch |err| {
-        std.log.err("{}", .{err});
-        return null;
-    };
-
-    return b.addWriteFile(b.pathFromRoot(out), cont.items);
-}
-
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest", "send", "recv" };
 const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest" };
 const asmExecFiles = [_][]const u8{ "dump", "echo", "aplay", "libdump" };
@@ -233,13 +221,6 @@ pub fn build(b: *std.build.Builder) void {
         headless_cmd.addArgs(args);
     }
 
-    const test_cmd = exe.run();
-    test_cmd.step.dependOn(b.getInstallStep());
-    test_cmd.addArgs(&[_][]const u8{ "--headless-cmd", "tests/heap.esh", "--cwd", "./zig-out/bin" });
-    if (b.args) |args| {
-        test_cmd.addArgs(args);
-    }
-
     b.installFile("content/fonts/scientifica.ttf", "bin/content/font.ttf");
     b.installFile("content/fonts/big.ttf", "bin/content/bios.ttf");
     b.installFile("content/emails.eme", "bin/content/emails.eme");
@@ -265,11 +246,13 @@ pub fn build(b: *std.build.Builder) void {
     headless_step.dependOn(&headless_cmd.step);
 
     const exe_tests = b.addTest(.{
-        .name = "sandeee",
+        .name = "main-test",
         .root_source_file = .{
             .path = "src/main.zig",
         },
     });
+
+    exe_tests.step.dependOn(&write_step.step);
 
     const platform = if (exe.target.os_tag) |tag|
         switch (tag) {
@@ -295,6 +278,5 @@ pub fn build(b: *std.build.Builder) void {
     upload_step.dependOn(&butler_step.step);
 
     const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&exe_tests.step);
-    test_step.dependOn(&test_cmd.step);
+    test_step.dependOn(&exe_tests.run().step);
 }
