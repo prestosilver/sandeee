@@ -1,0 +1,4 @@
+cd ../docs
+dump index.edf
+dump fdsafdsa.edf
+exit
