@@ -65,7 +65,27 @@ pub const Shell = struct {
 
     fn ls(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
-            return self.todo(param);
+            if (try self.root.getFolder(param[3..])) |folder| {
+                var result: Result = Result{
+                    .data = std.ArrayList(u8).init(allocator.alloc),
+                };
+
+                var rootlen = folder.name.len;
+
+                for (folder.subfolders.items) |item| {
+                    try result.data.appendSlice(item.name[rootlen..]);
+                    try result.data.append(' ');
+                }
+
+                for (folder.contents.items) |item| {
+                    try result.data.appendSlice(item.name[rootlen..]);
+                    try result.data.append(' ');
+                }
+
+                return result;
+            } else {
+                return error.FileNotFound;
+            }
         } else {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
@@ -305,7 +325,7 @@ pub const Shell = struct {
             }
         }
 
-        return self.todo(param);
+        return error.MissingParameter;
     }
 
     pub fn todo(_: *Shell, _: []const u8) !Result {
@@ -434,7 +454,7 @@ pub const Shell = struct {
             return result;
         }
 
-        return self.todo(params);
+        return error.MissingParameter;
     }
 
     pub fn run(self: *Shell, cmd: []const u8, params: []const u8) !Result {
