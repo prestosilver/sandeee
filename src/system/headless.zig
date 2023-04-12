@@ -22,12 +22,16 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool) anyerror!void {
 
     try files.Folder.init(DISK);
 
+    defer files.deinit();
+
     var mainShell = shell.Shell{ .root = files.home };
+
     var stdin = std.io.getStdIn().reader();
     var stdout = std.io.getStdOut();
     var buffer: [512]u8 = undefined;
 
-    _ = try stdout.write("Welcome To ShEEEl\n");
+    if (!exitFail)
+        _ = try stdout.write("Welcome To ShEEEl\n");
 
     var toRun = cmd;
 
@@ -35,11 +39,14 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool) anyerror!void {
         if (mainShell.vm != null) {
             var result = try mainShell.updateVM();
             if (result != null) {
-                _ = try stdout.write(result.?.data.items);
+                if (!exitFail)
+                    _ = try stdout.write(result.?.data.items);
                 result.?.data.deinit();
-                _ = try stdout.write("\n");
+                if (!exitFail)
+                    _ = try stdout.write("\n");
             } else {
-                _ = try stdout.write(mainShell.vm.?.out.items);
+                if (!exitFail)
+                    _ = try stdout.write(mainShell.vm.?.out.items);
                 mainShell.vm.?.out.clearAndFree();
             }
 
@@ -48,7 +55,8 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool) anyerror!void {
 
         var prompt = mainShell.getPrompt();
 
-        _ = try stdout.write(prompt);
+        if (!exitFail)
+            _ = try stdout.write(prompt);
 
         allocator.alloc.free(prompt);
 
@@ -63,8 +71,10 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool) anyerror!void {
                 data = toRun.?;
                 toRun = null;
             }
-            _ = try stdout.write(data);
-            _ = try stdout.write("\n");
+            if (!exitFail)
+                _ = try stdout.write(data);
+            if (!exitFail)
+                _ = try stdout.write("\n");
         } else {
             data = try stdin.readUntilDelimiter(&buffer, '\n');
         }
@@ -77,13 +87,13 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool) anyerror!void {
         var result = mainShell.run(command, data) catch |err| {
             const msg = @errorName(err);
 
-            _ = try stdout.write("Error: ");
-            _ = try stdout.write(msg);
-            _ = try stdout.write("\n");
-
             if (exitFail) {
                 return err;
             }
+
+            _ = try stdout.write("Error: ");
+            _ = try stdout.write(msg);
+            _ = try stdout.write("\n");
             continue;
         };
 
@@ -91,8 +101,10 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool) anyerror!void {
             break;
         } else {
             if (result.data.items.len != 0) {
-                _ = try stdout.write(result.data.items);
-                _ = try stdout.write("\n");
+                if (!exitFail) {
+                    _ = try stdout.write(result.data.items);
+                    _ = try stdout.write("\n");
+                }
             }
         }
 
@@ -103,17 +115,21 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool) anyerror!void {
 }
 
 test "Headless scripts" {
-    var dir = try std.fs.cwd().openIterableDir("tests", .{});
-    var start_cwd = try std.fs.cwd().openDir("tests", .{});
+    var dir = try std.fs.cwd().openIterableDir("/home/john/doc/rep/github.com/sandeee/tests", .{});
+    var start_cwd = try std.fs.cwd().openDir("/home/john/doc/rep/github.com/sandeee/tests", .{});
 
-    var iter = dir.iterate();
+    var iter = try dir.walk(std.testing.allocator);
+    defer iter.deinit();
 
-    try std.process.changeCurDir("zig-out/bin/");
+    try std.process.changeCurDir("/home/john/doc/rep/github.com/sandeee/zig-out/bin/");
 
-    while (try iter.next()) |path| {
-        var file = try start_cwd.openFile(path.name, .{});
+    std.log.info("fdsafdsa", .{});
+    while (try iter.next()) |entry| {
+        if (entry.kind != .File) continue;
 
-        var conts = try file.readToEndAlloc(std.testing.allocator, 1000000);
+        var file = try start_cwd.openFile(entry.path, .{});
+
+        var conts = try file.readToEndAlloc(std.testing.allocator, 10000);
         defer std.testing.allocator.free(conts);
 
         try headlessMain(conts, true);
