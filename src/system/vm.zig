@@ -21,7 +21,7 @@ pub const VM = struct {
     };
 
     pub const StackEntry = struct {
-        string: ?[]u8 = null,
+        string: ?*[]u8 = null,
         value: ?*u64 = null,
     };
 
@@ -100,9 +100,9 @@ pub const VM = struct {
 
     fn pushStackS(self: *VM, string: []const u8) !void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        var appendString = try self.allocator.alloc(u8, string.len);
+        var appendString = try self.allocator.create([]u8);
 
-        std.mem.copy(u8, appendString, string);
+        appendString.* = try self.allocator.dupe(u8, string);
 
         self.stack[self.rsp] = StackEntry{ .string = appendString };
         self.rsp += 1;
@@ -159,6 +159,7 @@ pub const VM = struct {
             Cat,
             Mod,
             Create,
+            Size,
             _,
         };
 
@@ -168,7 +169,10 @@ pub const VM = struct {
     };
 
     pub fn deinit(self: *VM) !void {
-        self.free(self.stack[0..self.rsp]);
+        var oldrsp = self.rsp;
+        self.rsp = 0;
+
+        self.free(self.stack[0..oldrsp]);
 
         if (self.code) |code| {
             for (code) |entry| {
@@ -197,6 +201,7 @@ pub const VM = struct {
         }
 
         self.allocator.free(self.args);
+        self.allocator.free(self.heap);
         self.functions.deinit();
         self.streams.deinit();
         self.out.deinit();
@@ -204,31 +209,21 @@ pub const VM = struct {
 
     pub fn freeValue(self: *VM, val: *u64) void {
         for (self.stack[0..self.rsp]) |entry| {
-            if (entry.value != null and @ptrToInt(entry.value.?) == @ptrToInt(val)) {
+            if (entry.value != null and entry.value.? == val) {
                 return;
             }
         }
         self.allocator.destroy(val);
     }
 
-    pub fn freeString(self: *VM, val: []const u8) void {
+    pub fn freeString(self: *VM, val: *[]const u8) void {
         for (self.stack[0..self.rsp]) |entry| {
-            if (entry.string != null and @ptrToInt(entry.string.?.ptr) == @ptrToInt(val.ptr)) {
+            if (entry.string != null and entry.string.? == val) {
                 return;
             }
         }
-        self.allocator.free(val);
-    }
-
-    pub fn resizeString(self: *VM, val: []u8, size: u64) ![]u8 {
-        var new = try self.allocator.realloc(val, size);
-
-        for (self.stack[0 .. self.rsp + 1], 0..) |entry, idx| {
-            if (entry.string != null and @ptrToInt(entry.string.?.ptr) == @ptrToInt(val.ptr)) {
-                self.stack[idx].string = new;
-            }
-        }
-        return new;
+        self.allocator.free(val.*);
+        self.allocator.destroy(val);
     }
 
     pub fn free(self: *VM, vals: []StackEntry) void {
@@ -238,14 +233,7 @@ pub const VM = struct {
         for (vals) |val| {
             var add = true;
             for (toFree.items) |item| {
-                if (val.string != null and item.string != null) {
-                    if (std.mem.eql(u8, val.string.?, item.string.?)) {
-                        add = false;
-                        break;
-                    }
-                }
-                if ((val.string == null) and (item.string == null)) add = false;
-                if (val.value == item.value)
+                if (val.value == item.value and val.string == item.string)
                     add = false;
             }
             if (add) {
@@ -283,13 +271,13 @@ pub const VM = struct {
                 defer self.free(&[_]StackEntry{ b, a });
 
                 if (a.string != null) {
-                    return error.MissingValue;
+                    return error.ValueMissing;
                 } else if (a.value != null) {
                     if (b.string != null) {
                         if (b.string.?.len < a.value.?.*) {
                             try self.pushStackS("");
                         } else {
-                            try self.pushStackS(b.string.?[a.value.?.*..]);
+                            try self.pushStackS(b.string.?.*[a.value.?.*..]);
                         }
                         return;
                     } else if (b.value != null) {
@@ -304,19 +292,37 @@ pub const VM = struct {
                 defer self.free(&[_]StackEntry{ b, a });
 
                 if (a.string != null) {
-                    return error.MissingValue;
+                    return error.ValueMissing;
                 } else if (a.value != null) {
                     if (b.string != null) {
                         if (b.string.?.len < a.value.?.*) {
                             try self.pushStackS("");
                         } else {
-                            try self.pushStackS(b.string.?[0 .. b.string.?.len - a.value.?.*]);
+                            try self.pushStackS(b.string.?.*[0 .. b.string.?.*.len - a.value.?.*]);
                         }
                         return;
                     } else if (b.value != null) {
                         try self.pushStackI(b.value.?.* -% a.value.?.*);
                         return;
                     } else return error.InvalidOp;
+                } else return error.InvalidOp;
+            },
+            Operation.Code.Size => {
+                var a = try self.popStack();
+                var b = try self.popStack();
+                defer self.free(&[_]StackEntry{ b, a });
+
+                if (a.string != null) {
+                    return error.ValueMissing;
+                } else if (a.value != null) {
+                    if (b.string != null) {
+                        if (b.string.?.len < a.value.?.*) {
+                            try self.pushStackS(b.string.?.*);
+                        } else {
+                            try self.pushStackS(b.string.?.*[0..a.value.?.*]);
+                        }
+                        return;
+                    } else return error.StringMissing;
                 } else return error.InvalidOp;
             },
             Operation.Code.Copy => {
@@ -331,7 +337,7 @@ pub const VM = struct {
 
                 var a = try self.findStack(op.value.?);
                 if (a.string != null) {
-                    try self.pushStackS(a.string.?);
+                    try self.pushStackS(a.string.?.*);
                     return;
                 } else if (a.value != null) {
                     try self.pushStackI(a.value.?.*);
@@ -382,8 +388,9 @@ pub const VM = struct {
                         0 => {
                             var a = try self.popStack();
                             defer self.free(&[_]StackEntry{a});
+
                             if (a.string != null) {
-                                try self.out.appendSlice(a.string.?);
+                                try self.out.appendSlice(a.string.?.*);
 
                                 return;
                             } else if (a.value != null) {
@@ -407,10 +414,10 @@ pub const VM = struct {
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
-                                if (path.string.?[0] == '/') {
-                                    _ = try files.root.newFile(path.string.?);
+                                if (path.string.?.*[0] == '/') {
+                                    _ = try files.root.newFile(path.string.?.*);
                                 } else {
-                                    _ = try self.root.newFile(path.string.?);
+                                    _ = try self.root.newFile(path.string.?.*);
                                 }
 
                                 return;
@@ -423,7 +430,7 @@ pub const VM = struct {
                             if (path.value != null) {
                                 return error.StringMissing;
                             } else if (path.string != null) {
-                                try self.streams.append(try streams.FileStream.Open(self.root, path.string.?, self));
+                                try self.streams.append(try streams.FileStream.Open(self.root, path.string.?.*, self));
                                 try self.pushStackI(self.streams.items.len - 1);
 
                                 return;
@@ -462,7 +469,7 @@ pub const VM = struct {
                                 var fs = self.streams.items[idx.value.?.*];
                                 if (fs == null) return error.InvalidOp;
                                 if (str.string != null) {
-                                    try fs.?.Write(str.string.?);
+                                    try fs.?.Write(str.string.?.*);
 
                                     return;
                                 } else if (str.value != null) {
@@ -537,7 +544,7 @@ pub const VM = struct {
                             if (name.string) |nameStr| {
                                 var val: u64 = 0;
 
-                                if (self.functions.contains(nameStr)) val = 1;
+                                if (self.functions.contains(nameStr.*)) val = 1;
 
                                 try self.pushStackI(val);
 
@@ -552,7 +559,8 @@ pub const VM = struct {
                             defer self.free(&[_]StackEntry{len});
                             if (len.value == null) return error.ValueMissing;
 
-                            var adds = try self.allocator.alloc(u8, len.value.?.*);
+                            var adds = try self.allocator.create([]u8);
+                            adds.* = try self.allocator.alloc(u8, len.value.?.*);
                             self.stack[self.rsp] = StackEntry{ .string = adds };
                             self.rsp += 1;
                             return;
@@ -567,17 +575,14 @@ pub const VM = struct {
 
                             //std.log.info("reg: {s}", .{name.string.?});
 
-                            var dup = try self.allocator.alloc(u8, func.string.?.len);
-                            std.mem.copy(u8, dup, func.string.?);
+                            var dup = try self.allocator.dupe(u8, func.string.?.*);
 
                             var ops = try self.stringToOps(dup);
                             defer ops.deinit();
 
-                            var finalOps = try self.allocator.alloc(Operation, ops.items.len);
-                            std.mem.copy(Operation, finalOps, ops.items);
+                            var finalOps = try self.allocator.dupe(Operation, ops.items);
 
-                            var nameStr = try self.allocator.alloc(u8, name.string.?.len);
-                            std.mem.copy(u8, nameStr, name.string.?);
+                            var nameStr = try self.allocator.dupe(u8, name.string.?.*);
 
                             try self.functions.put(nameStr, .{
                                 .string = dup,
@@ -592,7 +597,7 @@ pub const VM = struct {
                             defer self.free(&[_]StackEntry{name});
 
                             if (name.string) |nameStr| {
-                                _ = self.functions.orderedRemove(nameStr);
+                                _ = self.functions.orderedRemove(nameStr.*);
 
                                 return;
                             } else {
@@ -636,7 +641,7 @@ pub const VM = struct {
                             if (start.value == null) return error.ValueMissing;
                             if (data.string == null) return error.StringMissing;
 
-                            std.mem.copy(u8, self.heap[start.value.?.* .. start.value.?.* + data.string.?.len], data.string.?);
+                            std.mem.copy(u8, self.heap[start.value.?.* .. start.value.?.* + data.string.?.len], data.string.?.*);
 
                             return;
                         },
@@ -765,26 +770,18 @@ pub const VM = struct {
             Operation.Code.Asign => {
                 var a = try self.popStack();
                 var b = try self.findStack(0);
-                defer self.free(&[_]StackEntry{a});
+                var copy = b;
+
+                defer self.free(&[_]StackEntry{ a, copy });
 
                 if (a.value != null) {
-                    if (b.value == null) {
-                        self.free(&[_]StackEntry{b});
-                        b.string = null;
-                        b.value = try self.allocator.create(u64);
-                    }
+                    b.string = null;
                     b.value.?.* = a.value.?.*;
 
                     return;
                 } else if (a.string != null) {
-                    if (b.string == null) {
-                        defer self.free(&[_]StackEntry{b});
-                        b.value = null;
-                        b.string = a.string.?;
-                    } else {
-                        b.string.? = try self.resizeString(b.string.?, a.string.?.len);
-                        std.mem.copy(u8, b.string.?, a.string.?);
-                    }
+                    b.value = null;
+                    b.string.?.* = a.string.?.*;
 
                     return;
                 } else return error.InvalidOp;
@@ -813,21 +810,21 @@ pub const VM = struct {
                 if (a.string != null) {
                     if (b.string != null) {
                         var val: u64 = 0;
-                        if (std.mem.eql(u8, a.string.?, b.string.?)) val = 1;
+                        if (std.mem.eql(u8, a.string.?.*, b.string.?.*)) val = 1;
                         try self.pushStackI(val);
                         return;
                     } else if (b.value != null) {
                         var val: u64 = 0;
-                        if (a.string.?.len != 0 and a.string.?[0] == @intCast(u8, b.value.?.*)) val = 1;
-                        if (a.string.?.len == 0 and 0 == b.value.?.*) val = 1;
+                        if (a.string.?.*.len != 0 and a.string.?.*[0] == @intCast(u8, b.value.?.*)) val = 1;
+                        if (a.string.?.*.len == 0 and 0 == b.value.?.*) val = 1;
                         try self.pushStackI(val);
                         return;
                     } else return error.InvalidOp;
                 } else if (a.value != null) {
                     if (b.string != null) {
                         var val: u64 = 0;
-                        if (b.string.?.len != 0 and b.string.?[0] == @intCast(u8, a.value.?.*)) val = 1;
-                        if (b.string.?.len == 0 and 0 == a.value.?.*) val = 1;
+                        if (b.string.?.*.len != 0 and b.string.?.*[0] == @intCast(u8, a.value.?.*)) val = 1;
+                        if (b.string.?.*.len == 0 and 0 == a.value.?.*) val = 1;
                         try self.pushStackI(val);
                         return;
                     } else if (b.value != null) {
@@ -890,7 +887,7 @@ pub const VM = struct {
                     if (a.string.?.len == 0) {
                         try self.pushStackI(0);
                     } else {
-                        var val = @intCast(u64, a.string.?[0]);
+                        var val = @intCast(u64, a.string.?.*[0]);
                         try self.pushStackI(val);
                     }
                     return;
@@ -925,24 +922,25 @@ pub const VM = struct {
             },
             Operation.Code.Cat => {
                 var b = try self.popStack();
-                defer self.free(&[_]StackEntry{b});
                 var a = try self.findStack(0);
+
+                defer self.free(&[_]StackEntry{b});
 
                 if (a.string != null) {
                     if (b.string != null) {
-                        const start = a.string.?.len;
-                        const total = a.string.?.len + b.string.?.len;
+                        const start = a.string.?.*.len;
+                        const total = a.string.?.*.len + b.string.?.*.len;
 
-                        a.string.? = try self.resizeString(a.string.?, total);
-                        std.mem.copy(u8, a.string.?[start..], b.string.?);
+                        a.string.?.* = try self.allocator.realloc(a.string.?.*, total);
+                        std.mem.copy(u8, a.string.?.*[start..], b.string.?.*);
 
                         return;
                     } else if (b.value != null) {
-                        const start = a.string.?.len;
-                        const total = a.string.?.len + 8;
+                        const start = a.string.?.*.len;
+                        const total = a.string.?.*.len + 8;
 
-                        a.string.? = try self.resizeString(a.string.?, total);
-                        std.mem.copy(u8, a.string.?[start..], &std.mem.toBytes(b.value.?.*));
+                        a.string.?.* = try self.allocator.realloc(a.string.?.*, total);
+                        std.mem.copy(u8, a.string.?.*[start..], &std.mem.toBytes(b.value.?.*));
 
                         return;
                     } else return error.InvalidOp;
@@ -1094,6 +1092,7 @@ pub const VM = struct {
                 return error.UnknownFunction;
             }
         } else {
+            if (self.code.?.len <= self.pc) return self.done();
             oper = self.code.?[self.pc];
         }
 

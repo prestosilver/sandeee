@@ -42,3 +42,19 @@ _TextureDestroy:
     sys 7
     disc 0
     ret
+
+_TextureHeight:
+    dup 0
+    disc 1
+    push 6
+    add
+    getb
+    ret
+
+_TextureWidth:
+    dup 0
+    disc 1
+    push 4
+    add
+    getb
+    ret

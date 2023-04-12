@@ -36,7 +36,7 @@ value renderMap(value map, value win, value tex) {
             pos = y * 8;
             pos = pos + x;
             source = getTile(dup(map), dup(pos));
-            dest = _MakeRect(16 * x, 16 * y, 16, 16);
+            dest = _MakeRect(x * 16, y * 16, 16, 16);
 
             _WindowRender(dup(win), dup(tex), dup(dest), dup(source));
         }
@@ -48,6 +48,20 @@ value renderMap(value map, value win, value tex) {
     return 0;
 }
 
+value updateMap(value map) {
+    value x;
+    value y;
+    value result = "";
+
+    for (y = 0; y < 24; y = y + 1) {
+        for (x = 0; x < 8; x = x + 1) {
+            result = result & @3;
+        }
+    }
+
+    return result;
+}
+
 value main() {
     setupLibLoad();
     loadLib("/libs/window.ell");
@@ -55,25 +69,22 @@ value main() {
     loadLib("/libs/string.ell");
 
     value map = createMap();
-    value newmap = "";
+    value three = @3;
     value window = _WindowCreate();
     value texture = _TextureCreate();
     value lastTime = time();
     value dt = 0;
+
+    value test = "";
 
     _TextureUpload(_TextureRead("/cont/imgs/connectris.eia"), texture);
 
     for (0; _WindowOpen(); 1) {
         dt = time() - lastTime;
 
-        newmap = dup(map);
-
-        newmap = dup(newmap) & @10;
-        newmap = dup(newmap) + 1;
-
-        map = dup(newmap);
-
-        renderMap(dup(newmap), dup(window), texture);
+        map = updateMap(map);
+        
+        renderMap(dup(map), dup(window), dup(texture));
         
         _WindowFlip(dup(window));
 
