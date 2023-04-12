@@ -316,7 +316,7 @@ pub fn main() anyerror!void {
     args.deinit();
 
     if (isHeadless) {
-        return headless.headlessMain(headlessCmd);
+        return headless.headlessMain(headlessCmd, false);
     }
 
     // init graphics
@@ -553,4 +553,9 @@ pub fn main() anyerror!void {
     gfx.close(ctx);
     events.deinit();
     sb.deinit();
+}
+
+test "headless.zig" {
+    _ = @import("system/headless.zig");
+    _ = @import("system/vm.zig");
 }

@@ -7,7 +7,7 @@ const allocator = @import("../util/allocator.zig");
 
 const DISK = "headless.eee";
 
-pub fn headlessMain(cmd: ?[]const u8) anyerror!void {
+pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool) anyerror!void {
     var diskpath = fm.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
 
@@ -15,8 +15,10 @@ pub fn headlessMain(cmd: ?[]const u8) anyerror!void {
         try files.Folder.setupDisk(DISK);
     }
 
-    network.server = try network.Server.init();
-    _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
+    if (!@import("builtin").is_test) {
+        network.server = try network.Server.init();
+        _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
+    }
 
     try files.Folder.init(DISK);
 
@@ -79,6 +81,9 @@ pub fn headlessMain(cmd: ?[]const u8) anyerror!void {
             _ = try stdout.write(msg);
             _ = try stdout.write("\n");
 
+            if (exitFail) {
+                return err;
+            }
             continue;
         };
 
@@ -95,4 +100,22 @@ pub fn headlessMain(cmd: ?[]const u8) anyerror!void {
     }
 
     return;
+}
+
+test "Headless scripts" {
+    var dir = try std.fs.cwd().openIterableDir("tests", .{});
+    var start_cwd = try std.fs.cwd().openDir("tests", .{});
+
+    var iter = dir.iterate();
+
+    try std.process.changeCurDir("zig-out/bin/");
+
+    while (try iter.next()) |path| {
+        var file = try start_cwd.openFile(path.name, .{});
+
+        var conts = try file.readToEndAlloc(std.testing.allocator, 1000000);
+        defer std.testing.allocator.free(conts);
+
+        try headlessMain(conts, true);
+    }
 }

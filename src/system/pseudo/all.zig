@@ -15,10 +15,12 @@ pub fn setupFake(parent: *files.Folder) !files.Folder {
         .protected = true,
     };
 
-    try result.subfolders.append(try win.setupFakeWin(&result));
-    try result.subfolders.append(try gfx.setupFakeGfx(&result));
-    try result.subfolders.append(try snd.setupFakeSnd(&result));
-    try result.subfolders.append(try net.setupFakeNet(&result));
+    if (!@import("builtin").is_test) {
+        try result.subfolders.append(try win.setupFakeWin(&result));
+        try result.subfolders.append(try gfx.setupFakeGfx(&result));
+        try result.subfolders.append(try snd.setupFakeSnd(&result));
+        try result.subfolders.append(try net.setupFakeNet(&result));
+    }
 
     return result;
 }

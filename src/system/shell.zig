@@ -438,11 +438,13 @@ pub const Shell = struct {
     }
 
     pub fn run(self: *Shell, cmd: []const u8, params: []const u8) !Result {
+        if (!@import("builtin").is_test) {
+            if (std.mem.eql(u8, cmd, "cmd")) return self.runCmd(params);
+            if (std.mem.eql(u8, cmd, "edit")) return self.runEdit(params);
+            if (std.mem.eql(u8, cmd, "web")) return self.runWeb(params);
+        }
         if (std.mem.eql(u8, cmd, "help")) return self.help(params);
         if (std.mem.eql(u8, cmd, "ls")) return self.ls(params);
-        if (std.mem.eql(u8, cmd, "cmd")) return self.runCmd(params);
-        if (std.mem.eql(u8, cmd, "edit")) return self.runEdit(params);
-        if (std.mem.eql(u8, cmd, "web")) return self.runWeb(params);
         if (std.mem.eql(u8, cmd, "new")) return self.new(params);
         if (std.mem.eql(u8, cmd, "rem")) return self.rem(params);
         if (std.mem.eql(u8, cmd, "cd")) return self.cd(params);

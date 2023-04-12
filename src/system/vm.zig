@@ -1008,6 +1008,10 @@ pub const VM = struct {
             parsePtr += 1;
 
             if (kind == 1) {
+                if (parsePtr + 8 >= conts.len) {
+                    ops.deinit();
+                    return error.InvalidAsm;
+                }
                 var value = @bitCast(u64, conts[parsePtr..][0..8].*);
 
                 parsePtr += 8;
@@ -1017,6 +1021,10 @@ pub const VM = struct {
                 var buffPtr: usize = 0;
                 while (conts[parsePtr + buffPtr] != 0) {
                     buffPtr += 1;
+                    if (buffPtr + parsePtr >= conts.len) {
+                        ops.deinit();
+                        return error.InvalidAsm;
+                    }
                 }
                 try ops.append(VM.Operation{ .code = code, .string = conts[parsePtr .. parsePtr + buffPtr] });
                 parsePtr += buffPtr + 1;
@@ -1118,3 +1126,18 @@ pub const VM = struct {
         return self.done();
     }
 };
+
+test "VM Compile bad returns error" {
+    var vm = try VM.init(std.testing.allocator, undefined, &[_]u8{});
+    var err: anyerror!std.ArrayList(VM.Operation) = undefined;
+    err = vm.stringToOps("\x00");
+    try std.testing.expectError(error.InvalidAsm, err);
+    err = vm.stringToOps("\x00\x02\x01");
+    try std.testing.expectError(error.InvalidAsm, err);
+    err = vm.stringToOps("\x00\x01\x01");
+    try std.testing.expectError(error.InvalidAsm, err);
+    err = vm.stringToOps("\x00\x03");
+    try std.testing.expectError(error.InvalidAsm, err);
+
+    try vm.deinit();
+}
