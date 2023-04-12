@@ -11,6 +11,7 @@ const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../util/texture.zig");
 const config = @import("../system/config.zig");
+const c = @import("../c.zig");
 
 pub var settingManager: *config.SettingManager = undefined;
 
@@ -57,8 +58,17 @@ const SettingsData = struct {
         key: []const u8,
     };
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, scrollData: *win.WindowContents.WindowProps) !void {
-        _ = scrollData;
+    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        _ = props;
+
+        if (self.lastAction != null) {
+            if (self.lastAction.?.time <= 0) {
+                self.lastAction = null;
+            } else {
+                self.lastAction.?.time -= 5;
+            }
+        }
+
         if (self.focusedPane) |focused| {
             var settings = std.ArrayList(Setting).init(allocator.alloc);
             defer settings.deinit();
@@ -150,14 +160,6 @@ const SettingsData = struct {
             return;
         }
 
-        if (self.lastAction != null) {
-            if (self.lastAction.?.time <= 0) {
-                self.lastAction = null;
-            } else {
-                self.lastAction.?.time -= 5;
-            }
-        }
-
         self.scroll[1].data.size.y = bnds.h - 20;
 
         try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
@@ -225,7 +227,15 @@ const SettingsData = struct {
         }
     }
 
-    pub fn key(_: *Self, _: i32, _: i32) !void {}
+    pub fn key(self: *Self, keycode: i32, _: i32) void {
+        switch (keycode) {
+            c.GLFW_KEY_BACKSPACE => {
+                self.focusedPane = null;
+            },
+            else => {},
+        }
+    }
+
     pub fn scroll(_: *Self, _: f32, _: f32) !void {}
     pub fn move(_: *Self, _: f32, _: f32) !void {}
     pub fn focus(_: *Self) !void {}
