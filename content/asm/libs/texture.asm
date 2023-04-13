@@ -46,15 +46,33 @@ _TextureDestroy:
 _TextureHeight:
     dup 0
     disc 1
+    dup 0
     push 6
     add
     getb
+    dup 1
+    push 7
+    add
+    getb
+    push 255
+    mul
+    add
+    disc 1
     ret
 
 _TextureWidth:
     dup 0
     disc 1
+    dup 0
     push 4
     add
     getb
+    dup 1
+    push 5
+    add
+    getb
+    push 255
+    mul
+    add
+    disc 1
     ret

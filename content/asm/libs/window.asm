@@ -70,3 +70,17 @@ _WindowFlip:
     sys 5
     sys 7
     ret
+
+_WindowTitle:
+    dup 1
+    copy 1
+    cat
+    disc 1
+    disc 1
+    push "/fake/win/title"
+    sys 3
+    dup 0
+    dup 2
+    sys 5
+    sys 7
+    ret
