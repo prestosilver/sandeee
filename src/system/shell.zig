@@ -22,8 +22,12 @@ pub var webtex: *tex.Texture = undefined;
 pub var edittex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
 
-const VM_TIME = 8000000; // nano seconds
-const ASM_HEADER = "EEEp";
+pub const VM_TIME = 8000000; // nano seconds
+pub const ASM_HEADER = "EEEp";
+
+pub var frameTime: usize = VM_TIME;
+pub var vms: usize = 0;
+pub var vmsLeft: usize = 0;
 
 const ShellError = error{
     FileNotFound,
@@ -34,8 +38,6 @@ const ShellError = error{
 pub const Shell = struct {
     root: *files.Folder,
     vm: ?vm.VM = null,
-
-    var vms: usize = 0;
 
     pub fn getPrompt(self: *Shell) []const u8 {
         return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{self.root.name[0 .. self.root.name.len - 1]}) catch "> ";
@@ -357,6 +359,7 @@ pub const Shell = struct {
 
                 self.vm = try vm.VM.init(allocator.alloc, self.root, params);
                 vms += 1;
+                vmsLeft += 1;
 
                 var ops = cont[4..];
 
@@ -366,6 +369,7 @@ pub const Shell = struct {
                     try self.vm.?.deinit();
                     self.vm = null;
                     vms -= 1;
+                    vmsLeft -= 1;
 
                     return err;
                 };
@@ -380,7 +384,10 @@ pub const Shell = struct {
     }
 
     pub fn updateVM(self: *Shell) !?Result {
-        if (self.vm.?.runTime(VM_TIME / vms) catch |err| {
+        var timer = try std.time.Timer.start();
+        timer.reset();
+
+        if (self.vm.?.runTime(frameTime / vmsLeft) catch |err| {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
@@ -400,6 +407,13 @@ pub const Shell = struct {
             try self.vm.?.deinit();
             self.vm = null;
             vms -= 1;
+            vmsLeft -= 1;
+
+            if (frameTime < timer.read()) {
+                frameTime = 0;
+            } else {
+                frameTime -= timer.read();
+            }
 
             return result;
         }) {
@@ -412,8 +426,22 @@ pub const Shell = struct {
             try self.vm.?.deinit();
             self.vm = null;
             vms -= 1;
+            vmsLeft -= 1;
+
+            if (frameTime < timer.read()) {
+                frameTime = 0;
+            } else {
+                frameTime -= timer.read();
+            }
 
             return result;
+        }
+        vmsLeft -= 1;
+
+        if (frameTime < timer.read()) {
+            frameTime = 0;
+        } else {
+            frameTime -= timer.read();
         }
 
         return null;

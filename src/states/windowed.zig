@@ -17,6 +17,7 @@ const files = @import("../system/files.zig");
 const emails = @import("../system/mail.zig");
 const conf = @import("../system/config.zig");
 const gfx = @import("../util/graphics.zig");
+const shell = @import("../system/shell.zig");
 const cols = @import("../math/colors.zig");
 const network = @import("../system/network.zig");
 const cursor = @import("../drawers/cursor2d.zig");
@@ -139,6 +140,9 @@ pub const GSWindowed = struct {
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         if (self.openWindow.x > size.x - 500) self.openWindow.x = 100;
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
+
+        shell.frameTime = shell.VM_TIME;
+        shell.vmsLeft = shell.vms;
 
         // draw wallpaper
         try self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));

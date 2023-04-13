@@ -48,6 +48,7 @@ pub const VM = struct {
     pc: u64 = 0,
     code: ?[]const Operation = null,
     stopped: bool = false,
+    yield: bool = false,
     miscData: std.StringHashMap([]const u8),
 
     streams: std.ArrayList(?*streams.FileStream),
@@ -661,6 +662,11 @@ pub const VM = struct {
 
                             return;
                         },
+                        // yield
+                        17 => {
+                            self.yield = true;
+                            return;
+                        },
                         // panic
                         128 => {
                             @panic("VM Crash Called");
@@ -1128,13 +1134,15 @@ pub const VM = struct {
 
         timer.reset();
 
-        while (timer.read() < ns) {
+        while (timer.read() < ns and !self.yield) {
             if (self.runStep() catch |err| {
                 return err;
             }) {
                 return true;
             }
         }
+
+        self.yield = false;
 
         return self.done();
     }

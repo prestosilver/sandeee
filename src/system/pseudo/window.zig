@@ -66,10 +66,10 @@ pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
                 var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
                 if (self.idx == aid[0]) {
-                    var x = std.mem.toBytes(@floatToInt(u16, item.data.pos.x));
-                    var y = std.mem.toBytes(@floatToInt(u16, item.data.pos.y));
-                    std.mem.copy(u8, result[0..1], &x);
-                    std.mem.copy(u8, result[2..3], &y);
+                    var x = std.mem.asBytes(&@floatToInt(u16, item.data.pos.w));
+                    var y = std.mem.asBytes(&@floatToInt(u16, item.data.pos.h));
+                    std.mem.copy(u8, result[0..2], x);
+                    std.mem.copy(u8, result[2..4], y);
                     return result;
                 }
             }
