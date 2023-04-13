@@ -54,6 +54,36 @@ pub fn writeWinNew(_: []const u8, _: ?*vm.VM) !void {
     return;
 }
 
+// /fake/win/size
+
+pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
+    var result = try allocator.alloc.alloc(u8, 4);
+    if (vmInstance.?.miscData.get("window")) |aid| {
+        for (windowsPtr.*.items, 0..) |_, idx| {
+            var item = &windowsPtr.*.items[idx];
+            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
+                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+
+                if (self.idx == aid[0]) {
+                    var x = std.mem.toBytes(@floatToInt(u16, item.data.pos.x));
+                    var y = std.mem.toBytes(@floatToInt(u16, item.data.pos.y));
+                    std.mem.copy(u8, result[0..1], &x);
+                    std.mem.copy(u8, result[2..3], &y);
+                    return result;
+                }
+            }
+        }
+    }
+
+    std.mem.set(u8, result, 0);
+    return result;
+}
+
+pub fn writeWinSize(_: []const u8, _: ?*vm.VM) !void {
+    return;
+}
+
 // /fake/win/destroy
 
 pub fn readWinDestroy(_: ?*vm.VM) ![]const u8 {
@@ -279,6 +309,17 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinTitle,
         .pseudoWrite = writeWinTitle,
+        .parent = undefined,
+    };
+
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/size", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
+        .pseudoRead = readWinSize,
+        .pseudoWrite = writeWinSize,
         .parent = undefined,
     };
 
