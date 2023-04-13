@@ -22,7 +22,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         var no_comment = std.mem.split(u8, line, ";");
         var l = no_comment.first();
         if (l.len == 0) continue;
-        while (l[0] == ' ') l = l[1..];
+        while (l.len != 0 and l[0] == ' ') l = l[1..];
         while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
         if (l.len == 0) {
             continue;
@@ -49,7 +49,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         var no_comment = std.mem.split(u8, line, ";");
         var l = no_comment.first();
         if (l.len == 0) continue;
-        while (l[0] == ' ') l = l[1..];
+        while (l.len != 0 and l[0] == ' ') l = l[1..];
         while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
         if (l.len == 0 or l[l.len - 1] == ':') {
             continue;
@@ -164,7 +164,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         var no_comment = std.mem.split(u8, line, ";");
         var l = no_comment.first();
         if (l.len == 0) continue;
-        while (l[0] == ' ') l = l[1..];
+        while (l.len != 0 and l[0] == ' ') l = l[1..];
         while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
         if (l.len == 0) {
             continue;
@@ -201,7 +201,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         var no_comment = std.mem.split(u8, line, ";");
         var l = no_comment.first();
         if (l.len == 0) continue;
-        while (l[0] == ' ') l = l[1..];
+        while (l.len != 0 and l[0] == ' ') l = l[1..];
         while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
         if (l.len == 0 or l[l.len - 1] == ':') {
             if (l.len != 0) {
