@@ -166,6 +166,23 @@ pub const VM = struct {
         code: Code,
         string: ?[]const u8 = null,
         value: ?u64 = null,
+
+        pub fn format(
+            self: Operation,
+            comptime fmt: []const u8,
+            options: std.fmt.FormatOptions,
+            writer: anytype,
+        ) !void {
+            _ = options;
+            _ = fmt;
+            if (self.string != null) {
+                return std.fmt.format(writer, "{} \"{s}\"", .{ self.code, self.string.? });
+            } else if (self.value != null) {
+                return std.fmt.format(writer, "{} {}", .{ self.code, self.value.? });
+            } else {
+                return std.fmt.format(writer, "{}", .{self.code});
+            }
+        }
     };
 
     pub fn deinit(self: *VM) !void {
@@ -208,7 +225,7 @@ pub const VM = struct {
     }
 
     pub fn freeValue(self: *VM, val: *u64) void {
-        for (self.stack[0..self.rsp]) |entry| {
+        for (self.stack[0 .. self.rsp + 1]) |entry| {
             if (entry.value != null and entry.value.? == val) {
                 return;
             }
@@ -217,7 +234,7 @@ pub const VM = struct {
     }
 
     pub fn freeString(self: *VM, val: *[]const u8) void {
-        for (self.stack[0..self.rsp]) |entry| {
+        for (self.stack[0 .. self.rsp + 1]) |entry| {
             if (entry.string != null and entry.string.? == val) {
                 return;
             }
@@ -248,8 +265,7 @@ pub const VM = struct {
     }
 
     pub fn runOp(self: *VM, op: Operation) !void {
-        //std.log.debug("{?s}, {}", .{self.inside_fn, op});
-
+        // std.log.debug("{?s}:{}", .{ self.inside_fn, op });
         self.pc += 1;
 
         switch (op.code) {
@@ -647,7 +663,6 @@ pub const VM = struct {
                         },
                         // panic
                         128 => {
-                            std.log.info("{any}", .{self.heap});
                             @panic("VM Crash Called");
                         },
                         // misc
@@ -770,18 +785,27 @@ pub const VM = struct {
             Operation.Code.Asign => {
                 var a = try self.popStack();
                 var b = try self.findStack(0);
+
                 var copy = b;
 
-                defer self.free(&[_]StackEntry{ a, copy });
+                defer self.free(&[_]StackEntry{ copy, a });
 
                 if (a.value != null) {
                     b.string = null;
-                    b.value.?.* = a.value.?.*;
+                    if (b.value == null) {
+                        b.value.? = a.value.?;
+                    } else {
+                        b.value.?.* = a.value.?.*;
+                    }
 
                     return;
                 } else if (a.string != null) {
                     b.value = null;
-                    b.string.?.* = a.string.?.*;
+                    if (b.string == null) {
+                        b.string = a.string;
+                    } else {
+                        b.string.?.* = a.string.?.*;
+                    }
 
                     return;
                 } else return error.InvalidOp;
@@ -892,7 +916,7 @@ pub const VM = struct {
                     }
                     return;
                 } else if (a.value != null) {
-                    try self.pushStackS(std.mem.toBytes(a.value.?.*)[0..1]);
+                    try self.pushStackS(std.mem.asBytes(a.value.?)[0..1]);
 
                     return;
                 } else return error.InvalidOp;
@@ -922,25 +946,23 @@ pub const VM = struct {
             },
             Operation.Code.Cat => {
                 var b = try self.popStack();
-                var a = try self.findStack(0);
+                var a = try self.popStack();
 
-                defer self.free(&[_]StackEntry{b});
+                defer self.free(&[_]StackEntry{ b, a });
 
                 if (a.string != null) {
                     if (b.string != null) {
-                        const start = a.string.?.*.len;
-                        const total = a.string.?.*.len + b.string.?.*.len;
+                        var appends = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?.*, b.string.?.* });
+                        defer self.allocator.free(appends);
 
-                        a.string.?.* = try self.allocator.realloc(a.string.?.*, total);
-                        std.mem.copy(u8, a.string.?.*[start..], b.string.?.*);
+                        try self.pushStackS(appends);
 
                         return;
                     } else if (b.value != null) {
-                        const start = a.string.?.*.len;
-                        const total = a.string.?.*.len + 8;
+                        var appends = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?.*, std.mem.asBytes(b.value.?) });
+                        defer self.allocator.free(appends);
 
-                        a.string.?.* = try self.allocator.realloc(a.string.?.*, total);
-                        std.mem.copy(u8, a.string.?.*[start..], &std.mem.toBytes(b.value.?.*));
+                        try self.pushStackS(appends);
 
                         return;
                     } else return error.InvalidOp;
