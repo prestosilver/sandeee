@@ -69,6 +69,7 @@ _WindowFlip:
     dup 2
     sys 5
     sys 7
+    sys 17
     ret
 
 _WindowTitle:
@@ -83,4 +84,53 @@ _WindowTitle:
     dup 2
     sys 5
     sys 7
+    ret
+
+_WindowSize:
+    push "/fake/win/size"       ; path
+    sys 3                       ; open
+    dup 0                       ; handle
+    push 4                      ; size
+    sys 4                       ; read
+    dup 1                       ; file handle
+    sys 7                       ; flush
+    disc 1                      ; file handle
+    ret
+
+_WindowHeight:
+    disc 0
+    call WindowSize
+    dup 0
+    push 2
+    add
+    getb
+    dup 1
+    push 3
+    add
+    getb
+    push 256
+    mul
+    add
+    disc 1
+    push 36
+    sub
+    ret
+
+_WindowWidth:
+    disc 0
+    call WindowSize
+    dup 0
+    push 0
+    add
+    getb
+    dup 1
+    push 1
+    add
+    getb
+    push 256
+    mul
+    add
+    disc 1
+    push 4
+    sub
     ret
