@@ -83,6 +83,11 @@ const ExplorerData = struct {
             }
         }
 
+        if (!std.mem.eql(u8, props.info.name, "Files")) {
+            allocator.alloc.free(props.info.name);
+        }
+        props.info.name = try std.fmt.allocPrint(allocator.alloc, "Files - {s}", .{self.shell.root.name});
+
         if (self.shell.vm != null) {
             var result = self.shell.updateVM() catch null;
             if (result != null) {
