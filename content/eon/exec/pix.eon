@@ -19,9 +19,7 @@ value processArgs() {
 value render(value win, value tex, value w, value h) {
     value source = _MakeRect(0, 0, 1024, 1024);
     value dest = _MakeRect(0, 0, w * 2, h * 2);
-
-    print(_TextureWidth(tex));
-
+    
     _WindowRender(dup(win), tex, dest, source);
     _WindowFlip(dup(win));
 
@@ -37,8 +35,9 @@ value main() {
     value window = _WindowCreate();
     value texture = _TextureCreate();
     value content = _TextureRead(input);
-
     _TextureUpload(content, texture);
+
+    _WindowTitle(window, "PixEEE - " & input);
 
     value w = _TextureWidth(content);
     value h = _TextureHeight(content);

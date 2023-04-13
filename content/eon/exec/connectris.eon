@@ -9,14 +9,12 @@ value createMap() {
 }
 
 value getTile(value map, value pos) {
-    value subs = 192 - pos - 1;
-    value tile = map - subs;
-    tile = tile + pos;
+    value tile = map + pos;
     value tilev = @tile;
 
     value id = tilev + 65;
 
-    print(@id);
+    //print(@id);
 
     value x = tilev / 4;
     value y = tilev % 4;
@@ -41,9 +39,9 @@ value renderMap(value map, value win, value tex) {
             _WindowRender(dup(win), dup(tex), dup(dest), dup(source));
         }
 
-        print("\\n");
+        //print("\\n");
     }
-    print("========\\n");
+    //print("========\\n");
 
     return 0;
 }
@@ -52,10 +50,18 @@ value updateMap(value map) {
     value x;
     value y;
     value result = "";
+    value tile = 0;
+    value pos = 0;
 
     for (y = 0; y < 24; y = y + 1) {
         for (x = 0; x < 8; x = x + 1) {
-            result = result & @3;
+            pos = y * 8;
+            pos = pos + x;
+
+            tile = @map + dup(pos);
+            tile = tile + 1;
+            tile = tile % 16;
+            result = result & @tile;
         }
     }
 
@@ -69,7 +75,6 @@ value main() {
     loadLib("/libs/string.ell");
 
     value map = createMap();
-    value three = @3;
     value window = _WindowCreate();
     value texture = _TextureCreate();
     value lastTime = time();
@@ -82,7 +87,7 @@ value main() {
     for (0; _WindowOpen(); 1) {
         dt = time() - lastTime;
 
-        map = updateMap(map);
+        map = updateMap(dup(map));
         
         renderMap(dup(map), dup(window), dup(texture));
         
