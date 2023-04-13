@@ -123,7 +123,6 @@ test "Headless scripts" {
 
     try std.process.changeCurDir("/home/john/doc/rep/github.com/sandeee/zig-out/bin/");
 
-    std.log.info("fdsafdsa", .{});
     while (try iter.next()) |entry| {
         if (entry.kind != .File) continue;
 
