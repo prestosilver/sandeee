@@ -89,7 +89,6 @@ pub const Folder = struct {
 
     pub fn setupDisk(diskName: []const u8) !void {
         root = try allocator.alloc.create(Folder);
-        defer allocator.alloc.destroy(root);
         defer root.deinit();
 
         root.protected = false;
