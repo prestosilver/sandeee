@@ -22,7 +22,7 @@ const CMDData = struct {
     bt: []u8,
     text: std.ArrayList(u8),
     shell: shell.Shell,
-    bot: bool,
+    bot: bool = false,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
@@ -203,11 +203,14 @@ const CMDData = struct {
 pub fn new() !win.WindowContents {
     const self = try allocator.alloc.create(CMDData);
 
-    self.text = std.ArrayList(u8).init(allocator.alloc);
-    self.bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to ShEEEl", .{});
-
-    self.shell.root = files.home;
-    self.shell.vm = null;
+    self.* = .{
+        .text = std.ArrayList(u8).init(allocator.alloc),
+        .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to ShEEEl", .{}),
+        .shell = .{
+            .root = files.home,
+            .vm = null,
+        },
+    };
 
     return win.WindowContents.init(self, "cmd", "CMD", col.newColor(0, 0, 0, 1));
 }

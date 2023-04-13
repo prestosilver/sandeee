@@ -38,16 +38,19 @@ const SettingsData = struct {
     icons: [5]sprite.Sprite,
     scroll: [3]sprite.Sprite,
     focus: sprite.Sprite,
-    focused: ?u64,
-    selection: usize,
-    lastAction: ?SettingsMouseAction,
-    focusedPane: ?u64,
+
+    focused: ?usize = null,
+    selection: usize = 0,
+    lastAction: ?SettingsMouseAction = null,
+    focusedPane: ?usize = null,
+    editing: ?usize = null,
 
     const panels = [_]SettingPanel{
         SettingPanel{ .name = "Graphics", .icon = 1 },
         SettingPanel{ .name = "Sounds", .icon = 2 },
         SettingPanel{ .name = "Explorer", .icon = 3 },
     };
+
     const Setting = struct {
         const Kind = enum(u8) { String, Dropdown };
 
@@ -129,6 +132,19 @@ const SettingsData = struct {
                     .pos = vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y),
                 });
 
+                // check click
+                if (self.lastAction) |action| {
+                    if (rect.newRect(pos.x, pos.y, bnds.w, font.size).contains(action.pos)) {
+                        switch (action.kind) {
+                            .SingleLeft => {
+                                std.log.info("{s}", .{item.setting});
+                                self.lastAction = null;
+                            },
+                            .DoubleLeft => {},
+                        }
+                    }
+                }
+
                 // draw value
                 var value = settingManager.get(item.key);
                 if (value) |val| {
@@ -185,13 +201,14 @@ const SettingsData = struct {
             if (idx + 1 == self.selection)
                 try batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
 
-            if (self.lastAction != null) {
-                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
-                    switch (self.lastAction.?.kind) {
+            if (self.lastAction) |action| {
+                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(action.pos)) {
+                    switch (action.kind) {
                         .SingleLeft => {
                             self.selection = idx + 1;
                         },
                         .DoubleLeft => {
+                            self.selection = 0;
                             self.focusedPane = idx;
                         },
                     }
@@ -248,6 +265,27 @@ const SettingsData = struct {
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(SettingsData);
 
+    var ym = @intToFloat(f32, self.icons.len);
+
+    self.* = .{
+        .shader = shader,
+        .icons = undefined,
+        .scroll = .{ sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(0 / 32.0, 0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
+            vecs.newVec2(14.0, 12.0),
+        )), sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(0 / 32.0, 6.0 / 32.0 / ym, 7.0 / 32.0, 4.0 / 32.0 / ym),
+            vecs.newVec2(14.0, 64),
+        )), sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(0 / 32.0, 10.0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
+            vecs.newVec2(14.0, 12.0),
+        )) },
+        .focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
+            vecs.newVec2(72.0, 72.0),
+        )),
+    };
+
     for (self.icons, 0..) |_, idx| {
         var i = @intToFloat(f32, idx);
 
@@ -256,31 +294,6 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
             vecs.newVec2(64, 64),
         ));
     }
-
-    var ym = @intToFloat(f32, self.icons.len);
-
-    self.scroll[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
-        vecs.newVec2(14.0, 12.0),
-    ));
-
-    self.scroll[1] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 6.0 / 32.0 / ym, 7.0 / 32.0, 4.0 / 32.0 / ym),
-        vecs.newVec2(14.0, 64),
-    ));
-
-    self.scroll[2] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0 / 32.0, 10.0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
-        vecs.newVec2(14.0, 12.0),
-    ));
-
-    self.focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
-        vecs.newVec2(72.0, 72.0),
-    ));
-
-    self.shader = shader;
-    self.focusedPane = null;
 
     return win.WindowContents.init(self, "settings", "Settings", col.newColor(1, 1, 1, 1));
 }

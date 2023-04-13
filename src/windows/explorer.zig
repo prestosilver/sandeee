@@ -38,13 +38,13 @@ const ExplorerData = struct {
     icons: [5]sprite.Sprite,
     text_box: [2]sprite.Sprite,
     menubar: sprite.Sprite,
-
     focus: sprite.Sprite,
     gray: sprite.Sprite,
-    focused: ?u64,
-    selected: usize,
-    lastAction: ?ExplorerMouseAction,
     shell: shell.Shell,
+
+    focused: ?u64 = null,
+    selected: usize = 0,
+    lastAction: ?ExplorerMouseAction = null,
 
     pub fn getIcons(self: *Self) ![]const Icon {
         var result = try allocator.alloc.alloc(Icon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len);
@@ -251,6 +251,39 @@ const ExplorerData = struct {
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(ExplorerData);
 
+    var ym = @intToFloat(f32, self.icons.len);
+
+    self.* = .{
+        .focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
+            vecs.newVec2(72.0, 72.0),
+        )),
+        .gray = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(7.0 / 32.0, 6.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
+            vecs.newVec2(72.0, 72.0),
+        )),
+        .menubar = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(17.0 / 32.0, 0.0 / 32.0 / ym, 1.0 / 32.0, 18.0 / 32.0 / ym),
+            vecs.newVec2(0.0, 36.0),
+        )),
+        .text_box = .{
+            sprite.Sprite.new(texture, sprite.SpriteData.new(
+                rect.newRect(18.0 / 32.0, 0.0 / 32.0 / ym, 0.0 / 32.0, 14.0 / 32.0 / ym),
+                vecs.newVec2(2.0, 28.0),
+            )),
+            sprite.Sprite.new(texture, sprite.SpriteData.new(
+                rect.newRect(19.0 / 32.0, 0.0 / 32.0 / ym, 0.0 / 32.0, 14.0 / 32.0 / ym),
+                vecs.newVec2(2.0, 28.0),
+            )),
+        },
+        .icons = undefined,
+        .shader = shader,
+        .shell = .{
+            .root = files.home,
+            .vm = null,
+        },
+    };
+
     for (self.icons, 0..) |_, idx| {
         var i = @intToFloat(f32, idx);
 
@@ -260,43 +293,10 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
         ));
     }
 
-    var ym = @intToFloat(f32, self.icons.len);
-
-    self.focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
-        vecs.newVec2(72.0, 72.0),
-    ));
-
-    self.gray = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(7.0 / 32.0, 6.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
-        vecs.newVec2(72.0, 72.0),
-    ));
-
-    self.menubar = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(17.0 / 32.0, 0.0 / 32.0 / ym, 1.0 / 32.0, 18.0 / 32.0 / ym),
-        vecs.newVec2(0.0, 36.0),
-    ));
-
-    self.text_box[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(18.0 / 32.0, 0.0 / 32.0 / ym, 0.0 / 32.0, 14.0 / 32.0 / ym),
-        vecs.newVec2(2.0, 28.0),
-    ));
-
-    self.text_box[1] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(19.0 / 32.0, 0.0 / 32.0 / ym, 0.0 / 32.0, 14.0 / 32.0 / ym),
-        vecs.newVec2(2.0, 28.0),
-    ));
-
     self.icons[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
         rect.newRect(0.0 / 32.0, 21.0 / 32.0 / ym, 10.0 / 32.0, 11.0 / 32.0 / ym),
         vecs.newVec2(20.0, 22.0),
     ));
-
-    self.shader = shader;
-    self.selected = 0;
-
-    self.shell.root = files.home;
-    self.shell.vm = null;
 
     return win.WindowContents.init(self, "explorer", "Files", col.newColor(1, 1, 1, 1));
 }

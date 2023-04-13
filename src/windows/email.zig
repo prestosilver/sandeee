@@ -21,13 +21,13 @@ fn range(len: usize) []const void {
 const EmailData = struct {
     const Self = @This();
 
-    text: []const u8,
     icon: sprite.Sprite,
     divx: sprite.Sprite,
     divy: sprite.Sprite,
     dive: sprite.Sprite,
     sel: sprite.Sprite,
     shader: *shd.Shader,
+
     box: u8 = 0,
     viewing: ?*mail.Email = null,
 
@@ -199,29 +199,29 @@ const EmailData = struct {
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(EmailData);
 
-    self.divy = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0, 3.0 / 32.0, 3.0 / 32.0, 29.0 / 32.0),
-        vecs.newVec2(6, 100),
-    ));
-    self.divx = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(3.0 / 32.0, 0, 29.0 / 32.0, 3.0 / 32.0),
-        vecs.newVec2(100, 6),
-    ));
-    self.dive = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(16.0 / 32.0, 3.0 / 32.0, 16.0 / 32.0, 3.0 / 32.0),
-        vecs.newVec2(100, 6),
-    ));
-    self.sel = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(16.0 / 32.0, 6.0 / 32.0, 16.0 / 32.0, 3.0 / 32.0),
-        vecs.newVec2(100, 6),
-    ));
-    self.icon = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(3.0 / 32.0, 3.0 / 32.0, 13.0 / 32.0, 13.0 / 32.0),
-        vecs.newVec2(100, 100),
-    ));
-    self.shader = shader;
-    self.viewing = null;
-    self.box = 0;
+    self.* = .{
+        .divy = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(0, 3.0 / 32.0, 3.0 / 32.0, 29.0 / 32.0),
+            vecs.newVec2(6, 100),
+        )),
+        .divx = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(3.0 / 32.0, 0, 29.0 / 32.0, 3.0 / 32.0),
+            vecs.newVec2(100, 6),
+        )),
+        .dive = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(16.0 / 32.0, 3.0 / 32.0, 16.0 / 32.0, 3.0 / 32.0),
+            vecs.newVec2(100, 6),
+        )),
+        .sel = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(16.0 / 32.0, 6.0 / 32.0, 16.0 / 32.0, 3.0 / 32.0),
+            vecs.newVec2(100, 6),
+        )),
+        .icon = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(3.0 / 32.0, 3.0 / 32.0, 13.0 / 32.0, 13.0 / 32.0),
+            vecs.newVec2(100, 100),
+        )),
+        .shader = shader,
+    };
 
     return win.WindowContents.init(self, "email", "EEE Mail", col.newColor(1, 1, 1, 1));
 }

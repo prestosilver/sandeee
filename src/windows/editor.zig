@@ -18,20 +18,20 @@ const SCROLL = 30;
 pub const EditorData = struct {
     const Self = @This();
 
-    file: ?*files.File,
     buffer: std.ArrayList(u8),
     menuTop: sp.Sprite,
     menuDiv: sp.Sprite,
-    shader: *shd.Shader,
     numLeft: sp.Sprite,
     numDiv: sp.Sprite,
     icons: [2]sp.Sprite,
-    cursor: vecs.Vector2,
-    cursorIdx: usize,
-    prevIdx: usize,
-    modified: bool,
+    shader: *shd.Shader,
 
-    clickPos: ?vecs.Vector2,
+    cursor: vecs.Vector2 = .{ .x = 0, .y = 0 },
+    clickPos: ?vecs.Vector2 = null,
+    cursorIdx: usize = 0,
+    prevIdx: usize = 0,
+    modified: bool = false,
+    file: ?*files.File = null,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
@@ -274,37 +274,36 @@ pub const EditorData = struct {
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(EditorData);
 
-    self.menuTop = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(19.0 / 32.0, 0.0 / 32.0, 13.0 / 32.0, 2.0 / 32.0),
-        vecs.newVec2(100, 34),
-    ));
-    self.menuDiv = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(19.0 / 32.0, 2.0 / 32.0, 13.0 / 32.0, 1.0 / 32.0),
-        vecs.newVec2(100, 2),
-    ));
-    self.numLeft = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(16.0 / 32.0, 3.0 / 32.0, 2.0 / 32.0, 13.0 / 32.0),
-        vecs.newVec2(64, 100),
-    ));
-    self.numDiv = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(18.0 / 32.0, 3.0 / 32.0, 1.0 / 32.0, 13.0 / 32.0),
-        vecs.newVec2(2, 100),
-    ));
-    self.icons[0] = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(0, 0, 16.0 / 32.0, 16.0 / 32.0),
-        vecs.newVec2(32, 32),
-    ));
-    self.icons[1] = sp.Sprite.new(texture, sp.SpriteData.new(
-        rect.newRect(0, 16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0),
-        vecs.newVec2(32, 32),
-    ));
-
-    self.shader = shader;
-    self.file = null;
-    self.buffer = std.ArrayList(u8).init(allocator.alloc);
-    self.cursor.x = 0;
-    self.cursor.y = 0;
-    self.cursorIdx = 0;
+    self.* = .{
+        .menuTop = sp.Sprite.new(texture, sp.SpriteData.new(
+            rect.newRect(19.0 / 32.0, 0.0 / 32.0, 13.0 / 32.0, 2.0 / 32.0),
+            vecs.newVec2(100, 34),
+        )),
+        .menuDiv = sp.Sprite.new(texture, sp.SpriteData.new(
+            rect.newRect(19.0 / 32.0, 2.0 / 32.0, 13.0 / 32.0, 1.0 / 32.0),
+            vecs.newVec2(100, 2),
+        )),
+        .numLeft = sp.Sprite.new(texture, sp.SpriteData.new(
+            rect.newRect(16.0 / 32.0, 3.0 / 32.0, 2.0 / 32.0, 13.0 / 32.0),
+            vecs.newVec2(64, 100),
+        )),
+        .numDiv = sp.Sprite.new(texture, sp.SpriteData.new(
+            rect.newRect(18.0 / 32.0, 3.0 / 32.0, 1.0 / 32.0, 13.0 / 32.0),
+            vecs.newVec2(2, 100),
+        )),
+        .icons = .{
+            sp.Sprite.new(texture, sp.SpriteData.new(
+                rect.newRect(0, 0, 16.0 / 32.0, 16.0 / 32.0),
+                vecs.newVec2(32, 32),
+            )),
+            sp.Sprite.new(texture, sp.SpriteData.new(
+                rect.newRect(0, 16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0),
+                vecs.newVec2(32, 32),
+            )),
+        },
+        .shader = shader,
+        .buffer = std.ArrayList(u8).init(allocator.alloc),
+    };
 
     return win.WindowContents.init(self, "editor", "EEEDT", col.newColor(1, 1, 1, 1));
 }

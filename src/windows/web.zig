@@ -23,16 +23,17 @@ pub const WebData = struct {
         color: col.Color,
     };
 
-    shader: *shd.Shader,
-    file: ?*files.File,
-    links: std.ArrayList(WebLink),
-    hist: std.ArrayList(*files.File),
-    highlight_idx: usize,
-
     highlight: sprite.Sprite,
     menubar: sprite.Sprite,
     text_box: [2]sprite.Sprite,
     icons: [1]sprite.Sprite,
+    shader: *shd.Shader,
+    file: ?*files.File,
+    links: std.ArrayList(WebLink),
+    hist: std.ArrayList(*files.File),
+
+    top: bool = false,
+    highlight_idx: usize = 0,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
@@ -41,7 +42,12 @@ pub const WebData = struct {
             };
         }
 
-        var pos = vecs.newVec2(0, -props.scroll.?.value + 36);
+        if (self.top) {
+            props.scroll.?.value = 0;
+            self.top = false;
+        }
+
+        var pos = vecs.newVec2(0, -props.scroll.?.value + 34 - font.size);
 
         var cont: []const u8 = "Error Loading File";
         if (self.file) |file| {
@@ -180,7 +186,7 @@ pub const WebData = struct {
                     self.file = last;
                     self.links.clearAndFree();
                     self.highlight_idx = 0;
-                    // self.scrollVal = 0;
+                    self.top = true;
                 }
             }
 
@@ -194,7 +200,7 @@ pub const WebData = struct {
         self.file = self.links.items[self.highlight_idx - 1].url;
         self.links.clearAndFree();
         self.highlight_idx = 0;
-        // self.scrollVal = 0;
+        self.top = true;
     }
 
     pub fn key(_: *Self, _: i32, _: i32) !void {}
@@ -209,37 +215,36 @@ pub const WebData = struct {
 pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(WebData);
 
-    self.highlight = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(15.0 / 32.0, 7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0),
-        vecs.newVec2(0.0, 0.0),
-    ));
-
-    self.menubar = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(14.0 / 32.0, 7.0 / 32.0, 1.0 / 32.0, 18.0 / 32.0),
-        vecs.newVec2(0.0, 36.0),
-    ));
-
-    self.text_box[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(15.0 / 32.0, 10.0 / 32.0, 1.0 / 32.0, 14.0 / 32.0),
-        vecs.newVec2(2.0, 28.0),
-    ));
-
-    self.text_box[1] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(16.0 / 32.0, 10.0 / 32.0, 1.0 / 32.0, 14.0 / 32.0),
-        vecs.newVec2(2.0, 28),
-    ));
-
-    self.icons[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0.0 / 32.0, 22.0 / 32.0, 11.0 / 32.0, 10.0 / 32.0),
-        vecs.newVec2(22, 20),
-    ));
-
-    self.shader = shader;
-    self.highlight_idx = 0;
-
-    self.file = try files.root.getFile("/docs/index.edf");
-    self.links = std.ArrayList(WebData.WebLink).init(allocator.alloc);
-    self.hist = std.ArrayList(*files.File).init(allocator.alloc);
+    self.* = .{
+        .highlight = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(15.0 / 32.0, 7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0),
+            vecs.newVec2(0.0, 0.0),
+        )),
+        .menubar = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(14.0 / 32.0, 7.0 / 32.0, 1.0 / 32.0, 18.0 / 32.0),
+            vecs.newVec2(0.0, 36.0),
+        )),
+        .text_box = .{
+            sprite.Sprite.new(texture, sprite.SpriteData.new(
+                rect.newRect(15.0 / 32.0, 10.0 / 32.0, 1.0 / 32.0, 14.0 / 32.0),
+                vecs.newVec2(2.0, 28.0),
+            )),
+            sprite.Sprite.new(texture, sprite.SpriteData.new(
+                rect.newRect(16.0 / 32.0, 10.0 / 32.0, 1.0 / 32.0, 14.0 / 32.0),
+                vecs.newVec2(2.0, 28),
+            )),
+        },
+        .icons = .{
+            sprite.Sprite.new(texture, sprite.SpriteData.new(
+                rect.newRect(0.0 / 32.0, 22.0 / 32.0, 11.0 / 32.0, 10.0 / 32.0),
+                vecs.newVec2(22, 20),
+            )),
+        },
+        .shader = shader,
+        .file = try files.root.getFile("/docs/index.edf"),
+        .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),
+        .hist = std.ArrayList(*files.File).init(allocator.alloc),
+    };
 
     return win.WindowContents.init(self, "web", "Xplorer", col.newColor(1, 1, 1, 1));
 }

@@ -16,12 +16,13 @@ pub const VMData = struct {
     const Self = @This();
 
     rects: [2]std.ArrayList(VMDataEntry),
-    back: bool,
     idx: u8,
-    shd: *shd.Shader,
-    frameCounter: f32,
-    time: f32,
-    fps: f32,
+    shader: *shd.Shader,
+
+    back: bool = true,
+    frameCounter: f32 = 0,
+    time: f32 = 0,
+    fps: f32 = 0,
 
     const VMDataEntry = struct {
         loc: vecs.Vector3,
@@ -59,7 +60,7 @@ pub const VMData = struct {
         if (self.back) rects = self.rects[1];
 
         for (rects.items, 0..) |_, idx| {
-            try batch.draw(spr.Sprite, &rects.items[idx].s, self.shd, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
+            try batch.draw(spr.Sprite, &rects.items[idx].s, self.shader, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
         }
 
         if (builtin.mode == .Debug) {
@@ -99,11 +100,14 @@ pub const VMData = struct {
 pub fn new(idx: u8, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(VMData);
 
-    self.idx = idx;
-    self.shd = shader;
-    self.back = true;
-    self.rects[0] = std.ArrayList(VMData.VMDataEntry).init(allocator.alloc);
-    self.rects[1] = std.ArrayList(VMData.VMDataEntry).init(allocator.alloc);
+    self.* = .{
+        .idx = idx,
+        .shader = shader,
+        .rects = .{
+            std.ArrayList(VMData.VMDataEntry).init(allocator.alloc),
+            std.ArrayList(VMData.VMDataEntry).init(allocator.alloc),
+        },
+    };
 
     return win.WindowContents.init(self, "vm", "VM Window", col.newColor(1, 1, 1, 1));
 }
