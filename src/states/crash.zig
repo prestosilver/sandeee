@@ -49,6 +49,10 @@ pub const GSCrash = struct {
             .color = cols.newColor(1, 1, 1, 1),
         });
 
+        var offset = self.face.sizeText(.{
+            .text = self.message.*,
+        }).y;
+
         var stateLine = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prevState.*});
         defer allocator.alloc.free(stateLine);
 
@@ -56,14 +60,15 @@ pub const GSCrash = struct {
             .batch = self.sb,
             .shader = self.font_shader,
             .text = stateLine,
-            .pos = vecs.newVec2(300, 100 + self.face.size * 2),
+            .pos = vecs.newVec2(300, 100 + self.face.size * 1 + offset),
             .color = cols.newColor(1, 1, 1, 1),
         });
+
         try self.face.draw(.{
             .batch = self.sb,
             .shader = self.font_shader,
             .text = "THIS IS NOT AN INTENTIONAL CRASH, PLEASE REPORT THIS\n\nIF YOU SEE THIS YOUR FILES WERE SAVED :)",
-            .pos = vecs.newVec2(300, 100 + self.face.size * 4),
+            .pos = vecs.newVec2(300, 100 + self.face.size * 3 + offset),
             .color = cols.newColor(1, 1, 1, 1),
         });
     }

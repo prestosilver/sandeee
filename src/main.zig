@@ -17,6 +17,7 @@ const batch = @import("util/spritebatch.zig");
 const gfx = @import("util/graphics.zig");
 const shd = @import("util/shader.zig");
 const tex = @import("util/texture.zig");
+const panicHandler = @import("util/panic.zig");
 
 const inputEvs = @import("events/input.zig");
 const windowEvs = @import("events/window.zig");
@@ -251,18 +252,23 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
-    errorMsg = msg;
     errorState = @enumToInt(currentState);
 
+    var st = panicHandler.log();
+    errorMsg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ msg, st }) catch {
+        std.os.exit(0);
+    };
+
     if (isHeadless) {
-        std.log.info("{s}, {}", .{ msg, errorState });
+        std.log.info("{s}", .{errorMsg});
+
         std.os.exit(0);
     }
 
-    gameStates.getPtr(currentState).deinit() catch {};
+    defer gameStates.getPtr(@intToEnum(systemEvs.State, errorState)).deinit() catch {};
 
     // disable events on loading screen
-    inputEvs.setup(ctx.window, false);
+    inputEvs.setup(ctx.window, true);
 
     // run setup
     gameStates.getPtr(.Crash).setup() catch {};
