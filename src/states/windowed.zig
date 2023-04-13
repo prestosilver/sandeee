@@ -358,10 +358,6 @@ pub const GSWindowed = struct {
                 dragging.data.pos.y = old.y;
                 dragging.data.pos.h = old.h;
             }
-            for (self.windows.items) |*window| {
-                if (!window.data.active) continue;
-                try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
-            }
         }
         if (self.down and self.dragmode == .None) {
             for (self.windows.items) |*window| {
@@ -375,6 +371,10 @@ pub const GSWindowed = struct {
                     .y = window.data.pos.y + 36,
                 }));
             }
+        }
+        for (self.windows.items) |*window| {
+            if (!window.data.active) continue;
+            try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
         }
     }
 

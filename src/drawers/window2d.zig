@@ -104,8 +104,6 @@ pub const WindowContents = struct {
             if (mousepos.x > size.x - 28 and mousepos.x < size.x) {
                 var pc = (mousepos.y - 14) / (size.y - 28);
                 scrollData.value = std.math.round(scrollData.maxy * pc);
-
-                return;
             }
         }
         return self.vtable.click(self.ptr, size, mousepos, btn);
