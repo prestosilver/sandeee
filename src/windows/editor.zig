@@ -206,7 +206,11 @@ pub const EditorData = struct {
                 self.modified = true;
             },
             cc.GLFW_KEY_MINUS => {
-                try self.buffer.insert(self.cursorIdx, '-');
+                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
+                    try self.buffer.insert(self.cursorIdx, '_');
+                } else {
+                    try self.buffer.insert(self.cursorIdx, '-');
+                }
                 self.cursor.x += 1;
                 self.modified = true;
             },
@@ -246,6 +250,15 @@ pub const EditorData = struct {
                     try self.buffer.insert(self.cursorIdx, '"');
                 } else {
                     try self.buffer.insert(self.cursorIdx, '\'');
+                }
+                self.cursor.x += 1;
+                self.modified = true;
+            },
+            cc.GLFW_KEY_SLASH => {
+                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
+                    try self.buffer.insert(self.cursorIdx, '?');
+                } else {
+                    try self.buffer.insert(self.cursorIdx, '/');
                 }
                 self.cursor.x += 1;
                 self.modified = true;
