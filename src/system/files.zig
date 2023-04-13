@@ -40,6 +40,7 @@ pub const File = struct {
     pub fn deinit(self: *File) void {
         allocator.alloc.free(self.name);
         allocator.alloc.free(self.contents);
+        allocator.alloc.destroy(self);
     }
 };
 
@@ -49,8 +50,8 @@ fn range(len: usize) []const void {
 
 pub const Folder = struct {
     name: []const u8,
-    subfolders: std.ArrayList(Folder),
-    contents: std.ArrayList(File),
+    subfolders: std.ArrayList(*Folder),
+    contents: std.ArrayList(*File),
     parent: *Folder,
     protected: bool = false,
 
@@ -94,8 +95,8 @@ pub const Folder = struct {
         root.protected = false;
 
         root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
-        root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
-        root.contents = std.ArrayList(File).init(allocator.alloc);
+        root.subfolders = std.ArrayList(*Folder).init(allocator.alloc);
+        root.contents = std.ArrayList(*File).init(allocator.alloc);
         root.parent = root;
 
         var path = fm.getContentDir();
@@ -124,8 +125,8 @@ pub const Folder = struct {
             root.protected = false;
 
             root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
-            root.subfolders = std.ArrayList(Folder).init(allocator.alloc);
-            root.contents = std.ArrayList(File).init(allocator.alloc);
+            root.subfolders = std.ArrayList(*Folder).init(allocator.alloc);
+            root.contents = std.ArrayList(*File).init(allocator.alloc);
             root.parent = root;
 
             try root.subfolders.append(try fake.setupFake(root));
@@ -170,7 +171,7 @@ pub const Folder = struct {
             _ = try writer.write(folder.name);
         }
 
-        var files = std.ArrayList(File).init(allocator.alloc);
+        var files = std.ArrayList(*File).init(allocator.alloc);
         defer files.deinit();
         try self.getFiles(&files);
 
@@ -195,7 +196,7 @@ pub const Folder = struct {
         }
     }
 
-    pub fn getFiles(self: *Folder, files: *std.ArrayList(File)) !void {
+    pub fn getFiles(self: *Folder, files: *std.ArrayList(*File)) !void {
         if (self.protected) return;
 
         try files.appendSlice(self.contents.items);
@@ -209,8 +210,8 @@ pub const Folder = struct {
     }
 
     fn fixFolders(self: *Folder) void {
-        std.sort.sort(Folder, self.subfolders.items, Folder, sortList);
-        std.sort.sort(File, self.contents.items, File, sortList);
+        std.sort.sort(*Folder, self.subfolders.items, *Folder, sortList);
+        std.sort.sort(*File, self.contents.items, *File, sortList);
         for (self.subfolders.items, 0..) |_, idx| {
             self.subfolders.items[idx].parent = self;
             self.subfolders.items[idx].fixFolders();
@@ -249,11 +250,12 @@ pub const Folder = struct {
                     }
                 }
 
-                var folder = Folder{
+                var folder = try allocator.alloc.create(Folder);
+                folder.* = .{
                     .parent = self,
                     .name = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items }),
-                    .contents = std.ArrayList(File).init(allocator.alloc),
-                    .subfolders = std.ArrayList(Folder).init(allocator.alloc),
+                    .contents = std.ArrayList(*File).init(allocator.alloc),
+                    .subfolders = std.ArrayList(*Folder).init(allocator.alloc),
                 };
                 var result = try folder.newFile(name[file.items.len + 1 ..]);
                 if (result) {
@@ -275,11 +277,13 @@ pub const Folder = struct {
 
         var cont = try allocator.alloc.alloc(u8, 0);
 
-        try self.contents.append(File{
+        var adds = try allocator.alloc.create(File);
+        adds.* = .{
             .name = fullname,
             .contents = cont,
             .parent = self,
-        });
+        };
+        try self.contents.append(adds);
 
         self.fixFolders();
 
@@ -310,11 +314,12 @@ pub const Folder = struct {
                         return self.subfolders.items[idx].newFolder(name[file.items.len + 1 ..]);
                     }
                 }
-                var folder = Folder{
+                var folder = try allocator.alloc.create(Folder);
+                folder.* = Folder{
                     .parent = self,
                     .name = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items }),
-                    .contents = std.ArrayList(File).init(allocator.alloc),
-                    .subfolders = std.ArrayList(Folder).init(allocator.alloc),
+                    .contents = std.ArrayList(*File).init(allocator.alloc),
+                    .subfolders = std.ArrayList(*Folder).init(allocator.alloc),
                 };
                 var result = folder.newFolder(name[file.items.len..]);
                 try self.subfolders.append(folder);
@@ -332,12 +337,14 @@ pub const Folder = struct {
             }
         }
 
-        try self.subfolders.append(Folder{
+        var folder = try allocator.alloc.create(Folder);
+        folder.* = .{
             .parent = self,
             .name = fullname,
-            .contents = std.ArrayList(File).init(allocator.alloc),
-            .subfolders = std.ArrayList(Folder).init(allocator.alloc),
-        });
+            .contents = std.ArrayList(*File).init(allocator.alloc),
+            .subfolders = std.ArrayList(*Folder).init(allocator.alloc),
+        };
+        try self.subfolders.append(folder);
 
         self.fixFolders();
 
@@ -438,8 +445,8 @@ pub const Folder = struct {
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
         defer allocator.alloc.free(fullname);
         for (self.contents.items, 0..) |subfile, idx| {
-            if (check(subfile.name, fullname)) {
-                return &self.contents.items[idx];
+            if (std.mem.eql(u8, subfile.name, fullname)) {
+                return self.contents.items[idx];
             }
         }
         return null;
@@ -474,7 +481,7 @@ pub const Folder = struct {
         defer allocator.alloc.free(fullname);
         for (self.subfolders.items, 0..) |subfolder, idx| {
             if (std.ascii.eqlIgnoreCase(subfolder.name, fullname)) {
-                return &self.subfolders.items[idx];
+                return self.subfolders.items[idx];
             }
         }
         return null;
@@ -489,17 +496,18 @@ pub const Folder = struct {
 
     pub fn deinit(self: *Folder) void {
         for (self.subfolders.items) |*item| {
-            item.deinit();
+            item.*.deinit();
         }
 
         for (self.contents.items) |*item| {
-            item.deinit();
+            item.*.deinit();
         }
 
         self.subfolders.deinit();
         self.contents.deinit();
 
         allocator.alloc.free(self.name);
+        allocator.alloc.destroy(self);
     }
 
     pub fn toStr(self: *Folder) !std.ArrayList(u8) {
@@ -517,7 +525,7 @@ pub const Folder = struct {
             try result.appendSlice(folder.name);
         }
 
-        var files = std.ArrayList(File).init(allocator.alloc);
+        var files = std.ArrayList(*File).init(allocator.alloc);
         defer files.deinit();
         try self.getFiles(&files);
 
@@ -551,7 +559,6 @@ pub fn write() !void {
 
 pub fn deinit() void {
     root.deinit();
-    allocator.alloc.destroy(root);
 
     if (rootOut) |toFree| {
         allocator.alloc.free(toFree);

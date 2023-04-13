@@ -345,7 +345,7 @@ pub const Shell = struct {
 
         for (folder.contents.items, 0..) |_, idx| {
             var rootlen = folder.name.len;
-            var item = &folder.contents.items[idx];
+            var item = folder.contents.items[idx];
 
             if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
                 var cont = try item.read(null);

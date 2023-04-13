@@ -208,62 +208,81 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
 
 // /fake/win
 
-pub fn setupFakeWin(parent: *files.Folder) !files.Folder {
-    var result = files.Folder{
+pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
+    var result = try allocator.alloc.create(files.Folder);
+    result.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/", .{}),
-        .subfolders = std.ArrayList(files.Folder).init(allocator.alloc),
-        .contents = std.ArrayList(files.File).init(allocator.alloc),
+        .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),
+        .contents = std.ArrayList(*files.File).init(allocator.alloc),
         .parent = parent,
         .protected = true,
     };
 
-    try result.contents.append(files.File{
+    var file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/new", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinNew,
         .pseudoWrite = writeWinNew,
         .parent = undefined,
-    });
+    };
 
-    try result.contents.append(files.File{
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/open", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinOpen,
         .pseudoWrite = writeWinOpen,
         .parent = undefined,
-    });
+    };
 
-    try result.contents.append(files.File{
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/destroy", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinDestroy,
         .pseudoWrite = writeWinDestroy,
         .parent = undefined,
-    });
+    };
 
-    try result.contents.append(files.File{
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/render", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinRender,
         .pseudoWrite = writeWinRender,
         .parent = undefined,
-    });
+    };
 
-    try result.contents.append(files.File{
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/flip", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinFlip,
         .pseudoWrite = writeWinFlip,
         .parent = undefined,
-    });
+    };
 
-    try result.contents.append(files.File{
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/title", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinTitle,
         .pseudoWrite = writeWinTitle,
         .parent = undefined,
-    });
+    };
+
+    try result.contents.append(file);
 
     return result;
 }

@@ -36,8 +36,8 @@ pub const DiskStep = struct {
         files.root = self.alloc.create(files.Folder) catch undefined;
 
         files.root.name = files.ROOT_NAME;
-        files.root.subfolders = std.ArrayList(files.Folder).init(self.alloc);
-        files.root.contents = std.ArrayList(files.File).init(self.alloc);
+        files.root.subfolders = std.ArrayList(*files.Folder).init(self.alloc);
+        files.root.contents = std.ArrayList(*files.File).init(self.alloc);
 
         var count: usize = 0;
 

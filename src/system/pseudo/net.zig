@@ -32,30 +32,37 @@ pub fn readNetSend(_: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn setupFakeNet(parent: *files.Folder) !files.Folder {
-    var result = files.Folder{
+pub fn setupFakeNet(parent: *files.Folder) !*files.Folder {
+    var result = try allocator.alloc.create(files.Folder);
+    result.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/net/", .{}),
-        .subfolders = std.ArrayList(files.Folder).init(allocator.alloc),
-        .contents = std.ArrayList(files.File).init(allocator.alloc),
+        .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),
+        .contents = std.ArrayList(*files.File).init(allocator.alloc),
         .parent = parent,
         .protected = true,
     };
 
-    try result.contents.append(files.File{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/net/send", .{}),
+    var file = try allocator.alloc.create(files.File);
+    file.* = .{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/send", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readNetSend,
         .pseudoWrite = writeNetSend,
         .parent = undefined,
-    });
+    };
 
-    try result.contents.append(files.File{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/net/recv", .{}),
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/recv", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readNetRecv,
         .pseudoWrite = writeNetRecv,
         .parent = undefined,
-    });
+    };
+
+    try result.contents.append(file);
 
     return result;
 }

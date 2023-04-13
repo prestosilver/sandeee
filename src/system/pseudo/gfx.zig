@@ -76,40 +76,50 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
 
 // /fake/gfx
 
-pub fn setupFakeGfx(parent: *files.Folder) !files.Folder {
-    var result = files.Folder{
+pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
+    var result = try allocator.alloc.create(files.Folder);
+    result.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/", .{}),
-        .subfolders = std.ArrayList(files.Folder).init(allocator.alloc),
-        .contents = std.ArrayList(files.File).init(allocator.alloc),
+        .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),
+        .contents = std.ArrayList(*files.File).init(allocator.alloc),
         .parent = parent,
         .protected = true,
     };
 
     textures = std.AutoHashMap(u8, tex.Texture).init(allocator.alloc);
 
-    try result.contents.append(files.File{
+    var file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/new", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxNew,
         .pseudoWrite = writeGfxNew,
         .parent = undefined,
-    });
+    };
 
-    try result.contents.append(files.File{
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/destroy", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxDestroy,
         .pseudoWrite = writeGfxDestroy,
         .parent = undefined,
-    });
+    };
 
-    try result.contents.append(files.File{
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/upload", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxUpload,
         .pseudoWrite = writeGfxUpload,
         .parent = undefined,
-    });
+    };
+
+    try result.contents.append(file);
 
     return result;
 }
