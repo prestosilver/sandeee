@@ -40,5 +40,5 @@ pub fn log() []const u8 {
     }
 
     // Backtrace failed somehow, just print the message
-    return std.fmt.allocPrint(allocator.alloc, "\n") catch return result;
+    return std.fmt.allocPrint(allocator.alloc, "Debug Info Missing\n") catch return result;
 }
