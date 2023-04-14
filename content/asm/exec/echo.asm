@@ -1,7 +1,7 @@
     push 1
 
 loop_args:
-    dup 0
+    copy 0
     sys 8
     copy 0
     jz end

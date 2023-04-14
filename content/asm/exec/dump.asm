@@ -1,12 +1,12 @@
 main:
     push 1
     sys 8                       ; get file arg
-    dup 0
+    copy 0
     jz error                    ; jump if zero
     sys 3                       ; open file
 
 loop:
-    dup 0                       ; duplacte file handle
+    copy 0                      ; duplacte file handle
     push 1000000                ; read size
     sys 4                       ; read
     copy 0                      ; duplicate read

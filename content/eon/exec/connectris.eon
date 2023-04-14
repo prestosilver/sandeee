@@ -33,7 +33,7 @@ value renderMap(value map, value win, value tex) {
         for (x = 0; x < 8; x = x + 1) {
             pos = y * 8;
             pos = pos + x;
-            source = getTile(dup(map), dup(pos));
+            source = getTile(map, dup(pos));
             dest = _MakeRect(x * 16, y * 16, 16, 16);
 
             _WindowRender(dup(win), dup(tex), dup(dest), dup(source));
@@ -87,9 +87,9 @@ value main() {
     for (0; _WindowOpen(); 1) {
         dt = time() - lastTime;
 
-        map = updateMap(dup(map));
+        map = updateMap(map);
         
-        renderMap(dup(map), dup(window), dup(texture));
+        renderMap(map, dup(window), dup(texture));
         
         _WindowFlip(dup(window));
 
