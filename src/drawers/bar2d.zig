@@ -88,10 +88,10 @@ pub const BarData = struct {
             .pos = clockPos,
         });
 
-        pos.x = 3 * self.height + 10;
         self.btns = 0;
 
         for (windows.items) |window| {
+            pos.x = 3 * self.height + 10 + 4 * (self.height * @intToFloat(f32, window.data.idx));
             try font.draw(.{
                 .batch = batch,
                 .shader = font_shader,
@@ -137,16 +137,33 @@ pub const BarData = struct {
 
         var added = false;
 
-        var offset = 3 * self.height + 10;
+        if (self.screendims.y - self.height <= pos.y) {
+            var newTop: ?u32 = null;
 
-        for (windows.items) |*window| {
-            var btnBnds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
+            for (windows.items, 0..) |*window, idx| {
+                var offset = 3 * self.height + 10 + 4 * (self.height * @intToFloat(f32, window.data.idx));
 
-            if (btnBnds.contains(pos)) {
-                window.data.min = !window.data.min;
+                var btnBnds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
+
+                if (btnBnds.contains(pos)) {
+                    if (window.data.active or window.data.min) {
+                        window.data.min = !window.data.min;
+                    }
+                    if (window.data.min) {
+                        window.data.active = false;
+                    } else {
+                        window.data.active = true;
+                        newTop = @intCast(u32, idx);
+                    }
+                } else {
+                    window.data.active = false;
+                }
             }
-
-            offset += 4 * self.height;
+            if (newTop) |top| {
+                var swap = windows.orderedRemove(@intCast(usize, top));
+                try swap.data.contents.focus();
+                try windows.append(swap);
+            }
         }
 
         if (self.btnActive) {

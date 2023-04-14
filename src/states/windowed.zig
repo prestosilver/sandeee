@@ -71,6 +71,7 @@ pub const GSWindowed = struct {
 
         self.windows.items[self.windows.items.len - 1].data.pos.x = target.x;
         self.windows.items[self.windows.items.len - 1].data.pos.y = target.y;
+        self.windows.items[self.windows.items.len - 1].data.idx = self.windows.items.len;
 
         self.openWindow.x = target.x + 25;
         self.openWindow.y = target.y + 25;
@@ -176,6 +177,22 @@ pub const GSWindowed = struct {
     }
 
     pub fn update(self: *Self, _: f32) !void {
+        var offset: usize = 0;
+        for (0..self.windows.items.len) |target| {
+            var found = false;
+            while (!found) {
+                for (self.windows.items) |*item| {
+                    if (item.data.idx == target + offset) {
+                        item.data.idx = target;
+                        found = true;
+                        break;
+                    }
+                }
+                offset += 1;
+            }
+            offset -= 1;
+        }
+
         self.cursor.data.index = 0;
         for (self.windows.items, 0..) |_, idx| {
             if (self.windows.items[idx].data.min) continue;

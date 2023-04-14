@@ -233,6 +233,7 @@ pub const WindowData = struct {
     active: bool = false,
     full: bool = false,
     min: bool = false,
+    idx: usize = 0,
 
     contents: WindowContents,
 
