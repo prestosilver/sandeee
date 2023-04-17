@@ -197,6 +197,11 @@ pub fn keyDown(event: inputEvs.EventKeyDown) bool {
     return gameStates.getPtr(currentState).keypress(event.key, event.mods) catch false;
 }
 
+pub fn keyChar(event: inputEvs.EventKeyChar) bool {
+    gameStates.getPtr(currentState).keychar(event.codepoint, event.mods) catch return false;
+    return false;
+}
+
 pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
     gameStates.getPtr(currentState).mousepress(event.btn) catch return false;
     return false;
@@ -226,6 +231,7 @@ pub fn setupEvents() !void {
     events.em.registerListener(inputEvs.EventMouseUp, mouseUp);
     events.em.registerListener(inputEvs.EventMouseScroll, mouseScroll);
     events.em.registerListener(inputEvs.EventKeyDown, keyDown);
+    events.em.registerListener(inputEvs.EventKeyChar, keyChar);
 
     events.em.registerListener(systemEvs.EventStateChange, changeState);
 }

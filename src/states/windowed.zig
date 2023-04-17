@@ -249,6 +249,20 @@ pub const GSWindowed = struct {
         return false;
     }
 
+    pub fn keychar(self: *Self, code: u32, mods: c_int) !void {
+        if (self.bar.data.btnActive) {
+            return;
+        }
+
+        for (self.windows.items) |*window| {
+            if (!window.data.active) continue;
+
+            return window.data.char(code, mods);
+        }
+
+        return;
+    }
+
     pub fn mousepress(self: *Self, btn: c_int) !void {
         self.down = true;
         switch (btn) {

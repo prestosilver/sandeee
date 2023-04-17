@@ -240,6 +240,12 @@ const ExplorerData = struct {
     pub fn move(_: *Self, _: f32, _: f32) !void {}
     pub fn focus(_: *Self) !void {}
 
+    pub fn char(self: *Self, code: u32, mods: i32) !void {
+        _ = mods;
+        _ = code;
+        _ = self;
+    }
+
     pub fn key(self: *Self, keycode: i32, _: i32) void {
         if (self.shell.vm != null) return;
 

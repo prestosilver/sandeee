@@ -244,6 +244,12 @@ const SettingsData = struct {
         }
     }
 
+    pub fn char(self: *Self, code: u32, mods: i32) !void {
+        _ = mods;
+        _ = code;
+        _ = self;
+    }
+
     pub fn key(self: *Self, keycode: i32, _: i32) void {
         switch (keycode) {
             c.GLFW_KEY_BACKSPACE => {

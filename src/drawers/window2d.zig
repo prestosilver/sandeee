@@ -52,6 +52,7 @@ pub const WindowContents = struct {
         draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font, *WindowProps) anyerror!void,
         click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, i32) anyerror!void,
         key: *const fn (*anyopaque, i32, i32) anyerror!void,
+        char: *const fn (*anyopaque, u32, i32) anyerror!void,
         scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
         move: *const fn (*anyopaque, f32, f32) anyerror!void,
 
@@ -97,6 +98,10 @@ pub const WindowContents = struct {
 
     pub fn key(self: *Self, keycode: i32, mods: i32) !void {
         return self.vtable.key(self.ptr, keycode, mods);
+    }
+
+    pub fn char(self: *Self, codepoint: u32, mods: i32) !void {
+        return self.vtable.char(self.ptr, codepoint, mods);
     }
 
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
@@ -170,6 +175,12 @@ pub const WindowContents = struct {
                 return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods });
             }
 
+            fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
+                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.char, .{ self, codepoint, mods });
+            }
+
             fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: c_int) !void {
                 const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
 
@@ -203,6 +214,7 @@ pub const WindowContents = struct {
             const vtable = VTable{
                 .draw = drawImpl,
                 .key = keyImpl,
+                .char = charImpl,
                 .click = clickImpl,
                 .scroll = scrollImpl,
                 .move = moveImpl,
@@ -409,6 +421,18 @@ pub const WindowData = struct {
 
         try self.contents.key(keycode, mods);
         return true;
+    }
+
+    pub fn char(self: *WindowData, codepoint: u32, mods: i32) !void {
+        if (self.min) return;
+
+        var bnds = self.pos;
+        bnds.x += 4;
+        bnds.y += 32;
+        bnds.w -= 8;
+        bnds.h -= 36;
+
+        return self.contents.char(codepoint, mods);
     }
 
     pub fn getVerts(self: *WindowData, _: vecs.Vector3) !va.VertArray {

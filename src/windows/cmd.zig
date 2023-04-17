@@ -101,38 +101,19 @@ const CMDData = struct {
         return;
     }
 
+    pub fn char(self: *Self, code: u32, mods: i32) !void {
+        if (code == '\n') return;
+        try self.text.append(@intCast(u8, code));
+        _ = mods;
+    }
+
     pub fn key(self: *Self, code: i32, mods: i32) !void {
+        _ = mods;
         if (self.shell.vm != null) return;
 
         self.bot = true;
 
         switch (code) {
-            c.GLFW_KEY_A...c.GLFW_KEY_Z => {
-                if ((mods & c.GLFW_MOD_SHIFT) != 0) {
-                    try self.text.append(@intCast(u8, code - c.GLFW_KEY_A) + 'A');
-                } else {
-                    try self.text.append(@intCast(u8, code - c.GLFW_KEY_A) + 'a');
-                }
-            },
-            c.GLFW_KEY_0...c.GLFW_KEY_9 => {
-                if ((mods & c.GLFW_MOD_SHIFT) != 0) {
-                    try self.text.append(")!@#$%^&*("[@intCast(u8, code - c.GLFW_KEY_0)]);
-                } else {
-                    try self.text.append(@intCast(u8, code - c.GLFW_KEY_0) + '0');
-                }
-            },
-            c.GLFW_KEY_SPACE => {
-                try self.text.append(' ');
-            },
-            c.GLFW_KEY_PERIOD => {
-                try self.text.append('.');
-            },
-            c.GLFW_KEY_COMMA => {
-                try self.text.append(',');
-            },
-            c.GLFW_KEY_SLASH => {
-                try self.text.append('/');
-            },
             c.GLFW_KEY_ENTER => {
                 var shellPrompt = self.shell.getPrompt();
                 defer allocator.alloc.free(shellPrompt);

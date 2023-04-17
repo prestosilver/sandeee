@@ -167,56 +167,25 @@ pub const EditorData = struct {
         allocator.alloc.destroy(self);
     }
 
+    pub fn char(self: *Self, code: u32, mods: i32) !void {
+        _ = mods;
+
+        if (code == '\n') return;
+
+        try self.buffer.insert(self.cursorIdx, @intCast(u8, code));
+        self.cursor.x += 1;
+        self.modified = true;
+    }
+
     pub fn key(self: *Self, keycode: i32, mods: i32) !void {
+        _ = mods;
         if (self.file == null) return;
 
         switch (keycode) {
-            cc.GLFW_KEY_A...cc.GLFW_KEY_Z => {
-                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
-                    try self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_A) + 'A');
-                } else {
-                    try self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_A) + 'a');
-                }
-                self.cursor.x += 1;
-                self.modified = true;
-            },
-            cc.GLFW_KEY_0...cc.GLFW_KEY_9 => {
-                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
-                    try self.buffer.insert(self.cursorIdx, ")!@#$%^&*("[@intCast(u8, keycode - cc.GLFW_KEY_0)]);
-                } else {
-                    try self.buffer.insert(self.cursorIdx, @intCast(u8, keycode - cc.GLFW_KEY_0) + '0');
-                }
-                self.cursor.x += 1;
-                self.modified = true;
-            },
             cc.GLFW_KEY_ENTER => {
                 try self.buffer.insert(self.cursorIdx, '\n');
                 self.cursor.x = 0;
                 self.cursor.y += 1;
-                self.modified = true;
-            },
-            cc.GLFW_KEY_COMMA => {
-                try self.buffer.insert(self.cursorIdx, ',');
-                self.cursor.x += 1;
-                self.modified = true;
-            },
-            cc.GLFW_KEY_PERIOD => {
-                try self.buffer.insert(self.cursorIdx, '.');
-                self.cursor.x += 1;
-                self.modified = true;
-            },
-            cc.GLFW_KEY_MINUS => {
-                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
-                    try self.buffer.insert(self.cursorIdx, '_');
-                } else {
-                    try self.buffer.insert(self.cursorIdx, '-');
-                }
-                self.cursor.x += 1;
-                self.modified = true;
-            },
-            cc.GLFW_KEY_SPACE => {
-                try self.buffer.insert(self.cursorIdx, ' ');
-                self.cursor.x += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_DELETE => {
@@ -227,40 +196,13 @@ pub const EditorData = struct {
             },
             cc.GLFW_KEY_BACKSPACE => {
                 if (self.cursorIdx > 0) {
-                    var char = self.buffer.orderedRemove(self.cursorIdx - 1);
+                    var ch = self.buffer.orderedRemove(self.cursorIdx - 1);
                     self.cursor.x -= 1;
-                    if (char == '\n') {
+                    if (ch == '\n') {
                         self.cursor.y -= 1;
                         self.cursor.x = @intToFloat(f32, self.prevIdx - 1);
                     }
                 }
-                self.modified = true;
-            },
-            cc.GLFW_KEY_SEMICOLON => {
-                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
-                    try self.buffer.insert(self.cursorIdx, ':');
-                } else {
-                    try self.buffer.insert(self.cursorIdx, ';');
-                }
-                self.cursor.x += 1;
-                self.modified = true;
-            },
-            cc.GLFW_KEY_APOSTROPHE => {
-                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
-                    try self.buffer.insert(self.cursorIdx, '"');
-                } else {
-                    try self.buffer.insert(self.cursorIdx, '\'');
-                }
-                self.cursor.x += 1;
-                self.modified = true;
-            },
-            cc.GLFW_KEY_SLASH => {
-                if ((mods & cc.GLFW_MOD_SHIFT) != 0) {
-                    try self.buffer.insert(self.cursorIdx, '?');
-                } else {
-                    try self.buffer.insert(self.cursorIdx, '/');
-                }
-                self.cursor.x += 1;
                 self.modified = true;
             },
             cc.GLFW_KEY_LEFT => {

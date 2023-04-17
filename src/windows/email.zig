@@ -139,6 +139,11 @@ const EmailData = struct {
         }
     }
 
+    pub fn char(self: *Self, code: u32, mods: i32) !void {
+        _ = mods;
+        _ = code;
+        _ = self;
+    }
     pub fn key(_: *Self, _: i32, _: i32) !void {}
 
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {

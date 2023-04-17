@@ -83,6 +83,12 @@ pub const VMData = struct {
         }
     }
 
+    pub fn char(self: *Self, code: u32, mods: i32) !void {
+        _ = mods;
+        _ = code;
+        _ = self;
+    }
+
     pub fn key(_: *Self, _: i32, _: i32) !void {}
     pub fn click(_: *Self, _: vecs.Vector2, _: vecs.Vector2, _: i32) !void {}
     pub fn scroll(_: *Self, _: f32, _: f32) !void {}
