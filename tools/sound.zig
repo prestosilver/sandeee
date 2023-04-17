@@ -1,9 +1,5 @@
 const std = @import("std");
 
-const lol = error{
-    BadSection,
-};
-
 // Converts a wav file to a era file
 pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var result = std.ArrayList(u8).init(alloc);
