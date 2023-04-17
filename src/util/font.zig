@@ -136,8 +136,10 @@ pub const Font = struct {
     pub fn draw(self: *Font, params: drawParams) !void {
         var pos = params.pos;
         var srect = rect.newRect(0, 0, 1, 1);
-        pos.x = std.math.round(pos.x);
-        pos.y = std.math.round(pos.y);
+        pos.x = @round(pos.x);
+        pos.y = @round(pos.y);
+
+        var start = pos;
 
         if (params.wrap) |maxSize| {
             var iter = std.mem.split(u8, params.text, " ");
@@ -155,7 +157,7 @@ pub const Font = struct {
                                 split += 1;
                             }
 
-                            if (pos.y != params.pos.y and params.turnicate) {
+                            if (pos.y != start.y and params.turnicate) {
                                 return;
                             }
 
@@ -174,7 +176,7 @@ pub const Font = struct {
 
                             size = self.sizeText(.{ .text = spaced, .scale = params.scale });
                         }
-                        if (pos.y != params.pos.y and params.turnicate) {
+                        if (pos.y != start.y and params.turnicate) {
                             return;
                         }
                         try self.draw(.{
@@ -195,7 +197,7 @@ pub const Font = struct {
                     }
                 }
 
-                if (pos.y != params.pos.y and params.turnicate) {
+                if (pos.y != start.y and params.turnicate) {
                     return;
                 }
 
