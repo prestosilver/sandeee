@@ -1,0 +1,4 @@
+cd tests/src/asm
+asm fib.asm
+out.eep
+exit

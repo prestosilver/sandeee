@@ -39,7 +39,7 @@ pub const VM = struct {
     stack: [STACK_MAX]StackEntry,
     rsp: u64 = 0,
 
-    functions: std.StringArrayHashMap(VMFunc),
+    functions: std.StringHashMap(VMFunc),
     inside_fn: ?[]const u8 = null,
 
     retStack: [512]RetStackEntry = undefined,
@@ -50,6 +50,7 @@ pub const VM = struct {
     stopped: bool = false,
     yield: bool = false,
     miscData: std.StringHashMap([]const u8),
+    input: std.ArrayList(u8),
 
     streams: std.ArrayList(?*streams.FileStream),
 
@@ -75,9 +76,10 @@ pub const VM = struct {
             .stack = undefined,
             .allocator = alloc,
             .streams = std.ArrayList(?*streams.FileStream).init(alloc),
-            .functions = std.StringArrayHashMap(VMFunc).init(alloc),
+            .functions = std.StringHashMap(VMFunc).init(alloc),
             .miscData = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
+            .input = std.ArrayList(u8).init(alloc),
             .heap = try alloc.alloc(u8, 0),
             .args = tmpArgs,
             .root = root,
@@ -118,6 +120,14 @@ pub const VM = struct {
     fn findStack(self: *VM, idx: u64) VMError!StackEntry {
         if (self.rsp <= idx) return error.StackUnderflow;
         return self.stack[self.rsp - 1 - idx];
+    }
+
+    fn replaceStack(self: *VM, a: StackEntry, b: StackEntry) !void {
+        for (self.stack[0..self.rsp]) |*entry| {
+            if (entry.string == a.string and entry.value == a.value) {
+                entry.* = b;
+            }
+        }
     }
 
     pub const Operation = struct {
@@ -205,8 +215,8 @@ pub const VM = struct {
 
         while (iter.next()) |entry| {
             self.allocator.free(entry.key_ptr.*);
-            self.allocator.free(entry.value_ptr.*.ops);
-            self.allocator.free(entry.value_ptr.*.string);
+            self.allocator.free(entry.value_ptr.ops);
+            self.allocator.free(entry.value_ptr.string);
         }
 
         for (self.streams.items) |stream| {
@@ -226,18 +236,22 @@ pub const VM = struct {
     }
 
     pub fn freeValue(self: *VM, val: *u64) void {
-        for (self.stack[0 .. self.rsp + 1]) |entry| {
-            if (entry.value != null and entry.value.? == val) {
-                return;
+        if (self.rsp != 0) {
+            for (self.stack[0..self.rsp]) |entry| {
+                if (entry.value != null and entry.value.? == val) {
+                    return;
+                }
             }
         }
         self.allocator.destroy(val);
     }
 
     pub fn freeString(self: *VM, val: *[]const u8) void {
-        for (self.stack[0 .. self.rsp + 1]) |entry| {
-            if (entry.string != null and entry.string.? == val) {
-                return;
+        if (self.rsp != 0) {
+            for (self.stack[0..self.rsp]) |entry| {
+                if (entry.string != null and entry.string.? == val) {
+                    return;
+                }
             }
         }
         self.allocator.free(val.*);
@@ -251,8 +265,10 @@ pub const VM = struct {
         for (vals) |val| {
             var add = true;
             for (toFree.items) |item| {
-                if (val.value == item.value and val.string == item.string)
+                if (val.value == item.value and val.string == item.string) {
                     add = false;
+                    break;
+                }
             }
             if (add) {
                 toFree.append(val) catch {};
@@ -598,10 +614,9 @@ pub const VM = struct {
                             defer ops.deinit();
 
                             var finalOps = try self.allocator.dupe(Operation, ops.items);
+                            var finalName = try self.allocator.dupe(u8, name.string.?.*);
 
-                            var nameStr = try self.allocator.dupe(u8, name.string.?.*);
-
-                            try self.functions.put(nameStr, .{
+                            try self.functions.put(finalName, .{
                                 .string = dup,
                                 .ops = finalOps,
                             });
@@ -614,7 +629,11 @@ pub const VM = struct {
                             defer self.free(&[_]StackEntry{name});
 
                             if (name.string) |nameStr| {
-                                _ = self.functions.orderedRemove(nameStr.*);
+                                if (self.functions.fetchRemove(nameStr.*)) |entry| {
+                                    self.allocator.free(entry.key);
+                                    self.allocator.free(entry.value.ops);
+                                    self.allocator.free(entry.value.string);
+                                }
 
                                 return;
                             } else {
@@ -790,31 +809,15 @@ pub const VM = struct {
             },
             Operation.Code.Asign => {
                 var a = try self.popStack();
-                var b = try self.findStack(0);
+                var b = try self.popStack();
 
-                var copy = b;
+                defer self.free(&[_]StackEntry{ b, a });
 
-                defer self.free(&[_]StackEntry{ copy, a });
+                try self.pushStack(a);
 
-                if (a.value != null) {
-                    b.string = null;
-                    if (b.value == null) {
-                        b.value.? = a.value.?;
-                    } else {
-                        b.value.?.* = a.value.?.*;
-                    }
+                try self.replaceStack(b, a);
 
-                    return;
-                } else if (a.string != null) {
-                    b.value = null;
-                    if (b.string == null) {
-                        b.string = a.string;
-                    } else {
-                        b.string.?.* = a.string.?.*;
-                    }
-
-                    return;
-                } else return error.InvalidOp;
+                return;
             },
             Operation.Code.Disc => {
                 if (op.value == null) return error.ValueMissing;
@@ -893,14 +896,10 @@ pub const VM = struct {
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a.string != null) {
-                    if (b.string != null) {
-                        return error.InvalidOp;
-                    } else if (b.value != null) {
-                        return error.InvalidOp;
-                    } else return error.InvalidOp;
+                    return error.ValueMissing;
                 } else if (a.value != null) {
                     if (b.string != null) {
-                        return error.InvalidOp;
+                        return error.ValueMissing;
                     } else if (b.value != null) {
                         var val: u64 = 0;
                         if (a.value.?.* < b.value.?.*) val = 1;

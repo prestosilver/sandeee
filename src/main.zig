@@ -328,7 +328,7 @@ pub fn main() anyerror!void {
     args.deinit();
 
     if (isHeadless) {
-        return headless.headlessMain(headlessCmd, false);
+        return headless.headlessMain(headlessCmd, false, null);
     }
 
     // init graphics
@@ -454,7 +454,7 @@ pub fn main() anyerror!void {
             .texture = &cursortex,
             .data = cursor.CursorData.new(
                 rect.newRect(0, 0, 1, 1),
-                5,
+                6,
             ),
         },
         .wallpaper = wall.Wallpaper.new(&walltex, wall.WallData{
