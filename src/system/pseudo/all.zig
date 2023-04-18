@@ -2,6 +2,7 @@ const std = @import("std");
 const files = @import("../files.zig");
 const allocator = @import("../../util/allocator.zig");
 pub const win = @import("window.zig");
+pub const inp = @import("input.zig");
 pub const gfx = @import("gfx.zig");
 pub const snd = @import("snd.zig");
 pub const net = @import("net.zig");
@@ -21,6 +22,7 @@ pub fn setupFake(parent: *files.Folder) !*files.Folder {
         try result.subfolders.append(try gfx.setupFakeGfx(result));
         try result.subfolders.append(try snd.setupFakeSnd(result));
         try result.subfolders.append(try net.setupFakeNet(result));
+        try result.subfolders.append(try inp.setupFakeInp(result));
     }
 
     return result;

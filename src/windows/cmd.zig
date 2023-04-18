@@ -102,6 +102,12 @@ const CMDData = struct {
     }
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
+        if (self.shell.vm != null) {
+            try self.shell.vm.?.input.append(@intCast(u8, code));
+
+            return;
+        }
+
         if (code == '\n') return;
         try self.text.append(@intCast(u8, code));
         _ = mods;
