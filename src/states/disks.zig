@@ -122,7 +122,7 @@ pub const GSDisks = struct {
         pos.y += self.logo_sprite.data.size.y;
 
         if (self.auto) {
-            line = try std.fmt.allocPrint(allocator.alloc, "BootEEE V_{s} Booting to disk.eee in {}s", .{ VERSION, @floatToInt(i32, self.remaining + 0.5) });
+            line = try std.fmt.allocPrint(allocator.alloc, "BootEEE V_{s} Booting to default in {}s", .{ VERSION, @floatToInt(i32, self.remaining + 0.5) });
         } else {
             line = try std.fmt.allocPrint(allocator.alloc, "BootEEE V_{s}", .{VERSION});
         }
