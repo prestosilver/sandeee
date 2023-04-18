@@ -154,7 +154,7 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
     for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+            const alignment = @alignOf(vmwin.VMData);
             var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
             if (self.idx == aid) {
@@ -169,7 +169,21 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
 
 // /fake/win/title
 
-pub fn readWinTitle(_: ?*vm.VM) ![]const u8 {
+pub fn readWinTitle(vmInstance: ?*vm.VM) ![]const u8 {
+    if (vmInstance.?.miscData.get("window")) |aaid| {
+        for (windowsPtr.*.items, 0..) |_, idx| {
+            var item = &windowsPtr.*.items[idx];
+            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
+                const alignment = @alignOf(vmwin.VMData);
+                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+
+                if (self.idx == aaid[0]) {
+                    return allocator.alloc.dupe(u8, item.data.contents.props.info.name);
+                }
+            }
+        }
+    }
+
     return allocator.alloc.alloc(u8, 0);
 }
 
