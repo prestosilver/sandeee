@@ -127,19 +127,22 @@ pub const Font = struct {
         shader: *shd.Shader,
         pos: vec.Vector2,
         text: []const u8,
+        origin: ?*vec.Vector2 = null,
         scale: f32 = 1,
         color: col.Color = col.newColor(0, 0, 0, 1),
         wrap: ?f32 = null,
-        turnicate: bool = false,
+        maxlines: ?usize = null,
     };
 
     pub fn draw(self: *Font, params: drawParams) !void {
-        var pos = params.pos;
+        var pos = if (params.origin) |orig| orig.* else params.pos;
         var srect = rect.newRect(0, 0, 1, 1);
         pos.x = @round(pos.x);
         pos.y = @round(pos.y);
 
-        var start = pos;
+        var start = params.pos;
+        start.x = @round(start.x);
+        start.y = @round(start.y);
 
         if (params.wrap) |maxSize| {
             var iter = std.mem.split(u8, params.text, " ");
@@ -148,8 +151,8 @@ pub const Font = struct {
             while (iter.next()) |word| {
                 var size = self.sizeText(.{ .text = word, .scale = params.scale });
 
-                if (pos.x - params.pos.x + size.x > maxSize) {
-                    if (pos.x == params.pos.x) {
+                if (pos.x - start.x + size.x > maxSize) {
+                    if (pos.x == start.x) {
                         var spaced = word;
                         while (size.x > maxSize) {
                             var split: usize = 0;
@@ -157,64 +160,72 @@ pub const Font = struct {
                                 split += 1;
                             }
 
-                            if (pos.y != start.y and params.turnicate) {
-                                return;
-                            }
-
                             try self.draw(.{
                                 .batch = params.batch,
                                 .shader = params.shader,
                                 .text = spaced[0 .. split - 1],
-                                .pos = pos,
+                                .pos = start,
+                                .origin = &pos,
                                 .color = params.color,
                                 .scale = params.scale,
                                 .wrap = null,
+                                .maxlines = params.maxlines,
                             });
 
+                            pos.y += self.size * params.scale;
+                            pos.x = start.x;
+
                             spaced = spaced[split - 1 ..];
-                            pos.y += params.scale * self.size;
 
                             size = self.sizeText(.{ .text = spaced, .scale = params.scale });
-                        }
-                        if (pos.y != start.y and params.turnicate) {
-                            return;
                         }
                         try self.draw(.{
                             .batch = params.batch,
                             .shader = params.shader,
                             .text = spaced,
-                            .pos = pos,
+                            .pos = start,
+                            .origin = &pos,
                             .color = params.color,
                             .scale = params.scale,
                             .wrap = null,
+                            .maxlines = params.maxlines,
                         });
-                        pos.x += size.x;
-                        pos.x += spaceSize;
                         continue;
                     } else {
-                        pos.x = params.pos.x;
-                        pos.y += params.scale * self.size;
+                        pos.y += self.size * params.scale;
+                        pos.x = start.x;
                     }
                 }
-
-                if (pos.y != start.y and params.turnicate) {
-                    return;
-                }
-
                 try self.draw(.{
                     .batch = params.batch,
                     .shader = params.shader,
                     .text = word,
-                    .pos = pos,
+                    .pos = start,
+                    .origin = &pos,
                     .color = params.color,
                     .scale = params.scale,
                     .wrap = null,
+                    .maxlines = params.maxlines,
                 });
-                pos.x += size.x;
+
                 pos.x += spaceSize;
             }
 
             return;
+        }
+
+        var startscissor = params.batch.scissor;
+
+        if (params.batch.scissor != null) {
+            // if (!params.batch.scissor.?.contains(start)) return;
+            if (params.wrap != null)
+                params.batch.scissor.?.w =
+                    @max(0, @min(params.batch.scissor.?.w, params.pos.x + params.wrap.? - params.batch.scissor.?.x));
+            if (params.maxlines != null)
+                params.batch.scissor.?.h =
+                    @max(0, @min(params.batch.scissor.?.h, params.pos.y + (@intToFloat(f32, params.maxlines.?) + 0.25) * self.size * params.scale - params.batch.scissor.?.y));
+        } else {
+            // TODO: wrap
         }
 
         var vertarray = try va.VertArray.init();
@@ -223,7 +234,7 @@ pub const Font = struct {
             var ch = ach;
             if (ch == '\n') {
                 pos.y += self.size * params.scale;
-                pos.x = params.pos.x;
+                pos.x = start.x;
                 continue;
             }
             if (ch > 127) ch = '?';
@@ -250,15 +261,20 @@ pub const Font = struct {
             pos.y += char.ay * params.scale;
         }
 
+        if (params.origin != null) {
+            params.origin.?.* = pos;
+        }
+
         var entry = sb.QueueEntry{
             .update = true,
             .texture = &self.tex,
             .verts = vertarray,
-            .scissor = params.batch.scissor,
             .shader = params.shader.*,
         };
 
         try params.batch.addEntry(&entry);
+
+        params.batch.scissor = startscissor;
     }
 
     pub const sizeParams = struct {

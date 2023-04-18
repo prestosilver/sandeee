@@ -147,10 +147,10 @@ pub const SpriteBatch = struct {
             if (uscissor and entry.scissor != null) {
                 c.glEnable(c.GL_SCISSOR_TEST);
                 c.glScissor(
-                    @floatToInt(c_int, entry.scissor.?.x),
-                    @floatToInt(c_int, sb.size.y - entry.scissor.?.y - entry.scissor.?.h),
-                    @floatToInt(c_int, entry.scissor.?.w),
-                    @floatToInt(c_int, entry.scissor.?.h),
+                    @floatToInt(c_int, @round(entry.scissor.?.x)),
+                    @floatToInt(c_int, @round(sb.size.y - entry.scissor.?.y - entry.scissor.?.h)),
+                    @floatToInt(c_int, @round(entry.scissor.?.w)),
+                    @floatToInt(c_int, @round(entry.scissor.?.h)),
                 );
             } else if (uscissor) {
                 c.glDisable(c.GL_SCISSOR_TEST);
