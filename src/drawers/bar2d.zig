@@ -97,6 +97,7 @@ pub const BarData = struct {
                 .shader = font_shader,
                 .text = window.data.contents.props.info.name,
                 .pos = pos.location(),
+                .wrap = 4 * self.height - 16,
             });
 
             pos.x += 4 * self.height;
