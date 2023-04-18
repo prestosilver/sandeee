@@ -86,7 +86,7 @@ const ExplorerData = struct {
         if (!std.mem.eql(u8, props.info.name, "Files")) {
             allocator.alloc.free(props.info.name);
         }
-        props.info.name = try std.fmt.allocPrint(allocator.alloc, "Files - {s}", .{self.shell.root.name});
+        props.info.name = try std.fmt.allocPrint(allocator.alloc, "{s}", .{self.shell.root.name});
 
         if (self.shell.vm != null) {
             var result = self.shell.updateVM() catch null;
@@ -116,7 +116,7 @@ const ExplorerData = struct {
                 .pos = vecs.newVec2(bnds.x + x + xo - 5, bnds.y + 64 + y + 6),
                 .color = col.newColor(0, 0, 0, 1),
                 .wrap = 100,
-                .turnicate = true,
+                .maxlines = 1,
             });
 
             try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));

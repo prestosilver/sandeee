@@ -45,7 +45,7 @@ pub const EditorData = struct {
                 allocator.alloc.free(props.info.name);
             }
             var idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
-            props.info.name = try std.fmt.allocPrint(allocator.alloc, "EEEDT - {s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
+            props.info.name = try std.fmt.allocPrint(allocator.alloc, "EEEDT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
         }
 
         self.menuTop.data.size.x = bnds.w + 4;
