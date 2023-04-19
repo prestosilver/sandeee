@@ -60,6 +60,14 @@ pub const EditorData = struct {
 
         // draw file text
         if (self.file != null) {
+            if (self.clickPos) |clicked| {
+                self.cursor.y = @divFloor(clicked.y - 32 + props.scroll.?.value, font.size);
+                self.cursor.x = @round((clicked.x - 70) / font.sizeText(.{
+                    .text = "A",
+                }).x);
+                self.clickPos = null;
+            }
+
             // draw lines
             var y = bnds.y + 32 - props.scroll.?.value;
             var nr: usize = 1;
@@ -142,6 +150,9 @@ pub const EditorData = struct {
                         std.log.info("saved", .{});
                         self.modified = false;
                     }
+                }
+                if (mousepos.y > 32) {
+                    self.clickPos = mousepos;
                 }
             },
             else => {},
