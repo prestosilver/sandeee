@@ -164,13 +164,12 @@ pub const EditorData = struct {
     pub fn move(_: *Self, _: f32, _: f32) !void {}
 
     pub fn focus(self: *Self) !void {
-        _ = self;
-        // if (!self.modified and self.file != null) {
-        //     self.buffer.clearAndFree();
-        //     try self.buffer.appendSlice(try self.file.?.read(null));
+        if (!self.modified and self.file != null) {
+            self.buffer.clearAndFree();
+            try self.buffer.appendSlice(try self.file.?.read(null));
 
-        //     return;
-        // }
+            return;
+        }
     }
 
     pub fn deinit(self: *Self) !void {
