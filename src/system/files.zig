@@ -91,14 +91,16 @@ pub const Folder = struct {
         root = try allocator.alloc.create(Folder);
         defer root.deinit();
 
-        root.protected = false;
-
-        root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
-        root.subfolders = std.ArrayList(*Folder).init(allocator.alloc);
-        root.contents = std.ArrayList(*File).init(allocator.alloc);
-        root.parent = root;
+        root.* = .{
+            .protected = false,
+            .name = try allocator.alloc.dupe(u8, ROOT_NAME),
+            .subfolders = std.ArrayList(*Folder).init(allocator.alloc),
+            .contents = std.ArrayList(*File).init(allocator.alloc),
+            .parent = root,
+        };
 
         var path = fm.getContentDir();
+        defer allocator.alloc.free(path);
         var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
 
         var recovery = try d.openFile("content/recovery.eee", .{});
@@ -121,12 +123,13 @@ pub const Folder = struct {
         if (aDiskPath) |diskPath| {
             root = try allocator.alloc.create(Folder);
 
-            root.protected = false;
-
-            root.name = try std.fmt.allocPrint(allocator.alloc, ROOT_NAME, .{});
-            root.subfolders = std.ArrayList(*Folder).init(allocator.alloc);
-            root.contents = std.ArrayList(*File).init(allocator.alloc);
-            root.parent = root;
+            root.* = .{
+                .protected = false,
+                .name = try allocator.alloc.dupe(u8, ROOT_NAME),
+                .subfolders = std.ArrayList(*Folder).init(allocator.alloc),
+                .contents = std.ArrayList(*File).init(allocator.alloc),
+                .parent = root,
+            };
 
             try root.subfolders.append(try fake.setupFake(root));
 
