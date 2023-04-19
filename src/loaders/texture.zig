@@ -3,13 +3,19 @@ const worker = @import("worker.zig");
 const shd = @import("../util/shader.zig");
 const tex = @import("../util/texture.zig");
 const gfx = @import("../util/graphics.zig");
+const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 
-pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *tex.Texture)) !bool {
-    gfx.gContext.makeCurrent();
+pub var settingManager: *conf.SettingManager = undefined;
 
-    std.log.debug("load tex: {s}", .{self.indata.*});
-    self.out.* = try tex.newTextureFile(self.indata.*);
+pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *tex.Texture)) !bool {
+    var path = conf.SettingManager.get(settingManager, self.indata.*) orelse
+        self.indata.*;
+
+    std.log.debug("load tex: {s}", .{path});
+
+    gfx.gContext.makeCurrent();
+    self.out.* = try tex.newTextureFile(path);
     gfx.gContext.makeNotCurrent();
 
     return true;

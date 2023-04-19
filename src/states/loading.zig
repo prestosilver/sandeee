@@ -20,16 +20,16 @@ const systemEvs = @import("../events/system.zig");
 pub const GSLoading = struct {
     const Self = @This();
 
-    const winpath: []const u8 = "/cont/imgs/window.eia";
-    const webpath: []const u8 = "/cont/imgs/web.eia";
-    const wallpath: []const u8 = "/cont/imgs/wall.eia";
-    const barpath: []const u8 = "/cont/imgs/bar.eia";
-    const editorpath: []const u8 = "/cont/imgs/editor.eia";
-    const scrollpath: []const u8 = "/cont/imgs/scroll.eia";
-    const emailpath: []const u8 = "/cont/imgs/email.eia";
-    const explorerpath: []const u8 = "/cont/imgs/explorer.eia";
-    const cursorpath: []const u8 = "/cont/imgs/cursor.eia";
-    const barlogopath: []const u8 = "/cont/imgs/barlogo.eia";
+    const winpath: []const u8 = "window_frame_path";
+    const webpath: []const u8 = "web_textrure_path";
+    const wallpath: []const u8 = "wallpaper_path";
+    const barpath: []const u8 = "bar_texture_path";
+    const editorpath: []const u8 = "editor_texture_path";
+    const scrollpath: []const u8 = "scroll_texture_path";
+    const emailpath: []const u8 = "email_texture_path";
+    const explorerpath: []const u8 = "explorer_texture_path";
+    const cursorpath: []const u8 = "cursor_texture_path";
+    const barlogopath: []const u8 = "bar_logo_path";
     const loginpath: []const u8 = "/cont/snds/login.era";
     const settingspath: []const u8 = "/conf/system.cfg";
     const zero: u8 = 0;
@@ -74,6 +74,8 @@ pub const GSLoading = struct {
         self.done = false;
         var fontpath = fm.getContentPath("content/font.ttf");
         defer fontpath.deinit();
+
+        worker.texture.settingManager = self.settingManager;
 
         // files
         try self.loader.enqueue(self.disk, &zero, worker.files.loadFiles);

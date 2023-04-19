@@ -12,8 +12,6 @@ const shell = @import("../system/shell.zig");
 const files = @import("../system/files.zig");
 const c = @import("../c.zig");
 
-// TODO: Scrolling
-
 const MAX_SIZE = 10000;
 
 const CMDData = struct {
