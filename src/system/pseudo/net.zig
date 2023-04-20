@@ -44,7 +44,7 @@ pub fn setupFakeNet(parent: *files.Folder) !*files.Folder {
 
     var file = try allocator.alloc.create(files.File);
     file.* = .{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/send", .{}),
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/net/send", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readNetSend,
         .pseudoWrite = writeNetSend,
@@ -55,7 +55,7 @@ pub fn setupFakeNet(parent: *files.Folder) !*files.Folder {
 
     file = try allocator.alloc.create(files.File);
     file.* = .{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/recv", .{}),
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/net/recv", .{}),
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readNetRecv,
         .pseudoWrite = writeNetRecv,
