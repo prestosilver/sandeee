@@ -211,14 +211,14 @@ void main() {
 
     value table = tableCreate(20, 1);
 
-    // open output
-    value outfile = "out.eep";
-    value outhandle = createOpen(outfile);
-
     // open input
     value infile = processArgs();
     value inhandlea = open(infile);
     value inhandleb = open(infile);
+
+    // open output
+    value outfile = "out.eep";
+    value outhandle = createOpen(outfile);
 
     // get consts
     print("READ: " & infile & "\\n");
