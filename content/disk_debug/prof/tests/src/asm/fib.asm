@@ -1,51 +1,52 @@
-    call 24
+    call main
     sys 1
+print:
+    dup 0
+    sys 0
+    ret
+fib:
     copy 0
     push 2
     lt
-    jz 11
+    jz block_0_alt
     copy 0
     disc 1
-    dup 0
-    disc 1
     ret
+    jmp block_0_end
+block_0_alt:
+block_0_end:
     copy 0
     push 1
     sub
-    call 2
+    call fib
     copy 1
     push 2
     sub
-    call 2
+    call fib
     add
     disc 1
-    dup 0
-    disc 1
     ret
-    push 0
+printfib:
     copy 0
-    push 0
-    set
+    call fib
+    copy 1
+    call print
+    disc 0
+    push ": "
+    call print
     disc 0
     copy 0
-    push 20
-    lt
-    jz 46
-    copy 0
-    call 2
-    sys 0
+    call print
+    disc 0
+    push "\n"
+    call print
+    disc 0
+    push 0
+    disc 1
+    disc 1
+    ret
+main:
     push 10
-    getb
-    sys 0
-    copy 0
-    copy 1
-    push 1
-    add
-    set
+    call printfib
     disc 0
-    jmp 29
-    push "Done"
-    sys 0
-    dup 0
-    disc 1
     ret
