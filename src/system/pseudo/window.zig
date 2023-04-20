@@ -80,7 +80,27 @@ pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
     return result;
 }
 
-pub fn writeWinSize(_: []const u8, _: ?*vm.VM) !void {
+pub fn writeWinSize(data: []const u8, vmInstance: ?*vm.VM) !void {
+    if (vmInstance.?.miscData.get("window")) |aid| {
+        for (windowsPtr.*.items, 0..) |_, idx| {
+            var item = &windowsPtr.*.items[idx];
+            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
+                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+
+                if (self.idx == aid[0]) {
+                    var x = @intToFloat(f32, @ptrCast(*const u16, @alignCast(@alignOf(u16), &data[0])).*);
+                    var y = @intToFloat(f32, @ptrCast(*const u16, @alignCast(@alignOf(u16), &data[2])).*);
+                    item.data.pos.w = x;
+                    item.data.pos.h = y;
+
+                    std.log.info("{any}, {}, {}", .{ data, @floatToInt(i32, x), @floatToInt(i32, y) });
+                    return;
+                }
+            }
+        }
+    }
+
     return;
 }
 
@@ -138,6 +158,49 @@ pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
 }
 
 pub fn writeWinOpen(_: []const u8, _: ?*vm.VM) !void {
+    return;
+}
+
+// /fake/win/rules
+
+pub fn readWinRules(vmInstance: ?*vm.VM) ![]const u8 {
+    _ = vmInstance;
+    var result = try allocator.alloc.alloc(u8, 0);
+
+    return result;
+}
+
+pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
+    if (vmInstance.?.miscData.get("window")) |aaid| {
+        for (windowsPtr.*.items, 0..) |_, idx| {
+            var item = &windowsPtr.*.items[idx];
+            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
+                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+
+                if (self.idx == aaid) {
+                    if (std.mem.eql(u8, data[0..3], "min")) {
+                        if (data.len[3..].len < 4) {
+                            return;
+                        }
+                        item.data.contents.props.size.min.x = @intToFloat(f32, data[4]);
+                        item.data.contents.props.size.min.y = @intToFloat(f32, data[5]);
+                        item.data.contents.props.size.min.w = @intToFloat(f32, data[6]);
+                        item.data.contents.props.size.min.h = @intToFloat(f32, data[7]);
+                    } else if (std.mem.eql(u8, data[0..3], "max")) {
+                        if (data.len[3..].len < 4) {
+                            return;
+                        }
+                        item.data.contents.props.size.max.x = @intToFloat(f32, data[4]);
+                        item.data.contents.props.size.max.y = @intToFloat(f32, data[5]);
+                        item.data.contents.props.size.max.w = @intToFloat(f32, data[6]);
+                        item.data.contents.props.size.max.h = @intToFloat(f32, data[7]);
+                    }
+                    return;
+                }
+            }
+        }
+    }
     return;
 }
 
@@ -334,6 +397,17 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinSize,
         .pseudoWrite = writeWinSize,
+        .parent = undefined,
+    };
+
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/rules", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
+        .pseudoRead = readWinRules,
+        .pseudoWrite = writeWinRules,
         .parent = undefined,
     };
 
