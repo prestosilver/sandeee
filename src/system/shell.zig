@@ -22,7 +22,7 @@ pub var webtex: *tex.Texture = undefined;
 pub var edittex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
 
-pub const VM_TIME = 8000000; // nano seconds
+pub const VM_TIME = 10000000; // nano seconds
 pub const ASM_HEADER = "EEEp";
 
 pub var frameTime: usize = VM_TIME;
