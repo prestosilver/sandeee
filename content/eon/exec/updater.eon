@@ -1,0 +1,41 @@
+#include "content/eon/libs/sys.eon"
+
+value getdata(value data) {
+    asm "push \"/fake/net/send\"";
+    asm "sys 3";
+    asm "copy 0";
+    asm "push 10";
+    asm "getb";
+    asm "copy 2";
+    asm "disc 3";
+    asm "cat";
+    asm "sys 5";
+
+    asm "push \"/fake/net/recv\"";
+    asm "sys 3";
+    asm "copy 0";
+    asm "push 10";
+    asm "getb";
+    asm "push \"192.168.1.111\"";
+    asm "cat";
+    asm "sys 5";
+    asm "sys 7";
+
+    asm "push \"/fake/net/recv\"";
+    asm "sys 3";
+    asm "copy 0";
+    asm "push 10000";
+    asm "sys 4";
+    asm "copy 1";
+    asm "sys 7";
+
+    return 0;
+}
+
+value main() {
+    value version = 0;
+
+    print(getdata("lmao"));
+
+    return 0
+}

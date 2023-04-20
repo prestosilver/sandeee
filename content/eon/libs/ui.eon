@@ -1,0 +1,3 @@
+value drawButton(value win, value bnds, value label) {
+    return 0;
+}
