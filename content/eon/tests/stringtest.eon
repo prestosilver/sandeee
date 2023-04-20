@@ -1,0 +1,49 @@
+#include "content/eon/libs/libload.eon"
+#include "content/eon/libs/sys.eon"
+
+value main() {
+    setupLibLoad();
+    loadLib("/libs/string.ell");
+
+    print("_StringLength('lmao') = ");
+    print(_StringLength("lmao"));
+    print("\\n");
+
+    print("_StringStartsWith('lmao', 'lm') = ");
+    print(_StringStartsWith("lmao", "lm"));
+    print("\\n");
+
+    print("_StringStartsWith('lmao', 'fd') = ");
+    print(_StringStartsWith("lmao", "fd"));
+    print("\\n");
+
+    print("_StringEndsWith('lmao', 'ao') = ");
+    print(_StringEndsWith("lmao", "ao"));
+    print("\\n");
+
+    print("_StringEndsWith('lmao', 'fd') = ");
+    print(_StringEndsWith("lmao", "fd"));
+    print("\\n");
+
+    print("_StringIsNum('lmao') = ");
+    print(_StringIsNum("lmao"));
+    print("\\n");
+
+    print("_StringIsNum('34') = ");
+    print(_StringIsNum("34"));
+    print("\\n");
+    
+    print("_StringToNum('34') = ");
+    print(_StringToNum("34"));
+    print("\\n");
+    
+    print("_StringSub('abcdef', 2, 3) = '");
+    print(_StringSub("abcdef", 2, 3));
+    print("'\\n");
+
+    print("_StringSub('abcdef', 0, 3) = '");
+    print(_StringSub("abcdef", 0, 3));
+    print("'\\n");
+
+    return 0;
+}
