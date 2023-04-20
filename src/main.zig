@@ -128,6 +128,14 @@ pub fn blit() !void {
     // actual gl calls start here
     ctx.makeCurrent();
 
+    if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
+        // for when minimized render nothing
+        gfx.swap(&ctx);
+
+        ctx.makeNotCurrent();
+
+        return;
+    }
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
     // clear the window
@@ -166,6 +174,8 @@ pub fn blit() !void {
     c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
     c.glEnableVertexAttribArray(0);
     c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
+
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
 
     c.glFlush();
     c.glFinish();
@@ -358,8 +368,6 @@ pub fn main() anyerror!void {
         @panic("Preload Failed");
     };
 
-    sb = try batch.newSpritebatch(&size);
-
     // start setup states
     ctx.makeCurrent();
 
@@ -371,6 +379,7 @@ pub fn main() anyerror!void {
     c.glGenTextures(1, &renderedTexture);
     c.glGenRenderbuffers(1, &depthrenderbuffer);
 
+    sb = try batch.newSpritebatch(&size);
     // load some textures
     var biosTex = try tex.newTextureMem(biosImage);
     var logoTex = try tex.newTextureMem(logoImage);
