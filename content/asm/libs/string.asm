@@ -1,10 +1,10 @@
 _StringLength:                  ; str
     push 0                      ; str len
 length_loop:
-    dup 1                       ; str len str
-    dup 1                       ; str len str len
+    copy 1                      ; str len str
+    copy 1                      ; str len str len
     add                         ; str len strlol
-    jz length_end                      ; str len
+    jz length_end               ; str len
     push 1                      ; str len 1
     add                         ; str len
     jmp length_loop
@@ -50,7 +50,7 @@ _StringIsNum:
     disc 1
     push 0                      ; string idx
 num_loop:
-    dup 1                       ; string idx string
+    copy 1                      ; string idx string
     copy 1                      ; string idx string idx
     add                         ; string idx stringoff
     getb                        ; string idx char
@@ -65,7 +65,7 @@ num_loop:
     jz num_bad                  ; string idx
     push 1                      ; string idx 1
     add                         ; string idx
-    dup 1                       ; string idx string
+    copy 1                      ; string idx string
     copy 1                      ; string idx string idx
     add                         ; string idx stringoff
     jnz num_loop                ; string idx
@@ -84,18 +84,18 @@ _StringToNum:
 tonum_loop:
     push 10                     ; str result 10
     mul                         ; str result
-    dup 1                       ; str result 0 str
+    copy 1                      ; str result 0 str
     getb                        ; str result 0 char
     push 48
     sub                         ; str result num
     add                         ; str result
-    dup 1                       ; str result str
+    copy 1                      ; str result str
     push 1                      ; str result str 1
     add                         ; str result str
-    dup 1                       ; str result str result
+    copy 1                      ; str result str result
     disc 3                      ; result str result
     disc 2                      ; str result
-    dup 1                       ; str result str
+    copy 1                      ; str result str
     jnz tonum_loop              ; str result
     disc 1
     ret
@@ -106,10 +106,7 @@ _StringSub:                     ; str start len
     add                         ; str start len result
     disc 2                      ; str len result
     disc 2                      ; len result
-    dup 1                       ; len result len
-    dup 1                       ; len result len result
-    call "StringLength"         ; len result len resultlen
-    sub                         ; len result resultextra
-    sub                         ; len result
+    copy 1                      ; len result len
+    size                        ; len result
     disc 1                      ; result
     ret
