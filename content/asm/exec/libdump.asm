@@ -41,7 +41,7 @@ loop:
     disc 0                      ; handle | libhandle count
     push 1                      ; handle | libhandle count 1
     sub                         ; handle | libhandle count
-    dup 0                       ; handle | libhandle count count
+    copy 0                      ; handle | libhandle count count
     jnz loop                    ; handle | libhandle count
     disc 0                      ; handle | libhandle
     sys 7                       ; handle |
