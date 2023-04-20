@@ -160,11 +160,10 @@ pub const SpriteBatch = struct {
 
             ctex = entry.texture.tex;
             cshader = entry.shader.id;
-            entry.shader.setFloat("time", @floatCast(f32, c.glfwGetTime()));
             cscissor = entry.scissor;
 
             if (entry.update and entry.verts.items().len != 0) {
-                c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, entry.verts.items().len * @sizeOf(va.Vert)), entry.verts.items().ptr, c.GL_DYNAMIC_DRAW);
+                c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, entry.verts.items().len * @sizeOf(va.Vert)), entry.verts.items().ptr, c.GL_STREAM_DRAW);
             }
 
             c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
