@@ -39,13 +39,23 @@ pub const WindowContents = struct {
             value: f32 = 0,
             maxy: f32 = 0,
         };
+
         const InfoData = struct {
             kind: []const u8,
             name: []const u8,
         };
 
+        const SizeData = struct {
+            min: vecs.Vector2,
+            max: vecs.Vector2,
+        };
+
         scroll: ?ScrollData = null,
         info: InfoData,
+        size: SizeData = .{
+            .min = vecs.newVec2(400, 300),
+            .max = vecs.newVec2(100000, 100000),
+        },
     };
 
     const VTable = struct {

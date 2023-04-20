@@ -385,11 +385,23 @@ pub const GSWindowed = struct {
                     dragging.data.pos.h = winpos.y;
                 },
             }
-            if (dragging.data.pos.w < 400) {
+
+            // min size
+            if (dragging.data.pos.w < dragging.data.contents.props.size.min.x) {
                 dragging.data.pos.x = old.x;
                 dragging.data.pos.w = old.w;
             }
-            if (dragging.data.pos.h < 300) {
+            if (dragging.data.pos.h < dragging.data.contents.props.size.min.y) {
+                dragging.data.pos.y = old.y;
+                dragging.data.pos.h = old.h;
+            }
+
+            // max size
+            if (dragging.data.pos.w > dragging.data.contents.props.size.max.x) {
+                dragging.data.pos.x = old.x;
+                dragging.data.pos.w = old.w;
+            }
+            if (dragging.data.pos.h > dragging.data.contents.props.size.max.y) {
                 dragging.data.pos.y = old.y;
                 dragging.data.pos.h = old.h;
             }
