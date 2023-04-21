@@ -50,6 +50,38 @@ _WindowRender: ; tex win source dest
     push 0
     ret
 
+_WindowText: ; window x y text
+    dup 2    ; window x y text res
+    getb     ; window x y text res
+    dup 3    ; window x y text res x
+    push 256
+    div
+    getb     ; window x y text res x
+    cat      ; window x y text res
+    dup 2
+    getb
+    cat
+    copy 2
+    push 256
+    div
+    getb
+    cat
+    disc 2
+    disc 2 ; window text res
+    copy 1 ; window text res text
+    cat    ; window text res
+    disc 1 
+    cat
+    push "/fake/win/text"
+    sys 3
+    dup 0
+    dup 2
+    sys 5
+    sys 7
+    disc 0
+    push 0
+    ret
+
 _WindowOpen:
     push "/fake/win/open"       ; path
     sys 3                       ; open
@@ -72,7 +104,7 @@ _WindowFlip:
     sys 17
     ret
 
-_WindowTitle:
+_SetWindowTitle:
     dup 1
     copy 1
     cat
@@ -86,7 +118,7 @@ _WindowTitle:
     sys 7
     ret
 
-_WindowSize:
+_GetWindowSize:
     push "/fake/win/size"       ; path
     sys 3                       ; open
     dup 0                       ; handle
@@ -97,9 +129,62 @@ _WindowSize:
     disc 1                      ; file handle
     ret
 
+_SetWindowSize:
+    dup 1
+    getb
+    dup 2
+    push 256
+    div
+    getb
+    cat
+    dup 1
+    getb
+    cat
+    copy 1
+    push 256
+    div
+    getb
+    cat
+    disc 1
+    disc 1
+    push "/fake/win/size"
+    sys 3
+    dup 0
+    dup 2
+    sys 5
+    sys 7
+    ret
+
+_SetWindowRule:
+    dup 1
+    getb
+    dup 2
+    push 256
+    div
+    getb
+    cat
+    dup 1
+    getb
+    cat
+    copy 1
+    push 256
+    div
+    getb
+    cat
+    disc 1
+    disc 1
+    cat
+    push "/fake/win/rules"
+    sys 3
+    dup 0
+    dup 2
+    sys 5
+    sys 7
+    ret
+
 _WindowHeight:
     disc 0
-    call WindowSize
+    call GetWindowSize
     dup 0
     push 2
     add
@@ -118,7 +203,7 @@ _WindowHeight:
 
 _WindowWidth:
     disc 0
-    call WindowSize
+    call GetWindowSize
     dup 0
     push 0
     add

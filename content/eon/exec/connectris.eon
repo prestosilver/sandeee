@@ -7,7 +7,7 @@ value createMap() {
     value x;
     value y;
 
-    for (x = 0; x < 8; x = x + 1) {
+    for (x = 1; x < 9; x = x + 1) {
         result = result & @x;
     }
 
@@ -52,10 +52,10 @@ value renderMap(value map, value win, value tex) {
                 _WindowRender(win, tex, dest, source);
             }
         }
-
-        //print("\\n");
     }
-    //print("========\\n");
+
+    _WindowText(win, 140, 10, "score:");
+    _WindowText(win, 140, 30, "000000");
 
     return 0;
 }
@@ -140,6 +140,11 @@ value main() {
     value lastTime = time();
     value cntr = 0;
     value dt = 0;
+
+    _SetWindowRule("min", 256 + 6, 384 + 38);
+    _SetWindowRule("max", 256 + 6, 384 + 38);
+    _SetWindowTitle(window, "Connectris");
+    _SetWindowSize(256 + 6, 384 + 38);
 
     value test = "";
 

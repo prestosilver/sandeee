@@ -13,8 +13,6 @@ const shd = @import("../util/shader.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const cc = @import("../c.zig");
 
-const SCROLL = 30;
-
 pub const EditorData = struct {
     const Self = @This();
 

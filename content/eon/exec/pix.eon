@@ -60,7 +60,7 @@ value main() {
     value content = _TextureRead(input);
     _TextureUpload(content, texture);
 
-    _WindowTitle(window, "PixEEE - " & input);
+    _SetWindowTitle(window, "PixEEE - " & input);
 
     value w = _TextureWidth(content);
     value h = _TextureHeight(content);

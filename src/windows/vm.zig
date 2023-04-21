@@ -26,17 +26,46 @@ pub const VMData = struct {
     fps: f32 = 0,
     debug: bool = builtin.mode == .Debug,
 
-    const VMDataEntry = struct {
+    const VMDataKind = enum {
+        Rect,
+        Text,
+    };
+
+    const VMDataRect = struct {
         loc: vecs.Vector3,
         s: spr.Sprite,
     };
 
+    const VMDataText = struct {
+        pos: vecs.Vector2,
+        text: []const u8,
+    };
+
+    const VMDataEntry = union(VMDataKind) {
+        Rect: VMDataRect,
+        Text: VMDataText,
+    };
+
     pub fn addRect(self: *VMData, texture: *tex.Texture, src: rect.Rectangle, dst: rect.Rectangle) !void {
         var appends: VMDataEntry = .{
-            .loc = vecs.newVec3(dst.x, dst.y, 0),
-            .s = spr.Sprite{
-                .texture = texture,
-                .data = spr.SpriteData.new(src, vecs.newVec2(dst.w, dst.h)),
+            .Rect = .{
+                .loc = vecs.newVec3(dst.x, dst.y, 0),
+                .s = spr.Sprite{
+                    .texture = texture,
+                    .data = spr.SpriteData.new(src, vecs.newVec2(dst.w, dst.h)),
+                },
+            },
+        };
+
+        if (self.back) try self.rects[0].append(appends);
+        if (!self.back) try self.rects[1].append(appends);
+    }
+
+    pub fn addText(self: *VMData, dst: vecs.Vector2, text: []const u8) !void {
+        var appends: VMDataEntry = .{
+            .Text = .{
+                .pos = dst,
+                .text = try allocator.alloc.dupe(u8, text),
             },
         };
 
@@ -53,6 +82,15 @@ pub const VMData = struct {
     pub fn clear(self: *VMData) void {
         var rects = &self.rects[0];
         if (!self.back) rects = &self.rects[1];
+        for (rects.items) |item| {
+            switch (item) {
+                .Text => {
+                    allocator.alloc.free(item.Text.text);
+                },
+                .Rect => {},
+            }
+        }
+
         rects.*.clearAndFree();
     }
 
@@ -62,7 +100,21 @@ pub const VMData = struct {
         if (self.back) rects = self.rects[1];
 
         for (rects.items, 0..) |_, idx| {
-            try batch.draw(spr.Sprite, &rects.items[idx].s, self.shader, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].loc));
+            switch (rects.items[idx]) {
+                .Rect => {
+                    try batch.draw(spr.Sprite, &rects.items[idx].Rect.s, self.shader, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].Rect.loc));
+                },
+                .Text => {
+                    try font.draw(
+                        .{
+                            .batch = batch,
+                            .shader = font_shader,
+                            .pos = rects.items[idx].Text.pos.add(bnds.location()),
+                            .text = rects.items[idx].Text.text,
+                        },
+                    );
+                },
+            }
         }
 
         self.time += 1.0 / 60.0;

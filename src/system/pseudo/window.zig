@@ -10,6 +10,7 @@ const gfx = @import("gfx.zig");
 const rect = @import("../../math/rects.zig");
 const shd = @import("../../util/shader.zig");
 const vm = @import("../vm.zig");
+const vecs = @import("../../math/vecs.zig");
 
 pub var wintex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
@@ -94,7 +95,6 @@ pub fn writeWinSize(data: []const u8, vmInstance: ?*vm.VM) !void {
                     item.data.pos.w = x;
                     item.data.pos.h = y;
 
-                    std.log.info("{any}, {}, {}", .{ data, @floatToInt(i32, x), @floatToInt(i32, y) });
                     return;
                 }
             }
@@ -178,23 +178,23 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
                 const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
                 var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
-                if (self.idx == aaid) {
+                if (self.idx == aaid[0]) {
                     if (std.mem.eql(u8, data[0..3], "min")) {
-                        if (data.len[3..].len < 4) {
+                        if (data[3..].len < 4) {
                             return;
                         }
-                        item.data.contents.props.size.min.x = @intToFloat(f32, data[4]);
-                        item.data.contents.props.size.min.y = @intToFloat(f32, data[5]);
-                        item.data.contents.props.size.min.w = @intToFloat(f32, data[6]);
-                        item.data.contents.props.size.min.h = @intToFloat(f32, data[7]);
+                        var x = @intToFloat(f32, std.mem.bytesAsValue(u16, data[3..5]).*);
+                        var y = @intToFloat(f32, std.mem.bytesAsValue(u16, data[5..7]).*);
+                        item.data.contents.props.size.min.x = x;
+                        item.data.contents.props.size.min.y = y;
                     } else if (std.mem.eql(u8, data[0..3], "max")) {
-                        if (data.len[3..].len < 4) {
+                        if (data[3..].len < 4) {
                             return;
                         }
-                        item.data.contents.props.size.max.x = @intToFloat(f32, data[4]);
-                        item.data.contents.props.size.max.y = @intToFloat(f32, data[5]);
-                        item.data.contents.props.size.max.w = @intToFloat(f32, data[6]);
-                        item.data.contents.props.size.max.h = @intToFloat(f32, data[7]);
+                        var x = @intToFloat(f32, std.mem.bytesAsValue(u16, data[3..5]).*);
+                        var y = @intToFloat(f32, std.mem.bytesAsValue(u16, data[5..7]).*);
+                        item.data.contents.props.size.max.x = x;
+                        item.data.contents.props.size.max.y = y;
                     }
                     return;
                 }
@@ -313,6 +313,39 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
     return;
 }
 
+// /fake/win/text
+
+pub fn readWinText(_: ?*vm.VM) ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
+}
+
+pub fn writeWinText(data: []const u8, _: ?*vm.VM) !void {
+    if (data.len < 6) return;
+
+    var aid = data[0];
+
+    var dst = vecs.newVec2(
+        @intToFloat(f32, std.mem.bytesToValue(u16, data[1..3])),
+        @intToFloat(f32, std.mem.bytesToValue(u16, data[3..5])),
+    );
+
+    var text = data[5..];
+
+    for (windowsPtr.*.items, 0..) |_, idx| {
+        var item = &windowsPtr.*.items[idx];
+        if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
+            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
+            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+
+            if (self.idx == aid) {
+                return self.addText(dst, text);
+            }
+        }
+    }
+
+    return;
+}
+
 // /fake/win
 
 pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
@@ -408,6 +441,17 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinRules,
         .pseudoWrite = writeWinRules,
+        .parent = undefined,
+    };
+
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/text", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
+        .pseudoRead = readWinText,
+        .pseudoWrite = writeWinText,
         .parent = undefined,
     };
 
