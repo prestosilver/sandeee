@@ -1,6 +1,6 @@
 void print(value str) {
-    asm "dup 0";
     asm "sys 0";
+    asm "push 0";
     asm "ret";
 }
 

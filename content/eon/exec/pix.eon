@@ -43,8 +43,8 @@ value render(value win, value tex, value w, value h) {
 
     value dest = _MakeRect(target_x / 2, target_y / 2, target_w, target_h);
     
-    _WindowRender(dup(win), tex, dest, source);
-    _WindowFlip(dup(win));
+    _WindowRender(win, tex, dest, source);
+    _WindowFlip(win);
 
     return 0;
 }
@@ -66,7 +66,7 @@ value main() {
     value h = _TextureHeight(content);
 
     for (0; _WindowOpen(); 1) {
-        render(dup(window), dup(texture), w * 2, h * 2);
+        render(window, texture, w * 2, h * 2);
     }
 
     _TextureDestroy(texture);
