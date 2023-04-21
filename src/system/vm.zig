@@ -20,9 +20,14 @@ pub const VM = struct {
         UnknownFunction,
     };
 
-    pub const StackEntry = struct {
-        string: ?*[]u8 = null,
-        value: ?*u64 = null,
+    const StackEntryKind = enum {
+        string,
+        value,
+    };
+
+    pub const StackEntry = union(StackEntryKind) {
+        string: *[]u8,
+        value: *u64,
     };
 
     pub const RetStackEntry = struct {
@@ -124,7 +129,9 @@ pub const VM = struct {
 
     fn replaceStack(self: *VM, a: StackEntry, b: StackEntry) !void {
         for (self.stack[0..self.rsp]) |*entry| {
-            if (entry.string == a.string and entry.value == a.value) {
+            if ((a == .string and entry.* == .string and entry.string == a.string) or
+                (a == .value and entry.* == .value and entry.value == a.value))
+            {
                 entry.* = b;
             }
         }
@@ -238,7 +245,7 @@ pub const VM = struct {
     pub fn freeValue(self: *VM, val: *u64) void {
         if (self.rsp != 0) {
             for (self.stack[0..self.rsp]) |entry| {
-                if (entry.value != null and entry.value.? == val) {
+                if (entry == .value and entry.value == val) {
                     return;
                 }
             }
@@ -249,7 +256,7 @@ pub const VM = struct {
     pub fn freeString(self: *VM, val: *[]const u8) void {
         if (self.rsp != 0) {
             for (self.stack[0..self.rsp]) |entry| {
-                if (entry.string != null and entry.string.? == val) {
+                if (entry == .string and entry.string == val) {
                     return;
                 }
             }
@@ -265,7 +272,9 @@ pub const VM = struct {
         for (vals) |val| {
             var add = true;
             for (toFree.items) |item| {
-                if (val.value == item.value and val.string == item.string) {
+                if ((val == .string and item == .string and item.string == val.string) or
+                    (val == .value and item == .value and item.value == val.value))
+                {
                     add = false;
                     break;
                 }
@@ -276,8 +285,8 @@ pub const VM = struct {
         }
 
         for (toFree.items) |val| {
-            if (val.value != null) self.freeValue(val.value.?);
-            if (val.string != null) self.freeString(val.string.?);
+            if (val == .value) self.freeValue(val.value);
+            if (val == .string) self.freeString(val.string);
         }
     }
 
@@ -293,70 +302,69 @@ pub const VM = struct {
                 if (op.string != null) {
                     try self.pushStackS(op.string.?);
                     return;
-                } else if (op.value != null) {
+                }
+
+                if (op.value != null) {
                     try self.pushStackI(op.value.?);
                     return;
-                } else return error.InvalidOp;
+                }
             },
             Operation.Code.Add => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ b, a });
 
-                if (a.string != null) {
-                    return error.ValueMissing;
-                } else if (a.value != null) {
-                    if (b.string != null) {
-                        if (b.string.?.len < a.value.?.*) {
-                            try self.pushStackS("");
-                        } else {
-                            try self.pushStackS(b.string.?.*[a.value.?.*..]);
-                        }
-                        return;
-                    } else if (b.value != null) {
-                        try self.pushStackI(a.value.?.* +% b.value.?.*);
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                if (a != .value) return error.ValueMissing;
+
+                if (b == .string) {
+                    if (b.string.len < a.value.*) {
+                        try self.pushStackS("");
+                    } else {
+                        try self.pushStackS(b.string.*[a.value.*..]);
+                    }
+                    return;
+                }
+
+                if (b == .value) {
+                    try self.pushStackI(a.value.* +% b.value.*);
+                    return;
+                }
             },
             Operation.Code.Sub => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ b, a });
 
-                if (a.string != null) {
-                    return error.ValueMissing;
-                } else if (a.value != null) {
-                    if (b.string != null) {
-                        if (b.string.?.len < a.value.?.*) {
-                            try self.pushStackS("");
-                        } else {
-                            try self.pushStackS(b.string.?.*[0 .. b.string.?.*.len - a.value.?.*]);
-                        }
-                        return;
-                    } else if (b.value != null) {
-                        try self.pushStackI(b.value.?.* -% a.value.?.*);
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                if (a != .value) return error.ValueMissing;
+
+                if (b == .string) {
+                    if (b.string.len < a.value.*) {
+                        try self.pushStackS("");
+                    } else {
+                        try self.pushStackS(b.string.*[0 .. b.string.*.len - a.value.*]);
+                    }
+                    return;
+                }
+
+                if (b == .value) {
+                    try self.pushStackI(b.value.* -% a.value.*);
+                    return;
+                }
             },
             Operation.Code.Size => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ b, a });
 
-                if (a.string != null) {
-                    return error.ValueMissing;
-                } else if (a.value != null) {
-                    if (b.string != null) {
-                        if (b.string.?.len < a.value.?.*) {
-                            try self.pushStackS(b.string.?.*);
-                        } else {
-                            try self.pushStackS(b.string.?.*[0..a.value.?.*]);
-                        }
-                        return;
-                    } else return error.StringMissing;
-                } else return error.InvalidOp;
+                if (a != .value) return error.ValueMissing;
+                if (b != .string) return error.StringMissing;
+
+                if (b.string.len < a.value.*) {
+                    try self.pushStackS(b.string.*);
+                } else {
+                    try self.pushStackS(b.string.*[0..a.value.*]);
+                }
+                return;
             },
             Operation.Code.Copy => {
                 if (op.value == null) return error.ValueMissing;
@@ -369,16 +377,19 @@ pub const VM = struct {
                 if (op.value == null) return error.ValueMissing;
 
                 var a = try self.findStack(op.value.?);
-                if (a.string != null) {
-                    try self.pushStackS(a.string.?.*);
+                if (a == .string) {
+                    try self.pushStackS(a.string.*);
                     return;
-                } else if (a.value != null) {
-                    try self.pushStackI(a.value.?.*);
+                }
+
+                if (a == .value) {
+                    try self.pushStackI(a.value.*);
                     return;
-                } else return error.InvalidOp;
+                }
             },
             Operation.Code.Jmp => {
                 if (op.value == null) return error.ValueMissing;
+
                 self.pc = op.value.?;
                 return;
             },
@@ -386,33 +397,37 @@ pub const VM = struct {
                 var a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
-                if (a.string != null) {
-                    if (a.string.?.len == 0) {
+                if (a == .string) {
+                    if (a.string.len == 0) {
                         self.pc = op.value.?;
                     }
                     return;
-                } else if (a.value != null) {
-                    if (a.value.?.* == 0) {
+                }
+
+                if (a == .value) {
+                    if (a.value.* == 0) {
                         self.pc = op.value.?;
                     }
                     return;
-                } else return error.InvalidOp;
+                }
             },
             Operation.Code.Jnz => {
                 var a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
-                if (a.string != null) {
-                    if (a.string.?.len != 0) {
+                if (a == .string) {
+                    if (a.string.len != 0) {
                         self.pc = op.value.?;
                     }
                     return;
-                } else if (a.value != null) {
-                    if (a.value.?.* != 0) {
+                }
+
+                if (a == .value) {
+                    if (a.value.* != 0) {
                         self.pc = op.value.?;
                     }
                     return;
-                } else return error.InvalidOp;
+                }
             },
             Operation.Code.Sys => {
                 if (op.value != null) {
@@ -422,18 +437,20 @@ pub const VM = struct {
                             var a = try self.popStack();
                             defer self.free(&[_]StackEntry{a});
 
-                            if (a.string != null) {
-                                try self.out.appendSlice(a.string.?.*);
+                            if (a == .string) {
+                                try self.out.appendSlice(a.string.*);
 
                                 return;
-                            } else if (a.value != null) {
-                                var str = try std.fmt.allocPrint(self.allocator, "{}", .{a.value.?.*});
+                            }
+
+                            if (a == .value) {
+                                var str = try std.fmt.allocPrint(self.allocator, "{}", .{a.value.*});
                                 defer self.allocator.free(str);
 
                                 try self.out.appendSlice(str);
 
                                 return;
-                            } else return error.InvalidOp;
+                            }
                         },
                         // quit
                         1 => {
@@ -444,124 +461,114 @@ pub const VM = struct {
                         2 => {
                             var path = try self.popStack();
                             defer self.free(&[_]StackEntry{path});
-                            if (path.value != null) {
-                                return error.StringMissing;
-                            } else if (path.string != null) {
-                                if (path.string.?.*[0] == '/') {
-                                    _ = try files.root.newFile(path.string.?.*);
-                                } else {
-                                    _ = try self.root.newFile(path.string.?.*);
-                                }
 
-                                return;
-                            } else return error.InvalidOp;
+                            if (path != .string) return error.StringMissing;
+
+                            if (path.string.*[0] == '/') {
+                                _ = try files.root.newFile(path.string.*);
+                            } else {
+                                _ = try self.root.newFile(path.string.*);
+                            }
+
+                            return;
                         },
                         // open file
                         3 => {
                             var path = try self.popStack();
                             defer self.free(&[_]StackEntry{path});
-                            if (path.value != null) {
-                                return error.StringMissing;
-                            } else if (path.string != null) {
-                                try self.streams.append(try streams.FileStream.Open(self.root, path.string.?.*, self));
-                                try self.pushStackI(self.streams.items.len - 1);
 
-                                return;
-                            } else return error.InvalidOp;
+                            if (path != .string) return error.StringMissing;
+
+                            try self.streams.append(try streams.FileStream.Open(self.root, path.string.*, self));
+                            try self.pushStackI(self.streams.items.len - 1);
+
+                            return;
                         },
                         // read
                         4 => {
                             var len = try self.popStack();
                             var idx = try self.popStack();
                             defer self.free(&[_]StackEntry{ len, idx });
-                            if (idx.value != null) {
-                                if (idx.value.?.* >= self.streams.items.len) return error.StreamBad;
-                                var fs = self.streams.items[idx.value.?.*];
-                                if (fs == null) return error.InvalidStream;
-                                if (len.value != null) {
-                                    var cont = try fs.?.Read(@intCast(u32, len.value.?.*));
-                                    defer self.allocator.free(cont);
 
-                                    try self.pushStackS(cont);
+                            if (len != .value) return error.ValueMissing;
+                            if (idx != .value) return error.ValueMissing;
 
-                                    return;
-                                } else if (len.string != null) {
-                                    return error.ValueMissing;
-                                } else return error.InvalidOp;
-                            } else if (idx.string != null) {
-                                return error.ValueMissing;
-                            } else return error.InvalidOp;
+                            if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
+
+                            var fs = self.streams.items[idx.value.*];
+                            if (fs == null) return error.InvalidStream;
+
+                            var cont = try fs.?.Read(@intCast(u32, len.value.*));
+                            defer self.allocator.free(cont);
+
+                            try self.pushStackS(cont);
+
+                            return;
                         },
                         // write file
                         5 => {
                             var str = try self.popStack();
                             var idx = try self.popStack();
                             defer self.free(&[_]StackEntry{ str, idx });
-                            if (idx.value != null) {
-                                if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
-                                var fs = self.streams.items[idx.value.?.*];
-                                if (fs == null) return error.InvalidOp;
-                                if (str.string != null) {
-                                    try fs.?.Write(str.string.?.*);
 
-                                    return;
-                                } else if (str.value != null) {
-                                    return error.StringMissing;
-                                } else return error.InvalidOp;
-                            } else if (idx.string != null) {
-                                return error.ValueMissing;
-                            } else return error.InvalidOp;
+                            if (str != .string) return error.StringMissing;
+                            if (idx != .value) return error.ValueMissing;
+
+                            if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
+
+                            var fs = self.streams.items[idx.value.*];
+                            if (fs == null) return error.InvalidStream;
+
+                            try fs.?.Write(str.string.*);
+
+                            return;
                         },
                         // flush file
                         6 => {
                             var idx = try self.popStack();
                             defer self.free(&[_]StackEntry{idx});
 
-                            if (idx.value != null) {
-                                if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
-                                var fs = self.streams.items[idx.value.?.*];
-                                if (fs == null) return error.InvalidOp;
-                                try fs.?.Flush();
+                            if (idx != .value) return error.ValueMissing;
 
-                                return;
-                            } else if (idx.string != null) {
-                                return error.ValueMissing;
-                            } else return error.InvalidOp;
+                            if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
+                            var fs = self.streams.items[idx.value.*];
+                            if (fs == null) return error.InvalidStream;
+
+                            try fs.?.Flush();
+
+                            return;
                         },
                         // close file
                         7 => {
                             var idx = try self.popStack();
                             defer self.free(&[_]StackEntry{idx});
 
-                            if (idx.value != null) {
-                                if (idx.value.?.* >= self.streams.items.len) return error.InvalidOp;
-                                var fs = self.streams.items[idx.value.?.*];
-                                if (fs == null) return error.InvalidOp;
-                                try fs.?.Close();
+                            if (idx != .value) return error.ValueMissing;
 
-                                self.streams.items[idx.value.?.*] = null;
+                            if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
+                            var fs = self.streams.items[idx.value.*];
+                            if (fs == null) return error.InvalidStream;
 
-                                return;
-                            } else if (idx.string != null) {
-                                return error.ValueMissing;
-                            } else return error.InvalidOp;
+                            try fs.?.Close();
+                            self.streams.items[idx.value.*] = null;
+
+                            return;
                         },
                         // arg
                         8 => {
                             var idx = try self.popStack();
                             defer self.free(&[_]StackEntry{idx});
 
-                            if (idx.value != null) {
-                                if (idx.value.?.* >= self.args.len) {
-                                    try self.pushStackS("");
-                                    return;
-                                }
-                                try self.pushStackS(self.args[idx.value.?.*]);
+                            if (idx != .value) return error.ValueMissing;
 
+                            if (idx.value.* >= self.args.len) {
+                                try self.pushStackS("");
                                 return;
-                            } else if (idx.string != null) {
-                                return error.ValueMissing;
-                            } else return error.InvalidOp;
+                            }
+
+                            try self.pushStackS(self.args[idx.value.*]);
+
+                            return;
                         },
                         // time
                         9 => {
@@ -574,26 +581,25 @@ pub const VM = struct {
                             var name = try self.popStack();
                             defer self.free(&[_]StackEntry{name});
 
-                            if (name.string) |nameStr| {
-                                var val: u64 = 0;
+                            if (name != .string) return error.StringMissing;
 
-                                if (self.functions.contains(nameStr.*)) val = 1;
+                            var val: u64 = 0;
 
-                                try self.pushStackI(val);
+                            if (self.functions.contains(name.string.*)) val = 1;
 
-                                return;
-                            } else {
-                                return error.StringMissing;
-                            }
+                            try self.pushStackI(val);
+
+                            return;
                         },
                         // allocate
                         11 => {
                             var len = try self.popStack();
                             defer self.free(&[_]StackEntry{len});
-                            if (len.value == null) return error.ValueMissing;
+
+                            if (len != .value) return error.ValueMissing;
 
                             var adds = try self.allocator.create([]u8);
-                            adds.* = try self.allocator.alloc(u8, len.value.?.*);
+                            adds.* = try self.allocator.alloc(u8, len.value.*);
                             self.stack[self.rsp] = StackEntry{ .string = adds };
                             self.rsp += 1;
                             return;
@@ -603,18 +609,19 @@ pub const VM = struct {
                             var name = try self.popStack();
                             var func = try self.popStack();
                             defer self.free(&[_]StackEntry{ name, func });
-                            if (func.string == null) return error.StringMissing;
-                            if (name.string == null) return error.StringMissing;
+
+                            if (func != .string) return error.StringMissing;
+                            if (name != .string) return error.StringMissing;
 
                             //std.log.info("reg: {s}", .{name.string.?});
 
-                            var dup = try self.allocator.dupe(u8, func.string.?.*);
+                            var dup = try self.allocator.dupe(u8, func.string.*);
 
                             var ops = try self.stringToOps(dup);
                             defer ops.deinit();
 
                             var finalOps = try self.allocator.dupe(Operation, ops.items);
-                            var finalName = try self.allocator.dupe(u8, name.string.?.*);
+                            var finalName = try self.allocator.dupe(u8, name.string.*);
 
                             try self.functions.put(finalName, .{
                                 .string = dup,
@@ -628,44 +635,41 @@ pub const VM = struct {
                             var name = try self.popStack();
                             defer self.free(&[_]StackEntry{name});
 
-                            if (name.string) |nameStr| {
-                                if (self.functions.fetchRemove(nameStr.*)) |entry| {
-                                    self.allocator.free(entry.key);
-                                    self.allocator.free(entry.value.ops);
-                                    self.allocator.free(entry.value.string);
-                                }
+                            if (name != .string) return error.StringMissing;
 
-                                return;
-                            } else {
-                                return error.StringMissing;
+                            if (self.functions.fetchRemove(name.string.*)) |entry| {
+                                self.allocator.free(entry.key);
+                                self.allocator.free(entry.value.ops);
+                                self.allocator.free(entry.value.string);
                             }
+
+                            return;
                         },
                         // resize heap
                         14 => {
                             var size = try self.popStack();
                             defer self.free(&[_]StackEntry{size});
 
-                            if (size.value) |sizeVal| {
-                                var start = self.heap.len;
-                                self.heap = try self.allocator.realloc(self.heap, sizeVal.*);
+                            if (size != .value) return error.ValueMissing;
 
-                                if (start < self.heap.len)
-                                    std.mem.set(u8, self.heap[start..], 0);
+                            var start = self.heap.len;
+                            self.heap = try self.allocator.realloc(self.heap, size.value.*);
 
-                                return;
-                            } else {
-                                return error.ValueMissing;
-                            }
+                            if (start < self.heap.len)
+                                std.mem.set(u8, self.heap[start..], 0);
+
+                            return;
                         },
                         // read heap
                         15 => {
                             var size = try self.popStack();
                             var start = try self.popStack();
                             defer self.free(&[_]StackEntry{ start, size });
-                            if (start.value == null) return error.ValueMissing;
-                            if (size.value == null) return error.ValueMissing;
 
-                            try self.pushStackS(self.heap[start.value.?.* .. start.value.?.* + size.value.?.*]);
+                            if (start != .value) return error.ValueMissing;
+                            if (size != .value) return error.ValueMissing;
+
+                            try self.pushStackS(self.heap[start.value.* .. start.value.* + size.value.*]);
 
                             return;
                         },
@@ -674,10 +678,11 @@ pub const VM = struct {
                             var data = try self.popStack();
                             var start = try self.popStack();
                             defer self.free(&[_]StackEntry{ start, data });
-                            if (start.value == null) return error.ValueMissing;
-                            if (data.string == null) return error.StringMissing;
 
-                            std.mem.copy(u8, self.heap[start.value.?.* .. start.value.?.* + data.string.?.len], data.string.?.*);
+                            if (start != .value) return error.ValueMissing;
+                            if (data != .string) return error.StringMissing;
+
+                            std.mem.copy(u8, self.heap[start.value.* .. start.value.* + data.string.len], data.string.*);
 
                             return;
                         },
@@ -707,105 +712,99 @@ pub const VM = struct {
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.value != null) {
-                    if (b.value != null) {
-                        try self.pushStackI(a.value.?.* *% b.value.?.*);
+                if (a != .value) return error.ValueMissing;
+                if (b != .value) return error.ValueMissing;
 
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                try self.pushStackI(a.value.* *% b.value.*);
+
+                return;
             },
             Operation.Code.Div => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.value != null) {
-                    if (b.value != null) {
-                        if (a.value.?.* == 0) return error.DivZero;
+                if (a != .value) return error.ValueMissing;
+                if (b != .value) return error.ValueMissing;
 
-                        try self.pushStackI(b.value.?.* / a.value.?.*);
+                if (a.value.* == 0) return error.DivZero;
 
-                        return;
-                    } else return error.ValueMissing;
-                } else return error.ValueMissing;
+                try self.pushStackI(b.value.* / a.value.*);
+
+                return;
             },
             Operation.Code.Mod => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.value != null) {
-                    if (b.value != null) {
-                        if (a.value.?.* == 0) return error.DivZero;
+                if (a != .value) return error.ValueMissing;
+                if (b != .value) return error.ValueMissing;
 
-                        try self.pushStackI(b.value.?.* % a.value.?.*);
+                if (a.value.* == 0) return error.DivZero;
 
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                try self.pushStackI(b.value.* % a.value.*);
+
+                return;
             },
             Operation.Code.And => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.value != null) {
-                    if (b.value != null) {
-                        try self.pushStackI(a.value.?.* & b.value.?.*);
+                if (a != .value) return error.ValueMissing;
+                if (b != .value) return error.ValueMissing;
 
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                try self.pushStackI(a.value.* & b.value.*);
+
+                return;
             },
             Operation.Code.Or => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.value != null) {
-                    if (b.value != null) {
-                        try self.pushStackI(a.value.?.* | b.value.?.*);
+                if (a != .value) return error.ValueMissing;
+                if (b != .value) return error.ValueMissing;
 
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                try self.pushStackI(a.value.* | b.value.*);
+
+                return;
             },
             Operation.Code.Neg => {
                 var a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
-                if (a.value != null) {
-                    try self.pushStackI(0 -% a.value.?.*);
+                if (a != .value) return error.ValueMissing;
 
-                    return;
-                } else return error.InvalidOp;
+                try self.pushStackI(0 -% a.value.*);
+
+                return;
             },
             Operation.Code.Xor => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.value != null) {
-                    if (b.value != null) {
-                        try self.pushStackI(a.value.?.* ^ b.value.?.*);
+                if (a != .value) return error.ValueMissing;
+                if (b != .value) return error.ValueMissing;
 
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                try self.pushStackI(a.value.* ^ b.value.*);
+
+                return;
             },
             Operation.Code.Not => {
                 var a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
-                if (a.value != null) {
-                    var val: u64 = 0;
-                    if (a.value.?.* == 0) val = 1;
+                if (a != .value) return error.ValueMissing;
 
-                    try self.pushStackI(val);
+                var val: u64 = 0;
+                if (a.value.* == 0) val = 1;
 
-                    return;
-                } else return error.InvalidOp;
+                try self.pushStackI(val);
+
+                return;
             },
             Operation.Code.Asign => {
                 var a = try self.popStack();
@@ -840,91 +839,85 @@ pub const VM = struct {
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.string != null) {
-                    if (b.string != null) {
+                if (a == .string) {
+                    if (b == .string) {
                         var val: u64 = 0;
-                        if (std.mem.eql(u8, a.string.?.*, b.string.?.*)) val = 1;
+                        if (std.mem.eql(u8, a.string.*, b.string.*)) val = 1;
                         try self.pushStackI(val);
                         return;
-                    } else if (b.value != null) {
+                    }
+
+                    if (b == .value) {
                         var val: u64 = 0;
-                        if (a.string.?.*.len != 0 and a.string.?.*[0] == @intCast(u8, b.value.?.*)) val = 1;
-                        if (a.string.?.*.len == 0 and 0 == b.value.?.*) val = 1;
+                        if (a.string.*.len != 0 and a.string.*[0] == @intCast(u8, b.value.*)) val = 1;
+                        if (a.string.*.len == 0 and 0 == b.value.*) val = 1;
                         try self.pushStackI(val);
                         return;
-                    } else return error.InvalidOp;
-                } else if (a.value != null) {
-                    if (b.string != null) {
+                    }
+                }
+
+                if (a == .value) {
+                    if (b == .string) {
                         var val: u64 = 0;
-                        if (b.string.?.*.len != 0 and b.string.?.*[0] == @intCast(u8, a.value.?.*)) val = 1;
-                        if (b.string.?.*.len == 0 and 0 == a.value.?.*) val = 1;
+                        if (b.string.*.len != 0 and b.string.*[0] == @intCast(u8, a.value.*)) val = 1;
+                        if (b.string.*.len == 0 and 0 == a.value.*) val = 1;
                         try self.pushStackI(val);
                         return;
-                    } else if (b.value != null) {
+                    }
+
+                    if (b == .value) {
                         var val: u64 = 0;
-                        if (a.value.?.* == b.value.?.*) val = 1;
+                        if (a.value.* == b.value.*) val = 1;
                         try self.pushStackI(val);
                         return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                    }
+                }
             },
             Operation.Code.Less => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.string != null) {
-                    if (b.string != null) {
-                        return error.InvalidOp;
-                    } else if (b.value != null) {
-                        return error.InvalidOp;
-                    } else return error.InvalidOp;
-                } else if (a.value != null) {
-                    if (b.string != null) {
-                        return error.InvalidOp;
-                    } else if (b.value != null) {
-                        var val: u64 = 0;
-                        if (a.value.?.* > b.value.?.*) val = 1;
-                        try self.pushStackI(val);
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                if (a != .value) return error.ValueMissing;
+                if (b != .value) return error.ValueMissing;
+
+                var val: u64 = 0;
+                if (a.value.* > b.value.*) val = 1;
+                try self.pushStackI(val);
+                return;
             },
             Operation.Code.Greater => {
                 var a = try self.popStack();
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
-                if (a.string != null) {
-                    return error.ValueMissing;
-                } else if (a.value != null) {
-                    if (b.string != null) {
-                        return error.ValueMissing;
-                    } else if (b.value != null) {
-                        var val: u64 = 0;
-                        if (a.value.?.* < b.value.?.*) val = 1;
-                        try self.pushStackI(val);
-                        return;
-                    } else return error.InvalidOp;
-                } else return error.InvalidOp;
+                if (a != .value) return error.ValueMissing;
+                if (b != .value) return error.ValueMissing;
+
+                var val: u64 = 0;
+                if (a.value.* < b.value.*) val = 1;
+                try self.pushStackI(val);
+                return;
             },
             Operation.Code.Getb => {
                 var a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
-                if (a.string != null) {
-                    if (a.string.?.len == 0) {
+                if (a == .string) {
+                    if (a.string.len == 0) {
                         try self.pushStackI(0);
                     } else {
-                        var val = @intCast(u64, a.string.?.*[0]);
+                        var val = @intCast(u64, a.string.*[0]);
                         try self.pushStackI(val);
                     }
                     return;
-                } else if (a.value != null) {
-                    try self.pushStackS(std.mem.asBytes(a.value.?)[0..1]);
+                }
+
+                if (a == .value) {
+                    try self.pushStackS(std.mem.asBytes(a.value)[0..1]);
 
                     return;
-                } else return error.InvalidOp;
+                }
             },
             Operation.Code.Ret => {
                 self.retRsp -= 1;
@@ -955,38 +948,38 @@ pub const VM = struct {
 
                 defer self.free(&[_]StackEntry{ b, a });
 
-                if (a.string != null) {
-                    if (b.string != null) {
-                        var appends = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?.*, b.string.?.* });
-                        defer self.allocator.free(appends);
+                if (a != .string) return error.StringMissing;
 
-                        try self.pushStackS(appends);
+                if (b == .string) {
+                    var appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, b.string.* });
+                    defer self.allocator.free(appends);
 
-                        return;
-                    } else if (b.value != null) {
-                        var appends = try std.fmt.allocPrint(self.allocator, "{s}{s}", .{ a.string.?.*, std.mem.asBytes(b.value.?) });
-                        defer self.allocator.free(appends);
+                    try self.pushStackS(appends);
 
-                        try self.pushStackS(appends);
+                    return;
+                }
 
-                        return;
-                    } else return error.InvalidOp;
-                } else if (b.string != null) {
-                    return error.StringMissing;
-                } else return error.InvalidOp;
+                if (b == .value) {
+                    var appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, std.mem.asBytes(b.value) });
+                    defer self.allocator.free(appends);
+
+                    try self.pushStackS(appends);
+
+                    return;
+                }
             },
             Operation.Code.Create => {
                 var b = try self.popStack();
                 defer self.free(&[_]StackEntry{b});
 
-                if (b.value) |length| {
-                    var adds = try self.allocator.alloc(u8, length.*);
-                    defer self.allocator.free(adds);
-                    std.mem.set(u8, adds, 0);
-                    try self.pushStackS(adds);
+                if (b != .value) return error.ValueMissing;
 
-                    return;
-                } else return error.ValueMissing;
+                var adds = try self.allocator.alloc(u8, b.value.*);
+                defer self.allocator.free(adds);
+                std.mem.set(u8, adds, 0);
+                try self.pushStackS(adds);
+
+                return;
             },
             _ => {
                 return error.InvalidOp;
