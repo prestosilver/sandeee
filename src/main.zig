@@ -83,9 +83,6 @@ var font_shader: shd.Shader = undefined;
 var crt_shader: shd.Shader = undefined;
 var shader: shd.Shader = undefined;
 
-// screen dims
-var size: vecs.Vector2 = vecs.newVec2(0, 0);
-
 // the selected disk
 var disk: ?[]u8 = null;
 
@@ -249,7 +246,7 @@ pub fn setupEvents() !void {
 pub fn drawLoading(self: *loadingState.GSLoading) void {
     while (!self.done) {
         // render loading screen
-        self.draw(size) catch {};
+        self.draw(gfx.gContext.size) catch {};
 
         blit() catch {};
     }
@@ -261,8 +258,6 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
     ctx.makeCurrent();
     gfx.resize(event.w, event.h) catch {};
     ctx.makeNotCurrent();
-
-    size = vecs.newVec2(@intToFloat(f32, event.w), @intToFloat(f32, event.h));
 
     return false;
 }
@@ -293,7 +288,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
         var state = gameStates.getPtr(.Crash);
 
         state.update(1.0 / 60.0) catch break;
-        state.draw(size) catch break;
+        state.draw(gfx.gContext.size) catch break;
 
         blit() catch break;
     }
@@ -344,7 +339,6 @@ pub fn main() anyerror!void {
     // init graphics
     ctx = try gfx.init("Sandeee");
     gfx.gContext = &ctx;
-    size = ctx.size;
 
     var bigfontpath = fm.getContentPath("content/bios.ttf");
     defer bigfontpath.deinit();
@@ -379,7 +373,7 @@ pub fn main() anyerror!void {
     c.glGenTextures(1, &renderedTexture);
     c.glGenRenderbuffers(1, &depthrenderbuffer);
 
-    sb = try batch.newSpritebatch(&size);
+    sb = try batch.newSpritebatch(&gfx.gContext.size);
     // load some textures
     var biosTex = try tex.newTextureMem(biosImage);
     var logoTex = try tex.newTextureMem(logoImage);
@@ -467,13 +461,13 @@ pub fn main() anyerror!void {
             ),
         },
         .wallpaper = wall.Wallpaper.new(&walltex, wall.WallData{
-            .dims = &size,
+            .dims = &gfx.gContext.size,
             .mode = .Center,
             .size = &walltex.size,
         }),
         .bar = bar.Bar.new(&bartex, bar.BarData{
             .height = 38,
-            .screendims = &size,
+            .screendims = &gfx.gContext.size,
         }),
     };
 
@@ -527,7 +521,7 @@ pub fn main() anyerror!void {
     inputEvs.setup(ctx.window, true);
 
     //TODO: ???
-    win.deskSize = &size;
+    win.deskSize = &gfx.gContext.size;
 
     // update the frame timer
     var lastFrameTime = c.glfwGetTime();
@@ -547,7 +541,7 @@ pub fn main() anyerror!void {
         try state.update(@floatCast(f32, currentTime - lastFrameTime));
 
         // get tris
-        try state.draw(size);
+        try state.draw(gfx.gContext.size);
 
         // the state changed
         if (state != gameStates.getPtr(currentState)) {
