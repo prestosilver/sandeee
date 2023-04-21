@@ -145,6 +145,7 @@ pub const Font = struct {
         start.y = @round(start.y);
 
         if (params.wrap) |maxSize| {
+            if (maxSize <= 0) return;
             var iter = std.mem.split(u8, params.text, " ");
             var spaceSize = self.sizeText(.{ .text = " ", .scale = params.scale }).x;
 
