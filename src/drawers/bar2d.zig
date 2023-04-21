@@ -75,7 +75,7 @@ pub const BarData = struct {
         var ts = std.time.timestamp();
         var hours = @intCast(u64, ts) / std.time.s_per_hour % 12;
         var mins = @intCast(u64, ts) / std.time.s_per_min % 60;
-        var clockString = try std.fmt.allocPrint(allocator.alloc, "{d:0>2}:{d:0>2}", .{ hours, mins });
+        var clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{ hours, mins });
         defer allocator.alloc.free(clockString);
 
         var clockSize = font.sizeText(.{ .text = clockString });
