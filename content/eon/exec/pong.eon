@@ -39,16 +39,18 @@ value getkey() {
 }
 
 value update(value ax, value bx, value ballx, value bally,
-             value vx, value vy, value dt) {
+             value vx, value vy, value pings, value dt) {
 
     value tvx;
     value tvy;
     value contained;
     value tmp;
 
+    value acc = pings / 5 + 1;
+
     if (vx < 100) {
         tvx = 100 - vx;
-        tvx = tvx / 12;
+        tvx = acc * tvx / 12;
 
         contained = bally < ax + 100;
         tmp = bally > ax;
@@ -61,19 +63,21 @@ value update(value ax, value bx, value ballx, value bally,
             ballx = ballx + tvx;
             vy = bally - ax;
             vy = vy * 2;
+            pings = pings + 1;
         } else {
             if (ballx < tvx) {
                 vx = 200;
                 vy = 0;
                 ballx = 195;
                 bally = 145;
+                pings = 1;
                 return 0;
             }
             ballx = ballx - tvx;
         }
     } else {
         tvx = vx - 100;
-        tvx = tvx / 12;
+        tvx = acc * tvx / 12;
 
         contained = bally < bx + 100;
         tmp = bally > bx;
@@ -86,12 +90,14 @@ value update(value ax, value bx, value ballx, value bally,
             vy = bally - bx;
             vy = vy * 2;
             ballx = ballx - tvx;
+            pings = pings + 1;
         } else {
             if (ballx > 390 - tvx) {
                 vx = 0;
                 vy = 200;
                 ballx = 195;
                 bally = 145;
+                pings = 1;
                 return 0;
             }
             ballx = ballx + tvx;
@@ -123,12 +129,14 @@ value update(value ax, value bx, value ballx, value bally,
     value key = getkey();
 
     if (key == 119)
-        bx = bx - 10;
+        if (bx > 10)
+            bx = bx - 10;
 
     if (key == 115)
-        bx = bx + 10;
+        if (bx < 340)
+            bx = bx + 10;
 
-    if (bally > 75)
+    if (bally > 75) 
         ax = bally - 75;
 
     return 0;
@@ -150,6 +158,7 @@ value main() {
     value bx = 100;
     value vx = 0;
     value vy = 200;
+    value pings = 1;
 
     _SetWindowRule("min", 408, 338);
     _SetWindowRule("max", 408, 338);
@@ -164,7 +173,7 @@ value main() {
         dt = time() - lastTime;
         lastTime = time();
 
-        update(ax, bx, ballx, bally, vx, vy, dt);
+        update(ax, bx, ballx, bally, vx, vy, pings, dt);
         
         render(window, texture, ax, bx, ballx, bally, vx, vy);
         
