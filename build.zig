@@ -6,6 +6,7 @@ const sound = @import("tools/sound.zig");
 const image = @import("tools/textures.zig");
 const diskStep = @import("tools/disk.zig");
 const conv = @import("tools/convert.zig");
+const font = @import("tools/fonts.zig");
 const eon = @import("tools/eon.zig");
 const butler = @import("tools/butler.zig");
 
@@ -49,11 +50,11 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest", "send", "recv" };
 const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest", "stringtest" };
 const asmExecFiles = [_][]const u8{ "dump", "echo", "aplay", "libdump" };
-const eonExecFiles = [_][]const u8{ "updater", "asm", "pix", "connectris" };
+const eonExecFiles = [_][]const u8{ "updater", "asm", "pix", "connectris", "pong" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "ui", "heap", "table" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
-const pngImageFiles = [_][]const u8{ "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
+const pngImageFiles = [_][]const u8{ "pong", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios" };
 
 pub fn build(b: *std.build.Builder) void {
@@ -203,6 +204,10 @@ pub fn build(b: *std.build.Builder) void {
 
         write_step.step.dependOn(&step.step);
     }
+
+    var step = conv.ConvertStep.create(b, font.convert, "content/images/font.png", "content/disk/cont/fnts/scientifica.eff");
+
+    write_step.step.dependOn(&step.step);
 
     exe.step.dependOn(&write_step.step);
     exe.step.dependOn(&email_step.step);
