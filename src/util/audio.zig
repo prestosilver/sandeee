@@ -36,8 +36,6 @@ pub const Audio = struct {
     pub fn init() !Audio {
         var devicename = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
 
-        std.log.info("{s}", .{devicename});
-
         var result = Audio{
             .sources = undefined,
             .device = undefined,
