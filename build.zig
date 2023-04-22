@@ -1,5 +1,4 @@
 const std = @import("std");
-const freetype = @import("deps/mach-freetype/build.zig");
 const mail = @import("src/system/mail.zig");
 const comp = @import("tools/asm.zig");
 const sound = @import("tools/sound.zig");
@@ -69,10 +68,7 @@ pub fn build(b: *std.build.Builder) void {
         .source_file = .{ .path = "deps/zig-network/network.zig" },
     });
 
-    const freetypeModule = b.createModule(freetype.module);
-
     exe.addModule("network", networkModule);
-    exe.addModule("freetype", freetypeModule);
 
     _ = b.exec(&[_][]const u8{ "rm", "-rf", "content/disk" });
     _ = b.exec(&[_][]const u8{ "cp", "-r", "content/rawdisk", "content/disk" });
@@ -84,7 +80,6 @@ pub fn build(b: *std.build.Builder) void {
 
     // Includes
     exe.addIncludePath("deps/include");
-    exe.addIncludePath("deps/include/freetype2");
     if (exe.target.os_tag != null and exe.target.os_tag.? == .windows) {
         exe.addObjectFile("content/app.res.obj");
         exe.addLibraryPath("deps/lib");
@@ -98,7 +93,6 @@ pub fn build(b: *std.build.Builder) void {
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("OpenAL");
     exe.linkSystemLibrary("c");
-    exe.linkSystemLibrary("freetype");
     exe.linkLibC();
 
     exe.install();
@@ -205,9 +199,11 @@ pub fn build(b: *std.build.Builder) void {
         write_step.step.dependOn(&step.step);
     }
 
-    var step = conv.ConvertStep.create(b, font.convert, "content/images/font.png", "content/disk/cont/fnts/scientifica.eff");
+    var fontStep = conv.ConvertStep.create(b, font.convert, "content/images/font.png", "content/disk/cont/fnts/main.eff");
+    var biosFontStep = conv.ConvertStep.create(b, font.convert, "content/images/bios_font.png", "src/images/main.eff");
 
-    write_step.step.dependOn(&step.step);
+    write_step.step.dependOn(&fontStep.step);
+    write_step.step.dependOn(&biosFontStep.step);
 
     exe.step.dependOn(&write_step.step);
     exe.step.dependOn(&email_step.step);
@@ -226,8 +222,6 @@ pub fn build(b: *std.build.Builder) void {
         headless_cmd.addArgs(args);
     }
 
-    b.installFile("content/fonts/scientifica.ttf", "bin/content/font.ttf");
-    b.installFile("content/fonts/big.ttf", "bin/content/bios.ttf");
     b.installFile("content/emails.eme", "bin/content/emails.eme");
 
     if (exe.target.os_tag != null and exe.target.os_tag.? == .windows) {
@@ -237,11 +231,6 @@ pub fn build(b: *std.build.Builder) void {
         b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
-        b.installFile("deps/dll/libfreetype-6.dll", "bin/libfreetype-6.dll");
-        b.installFile("deps/dll/libbz2-1.dll", "bin/libbz2-1.dll");
-        b.installFile("deps/dll/libbrotlidec.dll", "bin/libbrotlidec.dll");
-        b.installFile("deps/dll/libbrotlicommon.dll", "bin/libbrotlicommon.dll");
-        b.installFile("deps/dll/zlib1.dll", "bin/zlib1.dll");
     }
 
     const run_step = b.step("run", "Run the app");

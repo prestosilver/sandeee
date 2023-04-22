@@ -32,6 +32,7 @@ pub const GSLoading = struct {
     const barlogopath: []const u8 = "bar_logo_path";
     const loginpath: []const u8 = "/cont/snds/login.era";
     const settingspath: []const u8 = "/conf/system.cfg";
+    const fontpath: []const u8 = "/cont/fnts/main.eff";
     const zero: u8 = 0;
     const delay: u64 = 300;
 
@@ -72,8 +73,6 @@ pub const GSLoading = struct {
 
     pub fn setup(self: *Self) !void {
         self.done = false;
-        var fontpath = fm.getContentPath("content/font.ttf");
-        defer fontpath.deinit();
 
         worker.texture.settingManager = self.settingManager;
 
@@ -105,7 +104,7 @@ pub const GSLoading = struct {
         try self.loader.enqueue(&zero, &zero, worker.mail.loadMail);
 
         // fonts
-        try self.loader.enqueue(&fontpath.items, self.face, worker.font.loadFont);
+        try self.loader.enqueue(&fontpath, self.face, worker.font.loadFontPath);
 
         // delay
         try self.loader.enqueue(&delay, &zero, worker.delay.loadDelay);
@@ -126,8 +125,6 @@ pub const GSLoading = struct {
         shell.webtex = self.webtex;
         shell.edittex = self.editortex;
         shell.shader = self.shader;
-
-        self.audio_man.* = try audio.Audio.init();
 
         // play login sound
         try self.audio_man.playSound(self.login_snd);

@@ -36,6 +36,8 @@ pub const Audio = struct {
     pub fn init() !Audio {
         var devicename = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
 
+        std.log.info("{s}", .{devicename});
+
         var result = Audio{
             .sources = undefined,
             .device = undefined,
@@ -47,7 +49,7 @@ pub const Audio = struct {
 
         if (c.alcMakeContextCurrent(result.context) == 0) return error.AudioInit;
 
-        c.alGenSources(SOURCES, &result.sources[0]);
+        c.alGenSources(SOURCES, &result.sources);
 
         return result;
     }

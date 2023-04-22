@@ -47,7 +47,7 @@ pub const WebData = struct {
             self.top = false;
         }
 
-        var pos = vecs.newVec2(0, -props.scroll.?.value + 34 - font.size);
+        var pos = vecs.newVec2(0, -props.scroll.?.value + 34);
 
         var cont: []const u8 = "Error Loading File";
         if (self.file) |file| {

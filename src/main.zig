@@ -276,9 +276,9 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
         std.os.exit(0);
     };
 
-    if (isHeadless) {
-        std.log.info("{s}", .{errorMsg});
+    std.log.info("{s}", .{errorMsg});
 
+    if (isHeadless) {
         std.os.exit(0);
     }
 
@@ -346,9 +346,6 @@ pub fn main() anyerror!void {
     ctx = try gfx.init("Sandeee");
     gfx.gContext = &ctx;
 
-    var bigfontpath = fm.getContentPath("content/bios.ttf");
-    defer bigfontpath.deinit();
-
     var biosFace: font.Font = undefined;
     var mainFace: font.Font = undefined;
 
@@ -360,7 +357,8 @@ pub fn main() anyerror!void {
     try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
 
     // fonts
-    try loader.enqueue(&bigfontpath.items, &biosFace, worker.font.loadFont);
+    const biosFont: []const u8 = @embedFile("images/main.eff");
+    try loader.enqueue(&biosFont, &biosFace, worker.font.loadFont);
 
     // load bios
     var prog: f32 = 0;
@@ -385,6 +383,8 @@ pub fn main() anyerror!void {
     var logoTex = try tex.newTextureMem(logoImage);
     var loadTex = try tex.newTextureMem(loadImage);
     var sadTex = try tex.newTextureMem(sadImage);
+
+    audioman = try audio.Audio.init();
 
     // disks state
     var gsDisks = diskState.GSDisks{
@@ -542,8 +542,8 @@ pub fn main() anyerror!void {
     var lastFrameTime = c.glfwGetTime();
 
     // networking :O
-    network.server = try network.Server.init();
-    _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
+    // network.server = try network.Server.init();
+    // _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
 
     // main loop
     while (gfx.poll(&ctx)) {

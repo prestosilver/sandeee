@@ -14,6 +14,8 @@ const lol = error{};
 //   FontChar: [256] chars,
 // }
 
+const SPACING = 1;
+
 pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var result = std.ArrayList(u8).init(alloc);
 
@@ -23,31 +25,30 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     try result.appendSlice("efnt");
 
     var chw = image.width / 16;
-    var chh = image.height / 16;
+    var chh = image.height / 16 + SPACING;
 
     try result.append(@intCast(u8, chw));
     try result.append(@intCast(u8, chh));
-    try result.append(2);
+    try result.append(1);
 
     for (0..16) |x| {
         for (0..16) |y| {
-            var ch = try alloc.alloc(u1, chw * chh);
+            var ch = try alloc.alloc(u8, chw * chh);
+            defer alloc.free(ch);
+            std.mem.set(u8, ch, 0);
+
             for (0..chw) |chx| {
-                for (0..chh) |chy| {
+                for (0..chh - SPACING) |chy| {
                     var pixelx = x * chw + chx;
-                    var pixely = y * chh + chy;
+                    var pixely = y * (chh - SPACING) + chy;
 
-                    var pixel = image.pixels.rgba32[pixelx + pixely * image.width];
+                    var pixel = image.pixels.rgba32[pixely + pixelx * image.height];
 
-                    ch[chx + chy * chh] = if (pixel.g != 0) 1 else 0;
+                    ch[chy + chx * (chh - SPACING)] = pixel.r * @divTrunc(pixel.a, 255);
                 }
             }
 
-            var data = std.mem.toBytes(ch);
-
-            try result.appendSlice(&data);
-
-            alloc.free(ch);
+            try result.appendSlice(ch);
         }
     }
 

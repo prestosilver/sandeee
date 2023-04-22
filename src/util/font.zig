@@ -2,28 +2,13 @@ const std = @import("std");
 const vec = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
-const ft = @import("freetype");
 const allocator = @import("allocator.zig");
 const sb = @import("spritebatch.zig");
 const shd = @import("shader.zig");
 const va = @import("vertArray.zig");
 const tex = @import("texture.zig");
+const files = @import("../system/files.zig");
 const c = @import("../c.zig");
-
-var lib: ft.c.FT_Library = undefined;
-
-const Error = error{
-    InitError,
-    LoadFaceError,
-    LoadGlyphError,
-    RenderGlyphError,
-    UnsupportedFileFormat,
-    UnsupportedPixelSize,
-};
-
-fn range(len: usize) []const void {
-    return @as([*]void, undefined)[0..len];
-}
 
 pub const Font = struct {
     tex: tex.Texture,
@@ -32,6 +17,7 @@ pub const Font = struct {
 
     pub const Char = struct {
         tx: f32,
+        ty: f32,
         tw: f32,
         th: f32,
         bearing: vec.Vector2,
@@ -40,36 +26,19 @@ pub const Font = struct {
         size: vec.Vector2,
     };
 
-    pub fn init(file: [*c]const u8, size: u32) !Font {
-        var face: ft.c.FT_Face = undefined;
+    pub fn init(path: []const u8) !Font {
+        if (try files.root.getFile(path)) |file|
+            return initMem(try file.read(null));
+        return error.NotFound;
+    }
 
-        var err = ft.c.FT_Init_FreeType(&lib);
-        if (err != 0) {
-            return error.InitError;
-        }
+    pub fn initMem(data: []const u8) !Font {
+        if (!std.mem.eql(u8, data[0..4], "efnt")) return error.BadFile;
 
-        err = ft.c.FT_New_Face(lib, @ptrCast([*c]const u8, file), 0, &face);
-        if (err == ft.c.FT_Err_Unknown_File_Format) {
-            return error.UnsupportedFileFormat;
-        } else if (err != 0) {
-            return error.LoadFaceError;
-        }
+        var charWidth = @intCast(c_uint, data[4]);
+        var charHeight = @intCast(c_uint, data[5]);
 
-        err = ft.c.FT_Set_Pixel_Sizes(face, 0, size);
-        if (err != 0) {
-            return error.UnsupportedPixelSize;
-        }
-
-        var atlasSize = vec.newVec2(0, 0);
-        for (range(128), 0..) |_, i| {
-            err = ft.c.FT_Load_Char(face, @intCast(c_ulong, i), ft.c.FT_LOAD_RENDER);
-            if (err != 0) {
-                return error.UnsupportedPixelSize;
-            }
-
-            atlasSize.x += @intToFloat(f32, face.*.glyph.*.bitmap.width);
-            if (atlasSize.y < @intToFloat(f32, face.*.glyph.*.bitmap.rows)) atlasSize.y = @intToFloat(f32, face.*.glyph.*.bitmap.rows);
-        }
+        var atlasSize = vec.newVec2(128 * @intToFloat(f32, charWidth), 2 * @intToFloat(f32, charHeight));
 
         var result: Font = undefined;
         c.glGenTextures(1, &result.tex.tex);
@@ -84,40 +53,53 @@ pub const Font = struct {
 
         var x: c_uint = 0;
 
-        for (range(128), 0..) |_, i| {
-            err = ft.c.FT_Load_Char(face, @intCast(c_ulong, i), ft.c.FT_LOAD_RENDER);
-            if (err != 0) {
-                continue;
-            }
-            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @intCast(c_int, x), 0, @intCast(c_int, face.*.glyph.*.bitmap.width), @intCast(c_int, face.*.glyph.*.bitmap.rows), c.GL_RED, c.GL_UNSIGNED_BYTE, face.*.glyph.*.bitmap.buffer);
+        for (0..128) |i| {
+            var chStart = 4 + 3 + (charWidth * charHeight * i);
+
+            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @intCast(c_int, x), 0, @intCast(c_int, charWidth), @intCast(c_int, charHeight), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
 
             result.chars[i] = Char{
                 .size = vec.newVec2(
-                    @intToFloat(f32, face.*.glyph.*.bitmap.width),
-                    @intToFloat(f32, face.*.glyph.*.bitmap.rows),
+                    @intToFloat(f32, charWidth) * 2,
+                    @intToFloat(f32, charHeight) * 2,
                 ),
                 .bearing = vec.newVec2(
-                    @intToFloat(f32, face.*.glyph.*.bitmap_left),
-                    @intToFloat(f32, face.*.glyph.*.bitmap_top),
+                    0,
+                    @intToFloat(f32, data[6]) * 2,
                 ),
-                .ax = @intToFloat(f32, face.*.glyph.*.advance.x >> 6),
-                .ay = @intToFloat(f32, face.*.glyph.*.advance.y >> 6),
+                .ax = @intToFloat(f32, charWidth) * 2 - 4,
+                .ay = 0,
                 .tx = @intToFloat(f32, x) / atlasSize.x,
-                .tw = @intToFloat(f32, face.*.glyph.*.bitmap.width) / atlasSize.x,
-                .th = @intToFloat(f32, face.*.glyph.*.bitmap.rows) / atlasSize.y,
+                .ty = 0.5,
+                .tw = @intToFloat(f32, charWidth) / atlasSize.x,
+                .th = @intToFloat(f32, charHeight) / atlasSize.y,
             };
 
-            x += face.*.glyph.*.bitmap.width;
+            chStart = 4 + 3 + (charWidth * charHeight * (i + 128));
+
+            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @intCast(c_int, x), @intCast(c_int, charHeight), @intCast(c_int, charWidth), @intCast(c_int, charHeight), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
+
+            result.chars[i] = Char{
+                .size = vec.newVec2(
+                    @intToFloat(f32, charWidth) * 2,
+                    @intToFloat(f32, charHeight) * 2,
+                ),
+                .bearing = vec.newVec2(
+                    0,
+                    @intToFloat(f32, data[6]) * 2,
+                ),
+                .ax = @intToFloat(f32, charWidth) * 2 - 4,
+                .ay = 0,
+                .tx = @intToFloat(f32, x) / atlasSize.x,
+                .ty = 0,
+                .tw = @intToFloat(f32, charWidth) / atlasSize.x,
+                .th = @intToFloat(f32, charHeight) / atlasSize.y,
+            };
+
+            x += charWidth;
         }
 
-        result.size = @intToFloat(f32, size);
-
-        err = ft.c.FT_Done_Face(face);
-        if (err != 0) {
-            return error.LoadFaceError;
-        }
-
-        err = ft.c.FT_Done_FreeType(lib);
+        result.size = @intToFloat(f32, charHeight * 2);
 
         return result;
     }
@@ -132,6 +114,7 @@ pub const Font = struct {
         color: col.Color = col.newColor(0, 0, 0, 1),
         wrap: ?f32 = null,
         maxlines: ?usize = null,
+        newLines: bool = true,
     };
 
     pub fn draw(self: *Font, params: drawParams) !void {
@@ -233,20 +216,19 @@ pub const Font = struct {
 
         for (params.text) |ach| {
             var ch = ach;
-            if (ch == '\n') {
+            if (ch == '\n' and params.newLines) {
                 pos.y += self.size * params.scale;
                 pos.x = start.x;
                 continue;
             }
-            if (ch > 127) ch = '?';
-            if (ch < 32) ch = '?';
 
             var char = self.chars[ch];
             var w = char.size.x * params.scale;
             var h = char.size.y * params.scale;
             var xpos = pos.x + char.bearing.x * params.scale;
-            var ypos = pos.y - (char.bearing.y - self.size) * params.scale;
+            var ypos = pos.y + char.bearing.y * params.scale;
             srect.x = char.tx;
+            srect.y = char.ty;
             srect.w = char.tw;
             srect.h = char.th;
 
