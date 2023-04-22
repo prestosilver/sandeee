@@ -438,10 +438,12 @@ pub const Shell = struct {
         }
         vmsLeft -= 1;
 
-        if (frameTime < timer.read()) {
+        var usedTime = timer.read();
+
+        if (frameTime < usedTime) {
             frameTime = 0;
         } else {
-            frameTime -= timer.read();
+            frameTime -= usedTime;
         }
 
         return null;
