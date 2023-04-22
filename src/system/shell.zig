@@ -387,7 +387,7 @@ pub const Shell = struct {
         var timer = try std.time.Timer.start();
         timer.reset();
 
-        if (self.vm.?.runTime(frameTime / vmsLeft) catch |err| {
+        if (self.vm.?.runTime(frameTime / vmsLeft, false and @import("builtin").mode == .Debug) catch |err| {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };

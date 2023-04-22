@@ -10,6 +10,9 @@ fn range(len: usize) []const void {
 }
 
 pub const VM = struct {
+    var cnts = std.EnumArray(Operation.Code, u64).initFill(0);
+    var times = std.EnumArray(Operation.Code, u64).initFill(0);
+
     const VMError = error{
         StackUnderflow,
         ValueMissing,
@@ -91,13 +94,13 @@ pub const VM = struct {
         };
     }
 
-    fn pushStack(self: *VM, entry: StackEntry) !void {
+    inline fn pushStack(self: *VM, entry: StackEntry) !void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         self.stack[self.rsp] = entry;
         self.rsp += 1;
     }
 
-    fn pushStackI(self: *VM, value: u64) !void {
+    inline fn pushStackI(self: *VM, value: u64) !void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         var val = try self.allocator.create(u64);
         val.* = value;
@@ -106,7 +109,7 @@ pub const VM = struct {
         self.rsp += 1;
     }
 
-    fn pushStackS(self: *VM, string: []const u8) !void {
+    inline fn pushStackS(self: *VM, string: []const u8) !void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         var appendString = try self.allocator.create([]u8);
 
@@ -116,13 +119,13 @@ pub const VM = struct {
         self.rsp += 1;
     }
 
-    fn popStack(self: *VM) VMError!StackEntry {
+    inline fn popStack(self: *VM) VMError!StackEntry {
         if (self.rsp == 0) return error.StackUnderflow;
         self.rsp -= 1;
         return self.stack[self.rsp];
     }
 
-    fn findStack(self: *VM, idx: u64) VMError!StackEntry {
+    inline fn findStack(self: *VM, idx: u64) VMError!StackEntry {
         if (self.rsp <= idx) return error.StackUnderflow;
         return self.stack[self.rsp - 1 - idx];
     }
@@ -178,7 +181,6 @@ pub const VM = struct {
             Mod,
             Create,
             Size,
-            _,
         };
 
         code: Code,
@@ -204,6 +206,16 @@ pub const VM = struct {
     };
 
     pub fn deinit(self: *VM) !void {
+        if (@import("builtin").mode == .Debug) {
+            var iter = cnts.iterator();
+
+            while (iter.next()) |entry| {
+                std.log.debug("op: {}, calls: {} time: {}", .{ entry.key, entry.value.*, times.get(entry.key) });
+            }
+
+            std.log.debug("=======", .{});
+        }
+
         var oldrsp = self.rsp;
         self.rsp = 0;
 
@@ -290,7 +302,7 @@ pub const VM = struct {
         }
     }
 
-    pub fn runOp(self: *VM, op: Operation) !void {
+    pub inline fn runOp(self: *VM, op: Operation) !void {
         // std.log.debug("{?s}:{}", .{ self.inside_fn, op });
         self.pc += 1;
 
@@ -981,11 +993,8 @@ pub const VM = struct {
 
                 return;
             },
-            _ => {
-                return error.InvalidOp;
-            },
         }
-        return error.NotImplemented;
+        return error.InvalidOp;
     }
 
     pub fn loadList(self: *VM, ops: []Operation) !void {
@@ -1016,7 +1025,7 @@ pub const VM = struct {
                 ops.deinit();
                 return error.InvalidAsm;
             }
-            var code: Operation.Code = @intToEnum(Operation.Code, conts[parsePtr]);
+            var code: Operation.Code = try std.meta.intToEnum(Operation.Code, conts[parsePtr]);
             parsePtr += 1;
             if (parsePtr >= conts.len) {
                 ops.deinit();
@@ -1073,14 +1082,8 @@ pub const VM = struct {
         try self.loadList(ops.items);
     }
 
-    pub fn runAll(self: *VM) !void {
-        while (!(self.runStep() catch |err| {
-            return err;
-        })) {}
-    }
-
     pub fn done(self: *VM) bool {
-        return (self.pc >= self.code.?.len and self.inside_fn == null) or self.stopped;
+        return self.stopped or (self.pc >= self.code.?.len and self.inside_fn == null);
     }
 
     pub fn getOp(self: *VM) ![]u8 {
@@ -1102,41 +1105,64 @@ pub const VM = struct {
         return result;
     }
 
-    pub fn runStep(self: *VM) !bool {
-        var oper: Operation = undefined;
+    pub fn getOper(self: *VM) !?Operation {
         if (self.inside_fn) |inside| {
             if (self.functions.getPtr(inside)) |func| {
-                oper = func.*.ops[self.pc];
-            } else {
-                //std.log.err("'{s}', {any}", .{inside, self.functions.get(inside)});
-                return error.UnknownFunction;
+                return func.*.ops[self.pc];
             }
+            //std.log.err("'{s}', {any}", .{inside, self.functions.get(inside)});
+            return error.UnknownFunction;
         } else {
-            if (self.code.?.len <= self.pc) return self.done();
-            oper = self.code.?[self.pc];
+            if (self.code.?.len <= self.pc) return null;
+            return self.code.?[self.pc];
         }
+
+        return null;
+    }
+
+    pub fn runStep(self: *VM) !bool {
+        var oper = try self.getOper() orelse return true;
 
         try self.runOp(oper);
 
         return self.done();
     }
 
-    pub fn runTime(self: *VM, ns: u64) !bool {
+    pub fn runAll(self: *VM) !void {
+        while (!try self.runStep()) {}
+    }
+
+    pub fn runTime(self: *VM, ns: u64, comptime prof: bool) !bool {
         var timer = try std.time.Timer.start();
 
         timer.reset();
 
-        while (timer.read() < ns and !self.yield) {
-            if (self.runStep() catch |err| {
-                return err;
-            }) {
-                return true;
+        if (prof) {
+            while (timer.read() < ns and !self.done() and !self.yield) {
+                var start = timer.read();
+
+                var op = (try self.getOper() orelse return true).code;
+                if (try self.runStep()) {
+                    return true;
+                }
+                cnts.getPtr(op).* += 1;
+                times.getPtr(op).* += timer.read() - start;
             }
+
+            self.yield = false;
+
+            return self.done();
+        } else {
+            while (timer.read() < ns and !self.done() and !self.yield) {
+                if (try self.runStep()) {
+                    return true;
+                }
+            }
+
+            self.yield = false;
+
+            return self.done();
         }
-
-        self.yield = false;
-
-        return self.done();
     }
 
     pub fn runNum(self: *VM, num: u64) !bool {
