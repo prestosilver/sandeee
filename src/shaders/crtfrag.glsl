@@ -22,8 +22,8 @@ uniform float scan_size = 3.0;
 uniform float scanline_alpha = 0.85;
 uniform float lines_velocity = -2.0;
 
-uniform int crt_enable = 0;
-uniform int dither_enable = 0;
+uniform int crt_enable = 1;
+uniform int dither_enable = 1;
 
 #define COLOR_STEPS 8.0
 #define GAMMA 2.5

@@ -209,7 +209,7 @@ pub const WebData = struct {
         _ = self;
     }
 
-    pub fn key(_: *Self, _: i32, _: i32) !void {}
+    pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
     pub fn focus(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {

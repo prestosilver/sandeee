@@ -90,6 +90,7 @@ const CMDData = struct {
             });
         }
 
+        //TODO: crash?
         props.scroll.?.maxy = @max(height, bnds.h) - bnds.h;
         if (self.bot) {
             self.bot = false;
@@ -111,9 +112,10 @@ const CMDData = struct {
         _ = mods;
     }
 
-    pub fn key(self: *Self, code: i32, mods: i32) !void {
+    pub fn key(self: *Self, code: i32, mods: i32, down: bool) !void {
         _ = mods;
         if (self.shell.vm != null) return;
+        if (!down) return;
 
         self.bot = true;
 

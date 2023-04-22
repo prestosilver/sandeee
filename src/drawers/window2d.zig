@@ -61,7 +61,7 @@ pub const WindowContents = struct {
     const VTable = struct {
         draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font, *WindowProps) anyerror!void,
         click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, i32) anyerror!void,
-        key: *const fn (*anyopaque, i32, i32) anyerror!void,
+        key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
         char: *const fn (*anyopaque, u32, i32) anyerror!void,
         scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
         move: *const fn (*anyopaque, f32, f32) anyerror!void,
@@ -106,8 +106,8 @@ pub const WindowContents = struct {
         try self.drawScroll(batch, bnds);
     }
 
-    pub fn key(self: *Self, keycode: i32, mods: i32) !void {
-        return self.vtable.key(self.ptr, keycode, mods);
+    pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
+        return self.vtable.key(self.ptr, keycode, mods, down);
     }
 
     pub fn char(self: *Self, codepoint: u32, mods: i32) !void {
@@ -179,10 +179,10 @@ pub const WindowContents = struct {
                 return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font, props });
             }
 
-            fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32) !void {
+            fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
                 const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods });
+                return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
             }
 
             fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
@@ -420,7 +420,7 @@ pub const WindowData = struct {
         }
     }
 
-    pub fn key(self: *WindowData, keycode: i32, mods: i32) !bool {
+    pub fn key(self: *WindowData, keycode: i32, mods: i32, down: bool) !bool {
         if (self.min) return true;
 
         var bnds = self.pos;
@@ -429,7 +429,7 @@ pub const WindowData = struct {
         bnds.w -= 8;
         bnds.h -= 36;
 
-        try self.contents.key(keycode, mods);
+        try self.contents.key(keycode, mods, down);
         return true;
     }
 

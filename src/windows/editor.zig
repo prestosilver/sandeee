@@ -185,9 +185,10 @@ pub const EditorData = struct {
         self.modified = true;
     }
 
-    pub fn key(self: *Self, keycode: i32, mods: i32) !void {
+    pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
         _ = mods;
         if (self.file == null) return;
+        if (!down) return;
 
         switch (keycode) {
             cc.GLFW_KEY_ENTER => {

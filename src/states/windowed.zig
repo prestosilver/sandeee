@@ -233,8 +233,8 @@ pub const GSWindowed = struct {
         }
     }
 
-    pub fn keypress(self: *Self, key: c_int, mods: c_int) !bool {
-        if (self.bar.data.btnActive) {
+    pub fn keypress(self: *Self, key: c_int, mods: c_int, down: bool) !bool {
+        if (self.bar.data.btnActive and !down) {
             self.bar.data.btnActive = false;
 
             return false;
@@ -243,7 +243,7 @@ pub const GSWindowed = struct {
         for (self.windows.items) |*window| {
             if (!window.data.active) continue;
 
-            return window.data.key(key, mods);
+            return window.data.key(key, mods, down);
         }
 
         return false;

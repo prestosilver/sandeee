@@ -7,6 +7,7 @@ const loadingState = @import("states/loading.zig");
 const windowedState = @import("states/windowed.zig");
 const crashState = @import("states/crash.zig");
 const installState = @import("states/installer.zig");
+const recoveryState = @import("states/recovery.zig");
 
 const fm = @import("util/files.zig");
 const font = @import("util/font.zig");
@@ -201,7 +202,11 @@ pub fn changeState(event: systemEvs.EventStateChange) bool {
 }
 
 pub fn keyDown(event: inputEvs.EventKeyDown) bool {
-    return gameStates.getPtr(currentState).keypress(event.key, event.mods) catch false;
+    return gameStates.getPtr(currentState).keypress(event.key, event.mods, true) catch false;
+}
+
+pub fn keyUp(event: inputEvs.EventKeyUp) bool {
+    return gameStates.getPtr(currentState).keypress(event.key, event.mods, false) catch false;
 }
 
 pub fn keyChar(event: inputEvs.EventKeyChar) bool {
@@ -233,12 +238,13 @@ pub fn setupEvents() !void {
     events.init();
 
     events.em.registerListener(inputEvs.EventWindowResize, windowResize);
+    events.em.registerListener(inputEvs.EventMouseScroll, mouseScroll);
     events.em.registerListener(inputEvs.EventMouseMove, mouseMove);
     events.em.registerListener(inputEvs.EventMouseDown, mouseDown);
     events.em.registerListener(inputEvs.EventMouseUp, mouseUp);
-    events.em.registerListener(inputEvs.EventMouseScroll, mouseScroll);
     events.em.registerListener(inputEvs.EventKeyDown, keyDown);
     events.em.registerListener(inputEvs.EventKeyChar, keyChar);
+    events.em.registerListener(inputEvs.EventKeyUp, keyUp);
 
     events.em.registerListener(systemEvs.EventStateChange, changeState);
 }
@@ -503,6 +509,14 @@ pub fn main() anyerror!void {
         },
     };
 
+    // recovery state
+    var gsRecovery = recoveryState.GSRecovery{
+        .shader = &shader,
+        .sb = &sb,
+        .font_shader = &font_shader,
+        .face = &biosFace,
+    };
+
     // done states setup
     ctx.makeNotCurrent();
 
@@ -514,6 +528,7 @@ pub fn main() anyerror!void {
     gameStates.set(.Loading, states.GameState.init(&gsLoading));
     gameStates.set(.Windowed, states.GameState.init(&gsWindowed));
     gameStates.set(.Crash, states.GameState.init(&gsCrash));
+    gameStates.set(.Recovery, states.GameState.init(&gsRecovery));
     gameStates.set(.Installer, states.GameState.init(&gsInstall));
 
     // run setup

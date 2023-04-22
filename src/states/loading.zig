@@ -157,7 +157,7 @@ pub const GSLoading = struct {
         }
     }
 
-    pub fn keypress(_: *Self, _: c_int, _: c_int) !bool {
+    pub fn keypress(_: *Self, _: c_int, _: c_int, _: bool) !bool {
         return false;
     }
 

@@ -136,7 +136,8 @@ pub const GSInstall = struct {
         }
     }
 
-    pub fn keypress(self: *Self, keycode: c_int, mods: c_int) !bool {
+    pub fn keypress(self: *Self, keycode: c_int, mods: c_int, down: bool) !bool {
+        if (!down) return false;
         switch (keycode) {
             c.GLFW_KEY_A...c.GLFW_KEY_Z => {
                 switch (self.status) {

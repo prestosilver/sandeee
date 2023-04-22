@@ -144,7 +144,7 @@ const EmailData = struct {
         _ = code;
         _ = self;
     }
-    pub fn key(_: *Self, _: i32, _: i32) !void {}
+    pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
 
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
         switch (btn) {

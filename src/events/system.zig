@@ -2,6 +2,7 @@ pub const State = enum {
     Disks,
     Loading,
     Installer,
+    Recovery,
     Windowed,
 
     Crash,

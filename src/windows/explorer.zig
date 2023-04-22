@@ -246,8 +246,9 @@ const ExplorerData = struct {
         _ = self;
     }
 
-    pub fn key(self: *Self, keycode: i32, _: i32) void {
+    pub fn key(self: *Self, keycode: i32, _: i32, down: bool) void {
         if (self.shell.vm != null) return;
+        if (!down) return;
 
         switch (keycode) {
             c.GLFW_KEY_BACKSPACE => {

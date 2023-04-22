@@ -25,6 +25,7 @@ pub const VMData = struct {
     time: f32 = 0,
     fps: f32 = 0,
     debug: bool = builtin.mode == .Debug,
+    input: u32,
 
     const VMDataKind = enum {
         Rect,
@@ -139,15 +140,20 @@ pub const VMData = struct {
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
         _ = mods;
-        _ = code;
-        _ = self;
+        self.input = code;
     }
 
-    pub fn key(self: *Self, keycode: i32, _: i32) !void {
+    pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
+        if (!down) {
+            self.input = 0;
+
+            return;
+        }
         if (keycode == c.GLFW_KEY_F1) {
             self.debug = !self.debug;
         }
     }
+
     pub fn click(_: *Self, _: vecs.Vector2, _: vecs.Vector2, _: i32) !void {}
     pub fn scroll(_: *Self, _: f32, _: f32) !void {}
     pub fn move(_: *Self, _: f32, _: f32) !void {}
@@ -171,6 +177,7 @@ pub fn new(idx: u8, shader: *shd.Shader) !win.WindowContents {
             std.ArrayList(VMData.VMDataEntry).init(allocator.alloc),
             std.ArrayList(VMData.VMDataEntry).init(allocator.alloc),
         },
+        .input = 0,
     };
 
     return win.WindowContents.init(self, "vm", "VM Window", col.newColor(1, 1, 1, 1));

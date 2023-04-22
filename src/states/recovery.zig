@@ -1,34 +1,31 @@
 const std = @import("std");
 const shd = @import("../util/shader.zig");
-const sb = @import("../util/spritebatch.zig");
-const sp = @import("../drawers/sprite2d.zig");
-const vecs = @import("../math/vecs.zig");
+const batch = @import("../util/spritebatch.zig");
 const font = @import("../util/font.zig");
-const allocator = @import("../util/allocator.zig");
-const fm = @import("../util/files.zig");
-const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const vecs = @import("../math/vecs.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
+const allocator = @import("../util/allocator.zig");
+const events = @import("../util/events.zig");
+const systemEvs = @import("../events/system.zig");
 
 const c = @import("../c.zig");
 
-pub const GSDisks = struct {
-    const Self = @This();
-    const VERSION = "0.0.2";
-    const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
+const VERSION = "0.0.0";
 
+pub const GSRecovery = struct {
+    const Self = @This();
+
+    shader: *shd.Shader,
+    sb: *batch.SpriteBatch,
     face: *font.Font,
     font_shader: *shd.Shader,
-    shader: *shd.Shader,
-    sb: *sb.SpriteBatch,
-    logo_sprite: sp.Sprite,
-    disk: *?[]u8,
 
-    remaining: f32 = 3,
     sel: usize = 0,
-    auto: bool = true,
     disks: std.ArrayList([]const u8) = undefined,
+
+    const DISK_LIST = "0123456789ABCDEF";
+    const TEXT_COLOR = cols.newColor(1, 1, 1, 1);
 
     pub fn getDate(name: []const u8) i128 {
         var path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;
@@ -42,14 +39,9 @@ pub const GSDisks = struct {
         return getDate(b) < getDate(a);
     }
 
-    const DISK_LIST = "0123456789ABCDEF";
-
     pub fn setup(self: *Self) !void {
-        gfx.gContext.color = cols.newColor(0, 0, 0, 1);
+        gfx.gContext.color = cols.newColor(0, 0, 1, 1);
 
-        self.sel = 0;
-        self.auto = true;
-        self.remaining = 3;
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
         const dir = try std.fs.cwd().openIterableDir("disks", .{});
@@ -77,83 +69,39 @@ pub const GSDisks = struct {
 
         self.disks.items.len = @min(self.disks.items.len, DISK_LIST.len);
 
-        try self.disks.append("+ New Disk");
-        try self.disks.append("R Recovery");
+        try self.disks.append("X Back");
     }
 
     pub fn deinit(self: *Self) !void {
-        for (self.disks.items[0 .. self.disks.items.len - 2]) |item| {
+        for (self.disks.items[0 .. self.disks.items.len - 1]) |item| {
             allocator.alloc.free(item);
         }
 
         self.disks.deinit();
     }
 
-    pub fn update(self: *Self, dt: f32) !void {
-        if (self.auto) self.remaining -= dt;
+    pub fn update(_: *Self, _: f32) !void {}
 
-        if (self.remaining <= 0) {
-            self.disk.* = null;
+    pub fn draw(self: *Self, size: vecs.Vector2) !void {
+        _ = size;
+        var y: f32 = 100;
 
-            if (self.sel < self.disks.items.len - 1) {
-                var sel = self.disks.items[self.sel];
-
-                self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
-                std.mem.copy(u8, self.disk.*.?, sel[2..]);
-            }
-
-            if (self.sel == self.disks.items.len - 2) {
-                events.em.sendEvent(systemEvs.EventStateChange{
-                    .targetState = .Installer,
-                });
-            } else if (self.sel == self.disks.items.len - 1) {
-                events.em.sendEvent(systemEvs.EventStateChange{
-                    .targetState = .Recovery,
-                });
-            } else {
-                events.em.sendEvent(systemEvs.EventStateChange{
-                    .targetState = .Loading,
-                });
-            }
-        }
-    }
-
-    pub fn draw(self: *Self, _: vecs.Vector2) !void {
-        var pos = vecs.newVec2(100, 100);
-
-        var line: []u8 = undefined;
-
-        try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(pos.x, pos.y, 0));
-        pos.y += self.logo_sprite.data.size.y;
-
-        if (self.auto) {
-            line = try std.fmt.allocPrint(allocator.alloc, "BootEEE V_{s} Booting to default in {}s", .{ VERSION, @floatToInt(i32, self.remaining + 0.5) });
-        } else {
-            line = try std.fmt.allocPrint(allocator.alloc, "BootEEE V_{s}", .{VERSION});
-        }
-
+        var titleLine = try std.fmt.allocPrint(allocator.alloc, "SandEEE Recovery v_{s}", .{VERSION});
+        defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
             .batch = self.sb,
             .shader = self.font_shader,
-            .text = line,
-            .pos = pos,
-            .color = TEXT_COLOR,
+            .text = titleLine,
+            .pos = vecs.newVec2(100, y),
+            .color = cols.newColor(1, 1, 1, 1),
         });
-        pos.y += self.face.size * 2;
-        try self.face.draw(.{
-            .batch = self.sb,
-            .shader = self.font_shader,
-            .text = "Select a disk",
-            .pos = pos,
-            .color = TEXT_COLOR,
-        });
-        pos.y += self.face.size * 1;
+        y += self.face.size * 2;
 
         if (self.disks.items.len != 0) {
             for (self.disks.items, 0..) |disk, idx| {
-                allocator.alloc.free(line);
+                var line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{disk});
+                defer allocator.alloc.free(line);
 
-                line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{disk});
                 if (idx == self.sel) {
                     line[0] = '>';
                 }
@@ -162,22 +110,22 @@ pub const GSDisks = struct {
                     .batch = self.sb,
                     .shader = self.font_shader,
                     .text = line,
-                    .pos = pos,
+                    .pos = vecs.newVec2(100, y),
                     .color = TEXT_COLOR,
                 });
-                pos.y += self.face.size * 1;
+                y += self.face.size * 1;
             }
         }
-        allocator.alloc.free(line);
     }
 
     pub fn keypress(self: *Self, key: c_int, _: c_int, down: bool) !bool {
         if (!down) return false;
-
-        self.auto = false;
         switch (key) {
             c.GLFW_KEY_ENTER => {
-                self.remaining = 0;
+                if (self.sel == self.disks.items.len - 1)
+                    events.em.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Disks,
+                    });
             },
             c.GLFW_KEY_DOWN => {
                 if (self.sel < self.disks.items.len - 1)
@@ -192,7 +140,7 @@ pub const GSDisks = struct {
                 for (self.disks.items, 0..) |disk, idx| {
                     if (c.glfwGetKeyName(key, 0)[0] == disk[0]) {
                         self.sel = idx;
-                        self.remaining = 0;
+                        // self.remaining = 0;
                     }
                 }
             },
@@ -200,7 +148,6 @@ pub const GSDisks = struct {
 
         return false;
     }
-
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
     pub fn mousepress(_: *Self, _: c_int) !void {}
     pub fn mouserelease(_: *Self) !void {}
