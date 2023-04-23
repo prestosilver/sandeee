@@ -703,6 +703,24 @@ pub const VM = struct {
                             self.yield = true;
                             return;
                         },
+                        // error
+                        18 => {
+                            var msg = try self.popStack();
+                            defer self.free(&[_]StackEntry{msg});
+
+                            if (msg != .string) return error.ValueMissing;
+
+                            var msgString = try self.getOp();
+                            defer self.allocator.free(msgString);
+
+                            try self.out.appendSlice("Error: ");
+                            try self.out.appendSlice(msg.string.*);
+                            try self.out.appendSlice("\n");
+                            try self.out.appendSlice(msgString);
+
+                            self.stopped = true;
+                            return;
+                        },
                         // panic
                         128 => {
                             @panic("VM Crash Called");
