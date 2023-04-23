@@ -150,7 +150,7 @@ pub const WebData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = file.name,
-                .pos = vecs.newVec2(bnds.x + 36, bnds.y + 2),
+                .pos = vecs.newVec2(bnds.x + 36, bnds.y + 8),
                 .wrap = bnds.w,
             });
         } else {
@@ -158,7 +158,7 @@ pub const WebData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = "Error",
-                .pos = vecs.newVec2(bnds.x + 36, bnds.y + 2),
+                .pos = vecs.newVec2(bnds.x + 36, bnds.y + 8),
                 .wrap = bnds.w,
             });
         }

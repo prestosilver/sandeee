@@ -190,7 +190,7 @@ const ExplorerData = struct {
             .batch = batch,
             .shader = font_shader,
             .text = self.shell.root.name,
-            .pos = vecs.newVec2(bnds.x + 36, bnds.y + 2),
+            .pos = vecs.newVec2(bnds.x + 36, bnds.y + 8),
             .color = col.newColor(0, 0, 0, 1),
         });
 
