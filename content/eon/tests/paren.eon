@@ -1,0 +1,4 @@
+value main() {
+    return 4 + (0 + 5);
+}
+
