@@ -223,16 +223,6 @@ pub const Folder = struct {
         }
     }
 
-    fn check(cmd: []const u8, exp: []const u8) bool {
-        if (cmd.len != exp.len) return false;
-
-        for (cmd, 0..) |char, idx| {
-            if (char != exp[idx])
-                return false;
-        }
-        return true;
-    }
-
     pub fn newFile(self: *Folder, name: []const u8) !bool {
         if (self.protected) return error.FolderProtected;
 
@@ -241,13 +231,13 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
-                if (check(file.items, ".")) return self.newFile(name[2..]);
-                if (check(file.items, "")) return self.newFile(name[1..]);
+                if (std.mem.eql(u8, file.items, ".")) return self.newFile(name[2..]);
+                if (std.mem.eql(u8, file.items, "")) return self.newFile(name[1..]);
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
                 for (self.subfolders.items, 0..) |folder, idx| {
-                    if (check(folder.name, fullname)) {
+                    if (std.mem.eql(u8, folder.name, fullname)) {
                         return self.subfolders.items[idx].newFile(name[file.items.len + 1 ..]);
                     }
                 }
@@ -271,7 +261,7 @@ pub const Folder = struct {
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
         for (self.contents.items) |subfile| {
-            if (check(subfile.name, fullname)) {
+            if (std.mem.eql(u8, subfile.name, fullname)) {
                 allocator.alloc.free(fullname);
                 return false;
             }
@@ -305,9 +295,9 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
-                if (check(file.items, "..")) return self.parent.newFolder(name[3..]);
-                if (check(file.items, ".")) return self.newFolder(name[2..]);
-                if (check(file.items, "")) return self.newFolder(name[1..]);
+                if (std.mem.eql(u8, file.items, "..")) return self.parent.newFolder(name[3..]);
+                if (std.mem.eql(u8, file.items, ".")) return self.newFolder(name[2..]);
+                if (std.mem.eql(u8, file.items, "")) return self.newFolder(name[1..]);
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
 
@@ -359,14 +349,14 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
-                if (check(file.items, "..")) return try self.parent.writeFile(name[3..], contents, vmInstance);
-                if (check(file.items, ".")) return try self.writeFile(name[2..], contents, vmInstance);
-                if (check(file.items, "")) return try self.writeFile(name[1..], contents, vmInstance);
+                if (std.mem.eql(u8, file.items, "..")) return try self.parent.writeFile(name[3..], contents, vmInstance);
+                if (std.mem.eql(u8, file.items, ".")) return try self.writeFile(name[2..], contents, vmInstance);
+                if (std.mem.eql(u8, file.items, "")) return try self.writeFile(name[1..], contents, vmInstance);
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
                 for (self.subfolders.items, 0..) |folder, idx| {
-                    if (check(folder.name, fullname)) {
+                    if (std.mem.eql(u8, folder.name, fullname)) {
                         return try self.subfolders.items[idx].writeFile(name[file.items.len..], contents, vmInstance);
                     }
                 }
@@ -378,7 +368,7 @@ pub const Folder = struct {
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
         for (self.contents.items, 0..) |subfile, idx| {
-            if (check(subfile.name, fullname)) {
+            if (std.mem.eql(u8, subfile.name, fullname)) {
                 try self.contents.items[idx].write(contents, vmInstance);
                 allocator.alloc.free(fullname);
                 return;
@@ -393,14 +383,14 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
-                if (check(file.items, "..")) return try self.parent.removeFile(name[3..], vmInstance);
-                if (check(file.items, ".")) return try self.removeFile(name[2..], vmInstance);
-                if (check(file.items, "")) return try self.removeFile(name[1..], vmInstance);
+                if (std.mem.eql(u8, file.items, "..")) return try self.parent.removeFile(name[3..], vmInstance);
+                if (std.mem.eql(u8, file.items, ".")) return try self.removeFile(name[2..], vmInstance);
+                if (std.mem.eql(u8, file.items, "")) return try self.removeFile(name[1..], vmInstance);
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
                 for (self.subfolders.items, 0..) |folder, idx| {
-                    if (check(folder.name, fullname)) {
+                    if (std.mem.eql(u8, folder.name, fullname)) {
                         return try self.subfolders.items[idx].removeFile(name[file.items.len..], vmInstance);
                     }
                 }
@@ -412,7 +402,7 @@ pub const Folder = struct {
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
         for (self.contents.items, 0..) |subfile, idx| {
-            if (check(subfile.name, fullname)) {
+            if (std.mem.eql(u8, subfile.name, fullname)) {
                 _ = self.contents.orderedRemove(idx);
                 allocator.alloc.free(fullname);
                 return;
@@ -427,14 +417,14 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
-                if (check(file.items, "..")) return self.parent.getFile(name[3..]);
-                if (check(file.items, ".")) return self.getFile(name[2..]);
-                if (check(file.items, "")) return self.getFile(name[1..]);
+                if (std.mem.eql(u8, file.items, "..")) return self.parent.getFile(name[3..]);
+                if (std.mem.eql(u8, file.items, ".")) return self.getFile(name[2..]);
+                if (std.mem.eql(u8, file.items, "")) return self.getFile(name[1..]);
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
                 for (self.subfolders.items, 0..) |folder, idx| {
-                    if (check(folder.name, fullname)) {
+                    if (std.mem.eql(u8, folder.name, fullname)) {
                         return self.subfolders.items[idx].getFile(name[file.items.len..]);
                     }
                 }
@@ -462,9 +452,9 @@ pub const Folder = struct {
 
         for (name) |ch| {
             if (ch == '/') {
-                if (check(file.items, "..")) return self.parent.getFolder(name[3..]);
-                if (check(file.items, ".")) return self.getFolder(name[2..]);
-                if (check(file.items, "")) return self.getFolder(name[1..]);
+                if (std.mem.eql(u8, file.items, "..")) return self.parent.getFolder(name[3..]);
+                if (std.mem.eql(u8, file.items, ".")) return self.getFolder(name[2..]);
+                if (std.mem.eql(u8, file.items, "")) return self.getFolder(name[1..]);
 
                 var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}/", .{ self.name, file.items });
                 defer allocator.alloc.free(fullname);
