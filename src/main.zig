@@ -127,7 +127,11 @@ pub fn blit() !void {
     ctx.makeCurrent();
 
     if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
+        // TODO: No signal indicator
+
         // for when minimized render nothing
+        gfx.clear(&ctx);
+
         gfx.swap(&ctx);
 
         ctx.makeNotCurrent();
@@ -553,10 +557,14 @@ pub fn main() anyerror!void {
         // get the time & update
         var currentTime = c.glfwGetTime();
 
-        try state.update(@floatCast(f32, currentTime - lastFrameTime));
+        // pause the game on minimize
+        if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
+            // update the game state
+            try state.update(@floatCast(f32, currentTime - lastFrameTime));
 
-        // get tris
-        try state.draw(gfx.gContext.size);
+            // get tris
+            try state.draw(gfx.gContext.size);
+        }
 
         // the state changed
         if (state != gameStates.getPtr(currentState)) {
