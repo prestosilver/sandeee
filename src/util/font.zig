@@ -234,22 +234,24 @@ pub const Font = struct {
             }
 
             var char = self.chars[ch];
-            var w = char.size.x * params.scale;
-            var h = char.size.y * params.scale;
-            var xpos = pos.x + char.bearing.x * params.scale;
-            var ypos = pos.y + char.bearing.y * params.scale;
-            srect.x = char.tx;
-            srect.y = char.ty;
-            srect.w = char.tw;
-            srect.h = char.th;
+            if (ch != ' ') {
+                var w = char.size.x * params.scale;
+                var h = char.size.y * params.scale;
+                var xpos = pos.x + char.bearing.x * params.scale;
+                var ypos = pos.y + char.bearing.y * params.scale;
+                srect.x = char.tx;
+                srect.y = char.ty;
+                srect.w = char.tw;
+                srect.h = char.th;
 
-            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), params.color);
-            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), params.color);
-            try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), params.color);
+                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), params.color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), params.color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), params.color);
 
-            try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), params.color);
-            try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), params.color);
-            try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), params.color);
+                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), params.color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), params.color);
+                try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), params.color);
+            }
 
             pos.x += char.ax * params.scale;
             pos.y += char.ay * params.scale;
