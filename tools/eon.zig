@@ -924,9 +924,8 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
     if (tokens[idx.*].kind == .TOKEN_OPEN_PAREN) {
         idx.* += 1;
         var a = try allocator.alloc(Expression, 1);
-        a[0] = try parseFactor(tokens, idx);
+        a[0] = try parseExpression(tokens, idx);
 
-        idx.* += 1;
         result = .{
             .a = a,
             .op = &tokens[idx.* - 1],
