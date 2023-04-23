@@ -114,6 +114,7 @@ pub const Font = struct {
         color: col.Color = col.newColor(0, 0, 0, 1),
         wrap: ?f32 = null,
         maxlines: ?usize = null,
+        curLine: usize = 0,
         newLines: bool = true,
     };
 
@@ -131,6 +132,7 @@ pub const Font = struct {
             if (maxSize <= 0) return;
             var iter = std.mem.split(u8, params.text, " ");
             var spaceSize = self.sizeText(.{ .text = " ", .scale = params.scale }).x;
+            var line: usize = 0;
 
             while (iter.next()) |word| {
                 var size = self.sizeText(.{ .text = word, .scale = params.scale });
@@ -144,6 +146,7 @@ pub const Font = struct {
                                 split += 1;
                             }
 
+                            line = @floatToInt(usize, (pos.y - start.y) / (self.size * params.scale));
                             try self.draw(.{
                                 .batch = params.batch,
                                 .shader = params.shader,
@@ -154,6 +157,7 @@ pub const Font = struct {
                                 .scale = params.scale,
                                 .wrap = null,
                                 .maxlines = params.maxlines,
+                                .curLine = line,
                             });
 
                             pos.y += self.size * params.scale;
@@ -163,6 +167,7 @@ pub const Font = struct {
 
                             size = self.sizeText(.{ .text = spaced, .scale = params.scale });
                         }
+                        line = @floatToInt(usize, (pos.y - start.y) / (self.size * params.scale));
                         try self.draw(.{
                             .batch = params.batch,
                             .shader = params.shader,
@@ -173,6 +178,7 @@ pub const Font = struct {
                             .scale = params.scale,
                             .wrap = null,
                             .maxlines = params.maxlines,
+                            .curLine = line,
                         });
                         continue;
                     } else {
@@ -180,6 +186,7 @@ pub const Font = struct {
                         pos.x = start.x;
                     }
                 }
+                line = @floatToInt(usize, (pos.y - start.y) / (self.size * params.scale));
                 try self.draw(.{
                     .batch = params.batch,
                     .shader = params.shader,
@@ -190,6 +197,7 @@ pub const Font = struct {
                     .scale = params.scale,
                     .wrap = null,
                     .maxlines = params.maxlines,
+                    .curLine = line,
                 });
 
                 pos.x += spaceSize;
@@ -197,6 +205,9 @@ pub const Font = struct {
 
             return;
         }
+
+        if (params.maxlines != null and
+            params.curLine >= params.maxlines.?) return;
 
         var startscissor = params.batch.scissor;
 
@@ -207,7 +218,7 @@ pub const Font = struct {
                     @max(0, @min(params.batch.scissor.?.w, params.pos.x + params.wrap.? - params.batch.scissor.?.x));
             if (params.maxlines != null)
                 params.batch.scissor.?.h =
-                    @max(0, @min(params.batch.scissor.?.h, params.pos.y + (@intToFloat(f32, params.maxlines.?) + 0.25) * self.size * params.scale - params.batch.scissor.?.y));
+                    @max(0, @min(params.batch.scissor.?.h, params.pos.y + ((@intToFloat(f32, params.maxlines.?) - @intToFloat(f32, params.curLine)) * self.size) - 2 * params.scale - params.batch.scissor.?.y));
         } else {
             // TODO: wrap
         }

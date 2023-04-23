@@ -63,7 +63,7 @@ pub const BarData = struct {
     }
 
     pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) !void {
-        var pos = rect.newRect(self.height, self.screendims.y - self.height + 6, self.screendims.x + self.height, self.height);
+        var pos = rect.newRect(self.height, self.screendims.y - self.height + 12, self.screendims.x + self.height, self.height);
 
         try font.draw(.{
             .batch = batch,
@@ -98,6 +98,7 @@ pub const BarData = struct {
                 .text = window.data.contents.props.info.name,
                 .pos = pos.location(),
                 .wrap = 4 * self.height - 16,
+                .maxlines = 1,
             });
 
             pos.x += 4 * self.height;
