@@ -43,23 +43,13 @@ pub const EventManager = struct {
         self.subs.append(listener) catch {};
     }
 
-    fn check(cmd: []const u8, exp: []const u8) bool {
-        if (cmd.len != exp.len) return false;
-
-        for (cmd, 0..) |char, idx| {
-            if (char != exp[idx])
-                return false;
-        }
-        return true;
-    }
-
     pub fn sendEvent(self: *EventManager, data: anytype) void {
         const T = @TypeOf(data);
 
         const name: []const u8 = @typeName(T);
         for (self.subs.items) |sub| {
             var call = @ptrCast(*const fn (T) bool, sub.calls);
-            if (check(sub.name, name) and call(data)) {
+            if (std.mem.eql(u8, sub.name, name) and call(data)) {
                 break;
             }
         }
