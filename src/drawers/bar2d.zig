@@ -176,12 +176,6 @@ pub const BarData = struct {
                     switch (i) {
                         0 => {
                             var window = win.Window.new(wintex, win.WindowData{
-                                .pos = rect.Rectangle{
-                                    .x = 100,
-                                    .y = 100,
-                                    .w = 400,
-                                    .h = 300,
-                                },
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -196,12 +190,6 @@ pub const BarData = struct {
                         },
                         1 => {
                             var window = win.Window.new(wintex, win.WindowData{
-                                .pos = rect.Rectangle{
-                                    .x = 100,
-                                    .y = 100,
-                                    .w = 400,
-                                    .h = 300,
-                                },
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -216,12 +204,6 @@ pub const BarData = struct {
                         },
                         2 => {
                             var window = win.Window.new(wintex, win.WindowData{
-                                .pos = rect.Rectangle{
-                                    .x = 100,
-                                    .y = 100,
-                                    .w = 400,
-                                    .h = 300,
-                                },
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -236,12 +218,6 @@ pub const BarData = struct {
                         },
                         3 => {
                             var window = win.Window.new(wintex, win.WindowData{
-                                .pos = rect.Rectangle{
-                                    .x = 100,
-                                    .y = 100,
-                                    .w = 400,
-                                    .h = 300,
-                                },
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -256,12 +232,6 @@ pub const BarData = struct {
                         },
                         4 => {
                             var window = win.Window.new(wintex, win.WindowData{
-                                .pos = rect.Rectangle{
-                                    .x = 100,
-                                    .y = 100,
-                                    .w = 400,
-                                    .h = 300,
-                                },
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -276,12 +246,6 @@ pub const BarData = struct {
                         },
                         5 => {
                             var window = win.Window.new(wintex, win.WindowData{
-                                .pos = rect.Rectangle{
-                                    .x = 100,
-                                    .y = 100,
-                                    .w = 400,
-                                    .h = 300,
-                                },
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,

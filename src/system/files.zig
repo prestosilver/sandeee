@@ -446,6 +446,7 @@ pub const Folder = struct {
 
     pub fn getFolder(self: *Folder, name: []const u8) !?*Folder {
         if (std.mem.eql(u8, name, "..")) return self.parent;
+        if (std.mem.eql(u8, name, "")) return self;
 
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();

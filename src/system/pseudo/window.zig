@@ -24,12 +24,6 @@ pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
     var winDat = try vmwin.new(vmIdx, shader);
 
     var window = win.Window.new(wintex, win.WindowData{
-        .pos = rect.Rectangle{
-            .x = 100,
-            .y = 100,
-            .w = 400,
-            .h = 300,
-        },
         .source = rect.Rectangle{
             .x = 0.0,
             .y = 0.0,

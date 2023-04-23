@@ -40,6 +40,8 @@ pub const Shell = struct {
     vm: ?vm.VM = null,
 
     pub fn getPrompt(self: *Shell) []const u8 {
+        if (self.root.name.len == 0)
+            return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{self.root.name}) catch "> ";
         return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{self.root.name[0 .. self.root.name.len - 1]}) catch "> ";
     }
 
@@ -48,6 +50,13 @@ pub const Shell = struct {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
+
+            if (param[3] == '/') {
+                if (try files.root.getFolder(param[4..])) |folder| {
+                    self.root = folder;
+                    return result;
+                }
+            }
 
             if (try self.root.getFolder(param[3..])) |folder| {
                 self.root = folder;
@@ -115,12 +124,6 @@ pub const Shell = struct {
         };
 
         var window = win.Window.new(wintex, win.WindowData{
-            .pos = rect.Rectangle{
-                .x = 100,
-                .y = 100,
-                .w = 400,
-                .h = 300,
-            },
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
@@ -142,12 +145,6 @@ pub const Shell = struct {
         };
 
         var window = win.Window.new(wintex, win.WindowData{
-            .pos = rect.Rectangle{
-                .x = 100,
-                .y = 100,
-                .w = 400,
-                .h = 300,
-            },
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
@@ -178,12 +175,6 @@ pub const Shell = struct {
         };
 
         var window = win.Window.new(wintex, win.WindowData{
-            .pos = rect.Rectangle{
-                .x = 100,
-                .y = 100,
-                .w = 400,
-                .h = 300,
-            },
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
