@@ -122,6 +122,8 @@ pub const EditorData = struct {
             }
         }
 
+        if (self.cursorIdx > self.buffer.items.len) self.cursorIdx = self.buffer.items.len - 1;
+
         // draw toolbar
         try batch.draw(sp.Sprite, &self.menuTop, self.shader, vecs.newVec3(bnds.x - 2, bnds.y - 2, 0));
         try batch.draw(sp.Sprite, &self.menuDiv, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 32, 0));
