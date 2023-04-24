@@ -195,31 +195,24 @@ pub const VM = struct {
         ) !void {
             _ = options;
             _ = fmt;
-            var code = std.fmt.allocPrint(u8, "{}", self.code);
-            defer self.allocator.free(code);
-
-            var idx = std.mem.lastIndexOf(u8, code, ".");
-
             if (self.string != null) {
-                return std.fmt.format(writer, "{} \"{s}\"", .{ code[idx..], self.string.? });
+                return std.fmt.format(writer, "{s} \"{s}\"", .{ @tagName(self.code), self.string.? });
             } else if (self.value != null) {
-                return std.fmt.format(writer, "{} {}", .{ code[idx..], self.value.? });
+                return std.fmt.format(writer, "{s} {}", .{ @tagName(self.code), self.value.? });
             } else {
-                return std.fmt.format(writer, "{}", .{code[idx..]});
+                return std.fmt.format(writer, "{s}", .{@tagName(self.code)});
             }
         }
     };
 
     pub fn deinit(self: *VM) !void {
-        if (@import("builtin").mode == .Debug) {
-            var iter = cnts.iterator();
+        // var iter = cnts.iterator();
 
-            while (iter.next()) |entry| {
-                std.log.debug("op: {}, calls: {} time: {}", .{ entry.key, entry.value.*, times.get(entry.key) });
-            }
+        // while (iter.next()) |entry| {
+        //     std.log.debug("op: {}, calls: {} time: {}", .{ entry.key, entry.value.*, times.get(entry.key) });
+        // }
 
-            std.log.debug("=======", .{});
-        }
+        // std.log.debug("=======", .{});
 
         var oldrsp = self.rsp;
         self.rsp = 0;
@@ -1115,7 +1108,7 @@ pub const VM = struct {
             if (self.functions.getPtr(inside)) |func| {
                 oper = func.*.ops[self.pc - 1];
             } else {
-                var result = try std.fmt.allocPrint(self.allocator, "In function '?' @ {}:\nOperation: {}", .{ self.pc, oper.code });
+                var result = try std.fmt.allocPrint(self.allocator, "In function '?' @ {}:\nOperation: {s}", .{ self.pc, @tagName(oper.code) });
 
                 return result;
             }
@@ -1123,7 +1116,7 @@ pub const VM = struct {
             oper = self.code.?[self.pc - 1];
         }
 
-        var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper.code });
+        var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {s}", .{ self.inside_fn, self.pc, @tagName(oper.code) });
 
         return result;
     }
