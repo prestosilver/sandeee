@@ -15,7 +15,5 @@ loop:
     sys 1
 
 error:
-    disc 0
-    push "Error: expected file"
-    sys 0
-    sys 1
+    push "expected file"
+    sys 18

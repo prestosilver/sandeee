@@ -92,7 +92,5 @@ main:
     ret
 
 error:
-    disc 0
-    push "Error: expected library file"
-    sys 0
-    sys 1
+    push "expected library file"
+    sys 18

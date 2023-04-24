@@ -3,8 +3,7 @@
 #include "content/eon/libs/sys.eon"
 
 void error(value msg) {
-    print("Error: " & msg);
-    quit();
+    asm "sys 18";
 }
 
 value processArgs() {

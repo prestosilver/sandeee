@@ -36,11 +36,12 @@ _TextureUpload:
 _TextureDestroy:
     push "/fake/gfx/destroy"
     sys 3
-    dup 0
-    dup 2
+    copy 0
+    copy 2
     sys 5                       ; write
     sys 7
     disc 0
+    push 0
     ret
 
 _TextureHeight:

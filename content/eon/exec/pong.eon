@@ -6,6 +6,11 @@ value render(value win, value tex, value ax, value bx,
     value source = "";
     value dest = "";
 
+    source = _MakeRect(256, 0, 256, 1024);
+    dest = _MakeRect(0, 0, 400, 300);
+
+    _WindowRender(win, tex, dest, source);
+
     source = _MakeRect(0, 0, 256, 1024);
     dest = _MakeRect(ballx, bally, 10, 10);
 
@@ -21,7 +26,7 @@ value render(value win, value tex, value ax, value bx,
 
     _WindowRender(win, tex, dest, source);
 
-    _WindowText(win, 140, 10, "0 - 0");
+    _WindowText(win, 150, 10, "0 - 0");
 
     return 0;
 }
