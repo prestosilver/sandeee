@@ -56,6 +56,13 @@ pub const WindowContents = struct {
             .min = vecs.newVec2(400, 300),
             .max = vecs.newVec2(100000, 100000),
         },
+
+        pub fn setTitle(self: *WindowProps, title: []const u8) !void {
+            if (!std.mem.eql(u8, self.info.name, title)) {
+                allocator.alloc.free(self.info.name);
+                self.info.name = try allocator.alloc.dupe(u8, title);
+            }
+        }
     };
 
     const VTable = struct {
@@ -238,7 +245,7 @@ pub const WindowContents = struct {
             .props = .{
                 .info = .{
                     .kind = kind,
-                    .name = name,
+                    .name = allocator.alloc.dupe(u8, name) catch "",
                 },
             },
             .vtable = &gen.vtable,

@@ -255,7 +255,7 @@ pub fn writeWinTitle(id: []const u8, _: ?*vm.VM) !void {
             var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
             if (self.idx == aid) {
-                item.data.contents.props.info.name = try allocator.alloc.dupe(u8, id[1..]);
+                try item.data.contents.props.setTitle(id[1..]);
                 return;
             }
         }

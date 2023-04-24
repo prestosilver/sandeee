@@ -39,11 +39,11 @@ pub const EditorData = struct {
         }
 
         if (self.file) |file| {
-            if (!std.mem.eql(u8, props.info.name, "EEEDT")) {
-                allocator.alloc.free(props.info.name);
-            }
             var idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
-            props.info.name = try std.fmt.allocPrint(allocator.alloc, "EEEDT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
+            var title = try std.fmt.allocPrint(allocator.alloc, "EEEDT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
+            defer allocator.alloc.free(title);
+
+            try props.setTitle(title);
         }
 
         self.menuTop.data.size.x = bnds.w + 4;

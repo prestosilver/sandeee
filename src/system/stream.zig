@@ -67,9 +67,7 @@ pub const FileStream = struct {
     pub fn Write(self: *FileStream, data: []const u8) !void {
         var targetsize = self.offset + data.len;
 
-        if (self.contents.len < targetsize) {
-            self.contents = try allocator.alloc.realloc(self.contents, targetsize);
-        }
+        self.contents = try allocator.alloc.realloc(self.contents, targetsize);
 
         std.mem.copy(u8, self.contents[self.offset .. self.offset + data.len], data);
 
