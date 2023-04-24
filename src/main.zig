@@ -558,7 +558,7 @@ pub fn main() anyerror!void {
         var currentTime = c.glfwGetTime();
 
         // pause the game on minimize
-        if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
+        if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) == 0) {
             // update the game state
             try state.update(@floatCast(f32, currentTime - lastFrameTime));
 
