@@ -195,12 +195,17 @@ pub const VM = struct {
         ) !void {
             _ = options;
             _ = fmt;
+            var code = std.fmt.allocPrint(u8, "{}", self.code);
+            defer self.allocator.free(code);
+
+            var idx = std.mem.lastIndexOf(u8, code, ".");
+
             if (self.string != null) {
-                return std.fmt.format(writer, "{} \"{s}\"", .{ self.code, self.string.? });
+                return std.fmt.format(writer, "{} \"{s}\"", .{ code[idx..], self.string.? });
             } else if (self.value != null) {
-                return std.fmt.format(writer, "{} {}", .{ self.code, self.value.? });
+                return std.fmt.format(writer, "{} {}", .{ code[idx..], self.value.? });
             } else {
-                return std.fmt.format(writer, "{}", .{self.code});
+                return std.fmt.format(writer, "{}", .{code[idx..]});
             }
         }
     };
