@@ -26,6 +26,8 @@ pub const VMData = struct {
     fps: f32 = 0,
     debug: bool = builtin.mode == .Debug,
     input: u32,
+    mousebtn: ?i32 = null,
+    mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
 
     const VMDataKind = enum {
         Rect,
@@ -154,7 +156,11 @@ pub const VMData = struct {
         }
     }
 
-    pub fn click(_: *Self, _: vecs.Vector2, _: vecs.Vector2, _: i32) !void {}
+    pub fn click(self: *Self, pos: vecs.Vector2, _: vecs.Vector2, btn: i32) !void {
+        self.mousebtn = btn;
+        self.mousepos = pos;
+    }
+
     pub fn scroll(_: *Self, _: f32, _: f32) !void {}
     pub fn move(_: *Self, _: f32, _: f32) !void {}
     pub fn focus(_: *Self) !void {}
