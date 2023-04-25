@@ -31,7 +31,7 @@ pub const GSWindowed = struct {
     down: bool = false,
 
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
-    windows: std.ArrayList(win.Window) = undefined,
+    windows: std.ArrayList(win.Window),
     openWindow: vecs.Vector2 = vecs.newVec2(0, 0),
 
     wallpaper: wall.Wallpaper,
@@ -81,8 +81,6 @@ pub const GSWindowed = struct {
 
     pub fn setup(self: *Self) !void {
         gfx.gContext.color = cols.newColor(0, 0.5, 0.5, 1);
-
-        self.windows = std.ArrayList(win.Window).init(allocator.alloc);
 
         pseudo.win.windowsPtr = &self.windows;
 

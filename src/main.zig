@@ -193,10 +193,6 @@ pub fn changeState(event: systemEvs.EventStateChange) bool {
     std.log.debug("ChangeState: {}", .{event.targetState});
 
     currentState = event.targetState;
-
-    // disable events on loading screen
-    inputEvs.setup(ctx.window, currentState != .Loading);
-
     return true;
 }
 
@@ -268,6 +264,8 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    gameStates.getPtr(@intToEnum(systemEvs.State, errorState)).deinit() catch {};
+
     errorState = @enumToInt(currentState);
 
     var st = panicHandler.log();
@@ -280,8 +278,6 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     if (isHeadless) {
         std.os.exit(0);
     }
-
-    defer gameStates.getPtr(@intToEnum(systemEvs.State, errorState)).deinit() catch {};
 
     // disable events on loading screen
     inputEvs.setup(ctx.window, true);
@@ -451,6 +447,7 @@ pub fn main() anyerror!void {
         .editortex = &editortex,
         .explorertex = &explorertex,
         .settingsManager = &settingManager,
+        .windows = std.ArrayList(win.Window).init(allocator.alloc),
         .bar_logo_sprite = .{
             .texture = &barlogotex,
             .data = sprite.SpriteData.new(
@@ -567,6 +564,9 @@ pub fn main() anyerror!void {
 
             // run setup
             try gameStates.getPtr(currentState).setup();
+
+            // disable events on loading screen
+            inputEvs.setup(ctx.window, currentState != .Loading);
 
             try sb.clear();
         } else {

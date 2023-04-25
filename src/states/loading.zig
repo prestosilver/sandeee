@@ -65,6 +65,8 @@ pub const GSLoading = struct {
 
     ctx: *gfx.Context,
 
+    loadingThread: std.Thread = undefined,
+
     loader: *worker.WorkerContext,
 
     fn loadThread(self: *Self) void {
@@ -73,6 +75,7 @@ pub const GSLoading = struct {
 
     pub fn setup(self: *Self) !void {
         self.done.storeUnchecked(false);
+        defer self.done.storeUnchecked(true);
 
         worker.texture.settingManager = self.settingManager;
 
@@ -109,10 +112,8 @@ pub const GSLoading = struct {
         // delay
         try self.loader.enqueue(&delay, &zero, worker.delay.loadDelay);
 
-        var loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
+        self.loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
         self.loader.run(&self.load_progress) catch {
-            self.done.storeUnchecked(true);
-            loadingThread.join();
             @panic("BootEEE failed, Problaby missing file");
         };
 
@@ -127,21 +128,20 @@ pub const GSLoading = struct {
         shell.webtex = self.webtex;
         shell.edittex = self.editortex;
         shell.shader = self.shader;
+    }
 
-        // play login sound
-        try self.audio_man.playSound(self.login_snd);
+    pub fn deinit(self: *Self) !void {
+        self.loadingThread.join();
+    }
 
+    pub fn update(self: *Self, _: f32) !void {
         events.em.sendEvent(systemEvs.EventStateChange{
             .targetState = .Windowed,
         });
 
-        self.done.storeUnchecked(true);
-        loadingThread.join();
+        // play login sound
+        try self.audio_man.playSound(self.login_snd);
     }
-
-    pub fn deinit(_: *Self) !void {}
-
-    pub fn update(_: *Self, _: f32) !void {}
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         var logoOff = size.sub(self.logo_sprite.data.size).div(2);
