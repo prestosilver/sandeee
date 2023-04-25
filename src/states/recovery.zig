@@ -24,6 +24,8 @@ pub const GSRecovery = struct {
     sel: usize = 0,
     disks: std.ArrayList([]const u8) = undefined,
 
+    sub_sel: ?usize = null,
+
     const DISK_LIST = "0123456789ABCDEF";
     const TEXT_COLOR = cols.newColor(1, 1, 1, 1);
 
@@ -36,11 +38,11 @@ pub const GSRecovery = struct {
     }
 
     pub fn sortDisksLt(_: u8, a: []const u8, b: []const u8) bool {
-        return getDate(b) < getDate(a);
+        return getDate(a) < getDate(b);
     }
 
     pub fn setup(self: *Self) !void {
-        gfx.gContext.color = cols.newColor(0, 0, 1, 1);
+        gfx.gContext.color = cols.newColor(0, 0, 0.3333, 1);
 
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
@@ -82,6 +84,8 @@ pub const GSRecovery = struct {
 
     pub fn update(_: *Self, _: f32) !void {}
 
+    const UPDATE_MODES = [_][*:0]const u8{ "H Hello", "W World", "X Back" };
+
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         _ = size;
         var y: f32 = 100;
@@ -96,6 +100,28 @@ pub const GSRecovery = struct {
             .color = cols.newColor(1, 1, 1, 1),
         });
         y += self.face.size * 2;
+
+        if (self.sub_sel) |sub_sel| {
+            for (UPDATE_MODES, 0..) |mode, idx| {
+                var line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{mode});
+                defer allocator.alloc.free(line);
+
+                if (idx == sub_sel) {
+                    line[0] = '>';
+                }
+
+                try self.face.draw(.{
+                    .batch = self.sb,
+                    .shader = self.font_shader,
+                    .text = line,
+                    .pos = vecs.newVec2(100, y),
+                    .color = TEXT_COLOR,
+                });
+                y += self.face.size * 1;
+            }
+
+            return;
+        }
 
         if (self.disks.items.len != 0) {
             for (self.disks.items, 0..) |disk, idx| {
@@ -122,23 +148,65 @@ pub const GSRecovery = struct {
         if (!down) return false;
         switch (key) {
             c.GLFW_KEY_ENTER => {
-                if (self.sel == self.disks.items.len - 1)
+                if (self.sub_sel) |sub_sel| {
+                    if (sub_sel == UPDATE_MODES.len - 1) {
+                        self.sub_sel = null;
+                        return false;
+                    }
+                    std.log.info("{?} {s}", .{ self.sub_sel.?, self.disks.items[self.sel][2..] });
+
+                    return false;
+                }
+
+                if (self.sel == self.disks.items.len - 1) {
                     events.em.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
+
+                    return false;
+                }
+
+                self.sub_sel = 0;
             },
             c.GLFW_KEY_DOWN => {
+                if (self.sub_sel) |sub_sel| {
+                    if (sub_sel < UPDATE_MODES.len - 1)
+                        self.sub_sel.? += 1;
+
+                    return false;
+                }
+
                 if (self.sel < self.disks.items.len - 1)
                     self.sel += 1;
             },
             c.GLFW_KEY_UP => {
+                if (self.sub_sel) |sub_sel| {
+                    if (sub_sel != 0)
+                        self.sub_sel.? -= 1;
+
+                    return false;
+                }
+
                 if (self.sel != 0)
                     self.sel -= 1;
             },
             else => {
                 if (c.glfwGetKeyName(key, 0) == null) return false;
+                if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == 'X') {
+                    if (self.sub_sel) |_| {
+                        self.sub_sel = null;
+                        return false;
+                    }
+
+                    events.em.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Disks,
+                    });
+
+                    return false;
+                }
+
                 for (self.disks.items, 0..) |disk, idx| {
-                    if (c.glfwGetKeyName(key, 0)[0] == disk[0]) {
+                    if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
                         // self.remaining = 0;
                     }
@@ -148,6 +216,7 @@ pub const GSRecovery = struct {
 
         return false;
     }
+
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
     pub fn mousepress(_: *Self, _: c_int) !void {}
     pub fn mouserelease(_: *Self) !void {}
