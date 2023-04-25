@@ -25,7 +25,7 @@ pub const VMData = struct {
     time: f32 = 0,
     fps: f32 = 0,
     debug: bool = builtin.mode == .Debug,
-    input: u32,
+    input: []i32,
     mousebtn: ?i32 = null,
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
 
@@ -141,16 +141,25 @@ pub const VMData = struct {
     }
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
+        _ = code;
+        _ = self;
         _ = mods;
-        self.input = code;
+        // self.input = code;
     }
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (!down) {
-            self.input = 0;
+            var newInput = try allocator.alloc.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
+            _ = std.mem.replace(i32, self.input, &.{keycode}, &.{}, newInput);
+            allocator.alloc.free(self.input);
+            self.input = newInput;
 
             return;
         }
+
+        self.input = try allocator.alloc.realloc(self.input, self.input.len + 1);
+        self.input[self.input.len - 1] = keycode;
+
         if (keycode == c.GLFW_KEY_F1) {
             self.debug = !self.debug;
         }
@@ -183,7 +192,7 @@ pub fn new(idx: u8, shader: *shd.Shader) !win.WindowContents {
             std.ArrayList(VMData.VMDataEntry).init(allocator.alloc),
             std.ArrayList(VMData.VMDataEntry).init(allocator.alloc),
         },
-        .input = 0,
+        .input = try allocator.alloc.alloc(i32, 0),
     };
 
     return win.WindowContents.init(self, "vm", "VM Window", col.newColor(1, 1, 1, 1));

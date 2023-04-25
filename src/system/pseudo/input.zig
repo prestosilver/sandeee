@@ -21,6 +21,36 @@ pub fn writeInputChar(_: []const u8, _: ?*vm.VM) !void {
     return;
 }
 
+// /fake/inp/win
+
+pub fn readInputWin(vmInstance: ?*vm.VM) ![]const u8 {
+    var result = try allocator.alloc.alloc(u8, 0);
+    if (vmInstance.?.miscData.get("window")) |aid| {
+        for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
+            var item = &pwindows.windowsPtr.*.items[idx];
+            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
+                const alignment = @typeInfo(*vmWin.VMData).Pointer.alignment;
+                var self = @ptrCast(*vmWin.VMData, @alignCast(alignment, item.data.contents.ptr));
+
+                if (self.idx == aid[0]) {
+                    result = try allocator.alloc.realloc(result, self.input.len * 2);
+                    for (self.input, 0..) |in, index| {
+                        result[index * 2] = std.mem.toBytes(in)[0];
+                        result[index * 2 + 1] = std.mem.toBytes(in)[1];
+                    }
+                    return result;
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+pub fn writeInputWin(_: []const u8, _: ?*vm.VM) !void {
+    return;
+}
+
 // /fake/inp/mouse
 
 pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
@@ -52,34 +82,6 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
 pub fn writeInputMouse(_: []const u8, _: ?*vm.VM) !void {
     return;
 }
-
-// /fake/inp/win
-
-pub fn readInputWin(vmInstance: ?*vm.VM) ![]const u8 {
-    var result = try allocator.alloc.alloc(u8, 1);
-    if (vmInstance.?.miscData.get("window")) |aid| {
-        for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
-            var item = &pwindows.windowsPtr.*.items[idx];
-            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @typeInfo(*vmWin.VMData).Pointer.alignment;
-                var self = @ptrCast(*vmWin.VMData, @alignCast(alignment, item.data.contents.ptr));
-
-                if (self.idx == aid[0]) {
-                    result[0] = @intCast(u8, self.input);
-                    return result;
-                }
-            }
-        }
-    }
-
-    std.mem.set(u8, result, 0);
-    return result;
-}
-
-pub fn writeInputWin(_: []const u8, _: ?*vm.VM) !void {
-    return;
-}
-
 pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
     var result = try allocator.alloc.create(files.Folder);
     result.* = .{

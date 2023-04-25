@@ -35,7 +35,7 @@ value getkey() {
     asm "push \"/fake/inp/win\"";
     asm "sys 3";
     asm "copy 0";
-    asm "push 1";
+    asm "push 100000";
     asm "sys 4";
     asm "copy 1";
     asm "sys 7";
@@ -132,17 +132,26 @@ value update(value ax, value bx, value ballx, value bally,
     }
 
     value key = getkey();
+    value keycode = 0;
+    value adds = 0;
+    
+    for (0; _StringLength(key) != 0; key = key + 2) {
+        keycode = @dup(key);
+        adds = key + 1;
+        adds = @adds;
+        adds = adds * 256;
+        keycode = keycode + adds;
 
-    if (key == 119)
-        if (bx > 10)
-            bx = bx - 10;
-
-    if (key == 115)
-        if (bx < 340)
-            bx = bx + 10;
-
-    if (bally > 75) 
-        ax = bally - 75;
+        if (keycode == 87) {
+            if (ax > 9) ax = ax - 10;
+        } else if (keycode == 83) {
+            if (ax < 200) ax = ax + 10;
+        } else if (keycode == 265) {
+            if (bx > 9) bx = bx - 10;
+        } else if (keycode == 264) {
+            if (bx < 200) bx = bx + 10;
+        }
+    }
 
     return 0;
 }
