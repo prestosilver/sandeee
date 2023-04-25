@@ -13,7 +13,7 @@ const c = @import("../c.zig");
 pub const Font = struct {
     tex: tex.Texture,
     size: f32,
-    chars: [128]Char,
+    chars: [256]Char,
 
     pub const Char = struct {
         tx: f32,
@@ -58,7 +58,7 @@ pub const Font = struct {
 
             c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @intCast(c_int, x), 0, @intCast(c_int, charWidth), @intCast(c_int, charHeight), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
 
-            result.chars[i] = Char{
+            result.chars[i + 128] = Char{
                 .size = vec.newVec2(
                     @intToFloat(f32, charWidth) * 2,
                     @intToFloat(f32, charHeight) * 2,
