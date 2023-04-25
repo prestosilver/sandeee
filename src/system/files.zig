@@ -56,6 +56,8 @@ pub const Folder = struct {
     protected: bool = false,
 
     pub fn loadDisk(file: std.fs.File) !void {
+        if (try file.getEndPos() < 4) return error.BadFile;
+
         var lenbuffer: []u8 = try allocator.alloc.alloc(u8, 4);
         defer allocator.alloc.free(lenbuffer);
         _ = try file.read(lenbuffer);
