@@ -40,7 +40,7 @@ pub const EditorData = struct {
 
         if (self.file) |file| {
             var idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
-            var title = try std.fmt.allocPrint(allocator.alloc, "EEEDT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
+            var title = try std.fmt.allocPrint(allocator.alloc, "\x82\x82\x82DT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
             defer allocator.alloc.free(title);
 
             try props.setTitle(title);
@@ -271,5 +271,5 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
         .buffer = std.ArrayList(u8).init(allocator.alloc),
     };
 
-    return win.WindowContents.init(self, "editor", "EEEDT", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "editor", "\x82\x82\x82DT", col.newColor(1, 1, 1, 1));
 }

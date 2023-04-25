@@ -113,8 +113,8 @@ pub const BarData = struct {
                 var text: []const u8 = "";
                 switch (i) {
                     0 => text = "Cmd",
-                    1 => text = "EEEMail",
-                    2 => text = "EEEdit",
+                    1 => text = "\x82\x82\x82Mail",
+                    2 => text = "\x82\x82\x82DT",
                     3 => text = "Files",
                     4 => text = "Xplore",
                     5 => text = "Settings",

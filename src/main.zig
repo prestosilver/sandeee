@@ -347,7 +347,7 @@ pub fn main() anyerror!void {
     }
 
     // init graphics
-    ctx = try gfx.init("Sandeee");
+    ctx = try gfx.init("SandEEE");
     gfx.gContext = &ctx;
 
     var biosFace: font.Font = undefined;

@@ -192,7 +192,7 @@ pub fn new() !win.WindowContents {
 
     self.* = .{
         .text = std.ArrayList(u8).init(allocator.alloc),
-        .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to ShEEEl", .{}),
+        .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh\x82\x82\x82l", .{}),
         .shell = .{
             .root = files.home,
             .vm = null,

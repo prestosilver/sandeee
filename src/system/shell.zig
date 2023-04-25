@@ -25,7 +25,7 @@ pub var shader: *shd.Shader = undefined;
 pub const VM_TIME = 10000000; // nano seconds
 pub const ASM_HEADER = "EEEp";
 
-pub var frameTime: usize = VM_TIME;
+pub var frameTime: u64 = VM_TIME;
 pub var vms: usize = 0;
 pub var vmsLeft: usize = 0;
 
@@ -289,7 +289,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        try result.data.appendSlice("Sheeell Help:\n");
+        try result.data.appendSlice("Sh\x82\x82\x82ll Help:\n");
         try result.data.appendSlice("=============\n");
         try result.data.appendSlice("help - prints this\n");
         try result.data.appendSlice("run - runs a command\n");

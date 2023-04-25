@@ -218,7 +218,7 @@ pub const Font = struct {
                     @max(0, @min(params.batch.scissor.?.w, params.pos.x + params.wrap.? - params.batch.scissor.?.x));
             if (params.maxlines != null)
                 params.batch.scissor.?.h =
-                    @max(0, @min(params.batch.scissor.?.h, params.pos.y + ((@intToFloat(f32, params.maxlines.?) - @intToFloat(f32, params.curLine)) * self.size) - 2 * params.scale - params.batch.scissor.?.y));
+                    @max(0, @min(params.batch.scissor.?.h, params.pos.y + ((@intToFloat(f32, params.maxlines.?) - @intToFloat(f32, params.curLine)) * self.size) - params.batch.scissor.?.y));
         } else {
             // TODO: wrap
         }

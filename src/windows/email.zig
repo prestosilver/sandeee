@@ -228,5 +228,5 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
         .shader = shader,
     };
 
-    return win.WindowContents.init(self, "email", "EEE Mail", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "email", "\x82\x82\x82 Mail", col.newColor(1, 1, 1, 1));
 }
