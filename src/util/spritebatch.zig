@@ -129,7 +129,7 @@ pub const SpriteBatch = struct {
         var cshader: c.GLuint = 0;
         var cscissor: ?rect.Rectangle = null;
 
-        for (sb.queue, 0..) |entry, idx| {
+        for (sb.queue, 0..) |*entry, idx| {
             if (@ptrToInt(entry.texture) != 0)
                 if (ctex != entry.texture.tex)
                     c.glBindTexture(c.GL_TEXTURE_2D, entry.texture.tex);

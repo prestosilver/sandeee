@@ -212,7 +212,6 @@ pub const Font = struct {
         var startscissor = params.batch.scissor;
 
         if (params.batch.scissor != null) {
-            // if (!params.batch.scissor.?.contains(start)) return;
             if (params.wrap != null)
                 params.batch.scissor.?.w =
                     @max(0, @min(params.batch.scissor.?.w, params.pos.x + params.wrap.? - params.batch.scissor.?.x));
