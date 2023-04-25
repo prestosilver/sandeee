@@ -197,11 +197,6 @@ pub fn changeState(event: systemEvs.EventStateChange) bool {
     // disable events on loading screen
     inputEvs.setup(ctx.window, currentState != .Loading);
 
-    // run setup
-    gameStates.getPtr(currentState).setup() catch |msg| {
-        @panic(@errorName(msg));
-    };
-
     return true;
 }
 
@@ -254,7 +249,7 @@ pub fn setupEvents() !void {
 }
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {
-    while (!self.done) {
+    while (!self.done.load(.SeqCst)) {
         // render loading screen
         self.draw(gfx.gContext.size) catch {};
 
@@ -569,6 +564,9 @@ pub fn main() anyerror!void {
         // the state changed
         if (state != gameStates.getPtr(currentState)) {
             try state.deinit();
+
+            // run setup
+            try gameStates.getPtr(currentState).setup();
 
             try sb.clear();
         } else {

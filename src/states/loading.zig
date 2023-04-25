@@ -38,7 +38,7 @@ pub const GSLoading = struct {
 
     load_progress: f32 = 0,
     login_snd: audio.Sound = undefined,
-    done: bool = false,
+    done: std.atomic.Atomic(bool) = std.atomic.Atomic(bool).init(false),
 
     sb: *sb.SpriteBatch,
 
@@ -72,7 +72,7 @@ pub const GSLoading = struct {
     }
 
     pub fn setup(self: *Self) !void {
-        self.done = false;
+        self.done.storeUnchecked(false);
 
         worker.texture.settingManager = self.settingManager;
 
@@ -109,8 +109,10 @@ pub const GSLoading = struct {
         // delay
         try self.loader.enqueue(&delay, &zero, worker.delay.loadDelay);
 
-        _ = try std.Thread.spawn(.{}, Self.loadThread, .{self});
+        var loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
         self.loader.run(&self.load_progress) catch {
+            self.done.storeUnchecked(true);
+            loadingThread.join();
             @panic("BootEEE failed, Problaby missing file");
         };
 
@@ -133,7 +135,8 @@ pub const GSLoading = struct {
             .targetState = .Windowed,
         });
 
-        self.done = true;
+        self.done.storeUnchecked(true);
+        loadingThread.join();
     }
 
     pub fn deinit(_: *Self) !void {}

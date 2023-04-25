@@ -15,8 +15,8 @@ pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *tex.Textur
     std.log.debug("load tex: {s}", .{path});
 
     gfx.gContext.makeCurrent();
+    defer gfx.gContext.makeNotCurrent();
     self.out.* = try tex.newTextureFile(path);
-    gfx.gContext.makeNotCurrent();
 
     return true;
 }
