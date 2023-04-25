@@ -1,15 +1,5 @@
 _StringLength:                  ; str
-    push 0                      ; str len
-length_loop:
-    copy 1                      ; str len str
-    copy 1                      ; str len str len
-    add                         ; str len strlol
-    jz length_end               ; str len
-    push 1                      ; str len 1
-    add                         ; str len
-    jmp length_loop
-length_end:
-    disc 1                      ; len
+    len
     ret
 
 _StringStartsWith:              ; str start

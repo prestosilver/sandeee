@@ -91,6 +91,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (std.mem.eql(u8, op, "mod")) code = 27;
         if (std.mem.eql(u8, op, "create")) code = 28;
         if (std.mem.eql(u8, op, "size")) code = 29;
+        if (std.mem.eql(u8, op, "len")) code = 30;
 
         if (code == 255) {
             std.log.info("{s}", .{op});
@@ -256,6 +257,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (std.mem.eql(u8, op, "mod")) code = 27;
         if (std.mem.eql(u8, op, "create")) code = 28;
         if (std.mem.eql(u8, op, "size")) code = 29;
+        if (std.mem.eql(u8, op, "len")) code = 30;
 
         if (code == 255) {
             std.log.info("{s}", .{op});

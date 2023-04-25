@@ -181,6 +181,7 @@ pub const VM = struct {
             Mod,
             Create,
             Size,
+            Len,
         };
 
         code: Code,
@@ -374,6 +375,16 @@ pub const VM = struct {
                 } else {
                     try self.pushStackS(b.string.*[0..a.value.*]);
                 }
+                return;
+            },
+            Operation.Code.Len => {
+                var a = try self.popStack();
+                defer self.free(&[_]StackEntry{a});
+
+                if (a != .string) return error.StringMissing;
+
+                try self.pushStackI(a.string.len);
+
                 return;
             },
             Operation.Code.Copy => {
