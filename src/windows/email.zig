@@ -52,12 +52,6 @@ const EmailData = struct {
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
-            .text = "  Inbox",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 0),
-        });
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
             .text = "  Spam",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 1),
         });
@@ -81,6 +75,7 @@ const EmailData = struct {
 
             for (mail.emails.items) |email| {
                 if (email.box != self.box) continue;
+                if (!email.visible()) continue;
 
                 var text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
@@ -92,11 +87,21 @@ const EmailData = struct {
                     try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 106, y - 2, 0));
                 }
 
+                if (email.complete()) {
+                    try font.draw(.{
+                        .batch = batch,
+                        .shader = font_shader,
+                        .text = "\x83",
+                        .pos = vecs.newVec2(bnds.x + 112, y - 4),
+                        .color = col.newColor(0, 1.0, 0, 1.0),
+                    });
+                }
+
                 try font.draw(.{
                     .batch = batch,
                     .shader = font_shader,
                     .text = text,
-                    .pos = vecs.newVec2(bnds.x + 112, y - 4),
+                    .pos = vecs.newVec2(bnds.x + 112 + 20, y - 4),
                 });
 
                 try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 112, y + font.size, 0));
@@ -108,6 +113,7 @@ const EmailData = struct {
             try batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 2 + font.size * 2, 0));
 
             var email = self.viewing.?;
+            email.viewed = true;
 
             var from = try std.fmt.allocPrint(allocator.alloc, "from: {s}", .{email.from});
             defer allocator.alloc.free(from);
@@ -155,6 +161,7 @@ const EmailData = struct {
 
                     for (mail.emails.items, 0..) |email, idx| {
                         if (email.box != self.box) continue;
+                        if (!email.visible()) continue;
 
                         var bnds = rect.newRect(106, @intToFloat(f32, y), size.x - 106, 28);
 
@@ -162,6 +169,7 @@ const EmailData = struct {
 
                         if (bnds.contains(mousepos)) {
                             if (email.selected) {
+                                mail.emails.items[idx].viewed = true;
                                 mail.emails.items[idx].selected = false;
                                 self.viewing = &mail.emails.items[idx];
                             } else {
@@ -176,7 +184,7 @@ const EmailData = struct {
                     if (bnds.contains(mousepos)) {
                         var id = (mousepos.y - 106.0) / 22.0;
 
-                        self.box = @intCast(u8, @floatToInt(i32, id - 0.5));
+                        self.box = @intCast(u8, @floatToInt(i32, id + 0.5));
 
                         self.viewing = null;
 
@@ -222,7 +230,7 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
             vecs.newVec2(100, 6),
         )),
         .icon = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(3.0 / 32.0, 3.0 / 32.0, 13.0 / 32.0, 13.0 / 32.0),
+            rect.newRect(16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0),
             vecs.newVec2(100, 100),
         )),
         .shader = shader,

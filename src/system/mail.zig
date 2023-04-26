@@ -8,15 +8,6 @@ fn range(len: usize) []const void {
     return @as([*]void, undefined)[0..len];
 }
 
-pub fn checkLine(line: []const u8, start: []const u8) bool {
-    if (line.len < start.len) return false;
-
-    for (start, 0..) |char, idx|
-        if (char != line[idx]) return false;
-
-    return true;
-}
-
 pub fn append(e: Email) !void {
     try emails.append(e);
 }
@@ -32,15 +23,19 @@ pub fn toStr() ![]u8 {
         var idStr = std.mem.toBytes(email.id);
         var boxStr = std.mem.toBytes(email.box);
         var fromLen = std.mem.toBytes(email.from.len)[0..4];
+        var depsLen = std.mem.toBytes(email.deps.len)[0..4];
         var subjectLen = std.mem.toBytes(email.subject.len)[0..4];
         var contentLen = std.mem.toBytes(email.contents.len)[0..4];
 
-        var appends = try std.fmt.allocPrint(
+        var appends = try std.mem.concat(
             allocator.alloc,
-            "{s}{s}{s}{s}{s}{s}{s}{s}",
-            .{
-                idStr,
-                boxStr,
+            u8,
+            &[_][]const u8{
+                &idStr,
+                &boxStr,
+                &.{@enumToInt(email.condition)},
+                depsLen,
+                email.deps,
                 fromLen,
                 email.from,
                 subjectLen,
@@ -63,6 +58,8 @@ pub fn parseTxt(file: std.fs.File) !Email {
         .from = "",
         .subject = "",
         .contents = "",
+        .deps = try allocator.alloc.alloc(u8, 0),
+        .condition = .View,
     };
 
     var buf_reader = std.io.bufferedReader(file.reader());
@@ -72,18 +69,21 @@ pub fn parseTxt(file: std.fs.File) !Email {
 
     var buf: [1024]u8 = undefined;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        if (checkLine(line, "id: ")) {
+        if (std.mem.startsWith(u8, line, "id: ")) {
             result.id = try std.fmt.parseInt(u8, line[4..], 0);
-        } else if (checkLine(line, "box: ")) {
+        } else if (std.mem.startsWith(u8, line, "box: ")) {
             result.box = try std.fmt.parseInt(u8, line[5..], 0);
-        } else if (checkLine(line, "from: ")) {
+        } else if (std.mem.startsWith(u8, line, "from: ")) {
             var sub = try allocator.alloc.alloc(u8, line.len - 6);
             std.mem.copy(u8, sub, line[6..]);
             result.from = sub;
-        } else if (checkLine(line, "sub: ")) {
+        } else if (std.mem.startsWith(u8, line, "sub: ")) {
             var sub = try allocator.alloc.alloc(u8, line.len - 5);
             std.mem.copy(u8, sub, line[5..]);
             result.subject = sub;
+        } else if (std.mem.startsWith(u8, line, "deps: ")) {
+            result.deps = try allocator.alloc.realloc(result.deps, result.deps.len + 1);
+            result.deps[result.deps.len - 1] = try std.fmt.parseInt(u8, line[6..], 0);
         } else {
             try contents.appendSlice(line);
             try contents.appendSlice("\n");
@@ -134,6 +134,14 @@ pub fn load() !void {
         emails.items[idx].id = bytebuffer[0];
         _ = try file.read(bytebuffer);
         emails.items[idx].box = bytebuffer[0];
+        _ = try file.read(bytebuffer);
+        emails.items[idx].condition = @intToEnum(Email.Condition, bytebuffer[0]);
+
+        _ = try file.read(lenbuffer);
+        var depssize = @bitCast(u32, lenbuffer[0..4].*);
+        var depsbuffer = try allocator.alloc.alloc(u8, depssize);
+        _ = try file.read(depsbuffer);
+        emails.items[idx].deps = depsbuffer;
 
         _ = try file.read(lenbuffer);
         var fromsize = @bitCast(u32, lenbuffer[0..4].*);
@@ -156,11 +164,38 @@ pub fn load() !void {
 }
 
 pub const Email = struct {
+    const Self = @This();
+    const Condition = enum(u8) {
+        Submit,
+        Run,
+        View,
+    };
+
     from: []const u8,
     subject: []const u8,
     contents: []const u8,
-    solved: bool = false,
+    deps: []align(1) u8,
+
+    viewed: bool = false,
+    condition: Condition,
     selected: bool = false,
     box: u8 = 0,
     id: u8 = 0,
+
+    pub fn visible(self: *const Self) bool {
+        for (emails.items) |dep| {
+            if (std.mem.indexOf(u8, self.deps, &.{dep.id})) |_| {
+                if (!dep.complete()) return false;
+            }
+        }
+
+        return true;
+    }
+
+    pub fn complete(self: *const Self) bool {
+        return switch (self.condition) {
+            .View => self.viewed,
+            else => false,
+        };
+    }
 };
