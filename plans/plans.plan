@@ -1,0 +1,726 @@
+{
+  "version": "0.8.0-alpha.8.1",
+  "pan": {
+    "X": 1076.7288,
+    "Y": 466.6977
+  },
+  "zoom": 1.2380036115646362,
+  "currentPage": 0,
+  "properties": {
+    "CacheDirectory": ""
+  },
+  "pages": [
+    {
+      "id": 0,
+      "pan": {
+        "X": 1076.7285,
+        "Y": 466.69763
+      },
+      "zoom": 1.2380036115646362,
+      "cards": [
+        {
+          "id": 36,
+          "rect": {
+            "X": 768,
+            "Y": -448,
+            "W": 288,
+            "H": 320
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 320,
+          "contents": "Sub-Page",
+          "properties": {
+            "description": "Get Inspired",
+            "subpage": 2,
+            "filepath": ""
+          }
+        },
+        {
+          "id": 1,
+          "rect": {
+            "X": -32,
+            "Y": -352,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "SandEEE",
+            "filepath": "",
+            "deadline": "2024-08-01"
+          }
+        },
+        {
+          "id": 2,
+          "rect": {
+            "X": 0,
+            "Y": -320,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Incubator demo",
+            "filepath": "",
+            "deadline": "2023-05-15"
+          }
+        },
+        {
+          "id": 27,
+          "rect": {
+            "X": 32,
+            "Y": -288,
+            "W": 288,
+            "H": 320
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 320,
+          "contents": "Sub-Page",
+          "properties": {
+            "subpage": 1,
+            "description": "Assets",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 3,
+          "rect": {
+            "X": 32,
+            "Y": 32,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Welcome screen",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 3,
+              "end": 5,
+              "joints": [
+                {
+                  "X": 416,
+                  "Y": 32
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "rect": {
+            "X": 32,
+            "Y": 64,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Email Intro",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 4,
+              "end": 6,
+              "joints": [
+                {
+                  "X": 928,
+                  "Y": 64
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": 60,
+          "rect": {
+            "X": 0,
+            "Y": 96,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Open Beta",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 5,
+          "rect": {
+            "X": 512,
+            "Y": 128,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Welcome screen",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 6,
+          "rect": {
+            "X": 992,
+            "Y": 128,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Email Intro",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 7,
+          "rect": {
+            "X": 544,
+            "Y": 160,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Welcome Text",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 8,
+          "rect": {
+            "X": 1024,
+            "Y": 160,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Finish Email app",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 9,
+          "rect": {
+            "X": 544,
+            "Y": 192,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Image",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 10,
+          "rect": {
+            "X": 1056,
+            "Y": 192,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Goals",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 11,
+          "rect": {
+            "X": 576,
+            "Y": 224,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Draw",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 12,
+          "rect": {
+            "X": 1088,
+            "Y": 224,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Submit",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 13,
+          "rect": {
+            "X": 576,
+            "Y": 256,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "render",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 14,
+          "rect": {
+            "X": 1088,
+            "Y": 256,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Run",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 15,
+          "rect": {
+            "X": 544,
+            "Y": 288,
+            "W": 288,
+            "H": 64
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 64,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Tell user to open email",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 16,
+          "rect": {
+            "X": 1088,
+            "Y": 288,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "View",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 97,
+          "rect": {
+            "X": 1056,
+            "Y": 320,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Notification Sound",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 96,
+          "rect": {
+            "X": 544,
+            "Y": 352,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "EEE Presence",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 98,
+          "rect": {
+            "X": 1056,
+            "Y": 352,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Multiple Instances",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 17,
+          "rect": {
+            "X": 1024,
+            "Y": 384,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Create File",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 55,
+          "rect": {
+            "X": 544,
+            "Y": 416,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Music?",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 18,
+          "rect": {
+            "X": 1024,
+            "Y": 416,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Edit File",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 94,
+          "rect": {
+            "X": 544,
+            "Y": 448,
+            "W": 288,
+            "H": 64
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 64,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Move UI to seprate texture",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 19,
+          "rect": {
+            "X": 1024,
+            "Y": 448,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Shell commands",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 20,
+          "rect": {
+            "X": 1024,
+            "Y": 480,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 0,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "New Checkbox",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 21,
+          "rect": {
+            "X": 1024,
+            "Y": 512,
+            "W": 288,
+            "H": 64
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 64,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Assembly hello world",
+            "filepath": ""
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "pan": {
+        "X": 0.00007551127,
+        "Y": 0.000009144466
+      },
+      "zoom": 0.5804163217544556,
+      "cards": [
+        {
+          "id": 33,
+          "rect": {
+            "X": -288,
+            "Y": 0,
+            "W": 288,
+            "H": 96
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 0,
+          "uncollapsedSizeY": 0,
+          "contents": "Image",
+          "properties": {
+            "filepath": "../content/images/wall.png"
+          }
+        },
+        {
+          "id": 28,
+          "rect": {
+            "X": 0,
+            "Y": 0,
+            "W": 512,
+            "H": 512
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 512,
+          "uncollapsedSizeY": 512,
+          "contents": "Image",
+          "properties": {
+            "filepath": "../content/images/bios_font.png"
+          }
+        },
+        {
+          "id": 29,
+          "rect": {
+            "X": 512,
+            "Y": 0,
+            "W": 512,
+            "H": 512
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 512,
+          "uncollapsedSizeY": 512,
+          "contents": "Image",
+          "properties": {
+            "filepath": "../content/images/font.png"
+          }
+        },
+        {
+          "id": 34,
+          "rect": {
+            "X": -288,
+            "Y": 96,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Note",
+          "properties": {
+            "description": "Desktop Logo",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 31,
+          "rect": {
+            "X": 0,
+            "Y": 512,
+            "W": 512,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 512,
+          "uncollapsedSizeY": 32,
+          "contents": "Note",
+          "properties": {
+            "description": "Bios Font",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 32,
+          "rect": {
+            "X": 512,
+            "Y": 512,
+            "W": 512,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 512,
+          "uncollapsedSizeY": 32,
+          "contents": "Note",
+          "properties": {
+            "description": "Main Font",
+            "filepath": ""
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "pan": {
+        "X": 119.6085,
+        "Y": 203.147
+      },
+      "zoom": 1.1429897546768188,
+      "cards": [
+        {
+          "id": 37,
+          "rect": {
+            "X": 0,
+            "Y": 0,
+            "W": 288,
+            "H": 224
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 224,
+          "contents": "Image",
+          "properties": {
+            "filepath": "../../../../../../../tmp/qutebrowser-vdIjln/1834191-3534189613.png"
+          }
+        },
+        {
+          "id": 92,
+          "rect": {
+            "X": 0,
+            "Y": 224,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Welcome screen",
+            "filepath": ""
+          }
+        }
+      ]
+    }
+  ],
+  "savedimages": {}
+}
