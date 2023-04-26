@@ -533,6 +533,7 @@ pub fn main() anyerror!void {
 
     //TODO: ???
     win.deskSize = &gfx.gContext.size;
+    windowedState.GSWindowed.deskSize = &gfx.gContext.size;
 
     // update the frame timer
     var lastFrameTime = c.glfwGetTime();

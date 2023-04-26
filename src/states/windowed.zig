@@ -21,6 +21,7 @@ const shell = @import("../system/shell.zig");
 const cols = @import("../math/colors.zig");
 const network = @import("../system/network.zig");
 const cursor = @import("../drawers/cursor2d.zig");
+const wins = @import("../windows/all.zig");
 
 pub const GSWindowed = struct {
     const Self = @This();
@@ -51,6 +52,8 @@ pub const GSWindowed = struct {
     scrolltex: *tex.Texture,
     explorertex: *tex.Texture,
 
+    pub var deskSize: *vecs.Vector2 = undefined;
+
     var globalSelf: *Self = undefined;
 
     fn createWindow(event: windowEvs.EventCreateWindow) bool {
@@ -68,6 +71,11 @@ pub const GSWindowed = struct {
             std.log.err("couldnt create window!", .{});
             return false;
         };
+
+        if (event.center) {
+            target.x = (deskSize.x - event.window.data.pos.w) / 2;
+            target.y = (deskSize.y - event.window.data.pos.h) / 2;
+        }
 
         self.windows.items[self.windows.items.len - 1].data.pos.x = target.x;
         self.windows.items[self.windows.items.len - 1].data.pos.y = target.y;
@@ -121,6 +129,27 @@ pub const GSWindowed = struct {
         win.WindowContents.shader = self.shader;
 
         events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
+
+        if (std.mem.eql(u8, self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
+            var window = win.Window.new(self.wintex, win.WindowData{
+                .source = rect.Rectangle{
+                    .x = 0.0,
+                    .y = 0.0,
+                    .w = 1.0,
+                    .h = 1.0,
+                },
+                .pos = .{
+                    .x = 0,
+                    .y = 0,
+                    .w = 600,
+                    .h = 350,
+                },
+                .contents = try wins.welcome.new(),
+                .active = true,
+            });
+
+            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = true });
+        }
     }
 
     pub fn deinit(self: *Self) !void {
@@ -387,17 +416,21 @@ pub const GSWindowed = struct {
             // min size
             if (dragging.data.pos.w < dragging.data.contents.props.size.min.x) {
                 dragging.data.pos.w = old.w;
+                dragging.data.pos.x = old.x;
             }
             if (dragging.data.pos.h < dragging.data.contents.props.size.min.y) {
                 dragging.data.pos.h = old.h;
+                dragging.data.pos.y = old.y;
             }
 
             // max size
             if (dragging.data.pos.w > dragging.data.contents.props.size.max.x) {
                 dragging.data.pos.w = old.w;
+                dragging.data.pos.x = old.x;
             }
             if (dragging.data.pos.h > dragging.data.contents.props.size.max.y) {
                 dragging.data.pos.h = old.h;
+                dragging.data.pos.y = old.y;
             }
         }
         if (self.down and self.dragmode == .None) {
