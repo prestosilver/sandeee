@@ -1,4 +1,5 @@
 id: 2
+deps: 0
 box: 1
 from: joe_m@eee.org
 sub: Program for me NOW!
