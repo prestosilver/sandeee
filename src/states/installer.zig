@@ -50,7 +50,7 @@ pub const GSInstall = struct {
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         var y: f32 = 100;
 
-        var titleLine = try std.fmt.allocPrint(allocator.alloc, "SandEEE Installer v_{s}", .{VERSION});
+        var titleLine = try std.fmt.allocPrint(allocator.alloc, "Sand\x82\x82\x82 Installer v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
             .batch = self.sb,
