@@ -14,10 +14,6 @@ const mail = @import("../system/mail.zig");
 
 const boxes: u8 = 3;
 
-fn range(len: usize) []const void {
-    return @as([*]void, undefined)[0..len];
-}
-
 const EmailData = struct {
     const Self = @This();
 
@@ -74,18 +70,17 @@ const EmailData = struct {
 
             var y: f32 = bnds.y + 2.0;
 
-            var iter = std.mem.reverseIterator(mail.emails.items);
-
-            while (iter.next()) |*email| {
+            for (0..mail.emails.items.len) |idx| {
+                var email = &mail.emails.items[mail.emails.items.len - 1 - idx];
                 if (email.box != self.box) continue;
                 if (!email.visible()) continue;
 
                 var text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
 
-                if (@ptrToInt(email) == @ptrToInt(self.selected)) {
+                if (self.selected != null and email == self.selected.?) {
                     self.sel.data.size.x = bnds.w - 106;
-                    self.sel.data.size.y = font.size + 4;
+                    self.sel.data.size.y = 22;
 
                     try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 106, y - 2, 0));
                 }
@@ -109,7 +104,7 @@ const EmailData = struct {
 
                 try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 112, y + font.size, 0));
 
-                y += 28;
+                y += 24;
             }
         } else {
             self.divx.data.size.x = bnds.w - 100;
@@ -159,16 +154,18 @@ const EmailData = struct {
             0 => {
                 var contBnds = rect.newRect(106, 0, size.x - 106, size.y);
                 if (contBnds.contains(mousepos)) {
-                    var y: i32 = 0;
+                    if (self.viewing != null) return;
+
+                    var y: i32 = 2;
 
                     for (0..mail.emails.items.len) |idx| {
                         var email = &mail.emails.items[mail.emails.items.len - 1 - idx];
                         if (email.box != self.box) continue;
                         if (!email.visible()) continue;
 
-                        var bnds = rect.newRect(106, @intToFloat(f32, y), size.x - 106, 28);
+                        var bnds = rect.newRect(106, @intToFloat(f32, y), size.x - 106, 24);
 
-                        y += 28;
+                        y += 24;
 
                         if (bnds.contains(mousepos)) {
                             if (self.selected != null and email == self.selected.?) {
@@ -183,7 +180,7 @@ const EmailData = struct {
                 } else {
                     var bnds = rect.newRect(0, 106, 106, size.y - 106);
                     if (bnds.contains(mousepos)) {
-                        var id = (mousepos.y - 106.0) / 22.0;
+                        var id = (mousepos.y - 106.0) / 24.0;
 
                         self.box = @intCast(u8, @floatToInt(i32, id + 0.5));
 

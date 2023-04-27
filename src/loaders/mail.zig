@@ -10,6 +10,7 @@ pub fn loadMail(_: *worker.WorkerQueueEntry(*const u8, *const u8)) !bool {
     mail.init();
 
     try mail.load();
+    try mail.loadEmailsState("conf/emails.bin");
 
     return true;
 }

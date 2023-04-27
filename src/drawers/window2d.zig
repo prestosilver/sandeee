@@ -160,6 +160,7 @@ pub const WindowContents = struct {
     }
 
     pub fn deinit(self: *Self) !void {
+        allocator.alloc.free(self.props.info.name);
         return self.vtable.deinit(self.ptr);
     }
 

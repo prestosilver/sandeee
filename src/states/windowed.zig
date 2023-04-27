@@ -153,6 +153,8 @@ pub const GSWindowed = struct {
     }
 
     pub fn deinit(self: *Self) !void {
+        try emails.saveEmailsState("conf/emails.bin");
+
         for (self.windows.items) |*window| {
             try window.data.deinit();
         }

@@ -369,10 +369,10 @@ pub const Folder = struct {
         }
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
+        defer allocator.alloc.free(fullname);
         for (self.contents.items, 0..) |subfile, idx| {
             if (std.mem.eql(u8, subfile.name, fullname)) {
                 try self.contents.items[idx].write(contents, vmInstance);
-                allocator.alloc.free(fullname);
                 return;
             }
         }

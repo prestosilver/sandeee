@@ -3,11 +3,37 @@ const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
+const files = @import("../system/files.zig");
 
 pub var emails: std.ArrayList(Email) = undefined;
 
-fn range(len: usize) []const void {
-    return @as([*]void, undefined)[0..len];
+pub fn saveEmailsState(path: []const u8) !void {
+    var conts = try allocator.alloc.alloc(u8, emails.items.len);
+
+    for (emails.items) |*email| {
+        conts[email.id] = 0;
+        if (email.viewed) conts[email.id] |= 1 << 0;
+        if (email.complete()) conts[email.id] |= 1 << 1;
+    }
+
+    _ = try files.root.newFile(path);
+    try files.root.writeFile(path, conts, null);
+
+    allocator.alloc.free(conts);
+}
+
+pub fn loadEmailsState(path: []const u8) !void {
+    if (try files.root.getFile(path)) |file| {
+        var conts = try file.read(null);
+        defer allocator.alloc.free(conts);
+
+        for (emails.items) |*email| {
+            if (conts.len < email.id) continue;
+
+            email.viewed = (conts[email.id] & (1 << 0)) != 0;
+            email.forceComplete = (conts[email.id] & (1 << 1)) != 0;
+        }
+    }
 }
 
 pub fn append(e: Email) !void {
@@ -109,6 +135,7 @@ pub fn init() void {
 
 pub fn deinit() void {
     for (emails.items) |email| {
+        allocator.alloc.free(email.deps);
         allocator.alloc.free(email.from);
         allocator.alloc.free(email.subject);
         allocator.alloc.free(email.contents);
@@ -134,7 +161,10 @@ pub fn load() !void {
     var count = @bitCast(u32, lenbuffer[0..4].*);
     try emails.resize(count);
 
-    for (range(count), 0..) |_, idx| {
+    for (0..count) |idx| {
+        emails.items[idx].viewed = false;
+        emails.items[idx].forceComplete = false;
+
         _ = try file.read(bytebuffer);
         emails.items[idx].id = bytebuffer[0];
         _ = try file.read(bytebuffer);
@@ -171,9 +201,9 @@ pub fn load() !void {
 pub const Email = struct {
     const Self = @This();
     const Condition = enum(u8) {
+        View,
         Submit,
         Run,
-        View,
     };
 
     from: []const u8,
@@ -182,7 +212,8 @@ pub const Email = struct {
     deps: []u8,
 
     viewed: bool = false,
-    condition: Condition,
+    forceComplete: bool = false,
+    condition: Condition = .View,
     box: u8 = 0,
     id: u8 = 0,
 
@@ -207,6 +238,8 @@ pub const Email = struct {
     }
 
     pub fn complete(self: *const Self) bool {
+        if (self.forceComplete) return true;
+
         return switch (self.condition) {
             .View => self.viewed,
             else => false,
