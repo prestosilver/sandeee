@@ -87,6 +87,8 @@ var shader: shd.Shader = undefined;
 // the selected disk
 var disk: ?[]u8 = null;
 
+var message_snd: audio.Sound = undefined;
+
 //
 var settingManager: conf.SettingManager = undefined;
 
@@ -229,6 +231,12 @@ pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
     return false;
 }
 
+pub fn mailRecv(event: systemEvs.eventEmailRecv) bool {
+    _ = event;
+    audioman.playSound(message_snd) catch {};
+    return false;
+}
+
 pub fn setupEvents() !void {
     events.init();
 
@@ -242,6 +250,7 @@ pub fn setupEvents() !void {
     events.em.registerListener(inputEvs.EventKeyUp, keyUp);
 
     events.em.registerListener(systemEvs.EventStateChange, changeState);
+    events.em.registerListener(systemEvs.eventEmailRecv, mailRecv);
 }
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {
@@ -414,6 +423,7 @@ pub fn main() anyerror!void {
         .audio_man = &audioman,
         .ctx = &ctx,
         .loading = drawLoading,
+        .message_snd = &message_snd,
         .logo_sprite = .{
             .texture = &logoTex,
             .data = sprite.SpriteData.new(

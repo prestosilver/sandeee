@@ -1,6 +1,8 @@
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
+const events = @import("../util/events.zig");
+const systemEvs = @import("../events/system.zig");
 
 pub var emails: std.ArrayList(Email) = undefined;
 
@@ -9,7 +11,10 @@ fn range(len: usize) []const void {
 }
 
 pub fn append(e: Email) !void {
-    try emails.append(e);
+    if (emails.items.len < e.id) {
+        try emails.resize(e.id + 1);
+    }
+    emails.items[e.id] = e;
 }
 
 pub fn toStr() ![]u8 {
@@ -174,13 +179,22 @@ pub const Email = struct {
     from: []const u8,
     subject: []const u8,
     contents: []const u8,
-    deps: []align(1) u8,
+    deps: []u8,
 
     viewed: bool = false,
     condition: Condition,
-    selected: bool = false,
     box: u8 = 0,
     id: u8 = 0,
+
+    pub fn view(self: *Self) void {
+        if (!self.viewed) {
+            self.viewed = true;
+
+            if (self.condition == .View) {
+                events.em.sendEvent(systemEvs.eventEmailRecv{});
+            }
+        }
+    }
 
     pub fn visible(self: *const Self) bool {
         for (emails.items) |dep| {
@@ -197,5 +211,15 @@ pub const Email = struct {
             .View => self.viewed,
             else => false,
         };
+    }
+
+    pub fn unlocks(self: *const Self) bool {
+        for (emails.items) |dep| {
+            if (std.mem.indexOf(u8, self.deps, &.{dep.id})) |_| {
+                if (!dep.complete()) return false;
+            }
+        }
+
+        return true;
     }
 };

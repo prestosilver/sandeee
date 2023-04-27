@@ -30,6 +30,7 @@ const EmailData = struct {
 
     box: u8 = 0,
     viewing: ?*mail.Email = null,
+    selected: ?*mail.Email = null,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
@@ -73,14 +74,16 @@ const EmailData = struct {
 
             var y: f32 = bnds.y + 2.0;
 
-            for (mail.emails.items) |email| {
+            var iter = std.mem.reverseIterator(mail.emails.items);
+
+            while (iter.next()) |*email| {
                 if (email.box != self.box) continue;
                 if (!email.visible()) continue;
 
                 var text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
 
-                if (email.selected) {
+                if (@ptrToInt(email) == @ptrToInt(self.selected)) {
                     self.sel.data.size.x = bnds.w - 106;
                     self.sel.data.size.y = font.size + 4;
 
@@ -113,7 +116,6 @@ const EmailData = struct {
             try batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 2 + font.size * 2, 0));
 
             var email = self.viewing.?;
-            email.viewed = true;
 
             var from = try std.fmt.allocPrint(allocator.alloc, "from: {s}", .{email.from});
             defer allocator.alloc.free(from);
@@ -159,7 +161,8 @@ const EmailData = struct {
                 if (contBnds.contains(mousepos)) {
                     var y: i32 = 0;
 
-                    for (mail.emails.items, 0..) |email, idx| {
+                    for (0..mail.emails.items.len) |idx| {
+                        var email = &mail.emails.items[mail.emails.items.len - 1 - idx];
                         if (email.box != self.box) continue;
                         if (!email.visible()) continue;
 
@@ -168,15 +171,13 @@ const EmailData = struct {
                         y += 28;
 
                         if (bnds.contains(mousepos)) {
-                            if (email.selected) {
-                                mail.emails.items[idx].viewed = true;
-                                mail.emails.items[idx].selected = false;
-                                self.viewing = &mail.emails.items[idx];
+                            if (self.selected != null and email == self.selected.?) {
+                                email.view();
+                                self.selected = null;
+                                self.viewing = email;
                             } else {
-                                mail.emails.items[idx].selected = true;
+                                self.selected = email;
                             }
-                        } else {
-                            mail.emails.items[idx].selected = false;
                         }
                     }
                 } else {

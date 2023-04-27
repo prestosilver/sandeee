@@ -31,6 +31,7 @@ pub const GSLoading = struct {
     const cursorpath: []const u8 = "cursor_texture_path";
     const barlogopath: []const u8 = "bar_logo_path";
     const loginpath: []const u8 = "/cont/snds/login.era";
+    const messagepath: []const u8 = "/cont/snds/message.era";
     const settingspath: []const u8 = "/conf/system.cfg";
     const fontpath: []const u8 = "/cont/fnts/main.eff";
     const zero: u8 = 0;
@@ -38,6 +39,7 @@ pub const GSLoading = struct {
 
     load_progress: f32 = 0,
     login_snd: audio.Sound = undefined,
+    message_snd: *audio.Sound,
     done: std.atomic.Atomic(bool) = std.atomic.Atomic(bool).init(false),
 
     sb: *sb.SpriteBatch,
@@ -102,6 +104,7 @@ pub const GSLoading = struct {
 
         // sounds
         try self.loader.enqueue(&loginpath, &self.login_snd, worker.sound.loadSound);
+        try self.loader.enqueue(&messagepath, self.message_snd, worker.sound.loadSound);
 
         // mail
         try self.loader.enqueue(&zero, &zero, worker.mail.loadMail);

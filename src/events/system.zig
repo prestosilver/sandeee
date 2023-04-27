@@ -11,3 +11,5 @@ pub const State = enum {
 pub const EventStateChange = struct {
     targetState: State,
 };
+
+pub const eventEmailRecv = struct {};
