@@ -3,6 +3,7 @@ deps: 0
 box: 1
 from: joe_m@eee.org
 sub: Program for me NOW!
+view
 Please program for me, I need more devs.
 
 Joe Moe

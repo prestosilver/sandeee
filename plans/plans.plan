@@ -1,10 +1,10 @@
 {
   "version": "0.8.0-alpha.8.1",
   "pan": {
-    "X": 1076.7288,
-    "Y": 466.6977
+    "X": 1201.5892,
+    "Y": 414.93436
   },
-  "zoom": 1.2380036115646362,
+  "zoom": 0.6706191897392273,
   "currentPage": 0,
   "properties": {
     "CacheDirectory": ""
@@ -13,16 +13,16 @@
     {
       "id": 0,
       "pan": {
-        "X": 1076.7285,
-        "Y": 466.69763
+        "X": 1201.5892,
+        "Y": 414.93436
       },
-      "zoom": 1.2380036115646362,
+      "zoom": 0.6706191897392273,
       "cards": [
         {
-          "id": 36,
+          "id": 0,
           "rect": {
-            "X": 768,
-            "Y": -448,
+            "X": 512,
+            "Y": -384,
             "W": 288,
             "H": 320
           },
@@ -75,7 +75,25 @@
           }
         },
         {
-          "id": 27,
+          "id": 47,
+          "rect": {
+            "X": -416,
+            "Y": -288,
+            "W": 288,
+            "H": 320
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 320,
+          "contents": "Sub-Page",
+          "properties": {
+            "description": "Characters",
+            "subpage": 3,
+            "filepath": ""
+          }
+        },
+        {
+          "id": 3,
           "rect": {
             "X": 32,
             "Y": -288,
@@ -87,13 +105,31 @@
           "uncollapsedSizeY": 320,
           "contents": "Sub-Page",
           "properties": {
-            "subpage": 1,
             "description": "Assets",
+            "subpage": 1,
             "filepath": ""
           }
         },
         {
-          "id": 3,
+          "id": 53,
+          "rect": {
+            "X": -416,
+            "Y": 32,
+            "W": 288,
+            "H": 320
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 320,
+          "contents": "Sub-Page",
+          "properties": {
+            "description": "Email Map",
+            "subpage": 4,
+            "filepath": ""
+          }
+        },
+        {
+          "id": 4,
           "rect": {
             "X": 32,
             "Y": 32,
@@ -111,8 +147,8 @@
           },
           "links": [
             {
-              "start": 3,
-              "end": 5,
+              "start": 4,
+              "end": 7,
               "joints": [
                 {
                   "X": 416,
@@ -123,7 +159,7 @@
           ]
         },
         {
-          "id": 4,
+          "id": 5,
           "rect": {
             "X": 32,
             "Y": 64,
@@ -141,8 +177,8 @@
           },
           "links": [
             {
-              "start": 4,
-              "end": 6,
+              "start": 5,
+              "end": 8,
               "joints": [
                 {
                   "X": 928,
@@ -153,7 +189,7 @@
           ]
         },
         {
-          "id": 60,
+          "id": 6,
           "rect": {
             "X": 0,
             "Y": 96,
@@ -171,7 +207,25 @@
           }
         },
         {
-          "id": 5,
+          "id": 25,
+          "rect": {
+            "X": 32,
+            "Y": 128,
+            "W": 288,
+            "H": 64
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 64,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Move UI to seprate texture",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 7,
           "rect": {
             "X": 512,
             "Y": 128,
@@ -189,7 +243,7 @@
           }
         },
         {
-          "id": 6,
+          "id": 8,
           "rect": {
             "X": 992,
             "Y": 128,
@@ -207,7 +261,7 @@
           }
         },
         {
-          "id": 7,
+          "id": 9,
           "rect": {
             "X": 544,
             "Y": 160,
@@ -225,7 +279,7 @@
           }
         },
         {
-          "id": 8,
+          "id": 10,
           "rect": {
             "X": 1024,
             "Y": 160,
@@ -243,7 +297,7 @@
           }
         },
         {
-          "id": 9,
+          "id": 11,
           "rect": {
             "X": 544,
             "Y": 192,
@@ -261,7 +315,7 @@
           }
         },
         {
-          "id": 10,
+          "id": 12,
           "rect": {
             "X": 1056,
             "Y": 192,
@@ -279,7 +333,7 @@
           }
         },
         {
-          "id": 11,
+          "id": 13,
           "rect": {
             "X": 576,
             "Y": 224,
@@ -297,7 +351,7 @@
           }
         },
         {
-          "id": 12,
+          "id": 14,
           "rect": {
             "X": 1088,
             "Y": 224,
@@ -315,7 +369,7 @@
           }
         },
         {
-          "id": 13,
+          "id": 15,
           "rect": {
             "X": 576,
             "Y": 256,
@@ -333,25 +387,25 @@
           }
         },
         {
-          "id": 14,
+          "id": 16,
           "rect": {
-            "X": 1088,
+            "X": 1120,
             "Y": 256,
             "W": 288,
             "H": 32
           },
-          "collapsed": "CollapsedNone",
+          "collapsed": "CollapsedShade",
           "uncollapsedSizeX": 288,
           "uncollapsedSizeY": 32,
           "contents": "Checkbox",
           "properties": {
             "checked": false,
-            "description": "Run",
+            "description": "Cond",
             "filepath": ""
           }
         },
         {
-          "id": 15,
+          "id": 17,
           "rect": {
             "X": 544,
             "Y": 288,
@@ -369,32 +423,14 @@
           }
         },
         {
-          "id": 16,
+          "id": 18,
           "rect": {
-            "X": 1088,
+            "X": 1120,
             "Y": 288,
             "W": 288,
             "H": 32
           },
-          "collapsed": "CollapsedNone",
-          "uncollapsedSizeX": 288,
-          "uncollapsedSizeY": 32,
-          "contents": "Checkbox",
-          "properties": {
-            "checked": true,
-            "description": "View",
-            "filepath": ""
-          }
-        },
-        {
-          "id": 97,
-          "rect": {
-            "X": 1056,
-            "Y": 320,
-            "W": 288,
-            "H": 32
-          },
-          "collapsed": "CollapsedNone",
+          "collapsed": "CollapsedShade",
           "uncollapsedSizeX": 288,
           "uncollapsedSizeY": 32,
           "contents": "Checkbox",
@@ -405,7 +441,25 @@
           }
         },
         {
-          "id": 96,
+          "id": 19,
+          "rect": {
+            "X": 1088,
+            "Y": 320,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Run",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 20,
           "rect": {
             "X": 544,
             "Y": 352,
@@ -423,46 +477,28 @@
           }
         },
         {
-          "id": 98,
+          "id": 21,
           "rect": {
-            "X": 1056,
+            "X": 1120,
             "Y": 352,
             "W": 288,
             "H": 32
           },
-          "collapsed": "CollapsedNone",
+          "collapsed": "CollapsedShade",
           "uncollapsedSizeX": 288,
-          "uncollapsedSizeY": 32,
+          "uncollapsedSizeY": 128,
           "contents": "Checkbox",
           "properties": {
             "checked": false,
-            "description": "Multiple Instances",
+            "description": "Cond",
             "filepath": ""
           }
         },
         {
-          "id": 17,
+          "id": 22,
           "rect": {
-            "X": 1024,
+            "X": 1120,
             "Y": 384,
-            "W": 288,
-            "H": 32
-          },
-          "collapsed": "CollapsedNone",
-          "uncollapsedSizeX": 288,
-          "uncollapsedSizeY": 32,
-          "contents": "Checkbox",
-          "properties": {
-            "checked": false,
-            "description": "Create File",
-            "filepath": ""
-          }
-        },
-        {
-          "id": 55,
-          "rect": {
-            "X": 544,
-            "Y": 416,
             "W": 288,
             "H": 32
           },
@@ -472,15 +508,159 @@
           "contents": "Checkbox",
           "properties": {
             "checked": false,
-            "description": "Music?",
+            "description": "Notification Sound",
             "filepath": ""
           }
         },
         {
-          "id": 18,
+          "id": 24,
+          "rect": {
+            "X": 1088,
+            "Y": 416,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "View",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 26,
+          "rect": {
+            "X": 1120,
+            "Y": 448,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Cond",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 27,
+          "rect": {
+            "X": 1120,
+            "Y": 480,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Notification Sound",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 28,
+          "rect": {
+            "X": 1056,
+            "Y": 512,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Multiple Instances",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 29,
+          "rect": {
+            "X": 1056,
+            "Y": 544,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Saving",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 30,
           "rect": {
             "X": 1024,
-            "Y": 416,
+            "Y": 576,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Emails",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 31,
+          "rect": {
+            "X": 1056,
+            "Y": 608,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Intro",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 32,
+          "rect": {
+            "X": 1056,
+            "Y": 640,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Create File",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 33,
+          "rect": {
+            "X": 1056,
+            "Y": 672,
             "W": 288,
             "H": 32
           },
@@ -495,64 +675,10 @@
           }
         },
         {
-          "id": 94,
+          "id": 36,
           "rect": {
-            "X": 544,
-            "Y": 448,
-            "W": 288,
-            "H": 64
-          },
-          "collapsed": "CollapsedNone",
-          "uncollapsedSizeX": 288,
-          "uncollapsedSizeY": 64,
-          "contents": "Checkbox",
-          "properties": {
-            "checked": false,
-            "description": "Move UI to seprate texture",
-            "filepath": ""
-          }
-        },
-        {
-          "id": 19,
-          "rect": {
-            "X": 1024,
-            "Y": 448,
-            "W": 288,
-            "H": 32
-          },
-          "collapsed": "CollapsedNone",
-          "uncollapsedSizeX": 288,
-          "uncollapsedSizeY": 32,
-          "contents": "Checkbox",
-          "properties": {
-            "checked": false,
-            "description": "Shell commands",
-            "filepath": ""
-          }
-        },
-        {
-          "id": 20,
-          "rect": {
-            "X": 1024,
-            "Y": 480,
-            "W": 288,
-            "H": 32
-          },
-          "collapsed": "CollapsedShade",
-          "uncollapsedSizeX": 288,
-          "uncollapsedSizeY": 0,
-          "contents": "Checkbox",
-          "properties": {
-            "checked": false,
-            "description": "New Checkbox",
-            "filepath": ""
-          }
-        },
-        {
-          "id": 21,
-          "rect": {
-            "X": 1024,
-            "Y": 512,
+            "X": 1056,
+            "Y": 704,
             "W": 288,
             "H": 64
           },
@@ -571,13 +697,13 @@
     {
       "id": 1,
       "pan": {
-        "X": 0.00007551127,
-        "Y": 0.000009144466
+        "X": 120.14465,
+        "Y": -6.541255
       },
-      "zoom": 0.5804163217544556,
+      "zoom": 0.864859938621521,
       "cards": [
         {
-          "id": 33,
+          "id": 37,
           "rect": {
             "X": -288,
             "Y": 0,
@@ -593,7 +719,7 @@
           }
         },
         {
-          "id": 28,
+          "id": 38,
           "rect": {
             "X": 0,
             "Y": 0,
@@ -609,7 +735,7 @@
           }
         },
         {
-          "id": 29,
+          "id": 39,
           "rect": {
             "X": 512,
             "Y": 0,
@@ -625,7 +751,7 @@
           }
         },
         {
-          "id": 34,
+          "id": 40,
           "rect": {
             "X": -288,
             "Y": 96,
@@ -642,7 +768,7 @@
           }
         },
         {
-          "id": 31,
+          "id": 41,
           "rect": {
             "X": 0,
             "Y": 512,
@@ -659,7 +785,7 @@
           }
         },
         {
-          "id": 32,
+          "id": 42,
           "rect": {
             "X": 512,
             "Y": 512,
@@ -680,13 +806,13 @@
     {
       "id": 2,
       "pan": {
-        "X": 119.6085,
-        "Y": 203.147
+        "X": 144.00014,
+        "Y": 112.00011
       },
       "zoom": 1.1429897546768188,
       "cards": [
         {
-          "id": 37,
+          "id": 43,
           "rect": {
             "X": 0,
             "Y": 0,
@@ -702,7 +828,7 @@
           }
         },
         {
-          "id": 92,
+          "id": 44,
           "rect": {
             "X": 0,
             "Y": 224,
@@ -716,6 +842,683 @@
           "properties": {
             "checked": false,
             "description": "Welcome screen",
+            "filepath": ""
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "pan": {
+        "X": 92.07089,
+        "Y": 19.911068
+      },
+      "zoom": 1.0773580074310303,
+      "cards": [
+        {
+          "id": 48,
+          "rect": {
+            "X": 0,
+            "Y": 0,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Joe Moe",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 51,
+          "rect": {
+            "X": 32,
+            "Y": 32,
+            "W": 256,
+            "H": 64
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 64,
+          "contents": "Note",
+          "properties": {
+            "description": "First person you talk to",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 50,
+          "rect": {
+            "X": 0,
+            "Y": 96,
+            "W": 288,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 288,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Jennifer Duncan",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 52,
+          "rect": {
+            "X": 32,
+            "Y": 128,
+            "W": 256,
+            "H": 64
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 64,
+          "contents": "Note",
+          "properties": {
+            "description": "Obsessed with assembly",
+            "filepath": ""
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "pan": {
+        "X": 598.98865,
+        "Y": 5.0483165
+      },
+      "zoom": 0.5537310838699341,
+      "cards": [
+        {
+          "id": 92,
+          "rect": {
+            "X": 0,
+            "Y": 0,
+            "W": 512,
+            "H": 512
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 512,
+          "uncollapsedSizeY": 512,
+          "contents": "Map",
+          "properties": {
+            "contents": "{\"contents\":[[12,12,12,11,12,5,5,5,5,5,5,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 73,
+          "rect": {
+            "X": 672,
+            "Y": 128,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Note",
+          "properties": {
+            "description": "Joe Moe",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 74,
+          "rect": {
+            "X": 1056,
+            "Y": 128,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Note",
+          "properties": {
+            "description": "Jennifer Dunkan",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 55,
+          "rect": {
+            "X": 672,
+            "Y": 224,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "description": "00 - Blackmail",
+            "filepath": "",
+            "checked": true
+          }
+        },
+        {
+          "id": 57,
+          "rect": {
+            "X": 1056,
+            "Y": 224,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "02 - Spam",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 57,
+              "end": 55,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 81,
+          "rect": {
+            "X": 704,
+            "Y": 256,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 84,
+          "rect": {
+            "X": 1088,
+            "Y": 256,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 56,
+          "rect": {
+            "X": 672,
+            "Y": 384,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "01 - Create file",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 56,
+              "end": 55,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 60,
+          "rect": {
+            "X": 1056,
+            "Y": 384,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 64,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "04 - Assembler Intro",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 60,
+              "end": 56,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 82,
+          "rect": {
+            "X": 704,
+            "Y": 416,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 83,
+          "rect": {
+            "X": 1088,
+            "Y": 416,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 59,
+          "rect": {
+            "X": 672,
+            "Y": 544,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "03 - Write script",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 59,
+              "end": 56,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 64,
+          "rect": {
+            "X": 1056,
+            "Y": 544,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "description": "05 - Hello.asm",
+            "filepath": "",
+            "checked": false
+          },
+          "links": [
+            {
+              "start": 64,
+              "end": 60,
+              "joints": []
+            },
+            {
+              "start": 64,
+              "end": 59,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 78,
+          "rect": {
+            "X": 704,
+            "Y": 576,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 79,
+          "rect": {
+            "X": 1088,
+            "Y": 576,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 75,
+          "rect": {
+            "X": 288,
+            "Y": 640,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Note",
+          "properties": {
+            "description": "Julien Web",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 85,
+          "rect": {
+            "X": 288,
+            "Y": 704,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "09 - edf create",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 85,
+              "end": 65,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 65,
+          "rect": {
+            "X": 672,
+            "Y": 704,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "description": "07 - browser",
+            "filepath": "",
+            "checked": false
+          },
+          "links": [
+            {
+              "start": 65,
+              "end": 67,
+              "joints": []
+            },
+            {
+              "start": 65,
+              "end": 59,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 67,
+          "rect": {
+            "X": 1056,
+            "Y": 704,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "06 - submit asm",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 67,
+              "end": 64,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 86,
+          "rect": {
+            "X": 320,
+            "Y": 736,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 77,
+          "rect": {
+            "X": 704,
+            "Y": 736,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 80,
+          "rect": {
+            "X": 1088,
+            "Y": 736,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 89,
+          "rect": {
+            "X": 288,
+            "Y": 864,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "0A - edf example",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 89,
+              "end": 85,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 98,
+          "rect": {
+            "X": 672,
+            "Y": 864,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "0B - reading file",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 98,
+              "end": 65,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 90,
+          "rect": {
+            "X": 320,
+            "Y": 896,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 99,
+          "rect": {
+            "X": 704,
+            "Y": 896,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Add",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 87,
+          "rect": {
+            "X": 672,
+            "Y": 1024,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 256,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "0B - libraries",
+            "filepath": ""
+          },
+          "links": [
+            {
+              "start": 87,
+              "end": 98,
+              "joints": []
+            }
+          ]
+        },
+        {
+          "id": 88,
+          "rect": {
+            "X": 704,
+            "Y": 1056,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedShade",
+          "uncollapsedSizeX": 224,
+          "uncollapsedSizeY": 32,
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Add",
             "filepath": ""
           }
         }

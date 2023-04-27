@@ -1,0 +1,13 @@
+id: 4
+deps: 1
+box: 0
+from: jennifer_d@eee.org
+sub: Assembler?
+view
+Hello,
+I see you haven't used the assembler yet, its the superior method of running anything on SandEEE.
+I could talk all day about how over powered the assembler is but I doubt anyone would listen.
+
+Unless you do?
+
+Jen Duncan
