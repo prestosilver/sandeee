@@ -2,6 +2,7 @@ const std = @import("std");
 const gfx = @import("graphics.zig");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
+const col = @import("../math/colors.zig");
 const tex = @import("../util/texture.zig");
 const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
@@ -35,6 +36,7 @@ pub const QueueEntry = struct {
     verts: va.VertArray,
     scissor: ?rect.Rectangle = null,
     hash: ?u32 = null,
+    clear: ?col.Color = null,
 
     pub fn GetHash(entry: *QueueEntry) void {
         if (entry.hash != null) return;
@@ -155,6 +157,11 @@ pub const SpriteBatch = struct {
                 );
             } else if (uscissor) {
                 c.glDisable(c.GL_SCISSOR_TEST);
+            }
+
+            if (entry.clear) |clearColor| {
+                c.glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+                c.glClear(c.GL_COLOR_BUFFER_BIT);
             }
 
             c.glBindBuffer(c.GL_ARRAY_BUFFER, sb.buffers[idx]);

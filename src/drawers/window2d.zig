@@ -401,6 +401,14 @@ pub const WindowData = struct {
         bnds.w -= 12;
         bnds.h -= 40;
 
+        try batch.addEntry(&.{
+            .update = true,
+            .texture = batch.queue[batch.queue.len - 1].texture,
+            .verts = try va.VertArray.init(),
+            .shader = shader.*,
+            .clear = self.contents.clearColor,
+        });
+
         try self.contents.draw(batch, shader, &bnds, font);
     }
 
@@ -473,7 +481,6 @@ pub const WindowData = struct {
         var min = rect.newRect(self.pos.x + self.pos.w - 108, self.pos.y, 64, 64);
 
         try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-        try addUiQuad(&result, 3, self.pos, 2, 3, 3, 17, 3, self.contents.clearColor);
 
         try addUiQuad(&result, 4, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
         try addUiQuad(&result, 5, full, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
