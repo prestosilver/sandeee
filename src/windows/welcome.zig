@@ -81,7 +81,7 @@ pub const WelcomeData = struct {
     pub fn focus(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
-        _ = self;
+        allocator.alloc.destroy(self);
     }
 };
 
