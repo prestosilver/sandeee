@@ -1,0 +1,11 @@
+id: 3
+deps: 1
+box: 0
+from: joe_m@eee.org
+sub: Editing files
+Hello,
+You havent put anything in your esh file, you can edit it by running "edit helloWorld.esh",
+
+Once you do that put "echo Hello World!" inside it and attach the file in a reply.
+
+Joe Moe

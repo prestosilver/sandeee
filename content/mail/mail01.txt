@@ -6,4 +6,6 @@ sub: Your first program.
 Hello,
 I heard you don't know how to write ShEEEl programs, so your first challenge is to write a simple Hello World program.
 
+To get started open cmd and run "new helloWorld.esh".
+
 Joe Moe
