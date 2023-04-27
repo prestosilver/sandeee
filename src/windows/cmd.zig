@@ -10,6 +10,8 @@ const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const shell = @import("../system/shell.zig");
 const files = @import("../system/files.zig");
+const events = @import("../util/events.zig");
+const systemEvs = @import("../events/system.zig");
 const c = @import("../c.zig");
 
 const MAX_SIZE = 10000;
@@ -130,6 +132,10 @@ const CMDData = struct {
                 std.mem.copy(u8, self.bt[start .. start + prompt.len], prompt);
 
                 var command = self.text.items;
+                events.em.sendEvent(systemEvs.EventRunCmd{
+                    .cmd = command,
+                });
+
                 if (std.mem.indexOf(u8, self.text.items, " ")) |size| {
                     command.len = size;
                 }

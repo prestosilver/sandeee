@@ -28,16 +28,16 @@ pub fn loadEmailsState(path: []const u8) !void {
         defer allocator.alloc.free(conts);
 
         for (emails.items) |*email| {
-            if (conts.len < email.id) continue;
+            if (conts.len < email.id + 1) continue;
 
             email.viewed = (conts[email.id] & (1 << 0)) != 0;
-            email.forceComplete = (conts[email.id] & (1 << 1)) != 0;
+            email.isComplete = (conts[email.id] & (1 << 1)) != 0;
         }
     }
 }
 
 pub fn append(e: Email) !void {
-    if (emails.items.len < e.id) {
+    if (emails.items.len < e.id + 1) {
         try emails.resize(e.id + 1);
     }
     emails.items[e.id] = e;
@@ -55,6 +55,7 @@ pub fn toStr() ![]u8 {
         var boxStr = std.mem.toBytes(email.box);
         var fromLen = std.mem.toBytes(email.from.len)[0..4];
         var depsLen = std.mem.toBytes(email.deps.len)[0..4];
+        var condsLen = std.mem.toBytes(email.conditionData.len)[0..4];
         var subjectLen = std.mem.toBytes(email.subject.len)[0..4];
         var contentLen = std.mem.toBytes(email.contents.len)[0..4];
 
@@ -65,6 +66,8 @@ pub fn toStr() ![]u8 {
                 &idStr,
                 &boxStr,
                 &.{@enumToInt(email.condition)},
+                condsLen,
+                email.conditionData,
                 depsLen,
                 email.deps,
                 fromLen,
@@ -89,8 +92,9 @@ pub fn parseTxt(file: std.fs.File) !Email {
         .from = "",
         .subject = "",
         .contents = "",
+        .conditionData = "",
         .deps = try allocator.alloc.alloc(u8, 0),
-        .condition = .View,
+        .condition = .None,
     };
 
     var buf_reader = std.io.bufferedReader(file.reader());
@@ -115,6 +119,15 @@ pub fn parseTxt(file: std.fs.File) !Email {
         } else if (std.mem.startsWith(u8, line, "deps: ")) {
             result.deps = try allocator.alloc.realloc(result.deps, result.deps.len + 1);
             result.deps[result.deps.len - 1] = try std.fmt.parseInt(u8, line[6..], 0);
+        } else if (std.mem.startsWith(u8, line, "submit: ")) {
+            result.condition = .Submit;
+            result.conditionData = try allocator.alloc.dupe(u8, line[8..]);
+        } else if (std.mem.startsWith(u8, line, "run: ")) {
+            result.condition = .Run;
+            result.conditionData = try allocator.alloc.dupe(u8, line[5..]);
+        } else if (std.mem.eql(u8, line, "view")) {
+            result.condition = .View;
+            result.conditionData = try allocator.alloc.dupe(u8, "");
         } else {
             try contents.appendSlice(line);
             try contents.appendSlice("\n");
@@ -163,7 +176,7 @@ pub fn load() !void {
 
     for (0..count) |idx| {
         emails.items[idx].viewed = false;
-        emails.items[idx].forceComplete = false;
+        emails.items[idx].isComplete = false;
 
         _ = try file.read(bytebuffer);
         emails.items[idx].id = bytebuffer[0];
@@ -171,6 +184,12 @@ pub fn load() !void {
         emails.items[idx].box = bytebuffer[0];
         _ = try file.read(bytebuffer);
         emails.items[idx].condition = @intToEnum(Email.Condition, bytebuffer[0]);
+
+        _ = try file.read(lenbuffer);
+        var condsize = @bitCast(u32, lenbuffer[0..4].*);
+        var condbuffer = try allocator.alloc.alloc(u8, condsize);
+        _ = try file.read(condbuffer);
+        emails.items[idx].conditionData = condbuffer;
 
         _ = try file.read(lenbuffer);
         var depssize = @bitCast(u32, lenbuffer[0..4].*);
@@ -201,6 +220,7 @@ pub fn load() !void {
 pub const Email = struct {
     const Self = @This();
     const Condition = enum(u8) {
+        None,
         View,
         Submit,
         Run,
@@ -209,11 +229,12 @@ pub const Email = struct {
     from: []const u8,
     subject: []const u8,
     contents: []const u8,
+    conditionData: []const u8,
     deps: []u8,
 
     viewed: bool = false,
-    forceComplete: bool = false,
-    condition: Condition = .View,
+    isComplete: bool = false,
+    condition: Condition = .None,
     box: u8 = 0,
     id: u8 = 0,
 
@@ -222,9 +243,15 @@ pub const Email = struct {
             self.viewed = true;
 
             if (self.condition == .View) {
-                events.em.sendEvent(systemEvs.eventEmailRecv{});
+                self.setComplete();
             }
         }
+    }
+
+    pub fn setComplete(self: *Self) void {
+        self.isComplete = true;
+        if (self.unlocks())
+            events.em.sendEvent(systemEvs.EventEmailRecv{});
     }
 
     pub fn visible(self: *const Self) bool {
@@ -238,21 +265,16 @@ pub const Email = struct {
     }
 
     pub fn complete(self: *const Self) bool {
-        if (self.forceComplete) return true;
-
-        return switch (self.condition) {
-            .View => self.viewed,
-            else => false,
-        };
+        return self.isComplete;
     }
 
     pub fn unlocks(self: *const Self) bool {
         for (emails.items) |dep| {
-            if (std.mem.indexOf(u8, self.deps, &.{dep.id})) |_| {
-                if (!dep.complete()) return false;
+            if (std.mem.indexOf(u8, dep.deps, &.{self.id})) |_| {
+                if (dep.visible()) return true;
             }
         }
 
-        return true;
+        return false;
     }
 };

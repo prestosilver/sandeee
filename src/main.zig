@@ -39,6 +39,7 @@ const conf = @import("system/config.zig");
 const files = @import("system/files.zig");
 const network = @import("system/network.zig");
 const headless = @import("system/headless.zig");
+const emails = @import("system/mail.zig");
 
 const c = @import("c.zig");
 
@@ -231,9 +232,22 @@ pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
     return false;
 }
 
-pub fn mailRecv(event: systemEvs.eventEmailRecv) bool {
+pub fn mailRecv(event: systemEvs.EventEmailRecv) bool {
     _ = event;
     audioman.playSound(message_snd) catch {};
+    return false;
+}
+
+pub fn runCmdEvent(event: systemEvs.EventRunCmd) bool {
+    for (emails.emails.items) |*email| {
+        if (!email.visible()) continue;
+        if (email.condition != .Run) continue;
+
+        if (std.mem.eql(u8, email.conditionData, event.cmd)) {
+            email.setComplete();
+        }
+    }
+
     return false;
 }
 
@@ -250,7 +264,8 @@ pub fn setupEvents() !void {
     events.em.registerListener(inputEvs.EventKeyUp, keyUp);
 
     events.em.registerListener(systemEvs.EventStateChange, changeState);
-    events.em.registerListener(systemEvs.eventEmailRecv, mailRecv);
+    events.em.registerListener(systemEvs.EventEmailRecv, mailRecv);
+    events.em.registerListener(systemEvs.EventRunCmd, runCmdEvent);
 }
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {

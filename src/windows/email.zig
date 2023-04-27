@@ -118,7 +118,7 @@ const EmailData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = from,
-                .pos = vecs.newVec2(bnds.x + 112, bnds.y - 4),
+                .pos = vecs.newVec2(bnds.x + 112, bnds.y),
             });
 
             var text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
@@ -127,7 +127,7 @@ const EmailData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = text,
-                .pos = vecs.newVec2(bnds.x + 112, bnds.y - 4 + font.size),
+                .pos = vecs.newVec2(bnds.x + 112, bnds.y + font.size),
             });
 
             var y = bnds.y + 8 + font.size * 2;
@@ -137,7 +137,7 @@ const EmailData = struct {
                 .shader = font_shader,
                 .text = email.contents,
                 .pos = vecs.newVec2(bnds.x + 112, y),
-                .wrap = bnds.w - 112.0,
+                .wrap = bnds.w - 116.0,
             });
         }
     }
