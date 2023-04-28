@@ -156,7 +156,7 @@ pub const Shell = struct {
         });
 
         if (param.len > 5) {
-            const alignment = @typeInfo(*wins.editor.EditorData).Pointer.alignment;
+            const alignment = @alignOf(wins.editor.EditorData);
             var edself = @ptrCast(*wins.editor.EditorData, @alignCast(alignment, window.data.contents.ptr));
 
             edself.file = try self.root.getFile(param[5..]);
@@ -216,23 +216,27 @@ pub const Shell = struct {
                     return try self.runAsm(folder, cmd, param);
                 }
 
-                for (try item.read(null)) |char| {
-                    if (char == '\n') {
-                        var res = try self.runLine(line.items);
-                        defer res.data.deinit();
-                        try result.data.appendSlice(res.data.items);
-                        if (result.data.getLast() != '\n') try result.data.append('\n');
-                        try line.resize(0);
-                    } else {
-                        try line.append(char);
+                if (std.mem.endsWith(u8, item.name, ".esh")) {
+                    for (try item.read(null)) |char| {
+                        if (char == '\n') {
+                            var res = try self.runLine(line.items);
+                            defer res.data.deinit();
+                            try result.data.appendSlice(res.data.items);
+                            if (result.data.getLast() != '\n') try result.data.append('\n');
+                            try line.resize(0);
+                        } else {
+                            try line.append(char);
+                        }
                     }
-                }
-                var res = try self.runLine(line.items);
-                defer res.data.deinit();
-                try result.data.appendSlice(res.data.items);
-                if (result.data.items.len != 0 and result.data.getLast() != '\n') try result.data.append('\n');
+                    var res = try self.runLine(line.items);
+                    defer res.data.deinit();
+                    try result.data.appendSlice(res.data.items);
+                    if (result.data.items.len != 0 and result.data.getLast() != '\n') try result.data.append('\n');
 
-                return result;
+                    return result;
+                }
+
+                return error.InvalidFileType;
             }
 
             if (std.mem.eql(u8, cmdeep, item.name[folderlen..])) {
@@ -245,23 +249,7 @@ pub const Shell = struct {
                     return try self.runAsm(folder, cmdeep, param);
                 }
 
-                for (cont) |char| {
-                    if (char == '\n') {
-                        var res = try self.runLine(line.items);
-                        defer res.data.deinit();
-                        try result.data.appendSlice(res.data.items);
-                        if (result.data.getLast() != '\n') try result.data.append('\n');
-                        try line.resize(0);
-                    } else {
-                        try line.append(char);
-                    }
-                }
-                var res = try self.runLine(line.items);
-                defer res.data.deinit();
-                try result.data.appendSlice(res.data.items);
-                if (result.data.getLast() != '\n') try result.data.append('\n');
-
-                return result;
+                return error.InvalidFileType;
             }
         }
 
