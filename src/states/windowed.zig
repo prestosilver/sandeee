@@ -22,6 +22,8 @@ const cols = @import("../math/colors.zig");
 const network = @import("../system/network.zig");
 const cursor = @import("../drawers/cursor2d.zig");
 const wins = @import("../windows/all.zig");
+const popups = @import("../drawers/popup2d.zig");
+const c = @import("../c.zig");
 
 pub const GSWindowed = struct {
     const Self = @This();
@@ -195,6 +197,20 @@ pub const GSWindowed = struct {
 
             // reset scisor jic
             self.sb.scissor = null;
+
+            if (self.windows.items[idx].data.popup) |*popup| {
+                popup.data.parentPos = window.data.pos;
+
+                try self.sb.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
+
+                // update scisor region
+                self.sb.scissor = popup.data.scissor();
+
+                try popup.data.drawContents(self.font_shader, self.face, self.sb);
+
+                // reset scisor jic
+                self.sb.scissor = null;
+            }
         }
 
         // draw bar
@@ -271,6 +287,19 @@ pub const GSWindowed = struct {
 
         for (self.windows.items) |*window| {
             if (!window.data.active) continue;
+
+            if (key == c.GLFW_KEY_F2) {
+                window.data.popup = .{
+                    .texture = self.wintex,
+                    .data = .{
+                        .source = rect.newRect(0, 0, 1, 1),
+                        .size = vecs.newVec2(300, 150),
+                        .parentPos = undefined,
+                    },
+                };
+
+                return false;
+            }
 
             return window.data.key(key, mods, down);
         }
@@ -368,6 +397,13 @@ pub const GSWindowed = struct {
 
         for (self.windows.items) |*window| {
             if (!window.data.active) continue;
+
+            if (window.data.popup) |*popup| {
+                if (popup.data.click(self.mousepos)) {
+                    window.data.popup = null;
+                }
+                return;
+            }
 
             return window.data.click(self.mousepos, btn);
         }

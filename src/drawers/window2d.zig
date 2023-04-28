@@ -8,6 +8,7 @@ const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
 const allocator = @import("../util/allocator.zig");
 const spr = @import("sprite2d.zig");
+const popup = @import("popup2d.zig");
 
 const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;
@@ -264,6 +265,7 @@ pub const WindowData = struct {
     full: bool = false,
     min: bool = false,
     idx: usize = 0,
+    popup: ?popup.Popup = null,
 
     contents: WindowContents,
 
@@ -413,7 +415,7 @@ pub const WindowData = struct {
         try self.contents.draw(batch, shader, &bnds, font);
     }
 
-    pub fn scissor(self: WindowData) rect.Rectangle {
+    pub fn scissor(self: *const WindowData) rect.Rectangle {
         var bnds = self.pos;
         bnds.y += 34;
         bnds.x += 6;
