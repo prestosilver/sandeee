@@ -288,9 +288,8 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
-    gameStates.getPtr(@intToEnum(systemEvs.State, errorState)).deinit() catch {};
-
     errorState = @enumToInt(currentState);
+    gameStates.getPtr(@intToEnum(systemEvs.State, errorState)).deinit() catch {};
 
     var st = panicHandler.log();
     errorMsg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ msg, st }) catch {
