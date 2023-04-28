@@ -120,6 +120,10 @@ pub const EditorData = struct {
 
                 nr += 1;
             }
+
+            if (self.cursor.y > @intToFloat(f32, nr - 2)) {
+                self.cursor.y = @intToFloat(f32, nr - 2);
+            }
         }
 
         if (self.cursorIdx > self.buffer.items.len) self.cursorIdx = self.buffer.items.len - 1;
@@ -151,8 +155,10 @@ pub const EditorData = struct {
                         self.modified = false;
                     }
                 }
-                if (mousepos.y > 32) {
-                    self.clickPos = mousepos;
+                if (self.buffer.items.len != 0) {
+                    if (mousepos.y > 32) {
+                        self.clickPos = mousepos;
+                    }
                 }
             },
             else => {},
