@@ -78,12 +78,15 @@ pub const GSDisks = struct {
         self.disks.items.len = @min(self.disks.items.len, DISK_LIST.len);
 
         try self.disks.append("+ New Disk");
-        try self.disks.append("R Recovery");
+        if (self.disks.items.len > 1)
+            try self.disks.append("R Recovery");
     }
 
     pub fn deinit(self: *Self) !void {
-        for (self.disks.items[0 .. self.disks.items.len - 2]) |item| {
-            allocator.alloc.free(item);
+        if (self.disks.items.len > 1) {
+            for (self.disks.items[0 .. self.disks.items.len - 2]) |item| {
+                allocator.alloc.free(item);
+            }
         }
 
         self.disks.deinit();
@@ -95,25 +98,32 @@ pub const GSDisks = struct {
         if (self.remaining <= 0) {
             self.disk.* = null;
 
-            if (self.sel < self.disks.items.len - 1) {
-                var sel = self.disks.items[self.sel];
+            if (self.disks.items.len > 1) {
+                if (self.sel < self.disks.items.len - 1) {
+                    var sel = self.disks.items[self.sel];
 
-                self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
-                std.mem.copy(u8, self.disk.*.?, sel[2..]);
-            }
+                    self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
+                    std.mem.copy(u8, self.disk.*.?, sel[2..]);
+                }
 
-            if (self.sel == self.disks.items.len - 2) {
+                if (self.sel == self.disks.items.len - 2) {
+                    events.em.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Installer,
+                    });
+                } else if (self.sel == self.disks.items.len - 1) {
+                    events.em.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Recovery,
+                    });
+                } else {
+                    events.em.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Loading,
+                    });
+                }
+            } else {
                 events.em.sendEvent(systemEvs.EventStateChange{
                     .targetState = .Installer,
                 });
-            } else if (self.sel == self.disks.items.len - 1) {
-                events.em.sendEvent(systemEvs.EventStateChange{
-                    .targetState = .Recovery,
-                });
-            } else {
-                events.em.sendEvent(systemEvs.EventStateChange{
-                    .targetState = .Loading,
-                });
+                return;
             }
         }
     }
