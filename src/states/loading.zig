@@ -126,6 +126,7 @@ pub const GSLoading = struct {
         pseudo.win.wintex = self.wintex;
 
         wins.settings.settingManager = self.settingManager;
+        wins.editor.wintex = self.wintex;
         wins.email.wintex = self.wintex;
 
         shell.wintex = self.wintex;

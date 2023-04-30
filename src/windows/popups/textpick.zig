@@ -12,11 +12,11 @@ const events = @import("../../util/events.zig");
 const windowEvs = @import("../../events/window.zig");
 const c = @import("../../c.zig");
 
-pub const PopupFolderPick = struct {
+pub const PopupTextPick = struct {
     const Self = @This();
 
-    path: []u8,
-    submit: *const fn (?*files.Folder, *anyopaque) anyerror!void,
+    text: []u8,
+    submit: *const fn (?*[]const u8, *anyopaque) anyerror!void,
     err: []const u8 = "",
     data: *anyopaque,
 
@@ -32,7 +32,7 @@ pub const PopupFolderPick = struct {
             .batch = batch,
             .shader = shader,
             .pos = bnds.location().add(.{ .x = 30, .y = font.size }),
-            .text = self.path,
+            .text = self.text,
             .wrap = bnds.w - 60,
             .maxlines = 1,
         });
@@ -49,18 +49,14 @@ pub const PopupFolderPick = struct {
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
         if (!down) return;
 
-        if (keycode == c.GLFW_KEY_BACKSPACE and self.path.len != 0) {
-            self.path = try allocator.alloc.realloc(self.path, self.path.len - 1);
+        if (keycode == c.GLFW_KEY_BACKSPACE and self.text.len != 0) {
+            self.text = try allocator.alloc.realloc(self.text, self.text.len - 1);
             self.err = "";
         }
 
         if (keycode == c.GLFW_KEY_ENTER) {
-            if (try files.root.getFolder(self.path)) |folder| {
-                try self.submit(folder, self.data);
-                events.em.sendEvent(windowEvs.EventClosePopup{});
-            } else {
-                self.err = "Folder Not Found";
-            }
+            try self.submit(self.text, self.data);
+            events.em.sendEvent(windowEvs.EventClosePopup{});
         }
     }
 
@@ -68,13 +64,13 @@ pub const PopupFolderPick = struct {
         if (keycode < 256) {
             self.err = "";
 
-            self.path = try allocator.alloc.realloc(self.path, self.path.len + 1);
-            self.path[self.path.len - 1] = @intCast(u8, keycode);
+            self.text = try allocator.alloc.realloc(self.text, self.text.len + 1);
+            self.text[self.text.len - 1] = @intCast(u8, keycode);
         }
     }
 
     pub fn deinit(self: *Self) !void {
-        allocator.alloc.free(self.path);
+        allocator.alloc.free(self.text);
         allocator.alloc.destroy(self);
     }
 };
