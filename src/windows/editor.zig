@@ -12,6 +12,11 @@ const files = @import("../system/files.zig");
 const shd = @import("../util/shader.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const cc = @import("../c.zig");
+const popups = @import("../drawers/popup2d.zig");
+const winEvs = @import("../events/window.zig");
+const events = @import("../util/events.zig");
+
+pub var wintex: *tex.Texture = undefined;
 
 pub const EditorData = struct {
     const Self = @This();
@@ -142,7 +147,25 @@ pub const EditorData = struct {
             0 => {
                 var open = rect.newRect(0, 0, 32, 32);
                 if (open.contains(mousepos)) {
-                    std.log.info("open", .{});
+                    var adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+                    adds.* = .{
+                        .path = try allocator.alloc.dupe(u8, files.home.name),
+                        .data = self,
+                        .submit = &submit,
+                    };
+
+                    events.em.sendEvent(winEvs.EventCreatePopup{
+                        .popup = .{
+                            .texture = wintex,
+                            .data = .{
+                                .title = "File Picker",
+                                .source = rect.newRect(0, 0, 1, 1),
+                                .size = vecs.newVec2(350, 125),
+                                .parentPos = undefined,
+                                .contents = popups.PopupData.PopupContents.init(adds),
+                            },
+                        },
+                    });
                 }
                 var save = rect.newRect(32, 0, 32, 32);
                 if (save.contains(mousepos)) {
@@ -165,6 +188,13 @@ pub const EditorData = struct {
         }
 
         return;
+    }
+
+    pub fn submit(file: ?*files.File, data: *anyopaque) !void {
+        if (file) |target| {
+            var self = @ptrCast(*Self, @alignCast(@alignOf(Self), data));
+            self.file = target;
+        }
     }
 
     pub fn move(_: *Self, _: f32, _: f32) !void {}
