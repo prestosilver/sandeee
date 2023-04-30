@@ -58,6 +58,33 @@ pub const GSWindowed = struct {
 
     var globalSelf: *Self = undefined;
 
+    fn createPopup(event: windowEvs.EventCreatePopup) bool {
+        for (globalSelf.windows.items) |*window| {
+            if (window.data.active) {
+                window.data.popup = event.popup;
+
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    fn closePopup(_: windowEvs.EventClosePopup) bool {
+        for (globalSelf.windows.items) |*window| {
+            if (window.data.active) {
+                if (window.data.popup) |*popup| {
+                    popup.data.contents.deinit() catch {};
+                }
+                window.data.popup = null;
+
+                return false;
+            }
+        }
+
+        return false;
+    }
+
     fn createWindow(event: windowEvs.EventCreateWindow) bool {
         var target = vecs.newVec2(100, 100);
         var self = globalSelf;
@@ -130,6 +157,9 @@ pub const GSWindowed = struct {
 
         win.WindowContents.shader = self.shader;
 
+        // TODO: Unregister
+        events.em.registerListener(windowEvs.EventCreatePopup, createPopup);
+        events.em.registerListener(windowEvs.EventClosePopup, closePopup);
         events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
 
         if (std.mem.eql(u8, self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
@@ -288,15 +318,8 @@ pub const GSWindowed = struct {
         for (self.windows.items) |*window| {
             if (!window.data.active) continue;
 
-            if (key == c.GLFW_KEY_F2) {
-                window.data.popup = .{
-                    .texture = self.wintex,
-                    .data = .{
-                        .source = rect.newRect(0, 0, 1, 1),
-                        .size = vecs.newVec2(300, 150),
-                        .parentPos = undefined,
-                    },
-                };
+            if (window.data.popup) |*popup| {
+                try popup.data.contents.key(key, mods, down);
 
                 return false;
             }
@@ -314,6 +337,10 @@ pub const GSWindowed = struct {
 
         for (self.windows.items) |*window| {
             if (!window.data.active) continue;
+
+            if (window.data.popup) |*popup| {
+                return popup.data.contents.char(code, mods);
+            }
 
             return window.data.char(code, mods);
         }

@@ -7,13 +7,95 @@ const win2d = @import("window2d.zig");
 const fnt = @import("../util/font.zig");
 const shd = @import("../util/shader.zig");
 
+pub const all = @import("../windows/popups/all.zig");
+
 const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;
 
 pub const PopupData = struct {
+    pub const PopupContents = struct {
+        const Self = @This();
+
+        const VTable = struct {
+            draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) anyerror!void,
+            key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
+            char: *const fn (*anyopaque, u32, i32) anyerror!void,
+            deinit: *const fn (*anyopaque) anyerror!void,
+        };
+
+        ptr: *anyopaque,
+        vtable: *const VTable,
+
+        pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+            return self.vtable.draw(self.ptr, batch, shader, bnds, font);
+        }
+
+        pub fn char(self: *Self, keycode: u32, mods: i32) !void {
+            return self.vtable.char(self.ptr, keycode, mods);
+        }
+
+        pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
+            return self.vtable.key(self.ptr, keycode, mods, down);
+        }
+
+        pub fn deinit(self: *Self) !void {
+            return self.vtable.deinit(self.ptr);
+        }
+
+        pub fn init(ptr: anytype) Self {
+            const Ptr = @TypeOf(ptr);
+            const ptr_info = @typeInfo(Ptr);
+
+            if (ptr_info != .Pointer) @compileError("ptr must be a pointer");
+            if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
+
+            const alignment = ptr_info.Pointer.alignment;
+
+            const gen = struct {
+                fn drawImpl(pointer: *anyopaque, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                    return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, shader, bnds, font });
+                }
+
+                fn keyImpl(pointer: *anyopaque, keycode: c_int, mods: c_int, down: bool) !void {
+                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                    return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
+                }
+
+                fn charImpl(pointer: *anyopaque, keycode: u32, mods: i32) !void {
+                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                    return @call(.auto, ptr_info.Pointer.child.char, .{ self, keycode, mods });
+                }
+
+                fn deinitImpl(pointer: *anyopaque) !void {
+                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                    return @call(.auto, ptr_info.Pointer.child.deinit, .{self});
+                }
+
+                const vtable = VTable{
+                    .draw = drawImpl,
+                    .key = keyImpl,
+                    .char = charImpl,
+                    .deinit = deinitImpl,
+                };
+            };
+
+            return Self{
+                .ptr = ptr,
+                .vtable = &gen.vtable,
+            };
+        }
+    };
+
     source: rect.Rectangle,
     size: vecs.Vector2,
     parentPos: rect.Rectangle,
+    contents: PopupContents,
+    title: []const u8,
 
     fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
         var source = src;
@@ -55,15 +137,15 @@ pub const PopupData = struct {
     }
 
     pub fn drawContents(self: *PopupData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
-        _ = self;
-        _ = font;
         try batch.addEntry(&.{
             .update = true,
             .texture = batch.queue[batch.queue.len - 1].texture,
             .verts = try va.VertArray.init(),
             .shader = shader.*,
-            .clear = cols.newColor(0, 0, 0, 1),
+            .clear = cols.newColorRGBA(192, 192, 192, 255),
         });
+
+        try self.contents.draw(batch, shader, self.scissor(), font);
     }
 
     pub fn getVerts(self: *PopupData, _: vecs.Vector3) !va.VertArray {
