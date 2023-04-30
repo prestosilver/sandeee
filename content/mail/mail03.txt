@@ -3,7 +3,7 @@ deps: 1
 box: 0
 from: joe_m@eee.org
 sub: Editing files
-submit: data
+submit: conts=echo Hello World!
 Hello,
 You haven't put anything in your esh file, you can edit it by running "edit helloWorld.esh",
 
