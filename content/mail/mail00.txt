@@ -1,5 +1,5 @@
 id: 0
-box: 2
+box: 0
 from: joe_m@eee.org
 sub: I know where you live
 view

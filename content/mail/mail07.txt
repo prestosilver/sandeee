@@ -4,6 +4,6 @@ box: 0
 from: jennifer_d@eee.org
 sub: Help
 view
-fdsafdsa
+You can get help with assembly at anytime with the browser.
 
 Jen Duncan
