@@ -11,8 +11,16 @@ const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../util/texture.zig");
 const mail = @import("../system/mail.zig");
+const popups = @import("../drawers/popup2d.zig");
+const files = @import("../system/files.zig");
+const winEvs = @import("../events/window.zig");
+const events = @import("../util/events.zig");
+
+const c = @import("../c.zig");
 
 const boxes: u8 = 3;
+
+pub var wintex: *tex.Texture = undefined;
 
 const EmailData = struct {
     const Self = @This();
@@ -22,6 +30,7 @@ const EmailData = struct {
     divy: sprite.Sprite,
     dive: sprite.Sprite,
     sel: sprite.Sprite,
+    reply: sprite.Sprite,
     shader: *shd.Shader,
 
     box: u8 = 0,
@@ -139,6 +148,9 @@ const EmailData = struct {
                 .pos = vecs.newVec2(bnds.x + 112, y),
                 .wrap = bnds.w - 116.0,
             });
+
+            if (self.viewing.?.condition == .Submit)
+                try batch.draw(sprite.Sprite, &self.reply, self.shader, vecs.newVec3(bnds.x + bnds.w - 26, bnds.y, 0));
         }
     }
 
@@ -147,11 +159,78 @@ const EmailData = struct {
         _ = code;
         _ = self;
     }
-    pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
+
+    pub fn submitFile(self: *Self) !void {
+        var adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+        adds.* = .{
+            .path = try allocator.alloc.dupe(u8, files.home.name),
+            .data = self,
+            .submit = &submit,
+        };
+
+        events.em.sendEvent(winEvs.EventCreatePopup{
+            .popup = .{
+                .texture = wintex,
+                .data = .{
+                    .title = "File Picker",
+                    .source = rect.newRect(0, 0, 1, 1),
+                    .size = vecs.newVec2(350, 125),
+                    .parentPos = undefined,
+                    .contents = popups.PopupData.PopupContents.init(adds),
+                },
+            },
+        });
+    }
+
+    pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
+        if (!down) return;
+
+        if (keycode == c.GLFW_KEY_R and self.viewing != null) {
+            if (self.viewing.?.condition != .Submit) return;
+            try self.submitFile();
+            return;
+        }
+    }
+
+    pub fn submit(file: ?*files.File, data: *anyopaque) !void {
+        if (file) |target| {
+            var self = @ptrCast(*Self, @alignCast(@alignOf(Self), data));
+
+            var conts = try target.read(null);
+
+            if (self.viewing) |selected| {
+                if (selected.condition != .Submit) return;
+                var iter = std.mem.split(u8, selected.conditionData, ";");
+
+                var good = true;
+
+                while (iter.next()) |cond| {
+                    var idx = std.mem.indexOf(u8, cond, "=") orelse cond.len - 1;
+                    var name = cond[0..idx];
+                    if (std.mem.eql(u8, name, "conts")) {
+                        var targetText = cond[idx + 1 ..];
+                        good = good and std.mem.eql(u8, targetText, conts);
+                    }
+                }
+
+                if (good) {
+                    selected.setComplete();
+                }
+            }
+        }
+    }
 
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
         switch (btn) {
             0 => {
+                if (self.viewing) |_| {
+                    var replyBnds = rect.newRect(size.x - 26, 0, 26, 26);
+
+                    if (replyBnds.contains(mousepos)) {
+                        try self.submitFile();
+                    }
+                }
+
                 var contBnds = rect.newRect(106, 0, size.x - 106, size.y);
                 if (contBnds.contains(mousepos)) {
                     if (self.viewing != null) return;
@@ -230,6 +309,10 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
         .icon = sprite.Sprite.new(texture, sprite.SpriteData.new(
             rect.newRect(16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0),
             vecs.newVec2(100, 100),
+        )),
+        .reply = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(3.0 / 32.0, 3.0 / 32.0, 13.0 / 32.0, 13.0 / 32.0),
+            vecs.newVec2(26, 26),
         )),
         .shader = shader,
     };
