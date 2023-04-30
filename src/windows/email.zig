@@ -25,12 +25,15 @@ pub var wintex: *tex.Texture = undefined;
 const EmailData = struct {
     const Self = @This();
 
+    backbg: sprite.Sprite,
+    reply: sprite.Sprite,
     icon: sprite.Sprite,
     divx: sprite.Sprite,
     divy: sprite.Sprite,
     dive: sprite.Sprite,
+    back: sprite.Sprite,
     sel: sprite.Sprite,
-    reply: sprite.Sprite,
+
     shader: *shd.Shader,
 
     box: u8 = 0,
@@ -118,6 +121,9 @@ const EmailData = struct {
         } else {
             self.divx.data.size.x = bnds.w - 100;
             try batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 2 + font.size * 2, 0));
+            try batch.draw(sprite.Sprite, &self.backbg, self.shader, vecs.newVec3(bnds.x + 104, bnds.y - 2, 0));
+            try batch.draw(sprite.Sprite, &self.reply, self.shader, vecs.newVec3(bnds.x + 104, bnds.y, 0));
+            try batch.draw(sprite.Sprite, &self.back, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 26, 0));
 
             var email = self.viewing.?;
 
@@ -127,7 +133,7 @@ const EmailData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = from,
-                .pos = vecs.newVec2(bnds.x + 112, bnds.y),
+                .pos = vecs.newVec2(bnds.x + 112 + 28, bnds.y),
             });
 
             var text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
@@ -136,7 +142,7 @@ const EmailData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = text,
-                .pos = vecs.newVec2(bnds.x + 112, bnds.y + font.size),
+                .pos = vecs.newVec2(bnds.x + 112 + 28, bnds.y + font.size),
             });
 
             var y = bnds.y + 8 + font.size * 2;
@@ -148,9 +154,6 @@ const EmailData = struct {
                 .pos = vecs.newVec2(bnds.x + 112, y),
                 .wrap = bnds.w - 116.0,
             });
-
-            if (self.viewing.?.condition == .Submit)
-                try batch.draw(sprite.Sprite, &self.reply, self.shader, vecs.newVec3(bnds.x + bnds.w - 26, bnds.y, 0));
         }
     }
 
@@ -211,6 +214,12 @@ const EmailData = struct {
                         var targetText = cond[idx + 1 ..];
                         good = good and std.mem.eql(u8, targetText, conts);
                     }
+                    if (std.mem.eql(u8, name, "runs")) {
+                        if (!std.mem.startsWith(u8, conts, "eeep")) return;
+
+                        var targetText = cond[idx + 1 ..];
+                        good = good and std.mem.eql(u8, targetText, conts);
+                    }
                 }
 
                 if (good) {
@@ -224,10 +233,17 @@ const EmailData = struct {
         switch (btn) {
             0 => {
                 if (self.viewing) |_| {
-                    var replyBnds = rect.newRect(size.x - 26, 0, 26, 26);
+                    var replyBnds = rect.newRect(106, 0, 26, 26);
 
                     if (replyBnds.contains(mousepos)) {
                         try self.submitFile();
+                    }
+
+                    var backBnds = rect.newRect(106, 26, 26, 10);
+
+                    if (backBnds.contains(mousepos)) {
+                        self.viewing = null;
+                        return;
                     }
                 }
 
@@ -291,28 +307,36 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .divy = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0, 3.0 / 32.0, 3.0 / 32.0, 29.0 / 32.0),
+            rect.newRect(0, 3.0 / 64.0, 3.0 / 32.0, 29.0 / 64.0),
             vecs.newVec2(6, 100),
         )),
         .divx = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(3.0 / 32.0, 0, 29.0 / 32.0, 3.0 / 32.0),
+            rect.newRect(3.0 / 32.0, 0, 29.0 / 32.0, 3.0 / 64.0),
             vecs.newVec2(100, 6),
         )),
         .dive = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(16.0 / 32.0, 3.0 / 32.0, 16.0 / 32.0, 3.0 / 32.0),
+            rect.newRect(17.0 / 32.0, 3.0 / 64.0, 15.0 / 32.0, 3.0 / 64.0),
             vecs.newVec2(100, 6),
         )),
         .sel = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(16.0 / 32.0, 6.0 / 32.0, 16.0 / 32.0, 3.0 / 32.0),
+            rect.newRect(17.0 / 32.0, 6.0 / 64.0, 15.0 / 32.0, 3.0 / 64.0),
             vecs.newVec2(100, 6),
         )),
         .icon = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0),
+            rect.newRect(16.0 / 32.0, 16.0 / 64.0, 16.0 / 32.0, 16.0 / 64.0),
             vecs.newVec2(100, 100),
         )),
         .reply = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(3.0 / 32.0, 3.0 / 32.0, 13.0 / 32.0, 13.0 / 32.0),
+            rect.newRect(3.0 / 32.0, 35.0 / 64.0, 13.0 / 32.0, 13.0 / 64.0),
             vecs.newVec2(26, 26),
+        )),
+        .back = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(19.0 / 32.0, 38.0 / 64.0, 13.0 / 32.0, 9.0 / 64.0),
+            vecs.newVec2(26, 18),
+        )),
+        .backbg = sprite.Sprite.new(texture, sprite.SpriteData.new(
+            rect.newRect(3.0 / 32.0, 3.0 / 64.0, 14.0 / 32.0, 13.0 / 64.0),
+            vecs.newVec2(28, 42),
         )),
         .shader = shader,
     };
