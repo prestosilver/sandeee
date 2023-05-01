@@ -124,6 +124,7 @@ pub const GSWindowed = struct {
             .{
                 .texture = globalSelf.notiftex,
                 .data = .{
+                    .title = event.title,
                     .text = event.text,
                     .icon = event.icon,
                 },
@@ -269,6 +270,7 @@ pub const GSWindowed = struct {
         // draw notifications
         for (self.notifs.items, 0..) |*notif, idx| {
             try self.sb.draw(notifications.Notification, notif, self.shader, vecs.newVec3(@intToFloat(f32, idx), 0, 0));
+            try notif.data.drawContents(self.sb, self.shader, self.face, self.font_shader, idx);
         }
 
         // draw cursor

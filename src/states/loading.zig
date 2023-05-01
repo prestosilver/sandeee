@@ -3,6 +3,7 @@ const shd = @import("../util/shader.zig");
 const sb = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
+const rect = @import("../math/rects.zig");
 const cols = @import("../math/colors.zig");
 const worker = @import("../loaders/worker.zig");
 const fm = @import("../util/files.zig");
@@ -21,7 +22,7 @@ pub const GSLoading = struct {
     const Self = @This();
 
     const winpath: []const u8 = "window_frame_path";
-    const webpath: []const u8 = "web_textrure_path";
+    const webpath: []const u8 = "web_texture_path";
     const wallpath: []const u8 = "wallpaper_path";
     const barpath: []const u8 = "bar_texture_path";
     const notifpath: []const u8 = "notif_texture_path";
@@ -131,6 +132,13 @@ pub const GSLoading = struct {
         wins.settings.settingManager = self.settingManager;
         wins.editor.wintex = self.wintex;
         wins.email.wintex = self.wintex;
+        wins.email.notif = .{
+            .texture = self.emailtex,
+            .data = .{
+                .source = rect.newRect(0.5, 0.75, 0.5, 0.25),
+                .size = undefined,
+            },
+        };
 
         shell.wintex = self.wintex;
         shell.webtex = self.webtex;

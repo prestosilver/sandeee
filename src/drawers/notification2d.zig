@@ -4,6 +4,8 @@ const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
 const va = @import("../util/vertArray.zig");
 const spr = @import("sprite2d.zig");
+const fnt = @import("../util/font.zig");
+const shd = @import("../util/shader.zig");
 const wins = @import("window2d.zig");
 
 const TOTAL_SPRITES = 1;
@@ -12,6 +14,7 @@ const TEX_SIZE: f32 = 32;
 pub const NotificationData = struct {
     time: f32 = 3.0,
     icon: ?spr.Sprite,
+    title: []const u8,
     text: []const u8,
     source: rect.Rectangle = rect.newRect(0, 0, 1, 1),
     color: cols.Color = cols.newColor(1, 1, 1, 1),
@@ -54,14 +57,51 @@ pub const NotificationData = struct {
 
     pub fn getVerts(self: *NotificationData, pos: vecs.Vector3) !va.VertArray {
         _ = self;
-        var target2d = wins.deskSize.sub(.{ .x = 210, .y = 100 + 60 * pos.x });
+        var target2d = wins.deskSize.sub(.{ .x = 260, .y = 100 + 80 * pos.x });
 
         var result = try va.VertArray.init();
 
         var targetpos = vecs.newVec3(target2d.x, target2d.y, 0);
 
-        try addUiQuad(&result, 0, rect.newRect(targetpos.x, targetpos.y, 200, 50), 2, 1, 1, 1, 1, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, 0, rect.newRect(targetpos.x, targetpos.y, 250, 70), 2, 1, 1, 1, 1, cols.newColor(1, 1, 1, 1));
+
         return result;
+    }
+
+    pub fn drawContents(self: *NotificationData, batch: *sb.SpriteBatch, shader: *shd.Shader, font: *fnt.Font, font_shader: *shd.Shader, idx: usize) !void {
+        if (self.icon) |*icon| {
+            icon.data.size.x = 60;
+            icon.data.size.y = 60;
+
+            var pos = wins.deskSize.sub(.{ .x = 255, .y = 95 + 80 * @intToFloat(f32, idx) });
+
+            try batch.draw(
+                spr.Sprite,
+                icon,
+                shader,
+                vecs.newVec3(pos.x, pos.y, 0),
+            );
+        }
+
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = self.title,
+            .pos = wins.deskSize.sub(.{ .x = 180, .y = 100 + 80 * @intToFloat(f32, idx) }),
+            .color = cols.newColor(0, 0, 0, 1),
+            .wrap = 160,
+            .maxlines = 1,
+        });
+
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = self.text,
+            .pos = wins.deskSize.sub(.{ .x = 180, .y = 100 - font.size + 80 * @intToFloat(f32, idx) }),
+            .color = cols.newColor(0, 0, 0, 1),
+            .wrap = 160,
+            .maxlines = 3,
+        });
     }
 };
 

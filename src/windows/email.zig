@@ -20,6 +20,7 @@ const c = @import("../c.zig");
 
 const boxes: u8 = 3;
 
+pub var notif: sprite.Sprite = undefined;
 pub var wintex: *tex.Texture = undefined;
 
 const EmailData = struct {

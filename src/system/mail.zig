@@ -5,6 +5,7 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const windowEvs = @import("../events/window.zig");
 const files = @import("../system/files.zig");
+const emailWin = @import("../windows/email.zig");
 
 pub var emails: std.ArrayList(Email) = undefined;
 
@@ -256,8 +257,9 @@ pub const Email = struct {
                 if (std.mem.indexOf(u8, dep.deps, &.{self.id})) |_| {
                     if (dep.visible())
                         events.em.sendEvent(windowEvs.EventNotification{
+                            .title = "You got mail",
                             .text = dep.subject,
-                            .icon = null,
+                            .icon = emailWin.notif,
                         });
                 }
             }
