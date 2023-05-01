@@ -302,6 +302,7 @@ pub const GSWindowed = struct {
         }
 
         self.cursor.data.index = 0;
+        self.cursor.data.flip = false;
         for (self.windows.items, 0..) |_, idx| {
             if (self.windows.items[idx].data.min) continue;
 
