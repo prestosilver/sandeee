@@ -23,6 +23,7 @@ const network = @import("../system/network.zig");
 const cursor = @import("../drawers/cursor2d.zig");
 const wins = @import("../windows/all.zig");
 const popups = @import("../drawers/popup2d.zig");
+const notifications = @import("../drawers/notification2d.zig");
 const c = @import("../c.zig");
 
 pub const GSWindowed = struct {
@@ -35,6 +36,7 @@ pub const GSWindowed = struct {
 
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
     windows: std.ArrayList(win.Window),
+    notifs: std.ArrayList(notifications.Notification),
     openWindow: vecs.Vector2 = vecs.newVec2(0, 0),
 
     wallpaper: wall.Wallpaper,
@@ -50,6 +52,7 @@ pub const GSWindowed = struct {
     webtex: *tex.Texture,
     wintex: *tex.Texture,
     emailtex: *tex.Texture,
+    notiftex: *tex.Texture,
     editortex: *tex.Texture,
     scrolltex: *tex.Texture,
     explorertex: *tex.Texture,
@@ -116,6 +119,20 @@ pub const GSWindowed = struct {
         return false;
     }
 
+    pub fn notification(event: windowEvs.EventNotification) bool {
+        globalSelf.notifs.append(
+            .{
+                .texture = globalSelf.notiftex,
+                .data = .{
+                    .text = event.text,
+                    .icon = event.icon,
+                },
+            },
+        ) catch {};
+
+        return false;
+    }
+
     pub fn setup(self: *Self) !void {
         gfx.gContext.color = cols.newColor(0, 0.5, 0.5, 1);
 
@@ -161,6 +178,7 @@ pub const GSWindowed = struct {
         events.em.registerListener(windowEvs.EventCreatePopup, createPopup);
         events.em.registerListener(windowEvs.EventClosePopup, closePopup);
         events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
+        events.em.registerListener(windowEvs.EventNotification, notification);
 
         if (std.mem.eql(u8, self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
             var window = win.Window.new(self.wintex, win.WindowData{
@@ -203,6 +221,7 @@ pub const GSWindowed = struct {
         if (self.openWindow.x > size.x - 500) self.openWindow.x = 100;
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
 
+        // setup vm data for update
         shell.frameTime = shell.VM_TIME;
         shell.vmsLeft = shell.vms;
 
@@ -247,11 +266,25 @@ pub const GSWindowed = struct {
         try self.sb.draw(bar.Bar, &self.bar, self.shader, vecs.newVec3(0, 0, 0));
         try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, self.sb, &self.windows);
 
+        // draw notifications
+        for (self.notifs.items, 0..) |*notif, idx| {
+            try self.sb.draw(notifications.Notification, notif, self.shader, vecs.newVec3(@intToFloat(f32, idx), 0, 0));
+        }
+
         // draw cursor
         try self.sb.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
     }
 
-    pub fn update(self: *Self, _: f32) !void {
+    pub fn update(self: *Self, dt: f32) !void {
+        for (self.notifs.items, 0..) |*notif, idx| {
+            try notif.data.update(dt);
+
+            if (notif.data.time == 0) {
+                _ = self.notifs.orderedRemove(idx);
+                break;
+            }
+        }
+
         var offset: usize = 0;
         for (0..self.windows.items.len) |target| {
             var found = false;
@@ -287,7 +320,7 @@ pub const GSWindowed = struct {
                     .Full => false,
                     .Min => false,
                     .ResizeL => false,
-                    .ResizeR => false,
+                    .ResizeR => true,
                     .ResizeB => false,
                     .ResizeLB => false,
                     .ResizeRB => true,

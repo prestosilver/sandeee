@@ -24,6 +24,7 @@ pub const GSLoading = struct {
     const webpath: []const u8 = "web_textrure_path";
     const wallpath: []const u8 = "wallpaper_path";
     const barpath: []const u8 = "bar_texture_path";
+    const notifpath: []const u8 = "notif_texture_path";
     const editorpath: []const u8 = "editor_texture_path";
     const scrollpath: []const u8 = "scroll_texture_path";
     const emailpath: []const u8 = "email_texture_path";
@@ -51,6 +52,7 @@ pub const GSLoading = struct {
     bartex: *tex.Texture,
     walltex: *tex.Texture,
     emailtex: *tex.Texture,
+    notiftex: *tex.Texture,
     editortex: *tex.Texture,
     scrolltex: *tex.Texture,
     cursortex: *tex.Texture,
@@ -92,6 +94,7 @@ pub const GSLoading = struct {
         try self.loader.enqueue(&webpath, self.webtex, worker.texture.loadTexture);
         try self.loader.enqueue(&barpath, self.bartex, worker.texture.loadTexture);
         try self.loader.enqueue(&wallpath, self.walltex, worker.texture.loadTexture);
+        try self.loader.enqueue(&notifpath, self.notiftex, worker.texture.loadTexture);
         try self.loader.enqueue(&emailpath, self.emailtex, worker.texture.loadTexture);
         try self.loader.enqueue(&scrollpath, self.scrolltex, worker.texture.loadTexture);
         try self.loader.enqueue(&editorpath, self.editortex, worker.texture.loadTexture);

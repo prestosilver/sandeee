@@ -3,6 +3,7 @@ const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
+const windowEvs = @import("../events/window.zig");
 const files = @import("../system/files.zig");
 
 pub var emails: std.ArrayList(Email) = undefined;
@@ -250,8 +251,18 @@ pub const Email = struct {
 
     pub fn setComplete(self: *Self) void {
         self.isComplete = true;
-        if (self.unlocks())
+        if (self.unlocks()) {
+            for (emails.items) |dep| {
+                if (std.mem.indexOf(u8, dep.deps, &.{self.id})) |_| {
+                    if (dep.visible())
+                        events.em.sendEvent(windowEvs.EventNotification{
+                            .text = dep.subject,
+                            .icon = null,
+                        });
+                }
+            }
             events.em.sendEvent(systemEvs.EventEmailRecv{});
+        }
     }
 
     pub fn visible(self: *const Self) bool {
