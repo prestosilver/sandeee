@@ -152,7 +152,7 @@ pub const PopupData = struct {
         var result = try va.VertArray.init();
         var sprite: u8 = 1;
 
-        var pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2));
+        var pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
 
         var close = rect.newRect(pos.x + self.size.x - 64, pos.y, 64, 64);
 
@@ -164,7 +164,7 @@ pub const PopupData = struct {
     }
 
     pub fn click(self: *PopupData, mousepos: vecs.Vector2) bool {
-        var pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2));
+        var pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
         var close = rect.newRect(pos.x + self.size.x - 64, pos.y, 64, 64);
         close.h = 26;
         close.x += close.w - 26;
@@ -177,7 +177,7 @@ pub const PopupData = struct {
     }
 
     pub fn scissor(self: *const PopupData) rect.Rectangle {
-        var pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2));
+        var pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
         var bnds = .{
             .x = pos.x,
             .y = pos.y,
