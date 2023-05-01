@@ -18,6 +18,7 @@ pub const PopupTextPick = struct {
     text: []u8,
     submit: *const fn (?*[]const u8, *anyopaque) anyerror!void,
     err: []const u8 = "",
+    prompt: []const u8,
     data: *anyopaque,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
@@ -25,7 +26,7 @@ pub const PopupTextPick = struct {
             .batch = batch,
             .shader = shader,
             .pos = bnds.location(),
-            .text = "Enter the files path:",
+            .text = self.prompt,
         });
 
         try font.draw(.{
