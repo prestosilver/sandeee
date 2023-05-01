@@ -258,7 +258,7 @@ pub const WindowContents = struct {
 
 pub const WindowData = struct {
     source: rect.Rectangle,
-    pos: rect.Rectangle = rect.newRect(100, 100, 400, 300),
+    pos: rect.Rectangle = rect.newRect(100, 100, 600, 400),
 
     oldpos: rect.Rectangle = rect.newRect(0, 0, 0, 0),
     active: bool = false,
