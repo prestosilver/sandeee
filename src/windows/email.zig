@@ -52,31 +52,6 @@ const EmailData = struct {
 
         try batch.draw(sprite.Sprite, &self.icon, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
-            .text = "  Inbox",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 0),
-        });
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
-            .text = "  Spam",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 1),
-        });
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
-            .text = "  Trash",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 2),
-        });
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
-            .text = ">",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + @intToFloat(f32, self.box) * font.size),
-        });
-
         if (self.viewing == null) {
             self.dive.data.size.x = bnds.w - 118;
 
@@ -155,6 +130,30 @@ const EmailData = struct {
                 .wrap = bnds.w - 116.0,
             });
         }
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = "  Inbox",
+            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 0),
+        });
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = "  Spam",
+            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 1),
+        });
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = "  Trash",
+            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 2),
+        });
+        try font.draw(.{
+            .batch = batch,
+            .shader = font_shader,
+            .text = ">",
+            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + @intToFloat(f32, self.box) * font.size),
+        });
     }
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
@@ -341,5 +340,5 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
         .shader = shader,
     };
 
-    return win.WindowContents.init(self, "email", "\x82\x82\x82 Mail", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "email", "\x82\x82\x82Mail", col.newColor(1, 1, 1, 1));
 }
