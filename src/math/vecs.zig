@@ -5,6 +5,13 @@ pub const Vector2 = struct {
     x: f32,
     y: f32,
 
+    pub fn round(a: Vector2) Vector2 {
+        return Vector2{
+            .x = @round(a.x),
+            .y = @round(a.y),
+        };
+    }
+
     pub fn add(a: Vector2, b: Vector2) Vector2 {
         return Vector2{
             .x = a.x + b.x,
