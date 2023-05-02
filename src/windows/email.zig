@@ -15,6 +15,7 @@ const popups = @import("../drawers/popup2d.zig");
 const files = @import("../system/files.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
+const vm = @import("../system/vm.zig");
 
 const c = @import("../c.zig");
 
@@ -215,10 +216,18 @@ const EmailData = struct {
                         good = good and std.mem.eql(u8, targetText, conts);
                     }
                     if (std.mem.eql(u8, name, "runs")) {
-                        if (!std.mem.startsWith(u8, conts, "eeep")) return;
+                        if (!std.mem.startsWith(u8, conts, "EEEp")) return;
+                        var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
+                        defer vmInstance.deinit() catch {};
 
+                        try vmInstance.loadString(conts[4..]);
+
+                        try vmInstance.runAll();
                         var targetText = cond[idx + 1 ..];
-                        good = good and std.mem.eql(u8, targetText, conts);
+
+                        std.log.info("{s}", .{vmInstance.out.items});
+
+                        good = good and std.mem.eql(u8, vmInstance.out.items, targetText);
                     }
                 }
 

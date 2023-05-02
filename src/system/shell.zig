@@ -336,7 +336,7 @@ pub const Shell = struct {
                     return error.BadASMFile;
                 }
 
-                self.vm = try vm.VM.init(allocator.alloc, self.root, params);
+                self.vm = try vm.VM.init(allocator.alloc, self.root, params, false);
                 vms += 1;
                 vmsLeft += 1;
 

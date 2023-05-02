@@ -65,10 +65,11 @@ pub const VM = struct {
     out: std.ArrayList(u8) = undefined,
     args: [][]u8,
     root: *files.Folder,
-
     heap: []u8,
 
-    pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8) !VM {
+    checker: bool = false,
+
+    pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8, comptime checker: bool) !VM {
         var splitIter = std.mem.split(u8, args, " ");
 
         var tmpArgs = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
@@ -91,6 +92,7 @@ pub const VM = struct {
             .heap = try alloc.alloc(u8, 0),
             .args = tmpArgs,
             .root = root,
+            .checker = checker,
         };
     }
 
@@ -528,6 +530,7 @@ pub const VM = struct {
                         },
                         // write file
                         5 => {
+                            if (self.checker) return;
                             var str = try self.popStack();
                             var idx = try self.popStack();
                             defer self.free(&[_]StackEntry{ str, idx });
@@ -546,6 +549,7 @@ pub const VM = struct {
                         },
                         // flush file
                         6 => {
+                            if (self.checker) return;
                             var idx = try self.popStack();
                             defer self.free(&[_]StackEntry{idx});
 
