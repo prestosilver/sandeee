@@ -1,0 +1,13 @@
+id: 9
+deps: 8
+box: 0
+from: prestosilver
+sub: Demo Complete
+Thanks for playing the SandEEE demo. In the full version expect:
+
+ - More quests
+ - A full story
+ - EON (You'll see)
+ - Networking
+
+and remember EEE sees all.
