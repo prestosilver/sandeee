@@ -132,6 +132,7 @@ pub const GSLoading = struct {
         wins.settings.settingManager = self.settingManager;
         wins.editor.wintex = self.wintex;
         wins.email.wintex = self.wintex;
+        wins.settings.wintex = self.wintex;
         wins.email.notif = .{
             .texture = self.emailtex,
             .data = .{

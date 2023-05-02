@@ -35,7 +35,7 @@ const ExplorerData = struct {
     };
 
     shader: *shd.Shader,
-    icons: [5]sprite.Sprite,
+    icons: [6]sprite.Sprite,
     text_box: [2]sprite.Sprite,
     menubar: sprite.Sprite,
     focus: sprite.Sprite,

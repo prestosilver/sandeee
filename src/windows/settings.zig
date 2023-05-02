@@ -11,9 +11,13 @@ const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../util/texture.zig");
 const config = @import("../system/config.zig");
+const popups = @import("../drawers/popup2d.zig");
+const winEvs = @import("../events/window.zig");
+const events = @import("../util/events.zig");
 const c = @import("../c.zig");
 
 pub var settingManager: *config.SettingManager = undefined;
+pub var wintex: *tex.Texture = undefined;
 
 const SettingPanel = struct {
     name: []const u8,
@@ -35,7 +39,7 @@ const SettingsData = struct {
     };
 
     shader: *shd.Shader,
-    icons: [5]sprite.Sprite,
+    icons: [6]sprite.Sprite,
     scroll: [3]sprite.Sprite,
     focus: sprite.Sprite,
 
@@ -45,10 +49,13 @@ const SettingsData = struct {
     focusedPane: ?usize = null,
     editing: ?usize = null,
 
+    value: []const u8,
+
     const panels = [_]SettingPanel{
         SettingPanel{ .name = "Graphics", .icon = 1 },
         SettingPanel{ .name = "Sounds", .icon = 2 },
         SettingPanel{ .name = "Explorer", .icon = 3 },
+        SettingPanel{ .name = "System", .icon = 5 },
     };
 
     const Setting = struct {
@@ -137,7 +144,29 @@ const SettingsData = struct {
                     if (rect.newRect(pos.x, pos.y, bnds.w, font.size).contains(action.pos)) {
                         switch (action.kind) {
                             .SingleLeft => {
-                                std.log.info("{s}", .{item.setting});
+                                self.value = settingManager.get(item.key) orelse "";
+                                var adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+                                adds.* = .{
+                                    .prompt = item.setting,
+                                    .text = try allocator.alloc.dupe(u8, self.value),
+                                    .data = self,
+                                    .submit = &submit,
+                                };
+
+                                self.value = item.key;
+
+                                events.em.sendEvent(winEvs.EventCreatePopup{
+                                    .popup = .{
+                                        .texture = wintex,
+                                        .data = .{
+                                            .title = "Text Picker",
+                                            .source = rect.newRect(0, 0, 1, 1),
+                                            .size = vecs.newVec2(350, 125),
+                                            .parentPos = undefined,
+                                            .contents = popups.PopupData.PopupContents.init(adds),
+                                        },
+                                    },
+                                });
                                 self.lastAction = null;
                             },
                             .DoubleLeft => {},
@@ -223,6 +252,11 @@ const SettingsData = struct {
         }
     }
 
+    pub fn submit(val: []u8, data: *anyopaque) !void {
+        var self = @ptrCast(*Self, @alignCast(@alignOf(Self), data));
+        try settingManager.set(self.value, val);
+    }
+
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
         switch (btn) {
             0 => {
@@ -291,6 +325,7 @@ pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
             rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
             vecs.newVec2(72.0, 72.0),
         )),
+        .value = "",
     };
 
     for (self.icons, 0..) |_, idx| {
