@@ -7,7 +7,7 @@ const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
 
 pub const WallData = struct {
-    const Mode = enum {
+    pub const Mode = enum {
         Color,
         Tile,
         Center,

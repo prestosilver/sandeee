@@ -89,6 +89,8 @@ var shader: shd.Shader = undefined;
 // the selected disk
 var disk: ?[]u8 = null;
 
+var wallpaper: *wall.Wallpaper = undefined;
+
 var message_snd: audio.Sound = undefined;
 
 //
@@ -240,6 +242,40 @@ pub fn mailRecv(event: systemEvs.EventEmailRecv) bool {
     return false;
 }
 
+pub fn settingSet(event: systemEvs.EventSetSetting) bool {
+    if (std.mem.eql(u8, event.setting, "wallpaper_mode")) {
+        wallpaper.data.mode = .Color;
+
+        if (std.ascii.eqlIgnoreCase(event.value, "tile")) {
+            wallpaper.data.mode = .Tile;
+        }
+
+        if (std.ascii.eqlIgnoreCase(event.value, "center")) {
+            wallpaper.data.mode = .Center;
+        }
+
+        if (std.ascii.eqlIgnoreCase(event.value, "stretch")) {
+            wallpaper.data.mode = .Stretch;
+        }
+
+        return true;
+    }
+    if (std.mem.eql(u8, event.setting, "crt_shader")) {
+        var val: c_int = if (std.ascii.eqlIgnoreCase("yes", event.value)) 1 else 0;
+
+        gfx.gContext.makeCurrent();
+        crt_shader.setInt("crt_enable", val);
+        crt_shader.setInt("dither_enable", val);
+        gfx.gContext.makeNotCurrent();
+
+        std.log.info("crt: {}", .{val});
+
+        return true;
+    }
+
+    return false;
+}
+
 pub fn runCmdEvent(event: systemEvs.EventRunCmd) bool {
     for (emails.emails.items) |*email| {
         if (!email.visible()) continue;
@@ -265,6 +301,7 @@ pub fn setupEvents() !void {
     events.em.registerListener(inputEvs.EventKeyChar, keyChar);
     events.em.registerListener(inputEvs.EventKeyUp, keyUp);
 
+    events.em.registerListener(systemEvs.EventSetSetting, settingSet);
     events.em.registerListener(systemEvs.EventStateChange, changeState);
     events.em.registerListener(systemEvs.EventEmailRecv, mailRecv);
     events.em.registerListener(systemEvs.EventRunCmd, runCmdEvent);
@@ -372,9 +409,9 @@ pub fn main() anyerror!void {
     loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
 
     // shaders
-    try loader.enqueue(&crt_shader_files, &crt_shader, worker.shader.loadShader);
     try loader.enqueue(&shader_files, &shader, worker.shader.loadShader);
     try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
+    try loader.enqueue(&crt_shader_files, &crt_shader, worker.shader.loadShader);
 
     // fonts
     const biosFont: []const u8 = @embedFile("images/main.eff");
@@ -563,6 +600,7 @@ pub fn main() anyerror!void {
     //TODO: ???
     win.deskSize = &gfx.gContext.size;
     windowedState.GSWindowed.deskSize = &gfx.gContext.size;
+    wallpaper = &gsWindowed.wallpaper;
 
     // update the frame timer
     var lastFrameTime = c.glfwGetTime();

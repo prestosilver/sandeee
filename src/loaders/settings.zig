@@ -5,6 +5,7 @@ const font = @import("../util/font.zig");
 const c = @import("../c.zig");
 const conf = @import("../system/config.zig");
 const files = @import("../system/files.zig");
+const allocator = @import("../util/allocator.zig");
 
 pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.SettingManager)) !bool {
     std.log.debug("load settings", .{});
@@ -28,7 +29,7 @@ pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.Sett
             var tvalue = std.mem.trim(u8, value, " ");
 
             if (tvalue.len > 1 and tvalue[0] == '"' and tvalue[tvalue.len - 1] == '"') {
-                try self.out.set(tkey, tvalue[1 .. tvalue.len - 1]);
+                try self.out.set(try allocator.alloc.dupe(u8, tkey), tvalue[1 .. tvalue.len - 1]);
             }
         }
     } else {

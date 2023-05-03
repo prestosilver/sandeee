@@ -8,6 +8,9 @@ uniform sampler2D tex;
 
 uniform float time = 0;
 
+uniform int crt_enable;
+uniform int dither_enable;
+
 uniform float screen_width = 1024;
 uniform float screen_height = 600;
 
@@ -21,9 +24,6 @@ uniform float lines_distance = 4.0;
 uniform float scan_size = 3.0;
 uniform float scanline_alpha = 0.85;
 uniform float lines_velocity = -2.0;
-
-uniform int crt_enable = 1;
-uniform int dither_enable = 1;
 
 #define COLOR_STEPS 8.0
 #define GAMMA 2.5
@@ -41,7 +41,6 @@ vec2 distort(vec2 coord, const vec2 ratio)
 
 	result *= ratio;
 	result.y += offsety;
-
 	return result;
 }
 
@@ -56,7 +55,6 @@ void get_color_scanline(vec2 uv,inout vec4 c,float time){
     c = c - n*c*(1.0 - scanline_alpha);
     c.a = 1.0;
 }
-
 
 float onOff(float a, float b, float c)
 {

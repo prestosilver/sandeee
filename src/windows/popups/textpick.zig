@@ -16,7 +16,7 @@ pub const PopupTextPick = struct {
     const Self = @This();
 
     text: []u8,
-    submit: *const fn (?*[]const u8, *anyopaque) anyerror!void,
+    submit: *const fn ([]u8, *anyopaque) anyerror!void,
     err: []const u8 = "",
     prompt: []const u8,
     data: *anyopaque,

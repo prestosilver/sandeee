@@ -255,6 +255,7 @@ const SettingsData = struct {
     pub fn submit(val: []u8, data: *anyopaque) !void {
         var self = @ptrCast(*Self, @alignCast(@alignOf(Self), data));
         try settingManager.set(self.value, val);
+        try settingManager.save();
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
