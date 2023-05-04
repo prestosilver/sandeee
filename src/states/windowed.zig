@@ -472,22 +472,23 @@ pub const GSWindowed = struct {
                         },
                         else => {
                             try self.windows.append(swap);
-                            if (swap.data.full) return;
-                            self.dragmode = mode;
-                            self.dragging = &self.windows.items[self.windows.items.len - 1];
-                            var start = self.dragging.?.data.pos;
-                            self.draggingStart = switch (self.dragmode) {
-                                win.DragMode.None => vecs.newVec2(0, 0),
-                                win.DragMode.Close => vecs.newVec2(0, 0),
-                                win.DragMode.Full => vecs.newVec2(0, 0),
-                                win.DragMode.Min => vecs.newVec2(0, 0),
-                                win.DragMode.Move => vecs.newVec2(start.x - self.mousepos.x, start.y - self.mousepos.y),
-                                win.DragMode.ResizeR => vecs.newVec2(start.w - self.mousepos.x, 0),
-                                win.DragMode.ResizeB => vecs.newVec2(0, start.h - self.mousepos.y),
-                                win.DragMode.ResizeL => vecs.newVec2(start.w + start.x, 0),
-                                win.DragMode.ResizeRB => vecs.newVec2(start.w - self.mousepos.x, start.h - self.mousepos.y),
-                                win.DragMode.ResizeLB => vecs.newVec2(start.w + start.x, start.h - self.mousepos.y),
-                            };
+                            if (!swap.data.full) {
+                                self.dragmode = mode;
+                                self.dragging = &self.windows.items[self.windows.items.len - 1];
+                                var start = self.dragging.?.data.pos;
+                                self.draggingStart = switch (self.dragmode) {
+                                    win.DragMode.None => vecs.newVec2(0, 0),
+                                    win.DragMode.Close => vecs.newVec2(0, 0),
+                                    win.DragMode.Full => vecs.newVec2(0, 0),
+                                    win.DragMode.Min => vecs.newVec2(0, 0),
+                                    win.DragMode.Move => vecs.newVec2(start.x - self.mousepos.x, start.y - self.mousepos.y),
+                                    win.DragMode.ResizeR => vecs.newVec2(start.w - self.mousepos.x, 0),
+                                    win.DragMode.ResizeB => vecs.newVec2(0, start.h - self.mousepos.y),
+                                    win.DragMode.ResizeL => vecs.newVec2(start.w + start.x, 0),
+                                    win.DragMode.ResizeRB => vecs.newVec2(start.w - self.mousepos.x, start.h - self.mousepos.y),
+                                    win.DragMode.ResizeLB => vecs.newVec2(start.w + start.x, start.h - self.mousepos.y),
+                                };
+                            }
                         },
                     }
                 }
@@ -496,7 +497,7 @@ pub const GSWindowed = struct {
         }
 
         for (self.windows.items) |*window| {
-            if (!window.data.active) continue;
+            if (!window.data.active and !window.data.full) continue;
 
             if (window.data.popup) |*popup| {
                 if (popup.data.click(self.mousepos)) {
