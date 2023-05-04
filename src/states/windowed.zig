@@ -12,6 +12,7 @@ const font = @import("../util/font.zig");
 const tex = @import("../util/texture.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
+const systemEvs = @import("../events/system.zig");
 const pseudo = @import("../system/pseudo/all.zig");
 const files = @import("../system/files.zig");
 const emails = @import("../system/mail.zig");
@@ -48,6 +49,8 @@ pub const GSWindowed = struct {
     settingsManager: *conf.SettingManager,
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
+
+    color: cols.Color = cols.newColor(0, 0, 0, 1),
 
     webtex: *tex.Texture,
     wintex: *tex.Texture,
@@ -134,8 +137,34 @@ pub const GSWindowed = struct {
         return false;
     }
 
+    pub fn settingSet(event: systemEvs.EventSetSetting) bool {
+        if (std.mem.eql(u8, event.setting, "wallpaper_color")) {
+            if (event.value.len != 6) {
+                globalSelf.color.r = 0;
+                globalSelf.color.g = 0;
+                globalSelf.color.b = 0;
+            } else {
+                globalSelf.color.r = @intToFloat(f32, std.fmt.parseInt(u8, event.value[0..2], 16) catch 0) / 255;
+                globalSelf.color.g = @intToFloat(f32, std.fmt.parseInt(u8, event.value[2..4], 16) catch 0) / 255;
+                globalSelf.color.b = @intToFloat(f32, std.fmt.parseInt(u8, event.value[4..6], 16) catch 0) / 255;
+            }
+
+            gfx.gContext.color = globalSelf.color;
+
+            return true;
+        }
+        if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
+            gfx.gContext.makeCurrent();
+            tex.uploadTextureFile(globalSelf.wallpaper.texture, event.value) catch return false;
+            gfx.gContext.makeNotCurrent();
+
+            return true;
+        }
+        return false;
+    }
+
     pub fn setup(self: *Self) !void {
-        gfx.gContext.color = cols.newColor(0, 0.5, 0.5, 1);
+        gfx.gContext.color = self.color;
 
         pseudo.win.windowsPtr = &self.windows;
 
@@ -180,6 +209,7 @@ pub const GSWindowed = struct {
         events.em.registerListener(windowEvs.EventClosePopup, closePopup);
         events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
         events.em.registerListener(windowEvs.EventNotification, notification);
+        events.em.registerListener(systemEvs.EventSetSetting, settingSet);
 
         if (std.mem.eql(u8, self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
             var window = win.Window.new(self.wintex, win.WindowData{
@@ -201,6 +231,13 @@ pub const GSWindowed = struct {
 
             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = true });
         }
+
+        if (self.settingsManager.get("wallpaper_color")) |color| {
+            _ = settingSet(.{
+                .setting = "wallpaper_color",
+                .value = color,
+            });
+        }
     }
 
     pub fn deinit(self: *Self) !void {
@@ -212,7 +249,7 @@ pub const GSWindowed = struct {
 
         try files.write();
 
-        self.settingsManager.deinit();
+        try self.settingsManager.deinit();
         self.windows.deinit();
         emails.deinit();
         files.deinit();
