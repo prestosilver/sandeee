@@ -64,6 +64,16 @@ pub fn newTextureMem(mem: []const u8) !Texture {
     return result;
 }
 
+pub fn uploadTextureFile(tex: *Texture, file: []const u8) !void {
+    var image = try files.root.getFile(file);
+
+    if (image == null) return error.NotFound;
+
+    var cont = try image.?.read(null);
+
+    return uploadTextureMem(tex, cont);
+}
+
 pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
     var width = @intCast(c_int, mem[4]) + @intCast(c_int, mem[5]) * 256;
     var height = @intCast(c_int, mem[6]) + @intCast(c_int, mem[7]) * 256;
