@@ -218,7 +218,7 @@ pub const WebData = struct {
     }
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(WebData);
 
     self.* = .{

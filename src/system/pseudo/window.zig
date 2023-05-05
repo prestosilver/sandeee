@@ -11,6 +11,7 @@ const rect = @import("../../math/rects.zig");
 const shd = @import("../../util/shader.zig");
 const vm = @import("../vm.zig");
 const vecs = @import("../../math/vecs.zig");
+const sb = @import("../../util/spritebatch.zig");
 
 pub var wintex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
@@ -23,7 +24,7 @@ pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
     var result = try allocator.alloc.alloc(u8, 1);
     var winDat = try vmwin.new(vmIdx, shader);
 
-    var window = win.Window.new(wintex, win.WindowData{
+    var window = win.Window.new("win", win.WindowData{
         .source = rect.Rectangle{
             .x = 0.0,
             .y = 0.0,
@@ -273,8 +274,7 @@ pub fn readWinRender(_: ?*vm.VM) ![]const u8 {
 pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
     if (data.len < 66) return;
 
-    var texture = gfx.textures.getPtr(data[0]);
-    if (texture == null) return;
+    if (sb.textureManager.get(data[0..1]) == null) return;
 
     var aid = data[1];
 
@@ -299,7 +299,7 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
             var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
 
             if (self.idx == aid) {
-                return self.addRect(texture.?, src, dst);
+                return self.addRect(data[0..1], src, dst);
             }
         }
     }

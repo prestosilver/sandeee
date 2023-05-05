@@ -17,7 +17,6 @@ const events = @import("../util/events.zig");
 const c = @import("../c.zig");
 
 pub var settingManager: *config.SettingManager = undefined;
-pub var wintex: *tex.Texture = undefined;
 
 const SettingPanel = struct {
     name: []const u8,
@@ -158,7 +157,7 @@ const SettingsData = struct {
 
                                 events.em.sendEvent(winEvs.EventCreatePopup{
                                     .popup = .{
-                                        .texture = wintex,
+                                        .texture = "win",
                                         .data = .{
                                             .title = "Text Picker",
                                             .source = rect.newRect(0, 0, 1, 1),
@@ -305,7 +304,7 @@ const SettingsData = struct {
     }
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(SettingsData);
 
     var ym = @intToFloat(f32, self.icons.len);

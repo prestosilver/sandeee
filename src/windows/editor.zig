@@ -16,8 +16,6 @@ const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 
-pub var wintex: *tex.Texture = undefined;
-
 pub const EditorData = struct {
     const Self = @This();
 
@@ -156,7 +154,7 @@ pub const EditorData = struct {
 
                     events.em.sendEvent(winEvs.EventCreatePopup{
                         .popup = .{
-                            .texture = wintex,
+                            .texture = "win",
                             .data = .{
                                 .title = "File Picker",
                                 .source = rect.newRect(0, 0, 1, 1),
@@ -273,7 +271,7 @@ pub const EditorData = struct {
     pub fn scroll(_: *Self, _: f32, _: f32) void {}
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(EditorData);
 
     self.* = .{

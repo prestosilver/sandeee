@@ -746,7 +746,7 @@ pub const VM = struct {
                 } else return error.ValueMissing;
             },
             Operation.Code.Jmpf => {
-                if (op.value == null) return error.ValueMissing;
+                if (op.value == null) return error.dValueMissing;
                 self.pc += @intCast(usize, op.value.?);
                 return;
             },

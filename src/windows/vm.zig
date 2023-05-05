@@ -49,7 +49,7 @@ pub const VMData = struct {
         Text: VMDataText,
     };
 
-    pub fn addRect(self: *VMData, texture: *tex.Texture, src: rect.Rectangle, dst: rect.Rectangle) !void {
+    pub fn addRect(self: *VMData, texture: []const u8, src: rect.Rectangle, dst: rect.Rectangle) !void {
         var appends: VMDataEntry = .{
             .Rect = .{
                 .loc = vecs.newVec3(dst.x, dst.y, 0),

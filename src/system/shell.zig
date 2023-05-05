@@ -17,9 +17,6 @@ const Result = struct {
     clear: bool = false,
 };
 
-pub var wintex: *tex.Texture = undefined;
-pub var webtex: *tex.Texture = undefined;
-pub var edittex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
 
 pub const VM_TIME = 10000000; // nano seconds
@@ -123,7 +120,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new(wintex, win.WindowData{
+        var window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
@@ -144,14 +141,14 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new(wintex, win.WindowData{
+        var window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
                 .w = 1.0,
                 .h = 1.0,
             },
-            .contents = try wins.editor.new(edittex, shader),
+            .contents = try wins.editor.new("edit", shader),
             .active = true,
         });
 
@@ -174,14 +171,14 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new(wintex, win.WindowData{
+        var window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
                 .w = 1.0,
                 .h = 1.0,
             },
-            .contents = try wins.web.new(webtex, shader),
+            .contents = try wins.web.new("web", shader),
             .active = true,
         });
 

@@ -260,7 +260,7 @@ const ExplorerData = struct {
     }
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(ExplorerData);
 
     var ym = @intToFloat(f32, self.icons.len);

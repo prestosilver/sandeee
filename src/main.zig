@@ -18,6 +18,7 @@ const batch = @import("util/spritebatch.zig");
 const gfx = @import("util/graphics.zig");
 const shd = @import("util/shader.zig");
 const tex = @import("util/texture.zig");
+const texMan = @import("util/texmanager.zig");
 const panicHandler = @import("util/panic.zig");
 
 const inputEvs = @import("events/input.zig");
@@ -96,17 +97,7 @@ var message_snd: audio.Sound = undefined;
 //
 var settingManager: conf.SettingManager = undefined;
 
-var wintex: tex.Texture = undefined;
-var webtex: tex.Texture = undefined;
-var bartex: tex.Texture = undefined;
-var walltex: tex.Texture = undefined;
-var notiftex: tex.Texture = undefined;
-var emailtex: tex.Texture = undefined;
-var editortex: tex.Texture = undefined;
-var barlogotex: tex.Texture = undefined;
-var explorertex: tex.Texture = undefined;
-var cursortex: tex.Texture = undefined;
-var scrolltex: tex.Texture = undefined;
+var textureManager: texMan.TextureManager = undefined;
 
 var ctx: gfx.Context = undefined;
 var sb: batch.SpriteBatch = undefined;
@@ -399,6 +390,9 @@ pub fn main() anyerror!void {
         return headless.headlessMain(headlessCmd, false, null);
     }
 
+    textureManager = texMan.TextureManager.init();
+    batch.textureManager = &textureManager;
+
     // init graphics
     ctx = try gfx.init("SandEEE");
     gfx.gContext = &ctx;
@@ -409,13 +403,13 @@ pub fn main() anyerror!void {
     loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
 
     // shaders
-    try loader.enqueue(&shader_files, &shader, worker.shader.loadShader);
-    try loader.enqueue(&font_shader_files, &font_shader, worker.shader.loadShader);
-    try loader.enqueue(&crt_shader_files, &crt_shader, worker.shader.loadShader);
+    try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &shader_files, &shader, worker.shader.loadShader);
+    try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &font_shader_files, &font_shader, worker.shader.loadShader);
+    try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &crt_shader_files, &crt_shader, worker.shader.loadShader);
 
     // fonts
     const biosFont: []const u8 = @embedFile("images/main.eff");
-    try loader.enqueue(&biosFont, &biosFace, worker.font.loadFont);
+    try loader.enqueue(*const []const u8, *font.Font, &biosFont, &biosFace, worker.font.loadFont);
 
     // load bios
     var prog: f32 = 0;
@@ -435,11 +429,12 @@ pub fn main() anyerror!void {
     c.glGenRenderbuffers(1, &depthrenderbuffer);
 
     sb = try batch.newSpritebatch(&gfx.gContext.size);
+
     // load some textures
-    var biosTex = try tex.newTextureMem(biosImage);
-    var logoTex = try tex.newTextureMem(logoImage);
-    var loadTex = try tex.newTextureMem(loadImage);
-    var sadTex = try tex.newTextureMem(sadImage);
+    try textureManager.putMem("bios", biosImage);
+    try textureManager.putMem("logo", logoImage);
+    try textureManager.putMem("load", loadImage);
+    try textureManager.putMem("sad", sadImage);
 
     audioman = try audio.Audio.init();
 
@@ -451,7 +446,7 @@ pub fn main() anyerror!void {
         .face = &biosFace,
         .disk = &disk,
         .logo_sprite = .{
-            .texture = &biosTex,
+            .texture = "bios",
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(168, 84),
@@ -462,31 +457,21 @@ pub fn main() anyerror!void {
     // loading state
     var gsLoading = loadingState.GSLoading{
         .sb = &sb,
-        .wintex = &wintex,
-        .bartex = &bartex,
-        .webtex = &webtex,
-        .walltex = &walltex,
-        .notiftex = &notiftex,
-        .emailtex = &emailtex,
-        .editortex = &editortex,
-        .scrolltex = &scrolltex,
-        .cursortex = &cursortex,
-        .barlogotex = &barlogotex,
-        .explorertex = &explorertex,
         .face = &mainFace,
         .audio_man = &audioman,
+        .textureManager = &textureManager,
         .ctx = &ctx,
         .loading = drawLoading,
         .message_snd = &message_snd,
         .logo_sprite = .{
-            .texture = &logoTex,
+            .texture = "logo",
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(320, 64),
             ),
         },
         .load_sprite = .{
-            .texture = &loadTex,
+            .texture = "load",
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(10, 10),
@@ -504,36 +489,28 @@ pub fn main() anyerror!void {
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &mainFace,
-        .webtex = &webtex,
-        .wintex = &wintex,
-        .notiftex = &notiftex,
-        .emailtex = &emailtex,
-        .scrolltex = &scrolltex,
-        .editortex = &editortex,
-        .explorertex = &explorertex,
         .settingsManager = &settingManager,
         .windows = std.ArrayList(win.Window).init(allocator.alloc),
         .notifs = std.ArrayList(notifs.Notification).init(allocator.alloc),
         .bar_logo_sprite = .{
-            .texture = &barlogotex,
+            .texture = "barlogo",
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(36, 464),
             ),
         },
         .cursor = .{
-            .texture = &cursortex,
+            .texture = "cursor",
             .data = cursor.CursorData.new(
                 rect.newRect(0, 0, 1, 1),
                 6,
             ),
         },
-        .wallpaper = wall.Wallpaper.new(&walltex, wall.WallData{
+        .wallpaper = wall.Wallpaper.new("wall", wall.WallData{
             .dims = &gfx.gContext.size,
             .mode = .Center,
-            .size = &walltex.size,
         }),
-        .bar = bar.Bar.new(&bartex, bar.BarData{
+        .bar = bar.Bar.new("bar", bar.BarData{
             .height = 38,
             .screendims = &gfx.gContext.size,
         }),
@@ -548,7 +525,7 @@ pub fn main() anyerror!void {
         .message = &errorMsg,
         .prevState = &errorState,
         .sad_sprite = .{
-            .texture = &sadTex,
+            .texture = "sad",
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(150, 150),
@@ -563,7 +540,7 @@ pub fn main() anyerror!void {
         .font_shader = &font_shader,
         .face = &biosFace,
         .load_sprite = .{
-            .texture = &loadTex,
+            .texture = "load",
             .data = sprite.SpriteData.new(
                 rect.newRect(1.0 / 5.0, 1.0 / 5.0, 1.0 / 5.0, 1.0 / 5.0),
                 vecs.newVec2(20, 32),

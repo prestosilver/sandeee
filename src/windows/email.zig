@@ -22,7 +22,6 @@ const c = @import("../c.zig");
 const boxes: u8 = 3;
 
 pub var notif: sprite.Sprite = undefined;
-pub var wintex: *tex.Texture = undefined;
 
 const EmailData = struct {
     const Self = @This();
@@ -174,7 +173,7 @@ const EmailData = struct {
 
         events.em.sendEvent(winEvs.EventCreatePopup{
             .popup = .{
-                .texture = wintex,
+                .texture = "win",
                 .data = .{
                     .title = "File Picker",
                     .source = rect.newRect(0, 0, 1, 1),
@@ -311,7 +310,7 @@ const EmailData = struct {
     }
 };
 
-pub fn new(texture: *tex.Texture, shader: *shd.Shader) !win.WindowContents {
+pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(EmailData);
 
     self.* = .{

@@ -54,8 +54,15 @@ pub const WorkerContext = struct {
         ctx.total = 0;
     }
 
-    pub fn enqueue(self: *WorkerContext, indata: anytype, outdata: anytype, loader: *const fn (*WorkerQueueEntry(@TypeOf(indata), @TypeOf(outdata))) anyerror!bool) !void {
-        const node = try allocator.alloc.create(WorkerQueueNode(@TypeOf(indata), @TypeOf(outdata)));
+    pub fn enqueue(
+        self: *WorkerContext,
+        comptime T: type,
+        comptime U: type,
+        indata: T,
+        outdata: U,
+        loader: *const fn (*WorkerQueueEntry(T, U)) anyerror!bool,
+    ) !void {
+        const node = try allocator.alloc.create(WorkerQueueNode(T, U));
 
         node.* = .{
             .prev = undefined,

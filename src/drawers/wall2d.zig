@@ -15,7 +15,6 @@ pub const WallData = struct {
     };
 
     dims: *vecs.Vector2,
-    size: *vecs.Vector2,
     mode: Mode = .Center,
 
     fn addQuad(arr: *va.VertArray, pos: rect.Rectangle, src: rect.Rectangle) !void {
@@ -33,6 +32,10 @@ pub const WallData = struct {
         var result = try va.VertArray.init();
         var pos: rect.Rectangle = undefined;
         var source = rect.newRect(0, 0, 1, 1);
+
+        var par = @fieldParentPtr(sb.Drawer(WallData), "data", self);
+        var size = (sb.textureManager.textures.get(par.texture) orelse return result).size;
+
         switch (self.mode) {
             .Color => {
                 return result;
@@ -42,12 +45,12 @@ pub const WallData = struct {
                 pos.h = self.dims.y;
                 pos.x = 0;
                 pos.y = 0;
-                source.w = self.dims.x / self.size.x;
-                source.h = self.dims.y / self.size.y;
+                source.w = self.dims.x / size.x;
+                source.h = self.dims.y / size.y;
             },
             .Center => {
-                pos.w = self.size.x;
-                pos.h = self.size.y;
+                pos.w = size.x;
+                pos.h = size.y;
                 pos.x = (self.dims.x - pos.w) / 2;
                 pos.y = (self.dims.y - pos.h) / 2;
             },

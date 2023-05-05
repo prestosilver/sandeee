@@ -4,23 +4,26 @@ const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const tex = @import("../util/texture.zig");
+const texMan = @import("../util/texmanager.zig");
 const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
 const allocator = @import("allocator.zig");
 const c = @import("../c.zig");
 
+pub var textureManager: *texMan.TextureManager = undefined;
+
 pub fn Drawer(comptime T: type) type {
     return struct {
         const Self = @This();
 
-        texture: *tex.Texture,
+        texture: []const u8,
         data: T,
 
         pub fn getVerts(self: *Self, pos: vecs.Vector3) !va.VertArray {
             return self.data.getVerts(pos);
         }
 
-        pub fn new(texture: *tex.Texture, self: T) Drawer(T) {
+        pub fn new(texture: []const u8, self: T) Drawer(T) {
             return Self{
                 .texture = texture,
                 .data = self,
@@ -65,7 +68,9 @@ pub const SpriteBatch = struct {
     pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: *shd.Shader, pos: vecs.Vector3) !void {
         var entry = QueueEntry{
             .update = true,
-            .texture = drawer.texture,
+            .texture = textureManager.get(drawer.texture) orelse {
+                return error.TextureNotFound;
+            },
             .verts = try drawer.getVerts(pos),
             .shader = shader.*,
         };

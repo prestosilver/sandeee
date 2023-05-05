@@ -134,7 +134,7 @@ pub const BarData = struct {
         }
     }
 
-    pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), webtex: *tex.Texture, wintex: *tex.Texture, emailtex: *tex.Texture, editortex: *tex.Texture, explorertex: *tex.Texture, shader: *shd.Shader, pos: vecs.Vector2) !bool {
+    pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), shader: *shd.Shader, pos: vecs.Vector2) !bool {
         var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;
@@ -176,7 +176,7 @@ pub const BarData = struct {
                     added = true;
                     switch (i) {
                         0 => {
-                            var window = win.Window.new(wintex, win.WindowData{
+                            var window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -190,70 +190,70 @@ pub const BarData = struct {
                             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         1 => {
-                            var window = win.Window.new(wintex, win.WindowData{
+                            var window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.email.new(emailtex, shader),
+                                .contents = try wins.email.new("email", shader),
                                 .active = true,
                             });
 
                             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         2 => {
-                            var window = win.Window.new(wintex, win.WindowData{
+                            var window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.editor.new(editortex, shader),
+                                .contents = try wins.editor.new("editor", shader),
                                 .active = true,
                             });
 
                             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         3 => {
-                            var window = win.Window.new(wintex, win.WindowData{
+                            var window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.explorer.new(explorertex, shader),
+                                .contents = try wins.explorer.new("explorer", shader),
                                 .active = true,
                             });
 
                             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         4 => {
-                            var window = win.Window.new(wintex, win.WindowData{
+                            var window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.web.new(webtex, shader),
+                                .contents = try wins.web.new("web", shader),
                                 .active = true,
                             });
 
                             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         5 => {
-                            var window = win.Window.new(wintex, win.WindowData{
+                            var window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.settings.new(explorertex, shader),
+                                .contents = try wins.settings.new("explorer", shader),
                                 .active = true,
                             });
 

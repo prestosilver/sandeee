@@ -10,9 +10,9 @@ const rect = @import("../../math/rects.zig");
 const vecs = @import("../../math/vecs.zig");
 const gfx = @import("../../util/graphics.zig");
 const vm = @import("../vm.zig");
+const sb = @import("../../util/spritebatch.zig");
 
 pub var texIdx: u8 = 0;
-pub var textures: std.AutoHashMap(u8, tex.Texture) = undefined;
 
 pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
     var result = try allocator.alloc.alloc(u8, 1);
@@ -21,7 +21,7 @@ pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
 
     gfx.gContext.makeCurrent();
 
-    try textures.put(texIdx, tex.newTextureSize(vecs.newVec2(0, 0)));
+    try sb.textureManager.textures.put(&.{texIdx}, tex.newTextureSize(vecs.newVec2(0, 0)));
 
     gfx.gContext.makeNotCurrent();
 
@@ -42,16 +42,16 @@ pub fn readGfxDestroy(_: ?*vm.VM) ![]const u8 {
 
 pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
     var idx = data[0];
-    var texture = textures.get(idx);
+    var texture = sb.textureManager.get(&.{idx});
     if (texture == null) return;
 
     gfx.gContext.makeCurrent();
 
-    tex.freeTexture(&texture.?);
+    tex.freeTexture(texture.?);
 
     gfx.gContext.makeNotCurrent();
 
-    _ = textures.remove(idx);
+    _ = sb.textureManager.textures.remove(&.{idx});
 }
 
 // /fake/gfx/upload
@@ -64,7 +64,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
     var idx = data[0];
     var image = data[1..];
 
-    var texture = textures.getPtr(idx);
+    var texture = sb.textureManager.get(&.{idx});
     if (texture == null) return;
 
     gfx.gContext.makeCurrent();
@@ -85,8 +85,6 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
         .parent = parent,
         .protected = true,
     };
-
-    textures = std.AutoHashMap(u8, tex.Texture).init(allocator.alloc);
 
     var file = try allocator.alloc.create(files.File);
     file.* = .{

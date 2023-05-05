@@ -52,14 +52,6 @@ pub const GSWindowed = struct {
 
     color: cols.Color = cols.newColor(0, 0, 0, 1),
 
-    webtex: *tex.Texture,
-    wintex: *tex.Texture,
-    emailtex: *tex.Texture,
-    notiftex: *tex.Texture,
-    editortex: *tex.Texture,
-    scrolltex: *tex.Texture,
-    explorertex: *tex.Texture,
-
     pub var deskSize: *vecs.Vector2 = undefined;
 
     var globalSelf: *Self = undefined;
@@ -125,7 +117,7 @@ pub const GSWindowed = struct {
     pub fn notification(event: windowEvs.EventNotification) bool {
         globalSelf.notifs.append(
             .{
-                .texture = globalSelf.notiftex,
+                .texture = "notif",
                 .data = .{
                     .title = event.title,
                     .text = event.text,
@@ -154,9 +146,10 @@ pub const GSWindowed = struct {
             return true;
         }
         if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
-            gfx.gContext.makeCurrent();
-            tex.uploadTextureFile(globalSelf.wallpaper.texture, event.value) catch return false;
-            gfx.gContext.makeNotCurrent();
+            // TODO: texman reload
+            // gfx.gContext.makeCurrent();
+            // tex.uploadTextureFile(globalSelf.wallpaper.texture, event.value) catch return false;
+            // gfx.gContext.makeNotCurrent();
 
             return true;
         }
@@ -171,7 +164,7 @@ pub const GSWindowed = struct {
         globalSelf = self;
 
         win.WindowContents.scrollSp[0] = .{
-            .texture = self.scrolltex,
+            .texture = "scroll",
             .data = .{
                 .source = rect.newRect(0, 0, 7.0 / 16.0, 6.0 / 16.0),
                 .size = vecs.newVec2(14, 12),
@@ -179,7 +172,7 @@ pub const GSWindowed = struct {
         };
 
         win.WindowContents.scrollSp[1] = .{
-            .texture = self.scrolltex,
+            .texture = "scroll",
             .data = .{
                 .source = rect.newRect(0, 6.0 / 16.0, 7.0 / 16.0, 4.0 / 16.0),
                 .size = vecs.newVec2(14, 64),
@@ -187,7 +180,7 @@ pub const GSWindowed = struct {
         };
 
         win.WindowContents.scrollSp[2] = .{
-            .texture = self.scrolltex,
+            .texture = "scroll",
             .data = .{
                 .source = rect.newRect(0, 10.0 / 16.0, 7.0 / 16.0, 6.0 / 16.0),
                 .size = vecs.newVec2(14, 12),
@@ -195,7 +188,7 @@ pub const GSWindowed = struct {
         };
 
         win.WindowContents.scrollSp[3] = .{
-            .texture = self.scrolltex,
+            .texture = "scroll",
             .data = .{
                 .source = rect.newRect(7.0 / 16.0, 0.0 / 16.0, 7.0 / 16.0, 14.0 / 16.0),
                 .size = vecs.newVec2(14, 28),
@@ -212,7 +205,7 @@ pub const GSWindowed = struct {
         events.em.registerListener(systemEvs.EventSetSetting, settingSet);
 
         if (std.mem.eql(u8, self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
-            var window = win.Window.new(self.wintex, win.WindowData{
+            var window = win.Window.new("win", win.WindowData{
                 .source = rect.Rectangle{
                     .x = 0.0,
                     .y = 0.0,
@@ -425,7 +418,7 @@ pub const GSWindowed = struct {
         self.down = true;
         switch (btn) {
             0 => {
-                if (try self.bar.data.doClick(&self.windows, self.webtex, self.wintex, self.emailtex, self.editortex, self.explorertex, self.shader, self.mousepos)) {
+                if (try self.bar.data.doClick(&self.windows, self.shader, self.mousepos)) {
                     return;
                 }
 

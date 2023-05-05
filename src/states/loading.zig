@@ -10,6 +10,7 @@ const fm = @import("../util/files.zig");
 const audio = @import("../util/audio.zig");
 const conf = @import("../system/config.zig");
 const tex = @import("../util/texture.zig");
+const texMan = @import("../util/texmanager.zig");
 const font = @import("../util/font.zig");
 const gfx = @import("../util/graphics.zig");
 const wins = @import("../windows/all.zig");
@@ -21,17 +22,20 @@ const systemEvs = @import("../events/system.zig");
 pub const GSLoading = struct {
     const Self = @This();
 
-    const winpath: []const u8 = "window_frame_path";
-    const webpath: []const u8 = "web_texture_path";
-    const wallpath: []const u8 = "wallpaper_path";
-    const barpath: []const u8 = "bar_texture_path";
-    const notifpath: []const u8 = "notif_texture_path";
-    const editorpath: []const u8 = "editor_texture_path";
-    const scrollpath: []const u8 = "scroll_texture_path";
-    const emailpath: []const u8 = "email_texture_path";
-    const explorerpath: []const u8 = "explorer_texture_path";
-    const cursorpath: []const u8 = "cursor_texture_path";
-    const barlogopath: []const u8 = "bar_logo_path";
+    const textureNames = [_][2][]const u8{
+        .{ "window_frame_path", "win" },
+        .{ "web_texture_path", "web" },
+        .{ "wallpaper_path", "wall" },
+        .{ "bar_texture_path", "bar" },
+        .{ "notif_texture_path", "notif" },
+        .{ "editor_texture_path", "editor" },
+        .{ "scroll_texture_path", "scroll" },
+        .{ "email_texture_path", "email" },
+        .{ "explorer_texture_path", "explorer" },
+        .{ "cursor_texture_path", "cursor" },
+        .{ "bar_logo_path", "barlogo" },
+    };
+
     const loginpath: []const u8 = "/cont/snds/login.era";
     const messagepath: []const u8 = "/cont/snds/message.era";
     const settingspath: []const u8 = "/conf/system.cfg";
@@ -48,17 +52,7 @@ pub const GSLoading = struct {
 
     loading: *const fn (*Self) void,
 
-    wintex: *tex.Texture,
-    webtex: *tex.Texture,
-    bartex: *tex.Texture,
-    walltex: *tex.Texture,
-    emailtex: *tex.Texture,
-    notiftex: *tex.Texture,
-    editortex: *tex.Texture,
-    scrolltex: *tex.Texture,
-    cursortex: *tex.Texture,
-    barlogotex: *tex.Texture,
-    explorertex: *tex.Texture,
+    textureManager: *texMan.TextureManager,
     face: *font.Font,
 
     logo_sprite: sp.Sprite,
@@ -83,41 +77,34 @@ pub const GSLoading = struct {
         defer self.done.storeUnchecked(true);
 
         worker.texture.settingManager = self.settingManager;
+        worker.texture.textureManager = self.textureManager;
 
         // files
-        try self.loader.enqueue(self.disk, &zero, worker.files.loadFiles);
+        try self.loader.enqueue(*?[]u8, *const u8, self.disk, &zero, worker.files.loadFiles);
 
         // settings
-        try self.loader.enqueue(&settingspath, self.settingManager, worker.settings.loadSettings);
+        try self.loader.enqueue(*const []const u8, *conf.SettingManager, &settingspath, self.settingManager, worker.settings.loadSettings);
 
         // textures
-        try self.loader.enqueue(&winpath, self.wintex, worker.texture.loadTexture);
-        try self.loader.enqueue(&webpath, self.webtex, worker.texture.loadTexture);
-        try self.loader.enqueue(&barpath, self.bartex, worker.texture.loadTexture);
-        try self.loader.enqueue(&wallpath, self.walltex, worker.texture.loadTexture);
-        try self.loader.enqueue(&notifpath, self.notiftex, worker.texture.loadTexture);
-        try self.loader.enqueue(&emailpath, self.emailtex, worker.texture.loadTexture);
-        try self.loader.enqueue(&scrollpath, self.scrolltex, worker.texture.loadTexture);
-        try self.loader.enqueue(&editorpath, self.editortex, worker.texture.loadTexture);
-        try self.loader.enqueue(&cursorpath, self.cursortex, worker.texture.loadTexture);
-        try self.loader.enqueue(&barlogopath, self.barlogotex, worker.texture.loadTexture);
-        try self.loader.enqueue(&explorerpath, self.explorertex, worker.texture.loadTexture);
+        for (&textureNames) |*textureEntry| {
+            try self.loader.enqueue(*const []const u8, *const []const u8, &textureEntry[0], &textureEntry[1], worker.texture.loadTexture);
+        }
 
         // delay
-        try self.loader.enqueue(&delay, &zero, worker.delay.loadDelay);
+        try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
 
         // sounds
-        try self.loader.enqueue(&loginpath, &self.login_snd, worker.sound.loadSound);
-        try self.loader.enqueue(&messagepath, self.message_snd, worker.sound.loadSound);
+        try self.loader.enqueue(*const []const u8, *audio.Sound, &loginpath, &self.login_snd, worker.sound.loadSound);
+        try self.loader.enqueue(*const []const u8, *audio.Sound, &messagepath, self.message_snd, worker.sound.loadSound);
 
         // mail
-        try self.loader.enqueue(&zero, &zero, worker.mail.loadMail);
+        try self.loader.enqueue(*const u8, *const u8, &zero, &zero, worker.mail.loadMail);
 
         // fonts
-        try self.loader.enqueue(&fontpath, self.face, worker.font.loadFontPath);
+        try self.loader.enqueue(*const []const u8, *font.Font, &fontpath, self.face, worker.font.loadFontPath);
 
         // delay
-        try self.loader.enqueue(&delay, &zero, worker.delay.loadDelay);
+        try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
 
         self.loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
         self.loader.run(&self.load_progress) catch {
@@ -127,24 +114,15 @@ pub const GSLoading = struct {
         // setup some pointers
         pseudo.snd.audioPtr = self.audio_man;
         pseudo.win.shader = self.shader;
-        pseudo.win.wintex = self.wintex;
 
         wins.settings.settingManager = self.settingManager;
-        wins.editor.wintex = self.wintex;
-        wins.email.wintex = self.wintex;
-        wins.settings.wintex = self.wintex;
         wins.email.notif = .{
-            .texture = self.emailtex,
+            .texture = "email",
             .data = .{
                 .source = rect.newRect(0.5, 0.75, 0.5, 0.25),
                 .size = undefined,
             },
         };
-
-        shell.wintex = self.wintex;
-        shell.webtex = self.webtex;
-        shell.edittex = self.editortex;
-        shell.shader = self.shader;
     }
 
     pub fn deinit(self: *Self) !void {
