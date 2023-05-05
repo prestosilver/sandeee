@@ -35,7 +35,7 @@ pub fn Drawer(comptime T: type) type {
 pub const QueueEntry = struct {
     update: bool,
     shader: shd.Shader,
-    texture: *tex.Texture,
+    texture: []const u8,
     verts: va.VertArray,
     scissor: ?rect.Rectangle = null,
     hash: ?u32 = null,
@@ -61,6 +61,8 @@ pub const QueueEntry = struct {
 pub const SpriteBatch = struct {
     prevQueue: []QueueEntry,
     queue: []QueueEntry,
+    queueLock: std.Thread.Mutex = .{},
+
     buffers: []c.GLuint,
     scissor: ?rect.Rectangle = null,
     size: *vecs.Vector2,
@@ -68,9 +70,7 @@ pub const SpriteBatch = struct {
     pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: *shd.Shader, pos: vecs.Vector3) !void {
         var entry = QueueEntry{
             .update = true,
-            .texture = textureManager.get(drawer.texture) orelse {
-                return error.TextureNotFound;
-            },
+            .texture = drawer.texture,
             .verts = try drawer.getVerts(pos),
             .shader = shader.*,
         };
@@ -79,14 +79,16 @@ pub const SpriteBatch = struct {
     }
 
     pub fn addEntry(sb: *SpriteBatch, entry: *QueueEntry) !void {
-        entry.scissor = sb.scissor;
+        sb.queueLock.lock();
+        defer sb.queueLock.unlock();
 
+        entry.scissor = sb.scissor;
         if (sb.queue.len == 0) {
             sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
             sb.queue[sb.queue.len - 1] = entry.*;
         } else {
             var last = &sb.queue[sb.queue.len - 1];
-            if (last.texture.tex == entry.texture.tex and
+            if (std.mem.eql(u8, last.texture, entry.texture) and
                 last.shader.id == entry.shader.id and
                 entry.scissor != null and last.scissor != null and
                 rect.Rectangle.equal(last.scissor.?, entry.scissor.?))
@@ -101,6 +103,9 @@ pub const SpriteBatch = struct {
     }
 
     pub fn render(sb: *SpriteBatch) !void {
+        sb.queueLock.lock();
+        defer sb.queueLock.unlock();
+
         if (sb.queue.len != 0) {
             for (sb.queue, 0..) |_, idx| {
                 if (idx >= sb.prevQueue.len) break;
@@ -136,11 +141,14 @@ pub const SpriteBatch = struct {
         var cshader: c.GLuint = 0;
         var cscissor: ?rect.Rectangle = null;
 
-        for (sb.queue, 0..) |*entry, idx| {
-            if (@ptrToInt(entry.texture) == 0) continue;
+        for (sb.queue, 0..) |entry, idx| {
+            var targTex = textureManager.get(entry.texture) orelse {
+                std.log.info("{any}", .{entry.texture});
+                @panic("Texture not found");
+            };
 
-            if (ctex != entry.texture.tex)
-                c.glBindTexture(c.GL_TEXTURE_2D, entry.texture.tex);
+            if (ctex != targTex.tex)
+                c.glBindTexture(c.GL_TEXTURE_2D, targTex.tex);
 
             if (cshader != entry.shader.id)
                 c.glUseProgram(entry.shader.id);
@@ -172,7 +180,7 @@ pub const SpriteBatch = struct {
 
             c.glBindBuffer(c.GL_ARRAY_BUFFER, sb.buffers[idx]);
 
-            ctex = entry.texture.tex;
+            ctex = targTex.tex;
             cshader = entry.shader.id;
             cscissor = entry.scissor;
 

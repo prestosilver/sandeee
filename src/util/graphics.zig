@@ -14,7 +14,7 @@ pub const Context = struct {
     window: ?*c.GLFWwindow,
     color: col.Color,
     shaders: std.ArrayList(shd.Shader),
-    lock: std.Thread.Mutex = undefined,
+    lock: std.Thread.Mutex = .{},
     size: vecs.Vector2,
 
     pub fn makeCurrent(self: *Context) void {
@@ -34,7 +34,7 @@ pub const Context = struct {
 
 export fn errorCallback(err: c_int, description: [*c]const u8) void {
     std.log.info("Error: {s}, {}\n", .{ description, err });
-    std.c.exit(1);
+    @panic("GLFW Error");
 }
 
 const GfxError = error{

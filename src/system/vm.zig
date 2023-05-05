@@ -248,9 +248,16 @@ pub const VM = struct {
             self.allocator.free(self.args[idx]);
         }
 
+        var miscIter = self.miscData.iterator();
+
+        while (miscIter.next()) |entry| {
+            self.allocator.free(entry.value_ptr.*);
+        }
+
         self.allocator.free(self.args);
         self.allocator.free(self.heap);
         self.functions.deinit();
+        self.miscData.deinit();
         self.streams.deinit();
         self.out.deinit();
     }

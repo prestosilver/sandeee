@@ -54,7 +54,7 @@ pub const VMData = struct {
             .Rect = .{
                 .loc = vecs.newVec3(dst.x, dst.y, 0),
                 .s = spr.Sprite{
-                    .texture = texture,
+                    .texture = try allocator.alloc.dupe(u8, texture),
                     .data = spr.SpriteData.new(src, vecs.newVec2(dst.w, dst.h)),
                 },
             },
@@ -90,7 +90,9 @@ pub const VMData = struct {
                 .Text => {
                     allocator.alloc.free(item.Text.text);
                 },
-                .Rect => {},
+                .Rect => {
+                    allocator.alloc.free(item.Rect.s.texture);
+                },
             }
         }
 

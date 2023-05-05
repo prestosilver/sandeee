@@ -613,7 +613,9 @@ pub fn main() anyerror!void {
             // disable events on loading screen
             inputEvs.setup(ctx.window, currentState != .Loading);
 
+            sb.queueLock.lock();
             try sb.clear();
+            sb.queueLock.unlock();
         } else {
             // render this is in else to fix single frame bugs
             try blit();
@@ -630,6 +632,10 @@ pub fn main() anyerror!void {
     if (disk) |toFree| {
         allocator.alloc.free(toFree);
     }
+
+    try biosFace.deinit();
+    try mainFace.deinit();
+    try batch.textureManager.deinit();
 
     gfx.close(ctx);
     events.deinit();

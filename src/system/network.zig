@@ -1,5 +1,6 @@
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
+const network = @import("network");
 
 const ServeFileError = error{
     RecvHeaderEOF,
@@ -34,27 +35,37 @@ pub const Client = struct {
 pub const Server = struct {
     const BUFSIZ = 512;
 
-    stream: std.net.StreamServer,
     data: std.AutoHashMap(u8, []u8),
+    input: std.AutoHashMap(u8, []u8),
+    sock: network.Socket,
 
     pub fn init() !Server {
-        var listener = std.net.StreamServer.init(.{});
+        try network.init();
 
-        const self_addr = std.net.Address.initIp4([_]u8{ 0, 0, 0, 0 }, PORT);
+        var sock = try network.Socket.create(.ipv4, .tcp);
+        var bindAddr = network.EndPoint{
+            .address = network.Address{
+                .ipv4 = network.Address.IPv4.any,
+            },
+            .port = PORT,
+        };
 
-        try listener.listen(self_addr);
-
-        std.log.debug("Listening on {}", .{self_addr});
+        try sock.bind(bindAddr);
 
         return .{
-            .stream = listener,
+            .sock = sock,
             .data = std.AutoHashMap(u8, []u8).init(allocator.alloc),
+            .input = std.AutoHashMap(u8, []u8).init(allocator.alloc),
         };
     }
 
+    pub fn deinit(self: *Server) !void {
+        self.sock.deinit();
+        network.deinit();
+    }
+
     pub fn send(self: *Server, port: u8, data: []const u8) !void {
-        var dat = try allocator.alloc.alloc(u8, data.len);
-        std.mem.copy(u8, dat, data);
+        var dat = try allocator.alloc.dupe(u8, data);
 
         std.log.debug("send data to port {}", .{port});
 
@@ -63,34 +74,25 @@ pub const Server = struct {
 
     pub fn serve() !void {
         var recv_buf: [BUFSIZ]u8 = undefined;
-        var recv_total: usize = 0;
+
+        try server.sock.listen();
 
         while (true) {
-            var conn = try server.stream.accept();
-            std.log.debug("recv on conn {}", .{conn.address});
-            while (conn.stream.read(recv_buf[recv_total..])) |recv_len| {
-                if (recv_len == 0)
-                    break;
+            var client = try server.sock.accept();
+            defer client.close();
 
-                recv_total += recv_len;
+            std.log.info("client: {}", .{try client.getLocalEndPoint()});
 
-                if (recv_total > 1 and recv_total > 1 + recv_buf[1]) break;
+            const len = try client.receive(&recv_buf);
+            if (len == 0) continue;
 
-                if (recv_total >= recv_buf.len)
-                    return ServeFileError.RecvHeaderExceededBuffer;
-            } else |read_err| {
-                return read_err;
-            }
-
-            var port: u8 = recv_buf[0];
-            std.log.debug("port active {}", .{port});
+            var port = recv_buf[0];
+            if (len > 1)
+                try server.input.put(port, recv_buf[1..]);
 
             if (server.data.get(port)) |data| {
-                std.log.debug("send on port {}", .{port});
-                try conn.stream.writeAll(data);
-                _ = server.data.remove(port);
+                _ = try client.send(data);
             }
-            conn.stream.close();
         }
     }
 };

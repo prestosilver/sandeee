@@ -27,7 +27,6 @@ pub fn saveEmailsState(path: []const u8) !void {
 pub fn loadEmailsState(path: []const u8) !void {
     if (try files.root.getFile(path)) |file| {
         var conts = try file.read(null);
-        defer allocator.alloc.free(conts);
 
         for (emails.items) |*email| {
             if (conts.len < email.id + 1) continue;
@@ -154,6 +153,7 @@ pub fn deinit() void {
         allocator.alloc.free(email.from);
         allocator.alloc.free(email.subject);
         allocator.alloc.free(email.contents);
+        allocator.alloc.free(email.conditionData);
     }
 
     emails.deinit();

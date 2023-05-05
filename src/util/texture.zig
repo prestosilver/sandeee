@@ -4,7 +4,14 @@ const c = @import("../c.zig");
 const files = @import("../system/files.zig");
 const gfx = @import("graphics.zig");
 
-pub const Texture = struct { tex: c.GLuint, size: vecs.Vector2 };
+pub const Texture = struct {
+    tex: c.GLuint,
+    size: vecs.Vector2,
+
+    pub fn deinit(self: *Texture) void {
+        c.glDeleteTextures(1, &self.tex);
+    }
+};
 
 pub const imageError = error{
     WrongSize,

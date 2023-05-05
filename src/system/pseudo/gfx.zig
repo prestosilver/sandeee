@@ -21,7 +21,9 @@ pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
 
     gfx.gContext.makeCurrent();
 
-    try sb.textureManager.textures.put(&.{texIdx}, tex.newTextureSize(vecs.newVec2(0, 0)));
+    var id = try allocator.alloc.dupe(u8, result);
+
+    try sb.textureManager.textures.put(id, tex.newTextureSize(vecs.newVec2(0, 0)));
 
     gfx.gContext.makeNotCurrent();
 

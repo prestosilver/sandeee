@@ -10,8 +10,10 @@ const tex = @import("texture.zig");
 const files = @import("../system/files.zig");
 const c = @import("../c.zig");
 
+var fontId: u8 = 0;
+
 pub const Font = struct {
-    tex: tex.Texture,
+    tex: []const u8,
     size: f32,
     chars: [256]Char,
 
@@ -32,7 +34,16 @@ pub const Font = struct {
         return error.NotFound;
     }
 
+    pub fn deinit(self: *Font) !void {
+        var texture = sb.textureManager.textures.fetchRemove(self.tex);
+        texture.?.value.deinit();
+
+        allocator.alloc.free(self.tex);
+    }
+
     pub fn initMem(data: []const u8) !Font {
+        if (fontId == 255) @panic("Max Fonts Reached");
+
         if (!std.mem.eql(u8, data[0..4], "efnt")) return error.BadFile;
 
         var charWidth = @intCast(c_uint, data[4]);
@@ -41,8 +52,10 @@ pub const Font = struct {
         var atlasSize = vec.newVec2(128 * @intToFloat(f32, charWidth), 2 * @intToFloat(f32, charHeight));
 
         var result: Font = undefined;
-        c.glGenTextures(1, &result.tex.tex);
-        c.glBindTexture(c.GL_TEXTURE_2D, result.tex.tex);
+        var texture: c.GLuint = undefined;
+
+        c.glGenTextures(1, &texture);
+        c.glBindTexture(c.GL_TEXTURE_2D, texture);
 
         c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
         c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
@@ -100,6 +113,15 @@ pub const Font = struct {
         }
 
         result.size = @intToFloat(f32, charHeight * 2);
+
+        result.tex = try std.fmt.allocPrint(allocator.alloc, "font{}", .{fontId});
+
+        try sb.textureManager.textures.put(result.tex, .{
+            .tex = texture,
+            .size = atlasSize,
+        });
+
+        fontId += 1;
 
         return result;
     }
@@ -262,7 +284,7 @@ pub const Font = struct {
 
         var entry = sb.QueueEntry{
             .update = true,
-            .texture = &self.tex,
+            .texture = self.tex,
             .verts = vertarray,
             .shader = params.shader.*,
         };

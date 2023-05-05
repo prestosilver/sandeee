@@ -38,11 +38,19 @@ pub const SettingManager = struct {
             try out.appendSlice("\"\n");
         }
 
-        try files.root.writeFile("/conf/system.cfg", try allocator.alloc.dupe(u8, out.items), null);
+        try files.root.writeFile("/conf/system.cfg", out.items, null);
     }
 
     pub fn deinit(self: *SettingManager) !void {
         try self.save();
+
+        var iter = self.settings.iterator();
+
+        while (iter.next()) |*entry| {
+            allocator.alloc.free(entry.value_ptr.*);
+            allocator.alloc.free(entry.key_ptr.*);
+        }
+
         self.*.settings.deinit();
     }
 };
