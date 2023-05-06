@@ -12,6 +12,8 @@ pub const WallData = struct {
         Tile,
         Center,
         Stretch,
+        Fill,
+        Zoom,
     };
 
     dims: *vecs.Vector2,
@@ -60,6 +62,7 @@ pub const WallData = struct {
                 pos.x = 0;
                 pos.y = 0;
             },
+            else => return result,
         }
 
         try addQuad(&result, pos, source);

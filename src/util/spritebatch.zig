@@ -142,17 +142,6 @@ pub const SpriteBatch = struct {
         var cscissor: ?rect.Rectangle = null;
 
         for (sb.queue, 0..) |entry, idx| {
-            var targTex = textureManager.get(entry.texture) orelse {
-                std.log.info("{any}", .{entry.texture});
-                @panic("Texture not found");
-            };
-
-            if (ctex != targTex.tex)
-                c.glBindTexture(c.GL_TEXTURE_2D, targTex.tex);
-
-            if (cshader != entry.shader.id)
-                c.glUseProgram(entry.shader.id);
-
             var uscissor = false;
 
             if (((cscissor != null) != (entry.scissor != null))) {
@@ -177,6 +166,19 @@ pub const SpriteBatch = struct {
                 c.glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
                 c.glClear(c.GL_COLOR_BUFFER_BIT);
             }
+
+            if (entry.texture.len == 0) continue;
+
+            var targTex = if (!std.mem.eql(u8, entry.texture, "none")) textureManager.get(entry.texture) orelse {
+                std.log.info("{any}", .{entry.texture});
+                @panic("Texture not found");
+            } else &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0) };
+
+            if (ctex != targTex.tex)
+                c.glBindTexture(c.GL_TEXTURE_2D, targTex.tex);
+
+            if (cshader != entry.shader.id)
+                c.glUseProgram(entry.shader.id);
 
             c.glBindBuffer(c.GL_ARRAY_BUFFER, sb.buffers[idx]);
 

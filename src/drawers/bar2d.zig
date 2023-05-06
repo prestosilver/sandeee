@@ -13,6 +13,8 @@ const gfx = @import("../util/graphics.zig");
 const spr = @import("../drawers/sprite2d.zig");
 const c = @import("../c.zig");
 const allocator = @import("../util/allocator.zig");
+const popups = @import("popup2d.zig");
+const files = @import("../system/files.zig");
 
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
@@ -260,8 +262,22 @@ pub const BarData = struct {
                             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         6 => {
-                            // TODO confirmation
-                            c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+                            var adds = try allocator.alloc.create(popups.all.quit.PopupQuit);
+                            adds.* = .{};
+
+                            events.em.sendEvent(windowEvs.EventCreatePopup{
+                                .global = true,
+                                .popup = .{
+                                    .texture = "win",
+                                    .data = .{
+                                        .title = "Quit SandEEE",
+                                        .source = rect.newRect(0, 0, 1, 1),
+                                        .size = vecs.newVec2(350, 125),
+                                        .parentPos = undefined,
+                                        .contents = popups.PopupData.PopupContents.init(adds),
+                                    },
+                                },
+                            });
                         },
                         else => {},
                     }
@@ -277,6 +293,11 @@ pub const BarData = struct {
         var bnds = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
 
         return bnds.contains(pos) or added;
+    }
+
+    pub fn submitPopup(_: ?*files.File, data: *anyopaque) !void {
+        _ = data;
+        c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
     }
 
     pub fn getVerts(self: *BarData, _: vecs.Vector3) !va.VertArray {

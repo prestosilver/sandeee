@@ -54,6 +54,9 @@ const fontFragShader = @embedFile("shaders/ffrag.glsl");
 const crtFragShader = @embedFile("shaders/crtfrag.glsl");
 const crtVertShader = @embedFile("shaders/crtvert.glsl");
 
+const clearFragShader = @embedFile("shaders/clearfrag.glsl");
+const clearVertShader = @embedFile("shaders/vert.glsl");
+
 // embed images
 const logoImage = @embedFile("images/logo.eia");
 const loadImage = @embedFile("images/load.eia");
@@ -75,6 +78,11 @@ const crt_shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = crtVertShader, .kind = c.GL_VERTEX_SHADER },
 };
 
+const clear_shader_files = [2]shd.ShaderFile{
+    shd.ShaderFile{ .contents = clearFragShader, .kind = c.GL_FRAGMENT_SHADER },
+    shd.ShaderFile{ .contents = clearVertShader, .kind = c.GL_VERTEX_SHADER },
+};
+
 var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
 var currentState: systemEvs.State = .Disks;
 
@@ -85,6 +93,7 @@ var loader = worker.WorkerContext{ .queue = &loader_queue };
 // shaders
 var font_shader: shd.Shader = undefined;
 var crt_shader: shd.Shader = undefined;
+var clear_shader: shd.Shader = undefined;
 var shader: shd.Shader = undefined;
 
 // the selected disk
@@ -318,6 +327,8 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    sb.scissor = null;
+
     errorState = @enumToInt(currentState);
     gameStates.getPtr(@intToEnum(systemEvs.State, errorState)).deinit() catch {};
 
@@ -406,6 +417,7 @@ pub fn main() anyerror!void {
     try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &shader_files, &shader, worker.shader.loadShader);
     try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &font_shader_files, &font_shader, worker.shader.loadShader);
     try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &crt_shader_files, &crt_shader, worker.shader.loadShader);
+    try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &clear_shader_files, &clear_shader, worker.shader.loadShader);
 
     // fonts
     const biosFont: []const u8 = @embedFile("images/main.eff");
@@ -488,6 +500,7 @@ pub fn main() anyerror!void {
         .sb = &sb,
         .shader = &shader,
         .font_shader = &font_shader,
+        .clearShader = &clear_shader,
         .face = &mainFace,
         .settingsManager = &settingManager,
         .windows = std.ArrayList(win.Window).init(allocator.alloc),

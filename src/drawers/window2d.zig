@@ -406,7 +406,7 @@ pub const WindowData = struct {
 
         try batch.addEntry(&.{
             .update = true,
-            .texture = batch.queue[batch.queue.len - 1].texture,
+            .texture = "",
             .verts = try va.VertArray.init(),
             .shader = shader.*,
             .clear = self.contents.clearColor,

@@ -59,8 +59,8 @@ pub const VertArray = struct {
 
     pub fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {
         try va.array.append(Vert{
-            .x = pos.x,
-            .y = pos.y,
+            .x = @round(pos.x),
+            .y = @round(pos.y),
             .z = pos.z,
             .u = uv.x,
             .v = uv.y,

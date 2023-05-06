@@ -25,6 +25,7 @@ const cursor = @import("../drawers/cursor2d.zig");
 const wins = @import("../windows/all.zig");
 const popups = @import("../drawers/popup2d.zig");
 const notifications = @import("../drawers/notification2d.zig");
+const va = @import("../util/vertArray.zig");
 const c = @import("../c.zig");
 
 pub const GSWindowed = struct {
@@ -45,10 +46,13 @@ pub const GSWindowed = struct {
     sb: *batch.SpriteBatch,
     shader: *shd.Shader,
     font_shader: *shd.Shader,
+    clearShader: *shd.Shader,
     face: *font.Font,
     settingsManager: *conf.SettingManager,
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
+
+    popup: ?popups.Popup = null,
 
     color: cols.Color = cols.newColor(0, 0, 0, 1),
 
@@ -57,6 +61,11 @@ pub const GSWindowed = struct {
     var globalSelf: *Self = undefined;
 
     fn createPopup(event: windowEvs.EventCreatePopup) bool {
+        if (event.global) {
+            globalSelf.popup = event.popup;
+            return false;
+        }
+
         for (globalSelf.windows.items) |*window| {
             if (window.data.active) {
                 window.data.popup = event.popup;
@@ -95,7 +104,7 @@ pub const GSWindowed = struct {
         }
 
         self.windows.append(event.window) catch {
-            std.log.err("couldnt create window!", .{});
+            std.log.err("couldn't create window!", .{});
             return false;
         };
 
@@ -303,6 +312,31 @@ pub const GSWindowed = struct {
             try notif.data.drawContents(self.sb, self.shader, self.face, self.font_shader, idx);
         }
 
+        // draw popup if exists
+        if (self.popup) |*popup| {
+            var clearSprite = sp.Sprite{
+                .texture = "none",
+                .data = .{
+                    .size = vecs.newVec2(deskSize.x, deskSize.y),
+                    .source = rect.newRect(0, 0, deskSize.x, deskSize.y),
+                },
+            };
+
+            try self.sb.draw(sp.Sprite, &clearSprite, self.clearShader, vecs.newVec3(0, 0, 0));
+
+            popup.data.parentPos = rect.newRect(0, 0, deskSize.x, deskSize.y);
+
+            try self.sb.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
+
+            // update scisor region
+            self.sb.scissor = popup.data.scissor();
+
+            try popup.data.drawContents(self.font_shader, self.face, self.sb);
+
+            // reset scisor jic
+            self.sb.scissor = null;
+        }
+
         // draw cursor
         try self.sb.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
     }
@@ -335,41 +369,44 @@ pub const GSWindowed = struct {
 
         self.cursor.data.index = 0;
         self.cursor.data.flip = false;
-        for (self.windows.items, 0..) |_, idx| {
-            if (self.windows.items[idx].data.min) continue;
 
-            var pos = self.windows.items[idx].data.pos;
-            pos.x -= 10;
-            pos.y -= 10;
-            pos.w += 20;
-            pos.h += 20;
+        if (self.popup == null) {
+            for (self.windows.items, 0..) |_, idx| {
+                if (self.windows.items[idx].data.min) continue;
 
-            if (pos.contains(self.mousepos)) {
-                var mode = self.windows.items[idx].data.getDragMode(self.mousepos);
-                self.cursor.data.flip = switch (mode) {
-                    .None => false,
-                    .Move => false,
-                    .Close => false,
-                    .Full => false,
-                    .Min => false,
-                    .ResizeL => false,
-                    .ResizeR => true,
-                    .ResizeB => false,
-                    .ResizeLB => false,
-                    .ResizeRB => true,
-                };
-                self.cursor.data.index = switch (mode) {
-                    .None => 0,
-                    .Move => 3,
-                    .Close => 0,
-                    .Full => 0,
-                    .Min => 0,
-                    .ResizeL => 1,
-                    .ResizeR => 1,
-                    .ResizeB => 2,
-                    .ResizeLB => 4,
-                    .ResizeRB => 4,
-                };
+                var pos = self.windows.items[idx].data.pos;
+                pos.x -= 10;
+                pos.y -= 10;
+                pos.w += 20;
+                pos.h += 20;
+
+                if (pos.contains(self.mousepos)) {
+                    var mode = self.windows.items[idx].data.getDragMode(self.mousepos);
+                    self.cursor.data.flip = switch (mode) {
+                        .None => false,
+                        .Move => false,
+                        .Close => false,
+                        .Full => false,
+                        .Min => false,
+                        .ResizeL => false,
+                        .ResizeR => true,
+                        .ResizeB => false,
+                        .ResizeLB => false,
+                        .ResizeRB => true,
+                    };
+                    self.cursor.data.index = switch (mode) {
+                        .None => 0,
+                        .Move => 3,
+                        .Close => 0,
+                        .Full => 0,
+                        .Min => 0,
+                        .ResizeL => 1,
+                        .ResizeR => 1,
+                        .ResizeB => 2,
+                        .ResizeLB => 4,
+                        .ResizeRB => 4,
+                    };
+                }
             }
         }
     }
@@ -377,6 +414,12 @@ pub const GSWindowed = struct {
     pub fn keypress(self: *Self, key: c_int, mods: c_int, down: bool) !bool {
         if (self.bar.data.btnActive and !down) {
             self.bar.data.btnActive = false;
+
+            return false;
+        }
+
+        if (self.popup) |*popup| {
+            try popup.data.contents.key(key, mods, down);
 
             return false;
         }
@@ -401,6 +444,10 @@ pub const GSWindowed = struct {
             return;
         }
 
+        if (self.popup) |*popup| {
+            return popup.data.contents.char(code, mods);
+        }
+
         for (self.windows.items) |*window| {
             if (!window.data.active) continue;
 
@@ -415,6 +462,14 @@ pub const GSWindowed = struct {
     }
 
     pub fn mousepress(self: *Self, btn: c_int) !void {
+        if (self.popup) |*popup| {
+            if (popup.data.click(self.mousepos)) {
+                self.popup = null;
+            }
+
+            return;
+        }
+
         self.down = true;
         switch (btn) {
             0 => {
@@ -510,6 +565,8 @@ pub const GSWindowed = struct {
 
     pub fn mousemove(self: *Self, pos: vecs.Vector2) !void {
         self.mousepos = pos;
+
+        if (self.popup != null) return;
 
         if (self.dragging) |dragging| {
             var old = dragging.data.pos;
