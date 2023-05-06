@@ -10,9 +10,6 @@ fn range(len: usize) []const void {
 }
 
 pub const VM = struct {
-    var cnts = std.EnumArray(Operation.Code, u64).initFill(0);
-    var times = std.EnumArray(Operation.Code, u64).initFill(0);
-
     const VMError = error{
         StackUnderflow,
         ValueMissing,
@@ -184,6 +181,9 @@ pub const VM = struct {
             Create,
             Size,
             Len,
+
+            Last,
+            _,
         };
 
         code: Code,
@@ -1010,7 +1010,7 @@ pub const VM = struct {
                 }
 
                 if (b == .value) {
-                    var appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, std.mem.asBytes(b.value) });
+                    var appends = try std.fmt.allocPrint(self.allocator, "{s}{}", .{ a.string.*, b.value.* });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
@@ -1031,6 +1031,7 @@ pub const VM = struct {
 
                 return;
             },
+            else => {},
         }
         return error.InvalidOp;
     }
@@ -1130,9 +1131,13 @@ pub const VM = struct {
             if (self.functions.getPtr(inside)) |func| {
                 oper = func.*.ops[self.pc - 1];
             } else {
-                var result = try std.fmt.allocPrint(self.allocator, "In function '?' @ {}:\nOperation: {s}", .{ self.pc, @tagName(oper.code) });
-
-                return result;
+                if (@enumToInt(oper.code) < @enumToInt(Operation.Code.Last)) {
+                    var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: {s}", .{ self.inside_fn, self.pc, @tagName(oper.code) });
+                    return result;
+                } else {
+                    var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: ?", .{ self.inside_fn, self.pc });
+                    return result;
+                }
             }
         } else {
             oper = self.code.?[self.pc - 1];
@@ -1170,37 +1175,20 @@ pub const VM = struct {
         while (!try self.runStep()) {}
     }
 
-    pub fn runTime(self: *VM, ns: u64, comptime prof: bool) !bool {
+    pub fn runTime(self: *VM, ns: u64, comptime _: bool) !bool {
         var timer = try std.time.Timer.start();
 
         timer.reset();
 
-        if (prof) {
-            while (timer.read() < ns and !self.done() and !self.yield) {
-                var start = timer.read();
-
-                var op = (try self.getOper() orelse return true).code;
-                if (try self.runStep()) {
-                    return true;
-                }
-                cnts.getPtr(op).* += 1;
-                times.getPtr(op).* += timer.read() - start;
+        while (timer.read() < ns and !self.done() and !self.yield) {
+            if (try self.runStep()) {
+                return true;
             }
-
-            self.yield = false;
-
-            return self.done();
-        } else {
-            while (timer.read() < ns and !self.done() and !self.yield) {
-                if (try self.runStep()) {
-                    return true;
-                }
-            }
-
-            self.yield = false;
-
-            return self.done();
         }
+
+        self.yield = false;
+
+        return self.done();
     }
 
     pub fn runNum(self: *VM, num: u64) !bool {
