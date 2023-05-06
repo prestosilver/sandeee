@@ -10,12 +10,14 @@ const vecs = @import("../../math/vecs.zig");
 const fnt = @import("../../util/font.zig");
 const events = @import("../../util/events.zig");
 const windowEvs = @import("../../events/window.zig");
+const systemEvs = @import("../../events/system.zig");
+const gfx = @import("../../util/graphics.zig");
 const c = @import("../../c.zig");
 
 pub const PopupQuit = struct {
     const Self = @This();
 
-    lol: u32,
+    lol: u32 = 0,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
         _ = self;
@@ -30,28 +32,23 @@ pub const PopupQuit = struct {
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
         if (!down) return;
 
-        if (keycode == c.GLFW_KEY_BACKSPACE and self.text.len != 0) {
-            self.text = try allocator.alloc.realloc(self.text, self.text.len - 1);
-            self.err = "";
-        }
-
-        if (keycode == c.GLFW_KEY_ENTER) {
-            try self.submit(self.text, self.data);
-            events.em.sendEvent(windowEvs.EventClosePopup{});
-        }
+        _ = self;
+        _ = keycode;
     }
 
-    pub fn char(self: *Self, keycode: u32, _: i32) !void {
-        if (keycode < 256) {
-            self.err = "";
+    pub fn char(_: *Self, _: u32, _: i32) !void {}
 
-            self.text = try allocator.alloc.realloc(self.text, self.text.len + 1);
-            self.text[self.text.len - 1] = @intCast(u8, keycode);
+    pub fn click(_: *Self, mousepos: vecs.Vector2) !void {
+        if (mousepos.x < 100) {
+            c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+        } else {
+            events.em.sendEvent(systemEvs.EventStateChange{
+                .targetState = .Disks,
+            });
         }
     }
 
     pub fn deinit(self: *Self) !void {
-        allocator.alloc.free(self.text);
         allocator.alloc.destroy(self);
     }
 };

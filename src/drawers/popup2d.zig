@@ -20,6 +20,7 @@ pub const PopupData = struct {
             draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) anyerror!void,
             key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
             char: *const fn (*anyopaque, u32, i32) anyerror!void,
+            click: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
             deinit: *const fn (*anyopaque) anyerror!void,
         };
 
@@ -36,6 +37,10 @@ pub const PopupData = struct {
 
         pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
             return self.vtable.key(self.ptr, keycode, mods, down);
+        }
+
+        pub fn click(self: *Self, mousepos: vecs.Vector2) !void {
+            return self.vtable.click(self.ptr, mousepos);
         }
 
         pub fn deinit(self: *Self) !void {
@@ -76,11 +81,18 @@ pub const PopupData = struct {
                     return @call(.auto, ptr_info.Pointer.child.deinit, .{self});
                 }
 
+                fn clickImpl(pointer: *anyopaque, mousepos: vecs.Vector2) !void {
+                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+
+                    return @call(.auto, ptr_info.Pointer.child.click, .{ self, mousepos });
+                }
+
                 const vtable = VTable{
                     .draw = drawImpl,
                     .key = keyImpl,
                     .char = charImpl,
                     .deinit = deinitImpl,
+                    .click = clickImpl,
                 };
             };
 
@@ -172,6 +184,8 @@ pub const PopupData = struct {
         if (close.contains(mousepos)) {
             return true;
         }
+
+        self.contents.click(mousepos.sub(pos)) catch {};
 
         return false;
     }
