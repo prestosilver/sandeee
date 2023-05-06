@@ -1,0 +1,62 @@
+#include "content/eon/libs/libload.eon"
+#include "content/eon/libs/sys.eon"
+
+void error(value msg) {
+    print("Error: " & msg);
+    quit();
+}
+
+value processArgs() {
+    value file = getArg(1);
+
+    if (file == 0) {
+       error("Missing File");
+    }
+
+    return file;
+}
+
+value render(value win, value tex, value time) {
+    _WindowText(win, 0, 0, "" & time);
+    _WindowFlip(win);
+
+    return 0;
+}
+
+value main() {
+    setupLibLoad();
+    loadLib("/libs/window.ell");
+    loadLib("/libs/texture.ell");
+    loadLib("/libs/sound.ell");
+    loadLib("/libs/string.ell");
+
+    value input = processArgs();
+    value window = _WindowCreate();
+    value texture = _TextureCreate();
+    //value content = _TextureRead("/cont/imgs/player.eia");
+    //_TextureUpload(content, texture);
+
+    _SetWindowTitle(window, "PlayEEEr - " & input);
+
+    value inFile = open(input);
+
+    value inData = read(inFile, 10000000);
+
+    close(inFile);
+
+    _playSound(inData);
+
+    value time = _StringLength(inData);
+
+    time = time / 44100;
+
+    for (0; _WindowOpen(); 1) {
+        render(window, texture, time);
+    }
+
+    _TextureDestroy(texture);
+    _WindowDestroy(window);
+
+    asm "ret";
+}
+

@@ -30,7 +30,7 @@ loop:
     dup 1
     push 440
     mul
-    call "SquareWave"
+    call "squareWave"
     push 2
     div
 
