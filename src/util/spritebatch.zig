@@ -84,6 +84,7 @@ pub const SpriteBatch = struct {
 
         entry.scissor = sb.scissor;
         if (sb.queue.len == 0) {
+            entry.texture = try allocator.alloc.dupe(u8, entry.texture);
             sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
             sb.queue[sb.queue.len - 1] = entry.*;
         } else {
@@ -96,6 +97,7 @@ pub const SpriteBatch = struct {
                 try last.verts.array.appendSlice(entry.verts.items());
                 entry.verts.deinit();
             } else {
+                entry.texture = try allocator.alloc.dupe(u8, entry.texture);
                 sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
                 sb.queue[sb.queue.len - 1] = entry.*;
             }
@@ -173,6 +175,7 @@ pub const SpriteBatch = struct {
 
             var targTex = if (!std.mem.eql(u8, entry.texture, "none")) textureManager.get(entry.texture) orelse {
                 std.log.info("{any}", .{entry.texture});
+                sb.queueLock.unlock();
                 @panic("Texture not found");
             } else &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0) };
 
@@ -210,6 +213,7 @@ pub const SpriteBatch = struct {
         for (sb.prevQueue, 0..) |_, idx| {
             var e = sb.prevQueue[idx];
             e.verts.deinit();
+            allocator.alloc.free(e.texture);
         }
 
         allocator.alloc.free(sb.prevQueue);
@@ -221,10 +225,12 @@ pub const SpriteBatch = struct {
         for (sb.prevQueue, 0..) |_, idx| {
             var e = sb.prevQueue[idx];
             e.verts.deinit();
+            allocator.alloc.free(e.texture);
         }
         for (sb.queue, 0..) |_, idx| {
             var e = sb.queue[idx];
             e.verts.deinit();
+            allocator.alloc.free(e.texture);
         }
 
         allocator.alloc.free(sb.buffers);
