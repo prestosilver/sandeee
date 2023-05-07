@@ -326,7 +326,12 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
     return false;
 }
 
+var paniced: bool = false;
+
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    if (paniced) std.os.exit(0);
+    paniced = true;
+
     sb.scissor = null;
 
     errorState = @enumToInt(currentState);
