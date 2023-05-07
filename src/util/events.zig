@@ -34,6 +34,12 @@ pub const EventManager = struct {
     }
 
     pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) bool) void {
+        for (self.subs.items) |*item| {
+            if (@ptrToInt(item.calls) == @ptrToInt(callee)) {
+                return;
+            }
+        }
+
         var call = @ptrCast(*const fn (*void) bool, callee);
         var listener = Listener(*void){
             .name = @typeName(T),
