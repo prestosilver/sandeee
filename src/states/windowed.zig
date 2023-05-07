@@ -624,13 +624,15 @@ pub const GSWindowed = struct {
             }
 
             // max size
-            if (dragging.data.pos.w > dragging.data.contents.props.size.max.x) {
-                dragging.data.pos.w = old.w;
-                dragging.data.pos.x = old.x;
-            }
-            if (dragging.data.pos.h > dragging.data.contents.props.size.max.y) {
-                dragging.data.pos.h = old.h;
-                dragging.data.pos.y = old.y;
+            if (dragging.data.contents.props.size.max != null) {
+                if (dragging.data.pos.w > dragging.data.contents.props.size.max.?.x) {
+                    dragging.data.pos.w = old.w;
+                    dragging.data.pos.x = old.x;
+                }
+                if (dragging.data.pos.h > dragging.data.contents.props.size.max.?.y) {
+                    dragging.data.pos.h = old.h;
+                    dragging.data.pos.y = old.y;
+                }
             }
         }
         if (self.down and self.dragmode == .None) {

@@ -48,14 +48,14 @@ pub const WindowContents = struct {
 
         const SizeData = struct {
             min: vecs.Vector2,
-            max: vecs.Vector2,
+            max: ?vecs.Vector2,
         };
 
         scroll: ?ScrollData = null,
         info: InfoData,
         size: SizeData = .{
             .min = vecs.newVec2(400, 300),
-            .max = vecs.newVec2(100000, 100000),
+            .max = null,
         },
 
         pub fn setTitle(self: *WindowProps, title: []const u8) !void {
@@ -327,7 +327,10 @@ pub const WindowData = struct {
         full.x += full.w - 26;
         full.w = 26;
         if (full.contains(mousepos)) {
-            return DragMode.Full;
+            if (self.contents.props.size.max == null)
+                return DragMode.Full
+            else
+                return DragMode.None;
         }
         var min = rect.newRect(self.pos.x + self.pos.w - 108, self.pos.y, 64, 64);
         min.h = 26;
@@ -485,8 +488,9 @@ pub const WindowData = struct {
 
         try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
+        var maxAlpha: f32 = if (self.contents.props.size.max == null) 1.0 else 0.5;
         try addUiQuad(&result, 4, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-        try addUiQuad(&result, 5, full, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, 5, full, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, maxAlpha));
         try addUiQuad(&result, 6, min, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
         return result;

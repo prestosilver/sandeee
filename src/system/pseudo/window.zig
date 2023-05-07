@@ -188,8 +188,7 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
                         }
                         var x = @intToFloat(f32, std.mem.bytesAsValue(u16, data[3..5]).*);
                         var y = @intToFloat(f32, std.mem.bytesAsValue(u16, data[5..7]).*);
-                        item.data.contents.props.size.max.x = x;
-                        item.data.contents.props.size.max.y = y;
+                        item.data.contents.props.size.max = .{ .x = x, .y = y };
                     }
                     return;
                 }
