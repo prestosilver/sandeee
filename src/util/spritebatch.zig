@@ -167,6 +167,8 @@ pub const SpriteBatch = struct {
                 c.glClear(c.GL_COLOR_BUFFER_BIT);
             }
 
+            cscissor = entry.scissor;
+
             if (entry.texture.len == 0) continue;
 
             var targTex = if (!std.mem.eql(u8, entry.texture, "none")) textureManager.get(entry.texture) orelse {
@@ -184,7 +186,6 @@ pub const SpriteBatch = struct {
 
             ctex = targTex.tex;
             cshader = entry.shader.id;
-            cscissor = entry.scissor;
 
             if (entry.update and entry.verts.items().len != 0) {
                 c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, entry.verts.items().len * @sizeOf(va.Vert)), entry.verts.items().ptr, c.GL_STREAM_DRAW);
