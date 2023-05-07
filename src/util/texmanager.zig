@@ -22,6 +22,10 @@ pub const TextureManager = struct {
     }
 
     pub fn putMem(self: *TextureManager, name: []const u8, texture: []const u8) !void {
+        if (self.textures.fetchRemove(name)) |old| {
+            old.value.deinit();
+        }
+
         try self.textures.put(name, try tex.newTextureMem(texture));
     }
 

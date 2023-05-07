@@ -8,7 +8,7 @@ pub const Texture = struct {
     tex: c.GLuint,
     size: vecs.Vector2,
 
-    pub fn deinit(self: *Texture) void {
+    pub fn deinit(self: *const Texture) void {
         c.glDeleteTextures(1, &self.tex);
     }
 };
