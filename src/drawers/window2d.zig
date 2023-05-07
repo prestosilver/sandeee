@@ -488,9 +488,9 @@ pub const WindowData = struct {
 
         try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
-        var maxAlpha: f32 = if (self.contents.props.size.max == null) 1.0 else 0.5;
+        var maxAlpha: f32 = if (self.contents.props.size.max == null) 1.0 else 0.75;
         try addUiQuad(&result, 4, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-        try addUiQuad(&result, 5, full, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, maxAlpha));
+        try addUiQuad(&result, 5, full, 2, 3, 3, 17, 3, cols.newColor(maxAlpha, maxAlpha, maxAlpha, 1));
         try addUiQuad(&result, 6, min, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
         return result;
