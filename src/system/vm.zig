@@ -1010,7 +1010,7 @@ pub const VM = struct {
                 }
 
                 if (b == .value) {
-                    var appends = try std.fmt.allocPrint(self.allocator, "{s}{}", .{ a.string.*, b.value.* });
+                    var appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, std.mem.asBytes(b.value) });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
