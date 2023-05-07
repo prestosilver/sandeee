@@ -57,9 +57,7 @@ pub const GSDisks = struct {
         var iter = dir.iterate();
 
         while (try iter.next()) |item| {
-            var entry = try allocator.alloc.alloc(u8, item.name.len);
-
-            std.mem.copy(u8, entry, item.name);
+            var entry = try allocator.alloc.dupe(u8, item.name);
 
             try self.disks.append(entry);
         }
@@ -75,7 +73,7 @@ pub const GSDisks = struct {
             self.disks.items[idx] = try std.fmt.allocPrint(allocator.alloc, "{c} {s}", .{ DISK_LIST[idx], copy });
         }
 
-        self.disks.items.len = @min(self.disks.items.len, DISK_LIST.len);
+        try self.disks.resize(@min(self.disks.items.len, DISK_LIST.len));
 
         try self.disks.append("+ New Disk");
         if (self.disks.items.len > 1)
@@ -101,6 +99,8 @@ pub const GSDisks = struct {
             if (self.disks.items.len > 1) {
                 if (self.sel < self.disks.items.len - 1) {
                     var sel = self.disks.items[self.sel];
+
+                    std.log.info("{}", .{sel.len});
 
                     self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
                     std.mem.copy(u8, self.disk.*.?, sel[2..]);

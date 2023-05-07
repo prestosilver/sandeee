@@ -17,16 +17,29 @@ const c = @import("../../c.zig");
 pub const PopupQuit = struct {
     const Self = @This();
 
-    lol: u32 = 0,
+    done: ?u32 = null,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
-        _ = self;
         try font.draw(.{
             .batch = batch,
             .shader = shader,
             .pos = bnds.location(),
             .text = "Quit",
         });
+
+        if (self.done) |rets| {
+            switch (rets) {
+                0 => {
+                    events.em.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Disks,
+                    });
+                },
+                1 => {
+                    c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+                },
+                else => return,
+            }
+        }
     }
 
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
@@ -38,13 +51,11 @@ pub const PopupQuit = struct {
 
     pub fn char(_: *Self, _: u32, _: i32) !void {}
 
-    pub fn click(_: *Self, mousepos: vecs.Vector2) !void {
+    pub fn click(self: *Self, mousepos: vecs.Vector2) !void {
         if (mousepos.x < 100) {
-            c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+            self.done = 1;
         } else {
-            events.em.sendEvent(systemEvs.EventStateChange{
-                .targetState = .Disks,
-            });
+            self.done = 0;
         }
     }
 

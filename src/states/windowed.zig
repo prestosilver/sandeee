@@ -37,8 +37,8 @@ pub const GSWindowed = struct {
     down: bool = false,
 
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
-    windows: std.ArrayList(win.Window),
-    notifs: std.ArrayList(notifications.Notification),
+    windows: std.ArrayList(win.Window) = undefined,
+    notifs: std.ArrayList(notifications.Notification) = undefined,
     openWindow: vecs.Vector2 = vecs.newVec2(0, 0),
 
     wallpaper: wall.Wallpaper,
@@ -78,6 +78,13 @@ pub const GSWindowed = struct {
     }
 
     fn closePopup(_: windowEvs.EventClosePopup) bool {
+        if (globalSelf.popup) |*popup| {
+            popup.data.contents.deinit() catch {};
+            globalSelf.popup = null;
+
+            return false;
+        }
+
         for (globalSelf.windows.items) |*window| {
             if (window.data.active) {
                 if (window.data.popup) |*popup| {
@@ -166,6 +173,10 @@ pub const GSWindowed = struct {
     }
 
     pub fn setup(self: *Self) !void {
+        self.popup = null;
+        self.windows = std.ArrayList(win.Window).init(allocator.alloc);
+        self.notifs = std.ArrayList(notifications.Notification).init(allocator.alloc);
+
         gfx.gContext.color = self.color;
 
         pseudo.win.windowsPtr = &self.windows;

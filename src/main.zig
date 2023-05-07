@@ -503,8 +503,6 @@ pub fn main() anyerror!void {
         .clearShader = &clear_shader,
         .face = &mainFace,
         .settingsManager = &settingManager,
-        .windows = std.ArrayList(win.Window).init(allocator.alloc),
-        .notifs = std.ArrayList(notifs.Notification).init(allocator.alloc),
         .bar_logo_sprite = .{
             .texture = "barlogo",
             .data = sprite.SpriteData.new(
@@ -599,10 +597,12 @@ pub fn main() anyerror!void {
     // network.server = try network.Server.init();
     // _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
 
+    var prev = currentState;
+
     // main loop
     while (gfx.poll(&ctx)) {
         // get the current state
-        var state = gameStates.getPtr(currentState);
+        var state = gameStates.getPtr(prev);
 
         // get the time & update
         var currentTime = c.glfwGetTime();
@@ -617,8 +617,12 @@ pub fn main() anyerror!void {
         }
 
         // the state changed
-        if (state != gameStates.getPtr(currentState)) {
+        if (currentState != prev) {
+            prev = currentState;
+
             try state.deinit();
+
+            std.log.info("setup: {}", .{currentState});
 
             // run setup
             try gameStates.getPtr(currentState).setup();

@@ -22,13 +22,15 @@ pub const GameState = struct {
     isSetup: bool,
 
     pub fn setup(state: *Self) anyerror!void {
+        if (!state.isSetup)
+            try state.vtable.setup(state.ptr);
         state.isSetup = true;
-        return state.vtable.setup(state.ptr);
     }
 
     pub fn deinit(state: *Self) anyerror!void {
+        if (state.isSetup)
+            try state.vtable.deinit(state.ptr);
         state.isSetup = false;
-        return state.vtable.deinit(state.ptr);
     }
 
     pub fn draw(state: *Self, size: vecs.Vector2) anyerror!void {
