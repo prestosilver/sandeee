@@ -24,7 +24,14 @@ pub const PopupQuit = struct {
             .batch = batch,
             .shader = shader,
             .pos = bnds.location(),
-            .text = "Quit",
+            .text = "Shutdown",
+        });
+
+        try font.draw(.{
+            .batch = batch,
+            .shader = shader,
+            .pos = bnds.location().add(vecs.Vector2{ .x = 175, .y = 0 }),
+            .text = "Restart",
         });
 
         if (self.done) |rets| {
@@ -52,7 +59,7 @@ pub const PopupQuit = struct {
     pub fn char(_: *Self, _: u32, _: i32) !void {}
 
     pub fn click(self: *Self, mousepos: vecs.Vector2) !void {
-        if (mousepos.x < 100) {
+        if (mousepos.x < 175) {
             self.done = 1;
         } else {
             self.done = 0;
