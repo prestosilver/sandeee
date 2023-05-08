@@ -44,10 +44,6 @@ pub const File = struct {
     }
 };
 
-fn range(len: usize) []const void {
-    return @as([*]void, undefined)[0..len];
-}
-
 pub const Folder = struct {
     name: []const u8,
     subfolders: std.ArrayList(*Folder),
@@ -61,10 +57,10 @@ pub const Folder = struct {
         var lenbuffer: []u8 = try allocator.alloc.alloc(u8, 4);
         defer allocator.alloc.free(lenbuffer);
         _ = try file.read(lenbuffer);
-        var folderCount = @bitCast(u32, lenbuffer[0..4].*);
-        for (range(folderCount)) |_| {
+        var folderCount = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
+        for (0..folderCount) |_| {
             _ = try file.read(lenbuffer);
-            var namesize = @bitCast(u32, lenbuffer[0..4].*);
+            var namesize = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
             var namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
             defer allocator.alloc.free(namebuffer);
             _ = try file.read(namebuffer);
@@ -72,15 +68,15 @@ pub const Folder = struct {
         }
 
         _ = try file.read(lenbuffer);
-        var fileCount = @bitCast(u32, lenbuffer[0..4].*);
-        for (range(fileCount)) |_| {
+        var fileCount = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
+        for (0..fileCount) |_| {
             _ = try file.read(lenbuffer);
-            var namesize = @bitCast(u32, lenbuffer[0..4].*);
+            var namesize = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
             var namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
             defer allocator.alloc.free(namebuffer);
             _ = try file.read(namebuffer);
             _ = try file.read(lenbuffer);
-            var contsize = @bitCast(u32, lenbuffer[0..4].*);
+            var contsize = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
             var contbuffer: []u8 = try allocator.alloc.alloc(u8, contsize);
             defer allocator.alloc.free(contbuffer);
             _ = try file.read(contbuffer);
@@ -101,15 +97,13 @@ pub const Folder = struct {
             .parent = root,
         };
 
-        var path = fm.getContentDir();
-        defer allocator.alloc.free(path);
-        var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
+        var d = std.fs.cwd();
 
         var recovery = try d.openFile("content/recovery.eee", .{});
         defer recovery.close();
         try loadDisk(recovery);
 
-        var out = try std.fmt.allocPrint(allocator.alloc, "{s}/disks/{s}", .{ path, diskName });
+        var out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskName});
         defer allocator.alloc.free(out);
 
         var file = try std.fs.cwd().createFile(out, .{});
@@ -135,12 +129,9 @@ pub const Folder = struct {
 
             try root.subfolders.append(try fake.setupFake(root));
 
-            var path = fm.getContentDir();
-            defer allocator.alloc.free(path);
+            var d = std.fs.cwd();
 
-            var d = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
-
-            rootOut = try std.fmt.allocPrint(allocator.alloc, "{s}/disks/{s}", .{ path, diskPath });
+            rootOut = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskPath});
 
             var user = (try d.openDir("disks", .{})).openFile(diskPath, .{}) catch null;
             if (user) |userdisk| {
@@ -167,10 +158,12 @@ pub const Folder = struct {
         defer folders.deinit();
         try self.getFolders(&folders);
 
-        var len = @bitCast([4]u8, @intCast(u32, folders.items.len));
+        var len = [4]u8{ 0, 0, 0, 0 };
+
+        std.mem.writeIntBig(u32, &len, @intCast(u32, folders.items.len));
         _ = try writer.write(&len);
         for (folders.items) |folder| {
-            len = @bitCast([4]u8, @intCast(u32, folder.name.len));
+            std.mem.writeIntBig(u32, &len, @intCast(u32, folder.name.len));
             _ = try writer.write(&len);
             _ = try writer.write(folder.name);
         }
@@ -179,13 +172,13 @@ pub const Folder = struct {
         defer files.deinit();
         try self.getFiles(&files);
 
-        len = @bitCast([4]u8, @intCast(u32, files.items.len));
+        std.mem.writeIntBig(u32, &len, @intCast(u32, files.items.len));
         _ = try writer.write(&len);
         for (files.items) |file| {
-            len = @bitCast([4]u8, @intCast(u32, file.name.len));
+            std.mem.writeIntBig(u32, &len, @intCast(u32, file.name.len));
             _ = try writer.write(&len);
             _ = try writer.write(file.name);
-            len = @bitCast([4]u8, @intCast(u32, file.contents.len));
+            std.mem.writeIntBig(u32, &len, @intCast(u32, file.contents.len));
             _ = try writer.write(&len);
             _ = try writer.write(file.contents);
         }
@@ -512,10 +505,12 @@ pub const Folder = struct {
         defer folders.deinit();
         try self.getFolders(&folders);
 
-        var len = @bitCast([4]u8, @intCast(u32, folders.items.len));
+        var len = [4]u8{ 0, 0, 0, 0 };
+
+        std.mem.writeIntBig(u32, &len, @intCast(u32, folders.items.len));
         try result.appendSlice(&len);
         for (folders.items) |folder| {
-            len = @bitCast([4]u8, @intCast(u32, folder.name.len));
+            std.mem.writeIntBig(u32, &len, @intCast(u32, folder.name.len));
             try result.appendSlice(&len);
             try result.appendSlice(folder.name);
         }
@@ -524,13 +519,13 @@ pub const Folder = struct {
         defer files.deinit();
         try self.getFiles(&files);
 
-        len = @bitCast([4]u8, @intCast(u32, files.items.len));
+        std.mem.writeIntBig(u32, &len, @intCast(u32, files.items.len));
         try result.appendSlice(&len);
         for (files.items) |file| {
-            len = @bitCast([4]u8, @intCast(u32, file.name.len));
+            std.mem.writeIntBig(u32, &len, @intCast(u32, file.name.len));
             try result.appendSlice(&len);
             try result.appendSlice(file.name);
-            len = @bitCast([4]u8, @intCast(u32, file.contents.len));
+            std.mem.writeIntBig(u32, &len, @intCast(u32, file.contents.len));
             try result.appendSlice(&len);
             try result.appendSlice(file.contents);
         }

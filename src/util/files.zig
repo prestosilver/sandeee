@@ -22,7 +22,3 @@ pub fn getContentPath(file: []const u8) std.ArrayList(u8) {
 
     return result;
 }
-
-pub fn getContentDir() []const u8 {
-    return std.process.getCwdAlloc(allocator.alloc) catch "";
-}

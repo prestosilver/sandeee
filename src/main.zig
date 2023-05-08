@@ -627,8 +627,6 @@ pub fn main() anyerror!void {
 
             try state.deinit();
 
-            std.log.info("setup: {}", .{currentState});
-
             // run setup
             try gameStates.getPtr(currentState).setup();
 
