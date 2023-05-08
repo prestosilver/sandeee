@@ -1,43 +1,40 @@
 #include "content/eon/libs/libload.eon"
 #include "content/eon/libs/sys.eon"
 
-value createMap() {
+fn createMap() {
     // tileSize, width, height
-    value result = "";
-    value x;
-    value y;
+    var result = "";
+    var x;
+    var y;
 
     for (x = 1; x < 9; x = x + 1) {
         result = result & @x;
     }
 
-    value size = 1 * 8 * 23;
+    var size = 1 * 8 * 23;
     result = result & new size;
 
     return result;
 }
 
-value getTile(value map, value pos) {
-    value tile = map + pos;
-    value tilev = @tile;
+fn getTile(map, pos) {
+    var tile = map + pos;
+    var tilev = @tile;
+    var id = tilev + 65;
 
-    value id = tilev + 65;
-
-    //print(@id);
-
-    value x = tilev / 4;
-    value y = tilev % 4;
+    var x = tilev / 4;
+    var y = tilev % 4;
 
     return _MakeRect(256 * x, 256 * y, 256, 256);
 }
 
-value renderMap(value map, value win, value tex) {
-    value x;
-    value y;
-    value pos = 0;
-    value id = "";
-    value source = _MakeRect(256, 0, 256, 256);
-    value dest = _MakeRect(0, 0, 16, 16);
+fn renderMap(map, win, tex) {
+    var x;
+    var y;
+    var pos = 0;
+    var id = "";
+    var source = _MakeRect(256, 0, 256, 256);
+    var dest = _MakeRect(0, 0, 16, 16);
 
     for (y = 0; y < 24; y = y + 1) {
         for (x = 0; x < 8; x = x + 1) {
@@ -60,19 +57,19 @@ value renderMap(value map, value win, value tex) {
     return 0;
 }
 
-value updateMap(value map) {
-    value x = 0;
-    value y = 1;
-    value result = "";
-    value pos = 0;
-    value posup = 0;
-    value posdown = 0;
-    value tile = 0;
-    value tileup = 0;
-    value tiledown = 0;
-    value tilev = "";
-    value tileupv = "";
-    value tiledownv = "";
+fn updateMap(map) {
+    var x = 0;
+    var y = 1;
+    var result = "";
+    var pos = 0;
+    var posup = 0;
+    var posdown = 0;
+    var tile = 0;
+    var tileup = 0;
+    var tiledown = 0;
+    var tilev = "";
+    var tileupv = "";
+    var tiledownv = "";
 
     for (x = 0; x < 8; x = x + 1) {
         result = result & @0;
@@ -117,7 +114,7 @@ value updateMap(value map) {
     return result;
 }
 
-value update(value map, value cntr, value dt) {
+fn update(map, cntr, dt) {
     cntr = cntr + dt;
 
     if (cntr > 100) {
@@ -128,25 +125,25 @@ value update(value map, value cntr, value dt) {
     return 0;
 }
 
-value main() {
+fn main() {
     setupLibLoad();
     loadLib("/libs/window.ell");
     loadLib("/libs/texture.ell");
     loadLib("/libs/string.ell");
 
-    value map = createMap();
-    value window = _WindowCreate();
-    value texture = _TextureCreate();
-    value lastTime = time();
-    value cntr = 0;
-    value dt = 0;
+    var map = createMap();
+    var window = _WindowCreate();
+    var texture = _TextureCreate();
+    var lastTime = time();
+    var cntr = 0;
+    var dt = 0;
 
     _SetWindowRule("min", 256 + 6, 384 + 38);
     _SetWindowRule("max", 256 + 6, 384 + 38);
     _SetWindowTitle(window, "Connectris");
     _SetWindowSize(256 + 6, 384 + 38);
 
-    value test = "";
+    var test = "";
 
     _TextureUpload(_TextureRead("/cont/imgs/connectris.eia"), texture);
 

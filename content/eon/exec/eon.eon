@@ -1,12 +1,14 @@
-value createToken(value kind, value val) {
-    value size = _StringLength(val) + 2;
-    value result = _HeapAlloc(size);
-    value result = @kind & @(size - 2) & val;
+fn createToken(kind, val) {
+    var size = _StringLength(val) + 2;
+    var result = _HeapAlloc(size);
+    var result = @kind & @(size - 2) & val;
+
+    return result;
 }
 
-value createExpression(value a, value op, value b) {
+fn createExpression(a, op, b) {
 
 }
 
-value main() {
+fn main() {
 }

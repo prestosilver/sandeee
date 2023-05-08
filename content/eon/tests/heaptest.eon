@@ -1,17 +1,17 @@
 #include "content/eon/libs/libload.eon"
 #include "content/eon/libs/sys.eon"
 
-value reada(value addr) {
+fn reada(addr) {
     asm "push 128";
     asm "sys 15";
     asm "ret";
 }
 
-value main() {
+fn main() {
     setupLibLoad();
     loadLib("/libs/heap.ell");
 
-    value a = _HeapAlloc(128);
+    var a = _HeapAlloc(128);
 
     print(a);
     print(reada(a));

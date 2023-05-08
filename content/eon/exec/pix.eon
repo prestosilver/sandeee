@@ -1,13 +1,12 @@
 #include "content/eon/libs/libload.eon"
 #include "content/eon/libs/sys.eon"
 
-void error(value msg) {
-    print("Error: " & msg);
-    quit();
+fn error(msg) {
+    asm "sys 18";
 }
 
-value processArgs() {
-    value file = getArg(1);
+fn processArgs() {
+    var file = getArg(1);
 
     if (file == 0) {
        error("Missing File");
@@ -16,16 +15,16 @@ value processArgs() {
     return file;
 }
 
-value render(value win, value tex, value w, value h) {
-    value source = _MakeRect(0, 0, 1024, 1024);
-    value win_w = _WindowWidth(win);
-    value win_h = _WindowHeight(win);
+fn render(win, tex, w, h) {
+    var source = _MakeRect(0, 0, 1024, 1024);
+    var win_w = _WindowWidth(win);
+    var win_h = _WindowHeight(win);
 
-    value ratio = 1000;
+    var ratio = 1000;
 
-    value width_ratio = win_w * 1000;
+    var width_ratio = win_w * 1000;
     width_ratio = width_ratio / w;
-    value height_ratio = win_h * 1000;
+    var height_ratio = win_h * 1000;
     height_ratio = height_ratio / h;
 
     ratio = width_ratio;
@@ -33,15 +32,15 @@ value render(value win, value tex, value w, value h) {
         ratio = height_ratio;
     }
 
-    value target_w = ratio * w;
+    var target_w = ratio * w;
     target_w = target_w / 1000;
-    value target_h = ratio * h;
+    var target_h = ratio * h;
     target_h = target_h / 1000;
 
-    value target_x = win_w - target_w;
-    value target_y = win_h - target_h;
+    var target_x = win_w - target_w;
+    var target_y = win_h - target_h;
 
-    value dest = _MakeRect(target_x / 2, target_y / 2, target_w, target_h);
+    var dest = _MakeRect(target_x / 2, target_y / 2, target_w, target_h);
     
     _WindowRender(win, tex, dest, source);
     _WindowFlip(win);
@@ -49,21 +48,21 @@ value render(value win, value tex, value w, value h) {
     return 0;
 }
 
-value main() {
+fn main() {
     setupLibLoad();
     loadLib("/libs/window.ell");
     loadLib("/libs/texture.ell");
 
-    value input = processArgs();
-    value window = _WindowCreate();
-    value texture = _TextureCreate();
-    value content = _TextureRead(input);
+    var input = processArgs();
+    var window = _WindowCreate();
+    var texture = _TextureCreate();
+    var content = _TextureRead(input);
     _TextureUpload(content, texture);
 
     _SetWindowTitle(window, "PixEEE - " & input);
 
-    value w = _TextureWidth(content);
-    value h = _TextureHeight(content);
+    var w = _TextureWidth(content);
+    var h = _TextureHeight(content);
 
     for (0; _WindowOpen(); 1) {
         render(window, texture, w * 2, h * 2);
@@ -72,6 +71,6 @@ value main() {
     _TextureDestroy(texture);
     _WindowDestroy(window);
 
-    asm "ret";
+    return 0;
 }
 

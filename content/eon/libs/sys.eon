@@ -1,48 +1,48 @@
-value getArg(value idx) {
+fn getArg(idx) {
     asm "sys 8";
     asm "ret";
 }
 
-value print(value str) {
+fn print(str) {
     asm "sys 0";
     asm "push 0";
     asm "ret";
 }
 
-value quit() {
+fn quit() {
     asm "sys 1";
 }
 
-value open(value path) {
+fn open(path) {
     asm "sys 3";
     asm "ret";
 }
 
-value createOpen(value path) {
+fn createOpen(path) {
     asm "dup 0";
     asm "sys 2";
     asm "sys 3";
     asm "ret";
 }
 
-value close(value file) {
+fn close(file) {
     asm "sys 7";
     asm "push 0";
     asm "ret";
 }
 
-value write(value file, value text) {
+fn write(file, text) {
     asm "sys 5";
     asm "push 0";
     asm "ret";
 }
 
-value read(value file, value len) {
+fn read(file, len) {
     asm "sys 4";
     asm "ret";
 }
 
-value time(value file, value len) {
+fn time(file, len) {
     asm "sys 9";
     asm "ret";
 }

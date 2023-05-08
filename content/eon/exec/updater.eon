@@ -1,6 +1,6 @@
 #include "content/eon/libs/sys.eon"
 
-value getdata(value data) {
+fn getdata(data) {
     asm "push \"/fake/net/send\"";
     asm "sys 3";
     asm "copy 0";
@@ -32,8 +32,8 @@ value getdata(value data) {
     return 0;
 }
 
-value main() {
-    value version = 0;
+fn main() {
+    var version = 0;
 
     print(getdata("lmao"));
 

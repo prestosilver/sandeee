@@ -8,8 +8,8 @@ const TokenKind = enum {
     TOKEN_OPEN_PAREN,
     TOKEN_CLOSE_PAREN,
     TOKEN_SEMI_COLON,
-    TOKEN_KEYWORD_VALUE,
-    TOKEN_KEYWORD_VOID,
+    TOKEN_KEYWORD_VAR,
+    TOKEN_KEYWORD_FN,
     TOKEN_KEYWORD_RETURN,
     TOKEN_KEYWORD_ASM,
     TOKEN_KEYWORD_IF,
@@ -543,7 +543,6 @@ const Statement = struct {
 };
 
 const FunctionParam = struct {
-    kind: []const u8,
     name: []const u8,
 };
 
@@ -684,15 +683,15 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "value")) {
+            } else if (std.mem.eql(u8, code, "var")) {
                 try result.append(.{
-                    .kind = .TOKEN_KEYWORD_VALUE,
+                    .kind = .TOKEN_KEYWORD_VAR,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "void")) {
+            } else if (std.mem.eql(u8, code, "fn")) {
                 try result.append(.{
-                    .kind = .TOKEN_KEYWORD_VOID,
+                    .kind = .TOKEN_KEYWORD_FN,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
@@ -1090,7 +1089,7 @@ pub fn parseStatement(tokens: []Token, idx: *usize) !Statement {
         .exprs = null,
         .blks = null,
     };
-    if (tokens[idx.*].kind == .TOKEN_KEYWORD_VALUE) {
+    if (tokens[idx.*].kind == .TOKEN_KEYWORD_VAR) {
         idx.* += 1;
         if (tokens[idx.*].kind != .TOKEN_IDENT) return error.ExpectedIdent;
 
@@ -1242,13 +1241,9 @@ pub fn parseBlock(tokens: []Token, idx: *usize) anyerror![]Statement {
 
 pub fn parseFunctionParam(tokens: []Token, idx: *usize) !FunctionParam {
     var result: FunctionParam = .{
-        .kind = "",
         .name = "",
     };
 
-    if (tokens[idx.*].kind != .TOKEN_KEYWORD_VALUE) return error.ExpectedValue;
-    result.kind = tokens[idx.*].value;
-    idx.* += 1;
     if (tokens[idx.*].kind != .TOKEN_IDENT) return error.ExpectedValue;
     result.name = tokens[idx.*].value;
     idx.* += 1;
@@ -1258,8 +1253,7 @@ pub fn parseFunctionParam(tokens: []Token, idx: *usize) !FunctionParam {
 
 pub fn parseFunctionDecl(tokens: []Token, idx: *usize) !FunctionDecl {
     var result: FunctionDecl = undefined;
-    if (tokens[idx.*].kind != .TOKEN_KEYWORD_VALUE and
-        tokens[idx.*].kind != .TOKEN_KEYWORD_VOID) return error.ExpectedType;
+    if (tokens[idx.*].kind != .TOKEN_KEYWORD_FN) return error.ExpectedType;
     result.ret = tokens[idx.*].value;
     idx.* += 1;
     if (tokens[idx.*].kind != .TOKEN_IDENT) return error.ExpectedIdent;

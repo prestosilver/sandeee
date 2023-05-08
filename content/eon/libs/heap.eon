@@ -1,6 +1,6 @@
 #include "content/eon/libs/sys.eon"
 
-value libInit() {
+fn libInit() {
     asm "push 1";
     asm "sys 14";
     asm "push 0";
@@ -10,7 +10,7 @@ value libInit() {
     asm "ret";
 }
 
-value HeapSize() {
+fn HeapSize() {
     asm "push 0";
     asm "push 1";
     asm "sys 15";
@@ -20,7 +20,7 @@ value HeapSize() {
     asm "ret";
 }
 
-value HeapGrow() {
+fn HeapGrow() {
     asm "push 0";
     asm "push 0";
     asm "push 1";
@@ -30,13 +30,13 @@ value HeapGrow() {
     asm "add";
     asm "getb";
     asm "sys 16";
-    value size = HeapSize();
+    var size = HeapSize();
     asm "sys 14";
     asm "push 0";
     asm "ret";
 }
 
-value getWord(value idx) {
+fn getWord(idx) {
     asm "push 2";
     asm "sys 15";
     asm "dup 0";
@@ -52,7 +52,7 @@ value getWord(value idx) {
     asm "ret";
 }
 
-value toWord(value v) {
+fn toWord(v) {
     asm "dup 0";
     asm "push 256";
     asm "div";
@@ -64,14 +64,14 @@ value toWord(value v) {
     asm "ret";
 }
 
-value putWord(value pos, value v) {
+fn putWord(pos, v) {
     asm "call toWord";
     asm "sys 16";
     asm "push 0";
     asm "ret";
 }
 
-value round(value a) {
+fn round(a) {
     asm "push 3";
     asm "add";
     asm "push 4";
@@ -81,18 +81,18 @@ value round(value a) {
     asm "ret";
 }
 
-value HeapPut(value pos, value data) {
+fn HeapPut(pos, data) {
     asm "disc 0";
     asm "disc 0";
     asm "ret";
 }
 
-value HeapAlloc(value size) {
-    value target = round(size);
-    value start = 1;
-    value current = 1;
-    value cont = 1;
-    value size = 0;
+fn HeapAlloc(size) {
+    var target = round(size);
+    var start = 1;
+    var current = 1;
+    var cont = 1;
+    var size = 0;
 
     for (cont = 1; cont; cont = 1) {
         size = current - start;
@@ -117,7 +117,7 @@ value HeapAlloc(value size) {
     return 0;
 }
 
-value HeapFree(value addr) {
+fn HeapFree(addr) {
     putWord(dup(addr), 0);
     putWord(dup(addr) + 2, 0);
 

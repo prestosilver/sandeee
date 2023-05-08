@@ -1,10 +1,10 @@
 #include "content/eon/libs/libload.eon"
 #include "content/eon/libs/sys.eon"
 
-value render(value win, value tex, value ax, value bx,
-                value ballx, value bally, value vx, value vy) {
-    value source = "";
-    value dest = "";
+fn render(win, tex, ax, bx,
+          ballx, bally, vx, vy) {
+    var source = "";
+    var dest = "";
 
     source = _MakeRect(256, 0, 256, 1024);
     dest = _MakeRect(0, 0, 400, 300);
@@ -31,7 +31,7 @@ value render(value win, value tex, value ax, value bx,
     return 0;
 }
 
-value getkey() {
+fn getkey() {
     asm "push \"/fake/inp/win\"";
     asm "sys 3";
     asm "copy 0";
@@ -43,15 +43,14 @@ value getkey() {
     asm "ret";
 }
 
-value update(value ax, value bx, value ballx, value bally,
-             value vx, value vy, value pings, value dt) {
+fn update(ax, bx, ballx, bally,
+          vx, vy, pings, dt) {
+    var tvx;
+    var tvy;
+    var contained;
+    var tmp;
 
-    value tvx;
-    value tvy;
-    value contained;
-    value tmp;
-
-    value acc = pings / 5 + 1;
+    var acc = pings / 5 + 1;
 
     if (vx < 100) {
         tvx = 100 - vx;
@@ -131,9 +130,9 @@ value update(value ax, value bx, value ballx, value bally,
         }
     }
 
-    value key = getkey();
-    value keycode = 0;
-    value adds = 0;
+    var key = getkey();
+    var keycode = 0;
+    var adds = 0;
     
     for (0; _StringLength(key) != 0; key = key + 2) {
         keycode = @dup(key);
@@ -156,30 +155,30 @@ value update(value ax, value bx, value ballx, value bally,
     return 0;
 }
 
-value main() {
+fn main() {
     setupLibLoad();
     loadLib("/libs/window.ell");
     loadLib("/libs/texture.ell");
     loadLib("/libs/string.ell");
 
-    value window = _WindowCreate();
-    value texture = _TextureCreate();
-    value lastTime = time();
-    value dt = 0;
-    value ballx = 195;
-    value bally = 145;
-    value ax = 100;
-    value bx = 100;
-    value vx = 0;
-    value vy = 200;
-    value pings = 1;
+    var window = _WindowCreate();
+    var texture = _TextureCreate();
+    var lastTime = time();
+    var dt = 0;
+    var ballx = 195;
+    var bally = 145;
+    var ax = 100;
+    var bx = 100;
+    var vx = 0;
+    var vy = 200;
+    var pings = 1;
 
     _SetWindowRule("min", 408, 338);
     _SetWindowRule("max", 408, 338);
     _SetWindowTitle(window, "Pong");
     _SetWindowSize(408, 338);
 
-    value test = "";
+    var test = "";
 
     _TextureUpload(_TextureRead("/cont/imgs/pong.eia"), texture);
 
@@ -197,6 +196,6 @@ value main() {
     _TextureDestroy(texture);
     _WindowDestroy(window);
 
-    asm "ret";
+    return 0;
 }
 

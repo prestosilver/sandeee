@@ -1,4 +1,3 @@
-value main() {
+fn main() {
     return 4 + (0 + 5);
 }
-

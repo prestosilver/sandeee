@@ -1,4 +1,4 @@
-value setupLibLoad() {
+fn setupLibLoad() {
     asm "push \"/libs/libload.eep\"";
     asm "sys 3";
     asm "copy 0";
@@ -12,7 +12,7 @@ value setupLibLoad() {
     return 0;
 }
 
-value loadLib(value name) {
+fn loadLib(name) {
     asm "dup 0";
     asm "call \"libload\"";
     return 0;

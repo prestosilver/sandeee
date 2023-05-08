@@ -2,22 +2,22 @@
 #include "content/eon/libs/table.eon"
 #include "content/eon/libs/sys.eon"
 
-void error(value msg) {
+fn error(msg) {
     asm "sys 18";
 }
 
-value processArgs() {
-    value file = getArg(1);
+fn processArgs() {
+    var file = getArg(1);
 
     if (file == 0) {
-       error("Bad Argument");
+        error("Bad Argument");
     }
 
     return file;
 }
 
-value stripLine(value line) {
-    value chr = 0;
+fn stripLine(line) {
+    var chr = 0;
     for (chr = @line; chr == 32; chr = @line) {
         line = line + 1;
     }
@@ -25,7 +25,7 @@ value stripLine(value line) {
     return line;
 }
 
-value getLineEnum(value line) {
+fn getLineEnum(line) {
     if (_StringStartsWith(line, "nop")) {
         return 0;
     } else if (_StringStartsWith(line, "sys")) {
@@ -38,7 +38,7 @@ value getLineEnum(value line) {
         return 4;
     } else if (_StringStartsWith(line, "copy")) {
         return 5;
-    // jmpf early bc reasons
+        // jmpf early bc reasons
     } else if (_StringStartsWith(line, "jmpf")) {
         return 9;
     } else if (_StringStartsWith(line, "jmp")) {
@@ -90,8 +90,8 @@ value getLineEnum(value line) {
     return 255;
 }
 
-value getLineData(value table, value line) {
-    value chr = 0;
+fn getLineData(table, line) {
+    var chr = 0;
     for (chr = @line; chr != 32; chr = @line) {
         line = line + 1;
         if (_StringLength(line) == 0) {
@@ -101,53 +101,52 @@ value getLineData(value table, value line) {
 
     line = line + 1;
 
-    value starts = @line == 34;
-    value ends = _StringLast(line) == 34;
+    var starts = @line == 34;
+    var ends = _StringLast(line) == 34;
 
     if (starts && ends) {
-       line = line + 1;
-       line = line - 1;
-       return @2 & line & @0;
+        line = line + 1;
+        line = line - 1;
+        return @2 & line & @0;
     }
 
-    value num = _StringToNum(line);
-
-    value name = "";
+    var num = _StringToNum(line);
+    var name = "";
 
     for (name = dup(line); _StringLength(name) < 20; 0) {
         name = name & @0;
     }
-    
+
     if (tableGet(table, name)) {
         num = @tableGet(table, name);
     }
 
     if (num < 256) {
-       return @3 & @num;
+        return @3 & @num;
     }
 
     return @1 & num;
 }
 
-value processLine(value table, value line) {
-    value stripped = stripLine(line);
-    value enum = getLineEnum(stripped);
+fn processLine(table, line) {
+    var stripped = stripLine(line);
+    var enum = getLineEnum(stripped);
 
     if (enum == 255) {
-       error("Invalid Instruction " & stripped);
+        error("Invalid Instruction " & stripped);
     }
 
-    value data = getLineData(table, stripped);
+    var data = getLineData(table, stripped);
 
     return @enum & data;
 }
 
-value processFile(value table, value infile, value outfile) {
+fn processFile(table, infile, outfile) {
     write(outfile, "EEEp");
 
-    value line = "";
+    var line = "";
 
-    value chr = read(infile, 1);
+    var chr = read(infile, 1);
     for (chr = chr; chr != ""; chr = read(infile, 1)) {
         if (@chr == 92) {
             chr = read(infile, 1);
@@ -170,12 +169,12 @@ value processFile(value table, value infile, value outfile) {
     return 0;
 }
 
-value processConsts(value table, value infile) {
-    value line = "";
+fn processConsts(table, infile) {
+    var line = "";
 
-    value chr = read(infile, 1);
-    value name = "";
-    value idx = 0;
+    var chr = read(infile, 1);
+    var name = "";
+    var idx = 0;
     for (chr = chr; chr != ""; chr = read(infile, 1)) {
         if (@chr == 92) {
             chr = read(infile, 1);
@@ -203,21 +202,21 @@ value processConsts(value table, value infile) {
     return 0;
 }
 
-void main() {
+fn main() {
     // load libs
     setupLibLoad();
     loadLib("/libs/string.ell");
 
-    value table = tableCreate(20, 1);
+    var table = tableCreate(20, 1);
 
     // open input
-    value infile = processArgs();
-    value inhandlea = open(infile);
-    value inhandleb = open(infile);
+    var infile = processArgs();
+    var inhandlea = open(infile);
+    var inhandleb = open(infile);
 
     // open output
-    value outfile = "out.eep";
-    value outhandle = createOpen(outfile);
+    var outfile = "out.eep";
+    var outhandle = createOpen(outfile);
 
     // get consts
     print("READ: " & infile & "\\n");
@@ -233,5 +232,5 @@ void main() {
     close(inhandleb);
     close(outhandle);
 
-    asm "ret";
+    return 0;
 }

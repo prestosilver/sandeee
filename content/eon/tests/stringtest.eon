@@ -1,7 +1,7 @@
 #include "content/eon/libs/libload.eon"
 #include "content/eon/libs/sys.eon"
 
-value main() {
+fn main() {
     setupLibLoad();
     loadLib("/libs/string.ell");
 

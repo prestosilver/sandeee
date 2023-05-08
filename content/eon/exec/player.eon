@@ -1,13 +1,12 @@
 #include "content/eon/libs/libload.eon"
 #include "content/eon/libs/sys.eon"
 
-void error(value msg) {
-    print("Error: " & msg);
-    quit();
+fn error(msg) {
+    asm "sys 18";
 }
 
-value processArgs() {
-    value file = getArg(1);
+fn processArgs() {
+    var file = getArg(1);
 
     if (file == 0) {
        error("Missing File");
@@ -16,37 +15,37 @@ value processArgs() {
     return file;
 }
 
-value render(value win, value tex, value time) {
+fn render(win, tex, time) {
     _WindowText(win, 0, 0, "" & time);
     _WindowFlip(win);
 
     return 0;
 }
 
-value main() {
+fn main() {
     setupLibLoad();
     loadLib("/libs/window.ell");
     loadLib("/libs/texture.ell");
     loadLib("/libs/sound.ell");
     loadLib("/libs/string.ell");
 
-    value input = processArgs();
-    value window = _WindowCreate();
-    value texture = _TextureCreate();
-    //value content = _TextureRead("/cont/imgs/player.eia");
+    var input = processArgs();
+    var window = _WindowCreate();
+    var texture = _TextureCreate();
+    //var content = _TextureRead("/cont/imgs/player.eia");
     //_TextureUpload(content, texture);
 
     _SetWindowTitle(window, "PlayEEEr - " & input);
 
-    value inFile = open(input);
+    var inFile = open(input);
 
-    value inData = read(inFile, 10000000);
+    var inData = read(inFile, 10000000);
 
     close(inFile);
 
     _playSound(inData);
 
-    value time = _StringLength(inData);
+    var time = _StringLength(inData);
 
     time = time / 44100;
 
@@ -57,6 +56,6 @@ value main() {
     _TextureDestroy(texture);
     _WindowDestroy(window);
 
-    asm "ret";
+    return 0;
 }
 
