@@ -21,18 +21,26 @@ main:
     push ""                     ; idx wave
 loop:
     copy 1
-    dup 0
+    copy 0
     push 1
     add                         ; wave idx
     set
     disc 0
 
-    dup 1
+    copy 1
     push 440
+    mul
+    call "sineWave"
+    push 2
+    div
+
+    copy 2
+    push 220
     mul
     call "squareWave"
     push 2
     div
+    add
 
     getb
     cat

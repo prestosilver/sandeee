@@ -182,6 +182,9 @@ pub const VM = struct {
             Size,
             Len,
 
+            Sin,
+            Cos,
+
             Last,
             _,
         };
@@ -851,6 +854,30 @@ pub const VM = struct {
 
                 var val: u64 = 0;
                 if (a.value.* == 0) val = 1;
+
+                try self.pushStackI(val);
+
+                return;
+            },
+            Operation.Code.Sin => {
+                var a = try self.popStack();
+                defer self.free(&[_]StackEntry{a});
+
+                if (a != .value) return error.ValueMissing;
+
+                var val: u64 = @floatToInt(u64, (std.math.sin(@intToFloat(f32, a.value.*) * (std.math.pi * 2) / 255) + 1.0) * 127.0);
+
+                try self.pushStackI(val);
+
+                return;
+            },
+            Operation.Code.Cos => {
+                var a = try self.popStack();
+                defer self.free(&[_]StackEntry{a});
+
+                if (a != .value) return error.ValueMissing;
+
+                var val: u64 = @floatToInt(u64, (std.math.cos(@intToFloat(f32, a.value.*) * (std.math.pi * 2) / 255) + 1.0) * 127.0);
 
                 try self.pushStackI(val);
 

@@ -7,6 +7,14 @@ _squareWave:
     mul
     ret
 
+_sineWave:
+    push 256
+    mul
+    push 22050                  ; x x 128
+    div                         ; x x
+    sin
+    ret
+
 _playSound:
     push "/fake/snd/play"       ; cont path
     sys 3                       ; cont handle
