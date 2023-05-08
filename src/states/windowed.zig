@@ -101,16 +101,15 @@ pub const GSWindowed = struct {
 
     fn createWindow(event: windowEvs.EventCreateWindow) bool {
         var target = vecs.newVec2(100, 100);
-        var self = globalSelf;
 
-        for (self.windows.items, 0..) |_, idx| {
-            self.windows.items[idx].data.active = false;
+        for (globalSelf.windows.items, 0..) |_, idx| {
+            globalSelf.windows.items[idx].data.active = false;
 
-            if (self.windows.items[idx].data.pos.x == 100 or self.windows.items[idx].data.pos.y == 100)
-                target = self.openWindow;
+            if (globalSelf.windows.items[idx].data.pos.x == 100 or globalSelf.windows.items[idx].data.pos.y == 100)
+                target = globalSelf.openWindow;
         }
 
-        self.windows.append(event.window) catch {
+        globalSelf.windows.append(event.window) catch {
             std.log.err("couldn't create window!", .{});
             return false;
         };
@@ -120,12 +119,12 @@ pub const GSWindowed = struct {
             target.y = (deskSize.y - event.window.data.pos.h) / 2;
         }
 
-        self.windows.items[self.windows.items.len - 1].data.pos.x = target.x;
-        self.windows.items[self.windows.items.len - 1].data.pos.y = target.y;
-        self.windows.items[self.windows.items.len - 1].data.idx = self.windows.items.len;
+        globalSelf.windows.items[globalSelf.windows.items.len - 1].data.pos.x = target.x;
+        globalSelf.windows.items[globalSelf.windows.items.len - 1].data.pos.y = target.y;
+        globalSelf.windows.items[globalSelf.windows.items.len - 1].data.idx = globalSelf.windows.items.len;
 
-        self.openWindow.x = target.x + 25;
-        self.openWindow.y = target.y + 25;
+        globalSelf.openWindow.x = target.x + 25;
+        globalSelf.openWindow.y = target.y + 25;
 
         return false;
     }
@@ -163,9 +162,10 @@ pub const GSWindowed = struct {
         }
         if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
             // TODO: texman reload
-            // gfx.gContext.makeCurrent();
-            // tex.uploadTextureFile(globalSelf.wallpaper.texture, event.value) catch return false;
-            // gfx.gContext.makeNotCurrent();
+            var texture = batch.textureManager.textures.getPtr("wall") orelse return false;
+            gfx.gContext.makeCurrent();
+            tex.uploadTextureFile(texture, event.value) catch return false;
+            gfx.gContext.makeNotCurrent();
 
             return true;
         }
