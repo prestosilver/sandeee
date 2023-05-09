@@ -8,6 +8,7 @@ const font = @import("../util/font.zig");
 const allocator = @import("../util/allocator.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
+const c = @import("../c.zig");
 
 pub const GSCrash = struct {
     const Self = @This();
@@ -67,7 +68,7 @@ pub const GSCrash = struct {
         try self.face.draw(.{
             .batch = self.sb,
             .shader = self.font_shader,
-            .text = "THIS IS NOT AN INTENTIONAL CRASH, PLEASE REPORT THIS\n\nIF YOU SEE THIS YOUR FILES WERE SAVED :)",
+            .text = "\nTypically this problem can be solved with recovery.\nIF YOU SEE THIS YOUR FILES WERE SAVED :)",
             .pos = vecs.newVec2(300, 100 + self.face.size * 3 + offset),
             .color = cols.newColor(1, 1, 1, 1),
         });

@@ -161,7 +161,6 @@ pub const GSWindowed = struct {
             return true;
         }
         if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
-            // TODO: texman reload
             var texture = batch.textureManager.textures.getPtr("wall") orelse return false;
             gfx.gContext.makeCurrent();
             tex.uploadTextureFile(texture, event.value) catch return false;
@@ -218,7 +217,7 @@ pub const GSWindowed = struct {
         win.WindowContents.shader = self.shader;
         shell.shader = self.shader;
 
-        // TODO: Unregister
+        // TODO: Unregister?
         events.em.registerListener(windowEvs.EventCreatePopup, createPopup);
         events.em.registerListener(windowEvs.EventClosePopup, closePopup);
         events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
@@ -262,7 +261,7 @@ pub const GSWindowed = struct {
         }
 
         try files.write();
-        try self.face.deinit();
+        // try self.face.deinit();
         try self.settingsManager.deinit();
 
         self.windows.deinit();
