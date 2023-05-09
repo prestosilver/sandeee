@@ -31,21 +31,21 @@ pub const WelcomeData = struct {
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
-            .text = "\x80 Open \x82\x82\x82Mail to get started",
+            .text = "  \x80 Open \x82\x82\x82Mail to get started",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 3 * font.size),
             .scale = 1,
         });
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
-            .text = "\x80 You can open Xplore anytime for help",
+            .text = "  \x80 You can open Xplore anytime for help",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 5 * font.size),
             .scale = 1,
         });
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
-            .text = "\x80 Remember \x82\x82\x82 is monitoring your activity",
+            .text = "  \x80 Remember \x82\x82\x82 is monitoring your activity",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 7 * font.size),
             .scale = 1,
         });
