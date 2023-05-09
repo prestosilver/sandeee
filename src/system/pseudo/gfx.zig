@@ -85,7 +85,6 @@ pub fn readGfxPixel(_: ?*vm.VM) ![]const u8 {
 
 pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) !void {
     var idx = data[0];
-    var image = data[1..];
 
     var texture = sb.textureManager.get(&.{idx});
     if (texture == null) return;
@@ -96,8 +95,6 @@ pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) !void {
     var y = std.mem.bytesToValue(u16, data[3..5]);
 
     texture.?.setPixel(x, y, cols.newColor(0, 0, 0, 1));
-
-    tex.uploadTextureMem(texture.?, image) catch return error.UploadError;
 
     gfx.gContext.makeNotCurrent();
 }
