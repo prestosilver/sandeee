@@ -8,10 +8,13 @@ const cols = @import("../math/colors.zig");
 const allocator = @import("../util/allocator.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
+const files = @import("../system/files.zig");
 
 const c = @import("../c.zig");
 
-const VERSION = "0.0.0";
+const VERSION = "0.0.3";
+
+//TODO: key presses
 
 pub const GSRecovery = struct {
     const Self = @This();
@@ -23,6 +26,7 @@ pub const GSRecovery = struct {
 
     sel: usize = 0,
     disks: std.ArrayList([]const u8) = undefined,
+    status: []const u8 = "",
 
     sub_sel: ?usize = null,
 
@@ -48,6 +52,7 @@ pub const GSRecovery = struct {
 
         self.sel = 0;
         self.sub_sel = null;
+        self.status = "";
 
         const dir = try std.fs.cwd().openIterableDir("disks", .{});
 
@@ -87,7 +92,7 @@ pub const GSRecovery = struct {
 
     pub fn update(_: *Self, _: f32) !void {}
 
-    const UPDATE_MODES = [_][*:0]const u8{ "R Reinstall", "D Delete disk", "X Back" };
+    const UPDATE_MODES = [_][*:0]const u8{ "R Reinstall System Files", "D Delete disk", "X Back" };
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         _ = size;
@@ -99,6 +104,15 @@ pub const GSRecovery = struct {
             .batch = self.sb,
             .shader = self.font_shader,
             .text = titleLine,
+            .pos = vecs.newVec2(100, y),
+            .color = cols.newColor(1, 1, 1, 1),
+        });
+        y += self.face.size * 1;
+
+        try self.face.draw(.{
+            .batch = self.sb,
+            .shader = self.font_shader,
+            .text = self.status,
             .pos = vecs.newVec2(100, y),
             .color = cols.newColor(1, 1, 1, 1),
         });
@@ -158,11 +172,15 @@ pub const GSRecovery = struct {
                     }
 
                     switch (sub_sel) {
+                        0 => {
+                            try files.Folder.recoverDisk(self.disks.items[self.sel][2..]);
+                            self.status = "Reinstalled";
+                        },
                         1 => {
                             var path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
                             defer allocator.alloc.free(path);
 
-                            std.log.info("deleting {s}", .{path});
+                            self.status = "Deleted";
 
                             try std.fs.cwd().deleteFile(path);
 

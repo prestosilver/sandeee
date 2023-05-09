@@ -115,6 +115,40 @@ pub const Folder = struct {
         try root.write(file);
     }
 
+    pub fn recoverDisk(diskName: []const u8) !void {
+        root = try allocator.alloc.create(Folder);
+        defer root.deinit();
+
+        root.* = .{
+            .protected = false,
+            .name = try allocator.alloc.dupe(u8, ROOT_NAME),
+            .subfolders = std.ArrayList(*Folder).init(allocator.alloc),
+            .contents = std.ArrayList(*File).init(allocator.alloc),
+            .parent = root,
+        };
+
+        var d = std.fs.cwd();
+
+        var out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskName});
+        defer allocator.alloc.free(out);
+        {
+            var outFile = try d.openFile(out, .{});
+            defer outFile.close();
+
+            var recovery = try d.openFile("content/recovery.eee", .{});
+            defer recovery.close();
+            try loadDisk(outFile);
+            try loadDisk(recovery);
+        }
+
+        var file = try std.fs.cwd().createFile(out, .{});
+        defer file.close();
+
+        root.fixFolders();
+
+        try root.write(file);
+    }
+
     pub fn init(aDiskPath: ?[]const u8) !void {
         if (aDiskPath) |diskPath| {
             root = try allocator.alloc.create(Folder);
