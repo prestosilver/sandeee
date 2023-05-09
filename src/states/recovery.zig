@@ -46,6 +46,9 @@ pub const GSRecovery = struct {
 
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
+        self.sel = 0;
+        self.sub_sel = null;
+
         const dir = try std.fs.cwd().openIterableDir("disks", .{});
 
         var iter = dir.iterate();
@@ -153,7 +156,33 @@ pub const GSRecovery = struct {
                         self.sub_sel = null;
                         return false;
                     }
-                    std.log.info("{?} {s}", .{ self.sub_sel.?, self.disks.items[self.sel][2..] });
+
+                    switch (sub_sel) {
+                        1 => {
+                            var path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
+                            defer allocator.alloc.free(path);
+
+                            std.log.info("deleting {s}", .{path});
+
+                            try std.fs.cwd().deleteFile(path);
+
+                            _ = self.disks.orderedRemove(self.sel);
+
+                            self.sub_sel = null;
+                            self.sel = 0;
+
+                            if (self.disks.items.len == 1) {
+                                events.em.sendEvent(systemEvs.EventStateChange{
+                                    .targetState = .Disks,
+                                });
+
+                                return false;
+                            }
+                        },
+                        else => {
+                            std.log.info("{?} {s}", .{ sub_sel, self.disks.items[self.sel][2..] });
+                        },
+                    }
 
                     return false;
                 }
