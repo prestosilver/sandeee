@@ -3,6 +3,7 @@ const vecs = @import("../math/vecs.zig");
 const c = @import("../c.zig");
 const files = @import("../system/files.zig");
 const gfx = @import("graphics.zig");
+const cols = @import("../math/colors.zig");
 
 pub const Texture = struct {
     tex: c.GLuint,
@@ -10,6 +11,11 @@ pub const Texture = struct {
 
     pub fn deinit(self: *const Texture) void {
         c.glDeleteTextures(1, &self.tex);
+    }
+
+    pub fn setPixel(self: *const Texture, x: i32, y: i32, color: cols.Color) void {
+        c.glBindTexture(c.GL_TEXTURE_2D, self.tex);
+        c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, x, y, 1, 1, c.GL_RGBA, c.GL_FLOAT, &color.r);
     }
 };
 

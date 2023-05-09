@@ -7,7 +7,7 @@ pub fn log() []const u8 {
 
     // Try to run a backtrace to get where the log message originated from
     if (!builtin.strip_debug_info) {
-        const debug_info = std.debug.getSelfDebugInfo() catch unreachable;
+        const debug_info = std.debug.getSelfDebugInfo() catch return "";
         var address: usize = 0;
         if (builtin.os.tag == .windows) {
             var addr_buf: [4]usize = undefined;

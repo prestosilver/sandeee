@@ -11,6 +11,7 @@ const vecs = @import("../../math/vecs.zig");
 const gfx = @import("../../util/graphics.zig");
 const vm = @import("../vm.zig");
 const sb = @import("../../util/spritebatch.zig");
+const cols = @import("../../math/colors.zig");
 
 pub var texIdx: u8 = 0;
 
@@ -76,6 +77,31 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
     gfx.gContext.makeNotCurrent();
 }
 
+// /fake/gfx/pixel
+
+pub fn readGfxPixel(_: ?*vm.VM) ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
+}
+
+pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) !void {
+    var idx = data[0];
+    var image = data[1..];
+
+    var texture = sb.textureManager.get(&.{idx});
+    if (texture == null) return;
+
+    gfx.gContext.makeCurrent();
+
+    var x = std.mem.bytesToValue(u16, data[1..3]);
+    var y = std.mem.bytesToValue(u16, data[3..5]);
+
+    texture.?.setPixel(x, y, cols.newColor(0, 0, 0, 1));
+
+    tex.uploadTextureMem(texture.?, image) catch return error.UploadError;
+
+    gfx.gContext.makeNotCurrent();
+}
+
 // /fake/gfx
 
 pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
@@ -94,6 +120,17 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxNew,
         .pseudoWrite = writeGfxNew,
+        .parent = undefined,
+    };
+
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/pixel", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
+        .pseudoRead = readGfxPixel,
+        .pseudoWrite = writeGfxPixel,
         .parent = undefined,
     };
 
