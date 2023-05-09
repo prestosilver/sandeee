@@ -407,6 +407,8 @@ pub const Folder = struct {
     }
 
     pub fn removeFile(self: *Folder, name: []const u8, vmInstance: ?*vm.VM) !void {
+        if (self.protected) return error.FolderProtected;
+
         var file = std.ArrayList(u8).init(allocator.alloc);
         defer file.deinit();
 
@@ -430,10 +432,10 @@ pub const Folder = struct {
         }
 
         var fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
+        defer allocator.alloc.free(fullname);
         for (self.contents.items, 0..) |subfile, idx| {
             if (std.mem.eql(u8, subfile.name, fullname)) {
                 _ = self.contents.orderedRemove(idx);
-                allocator.alloc.free(fullname);
                 return;
             }
         }

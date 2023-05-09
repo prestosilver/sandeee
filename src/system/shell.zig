@@ -452,9 +452,9 @@ pub const Shell = struct {
         };
 
         if (params.len > 4) {
-            self.root.removeFile(params[4..], null) catch {
+            self.root.removeFile(params[4..], null) catch |err| {
                 result.data.deinit();
-                return error.FileNotFound;
+                return err;
             };
             try result.data.appendSlice("removed");
             return result;
