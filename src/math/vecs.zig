@@ -5,35 +5,35 @@ pub const Vector2 = struct {
     x: f32,
     y: f32,
 
-    pub fn round(a: Vector2) Vector2 {
+    pub inline fn round(a: Vector2) Vector2 {
         return Vector2{
             .x = @round(a.x),
             .y = @round(a.y),
         };
     }
 
-    pub fn add(a: Vector2, b: Vector2) Vector2 {
+    pub inline fn add(a: Vector2, b: Vector2) Vector2 {
         return Vector2{
             .x = a.x + b.x,
             .y = a.y + b.y,
         };
     }
 
-    pub fn mul(a: Vector2, b: f32) Vector2 {
+    pub inline fn mul(a: Vector2, b: f32) Vector2 {
         return Vector2{
             .x = a.x * b,
             .y = a.y * b,
         };
     }
 
-    pub fn sub(a: Vector2, b: Vector2) Vector2 {
+    pub inline fn sub(a: Vector2, b: Vector2) Vector2 {
         return Vector2{
             .x = a.x - b.x,
             .y = a.y - b.y,
         };
     }
 
-    pub fn div(a: Vector2, b: f32) Vector2 {
+    pub inline fn div(a: Vector2, b: f32) Vector2 {
         return Vector2{
             .x = a.x / b,
             .y = a.y / b,
@@ -42,27 +42,27 @@ pub const Vector2 = struct {
 
     // misc stuff
 
-    pub fn magSq(a: Vector2) f32 {
+    pub inline fn magSq(a: Vector2) f32 {
         return @fabs((a.x * a.x) + (a.y * a.y));
     }
 
-    pub fn mag(a: Vector2) f32 {
+    pub inline fn mag(a: Vector2) f32 {
         return std.math.sqrt(magSq(a));
     }
 
-    pub fn distSq(a: Vector2, b: Vector2) f32 {
+    pub inline fn distSq(a: Vector2, b: Vector2) f32 {
         return magSq(sub(a, b));
     }
 
-    pub fn dist(a: Vector2, b: Vector2) f32 {
+    pub inline fn dist(a: Vector2, b: Vector2) f32 {
         return mag(sub(a, b));
     }
 
-    pub fn getAngle(a: Vector2) f32 {
+    pub inline fn getAngle(a: Vector2) f32 {
         return std.math.atan2(f32, a.x, a.y);
     }
 
-    pub fn setAngle(a: Vector2, angle: f32) f32 {
+    pub inline fn setAngle(a: Vector2, angle: f32) f32 {
         var magnitude = a.mag;
 
         var x = @cos(angle);
@@ -80,7 +80,7 @@ pub const Vector3 = struct {
     y: f32,
     z: f32,
 
-    pub fn add(a: Vector3, b: Vector3) Vector3 {
+    pub inline fn add(a: Vector3, b: Vector3) Vector3 {
         return Vector3{
             .x = a.x + b.x,
             .y = a.y + b.y,
@@ -88,11 +88,11 @@ pub const Vector3 = struct {
         };
     }
 
-    pub fn dot(a: Vector2, b: Vector2) f32 {
+    pub inline fn dot(a: Vector2, b: Vector2) f32 {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 
-    pub fn cross(a: Vector2, b: Vector2) Vector3 {
+    pub inline fn cross(a: Vector2, b: Vector2) Vector3 {
         return Vector3{
             .x = a.y * a.z - b.z * b.y,
             .y = a.z * a.x - b.x * b.z,
@@ -100,23 +100,23 @@ pub const Vector3 = struct {
         };
     }
 
-    pub fn mag(a: Vector2) f32 {
+    pub inline fn mag(a: Vector2) f32 {
         return std.math.sqrt(dot(a, a));
     }
 
-    pub fn normalize(a: Vector3) Vector3 {
+    pub inline fn normalize(a: Vector3) Vector3 {
         return a * (1 / a.mag);
     }
 };
 
-pub fn newVec2(x: f32, y: f32) Vector2 {
+pub inline fn newVec2(x: f32, y: f32) Vector2 {
     return Vector2{
         .x = x,
         .y = y,
     };
 }
 
-pub fn newVec3(x: f32, y: f32, z: f32) Vector3 {
+pub inline fn newVec3(x: f32, y: f32, z: f32) Vector3 {
     return Vector3{
         .x = x,
         .y = y,
