@@ -261,8 +261,9 @@ pub const GSWindowed = struct {
         }
 
         try files.write();
-
+        try self.face.deinit();
         try self.settingsManager.deinit();
+
         self.windows.deinit();
         emails.deinit();
         files.deinit();
@@ -303,6 +304,8 @@ pub const GSWindowed = struct {
 
                 try self.sb.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
 
+                try popup.data.drawName(self.font_shader, self.face, self.sb);
+
                 // update scisor region
                 self.sb.scissor = popup.data.scissor();
 
@@ -338,6 +341,8 @@ pub const GSWindowed = struct {
             popup.data.parentPos = rect.newRect(0, 0, deskSize.x, deskSize.y);
 
             try self.sb.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
+
+            try popup.data.drawName(self.font_shader, self.face, self.sb);
 
             // update scisor region
             self.sb.scissor = popup.data.scissor();

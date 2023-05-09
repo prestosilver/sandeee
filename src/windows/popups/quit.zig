@@ -12,25 +12,31 @@ const events = @import("../../util/events.zig");
 const windowEvs = @import("../../events/window.zig");
 const systemEvs = @import("../../events/system.zig");
 const gfx = @import("../../util/graphics.zig");
+const spr = @import("../../drawers/sprite2d.zig");
 const c = @import("../../c.zig");
 
 pub const PopupQuit = struct {
     const Self = @This();
 
     done: ?u32 = null,
+    icons: [2]spr.Sprite,
+    shader: *shd.Shader,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+        try batch.draw(spr.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 55, bnds.y, 0));
+        try batch.draw(spr.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 231, bnds.y, 0));
+
         try font.draw(.{
             .batch = batch,
             .shader = shader,
-            .pos = bnds.location(),
+            .pos = bnds.location().add(vecs.Vector2{ .x = 0, .y = 64 }),
             .text = "Shutdown",
         });
 
         try font.draw(.{
             .batch = batch,
             .shader = shader,
-            .pos = bnds.location().add(vecs.Vector2{ .x = 175, .y = 0 }),
+            .pos = bnds.location().add(vecs.Vector2{ .x = 175, .y = 64 }),
             .text = "Restart",
         });
 

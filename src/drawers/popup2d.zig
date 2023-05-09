@@ -148,6 +148,21 @@ pub const PopupData = struct {
         };
     }
 
+    pub fn drawName(self: *PopupData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
+        var pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
+
+        var color = cols.newColorRGBA(255, 255, 255, 255);
+        try font.draw(.{
+            .batch = batch,
+            .shader = shader,
+            .text = self.title,
+            .pos = vecs.newVec2(pos.x + 9, pos.y + 8),
+            .color = color,
+            .wrap = self.size.x,
+            .maxlines = 1,
+        });
+    }
+
     pub fn drawContents(self: *PopupData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
         try batch.addEntry(&.{
             .update = true,
@@ -185,7 +200,12 @@ pub const PopupData = struct {
             return true;
         }
 
-        self.contents.click(mousepos.sub(pos)) catch {};
+        var clickPos = mousepos.sub(pos);
+
+        if (clickPos.x < 0 or clickPos.y < 34) return false;
+        if (clickPos.x > self.size.x or clickPos.y > self.size.y) return false;
+
+        self.contents.click(clickPos) catch {};
 
         return false;
     }

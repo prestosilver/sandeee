@@ -19,7 +19,7 @@ const files = @import("../system/files.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
 
-const TOTAL_SPRITES: f32 = 12;
+const TOTAL_SPRITES: f32 = 13;
 const TEX_SIZE: f32 = 32;
 
 fn range(len: usize) []const void {
@@ -263,7 +263,25 @@ pub const BarData = struct {
                         },
                         6 => {
                             var adds = try allocator.alloc.create(popups.all.quit.PopupQuit);
-                            adds.* = .{};
+                            adds.* = .{
+                                .shader = shader,
+                                .icons = .{
+                                    .{
+                                        .texture = "bar",
+                                        .data = .{
+                                            .source = rect.newRect(0, 11.0 / TOTAL_SPRITES, 1.0, 1.0 / TOTAL_SPRITES),
+                                            .size = vecs.newVec2(64, 64),
+                                        },
+                                    },
+                                    .{
+                                        .texture = "bar",
+                                        .data = .{
+                                            .source = rect.newRect(0, 12.0 / TOTAL_SPRITES, 1.0, 1.0 / TOTAL_SPRITES),
+                                            .size = vecs.newVec2(64, 64),
+                                        },
+                                    },
+                                },
+                            };
 
                             events.em.sendEvent(windowEvs.EventCreatePopup{
                                 .global = true,
