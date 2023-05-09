@@ -84,7 +84,7 @@ pub const GSRecovery = struct {
 
     pub fn update(_: *Self, _: f32) !void {}
 
-    const UPDATE_MODES = [_][*:0]const u8{ "H Hello", "W World", "X Back" };
+    const UPDATE_MODES = [_][*:0]const u8{ "R Reinstall", "D Delete disk", "X Back" };
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         _ = size;

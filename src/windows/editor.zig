@@ -172,7 +172,6 @@ pub const EditorData = struct {
                         var buff = try allocator.alloc.alloc(u8, self.buffer.items.len);
                         std.mem.copy(u8, buff, self.buffer.items);
                         self.file.?.contents = buff;
-                        std.log.info("saved", .{});
                         self.modified = false;
                     }
                 }

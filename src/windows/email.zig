@@ -224,8 +224,6 @@ const EmailData = struct {
                         try vmInstance.runAll();
                         var targetText = cond[idx + 1 ..];
 
-                        std.log.info("{s}", .{vmInstance.out.items});
-
                         good = good and std.mem.eql(u8, vmInstance.out.items, targetText);
                     }
                 }

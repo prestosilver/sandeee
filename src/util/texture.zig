@@ -14,8 +14,6 @@ pub const Texture = struct {
     }
 
     pub fn setPixel(self: *const Texture, x: i32, y: i32, color: cols.Color) void {
-        std.log.info("{}, {}", .{ x, y });
-
         c.glBindTexture(c.GL_TEXTURE_2D, self.tex);
         c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, x, y, 1, 1, c.GL_RGBA, c.GL_FLOAT, &color.r);
         c.glBindTexture(c.GL_TEXTURE_2D, 0);
