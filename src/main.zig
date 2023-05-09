@@ -654,7 +654,6 @@ pub fn main() anyerror!void {
     }
 
     try biosFace.deinit();
-    try mainFace.deinit();
     try batch.textureManager.deinit();
 
     gfx.close(ctx);

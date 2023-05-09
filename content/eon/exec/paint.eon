@@ -1,0 +1,86 @@
+#include "content/eon/libs/libload.eon"
+#include "content/eon/libs/sys.eon"
+
+fn error(msg) {
+    asm "sys 18";
+}
+
+fn processArgs() {
+    var file = getArg(1);
+
+    if (file == 0) {
+       error("Missing File");
+    }
+
+    return file;
+}
+
+fn setPixel(tex, x, y) {
+    asm "copy 2";
+    asm "push 0";
+    asm "getb";
+    asm "cat";
+
+    return 0;
+}
+
+fn render(win, tex, w, h) {
+    var source = _MakeRect(0, 0, 1024, 1024);
+    var win_w = _WindowWidth(win);
+    var win_h = _WindowHeight(win);
+
+    var ratio = 1000;
+
+    var width_ratio = win_w * 1000;
+    width_ratio = width_ratio / w;
+    var height_ratio = win_h * 1000;
+    height_ratio = height_ratio / h;
+
+    ratio = width_ratio;
+    if (ratio > height_ratio) {
+        ratio = height_ratio;
+    }
+
+    var target_w = ratio * w;
+    target_w = target_w / 1000;
+    var target_h = ratio * h;
+    target_h = target_h / 1000;
+
+    var target_x = win_w - target_w;
+    var target_y = win_h - target_h;
+
+    var dest = _MakeRect(target_x / 2, target_y / 2, target_w, target_h);
+    
+    _WindowRender(win, tex, dest, source);
+    _WindowFlip(win);
+
+    return 0;
+}
+
+fn main() {
+    setupLibLoad();
+    loadLib("/libs/window.ell");
+    loadLib("/libs/texture.ell");
+
+    var input = processArgs();
+    var window = _WindowCreate();
+    var texture = _TextureCreate();
+    var content = _TextureRead(input);
+    _TextureUpload(content, texture);
+    setPixel(texture, 0, 0);
+
+    _SetWindowTitle(window, "EEE Image Array Editor" & input);
+
+    var w = _TextureWidth(content);
+    var h = _TextureHeight(content);
+
+    for (0; _WindowOpen(); 1) {
+        render(window, texture, w * 2, h * 2);
+    }
+
+    _TextureDestroy(texture);
+    _WindowDestroy(window);
+
+    return 0;
+}
+
