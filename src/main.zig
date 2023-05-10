@@ -351,6 +351,9 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     // disable events on loading screen
     inputEvs.setup(ctx.window, true);
 
+    // update game state
+    currentState = .Crash;
+
     // run setup
     gameStates.getPtr(.Crash).setup() catch {};
 
