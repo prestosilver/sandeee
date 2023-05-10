@@ -85,6 +85,14 @@ fn getLineEnum(line) {
         return 27;
     } else if (_StringStartsWith(line, "create")) {
         return 28;
+    } else if (_StringStartsWith(line, "size")) {
+        return 29;
+    } else if (_StringStartsWith(line, "len")) {
+        return 30;
+    } else if (_StringStartsWith(line, "sin")) {
+        return 31;
+    } else if (_StringStartsWith(line, "cos")) {
+        return 32;
     }
 
     return 255;
