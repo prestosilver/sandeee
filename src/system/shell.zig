@@ -167,6 +167,7 @@ pub const Shell = struct {
     }
 
     pub fn runWeb(self: *Shell, param: []const u8) !Result {
+        _ = self;
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
@@ -186,7 +187,7 @@ pub const Shell = struct {
             const alignment = @typeInfo(*wins.web.WebData).Pointer.alignment;
             var webself = @ptrCast(*wins.web.WebData, @alignCast(alignment, window.data.contents.ptr));
 
-            webself.file = try self.root.getFile(param[4..]);
+            webself.path = try allocator.alloc.dupe(u8, param[4..]);
         }
         events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 

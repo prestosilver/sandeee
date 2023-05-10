@@ -11,6 +11,9 @@ const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const files = @import("../system/files.zig");
 const tex = @import("../util/texture.zig");
+const winEvs = @import("../events/window.zig");
+const events = @import("../util/events.zig");
+const popups = @import("../drawers/popup2d.zig");
 
 const SCROLL = 30;
 
@@ -18,22 +21,105 @@ pub const WebData = struct {
     const Self = @This();
 
     pub const WebLink = struct {
-        url: ?*files.File,
+        url: []const u8,
         pos: rect.Rectangle,
-        color: col.Color,
     };
 
     highlight: sprite.Sprite,
     menubar: sprite.Sprite,
     text_box: [2]sprite.Sprite,
     icons: [1]sprite.Sprite,
+    path: ?[]const u8,
+
     shader: *shd.Shader,
-    file: ?*files.File,
+    conts: ?[]const u8,
     links: std.ArrayList(WebLink),
-    hist: std.ArrayList(*files.File),
+    hist: std.ArrayList([]const u8),
 
     top: bool = false,
     highlight_idx: usize = 0,
+
+    pub fn loadPage(self: *Self) !void {
+        if (self.path) |path| {
+            switch (path[0]) {
+                '@' => {
+                    var idx = std.mem.indexOf(u8, path, ":") orelse {
+                        self.conts = "Bad Remote";
+
+                        return;
+                    };
+
+                    var stream = try std.net.tcpConnectToHost(allocator.alloc, path[1..idx], 80);
+                    var request = try std.fmt.allocPrint(allocator.alloc, "GET {s} HTTP/1.1\r\nUser-Agent: SandEEE/0.0\r\nConnection: Close\r\nHost: {s}\r\n\r\n", .{
+                        path[idx + 1 ..],
+                        path[1..idx],
+                    });
+
+                    defer allocator.alloc.free(request);
+
+                    _ = try stream.write(request);
+
+                    var conts = try allocator.alloc.alloc(u8, 10000);
+                    defer allocator.alloc.free(conts);
+
+                    var fconts = conts[0..try stream.readAll(conts)];
+                    fconts = fconts[(std.mem.indexOf(u8, fconts, "\r\n\r\n") orelse 0) + 4 ..];
+
+                    if (!std.mem.endsWith(u8, self.path.?, "edf")) {
+                        try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0 ..]);
+
+                        try self.back();
+                        return;
+                    }
+
+                    self.conts = try allocator.alloc.dupe(u8, fconts);
+                },
+                '/' => {
+                    self.conts = try ((try files.root.getFile(path)) orelse return).read(null);
+                },
+                else => {},
+            }
+        }
+    }
+
+    pub fn saveDialog(self: *Self, outputData: []const u8, name: []const u8) !void {
+        _ = self;
+        var output = try allocator.alloc.create([]const u8);
+        output.* = outputData;
+
+        var adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+        adds.* = .{
+            .text = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ files.home.name, name }),
+            .data = @ptrCast(*anyopaque, output),
+            .submit = &submit,
+            .prompt = "Pick a path to save the file",
+        };
+
+        events.em.sendEvent(winEvs.EventCreatePopup{
+            .popup = .{
+                .texture = "win",
+                .data = .{
+                    .title = "Save As",
+                    .source = rect.newRect(0, 0, 1, 1),
+                    .size = vecs.newVec2(350, 125),
+                    .parentPos = undefined,
+                    .contents = popups.PopupData.PopupContents.init(adds),
+                },
+            },
+        });
+    }
+
+    pub fn submit(file: []const u8, data: *anyopaque) !void {
+        var conts = @ptrCast(*[]const u8, @alignCast(@alignOf(Self), data));
+
+        _ = try files.root.newFile(file);
+        if (try files.root.getFile(file)) |target| {
+            try target.write(conts.*, null);
+
+            allocator.alloc.free(conts.*);
+            allocator.alloc.destroy(conts);
+        }
+    }
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
@@ -42,6 +128,7 @@ pub const WebData = struct {
             };
         }
 
+        var add_links = false;
         if (self.top) {
             props.scroll.?.value = 0;
             self.top = false;
@@ -49,14 +136,14 @@ pub const WebData = struct {
 
         var pos = vecs.newVec2(0, -props.scroll.?.value + 34);
 
-        var cont: []const u8 = "Error Loading File";
-        if (self.file) |file| {
-            cont = try file.read(null);
+        if (self.conts == null) {
+            try self.loadPage();
+            add_links = true;
         }
 
-        var iter = std.mem.split(u8, cont, "\n");
+        var cont = self.conts orelse "Error Loading Page";
 
-        const add_links = self.links.items.len == 0;
+        var iter = std.mem.split(u8, cont, "\n");
 
         // draw text
         while (iter.next()) |line| {
@@ -77,33 +164,23 @@ pub const WebData = struct {
             if (std.mem.startsWith(u8, line, "> ")) {
                 color = col.newColor(0, 0, 1, 1);
                 var linkcont = line[2..];
-                var linkiter = std.mem.split(u8, linkcont, ":");
-                text = linkiter.next().?;
+                var linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
+                text = linkcont[0..linkidx];
                 text = std.mem.trim(u8, text, &std.ascii.whitespace);
-                var url = linkiter.next();
-                url = std.mem.trim(u8, url.?, &std.ascii.whitespace);
-                if (url) |path| {
-                    var size = font.sizeText(.{ .text = text, .scale = scale });
-                    var file = try self.file.?.parent.getFile(path);
+                var url = linkcont[linkidx + 1 ..];
+                url = std.mem.trim(u8, url, &std.ascii.whitespace);
+                var size = font.sizeText(.{ .text = text, .scale = scale });
 
-                    if (path[0] == '/') {
-                        file = try files.root.getFile(path);
-                    }
-
-                    if (file == null) {
-                        color = col.newColor(1, 0, 0, 1);
-                    }
-
-                    if (add_links) {
-                        var link = WebData.WebLink{
-                            .url = file,
-                            .pos = rect.newRect(6 + pos.x, 6 + pos.y + props.scroll.?.value, size.x, size.y),
-                            .color = color,
-                        };
-                        try self.links.append(link);
-                    }
+                if (add_links) {
+                    var link = WebData.WebLink{
+                        .url = url,
+                        .pos = rect.newRect(6 + pos.x, 6 + pos.y + props.scroll.?.value, size.x, size.y),
+                    };
+                    try self.links.append(link);
                 }
             }
+
+            if (pos.y > bnds.h + bnds.y and !add_links) continue;
 
             try font.draw(.{
                 .batch = batch,
@@ -128,7 +205,7 @@ pub const WebData = struct {
             self.highlight.data.size.x = hlpos.w;
             self.highlight.data.size.y = hlpos.h;
 
-            self.highlight.data.color = self.links.items[self.highlight_idx - 1].color;
+            self.highlight.data.color = col.newColor(0, 0, 255, 128);
 
             try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - props.scroll.?.value + 4, 0));
         }
@@ -145,11 +222,11 @@ pub const WebData = struct {
 
         var tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 150 - 34, 28);
-        if (self.file) |file| {
+        if (self.path) |file| {
             try font.draw(.{
                 .batch = batch,
                 .shader = font_shader,
-                .text = file.name,
+                .text = file,
                 .pos = vecs.newVec2(bnds.x + 36, bnds.y + 8),
                 .wrap = bnds.w,
             });
@@ -179,25 +256,45 @@ pub const WebData = struct {
         self.highlight_idx = 0;
     }
 
+    pub fn back(self: *Self) !void {
+        if (self.hist.popOrNull()) |last| {
+            self.path = last;
+            self.conts = null;
+            self.links.clearAndFree();
+            self.highlight_idx = 0;
+            self.top = true;
+        }
+    }
+
     pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, _: i32) !void {
         if (pos.y < 36) {
             if (rect.newRect(0, 0, 28, 28).contains(pos)) {
-                if (self.hist.popOrNull()) |last| {
-                    self.file = last;
-                    self.links.clearAndFree();
-                    self.highlight_idx = 0;
-                    self.top = true;
-                }
+                try self.back();
             }
 
             return;
         }
 
+        var lastHost: []const u8 = "";
+        if (self.path.?[0] == '@') {
+            if (std.mem.indexOf(u8, self.path.?, ":")) |idx|
+                lastHost = self.path.?[1..idx];
+        }
+
         if (self.highlight_idx == 0) return;
 
-        try self.hist.append(self.file.?);
+        try self.hist.append(self.path.?);
 
-        self.file = self.links.items[self.highlight_idx - 1].url;
+        self.path = self.links.items[self.highlight_idx - 1].url;
+
+        if (self.path.?[0] == '@') {
+            if (std.mem.indexOf(u8, self.path.?, ":") == null) {
+                self.path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ lastHost, self.path.?[1..] });
+            }
+        }
+
+        self.conts = null;
+
         self.links.clearAndFree();
         self.highlight_idx = 0;
         self.top = true;
@@ -246,10 +343,11 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
                 vecs.newVec2(22, 20),
             )),
         },
+        .path = "@sandeee.org:/index.edf",
+        .conts = null,
         .shader = shader,
-        .file = try files.root.getFile("/docs/index.edf"),
         .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),
-        .hist = std.ArrayList(*files.File).init(allocator.alloc),
+        .hist = std.ArrayList([]const u8).init(allocator.alloc),
     };
 
     return win.WindowContents.init(self, "web", "Xplorer", col.newColor(1, 1, 1, 1));
