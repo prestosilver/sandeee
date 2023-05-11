@@ -28,7 +28,7 @@ pub const WebData = struct {
     highlight: sprite.Sprite,
     menubar: sprite.Sprite,
     text_box: [2]sprite.Sprite,
-    icons: [1]sprite.Sprite,
+    icons: [2]sprite.Sprite,
     path: ?[]const u8,
 
     shader: *shd.Shader,
@@ -38,9 +38,14 @@ pub const WebData = struct {
 
     top: bool = false,
     highlight_idx: usize = 0,
+    loading: bool = false,
+    add_links: bool = false,
 
     pub fn loadPage(self: *Self) !void {
         if (self.path) |path| {
+            self.loading = true;
+            defer self.loading = false;
+            defer self.add_links = true;
             switch (path[0]) {
                 '@' => {
                     var idx = std.mem.indexOf(u8, path, ":") orelse {
@@ -63,6 +68,12 @@ pub const WebData = struct {
                     defer allocator.alloc.free(conts);
 
                     var fconts = conts[0..try stream.readAll(conts)];
+                    if (std.mem.indexOf(u8, fconts, "404 File not found") != null) {
+                        self.conts = try allocator.alloc.dupe(u8, "- 404 Error -");
+
+                        return;
+                    }
+
                     fconts = fconts[(std.mem.indexOf(u8, fconts, "\r\n\r\n") orelse 0) + 4 ..];
 
                     if (!std.mem.endsWith(u8, self.path.?, "edf")) {
@@ -128,96 +139,99 @@ pub const WebData = struct {
             };
         }
 
-        var add_links = false;
         if (self.top) {
             props.scroll.?.value = 0;
             self.top = false;
         }
 
-        var pos = vecs.newVec2(0, -props.scroll.?.value + 34);
+        if (!self.loading) drawConts: {
+            var pos = vecs.newVec2(0, -props.scroll.?.value + 34);
 
-        if (self.conts == null) {
-            try self.loadPage();
-            add_links = true;
-        }
-
-        var cont = self.conts orelse "Error Loading Page";
-
-        var iter = std.mem.split(u8, cont, "\n");
-
-        // draw text
-        while (iter.next()) |line| {
-            var scale: f32 = 1;
-            var text = line;
-            var color = col.newColor(0, 0, 0, 1);
-
-            if (std.mem.startsWith(u8, line, "- ") and std.mem.endsWith(u8, line, " -")) {
-                scale = 3.0;
-                text = line[2 .. line.len - 2];
+            if (self.conts == null) {
+                _ = try std.Thread.spawn(.{}, loadPage, .{self});
+                break :drawConts;
             }
 
-            if (std.mem.startsWith(u8, line, "-- ") and std.mem.endsWith(u8, line, " --")) {
-                scale = 2.0;
-                text = line[3 .. line.len - 3];
-            }
+            var cont = self.conts orelse "Error Loading Page";
 
-            if (std.mem.startsWith(u8, line, "> ")) {
-                color = col.newColor(0, 0, 1, 1);
-                var linkcont = line[2..];
-                var linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
-                text = linkcont[0..linkidx];
-                text = std.mem.trim(u8, text, &std.ascii.whitespace);
-                var url = linkcont[linkidx + 1 ..];
-                url = std.mem.trim(u8, url, &std.ascii.whitespace);
-                var size = font.sizeText(.{ .text = text, .scale = scale });
+            var iter = std.mem.split(u8, cont, "\n");
 
-                if (add_links) {
-                    var link = WebData.WebLink{
-                        .url = url,
-                        .pos = rect.newRect(6 + pos.x, 6 + pos.y + props.scroll.?.value, size.x, size.y),
-                    };
-                    try self.links.append(link);
+            // draw text
+            while (iter.next()) |line| {
+                var scale: f32 = 1;
+                var text = line;
+                var color = col.newColor(0, 0, 0, 1);
+
+                if (std.mem.startsWith(u8, line, "- ") and std.mem.endsWith(u8, line, " -")) {
+                    scale = 3.0;
+                    text = line[2 .. line.len - 2];
                 }
+
+                if (std.mem.startsWith(u8, line, "-- ") and std.mem.endsWith(u8, line, " --")) {
+                    scale = 2.0;
+                    text = line[3 .. line.len - 3];
+                }
+
+                if (std.mem.startsWith(u8, line, "> ")) {
+                    color = col.newColor(0, 0, 1, 1);
+                    var linkcont = line[2..];
+                    var linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
+                    text = linkcont[0..linkidx];
+                    text = std.mem.trim(u8, text, &std.ascii.whitespace);
+                    var url = linkcont[linkidx + 1 ..];
+                    url = std.mem.trim(u8, url, &std.ascii.whitespace);
+                    var size = font.sizeText(.{ .text = text, .scale = scale });
+
+                    if (self.add_links) {
+                        var link = WebData.WebLink{
+                            .url = url,
+                            .pos = rect.newRect(6 + pos.x, 6 + pos.y + props.scroll.?.value, size.x, size.y),
+                        };
+                        try self.links.append(link);
+                    }
+                }
+
+                if (pos.y > bnds.h + bnds.y and !self.add_links) continue;
+
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = font_shader,
+                    .text = text,
+                    .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
+                    .color = color,
+                    .scale = scale,
+                    .wrap = bnds.w,
+                });
+
+                pos.y += font.sizeText(.{ .text = text, .scale = scale, .wrap = bnds.w }).y;
+                pos.x = 0;
             }
 
-            if (pos.y > bnds.h + bnds.y and !add_links) continue;
+            props.scroll.?.maxy = pos.y + 64 + font.size + props.scroll.?.value - bnds.h;
 
-            try font.draw(.{
-                .batch = batch,
-                .shader = font_shader,
-                .text = text,
-                .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
-                .color = color,
-                .scale = scale,
-                .wrap = bnds.w,
-            });
+            // draw highlight for url
+            if (self.highlight_idx != 0) {
+                var hlpos = self.links.items[self.highlight_idx - 1].pos;
 
-            pos.y += font.sizeText(.{ .text = text, .scale = scale, .wrap = bnds.w }).y;
-            pos.x = 0;
-        }
+                self.highlight.data.size.x = hlpos.w;
+                self.highlight.data.size.y = hlpos.h;
 
-        props.scroll.?.maxy = pos.y + 64 + font.size + props.scroll.?.value - bnds.h;
+                self.highlight.data.color = col.newColor(0, 0, 255, 128);
 
-        // draw highlight for url
-        if (self.highlight_idx != 0) {
-            var hlpos = self.links.items[self.highlight_idx - 1].pos;
+                try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - props.scroll.?.value + 4, 0));
+            }
 
-            self.highlight.data.size.x = hlpos.w;
-            self.highlight.data.size.y = hlpos.h;
-
-            self.highlight.data.color = col.newColor(0, 0, 255, 128);
-
-            try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - props.scroll.?.value + 4, 0));
+            self.add_links = false;
         }
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
         try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
-        self.text_box[1].data.size.x = bnds.w - 150 - 34;
+        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 2, 0));
+        self.text_box[1].data.size.x = bnds.w - 150 - 66;
 
-        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 66, bnds.y + 2, 0));
         try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 150, bnds.y + 2, 0));
 
         var tmp = batch.scissor;
@@ -227,7 +241,7 @@ pub const WebData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = file,
-                .pos = vecs.newVec2(bnds.x + 36, bnds.y + 8),
+                .pos = vecs.newVec2(bnds.x + 68, bnds.y + 8),
                 .wrap = bnds.w,
             });
         } else {
@@ -235,13 +249,15 @@ pub const WebData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = "Error",
-                .pos = vecs.newVec2(bnds.x + 36, bnds.y + 8),
+                .pos = vecs.newVec2(bnds.x + 68, bnds.y + 8),
                 .wrap = bnds.w,
             });
         }
         batch.scissor = tmp;
 
         try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
+
+        try batch.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 36, bnds.y + 6, 0));
     }
 
     pub fn scroll(_: *Self, _: f32, _: f32) void {}
@@ -259,7 +275,10 @@ pub const WebData = struct {
     pub fn back(self: *Self) !void {
         if (self.hist.popOrNull()) |last| {
             self.path = last;
-            self.conts = null;
+            if (self.conts != null) {
+                allocator.alloc.free(self.conts.?);
+                self.conts = null;
+            }
             self.links.clearAndFree();
             self.highlight_idx = 0;
             self.top = true;
@@ -270,6 +289,13 @@ pub const WebData = struct {
         if (pos.y < 36) {
             if (rect.newRect(0, 0, 28, 28).contains(pos)) {
                 try self.back();
+            }
+
+            if (rect.newRect(30, 0, 28, 28).contains(pos)) {
+                if (self.conts != null) {
+                    allocator.alloc.free(self.conts.?);
+                    self.conts = null;
+                }
             }
 
             return;
@@ -293,8 +319,10 @@ pub const WebData = struct {
             }
         }
 
-        self.conts = null;
-
+        if (self.conts != null) {
+            allocator.alloc.free(self.conts.?);
+            self.conts = null;
+        }
         self.links.clearAndFree();
         self.highlight_idx = 0;
         self.top = true;
@@ -341,6 +369,10 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
             sprite.Sprite.new(texture, sprite.SpriteData.new(
                 rect.newRect(0.0 / 32.0, 22.0 / 32.0, 11.0 / 32.0, 10.0 / 32.0),
                 vecs.newVec2(22, 20),
+            )),
+            sprite.Sprite.new(texture, sprite.SpriteData.new(
+                rect.newRect(22.0 / 32.0, 22.0 / 32.0, 10.0 / 32.0, 10.0 / 32.0),
+                vecs.newVec2(20, 20),
             )),
         },
         .path = "@sandeee.org:/index.edf",
