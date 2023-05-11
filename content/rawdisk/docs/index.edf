@@ -1,8 +1,0 @@
-- Docs -
-> glossary: /docs/glossary.edf
--- System Structure --
-> fake files: /docs/fake/index.edf
--- The VM --
-> general: /doc/vm/start.edf
-> op codes: /docs/vm/ops.edf
-> sys: /docs/vm/sys.edf
