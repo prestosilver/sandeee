@@ -52,7 +52,7 @@ pub const NotificationData = struct {
     }
 
     pub fn update(self: *NotificationData, dt: f32) !void {
-        self.time = @max(0, self.time - dt);
+        self.time = @max(@as(f32, 0), self.time - dt);
     }
 
     pub fn getVerts(self: *NotificationData, pos: vecs.Vector3) !va.VertArray {
