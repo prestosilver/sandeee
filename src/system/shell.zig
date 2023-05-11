@@ -307,6 +307,24 @@ pub const Shell = struct {
         return error.MissingParameter;
     }
 
+    pub fn dir(self: *Shell, param: []const u8) !Result {
+        var result: Result = Result{
+            .data = std.ArrayList(u8).init(allocator.alloc),
+        };
+
+        if (param.len > 4) {
+            if (try self.root.newFolder(param[4..])) {
+                try result.data.appendSlice("created");
+                return result;
+            } else {
+                result.data.deinit();
+                return error.FileNotFound;
+            }
+        }
+
+        return error.MissingParameter;
+    }
+
     pub fn todo(_: *Shell, _: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
@@ -473,6 +491,7 @@ pub const Shell = struct {
         if (std.mem.eql(u8, cmd, "help")) return self.help(params);
         if (std.mem.eql(u8, cmd, "ls")) return self.ls(params);
         if (std.mem.eql(u8, cmd, "new")) return self.new(params);
+        if (std.mem.eql(u8, cmd, "dir")) return self.dir(params);
         if (std.mem.eql(u8, cmd, "rem")) return self.rem(params);
         if (std.mem.eql(u8, cmd, "cd")) return self.cd(params);
 
