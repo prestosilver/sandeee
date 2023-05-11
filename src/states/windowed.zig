@@ -51,6 +51,7 @@ pub const GSWindowed = struct {
     settingsManager: *conf.SettingManager,
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
+    init: bool = false,
 
     popup: ?popups.Popup = null,
 
@@ -145,6 +146,8 @@ pub const GSWindowed = struct {
     }
 
     pub fn settingSet(event: systemEvs.EventSetSetting) bool {
+        if (!globalSelf.init) return false;
+
         if (std.mem.eql(u8, event.setting, "wallpaper_color")) {
             if (event.value.len != 6) {
                 globalSelf.color.r = 0;
@@ -172,6 +175,8 @@ pub const GSWindowed = struct {
     }
 
     pub fn setup(self: *Self) !void {
+        self.init = true;
+
         self.popup = null;
         self.windows = std.ArrayList(win.Window).init(allocator.alloc);
         self.notifs = std.ArrayList(notifications.Notification).init(allocator.alloc);
@@ -224,7 +229,7 @@ pub const GSWindowed = struct {
         events.em.registerListener(windowEvs.EventNotification, notification);
         events.em.registerListener(systemEvs.EventSetSetting, settingSet);
 
-        if (std.mem.eql(u8, self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
+        if (std.ascii.eqlIgnoreCase(self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
             var window = win.Window.new("win", win.WindowData{
                 .source = rect.Rectangle{
                     .x = 0.0,
@@ -254,6 +259,8 @@ pub const GSWindowed = struct {
     }
 
     pub fn deinit(self: *Self) !void {
+        self.init = false;
+
         try emails.saveEmailsState("conf/emails.bin");
 
         for (self.windows.items) |*window| {
