@@ -222,7 +222,6 @@ pub const GSWindowed = struct {
         win.WindowContents.shader = self.shader;
         shell.shader = self.shader;
 
-        // TODO: Unregister?
         events.em.registerListener(windowEvs.EventCreatePopup, createPopup);
         events.em.registerListener(windowEvs.EventClosePopup, closePopup);
         events.em.registerListener(windowEvs.EventCreateWindow, createWindow);

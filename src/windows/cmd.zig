@@ -92,7 +92,6 @@ const CMDData = struct {
             });
         }
 
-        //TODO: crash?
         props.scroll.?.maxy = @max(height, bnds.h) - bnds.h;
         if (self.bot) {
             self.bot = false;

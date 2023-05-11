@@ -134,8 +134,6 @@ pub fn blit() !void {
     ctx.makeCurrent();
 
     if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
-        // TODO: No signal indicator
-
         // for when minimized render nothing
         gfx.clear(&ctx);
 
@@ -593,7 +591,7 @@ pub fn main() anyerror!void {
     try gameStates.getPtr(.Disks).setup();
     inputEvs.setup(ctx.window, true);
 
-    //TODO: ???
+    // set some random vars
     win.deskSize = &gfx.gContext.size;
     windowedState.GSWindowed.deskSize = &gfx.gContext.size;
     wallpaper = &gsWindowed.wallpaper;

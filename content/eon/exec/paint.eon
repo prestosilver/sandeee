@@ -15,11 +15,22 @@ fn processArgs() {
     return file;
 }
 
+fn toShort(n) {
+    var result = @n;
+    var adds = n / 256;
+
+    return result & @adds;
+}
+
 fn setPixel(tex, x, y) {
-    asm "copy 2";
-    asm "push 0";
-    asm "getb";
-    asm "cat";
+    var file = open("/fake/gfx/pixel");
+
+    var xs = toShort(x);
+    var ys = toShort(y);
+    
+    write(file, tex & xs & ys);
+
+    close(file);
 
     return 0;
 }
@@ -67,7 +78,7 @@ fn main() {
     var texture = _TextureCreate();
     var content = _TextureRead(input);
     _TextureUpload(content, texture);
-    setPixel(texture, 0, 0);
+    setPixel(texture, 1, 1);
 
     _SetWindowTitle(window, "EEE Image Array Editor" & input);
 
