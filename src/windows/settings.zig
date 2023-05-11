@@ -125,6 +125,21 @@ const SettingsData = struct {
                         },
                     });
                 },
+                3 => {
+                    try settings.appendSlice(&[_]Setting{
+                        Setting{
+                            .kind = .Dropdown,
+                            .kinddata = "No Yes",
+                            .setting = "Show Welcome",
+                            .key = "show_welcome",
+                        },
+                        Setting{
+                            .kind = .String,
+                            .setting = "Startup Script",
+                            .key = "startup_file",
+                        },
+                    });
+                },
                 else => {},
             }
 
