@@ -35,7 +35,7 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         for (0..16) |y| {
             var ch = try alloc.alloc(u8, chw * chh);
             defer alloc.free(ch);
-            std.mem.set(u8, ch, 0);
+            @memset(ch, 0);
 
             for (0..chw) |chx| {
                 for (0..chh - SPACING) |chy| {

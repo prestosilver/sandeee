@@ -72,7 +72,7 @@ pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
         }
     }
 
-    std.mem.set(u8, result, 0);
+    @memset(result, 0);
     return result;
 }
 

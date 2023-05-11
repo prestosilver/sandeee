@@ -96,7 +96,7 @@ pub fn build(b: *std.build.Builder) void {
     exe.linkSystemLibrary("c");
     exe.linkLibC();
 
-    exe.install();
+    b.installArtifact(exe);
 
     var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
     var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
@@ -209,14 +209,14 @@ pub fn build(b: *std.build.Builder) void {
     exe.step.dependOn(&write_step.step);
     exe.step.dependOn(&email_step.step);
 
-    const run_cmd = exe.run();
+    const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     run_cmd.addArgs(&[_][]const u8{ "--cwd", "./zig-out/bin" });
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
 
-    const headless_cmd = exe.run();
+    const headless_cmd = b.addRunArtifact(exe);
     headless_cmd.step.dependOn(b.getInstallStep());
     headless_cmd.addArgs(&[_][]const u8{ "--cwd", "./zig-out/bin", "--headless" });
     if (b.args) |args| {
@@ -273,5 +273,5 @@ pub fn build(b: *std.build.Builder) void {
     upload_step.dependOn(&butler_step.step);
 
     const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&exe_tests.run().step);
+    test_step.dependOn(&b.addRunArtifact(exe_tests).step);
 }

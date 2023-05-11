@@ -691,7 +691,7 @@ pub const VM = struct {
                             self.heap = try self.allocator.realloc(self.heap, @intCast(usize, size.value.*));
 
                             if (start < self.heap.len)
-                                std.mem.set(u8, self.heap[start..], 0);
+                                @memset(self.heap[start..], 0);
 
                             return;
                         },
@@ -1053,7 +1053,7 @@ pub const VM = struct {
 
                 var adds = try self.allocator.alloc(u8, @intCast(usize, b.value.*));
                 defer self.allocator.free(adds);
-                std.mem.set(u8, adds, 0);
+                @memset(adds, 0);
                 try self.pushStackS(adds);
 
                 return;

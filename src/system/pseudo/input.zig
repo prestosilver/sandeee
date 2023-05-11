@@ -76,7 +76,7 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
         }
     }
 
-    std.mem.set(u8, result, 0);
+    @memset(result, 0);
     return result;
 }
 pub fn writeInputMouse(_: []const u8, _: ?*vm.VM) !void {
