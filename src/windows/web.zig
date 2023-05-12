@@ -265,7 +265,7 @@ pub const WebData = struct {
                     if (self.add_links) {
                         var link = WebData.WebLink{
                             .url = url,
-                            .pos = rect.newRect(6 + pos.x, 6 + pos.y + props.scroll.?.value, size.x, size.y),
+                            .pos = rect.newRect(6 + pos.x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
                         };
                         try self.links.append(link);
                     }
@@ -296,7 +296,7 @@ pub const WebData = struct {
                 self.highlight.data.size.x = hlpos.w;
                 self.highlight.data.size.y = hlpos.h;
 
-                self.highlight.data.color = col.newColor(0, 0, 255, 128);
+                self.highlight.data.color = col.newColor(0, 0, 1, 0.75);
 
                 try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - props.scroll.?.value + 4, 0));
             }
