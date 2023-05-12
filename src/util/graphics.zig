@@ -67,8 +67,6 @@ pub fn init(name: [*c]const u8) !Context {
     if (c.gladLoadGLLoader(@ptrCast(c.GLADloadproc, &c.glfwGetProcAddress)) == 0) {
         return error.GLADInit;
     }
-    c.glfwWindowHint(c.GLFW_SAMPLES, 4);
-    c.glEnable(c.GL_MULTISAMPLE);
 
     var shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
 
