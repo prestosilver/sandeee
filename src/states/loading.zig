@@ -108,6 +108,7 @@ pub const GSLoading = struct {
 
         self.loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
         self.loader.run(&self.load_progress) catch {
+            self.done.storeUnchecked(true);
             @panic("BootEEE failed, Problaby missing file");
         };
 
