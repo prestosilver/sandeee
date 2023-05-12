@@ -70,11 +70,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
     var texture = sb.textureManager.get(&.{idx});
     if (texture == null) return;
 
-    gfx.gContext.makeCurrent();
-
     tex.uploadTextureMem(texture.?, image) catch return error.UploadError;
-
-    gfx.gContext.makeNotCurrent();
 }
 
 // /fake/gfx/pixel
