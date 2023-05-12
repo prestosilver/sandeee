@@ -165,9 +165,7 @@ pub const GSWindowed = struct {
         }
         if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
             var texture = batch.textureManager.textures.getPtr("wall") orelse return false;
-            gfx.gContext.makeCurrent();
             tex.uploadTextureFile(texture, event.value) catch return false;
-            gfx.gContext.makeNotCurrent();
 
             return true;
         }
