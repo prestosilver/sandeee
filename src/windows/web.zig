@@ -16,6 +16,7 @@ const events = @import("../util/events.zig");
 const popups = @import("../drawers/popup2d.zig");
 
 const SCROLL = 30;
+var web_idx: u8 = 0;
 
 pub const WebData = struct {
     const Self = @This();
@@ -39,13 +40,20 @@ pub const WebData = struct {
     top: bool = false,
     highlight_idx: usize = 0,
     loading: bool = false,
+    add_imgs: bool = false,
     add_links: bool = false,
+    web_idx: u8,
 
     pub fn loadPage(self: *Self) !void {
         if (self.path) |path| {
             self.loading = true;
-            defer self.loading = false;
-            defer self.add_links = true;
+            defer {
+                self.loading = false;
+                self.add_imgs = true;
+                self.add_links = true;
+                self.links.clearAndFree();
+            }
+
             switch (path[0]) {
                 '@' => {
                     var idx = std.mem.indexOf(u8, path, ":") orelse {
@@ -91,6 +99,50 @@ pub const WebData = struct {
                 else => {},
             }
         }
+    }
+
+    pub fn loadimage(self: *Self, path: []const u8, target: []const u8) void {
+        defer allocator.alloc.free(target);
+        defer allocator.alloc.free(path);
+
+        var target_path = allocator.alloc.dupe(u8, path) catch return;
+
+        if (std.mem.indexOf(u8, path, ":") == null) {
+            allocator.alloc.free(target_path);
+            var idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
+
+            target_path = std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ self.path.?[1..idx], path[1..] }) catch return;
+        }
+
+        var idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
+
+        var stream = std.net.tcpConnectToHost(allocator.alloc, target_path[1..idx], 80) catch return;
+        var request = std.fmt.allocPrint(allocator.alloc, "GET {s} HTTP/1.1\r\nUser-Agent: SandEEE/0.0\r\nConnection: Close\r\nHost: {s}\r\n\r\n", .{
+            target_path[idx + 1 ..],
+            target_path[1..idx],
+        }) catch return;
+
+        defer allocator.alloc.free(request);
+
+        _ = stream.write(request) catch return;
+
+        var conts = allocator.alloc.alloc(u8, 10000) catch return;
+        defer allocator.alloc.free(conts);
+
+        var fconts = conts[0 .. stream.readAll(conts) catch return];
+        if (std.mem.indexOf(u8, fconts, "404 File not found") != null) {
+            std.log.info("404: {s}", .{target_path});
+            return;
+        }
+
+        fconts = fconts[(std.mem.indexOf(u8, fconts, "\r\n\r\n") orelse 0) + 4 ..];
+
+        var texture = sb.textureManager.get(target).?;
+
+        tex.uploadTextureMem(texture, fconts) catch {};
+
+        self.add_links = true;
+        self.links.clearAndFree();
     }
 
     pub fn saveDialog(self: *Self, outputData: []const u8, name: []const u8) !void {
@@ -156,6 +208,14 @@ pub const WebData = struct {
 
             var iter = std.mem.split(u8, cont, "\n");
 
+            var texid: [6]u8 = undefined;
+            texid[0] = 'w';
+            texid[1] = 'e';
+            texid[2] = 'b';
+            texid[3] = '_';
+            texid[4] = 0;
+            texid[5] = self.web_idx;
+
             // draw text
             while (iter.next()) |line| {
                 var scale: f32 = 1;
@@ -170,6 +230,26 @@ pub const WebData = struct {
                 if (std.mem.startsWith(u8, line, "-- ") and std.mem.endsWith(u8, line, " --")) {
                     scale = 2.0;
                     text = line[3 .. line.len - 3];
+                }
+
+                if (std.mem.startsWith(u8, line, "[") and std.mem.endsWith(u8, line, "]")) {
+                    if (self.add_imgs) {
+                        try sb.textureManager.putMem(try allocator.alloc.dupe(u8, &texid), "eimg\x01\x00\x01\x00\x00\x00\x00\xff");
+
+                        _ = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
+                    }
+
+                    var size = sb.textureManager.get(&texid).?.size.mul(2);
+                    try batch.draw(sprite.Sprite, &.{
+                        .texture = &texid,
+                        .data = .{
+                            .source = rect.newRect(0, 0, 1, 1),
+                            .size = size,
+                        },
+                    }, self.shader, vecs.newVec3(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y, 0));
+                    texid[4] += 1;
+                    pos.y += size.y;
+                    continue;
                 }
 
                 if (std.mem.startsWith(u8, line, "> ")) {
@@ -222,6 +302,7 @@ pub const WebData = struct {
             }
 
             self.add_links = false;
+            self.add_imgs = false;
         }
 
         // draw menubar
@@ -229,13 +310,13 @@ pub const WebData = struct {
         try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
         try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 2, 0));
-        self.text_box[1].data.size.x = bnds.w - 150 - 66;
+        self.text_box[1].data.size.x = bnds.w - 8 - 66;
 
         try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 66, bnds.y + 2, 0));
-        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 150, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 8, bnds.y + 2, 0));
 
         var tmp = batch.scissor;
-        batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 150 - 34, 28);
+        batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 34, 28);
         if (self.path) |file| {
             try font.draw(.{
                 .batch = batch,
@@ -323,7 +404,6 @@ pub const WebData = struct {
             allocator.alloc.free(self.conts.?);
             self.conts = null;
         }
-        self.links.clearAndFree();
         self.highlight_idx = 0;
         self.top = true;
     }
@@ -380,7 +460,10 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
         .shader = shader,
         .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),
         .hist = std.ArrayList([]const u8).init(allocator.alloc),
+        .web_idx = web_idx,
     };
+
+    web_idx += 1;
 
     return win.WindowContents.init(self, "web", "Xplorer", col.newColor(1, 1, 1, 1));
 }
