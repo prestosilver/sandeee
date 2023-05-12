@@ -290,7 +290,7 @@ pub const WebData = struct {
             props.scroll.?.maxy = pos.y + 64 + font.size + props.scroll.?.value - bnds.h;
 
             // draw highlight for url
-            if (self.highlight_idx != 0) {
+            if (self.highlight_idx != 0 and self.links.items.len >= self.highlight_idx) {
                 var hlpos = self.links.items[self.highlight_idx - 1].pos;
 
                 self.highlight.data.size.x = hlpos.w;
