@@ -2,6 +2,7 @@ const std = @import("std");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const win = @import("../drawers/window2d.zig");
+const desk = @import("../drawers/desk2d.zig");
 const allocator = @import("../util/allocator.zig");
 const wall = @import("../drawers/wall2d.zig");
 const bar = @import("../drawers/bar2d.zig");
@@ -52,6 +53,8 @@ pub const GSWindowed = struct {
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
     init: bool = false,
+
+    desk: desk.Desk,
 
     popup: ?popups.Popup = null,
 
@@ -283,6 +286,8 @@ pub const GSWindowed = struct {
 
         // draw wallpaper
         try self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
+        try self.sb.draw(desk.Desk, &self.desk, self.shader, vecs.newVec3(0, 0, 0));
+        try self.desk.data.addText(self.sb, self.font_shader, self.face);
 
         for (self.windows.items, 0..) |window, idx| {
             // continue if window closed on update

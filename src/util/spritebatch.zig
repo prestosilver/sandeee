@@ -173,11 +173,14 @@ pub const SpriteBatch = struct {
 
             if (entry.texture.len == 0) continue;
 
-            var targTex = if (!std.mem.eql(u8, entry.texture, "none")) textureManager.get(entry.texture) orelse {
-                std.log.info("{s}", .{entry.texture});
-                sb.queueLock.unlock();
-                @panic("Texture not found");
-            } else &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0) };
+            var targTex = if (!std.mem.eql(u8, entry.texture, "none"))
+                textureManager.get(entry.texture) orelse
+                    textureManager.get("error") orelse {
+                    sb.queueLock.unlock();
+                    @panic("texture not found");
+                }
+            else
+                &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0) };
 
             if (ctex != targTex.tex)
                 c.glBindTexture(c.GL_TEXTURE_2D, targTex.tex);

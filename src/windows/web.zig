@@ -234,7 +234,7 @@ pub const WebData = struct {
 
                 if (std.mem.startsWith(u8, line, "[") and std.mem.endsWith(u8, line, "]")) {
                     if (self.add_imgs) {
-                        try sb.textureManager.putMem(try allocator.alloc.dupe(u8, &texid), "eimg\x01\x00\x01\x00\x00\x00\x00\xff");
+                        try sb.textureManager.putMem(try allocator.alloc.dupe(u8, &texid), "eimg\x01\x00\x01\x00\x00\x00\x00\x00");
 
                         _ = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                     }

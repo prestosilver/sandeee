@@ -78,10 +78,12 @@ pub fn newTextureMem(mem: []const u8) !Texture {
     return result;
 }
 
+const errorImage = @embedFile("../images/error.eia");
+
 pub fn uploadTextureFile(tex: *Texture, file: []const u8) !void {
     var image = try files.root.getFile(file);
 
-    if (image == null) return error.NotFound;
+    if (image == null) return uploadTextureMem(tex, errorImage);
 
     var cont = try image.?.read(null);
 

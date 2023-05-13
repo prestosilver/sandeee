@@ -17,8 +17,12 @@ pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []co
     std.log.debug("load tex: {s}", .{path});
 
     gfx.gContext.makeCurrent();
-    defer gfx.gContext.makeNotCurrent();
-    var texture = try tex.newTextureFile(path);
+    var texture = tex.newTextureSize(.{ .x = 0, .y = 0 });
+    gfx.gContext.makeNotCurrent();
+
+    tex.uploadTextureFile(&texture, path) catch {
+        return error.LoadError;
+    };
 
     try textureManager.textures.put(self.out.*, texture);
 

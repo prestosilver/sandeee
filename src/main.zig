@@ -35,6 +35,7 @@ const sprite = @import("drawers/sprite2d.zig");
 const bar = @import("drawers/bar2d.zig");
 const win = @import("drawers/window2d.zig");
 const cursor = @import("drawers/cursor2d.zig");
+const desk = @import("drawers/desk2d.zig");
 const notifs = @import("drawers/notification2d.zig");
 
 const conf = @import("system/config.zig");
@@ -62,6 +63,7 @@ const logoImage = @embedFile("images/logo.eia");
 const loadImage = @embedFile("images/load.eia");
 const biosImage = @embedFile("images/bios.eia");
 const sadImage = @embedFile("images/sad.eia");
+const errorImage = @embedFile("images/error.eia");
 
 const shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fragShader, .kind = c.GL_FRAGMENT_SHADER },
@@ -453,6 +455,7 @@ pub fn main() anyerror!void {
     try textureManager.putMem("logo", logoImage);
     try textureManager.putMem("load", loadImage);
     try textureManager.putMem("sad", sadImage);
+    try textureManager.putMem("error", errorImage);
 
     audioman = try audio.Audio.init();
 
@@ -515,6 +518,10 @@ pub fn main() anyerror!void {
                 rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(36, 464),
             ),
+        },
+        .desk = .{
+            .texture = "explorer",
+            .data = .{},
         },
         .cursor = .{
             .texture = "cursor",
@@ -593,6 +600,7 @@ pub fn main() anyerror!void {
 
     // set some random vars
     win.deskSize = &gfx.gContext.size;
+    desk.deskSize = &gfx.gContext.size;
     windowedState.GSWindowed.deskSize = &gfx.gContext.size;
     wallpaper = &gsWindowed.wallpaper;
 
