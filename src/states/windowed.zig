@@ -571,6 +571,7 @@ pub const GSWindowed = struct {
 
         for (self.windows.items) |*window| {
             if (!window.data.active and !window.data.full) continue;
+            try self.desk.data.click(self.shader, null);
 
             if (window.data.popup) |*popup| {
                 if (popup.data.click(self.mousepos)) {
@@ -581,6 +582,8 @@ pub const GSWindowed = struct {
 
             return window.data.click(self.mousepos, btn);
         }
+
+        try self.desk.data.click(self.shader, self.mousepos);
     }
 
     pub fn mouserelease(self: *Self) !void {

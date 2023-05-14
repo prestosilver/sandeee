@@ -21,7 +21,7 @@ const Icon = struct {
     icon: u8,
 };
 
-const ExplorerData = struct {
+pub const ExplorerData = struct {
     const Self = @This();
 
     const ExplorerMouseActionType = enum {
