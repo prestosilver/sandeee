@@ -47,6 +47,8 @@ pub const WebData = struct {
     web_idx: u8,
 
     pub fn loadPage(self: *Self) !void {
+        if (self.loading) return;
+
         if (self.path) |path| {
             self.loading = true;
             defer {
@@ -91,7 +93,8 @@ pub const WebData = struct {
                     try req.wait();
 
                     if (req.response.status != .ok) {
-                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {}", .{req.response.status});
+                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @enumToInt(req.response.status), @tagName(req.response.status) });
+
                         return;
                     }
 
@@ -99,7 +102,7 @@ pub const WebData = struct {
                     defer allocator.alloc.free(fconts);
 
                     if (!std.mem.endsWith(u8, self.path.?, "edf")) {
-                        try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0 ..]);
+                        try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[(std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0) + 1 ..]);
 
                         try self.back();
                         return;
@@ -110,7 +113,9 @@ pub const WebData = struct {
                 '/' => {
                     self.conts = try ((try files.root.getFile(path)) orelse return).read(null);
                 },
-                else => {},
+                else => {
+                    self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: Invalid Url protocol", .{});
+                },
             }
         }
     }
@@ -179,7 +184,7 @@ pub const WebData = struct {
 
         var adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
         adds.* = .{
-            .text = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ files.home.name, name }),
+            .text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ files.home.name, name }),
             .data = @ptrCast(*anyopaque, output),
             .submit = &submit,
             .prompt = "Pick a path to save the file",
@@ -214,7 +219,7 @@ pub const WebData = struct {
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 34,
+                .offsetStart = 32,
             };
         }
 
