@@ -731,7 +731,7 @@ pub const VM = struct {
                             var msg = try self.popStack();
                             defer self.free(&[_]StackEntry{msg});
 
-                            if (msg != .string) return error.ValueMissing;
+                            if (msg != .string) return error.StringMissing;
 
                             var msgString = try self.getOp();
                             defer self.allocator.free(msgString);
@@ -743,6 +743,21 @@ pub const VM = struct {
 
                             self.stopped = true;
                             return;
+                        },
+                        // file size
+                        19 => {
+                            var path = try self.popStack();
+                            defer self.free(&[_]StackEntry{path});
+
+                            if (path != .string) return error.StringMissing;
+
+                            if (try self.root.getFile(path.string.*)) |file| {
+                                try self.pushStackI(file.size());
+
+                                return;
+                            }
+
+                            return error.FileMissing;
                         },
                         // panic
                         128 => {

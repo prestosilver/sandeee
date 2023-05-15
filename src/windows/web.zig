@@ -14,8 +14,10 @@ const tex = @import("../util/texture.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const popups = @import("../drawers/popup2d.zig");
+const gfx = @import("../util/graphics.zig");
 
 const SCROLL = 30;
+
 var web_idx: u8 = 0;
 
 pub const WebData = struct {
@@ -62,27 +64,39 @@ pub const WebData = struct {
                         return;
                     };
 
-                    var stream = try std.net.tcpConnectToHost(allocator.alloc, path[1..idx], 80);
-                    var request = try std.fmt.allocPrint(allocator.alloc, "GET {s} HTTP/1.1\r\nUser-Agent: SandEEE/0.0\r\nConnection: Close\r\nHost: {s}\r\n\r\n", .{
-                        path[idx + 1 ..],
-                        path[1..idx],
-                    });
+                    var client = std.http.Client{ .allocator = allocator.alloc };
+                    defer client.deinit();
 
-                    defer allocator.alloc.free(request);
+                    const uri = std.Uri{
+                        .scheme = "http",
+                        .user = null,
+                        .password = null,
+                        .host = path[1..idx],
+                        .port = 80,
+                        .path = path[idx + 1 ..],
+                        .query = null,
+                        .fragment = null,
+                    };
 
-                    _ = try stream.write(request);
+                    var headers = std.http.Headers{ .allocator = allocator.alloc };
+                    defer headers.deinit();
 
-                    var conts = try allocator.alloc.alloc(u8, 10000);
-                    defer allocator.alloc.free(conts);
+                    try headers.append("User-Agent", "SandEEE/0.0");
+                    try headers.append("Connection", "Close");
 
-                    var fconts = conts[0..try stream.readAll(conts)];
-                    if (std.mem.indexOf(u8, fconts, "404 File not found") != null) {
-                        self.conts = try allocator.alloc.dupe(u8, "- 404 Error -");
+                    var req = try client.request(.GET, uri, headers, .{});
+                    defer req.deinit();
 
+                    try req.start();
+                    try req.wait();
+
+                    if (req.response.status != .ok) {
+                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {}", .{req.response.status});
                         return;
                     }
 
-                    fconts = fconts[(std.mem.indexOf(u8, fconts, "\r\n\r\n") orelse 0) + 4 ..];
+                    var fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
+                    defer allocator.alloc.free(fconts);
 
                     if (!std.mem.endsWith(u8, self.path.?, "edf")) {
                         try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0 ..]);
@@ -101,45 +115,58 @@ pub const WebData = struct {
         }
     }
 
-    pub fn loadimage(self: *Self, path: []const u8, target: []const u8) void {
+    pub fn loadimage(self: *Self, path: []const u8, target: []const u8) !void {
         defer allocator.alloc.free(target);
         defer allocator.alloc.free(path);
 
-        var target_path = allocator.alloc.dupe(u8, path) catch return;
+        var target_path = try allocator.alloc.dupe(u8, path);
 
         if (std.mem.indexOf(u8, path, ":") == null) {
             allocator.alloc.free(target_path);
             var idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
 
-            target_path = std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ self.path.?[1..idx], path[1..] }) catch return;
+            target_path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ self.path.?[1..idx], path[1..] });
         }
 
         var idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
 
-        var stream = std.net.tcpConnectToHost(allocator.alloc, target_path[1..idx], 80) catch return;
-        var request = std.fmt.allocPrint(allocator.alloc, "GET {s} HTTP/1.1\r\nUser-Agent: SandEEE/0.0\r\nConnection: Close\r\nHost: {s}\r\n\r\n", .{
-            target_path[idx + 1 ..],
-            target_path[1..idx],
-        }) catch return;
+        var client = std.http.Client{ .allocator = allocator.alloc };
+        defer client.deinit();
 
-        defer allocator.alloc.free(request);
+        const uri = std.Uri{
+            .scheme = "http",
+            .user = null,
+            .password = null,
+            .host = target_path[1..idx],
+            .port = 80,
+            .path = target_path[idx + 1 ..],
+            .query = null,
+            .fragment = null,
+        };
 
-        _ = stream.write(request) catch return;
+        var headers = std.http.Headers{ .allocator = allocator.alloc };
+        defer headers.deinit();
 
-        var conts = allocator.alloc.alloc(u8, 10000) catch return;
-        defer allocator.alloc.free(conts);
+        try headers.append("User-Agent", "SandEEE/0.0");
+        try headers.append("Connection", "Close");
 
-        var fconts = conts[0 .. stream.readAll(conts) catch return];
-        if (std.mem.indexOf(u8, fconts, "404 File not found") != null) {
-            std.log.info("404: {s}", .{target_path});
+        var req = try client.request(.GET, uri, headers, .{});
+        defer req.deinit();
+
+        try req.start();
+        try req.wait();
+
+        if (req.response.status != .ok) {
+            // self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {}", .{req.response.status});
             return;
         }
 
-        fconts = fconts[(std.mem.indexOf(u8, fconts, "\r\n\r\n") orelse 0) + 4 ..];
+        var fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
+        defer allocator.alloc.free(fconts);
 
         var texture = sb.textureManager.get(target).?;
 
-        tex.uploadTextureMem(texture, fconts) catch {};
+        try tex.uploadTextureMem(texture, fconts);
 
         self.add_links = true;
         self.links.clearAndFree();
@@ -173,7 +200,7 @@ pub const WebData = struct {
     }
 
     pub fn submit(file: []const u8, data: *anyopaque) !void {
-        var conts = @ptrCast(*[]const u8, @alignCast(@alignOf(Self), data));
+        var conts = @ptrCast(*[]const u8, @alignCast(@alignOf(*[]const u8), data));
 
         _ = try files.root.newFile(file);
         if (try files.root.getFile(file)) |target| {
@@ -234,7 +261,13 @@ pub const WebData = struct {
 
                 if (std.mem.startsWith(u8, line, "[") and std.mem.endsWith(u8, line, "]")) {
                     if (self.add_imgs) {
-                        try sb.textureManager.putMem(try allocator.alloc.dupe(u8, &texid), "eimg\x01\x00\x01\x00\x00\x00\x00\x00");
+                        gfx.gContext.makeCurrent();
+                        defer gfx.gContext.makeNotCurrent();
+
+                        try sb.textureManager.putMem(try allocator.alloc.dupe(u8, &texid), @embedFile("../images/error.eia"));
+
+                        sb.textureManager.get(&texid).?.size =
+                            sb.textureManager.get(&texid).?.size.div(4);
 
                         _ = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                     }

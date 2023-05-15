@@ -20,6 +20,11 @@ pub const File = struct {
     pseudoWrite: ?*const fn ([]const u8, ?*vm.VM) anyerror!void = null,
     pseudoRead: ?*const fn (?*vm.VM) anyerror![]const u8 = null,
 
+    pub fn size(self: *File) usize {
+        if (self.pseudoRead != null) return 0;
+        return self.contents.len;
+    }
+
     pub fn write(self: *File, contents: []const u8, vmInstance: ?*vm.VM) !void {
         if (self.pseudoWrite != null) {
             return self.pseudoWrite.?(contents, vmInstance);
