@@ -59,6 +59,8 @@ pub fn newTextureMem(mem: []const u8) !Texture {
     var height = @intCast(c_int, mem[6]) + @intCast(c_int, mem[7]) * 256;
 
     if (mem.len / 4 - 2 != width * height) {
+        std.log.info("expected {} got {}", .{ width * height * 4 + 4, mem.len });
+
         return error.WrongSize;
     }
 
@@ -98,6 +100,8 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
     var height = @intCast(c_int, mem[6]) + @intCast(c_int, mem[7]) * 256;
 
     if (mem.len / 4 - 2 != width * height) {
+        std.log.info("expected {} got {}", .{ width * height * 4 + 4, mem.len });
+
         return error.WrongSize;
     }
 
