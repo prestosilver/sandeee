@@ -1,0 +1,28 @@
+fn error(msg) {
+    asm "sys 18";
+}
+
+fn fileSize(file) {
+    asm "sys 19";
+    asm "ret";
+}
+
+fn print(str) {
+    asm "sys 0";
+    asm "push 0";
+    asm "ret";
+}
+
+fn getArg(idx) {
+    asm "sys 8";
+    asm "ret";
+}
+
+fn main() {
+    var arg = getArg(1);
+    print("Size: ");
+    print(fileSize(arg));
+    print("B\\n");
+
+    return 0;
+}

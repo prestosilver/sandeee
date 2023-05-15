@@ -49,7 +49,7 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
 const eonTestsFiles = [_][]const u8{ "fib", "tabletest", "heaptest", "stringtest", "paren" };
 const asmExecFiles = [_][]const u8{ "dump", "echo", "aplay", "libdump" };
-const eonExecFiles = [_][]const u8{ "player", "asm", "pix" };
+const eonExecFiles = [_][]const u8{ "stat", "player", "asm", "pix" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "heap", "table" };
 const wavSoundFiles = [_][]const u8{ "login", "message", "track1" };
