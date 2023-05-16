@@ -18,6 +18,8 @@ pub const FileStream = struct {
     pub fn Open(root: *files.Folder, path: []const u8, vmInstance: ?*vm.VM) !*FileStream {
         var result = try allocator.alloc.create(FileStream);
 
+        if (path.len == 0) return error.FileMissing;
+
         var folder = root;
         if (path[0] == '/') {
             folder = files.root;
