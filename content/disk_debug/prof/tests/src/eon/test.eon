@@ -1,11 +1,3 @@
-value print(value str) {
-    asm "sys 0";
-    asm "push 0";
-    asm "ret";
-}
-
-value main() {
-    print("Hello World!");
-
-    return 0;
+fn main() {
+    return 0 + 5;
 }

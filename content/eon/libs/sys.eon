@@ -46,3 +46,7 @@ fn time(file, len) {
     asm "sys 9";
     asm "ret";
 }
+
+fn error(msg) {
+    asm "sys 18";
+}

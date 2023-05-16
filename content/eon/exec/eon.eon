@@ -1,14 +1,141 @@
-fn createToken(kind, val) {
-    var size = _StringLength(val) + 2;
-    var result = _HeapAlloc(size);
-    var result = @kind & @(size - 2) & val;
+#include "content/eon/libs/sys.eon"
+
+fn isWhitespace(char) {
+    if (@char == 32) return 1;
+    if (@char == 10) return 1;
+    if (@char == 11) return 1;
+
+    return 0;
+}
+
+fn nextWord(file) {
+    var result = "";
+    var char = " ";
+
+    for (0; isWhitespace(char); char = read(file, 1)) {}
+    result = dup(char);
+
+    if (result == ";") return result;
+
+    var ws = 0;
+
+    for (0; ws == 0; 0) {
+
+        char = read(file, 1);
+        ws = isWhitespace(char);
+        if (@result == 34) {
+            ws = char == 34;
+        }
+
+        if (ws == 0) {
+            result = result & char;
+        }
+    }
+    if (@result == 34) {
+        return result & @34;
+    }
 
     return result;
 }
 
-fn createExpression(a, op, b) {
+fn parseStmt(file, first) {
+    var done = 0;
+    var word = "";
+    var result = "";
+    var next = "";
+    var stmt = "";
 
+    word = dup(first);
+
+    if (word == "") word = nextWord(file);
+
+    if (word == "+") {
+        stmt = parseStmt(file, "");
+
+        next = nextWord(file);
+
+        if (next != ";") {
+            stmt = stmt & parseStmt(file, next);
+        }
+
+        return "    " & stmt & "    add\\n";
+    }
+
+    if (word == "return") {
+        stmt = parseStmt(file, "");
+
+        next = nextWord(file);
+
+        if (next != ";") {
+            stmt = stmt & parseStmt(file, next);
+        }
+
+        return stmt & "    ret\\n";
+    }
+    
+    if (word == "asm") {
+        word = nextWord(file) + 1;
+        word = word - 1;
+
+        return word & "\\n";
+    }
+
+    return "    push " & word & "\\n";    
+}
+
+fn len(string) {
+    asm "len";
+    asm "ret";
+}
+
+fn parseBlock(file) {
+    var word = nextWord(file);
+
+    if (word != "{") error("Expected '{' got '" & word & "'");
+
+    var code = "";
+    var done = 0;
+    var stmtdata;
+    var word = "";
+
+    for (0; done == 0; 0) {
+        word = nextWord(file);
+
+        if (word != "}") {
+            stmtdata = parseStmt(file, word);
+
+            if (stmtdata == "") {
+                done = 1
+            } else {
+                code = code & stmtdata;
+            }
+        } else {
+            done = 1;
+        }
+    }
+
+    return code;
+}
+
+fn parseFunction(file) {
+    var word;
+    
+    word = nextWord(file);
+
+    if (word != "fn") error("Expected 'fn' got '" & word & "'");
+
+    var name = nextWord(file);
+
+    var block = parseBlock(file);
+
+    return name & ":\\n" & block;
 }
 
 fn main() {
+    var fileName = getArg(1);
+    var file = open(fileName);
+
+    print(parseFunction(file));
+
+    return 0;
 }

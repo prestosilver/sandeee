@@ -1,10 +1,6 @@
 #include "content/eon/libs/libload.eon"
 #include "content/eon/libs/sys.eon"
 
-fn error(msg) {
-    asm "sys 18";
-}
-
 fn processArgs() {
     var file = getArg(1);
 

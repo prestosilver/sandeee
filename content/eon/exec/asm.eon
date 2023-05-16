@@ -2,10 +2,6 @@
 #include "content/eon/libs/table.eon"
 #include "content/eon/libs/sys.eon"
 
-fn error(msg) {
-    asm "sys 18";
-}
-
 fn processArgs() {
     var file = getArg(1);
 
@@ -155,7 +151,8 @@ fn processFile(table, infile, outfile) {
     var line = "";
 
     var chr = read(infile, 1);
-    for (chr = chr; chr != ""; chr = read(infile, 1)) {
+    var done = 0;
+    for (chr = chr; done == 0; chr = read(infile, 1)) {
         if (@chr == 92) {
             chr = read(infile, 1);
             if (@chr == 110) {
@@ -169,6 +166,13 @@ fn processFile(table, infile, outfile) {
             }
 
             line = "";
+        } else if (chr == "") {
+            if (_StringLast(line) != 58) {
+                write(outfile, processLine(table, line));
+            }
+
+            line = "";
+            done = 1;
         } else {
             line = line & chr;
         }
@@ -183,7 +187,8 @@ fn processConsts(table, infile) {
     var chr = read(infile, 1);
     var name = "";
     var idx = 0;
-    for (chr = chr; chr != ""; chr = read(infile, 1)) {
+    var done = 0;
+    for (chr = chr; done == 0; chr = read(infile, 1)) {
         if (@chr == 92) {
             chr = read(infile, 1);
             if (@chr == 78) {
@@ -202,6 +207,18 @@ fn processConsts(table, infile) {
             }
 
             line = "";
+        } else if (chr == "") {
+            if (_StringLast(line) == 58) {
+                for (name = line - 1; _StringLength(name) < 20; 0) {
+                    name = name & @0;
+                }
+                tablePut(table, name, @idx);
+            } else {
+                idx = idx + 1;
+            }
+
+            line = "";
+            done = 1;
         } else {
             line = line & chr;
         }
