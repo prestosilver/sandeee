@@ -11,6 +11,7 @@ const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
+const shell = @import("../system/shell.zig");
 const std = @import("std");
 
 const TOTAL_SPRITES = 6.0;
@@ -21,10 +22,7 @@ pub var deskSize: *vecs.Vector2 = undefined;
 pub const DeskData = struct {
     // TODO: implement
     sel: ?usize = null,
-
-    pub fn new() DeskData {
-        return DeskData{};
-    }
+    shell: shell.Shell,
 
     fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
         var source = src;
@@ -60,7 +58,7 @@ pub const DeskData = struct {
         var position = vecs.newVec2(0, 0);
         var idx: usize = 0;
 
-        for (files.home.subfolders.items) |folder| {
+        for (self.shell.root.subfolders.items) |folder| {
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
                     var window = win.Window.new("win", win.WindowData{
@@ -93,10 +91,16 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        for (files.home.contents.items) |_| {
+        for (self.shell.root.contents.items) |file| {
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
-                    //TODO: open
+                    const index = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
+
+                    var cmd = file.name[index + 1 ..];
+
+                    _ = self.shell.run(cmd, cmd) catch {
+                        //TODO: popup
+                    };
 
                     self.sel = null;
 
@@ -184,6 +188,15 @@ pub const DeskData = struct {
             try addIconText(batch, position, file.name, font_shader, font, textColor);
 
             updatePos(&position);
+        }
+    }
+
+    pub fn updateVm(self: *DeskData) !void {
+        if (self.shell.vm != null) {
+            var result = self.shell.updateVM() catch null;
+            if (result != null) {
+                result.?.data.deinit();
+            }
         }
     }
 };

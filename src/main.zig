@@ -523,7 +523,11 @@ pub fn main() anyerror!void {
         },
         .desk = .{
             .texture = "explorer",
-            .data = .{},
+            .data = .{
+                .shell = .{
+                    .root = undefined,
+                },
+            },
         },
         .cursor = .{
             .texture = "cursor",

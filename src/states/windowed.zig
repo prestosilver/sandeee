@@ -250,6 +250,8 @@ pub const GSWindowed = struct {
             events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = true });
         }
 
+        self.desk.data.shell.root = files.home;
+
         if (self.settingsManager.get("wallpaper_color")) |color| {
             _ = settingSet(.{
                 .setting = "wallpaper_color",
@@ -288,6 +290,7 @@ pub const GSWindowed = struct {
         try self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
         try self.sb.draw(desk.Desk, &self.desk, self.shader, vecs.newVec3(0, 0, 0));
         try self.desk.data.addText(self.sb, self.font_shader, self.face);
+        try self.desk.data.updateVm();
 
         for (self.windows.items, 0..) |window, idx| {
             // continue if window closed on update
