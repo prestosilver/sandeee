@@ -19,7 +19,7 @@ const Result = struct {
 
 pub var shader: *shd.Shader = undefined;
 
-pub const VM_TIME = 25000000; // nano seconds
+pub const VM_TIME = 10000000; // nano seconds
 pub const ASM_HEADER = "EEEp";
 
 pub var frameTime: u64 = VM_TIME;

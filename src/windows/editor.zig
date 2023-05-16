@@ -165,15 +165,9 @@ pub const EditorData = struct {
                         },
                     });
                 }
-                var save = rect.newRect(32, 0, 32, 32);
-                if (save.contains(mousepos)) {
-                    if (self.file != null) {
-                        allocator.alloc.free(self.file.?.contents);
-                        var buff = try allocator.alloc.alloc(u8, self.buffer.items.len);
-                        std.mem.copy(u8, buff, self.buffer.items);
-                        self.file.?.contents = buff;
-                        self.modified = false;
-                    }
+                var saveBnds = rect.newRect(32, 0, 32, 32);
+                if (saveBnds.contains(mousepos)) {
+                    try self.save();
                 }
                 if (self.buffer.items.len != 0) {
                     if (mousepos.y > 32) {
@@ -185,6 +179,16 @@ pub const EditorData = struct {
         }
 
         return;
+    }
+
+    pub fn save(self: *Self) !void {
+        if (self.file != null) {
+            allocator.alloc.free(self.file.?.contents);
+            var buff = try allocator.alloc.alloc(u8, self.buffer.items.len);
+            std.mem.copy(u8, buff, self.buffer.items);
+            self.file.?.contents = buff;
+            self.modified = false;
+        }
     }
 
     pub fn submit(file: ?*files.File, data: *anyopaque) !void {
@@ -210,9 +214,7 @@ pub const EditorData = struct {
         allocator.alloc.destroy(self);
     }
 
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = mods;
-
+    pub fn char(self: *Self, code: u32, _: i32) !void {
         if (code == '\n') return;
 
         try self.buffer.insert(self.cursorIdx, @intCast(u8, code));
@@ -221,11 +223,17 @@ pub const EditorData = struct {
     }
 
     pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
-        _ = mods;
         if (self.file == null) return;
         if (!down) return;
 
         switch (keycode) {
+            cc.GLFW_KEY_S => {
+                if ((mods & cc.GLFW_MOD_CONTROL) != 0) {
+                    try self.save();
+
+                    return;
+                }
+            },
             cc.GLFW_KEY_ENTER => {
                 try self.buffer.insert(self.cursorIdx, '\n');
                 self.cursor.x = 0;
