@@ -12,7 +12,7 @@ const files = @import("../system/files.zig");
 
 const c = @import("../c.zig");
 
-const VERSION = "0.0.3";
+const VERSION = "0.0.4";
 
 //TODO: key presses
 
@@ -98,7 +98,7 @@ pub const GSRecovery = struct {
         _ = size;
         var y: f32 = 100;
 
-        var titleLine = try std.fmt.allocPrint(allocator.alloc, "SandEEE Recovery v_{s}", .{VERSION});
+        var titleLine = try std.fmt.allocPrint(allocator.alloc, "RecoverEEE v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
             .batch = self.sb,
