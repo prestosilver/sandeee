@@ -12,9 +12,7 @@ const files = @import("../system/files.zig");
 
 const c = @import("../c.zig");
 
-const VERSION = "0.0.4";
-
-//TODO: key presses
+const VERSION = "0.0.5";
 
 pub const GSRecovery = struct {
     const Self = @This();
@@ -164,10 +162,20 @@ pub const GSRecovery = struct {
     pub fn keypress(self: *Self, key: c_int, _: c_int, down: bool) !bool {
         if (!down) return false;
         switch (key) {
+            c.GLFW_KEY_ESCAPE => {
+                if (self.sub_sel != null) self.sub_sel = null else {
+                    events.em.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Disks,
+                    });
+
+                    return false;
+                }
+            },
             c.GLFW_KEY_ENTER => {
                 if (self.sub_sel) |sub_sel| {
                     if (sub_sel == UPDATE_MODES.len - 1) {
                         self.sub_sel = null;
+
                         return false;
                     }
 
@@ -197,9 +205,7 @@ pub const GSRecovery = struct {
                                 return false;
                             }
                         },
-                        else => {
-                            std.log.info("{?} {s}", .{ sub_sel, self.disks.items[self.sel][2..] });
-                        },
+                        else => {},
                     }
 
                     return false;
@@ -253,9 +259,9 @@ pub const GSRecovery = struct {
                 }
 
                 for (self.disks.items, 0..) |disk, idx| {
-                    if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
+                    if (self.sub_sel != null) {} else if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
-                        // self.remaining = 0;
+                        self.sub_sel = 0;
                     }
                 }
             },

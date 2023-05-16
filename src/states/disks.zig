@@ -15,7 +15,7 @@ const c = @import("../c.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
-    const VERSION = "0.0.2";
+    const VERSION = "0.0.3";
     const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
 
     face: *font.Font,
@@ -198,7 +198,7 @@ pub const GSDisks = struct {
             else => {
                 if (c.glfwGetKeyName(key, 0) == null) return false;
                 for (self.disks.items, 0..) |disk, idx| {
-                    if (c.glfwGetKeyName(key, 0)[0] == disk[0]) {
+                    if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
                         self.remaining = 0;
                     }
