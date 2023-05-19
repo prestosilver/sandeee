@@ -56,8 +56,7 @@ const EmailData = struct {
 
             var y: f32 = bnds.y + 2.0;
 
-            for (0..mail.emails.items.len) |idx| {
-                var email = &mail.emails.items[mail.emails.items.len - 1 - idx];
+            for (mail.emails.items) |*email| {
                 if (email.box != self.box) continue;
                 if (!email.visible()) continue;
 
@@ -251,8 +250,7 @@ const EmailData = struct {
 
                     var y: i32 = 2;
 
-                    for (0..mail.emails.items.len) |idx| {
-                        var email = &mail.emails.items[mail.emails.items.len - 1 - idx];
+                    for (mail.emails.items) |*email| {
                         if (email.box != self.box) continue;
                         if (!email.visible()) continue;
 
