@@ -46,7 +46,7 @@ pub fn init(name: [*c]const u8) !Context {
     _ = c.glfwSetErrorCallback(errorCallback);
 
     if (c.glfwInit() == 0) {
-        return error.GLFWInit;
+        return error.GLFWInitFailed;
     }
 
     var monitor = c.glfwGetPrimaryMonitor();
@@ -56,7 +56,7 @@ pub fn init(name: [*c]const u8) !Context {
     c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
     c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
     c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
-    c.glfwWindowHint(c.GLFW_REFRESH_RATE, mode.refreshRate);
+    c.glfwWindowHint(c.GLFW_REFRESH_RATE, 60);
 
     var win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
 
@@ -65,7 +65,7 @@ pub fn init(name: [*c]const u8) !Context {
     c.glfwSwapInterval(1);
 
     if (c.gladLoadGLLoader(@ptrCast(c.GLADloadproc, &c.glfwGetProcAddress)) == 0) {
-        return error.GLADInit;
+        return error.GLADInitFailed;
     }
 
     var shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
