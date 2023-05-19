@@ -1245,7 +1245,7 @@ pub const VM = struct {
 };
 
 test "VM Compile bad returns error" {
-    var vm = try VM.init(std.testing.allocator, undefined, &[_]u8{});
+    var vm = try VM.init(std.testing.allocator, undefined, &[_]u8{}, false);
     var err: anyerror!std.ArrayList(VM.Operation) = undefined;
     err = vm.stringToOps("\x00");
     try std.testing.expectError(error.InvalidAsm, err);
