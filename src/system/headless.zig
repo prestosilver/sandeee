@@ -2,7 +2,6 @@ const std = @import("std");
 const fm = @import("../util/files.zig");
 const files = @import("files.zig");
 const shell = @import("shell.zig");
-const network = @import("network.zig");
 const allocator = @import("../util/allocator.zig");
 
 const DISK = "headless.eee";
@@ -13,11 +12,6 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
     if (std.fs.cwd().access(diskpath.items, .{}) catch null == null) {
         try files.Folder.setupDisk(DISK);
-    }
-
-    if (!@import("builtin").is_test) {
-        network.server = try network.Server.init();
-        _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
     }
 
     try files.Folder.init(DISK);

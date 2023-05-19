@@ -21,7 +21,6 @@ const conf = @import("../system/config.zig");
 const gfx = @import("../util/graphics.zig");
 const shell = @import("../system/shell.zig");
 const cols = @import("../math/colors.zig");
-const network = @import("../system/network.zig");
 const cursor = @import("../drawers/cursor2d.zig");
 const wins = @import("../windows/all.zig");
 const popups = @import("../drawers/popup2d.zig");

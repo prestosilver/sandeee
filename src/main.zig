@@ -40,7 +40,6 @@ const notifs = @import("drawers/notification2d.zig");
 
 const conf = @import("system/config.zig");
 const files = @import("system/files.zig");
-const network = @import("system/network.zig");
 const headless = @import("system/headless.zig");
 const emails = @import("system/mail.zig");
 
@@ -344,8 +343,9 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
         std.os.exit(0);
     };
 
-    std.log.info("{s}", .{errorMsg});
+    std.fs.cwd().writeFile("CrashLog.txt", errorMsg) catch {};
 
+    // no display on headless
     if (isHeadless) {
         std.os.exit(0);
     }
@@ -367,6 +367,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
         blit() catch break;
     }
+
     std.os.exit(0);
 }
 
@@ -378,8 +379,13 @@ pub fn main() anyerror!void {
         std.log.debug("no leaks! :)", .{});
     };
 
+    // check arguments
     var args = try std.process.ArgIterator.initWithAllocator(allocator.alloc);
-    _ = args.next().?;
+
+    // ignore first arg
+    _ = args.next();
+
+    // setup the headless command
     var headlessCmd: ?[]const u8 = null;
 
     while (args.next()) |arg| {
@@ -388,11 +394,9 @@ pub fn main() anyerror!void {
             std.log.debug("chdir: {s}", .{path});
 
             try std.process.changeCurDir(path);
-        }
-        if (std.mem.eql(u8, arg, "--headless")) {
+        } else if (std.mem.eql(u8, arg, "--headless")) {
             isHeadless = true;
-        }
-        if (std.mem.eql(u8, arg, "--headless-cmd")) {
+        } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
             var script = args.next().?;
             var buff = try allocator.alloc.alloc(u8, 1024);
             var file = try std.fs.cwd().openFile(script, .{});
@@ -405,12 +409,15 @@ pub fn main() anyerror!void {
         }
     }
 
+    // free the argument iterator
     args.deinit();
 
+    // switch to headless main function if nessessary
     if (isHeadless) {
         return headless.headlessMain(headlessCmd, false, null);
     }
 
+    // setup the texture manager
     textureManager = texMan.TextureManager.init();
     batch.textureManager = &textureManager;
 
@@ -418,9 +425,11 @@ pub fn main() anyerror!void {
     ctx = try gfx.init("SandEEE");
     gfx.gContext = &ctx;
 
+    // create some fonts
     var biosFace: font.Font = undefined;
     var mainFace: font.Font = undefined;
 
+    // create the loaders queue
     loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
 
     // shaders
@@ -442,7 +451,7 @@ pub fn main() anyerror!void {
     // start setup states
     ctx.makeCurrent();
 
-    // setup double buffer rendering
+    // setup render texture for shaders
     c.glGenFramebuffers(1, &framebufferName);
     c.glGenBuffers(1, &quad_VertexArrayID);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
@@ -450,6 +459,7 @@ pub fn main() anyerror!void {
     c.glGenTextures(1, &renderedTexture);
     c.glGenRenderbuffers(1, &depthrenderbuffer);
 
+    // create the sprite batch
     sb = try batch.newSpritebatch(&gfx.gContext.size);
 
     // load some textures
@@ -613,10 +623,7 @@ pub fn main() anyerror!void {
     // update the frame timer
     var lastFrameTime = c.glfwGetTime();
 
-    // networking :O
-    // network.server = try network.Server.init();
-    // _ = try std.Thread.spawn(.{}, network.Server.serve, .{});
-
+    // setup state machine
     var prev = currentState;
 
     // main loop
