@@ -19,8 +19,6 @@ const vm = @import("../system/vm.zig");
 
 const c = @import("../c.zig");
 
-const boxes: u8 = 3;
-
 pub var notif: sprite.Sprite = undefined;
 
 const EmailData = struct {
@@ -37,7 +35,7 @@ const EmailData = struct {
 
     shader: *shd.Shader,
 
-    box: u8 = 0,
+    box: usize = 0,
     viewing: ?*mail.Email = null,
     selected: ?*mail.Email = null,
 
@@ -131,29 +129,23 @@ const EmailData = struct {
                 .wrap = bnds.w - 116.0,
             });
         }
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
-            .text = "  Inbox",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 0),
-        });
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
-            .text = "  Spam",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 1),
-        });
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
-            .text = "  Trash",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * 2),
-        });
+
+        for (mail.boxes, 0..) |box, idx| {
+            var pos = vecs.newVec2(bnds.x + 20, bnds.y + 106 + font.size * @intToFloat(f32, idx));
+
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = box,
+                .pos = pos,
+            });
+        }
+
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
             .text = ">",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + @intToFloat(f32, self.box) * font.size),
+            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * @intToFloat(f32, self.box)),
         });
     }
 
@@ -289,8 +281,8 @@ const EmailData = struct {
 
                         if (self.box < 0) {
                             self.box = 0;
-                        } else if (self.box > boxes - 1) {
-                            self.box = boxes - 1;
+                        } else if (self.box > mail.boxes.len - 1) {
+                            self.box = mail.boxes.len - 1;
                         }
                     }
                 }

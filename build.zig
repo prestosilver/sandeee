@@ -9,32 +9,23 @@ const font = @import("tools/fonts.zig");
 const eon = @import("tools/eon.zig");
 const butler = @import("tools/butler.zig");
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-pub const alloc = gpa.allocator();
+pub fn emails(path: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    var root = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
+    var dir = try std.fs.cwd().openIterableDir(path, .{ .access_sub_paths = true });
+    var walker = try dir.walk(alloc);
+    var entry = try walker.next();
 
-pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
-    var root = std.fs.openDirAbsolute(b.pathFromRoot(path), .{ .access_sub_paths = true }) catch null;
-    var dir = std.fs.openIterableDirAbsolute(b.pathFromRoot(path), .{ .access_sub_paths = true }) catch null;
-    var walker = dir.?.walk(alloc) catch null;
-    var entry = walker.?.next() catch null;
-
-    mail.init();
-    defer mail.deinit();
+    mail.emails = std.ArrayList(mail.Email).init(alloc);
+    defer mail.emails.clearAndFree();
 
     var count: usize = 0;
 
-    while (entry) |file| : (entry = walker.?.next() catch null) {
+    while (entry) |file| : (entry = walker.next() catch null) {
         switch (file.kind) {
-            std.fs.IterableDir.Entry.Kind.File => {
-                var f = root.?.openFile(file.path, .{}) catch {
-                    std.log.err("Failed to open {s}", .{file.path});
-                    return "";
-                };
+            .File => {
+                var f = try root.openFile(file.path, .{});
                 defer f.close();
-                mail.append(mail.parseTxt(f) catch |err| {
-                    std.log.err("Failed to parse {s} {}", .{ file.path, err });
-                    return "";
-                }) catch {};
+                try mail.append(try mail.parseTxt(f));
                 count += 1;
             },
             else => {},
@@ -43,7 +34,10 @@ pub fn emails(b: *std.build.Builder, path: []const u8) []const u8 {
 
     std.log.info("packed {} emails", .{count});
 
-    return mail.toStr() catch "";
+    var result = std.ArrayList(u8).init(alloc);
+    try result.appendSlice(try mail.toStr());
+
+    return result;
 }
 
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
@@ -99,7 +93,8 @@ pub fn build(b: *std.build.Builder) void {
     b.installArtifact(exe);
 
     var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
-    var email_step = b.addWriteFile(b.pathFromRoot("content/emails.eme"), emails(b, b.pathFromRoot("content/mail/")));
+    var email_step = conv.ConvertStep.create(b, emails, "content/mail/inbox/", "content/disk/cont/mail/inbox.eme");
+    var email_spam_step = conv.ConvertStep.create(b, emails, "content/mail/spam/", "content/disk/cont/mail/spam.eme");
 
     if (exe.optimize == .Debug) {
         for (asmTestsFiles) |file| {
@@ -205,9 +200,10 @@ pub fn build(b: *std.build.Builder) void {
 
     write_step.step.dependOn(&fontStep.step);
     write_step.step.dependOn(&biosFontStep.step);
+    write_step.step.dependOn(&email_spam_step.step);
+    write_step.step.dependOn(&email_step.step);
 
     exe.step.dependOn(&write_step.step);
-    exe.step.dependOn(&email_step.step);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
@@ -222,8 +218,6 @@ pub fn build(b: *std.build.Builder) void {
     if (b.args) |args| {
         headless_cmd.addArgs(args);
     }
-
-    b.installFile("content/emails.eme", "bin/content/emails.eme");
 
     if (exe.target.os_tag != null and exe.target.os_tag.? == .windows) {
         b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");

@@ -8,14 +8,28 @@ const files = @import("../system/files.zig");
 const emailWin = @import("../windows/email.zig");
 
 pub var emails: std.ArrayList(Email) = undefined;
+pub var boxes: [][]const u8 = undefined;
 
 pub fn saveEmailsState(path: []const u8) !void {
-    var conts = try allocator.alloc.alloc(u8, emails.items.len);
+    var start = try allocator.alloc.alloc(u8, 1);
+
+    start[0] = @intCast(u8, boxes.len);
+
+    for (boxes) |boxname| {
+        var sidx = start.len;
+        start = try allocator.alloc.realloc(start, start.len + boxname.len + 1);
+        start[sidx] = @intCast(u8, boxname.len);
+        std.mem.copy(u8, start[sidx + 1 ..], boxname);
+    }
+
+    var conts = try allocator.alloc.alloc(u8, start.len + 256 * boxes.len);
+    @memset(conts, 0);
+
+    std.mem.copy(u8, conts[0..start.len], start);
 
     for (emails.items) |*email| {
-        conts[email.id] = 0;
-        if (email.viewed) conts[email.id] |= 1 << 0;
-        if (email.complete()) conts[email.id] |= 1 << 1;
+        if (email.viewed) conts[start.len + @intCast(usize, email.box) * 256 + email.id] |= 1 << 0;
+        if (email.complete()) conts[start.len + @intCast(usize, email.box) * 256 + email.id] |= 1 << 1;
     }
 
     _ = try files.root.newFile(path);
@@ -27,21 +41,40 @@ pub fn saveEmailsState(path: []const u8) !void {
 pub fn loadEmailsState(path: []const u8) !void {
     if (try files.root.getFile(path)) |file| {
         var conts = try file.read(null);
+        var idx: usize = 0;
 
-        for (emails.items) |*email| {
-            if (conts.len < email.id + 1) continue;
+        var total = conts[idx];
+        idx += 1;
 
-            email.viewed = (conts[email.id] & (1 << 0)) != 0;
-            email.isComplete = (conts[email.id] & (1 << 1)) != 0;
+        var names = try allocator.alloc.alloc([]const u8, total);
+
+        for (names) |*name| {
+            var len = conts[idx];
+            idx += 1;
+
+            name.* = conts[idx .. idx + len];
+            idx += len;
+        }
+
+        var startidx = idx;
+
+        for (names, 0..) |name, nameidx| {
+            for (boxes, 0..) |boxname, boxidx| {
+                if (std.mem.eql(u8, boxname, name)) {
+                    for (emails.items) |*email| {
+                        if (email.box != boxidx) continue;
+
+                        email.viewed = (conts[startidx + email.id + 256 * nameidx] & (1 << 0)) != 0;
+                        email.isComplete = (conts[startidx + email.id + 256 * nameidx] & (1 << 1)) != 0;
+                    }
+                }
+            }
         }
     }
 }
 
 pub fn append(e: Email) !void {
-    if (emails.items.len < e.id + 1) {
-        try emails.resize(e.id + 1);
-    }
-    emails.items[e.id] = e;
+    try emails.append(e);
 }
 
 pub fn toStr() ![]u8 {
@@ -53,7 +86,6 @@ pub fn toStr() ![]u8 {
         var start = result.len;
 
         var idStr = std.mem.toBytes(email.id);
-        var boxStr = std.mem.toBytes(email.box);
         var fromLen = std.mem.toBytes(email.from.len)[0..4];
         var depsLen = std.mem.toBytes(email.deps.len)[0..4];
         var condsLen = std.mem.toBytes(email.conditionData.len)[0..4];
@@ -65,7 +97,6 @@ pub fn toStr() ![]u8 {
             u8,
             &[_][]const u8{
                 &idStr,
-                &boxStr,
                 &.{@enumToInt(email.condition)},
                 condsLen,
                 email.conditionData,
@@ -135,8 +166,7 @@ pub fn parseTxt(file: std.fs.File) !Email {
         }
     }
 
-    var str_contents = try allocator.alloc.alloc(u8, contents.items.len);
-    std.mem.copy(u8, str_contents, contents.items);
+    var str_contents = try allocator.alloc.dupe(u8, contents.items);
 
     result.contents = str_contents;
 
@@ -160,59 +190,74 @@ pub fn deinit() void {
 }
 
 pub fn load() !void {
-    var d = std.fs.cwd();
+    if (try files.root.getFolder("/cont/mail/")) |folder| {
+        var fileList = std.ArrayList(*files.File).init(allocator.alloc);
+        defer fileList.deinit();
+        try folder.getFiles(&fileList);
 
-    var file = try d.openFile("content/emails.eme", .{});
+        boxes = try allocator.alloc.alloc([]u8, fileList.items.len);
 
-    var lenbuffer: []u8 = try allocator.alloc.alloc(u8, 4);
-    var bytebuffer: []u8 = try allocator.alloc.alloc(u8, 1);
-    defer allocator.alloc.free(bytebuffer);
+        for (fileList.items, 0..) |file, boxid| {
+            std.log.info("load emails: {s}", .{file.name});
 
-    defer allocator.alloc.free(lenbuffer);
-    _ = try file.read(lenbuffer);
-    var count = @bitCast(u32, lenbuffer[0..4].*);
-    try emails.resize(count);
+            boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
 
-    for (0..count) |idx| {
-        emails.items[idx].viewed = false;
-        emails.items[idx].isComplete = false;
+            var conts = try file.read(null);
 
-        _ = try file.read(bytebuffer);
-        emails.items[idx].id = bytebuffer[0];
-        _ = try file.read(bytebuffer);
-        emails.items[idx].box = bytebuffer[0];
-        _ = try file.read(bytebuffer);
-        emails.items[idx].condition = @intToEnum(Email.Condition, bytebuffer[0]);
+            var fidx: usize = 0;
 
-        _ = try file.read(lenbuffer);
-        var condsize = @bitCast(u32, lenbuffer[0..4].*);
-        var condbuffer = try allocator.alloc.alloc(u8, condsize);
-        _ = try file.read(condbuffer);
-        emails.items[idx].conditionData = condbuffer;
+            var start = emails.items.len;
 
-        _ = try file.read(lenbuffer);
-        var depssize = @bitCast(u32, lenbuffer[0..4].*);
-        var depsbuffer = try allocator.alloc.alloc(u8, depssize);
-        _ = try file.read(depsbuffer);
-        emails.items[idx].deps = depsbuffer;
+            var count = @bitCast(u32, conts[fidx .. fidx + 4][0..4].*);
+            try emails.resize(start + count);
 
-        _ = try file.read(lenbuffer);
-        var fromsize = @bitCast(u32, lenbuffer[0..4].*);
-        var frombuffer: []u8 = try allocator.alloc.alloc(u8, fromsize);
-        _ = try file.read(frombuffer);
-        emails.items[idx].from = frombuffer;
+            fidx += 4;
 
-        _ = try file.read(lenbuffer);
-        var subsize = @bitCast(u32, lenbuffer[0..4].*);
-        var subbuffer: []u8 = try allocator.alloc.alloc(u8, subsize);
-        _ = try file.read(subbuffer);
-        emails.items[idx].subject = subbuffer;
+            for (start..start + count) |idx| {
+                emails.items[idx].viewed = false;
+                emails.items[idx].isComplete = false;
 
-        _ = try file.read(lenbuffer);
-        var contentsize = @bitCast(u32, lenbuffer[0..4].*);
-        var contentbuffer: []u8 = try allocator.alloc.alloc(u8, contentsize);
-        _ = try file.read(contentbuffer);
-        emails.items[idx].contents = contentbuffer;
+                emails.items[idx].id = conts[fidx];
+                fidx += 1;
+
+                emails.items[idx].box = @intCast(u8, boxid);
+
+                emails.items[idx].condition = @intToEnum(Email.Condition, conts[fidx]);
+                fidx += 1;
+
+                const kind = *align(1) const u32;
+
+                var len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                fidx += 4;
+
+                emails.items[idx].conditionData = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
+
+                len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                fidx += 4;
+
+                emails.items[idx].deps = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
+
+                len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                fidx += 4;
+
+                emails.items[idx].from = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
+
+                len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                fidx += 4;
+
+                emails.items[idx].subject = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
+
+                len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                fidx += 4;
+
+                emails.items[idx].contents = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
+            }
+        }
     }
 }
 
@@ -251,6 +296,7 @@ pub const Email = struct {
         self.isComplete = true;
         if (self.unlocks()) {
             for (emails.items) |dep| {
+                if (dep.box != self.box) continue;
                 if (std.mem.indexOf(u8, dep.deps, &.{self.id})) |_| {
                     if (dep.visible())
                         events.em.sendEvent(windowEvs.EventNotification{
@@ -266,6 +312,7 @@ pub const Email = struct {
 
     pub fn visible(self: *const Self) bool {
         for (emails.items) |dep| {
+            if (dep.box != self.box) continue;
             if (std.mem.indexOf(u8, self.deps, &.{dep.id})) |_| {
                 if (!dep.complete()) return false;
             }
@@ -280,6 +327,7 @@ pub const Email = struct {
 
     pub fn unlocks(self: *const Self) bool {
         for (emails.items) |dep| {
+            if (dep.box != self.box) continue;
             if (std.mem.indexOf(u8, dep.deps, &.{self.id})) |_| {
                 if (dep.visible()) return true;
             }
