@@ -27,7 +27,7 @@ uniform float lines_velocity = -2.0;
 
 #define COLOR_STEPS 8.0
 #define GAMMA 2.5
-#define distortion 0.1
+#define distortion 0.075
 
 vec2 distort(vec2 coord, const vec2 ratio)
 {
@@ -118,22 +118,7 @@ void main()
     }
 
     float d = length(xy);
-    if(d < 1.5){
-        xy = distort(xy, vec2(1));
-    }
-    else{
-        xy = SCREEN_UV.xy;
-    }
-
-    if (xy.x < 0 || xy.y < 0) {
-        color = vec4(0, 0, 0, 1);
-        return;
-    }
-
-    if (xy.x > 1 || xy.y > 1) {
-        color = vec4(0, 0, 0, 1);
-        return;
-    }
+    xy = mix(xy, distort(xy, vec2(1)), step(d, 1.5));
 
     xy.x += displace(xy) * 0.125;
 
@@ -148,6 +133,8 @@ void main()
     get_color_bleeding(current_color,color_left);
     vec4 c = current_color+color_left;
     get_color_scanline(SCREEN_UV.xy,c,time);
+    
+    c = mix(vec4(0, 0, 0, 1), c, smoothstep(0 - pixel_size_y, 0, xy.y) * (1.0 - smoothstep(1, 1 + pixel_size_y, xy.y)) * smoothstep(0 - pixel_size_x, 0, xy.x) * (1.0 - smoothstep(1, 1 + pixel_size_x, xy.x)));
 
     color = c;
     color = pow(color, vec4(1.0 / GAMMA));
