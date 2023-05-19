@@ -134,6 +134,9 @@ fn getLineData(table, line) {
 
 fn processLine(table, line) {
     var stripped = stripLine(line);
+
+    if (_StringLength(stripped) == 0) return "";
+    
     var enum = getLineEnum(stripped);
 
     if (enum == 255) {
