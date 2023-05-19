@@ -626,19 +626,19 @@ pub const VM = struct {
 
                             return;
                         },
-                        // allocate
-                        11 => {
-                            var len = try self.popStack();
-                            defer self.free(&[_]StackEntry{len});
+                        // TODO decide
+                        // 11 => {
+                        //     var len = try self.popStack();
+                        //     defer self.free(&[_]StackEntry{len});
 
-                            if (len != .value) return error.ValueMissing;
+                        //     if (len != .value) return error.ValueMissing;
 
-                            var adds = try self.allocator.create([]u8);
-                            adds.* = try self.allocator.alloc(u8, @intCast(usize, len.value.*));
-                            self.stack[self.rsp] = StackEntry{ .string = adds };
-                            self.rsp += 1;
-                            return;
-                        },
+                        //     var adds = try self.allocator.create([]u8);
+                        //     adds.* = try self.allocator.alloc(u8, @intCast(usize, len.value.*));
+                        //     self.stack[self.rsp] = StackEntry{ .string = adds };
+                        //     self.rsp += 1;
+                        //     return;
+                        // },
                         // regfn
                         12 => {
                             var name = try self.popStack();
@@ -647,8 +647,6 @@ pub const VM = struct {
 
                             if (func != .string) return error.StringMissing;
                             if (name != .string) return error.StringMissing;
-
-                            //std.log.info("reg: {s}", .{name.string.?});
 
                             var dup = try self.allocator.dupe(u8, func.string.*);
 
