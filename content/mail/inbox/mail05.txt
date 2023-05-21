@@ -1,6 +1,5 @@
 id: 5
 deps: 4
-box: 0
 from: jennifer_d@eee.org
 sub: SystemCall incoming
 run: new helloWorld.asm

@@ -1,5 +1,4 @@
 id: 0
-box: 0
 from: eee@eee.org
 sub: EEE sees all
 view

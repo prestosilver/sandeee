@@ -1,6 +1,5 @@
 id: 4
 deps: 1
-box: 0
 from: jennifer_d@eee.org
 sub: Assembler?
 view

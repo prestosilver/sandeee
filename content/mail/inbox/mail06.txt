@@ -1,6 +1,5 @@
 id: 6
 deps: 5
-box: 0
 from: jennifer_d@eee.org
 sub: Hello World!
 submit: runs=Hello World!

@@ -1,6 +1,5 @@
 id: 1
 deps: 0
-box: 0
 from: joe_m@eee.org
 sub: Your first program.
 run: new helloWorld.esh

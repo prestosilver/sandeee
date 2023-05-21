@@ -1,6 +1,5 @@
 id: 8
 deps: 7
-box: 0
 from: julien_w@eee.org
 sub: The internet :O
 run: new index.edf

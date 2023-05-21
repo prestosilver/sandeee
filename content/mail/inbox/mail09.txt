@@ -1,6 +1,5 @@
 id: 9
 deps: 8
-box: 0
 from: prestosilver
 sub: Demo Complete
 Thanks for playing the SandEEE demo. In the full version expect:
