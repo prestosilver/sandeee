@@ -282,7 +282,7 @@ pub fn runCmdEvent(event: systemEvs.EventRunCmd) bool {
         if (!email.visible()) continue;
         if (email.condition != .Run) continue;
 
-        if (std.mem.eql(u8, email.conditionData, event.cmd)) {
+        if (std.ascii.eqlIgnoreCase(email.conditionData, event.cmd)) {
             email.setComplete();
         }
     }
@@ -375,7 +375,7 @@ var isHeadless = false;
 
 pub fn main() anyerror!void {
     defer if (!builtin.link_libc or !allocator.useclib) {
-        std.debug.assert(allocator.gpa.deinit() != .ok);
+        std.debug.assert(allocator.gpa.deinit() == .ok);
         std.log.debug("no leaks! :)", .{});
     };
 
@@ -676,6 +676,7 @@ pub fn main() anyerror!void {
     }
 
     try biosFace.deinit();
+    try mainFace.deinit();
     try batch.textureManager.deinit();
 
     gfx.close(ctx);

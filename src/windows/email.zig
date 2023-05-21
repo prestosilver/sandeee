@@ -203,7 +203,7 @@ const EmailData = struct {
                     var name = cond[0..idx];
                     if (std.mem.eql(u8, name, "conts")) {
                         var targetText = cond[idx + 1 ..];
-                        good = good and std.mem.eql(u8, targetText, conts);
+                        good = good and std.ascii.eqlIgnoreCase(targetText, conts);
                     }
                     if (std.mem.eql(u8, name, "runs")) {
                         if (!std.mem.startsWith(u8, conts, "EEEp")) return;
@@ -215,7 +215,7 @@ const EmailData = struct {
                         try vmInstance.runAll();
                         var targetText = cond[idx + 1 ..];
 
-                        good = good and std.mem.eql(u8, vmInstance.out.items, targetText);
+                        good = good and std.ascii.eqlIgnoreCase(vmInstance.out.items, targetText);
                     }
                 }
 
