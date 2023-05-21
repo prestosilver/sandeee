@@ -8,36 +8,7 @@ const conv = @import("tools/convert.zig");
 const font = @import("tools/fonts.zig");
 const eon = @import("tools/eon.zig");
 const butler = @import("tools/butler.zig");
-
-pub fn emails(path: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
-    var root = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
-    var dir = try std.fs.cwd().openIterableDir(path, .{ .access_sub_paths = true });
-    var walker = try dir.walk(alloc);
-    var entry = try walker.next();
-
-    mail.emails = std.ArrayList(mail.Email).init(alloc);
-
-    var count: usize = 0;
-
-    while (entry) |file| : (entry = walker.next() catch null) {
-        switch (file.kind) {
-            .File => {
-                var f = try root.openFile(file.path, .{});
-                defer f.close();
-                try mail.append(try mail.parseTxt(f));
-                count += 1;
-            },
-            else => {},
-        }
-    }
-
-    std.log.info("packed {} emails", .{count});
-
-    var result = std.ArrayList(u8).init(alloc);
-    try result.appendSlice(try mail.toStr());
-
-    return result;
-}
+const emails = @import("tools/mail.zig");
 
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
 const eonTestsFiles = [_][]const u8{ "pong", "fib", "tabletest", "heaptest", "stringtest", "paren" };
@@ -92,8 +63,8 @@ pub fn build(b: *std.build.Builder) void {
     b.installArtifact(exe);
 
     var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
-    var email_step = conv.ConvertStep.create(b, emails, "content/mail/inbox/", "content/disk/cont/mail/inbox.eme");
-    var email_spam_step = conv.ConvertStep.create(b, emails, "content/mail/spam/", "content/disk/cont/mail/spam.eme");
+    var email_step = conv.ConvertStep.create(b, emails.emails, "content/mail/inbox/", "content/disk/cont/mail/inbox.eme");
+    var email_spam_step = conv.ConvertStep.create(b, emails.emails, "content/mail/spam/", "content/disk/cont/mail/spam.eme");
 
     if (exe.optimize == .Debug) {
         for (asmTestsFiles) |file| {
