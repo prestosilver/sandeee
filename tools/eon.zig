@@ -298,6 +298,9 @@ const Expression = struct {
                     std.log.info("{s}", .{self.op.?.value});
                     return error.UnknownIdent;
                 },
+                .TOKEN_CLOSE_PAREN => {
+                    return result;
+                },
                 else => {
                     std.log.info("{}", .{self.op.?.kind});
                     return error.UnknownToken;
@@ -925,14 +928,14 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
         var a = try allocator.alloc(Expression, 1);
         a[0] = try parseExpression(tokens, idx);
 
+        if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
+        idx.* += 1;
+
         result = .{
             .a = a,
             .op = &tokens[idx.* - 1],
             .b = &emptyExpr,
         };
-
-        if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
-        idx.* += 1;
 
         return result;
     } else if (tokens[idx.*].kind == .TOKEN_INT_LIT or
@@ -1330,8 +1333,8 @@ pub fn compileEonLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
     var tokens = try lex_file(in);
     defer tokens.deinit();
 
-    //for (tokens.items) |tok|
-    //    std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
+    // for (tokens.items) |tok|
+    //     std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
 
     var prog = try parseProgram(tokens.items);
 
