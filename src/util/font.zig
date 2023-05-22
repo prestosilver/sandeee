@@ -17,6 +17,8 @@ pub const Font = struct {
     size: f32,
     chars: [256]Char,
 
+    setup: bool,
+
     pub const Char = struct {
         tx: f32,
         ty: f32,
@@ -35,6 +37,8 @@ pub const Font = struct {
     }
 
     pub fn deinit(self: *Font) !void {
+        if (!self.setup) return;
+
         var texture = sb.textureManager.textures.fetchRemove(self.tex);
         texture.?.value.deinit();
 
@@ -122,6 +126,8 @@ pub const Font = struct {
         });
 
         fontId += 1;
+
+        result.setup = true;
 
         return result;
     }

@@ -429,6 +429,10 @@ pub fn main() anyerror!void {
     var biosFace: font.Font = undefined;
     var mainFace: font.Font = undefined;
 
+    // setup fonts deinit
+    biosFace.setup = false;
+    mainFace.setup = false;
+
     // create the loaders queue
     loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
 
