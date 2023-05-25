@@ -50,3 +50,8 @@ fn time(file, len) {
 fn error(msg) {
     asm "sys 18";
 }
+
+fn fileSize(file) {
+    asm "sys 19";
+    asm "ret";
+}

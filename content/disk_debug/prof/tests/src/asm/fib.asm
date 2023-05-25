@@ -49,4 +49,3 @@ main:
     push 10
     call printfib
     disc 0
-    ret

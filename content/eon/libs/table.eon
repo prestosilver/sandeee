@@ -24,7 +24,7 @@ fn tableEntrySize(table) {
     return tableKeySize(dup(table)) + tableValueSize(dup(table));
 }
 
-fn setSize(table, size) {
+fn tableSetSize(table, size) {
     var length = _StringLength(table) - 2;
 
     var end = table + 3;
@@ -81,7 +81,7 @@ fn tablePut(table, key, val) {
            return 1;
         }
     }
-    setSize(table, total + 1);
+    tableSetSize(table, total + 1);
 
     table = table & key & val;
     return 1;
@@ -107,5 +107,5 @@ fn tableGet(table, key) {
             return dup(tEntry) + keySize;
         }
     }
-    return 0;
+    return "";
 }

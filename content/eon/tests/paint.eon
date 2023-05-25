@@ -18,7 +18,7 @@ fn toShort(n) {
     return result & @adds;
 }
 
-fn setPixel(tex, x, y) {
+fn setPixel(tex, x, y, color) {
     var file = open("/fake/gfx/pixel");
 
     var xs = toShort(x);
@@ -64,6 +64,83 @@ fn render(win, tex, w, h) {
     return 0;
 }
 
+fn getclick() {
+    asm "push \"/fake/inp/mouse\"";
+    asm "sys 3";
+    asm "copy 0";
+    asm "push 100000";
+    asm "sys 4";
+    asm "copy 1";
+    asm "sys 7";
+    asm "disc 1";
+    asm "ret";
+}
+
+fn processClick(win, texture, w, h) {
+    var clickData = getclick();
+    var btn = @clickData;
+
+    if (btn == 255) return 0;
+
+    var x = @(clickData + 2);
+    var y = @(clickData + 4);
+
+    var xo = @(clickData + 1);
+    var yo = @(clickData + 3);
+    xo = xo * 256;
+    yo = yo * 256;
+
+    x = x + xo;
+    y = y + yo;
+
+    print("mouse_pos: ");
+    print(x);
+    print(", ");
+    print(y);
+    print("\\n");
+
+    var win_w = _WindowWidth(win);
+    var win_h = _WindowHeight(win);
+
+    var ratio = 1000;
+
+    var width_ratio = win_w * 1000;
+    width_ratio = width_ratio / (w * 2);
+    var height_ratio = win_h * 1000;
+    height_ratio = height_ratio / (h * 2);
+
+    ratio = width_ratio;
+    if (ratio > height_ratio) {
+        ratio = height_ratio;
+    }
+
+    var target_w = ratio * (w * 2);
+    target_w = target_w / 1000;
+    var target_h = ratio * (h * 2);
+    target_h = target_h / 1000;
+
+    var target_x = win_w - target_w;
+    var target_y = win_h - target_h;
+
+    x = x - target_x;
+    x = x * w;
+    x = x / (target_x + target_w);
+
+    y = y - target_y;
+    y = y * h;
+    y = y / (target_y + target_h);
+
+    setPixel(texture, x, y, "0000");
+
+    print("texture_pos: ");
+    print(x);
+    print(", ");
+    print(y);
+    print("\\n");
+
+    return 1;
+}
+
 fn main() {
     setupLibLoad();
     loadLib("/libs/window.ell");
@@ -74,14 +151,14 @@ fn main() {
     var texture = _TextureCreate();
     var content = _TextureRead(input);
     _TextureUpload(content, texture);
-    setPixel(texture, 1, 1);
-
     _SetWindowTitle(window, "EEE Image Array Editor" & input);
 
     var w = _TextureWidth(content);
     var h = _TextureHeight(content);
 
     for (0; _WindowOpen(); 1) {
+        processClick(window, texture, w, h);
+
         render(window, texture, w * 2, h * 2);
     }
 

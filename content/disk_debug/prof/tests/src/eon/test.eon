@@ -1,3 +1,26 @@
+fn print() {
+    asm "sys 0";
+
+    return 0;
+}
+
 fn main() {
-    return 0 + 5;
+    var lol = 10;
+
+    print(lol);
+    print("\n");
+    print("Hello" & " World!\n");
+    print("2nd line\n");
+    print((5 + 4) * 3);
+    print("\n");
+
+    if (10 == 0) {
+       print("bad");
+    }
+
+    if (0 == 0) {
+       print("good");
+    }
+
+    return 0;
 }

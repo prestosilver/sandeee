@@ -34,6 +34,7 @@
     call "ArrayGetLen"
     sys 0
     sys 1
+    ret
 
 setup_load:
     push "/libs/libload.eep"    ; libload
