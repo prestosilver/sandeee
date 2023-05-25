@@ -29,7 +29,7 @@ pub const Vert = struct {
         };
     }
 
-    pub fn getHash(v: Vert) u32 {
+    pub inline fn getHash(v: Vert) u32 {
         var casted = std.mem.asBytes(&[_]f32{ v.x, v.y, v.u, v.v, v.r, v.g, v.b });
         var hash: u32 = 1235;
         for (casted) |ch|
@@ -42,22 +42,22 @@ pub const Vert = struct {
 pub const VertArray = struct {
     array: std.ArrayList(Vert),
 
-    pub fn init() !VertArray {
+    pub inline fn init() !VertArray {
         var result = VertArray{
             .array = std.ArrayList(Vert).init(allocator.alloc),
         };
         return result;
     }
 
-    pub fn deinit(va: *VertArray) void {
+    pub inline fn deinit(va: *VertArray) void {
         va.array.deinit();
     }
 
-    pub fn items(va: VertArray) []const Vert {
+    pub inline fn items(va: VertArray) []const Vert {
         return va.array.items;
     }
 
-    pub fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {
+    pub inline fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {
         try va.array.append(Vert{
             .x = @round(pos.x),
             .y = @round(pos.y),
