@@ -1,0 +1,30 @@
+fn print() {
+    asm "sys 0";
+    asm "push 0";
+    asm "ret";
+}
+
+fn fib(idx) {
+    if (idx < 2) {
+        return idx;
+    }
+
+    return fib(idx - 1) + fib(idx - 2);
+}
+
+fn printfib(idx) {
+    var val = fib(idx);
+
+    print(idx);
+    print(": ");
+    print(val);
+    print("\n");
+
+    return 0;
+}
+
+fn main() {
+    printfib(9);
+
+    return 0;
+}
