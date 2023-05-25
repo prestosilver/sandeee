@@ -167,13 +167,23 @@ pub const VMData = struct {
         }
     }
 
-    pub fn click(self: *Self, pos: vecs.Vector2, _: vecs.Vector2, btn: i32) !void {
+    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, btn: i32) !void {
         self.mousebtn = btn;
         self.mousepos = pos;
     }
 
     pub fn scroll(_: *Self, _: f32, _: f32) !void {}
-    pub fn move(_: *Self, _: f32, _: f32) !void {}
+
+    pub fn move(self: *Self, x: f32, y: f32) !void {
+        _ = self;
+        _ = x;
+        _ = y;
+
+        //var pos = vecs.newVec2(x, y);
+
+        //self.mousepos = pos;
+    }
+
     pub fn focus(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
