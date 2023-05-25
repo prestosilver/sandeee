@@ -240,17 +240,17 @@ pub const SpriteBatch = struct {
         allocator.alloc.free(sb.queue);
         allocator.alloc.free(sb.prevQueue);
     }
+
+    pub fn new(size: *vecs.Vector2) !SpriteBatch {
+        var buffer = try allocator.alloc.alloc(c.GLuint, 0);
+        var q = try allocator.alloc.alloc(QueueEntry, 0);
+        var pq = try allocator.alloc.alloc(QueueEntry, 0);
+
+        return SpriteBatch{
+            .prevQueue = pq,
+            .queue = q,
+            .buffers = buffer,
+            .size = size,
+        };
+    }
 };
-
-pub fn newSpritebatch(size: *vecs.Vector2) !SpriteBatch {
-    var buffer = try allocator.alloc.alloc(c.GLuint, 0);
-    var q = try allocator.alloc.alloc(QueueEntry, 0);
-    var pq = try allocator.alloc.alloc(QueueEntry, 0);
-
-    return SpriteBatch{
-        .prevQueue = pq,
-        .queue = q,
-        .buffers = buffer,
-        .size = size,
-    };
-}
