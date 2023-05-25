@@ -26,43 +26,41 @@ uniform float scanline_alpha = 0.85;
 uniform float lines_velocity = -2.0;
 
 #define COLOR_STEPS 8.0
-#define GAMMA 2.5
+#define GAMMA 2
 #define distortion 0.075
 
 vec2 distort(vec2 coord, const vec2 ratio)
 {
-	float offsety = 1.0 - ratio.y;
-	coord.y -= offsety;
-	coord /= ratio;
+    float offsety = 1.0 - ratio.y;
+    coord.y -= offsety;
+    coord /= ratio;
 
-	vec2 cc = coord - 0.5;
-	float dist = dot(cc, cc) * distortion;
-	vec2 result = coord + cc * (1.0 + dist) * dist;
+    vec2 cc = coord - 0.5;
+    float dist = dot(cc, cc) * distortion;
+    vec2 result = coord + cc * (1.0 + dist) * dist;
 
-	result *= ratio;
-	result.y += offsety;
-	return result;
+    result *= ratio;
+    result.y += offsety;
+    return result;
 }
 
-void get_color_bleeding(inout vec4 current_color,inout vec4 color_left){
+void get_color_bleeding(inout vec4 current_color,inout vec4 color_left) {
     current_color = current_color*vec4(color_bleeding,0.5,1.0-color_bleeding,1);
     color_left = color_left*vec4(1.0-color_bleeding,0.5,color_bleeding,1);
 }
 
-void get_color_scanline(vec2 uv,inout vec4 c,float time){
+void get_color_scanline(vec2 uv,inout vec4 c,float time) {
     float line_row = floor((uv.y * screen_height/2/scan_size) + mod(time*lines_velocity, lines_distance));
     float n = 1.0 - ceil((mod(line_row,lines_distance)/lines_distance));
     c = c - n*c*(1.0 - scanline_alpha);
     c.a = 1.0;
 }
 
-float onOff(float a, float b, float c)
-{
+float onOff(float a, float b, float c) {
     return step(c, sin(time + a*cos(time*b)));
 }
 
-float displace(vec2 look)
-{
+float displace(vec2 look) {
     float y = (look.y-mod(time/4.,1.));
     float window = 1./(1.+50.*y*y);
     return sin(look.y*20. + time)/80.*onOff(4.,2.,.8)*(1.+cos(time*60.))*window;
