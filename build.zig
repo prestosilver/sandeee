@@ -11,8 +11,8 @@ const butler = @import("tools/butler.zig");
 const emails = @import("tools/mail.zig");
 
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
-const eonTestsFiles = [_][]const u8{ "pong", "fib", "tabletest", "heaptest", "stringtest", "paren" };
-const asmExecFiles = [_][]const u8{ "dump", "echo", "aplay", "libdump" };
+const eonTestsFiles = [_][]const u8{ "pong", "paint", "fib", "tabletest", "heaptest", "stringtest", "paren" };
+const asmExecFiles = [_][]const u8{ "time", "dump", "echo", "aplay", "libdump" };
 const eonExecFiles = [_][]const u8{ "eon", "stat", "player", "asm", "pix" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "heap", "table" };
@@ -20,6 +20,7 @@ const wavSoundFiles = [_][]const u8{ "login", "message", "track1" };
 const pngImageFiles = [_][]const u8{ "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const incLibsFiles = [_][]const u8{"libload"};
+const mailDirs = [_][]const u8{ "inbox", "spam" };
 
 pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable(.{
