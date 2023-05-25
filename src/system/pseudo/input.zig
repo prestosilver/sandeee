@@ -54,7 +54,7 @@ pub fn writeInputWin(_: []const u8, _: ?*vm.VM) !void {
 // /fake/inp/mouse
 
 pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
-    var result = try allocator.alloc.alloc(u8, 3);
+    var result = try allocator.alloc.alloc(u8, 5);
 
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
@@ -65,10 +65,12 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
 
                 if (self.idx == aid[0]) {
                     result[0] = 255;
-                    if (self.mousebtn != null)
+                    if (self.mousebtn != null) {
                         result[0] = @intCast(u8, self.mousebtn.?);
-                    result[1] = @floatToInt(u8, self.mousepos.x);
-                    result[2] = @floatToInt(u8, self.mousepos.y);
+                        self.mousebtn = null;
+                    }
+                    std.mem.writeIntBig(u16, result[1..3], @floatToInt(u16, self.mousepos.x));
+                    std.mem.writeIntBig(u16, result[3..5], @floatToInt(u16, self.mousepos.y));
 
                     return result;
                 }
@@ -79,9 +81,11 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
     @memset(result, 0);
     return result;
 }
+
 pub fn writeInputMouse(_: []const u8, _: ?*vm.VM) !void {
     return;
 }
+
 pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
     var result = try allocator.alloc.create(files.Folder);
     result.* = .{
