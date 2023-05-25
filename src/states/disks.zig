@@ -105,20 +105,20 @@ pub const GSDisks = struct {
                 }
 
                 if (self.sel == self.disks.items.len - 2) {
-                    events.em.sendEvent(systemEvs.EventStateChange{
+                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Installer,
                     });
                 } else if (self.sel == self.disks.items.len - 1) {
-                    events.em.sendEvent(systemEvs.EventStateChange{
+                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Recovery,
                     });
                 } else {
-                    events.em.sendEvent(systemEvs.EventStateChange{
+                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Loading,
                     });
                 }
             } else {
-                events.em.sendEvent(systemEvs.EventStateChange{
+                events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                     .targetState = .Installer,
                 });
                 return;

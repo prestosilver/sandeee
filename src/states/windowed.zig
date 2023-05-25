@@ -222,11 +222,11 @@ pub const GSWindowed = struct {
         win.WindowContents.shader = self.shader;
         shell.shader = self.shader;
 
-        events.em.registerListener(windowEvs.EventCreatePopup, createPopup);
-        events.em.registerListener(windowEvs.EventClosePopup, closePopup);
-        events.em.registerListener(windowEvs.EventCreateWindow, createWindow);
-        events.em.registerListener(windowEvs.EventNotification, notification);
-        events.em.registerListener(systemEvs.EventSetSetting, settingSet);
+        events.EventManager.instance.registerListener(windowEvs.EventCreatePopup, createPopup);
+        events.EventManager.instance.registerListener(windowEvs.EventClosePopup, closePopup);
+        events.EventManager.instance.registerListener(windowEvs.EventCreateWindow, createWindow);
+        events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
+        events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
 
         if (std.ascii.eqlIgnoreCase(self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
             var window = win.Window.new("win", win.WindowData{
@@ -246,7 +246,7 @@ pub const GSWindowed = struct {
                 .active = true,
             });
 
-            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = true });
+            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = true });
         }
 
         self.desk.data.shell.root = files.home;

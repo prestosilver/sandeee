@@ -152,7 +152,7 @@ pub const EditorData = struct {
                         .submit = &submit,
                     };
 
-                    events.em.sendEvent(winEvs.EventCreatePopup{
+                    events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
                         .popup = .{
                             .texture = "win",
                             .data = .{

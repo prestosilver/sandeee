@@ -268,6 +268,7 @@ pub const Email = struct {
         View,
         Submit,
         Run,
+        Logins,
     };
 
     from: []const u8,
@@ -299,14 +300,14 @@ pub const Email = struct {
                 if (dep.box != self.box) continue;
                 if (std.mem.indexOf(u8, dep.deps, &.{self.id})) |_| {
                     if (dep.visible())
-                        events.em.sendEvent(windowEvs.EventNotification{
+                        events.EventManager.instance.sendEvent(windowEvs.EventNotification{
                             .title = "You got mail",
                             .text = dep.subject,
                             .icon = emailWin.notif,
                         });
                 }
             }
-            events.em.sendEvent(systemEvs.EventEmailRecv{});
+            events.EventManager.instance.sendEvent(systemEvs.EventEmailRecv{});
         }
     }
 

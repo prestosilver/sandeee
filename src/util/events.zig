@@ -1,36 +1,28 @@
 const std = @import("std");
 const allocator = @import("allocator.zig");
 
-pub var em: EventManager = undefined;
-
-pub fn init() void {
-    em = EventManager.init();
-}
-
-pub fn deinit() void {
-    em.deinit();
-}
-
 pub const EventManager = struct {
+    pub var instance: EventManager = undefined;
+
+    subs: std.ArrayList(Listener(*void)),
+
+    pub fn init() void {
+        var subs = std.ArrayList(Listener(*void)).init(allocator.alloc);
+
+        instance = EventManager{
+            .subs = subs,
+        };
+    }
+
+    pub fn deinit() void {
+        instance.subs.deinit();
+    }
+
     fn Listener(comptime T: type) type {
         return struct {
             name: []const u8,
             calls: *const fn (T) bool,
         };
-    }
-
-    subs: std.ArrayList(Listener(*void)),
-
-    pub fn init() EventManager {
-        var subs = std.ArrayList(Listener(*void)).init(allocator.alloc);
-
-        return EventManager{
-            .subs = subs,
-        };
-    }
-
-    pub fn deinit(self: *EventManager) void {
-        self.subs.deinit();
     }
 
     pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) bool) void {

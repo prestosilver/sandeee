@@ -131,7 +131,7 @@ pub const Shell = struct {
             .active = true,
         });
 
-        events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
         return result;
     }
@@ -161,7 +161,7 @@ pub const Shell = struct {
             if (edself.file == null) return result;
             try edself.buffer.appendSlice(try edself.file.?.read(null));
         }
-        events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
         return result;
     }
@@ -189,7 +189,7 @@ pub const Shell = struct {
 
             webself.path = try allocator.alloc.dupe(u8, param[4..]);
         }
-        events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
         return result;
     }

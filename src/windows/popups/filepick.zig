@@ -57,7 +57,7 @@ pub const PopupFilePick = struct {
         if (keycode == c.GLFW_KEY_ENTER) {
             if (try files.root.getFile(self.path)) |file| {
                 try self.submit(file, self.data);
-                events.em.sendEvent(windowEvs.EventClosePopup{});
+                events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
             } else {
                 self.err = "File Not Found";
             }

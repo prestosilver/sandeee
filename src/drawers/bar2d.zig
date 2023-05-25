@@ -189,7 +189,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         1 => {
                             var window = win.Window.new("win", win.WindowData{
@@ -203,7 +203,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         2 => {
                             var window = win.Window.new("win", win.WindowData{
@@ -217,7 +217,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         3 => {
                             var window = win.Window.new("win", win.WindowData{
@@ -231,7 +231,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         4 => {
                             var window = win.Window.new("win", win.WindowData{
@@ -245,7 +245,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         5 => {
                             var window = win.Window.new("win", win.WindowData{
@@ -259,7 +259,7 @@ pub const BarData = struct {
                                 .active = true,
                             });
 
-                            events.em.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         6 => {
                             var adds = try allocator.alloc.create(popups.all.quit.PopupQuit);
@@ -283,7 +283,7 @@ pub const BarData = struct {
                                 },
                             };
 
-                            events.em.sendEvent(windowEvs.EventCreatePopup{
+                            events.EventManager.instance.sendEvent(windowEvs.EventCreatePopup{
                                 .global = true,
                                 .popup = .{
                                     .texture = "win",

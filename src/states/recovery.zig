@@ -164,7 +164,7 @@ pub const GSRecovery = struct {
         switch (key) {
             c.GLFW_KEY_ESCAPE => {
                 if (self.sub_sel != null) self.sub_sel = null else {
-                    events.em.sendEvent(systemEvs.EventStateChange{
+                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
 
@@ -198,7 +198,7 @@ pub const GSRecovery = struct {
                             self.sel = 0;
 
                             if (self.disks.items.len == 1) {
-                                events.em.sendEvent(systemEvs.EventStateChange{
+                                events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                                     .targetState = .Disks,
                                 });
 
@@ -212,7 +212,7 @@ pub const GSRecovery = struct {
                 }
 
                 if (self.sel == self.disks.items.len - 1) {
-                    events.em.sendEvent(systemEvs.EventStateChange{
+                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
 
@@ -251,7 +251,7 @@ pub const GSRecovery = struct {
                         return false;
                     }
 
-                    events.em.sendEvent(systemEvs.EventStateChange{
+                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
 

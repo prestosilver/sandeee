@@ -16,7 +16,7 @@ pub const SettingManager = struct {
             allocator.alloc.free(val);
         try self.*.settings.put(setting, try allocator.alloc.dupe(u8, value));
 
-        events.em.sendEvent(systemEvs.EventSetSetting{
+        events.EventManager.instance.sendEvent(systemEvs.EventSetSetting{
             .setting = setting,
             .value = value,
         });

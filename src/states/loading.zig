@@ -131,7 +131,7 @@ pub const GSLoading = struct {
     }
 
     pub fn update(self: *Self, _: f32) !void {
-        events.em.sendEvent(systemEvs.EventStateChange{
+        events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
             .targetState = .Windowed,
         });
 

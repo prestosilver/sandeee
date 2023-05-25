@@ -170,7 +170,7 @@ const SettingsData = struct {
 
                                 self.value = item.key;
 
-                                events.em.sendEvent(winEvs.EventCreatePopup{
+                                events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
                                     .popup = .{
                                         .texture = "win",
                                         .data = .{

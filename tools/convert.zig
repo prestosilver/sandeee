@@ -22,6 +22,7 @@ pub const ConvertStep = struct {
             .alloc = b.allocator,
             .func = func,
         };
+
         return self;
     }
 

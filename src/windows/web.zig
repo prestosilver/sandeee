@@ -190,7 +190,7 @@ pub const WebData = struct {
             .prompt = "Pick a path to save the file",
         };
 
-        events.em.sendEvent(winEvs.EventCreatePopup{
+        events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
             .popup = .{
                 .texture = "win",
                 .data = .{

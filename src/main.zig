@@ -261,6 +261,7 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
 
         return true;
     }
+
     if (std.mem.eql(u8, event.setting, "crt_shader")) {
         var val: c_int = if (std.ascii.eqlIgnoreCase("yes", event.value)) 1 else 0;
 
@@ -291,21 +292,21 @@ pub fn runCmdEvent(event: systemEvs.EventRunCmd) bool {
 }
 
 pub fn setupEvents() !void {
-    events.init();
+    events.EventManager.init();
 
-    events.em.registerListener(inputEvs.EventWindowResize, windowResize);
-    events.em.registerListener(inputEvs.EventMouseScroll, mouseScroll);
-    events.em.registerListener(inputEvs.EventMouseMove, mouseMove);
-    events.em.registerListener(inputEvs.EventMouseDown, mouseDown);
-    events.em.registerListener(inputEvs.EventMouseUp, mouseUp);
-    events.em.registerListener(inputEvs.EventKeyDown, keyDown);
-    events.em.registerListener(inputEvs.EventKeyChar, keyChar);
-    events.em.registerListener(inputEvs.EventKeyUp, keyUp);
+    events.EventManager.instance.registerListener(inputEvs.EventWindowResize, windowResize);
+    events.EventManager.instance.registerListener(inputEvs.EventMouseScroll, mouseScroll);
+    events.EventManager.instance.registerListener(inputEvs.EventMouseMove, mouseMove);
+    events.EventManager.instance.registerListener(inputEvs.EventMouseDown, mouseDown);
+    events.EventManager.instance.registerListener(inputEvs.EventMouseUp, mouseUp);
+    events.EventManager.instance.registerListener(inputEvs.EventKeyDown, keyDown);
+    events.EventManager.instance.registerListener(inputEvs.EventKeyChar, keyChar);
+    events.EventManager.instance.registerListener(inputEvs.EventKeyUp, keyUp);
 
-    events.em.registerListener(systemEvs.EventSetSetting, settingSet);
-    events.em.registerListener(systemEvs.EventStateChange, changeState);
-    events.em.registerListener(systemEvs.EventEmailRecv, mailRecv);
-    events.em.registerListener(systemEvs.EventRunCmd, runCmdEvent);
+    events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
+    events.EventManager.instance.registerListener(systemEvs.EventStateChange, changeState);
+    events.EventManager.instance.registerListener(systemEvs.EventEmailRecv, mailRecv);
+    events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
 }
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {
@@ -464,7 +465,7 @@ pub fn main() anyerror!void {
     c.glGenRenderbuffers(1, &depthrenderbuffer);
 
     // create the sprite batch
-    sb = try batch.newSpritebatch(&gfx.gContext.size);
+    sb = try batch.SpriteBatch.new(&gfx.gContext.size);
 
     // load some textures
     try textureManager.putMem("bios", biosImage);
@@ -684,7 +685,7 @@ pub fn main() anyerror!void {
     try batch.textureManager.deinit();
 
     gfx.close(ctx);
-    events.deinit();
+    events.EventManager.deinit();
     sb.deinit();
 }
 

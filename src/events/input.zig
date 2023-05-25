@@ -32,18 +32,18 @@ pub const EventKeyChar = struct { codepoint: u32, mods: i32 };
 var global_mods: i32 = 0;
 
 pub fn cursor_pos_callback(_: ?*c.GLFWwindow, x: f64, y: f64) callconv(.C) void {
-    ev.em.sendEvent(EventMouseMove{ .x = x, .y = y });
+    ev.EventManager.instance.sendEvent(EventMouseMove{ .x = x, .y = y });
 }
 
 pub fn char_callback(_: ?*c.GLFWwindow, codepoint: c_uint) callconv(.C) void {
-    ev.em.sendEvent(EventKeyChar{ .codepoint = codepoint, .mods = global_mods });
+    ev.EventManager.instance.sendEvent(EventKeyChar{ .codepoint = codepoint, .mods = global_mods });
 }
 
 pub fn key_callback(_: ?*c.GLFWwindow, key: c_int, _: c_int, action: c_int, mods: c_int) callconv(.C) void {
     switch (action) {
-        c.GLFW_PRESS => ev.em.sendEvent(EventKeyDown{ .key = key, .mods = mods }),
-        c.GLFW_REPEAT => ev.em.sendEvent(EventKeyDown{ .key = key, .mods = mods }),
-        c.GLFW_RELEASE => ev.em.sendEvent(EventKeyUp{ .key = key, .mods = mods }),
+        c.GLFW_PRESS => ev.EventManager.instance.sendEvent(EventKeyDown{ .key = key, .mods = mods }),
+        c.GLFW_REPEAT => ev.EventManager.instance.sendEvent(EventKeyDown{ .key = key, .mods = mods }),
+        c.GLFW_RELEASE => ev.EventManager.instance.sendEvent(EventKeyUp{ .key = key, .mods = mods }),
         else => {},
     }
 
@@ -52,16 +52,16 @@ pub fn key_callback(_: ?*c.GLFWwindow, key: c_int, _: c_int, action: c_int, mods
 
 pub fn mouse_button_callback(_: ?*c.GLFWwindow, btn: c_int, action: c_int, _: c_int) callconv(.C) void {
     switch (action) {
-        c.GLFW_PRESS => ev.em.sendEvent(EventMouseDown{ .btn = btn }),
-        c.GLFW_RELEASE => ev.em.sendEvent(EventMouseUp{ .btn = btn }),
+        c.GLFW_PRESS => ev.EventManager.instance.sendEvent(EventMouseDown{ .btn = btn }),
+        c.GLFW_RELEASE => ev.EventManager.instance.sendEvent(EventMouseUp{ .btn = btn }),
         else => {},
     }
 }
 
 pub fn framebuffer_size_callback(_: ?*c.GLFWwindow, width: c_int, height: c_int) callconv(.C) void {
-    ev.em.sendEvent(EventWindowResize{ .w = width, .h = height });
+    ev.EventManager.instance.sendEvent(EventWindowResize{ .w = width, .h = height });
 }
 
 pub fn scroll_callback(_: ?*c.GLFWwindow, x: f64, y: f64) callconv(.C) void {
-    ev.em.sendEvent(EventMouseScroll{ .x = @floatCast(f32, x), .y = @floatCast(f32, y) });
+    ev.EventManager.instance.sendEvent(EventMouseScroll{ .x = @floatCast(f32, x), .y = @floatCast(f32, y) });
 }

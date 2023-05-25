@@ -129,7 +129,7 @@ pub const GSInstall = struct {
             self.timer -= dt;
             if (self.timer < 0) {
                 self.timer = 0;
-                events.em.sendEvent(systemEvs.EventStateChange{
+                events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                     .targetState = .Disks,
                 });
             }

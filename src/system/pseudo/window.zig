@@ -35,7 +35,7 @@ pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
         .active = true,
     });
 
-    events.em.sendEvent(winev.EventCreateWindow{ .window = window });
+    events.EventManager.instance.sendEvent(winev.EventCreateWindow{ .window = window });
 
     result[0] = vmIdx;
     vmIdx = vmIdx +% 1;

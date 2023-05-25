@@ -43,7 +43,7 @@ pub const PopupQuit = struct {
         if (self.done) |rets| {
             switch (rets) {
                 0 => {
-                    events.em.sendEvent(systemEvs.EventStateChange{
+                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
                 },
