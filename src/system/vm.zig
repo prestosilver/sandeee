@@ -487,6 +487,22 @@ pub const VM = struct {
                         },
                         // quit
                         1 => {
+                            if (self.functions.contains("_quit")) {
+                                if (self.inside_fn) |func| {
+                                    if (std.mem.eql(u8, func, "_quit")) {
+                                        self.stopped = true;
+                                        return;
+                                    }
+                                }
+                                self.retStack[self.retRsp].location = self.pc;
+                                self.retStack[self.retRsp].function = self.inside_fn;
+                                self.pc = 0;
+                                self.inside_fn = "_quit";
+                                self.retRsp += 1;
+
+                                return;
+                            }
+
                             self.stopped = true;
                             return;
                         },
@@ -756,6 +772,22 @@ pub const VM = struct {
                             }
 
                             return error.FileMissing;
+                        },
+                        // setrsp
+                        20 => {
+                            var num = try self.popStack();
+                            defer self.free(&[_]StackEntry{num});
+
+                            if (num != .value) return error.ValueMissing;
+                            if (self.rsp < num.value.*) return error.InvalidValue;
+
+                            var oldRsp = self.rsp;
+
+                            self.rsp = num.value.*;
+
+                            self.free(self.stack[self.rsp..oldRsp]);
+
+                            return;
                         },
                         // panic
                         128 => {
@@ -1191,6 +1223,10 @@ pub const VM = struct {
     pub fn getOper(self: *VM) !?Operation {
         if (self.inside_fn) |inside| {
             if (self.functions.getPtr(inside)) |func| {
+                if (func.*.ops.len <= self.pc) return .{
+                    .code = .Ret,
+                };
+
                 return func.*.ops[self.pc];
             }
             //std.log.err("'{s}', {any}", .{inside, self.functions.get(inside)});
