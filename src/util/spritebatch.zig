@@ -241,7 +241,7 @@ pub const SpriteBatch = struct {
         allocator.alloc.free(sb.prevQueue);
     }
 
-    pub fn new(size: *vecs.Vector2) !SpriteBatch {
+    pub fn init(size: *vecs.Vector2) !SpriteBatch {
         var buffer = try allocator.alloc.alloc(c.GLuint, 0);
         var q = try allocator.alloc.alloc(QueueEntry, 0);
         var pq = try allocator.alloc.alloc(QueueEntry, 0);

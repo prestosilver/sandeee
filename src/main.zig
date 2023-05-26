@@ -380,14 +380,14 @@ pub fn main() anyerror!void {
         std.log.debug("no leaks! :)", .{});
     };
 
+    // setup the headless command
+    var headlessCmd: ?[]const u8 = null;
+
     // check arguments
     var args = try std.process.ArgIterator.initWithAllocator(allocator.alloc);
 
     // ignore first arg
     _ = args.next();
-
-    // setup the headless command
-    var headlessCmd: ?[]const u8 = null;
 
     while (args.next()) |arg| {
         if (std.mem.eql(u8, arg, "--cwd")) {
@@ -465,7 +465,7 @@ pub fn main() anyerror!void {
     c.glGenRenderbuffers(1, &depthrenderbuffer);
 
     // create the sprite batch
-    sb = try batch.SpriteBatch.new(&gfx.gContext.size);
+    sb = try batch.SpriteBatch.init(&gfx.gContext.size);
 
     // load some textures
     try textureManager.putMem("bios", biosImage);
