@@ -234,6 +234,11 @@ pub const EditorData = struct {
                     return;
                 }
             },
+            cc.GLFW_KEY_TAB => {
+                try self.buffer.insertSlice(self.cursorIdx, "  ");
+                self.cursor.x += 4;
+                self.modified = true;
+            },
             cc.GLFW_KEY_ENTER => {
                 try self.buffer.insert(self.cursorIdx, '\n');
                 self.cursor.x = 0;
