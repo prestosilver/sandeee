@@ -125,6 +125,16 @@ const SettingsData = struct {
                         },
                     });
                 },
+                2 => {
+                    try settings.appendSlice(&[_]Setting{
+                        Setting{
+                            .kind = .Dropdown,
+                            .kinddata = "No Yes",
+                            .setting = "Show Hidden Files",
+                            .key = "explorer_hidden",
+                        },
+                    });
+                },
                 3 => {
                     try settings.appendSlice(&[_]Setting{
                         Setting{

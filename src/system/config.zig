@@ -22,8 +22,15 @@ pub const SettingManager = struct {
         });
     }
 
-    pub fn get(self: *SettingManager, setting: []const u8) ?[]const u8 {
+    pub inline fn get(self: *SettingManager, setting: []const u8) ?[]const u8 {
         return self.*.settings.get(setting);
+    }
+
+    pub inline fn getBool(self: *SettingManager, setting: []const u8) bool {
+        if (self.get(setting)) |val|
+            return std.ascii.eqlIgnoreCase(val, "yes")
+        else
+            return false;
     }
 
     pub fn save(self: *SettingManager) !void {

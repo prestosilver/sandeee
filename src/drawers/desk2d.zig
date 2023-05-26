@@ -12,15 +12,16 @@ const wins = @import("../windows/all.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
 const shell = @import("../system/shell.zig");
+const config = @import("../system/config.zig");
 const std = @import("std");
 
 const TOTAL_SPRITES = 6.0;
 const SPACING = vecs.newVec2(128, 100);
 
 pub var deskSize: *vecs.Vector2 = undefined;
+pub var settingsManager: *config.SettingManager = undefined;
 
 pub const DeskData = struct {
-    // TODO: implement
     sel: ?usize = null,
     shell: shell.Shell,
 
@@ -49,6 +50,14 @@ pub const DeskData = struct {
         }
     }
 
+    pub fn checkIconSkip(name: []const u8) bool {
+        if (settingsManager.getBool("explorer_hidden")) return true;
+
+        var idx = std.mem.lastIndexOf(u8, name, "/") orelse 0;
+
+        return name[idx + 1] != '_';
+    }
+
     pub fn click(self: *DeskData, shader: *shd.Shader, pos: ?vecs.Vector2) !void {
         if (pos == null) {
             self.sel = null;
@@ -59,6 +68,8 @@ pub const DeskData = struct {
         var idx: usize = 0;
 
         for (self.shell.root.subfolders.items) |folder| {
+            if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
+
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
                     var window = win.Window.new("win", win.WindowData{
@@ -92,6 +103,8 @@ pub const DeskData = struct {
         }
 
         for (self.shell.root.contents.items) |file| {
+            if (!checkIconSkip(file.name)) continue;
+
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
                     const index = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
@@ -121,7 +134,9 @@ pub const DeskData = struct {
         var position = vecs.newVec2(0, 0);
         var idx: usize = 0;
 
-        for (files.home.subfolders.items) |_| {
+        for (files.home.subfolders.items) |folder| {
+            if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
+
             try addQuad(&result, 3, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
 
             if (self.sel) |sel| {
@@ -134,7 +149,9 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        for (files.home.contents.items) |_| {
+        for (files.home.contents.items) |file| {
+            if (!checkIconSkip(file.name)) continue;
+
             try addQuad(&result, 4, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
 
             if (self.sel) |sel| {
@@ -179,12 +196,16 @@ pub const DeskData = struct {
         textColor.b = 1.0 - textColor.b;
 
         for (files.home.subfolders.items) |folder| {
+            if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
+
             try addIconText(batch, position, folder.name[0 .. folder.name.len - 1], font_shader, font, textColor);
 
             updatePos(&position);
         }
 
         for (files.home.contents.items) |file| {
+            if (!checkIconSkip(file.name)) continue;
+
             try addIconText(batch, position, file.name, font_shader, font, textColor);
 
             updatePos(&position);

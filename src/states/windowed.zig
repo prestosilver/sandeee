@@ -228,7 +228,7 @@ pub const GSWindowed = struct {
         events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
         events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
 
-        if (std.ascii.eqlIgnoreCase(self.settingsManager.get("show_welcome") orelse "No", "Yes")) {
+        if (self.settingsManager.getBool("show_welcome")) {
             var window = win.Window.new("win", win.WindowData{
                 .source = rect.Rectangle{
                     .x = 0.0,
@@ -250,6 +250,7 @@ pub const GSWindowed = struct {
         }
 
         self.desk.data.shell.root = files.home;
+        desk.settingsManager = self.settingsManager;
 
         if (self.settingsManager.get("wallpaper_color")) |color| {
             _ = settingSet(.{
