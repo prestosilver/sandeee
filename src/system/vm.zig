@@ -1,13 +1,11 @@
 const std = @import("std");
 const streams = @import("stream.zig");
 const files = @import("files.zig");
-//const shell = @import("shell.zig");
+const telem = @import("telem.zig");
+const events = @import("../util/events.zig");
+const systemEvs = @import("../events/system.zig");
 
 const STACK_MAX = 2048;
-
-fn range(len: usize) []const void {
-    return @as([*]void, undefined)[0..len];
-}
 
 pub const VM = struct {
     const VMError = error{
@@ -314,7 +312,9 @@ pub const VM = struct {
     }
 
     pub inline fn runOp(self: *VM, op: Operation) !void {
-        // std.log.debug("{?s}:{}", .{ self.inside_fn, op });
+        telem.Telem.instance.instructionCalls += 1;
+        events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
+
         self.pc += 1;
 
         switch (op.code) {
@@ -1268,7 +1268,7 @@ pub const VM = struct {
     }
 
     pub fn runNum(self: *VM, num: u64) !bool {
-        for (range(num)) |_| {
+        for (0..num) |_| {
             if (self.runStep() catch |err| {
                 return err;
             }) {
