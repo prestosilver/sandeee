@@ -4,13 +4,14 @@ const font = @import("../util/font.zig");
 const mail = @import("../system/mail.zig");
 const c = @import("../c.zig");
 
-pub fn loadMail(_: *worker.WorkerQueueEntry(*const u8, *const u8)) !bool {
+pub fn loadMail(self: *worker.WorkerQueueEntry(*const []const u8, *mail.EmailManager)) !bool {
     std.log.debug("load mail", .{});
 
-    mail.init();
+    self.out.* = mail.EmailManager.init();
 
-    try mail.load();
-    try mail.loadEmailsState("conf/emails.bin");
+    try self.out.loadFromFolder(self.indata.*);
+
+    try self.out.loadStateFile("conf/emails.bin");
 
     return true;
 }

@@ -20,6 +20,7 @@ const vm = @import("../system/vm.zig");
 const c = @import("../c.zig");
 
 pub var notif: sprite.Sprite = undefined;
+pub var emailManager: *mail.EmailManager = undefined;
 
 const EmailData = struct {
     const Self = @This();
@@ -36,8 +37,8 @@ const EmailData = struct {
     shader: *shd.Shader,
 
     box: usize = 0,
-    viewing: ?*mail.Email = null,
-    selected: ?*mail.Email = null,
+    viewing: ?*mail.EmailManager.Email = null,
+    selected: ?*mail.EmailManager.Email = null,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
@@ -56,9 +57,9 @@ const EmailData = struct {
 
             var y: f32 = bnds.y + 2.0;
 
-            for (mail.emails.items) |*email| {
+            for (emailManager.emails.items) |*email| {
                 if (email.box != self.box) continue;
-                if (!email.visible()) continue;
+                if (!emailManager.getEmailVisible(email)) continue;
 
                 var text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
@@ -70,7 +71,7 @@ const EmailData = struct {
                     try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 106, y - 2, 0));
                 }
 
-                if (email.complete()) {
+                if (email.isComplete) {
                     try font.draw(.{
                         .batch = batch,
                         .shader = font_shader,
@@ -129,7 +130,7 @@ const EmailData = struct {
             });
         }
 
-        for (mail.boxes, 0..) |box, idx| {
+        for (emailManager.boxes, 0..) |box, idx| {
             var pos = vecs.newVec2(bnds.x + 20, bnds.y + 106 + font.size * @intToFloat(f32, idx));
 
             try font.draw(.{
@@ -220,7 +221,7 @@ const EmailData = struct {
                 }
 
                 if (good) {
-                    selected.setComplete();
+                    emailManager.setEmailComplete(selected);
                 }
             }
         }
@@ -250,9 +251,9 @@ const EmailData = struct {
 
                     var y: i32 = 2;
 
-                    for (mail.emails.items) |*email| {
+                    for (emailManager.emails.items) |*email| {
                         if (email.box != self.box) continue;
-                        if (!email.visible()) continue;
+                        if (!emailManager.getEmailVisible(email)) continue;
 
                         var bnds = rect.newRect(106, @intToFloat(f32, y), size.x - 106, 24);
 
@@ -260,7 +261,7 @@ const EmailData = struct {
 
                         if (bnds.contains(mousepos)) {
                             if (self.selected != null and email == self.selected.?) {
-                                email.view();
+                                emailManager.viewEmail(email);
                                 self.selected = null;
                                 self.viewing = email;
                             } else {
@@ -279,8 +280,8 @@ const EmailData = struct {
 
                         if (self.box < 0) {
                             self.box = 0;
-                        } else if (self.box > mail.boxes.len - 1) {
-                            self.box = mail.boxes.len - 1;
+                        } else if (self.box > emailManager.boxes.len - 1) {
+                            self.box = emailManager.boxes.len - 1;
                         }
                     }
                 }

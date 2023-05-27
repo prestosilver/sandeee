@@ -104,10 +104,10 @@ var wallpaper: *wall.Wallpaper = undefined;
 
 var message_snd: audio.Sound = undefined;
 
-//
+// managers
 var settingManager: conf.SettingManager = undefined;
-
 var textureManager: texMan.TextureManager = undefined;
+var emailManager: emails.EmailManager = undefined;
 
 var ctx: gfx.Context = undefined;
 var sb: batch.SpriteBatch = undefined;
@@ -279,12 +279,12 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
 }
 
 pub fn runCmdEvent(event: systemEvs.EventRunCmd) bool {
-    for (emails.emails.items) |*email| {
-        if (!email.visible()) continue;
+    for (emailManager.emails.items) |*email| {
+        if (!emailManager.getEmailVisible(email)) continue;
         if (email.condition != .Run) continue;
 
         if (std.ascii.eqlIgnoreCase(email.conditionData, event.cmd)) {
-            email.setComplete();
+            emailManager.setEmailComplete(email);
         }
     }
 
@@ -498,6 +498,7 @@ pub fn main() anyerror!void {
         .face = &mainFace,
         .audio_man = &audioman,
         .textureManager = &textureManager,
+        .emailManager = &emailManager,
         .ctx = &ctx,
         .loading = drawLoading,
         .message_snd = &message_snd,
@@ -529,6 +530,7 @@ pub fn main() anyerror!void {
         .clearShader = &clear_shader,
         .face = &mainFace,
         .settingsManager = &settingManager,
+        .emailManager = &emailManager,
         .bar_logo_sprite = .{
             .texture = "barlogo",
             .data = sprite.SpriteData.new(

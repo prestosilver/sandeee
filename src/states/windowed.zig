@@ -26,6 +26,7 @@ const wins = @import("../windows/all.zig");
 const popups = @import("../drawers/popup2d.zig");
 const notifications = @import("../drawers/notification2d.zig");
 const va = @import("../util/vertArray.zig");
+const telem = @import("../system/telem.zig");
 const c = @import("../c.zig");
 
 pub const GSWindowed = struct {
@@ -49,6 +50,7 @@ pub const GSWindowed = struct {
     clearShader: *shd.Shader,
     face: *font.Font,
     settingsManager: *conf.SettingManager,
+    emailManager: *emails.EmailManager,
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
     init: bool = false,
@@ -258,23 +260,25 @@ pub const GSWindowed = struct {
                 .value = color,
             });
         }
+
+        telem.Telem.instance.logins += 1;
+        events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
     }
 
     pub fn deinit(self: *Self) !void {
         self.init = false;
 
-        try emails.saveEmailsState("conf/emails.bin");
+        try self.emailManager.saveStateFile("conf/emails.bin");
 
         for (self.windows.items) |*window| {
             try window.data.deinit();
         }
 
         try files.write();
-        // try self.face.deinit();
         try self.settingsManager.deinit();
 
         self.windows.deinit();
-        emails.deinit();
+        self.emailManager.deinit();
         files.deinit();
     }
 

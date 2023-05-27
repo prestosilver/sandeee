@@ -1,6 +1,8 @@
 const std = @import("std");
 
-const Telem = struct {
-    logins: u32 = 0,
+pub const Telem = struct {
+    pub var instance: Telem = .{};
+
+    logins: u64 = 0,
     instructionCalls: u128 = 0,
 };

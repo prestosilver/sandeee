@@ -18,6 +18,7 @@ const pseudo = @import("../system/pseudo/all.zig");
 const shell = @import("../system/shell.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
+const mail = @import("../system/mail.zig");
 
 pub const GSLoading = struct {
     const Self = @This();
@@ -36,6 +37,7 @@ pub const GSLoading = struct {
         .{ "bar_logo_path", "barlogo" },
     };
 
+    const mailpath: []const u8 = "/cont/mail";
     const loginpath: []const u8 = "/cont/snds/login.era";
     const messagepath: []const u8 = "/cont/snds/message.era";
     const settingspath: []const u8 = "/conf/system.cfg";
@@ -53,6 +55,7 @@ pub const GSLoading = struct {
     loading: *const fn (*Self) void,
 
     textureManager: *texMan.TextureManager,
+    emailManager: *mail.EmailManager,
     face: *font.Font,
 
     logo_sprite: sp.Sprite,
@@ -98,13 +101,15 @@ pub const GSLoading = struct {
         try self.loader.enqueue(*const []const u8, *audio.Sound, &messagepath, self.message_snd, worker.sound.loadSound);
 
         // mail
-        try self.loader.enqueue(*const u8, *const u8, &zero, &zero, worker.mail.loadMail);
+        try self.loader.enqueue(*const []const u8, *mail.EmailManager, &mailpath, self.emailManager, worker.mail.loadMail);
 
         // fonts
         try self.loader.enqueue(*const []const u8, *font.Font, &fontpath, self.face, worker.font.loadFontPath);
 
         // delay
         try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
+
+        self.load_progress = 0;
 
         self.loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
         self.loader.run(&self.load_progress) catch {
@@ -117,6 +122,7 @@ pub const GSLoading = struct {
         pseudo.win.shader = self.shader;
 
         wins.settings.settingManager = self.settingManager;
+        wins.email.emailManager = self.emailManager;
         wins.email.notif = .{
             .texture = "email",
             .data = .{
