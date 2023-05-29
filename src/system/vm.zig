@@ -6,10 +6,13 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 
 const STACK_MAX = 2048;
+const RET_STACK_MAX = 256;
 
 pub const VM = struct {
     const VMError = error{
+        Memory,
         StackUnderflow,
+        StackOverflow,
         ValueMissing,
         StringMissing,
         InvalidOp,
@@ -30,7 +33,7 @@ pub const VM = struct {
 
     pub const RetStackEntry = struct {
         function: ?[]const u8,
-        location: u64,
+        location: usize,
     };
 
     pub const VMFunc = struct {
@@ -45,7 +48,7 @@ pub const VM = struct {
     functions: std.StringHashMap(VMFunc),
     inside_fn: ?[]const u8 = null,
 
-    retStack: [256]RetStackEntry = undefined,
+    retStack: [RET_STACK_MAX]RetStackEntry = undefined,
     retRsp: u8 = 0,
 
     pc: usize = 0,
@@ -64,14 +67,14 @@ pub const VM = struct {
 
     checker: bool = false,
 
-    pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8, comptime checker: bool) !VM {
+    pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8, comptime checker: bool) VMError!VM {
         var splitIter = std.mem.split(u8, args, " ");
 
-        var tmpArgs = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
+        var tmpArgs = alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1) catch return error.Memory;
 
         var idx: usize = 0;
         while (splitIter.next()) |item| {
-            tmpArgs[idx] = try alloc.alloc(u8, item.len);
+            tmpArgs[idx] = alloc.alloc(u8, item.len) catch return error.Memory;
             std.mem.copy(u8, tmpArgs[idx], item);
             idx += 1;
         }
@@ -84,33 +87,33 @@ pub const VM = struct {
             .miscData = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
             .input = std.ArrayList(u8).init(alloc),
-            .heap = try alloc.alloc(u8, 0),
+            .heap = alloc.alloc(u8, 0) catch return error.Memory,
             .args = tmpArgs,
             .root = root,
             .checker = checker,
         };
     }
 
-    inline fn pushStack(self: *VM, entry: StackEntry) !void {
+    inline fn pushStack(self: *VM, entry: StackEntry) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         self.stack[self.rsp] = entry;
         self.rsp += 1;
     }
 
-    inline fn pushStackI(self: *VM, value: u64) !void {
+    inline fn pushStackI(self: *VM, value: u64) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        var val = try self.allocator.create(u64);
+        var val = self.allocator.create(u64) catch return error.Memory;
         val.* = value;
 
         self.stack[self.rsp] = StackEntry{ .value = val };
         self.rsp += 1;
     }
 
-    inline fn pushStackS(self: *VM, string: []const u8) !void {
+    inline fn pushStackS(self: *VM, string: []const u8) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        var appendString = try self.allocator.create([]u8);
+        var appendString = self.allocator.create([]u8) catch return error.Memory;
 
-        appendString.* = try self.allocator.dupe(u8, string);
+        appendString.* = self.allocator.dupe(u8, string) catch return error.Memory;
 
         self.stack[self.rsp] = StackEntry{ .string = appendString };
         self.rsp += 1;
@@ -127,7 +130,7 @@ pub const VM = struct {
         return self.stack[self.rsp - 1 - @intCast(usize, idx)];
     }
 
-    fn replaceStack(self: *VM, a: StackEntry, b: StackEntry) !void {
+    inline fn replaceStack(self: *VM, a: StackEntry, b: StackEntry) VMError!void {
         for (self.stack[0..self.rsp]) |*entry| {
             if ((a == .string and entry.* == .string and entry.string == a.string) or
                 (a == .value and entry.* == .value and entry.value == a.value))
@@ -210,14 +213,6 @@ pub const VM = struct {
     };
 
     pub fn deinit(self: *VM) !void {
-        // var iter = cnts.iterator();
-
-        // while (iter.next()) |entry| {
-        //     std.log.debug("op: {}, calls: {} time: {}", .{ entry.key, entry.value.*, times.get(entry.key) });
-        // }
-
-        // std.log.debug("=======", .{});
-
         var oldrsp = self.rsp;
         self.rsp = 0;
 
@@ -263,7 +258,7 @@ pub const VM = struct {
         self.out.deinit();
     }
 
-    pub fn freeValue(self: *VM, val: *u64) void {
+    pub inline fn freeValue(self: *VM, val: *u64) void {
         if (self.rsp != 0) {
             for (self.stack[0..self.rsp]) |entry| {
                 if (entry == .value and entry.value == val) {
@@ -274,7 +269,7 @@ pub const VM = struct {
         self.allocator.destroy(val);
     }
 
-    pub fn freeString(self: *VM, val: *[]const u8) void {
+    pub inline fn freeString(self: *VM, val: *[]const u8) void {
         if (self.rsp != 0) {
             for (self.stack[0..self.rsp]) |entry| {
                 if (entry == .string and entry.string == val) {
@@ -287,33 +282,49 @@ pub const VM = struct {
     }
 
     pub fn free(self: *VM, vals: []StackEntry) void {
-        var toFree = std.ArrayList(StackEntry).init(self.allocator);
-        defer toFree.deinit();
-
-        for (vals) |val| {
-            var add = true;
-            for (toFree.items) |item| {
-                if ((val == .string and item == .string and item.string == val.string) or
-                    (val == .value and item == .value and item.value == val.value))
-                {
-                    add = false;
-                    break;
+        switch (vals.len) {
+            0 => return,
+            1 => {
+                switch (vals[0]) {
+                    .value => self.freeValue(vals[0].value),
+                    .string => self.freeString(vals[0].string),
                 }
-            }
-            if (add) {
-                toFree.append(val) catch {};
-            }
-        }
+            },
+            else => {
+                var toFree = self.allocator.alloc(StackEntry, vals.len) catch return;
+                defer self.allocator.free(toFree);
 
-        for (toFree.items) |val| {
-            if (val == .value) self.freeValue(val.value);
-            if (val == .string) self.freeString(val.string);
+                var idx: usize = 0;
+
+                for (vals) |val| {
+                    for (0..idx) |index| {
+                        if ((val == .string and toFree[index] == .string and toFree[index].string == val.string) or
+                            (val == .value and toFree[index] == .value and toFree[index].value == val.value))
+                        {
+                            break;
+                        }
+                    } else {
+                        toFree[idx] = val;
+                        idx += 1;
+                    }
+                }
+
+                toFree.len = idx;
+
+                for (toFree) |val| {
+                    switch (val) {
+                        .value => self.freeValue(val.value),
+                        .string => self.freeString(val.string),
+                    }
+                }
+            },
         }
     }
 
     pub inline fn runOp(self: *VM, op: Operation) !void {
         telem.Telem.instance.instructionCalls += 1;
-        events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
+
+        //std.log.info("{}", .{op});
 
         self.pc += 1;
 
@@ -765,6 +776,14 @@ pub const VM = struct {
 
                             if (path != .string) return error.StringMissing;
 
+                            if (path.string.*[0] == '/') {
+                                if (try files.root.getFile(path.string.*)) |file| {
+                                    try self.pushStackI(file.size());
+
+                                    return;
+                                }
+                            }
+
                             if (try self.root.getFile(path.string.*)) |file| {
                                 try self.pushStackI(file.size());
 
@@ -945,13 +964,20 @@ pub const VM = struct {
 
                 if (op.value.? > self.rsp) return error.StackUnderflow;
 
-                var items = self.stack[self.rsp - @intCast(usize, op.value.?) .. self.rsp];
-                self.rsp -= @intCast(u8, op.value.?);
-                var disc = try self.popStack();
-                defer self.free(&[_]StackEntry{disc});
+                switch (op.value.?) {
+                    0 => {
+                        var disc = try self.popStack();
+                        defer self.free(&[_]StackEntry{disc});
+                    },
+                    else => {
+                        var items = self.stack[self.rsp - @intCast(usize, op.value.?) .. self.rsp];
+                        self.rsp -= @intCast(u8, op.value.?);
+                        var disc = try self.popStack();
+                        defer self.free(&[_]StackEntry{disc});
 
-                for (items) |item| {
-                    try self.pushStack(item);
+                        std.mem.copyForwards(StackEntry, self.stack[self.rsp .. self.rsp + items.len], items);
+                        self.rsp += items.len;
+                    },
                 }
 
                 return;
@@ -1204,7 +1230,7 @@ pub const VM = struct {
                 oper = func.*.ops[self.pc - 1];
             } else {
                 if (@enumToInt(oper.code) < @enumToInt(Operation.Code.Last)) {
-                    var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: {s}", .{ self.inside_fn, self.pc, @tagName(oper.code) });
+                    var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper });
                     return result;
                 } else {
                     var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: ?", .{ self.inside_fn, self.pc });
@@ -1215,7 +1241,7 @@ pub const VM = struct {
             oper = self.code.?[self.pc - 1];
         }
 
-        var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {s}", .{ self.inside_fn, self.pc, @tagName(oper.code) });
+        var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper });
 
         return result;
     }
@@ -1263,6 +1289,8 @@ pub const VM = struct {
         }
 
         self.yield = false;
+
+        events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
 
         return self.done();
     }
