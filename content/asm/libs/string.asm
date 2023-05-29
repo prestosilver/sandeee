@@ -2,6 +2,39 @@ _StringLength:                  ; str
     len
     ret
 
+_StringSplit:                   ; str trg
+    push 0                      ; str trg idx
+split_loop:
+    push 1
+    add                         ; str trg idx
+    dup 2                       ; str trg idx _str
+    copy 1
+    add                         ; str trg idx offset
+    size 1                      ; str trg idx char
+    copy 0                      ; str trg idx char char
+    len                         ; str trg idx char valid
+    jz split_end                ; str trg idx char
+    eq                          ; str trg idx eql
+    jnz split_good              ; str trg idx
+    jmp split_loop              ; str trg idx
+split_good:                     ; str trg idx
+    disc 1                      ; str idx
+    dup 1                       ; str idx str
+    copy 1                      ; str idx str idx
+    add                         ; str idx end
+    copy 2                      ; str idx end str
+    copy 2                      ; str idx end str idx
+    size                        ; str idx end start
+    disc 2                      ; str end start
+    disc 2                      ; end start
+    ret
+split_end:                      ; str trg idx
+    disc 1                      ; str idx
+    len                         ; start
+    push ""                     ; end
+    ret
+
+
 _StringStartsWith:              ; str start
     copy 1                      ; str start str
     copy 2                      ; str start str str
