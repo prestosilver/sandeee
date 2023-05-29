@@ -259,7 +259,9 @@ pub const GSRecovery = struct {
                 }
 
                 for (self.disks.items, 0..) |disk, idx| {
-                    if (self.sub_sel != null) {} else if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
+                    if (self.sub_sel != null) {
+                        // TODO: impl
+                    } else if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
                         self.sub_sel = 0;
                     }

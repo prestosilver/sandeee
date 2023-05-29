@@ -113,7 +113,7 @@ var ctx: gfx.Context = undefined;
 var sb: batch.SpriteBatch = undefined;
 var audioman: audio.Audio = undefined;
 
-var errorMsg: []const u8 = "Error: Unknown";
+var errorMsg: []const u8 = "Error: Unknown error";
 var errorState: u8 = 0;
 
 var framebufferName: c.GLuint = 0;
@@ -144,6 +144,7 @@ pub fn blit() !void {
 
         return;
     }
+
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
     // clear the window

@@ -72,6 +72,8 @@ pub const EditorData = struct {
             // draw lines
             var y = bnds.y + 32 - props.scroll.?.value;
             var nr: usize = 1;
+
+            // TODO: verify cursor pos x
             self.cursorIdx = @floatToInt(usize, self.cursor.x);
             self.prevIdx = 0;
 
