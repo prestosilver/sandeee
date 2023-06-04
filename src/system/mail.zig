@@ -29,6 +29,10 @@ pub const EmailManager = struct {
         box: u8 = 0,
         id: u8 = 0,
 
+        pub fn lessThan(_: bool, a: Email, b: Email) bool {
+            return a.id < b.id;
+        }
+
         pub fn parseTxt(file: std.fs.File) !Email {
             var result = Email{
                 .from = "",
@@ -336,6 +340,7 @@ pub const EmailManager = struct {
                     self.emails.items[idx].contents = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                     fidx += len;
                 }
+                std.sort.insertionSort(Email, self.emails.items[start..], false, Email.lessThan);
             }
         }
     }
