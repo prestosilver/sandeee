@@ -1,0 +1,4 @@
+EON
+    filter remove_inline //.*$
+    extension eon
+    3rd_gen_scale 0.77
