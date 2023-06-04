@@ -238,8 +238,7 @@ pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
     return false;
 }
 
-pub fn mailRecv(event: systemEvs.EventEmailRecv) bool {
-    _ = event;
+pub fn notification(_: windowEvs.EventNotification) bool {
     audioman.playSound(message_snd) catch {};
     return false;
 }
@@ -306,7 +305,7 @@ pub fn setupEvents() !void {
 
     events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
     events.EventManager.instance.registerListener(systemEvs.EventStateChange, changeState);
-    events.EventManager.instance.registerListener(systemEvs.EventEmailRecv, mailRecv);
+    events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
     events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
 }
 
