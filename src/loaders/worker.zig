@@ -23,10 +23,6 @@ pub fn WorkerQueueEntry(comptime T: type, comptime U: type) type {
     };
 }
 
-pub const fdsa = error{
-    LoadError,
-};
-
 pub const WorkerContext = struct {
     queue: *std.atomic.Queue(WorkerQueueEntry(*void, *void)),
     total: usize = 0,
@@ -35,7 +31,7 @@ pub const WorkerContext = struct {
         return std.atomic.Queue(WorkerQueueEntry(T, U)).Node;
     }
 
-    pub fn run(ctx: *WorkerContext, progress: *f32) !void {
+    pub fn run(ctx: *WorkerContext, progress: *f32) anyerror!void {
         var prog: usize = 0;
 
         // run all the loader funcs

@@ -18,12 +18,12 @@ const settings = @import("settings.zig");
 
 const SCROLL = 30;
 
-const Icon = struct {
-    name: []const u8,
-    icon: u8,
-};
-
 pub const ExplorerData = struct {
+    const ExplorerIcon = struct {
+        name: []const u8,
+        icon: u8,
+    };
+
     const Self = @This();
 
     const ExplorerMouseActionType = enum {
@@ -48,12 +48,12 @@ pub const ExplorerData = struct {
     selected: usize = 0,
     lastAction: ?ExplorerMouseAction = null,
 
-    pub fn getIcons(self: *Self) ![]const Icon {
-        var result = try allocator.alloc.alloc(Icon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len);
+    pub fn getIcons(self: *Self) ![]const ExplorerIcon {
+        var result = try allocator.alloc.alloc(ExplorerIcon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len);
         var idx: usize = 0;
 
         for (self.shell.root.subfolders.items) |folder| {
-            result[idx] = Icon{
+            result[idx] = ExplorerIcon{
                 .name = folder.name[self.shell.root.name.len .. folder.name.len - 1],
                 .icon = 3,
             };
@@ -61,7 +61,7 @@ pub const ExplorerData = struct {
         }
 
         for (self.shell.root.contents.items) |file| {
-            result[idx] = Icon{
+            result[idx] = ExplorerIcon{
                 .name = file.name[self.shell.root.name.len..],
                 .icon = 4,
             };
