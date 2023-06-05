@@ -261,12 +261,16 @@ pub const GSWindowed = struct {
             });
         }
 
+        try telem.Telem.load();
+
         telem.Telem.instance.logins += 1;
         events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
     }
 
     pub fn deinit(self: *Self) !void {
         self.init = false;
+
+        try telem.Telem.save();
 
         try self.emailManager.saveStateFile("conf/emails.bin");
 
