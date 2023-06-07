@@ -72,23 +72,12 @@ get_lib_data_handle:
     disc 1                      ; libname handle libhandle
     ret
 
-try_init:
-    push "libInit"
-    sys 10                      ; exists
-    jz end_init
-    call "libInit"
-    push "libInit"
-    sys 13
-end_init:
-    ret
-
 main:
     copy 0                      ; libname libname
     call get_lib_handle         ; libname libname handle
     call verify_lib_header      ; libname libname handle
     call load_lib_funcs         ; libname
     disc 0                      ;
-    call try_init
     ret
 
 error:

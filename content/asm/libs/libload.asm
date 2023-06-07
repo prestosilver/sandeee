@@ -67,13 +67,23 @@ get_lib_data_handle:
     disc 1                      ; libname handle libhandle
     ret
 
-try_init:
-    push "libInit"
+try_init:                       ; libname
+    push "libInit"           
     sys 10                      ; exists
-    jz end_init
-    call "libInit"
+    jz end_init       
+    push "libInit"              ; libname
+    sys 11                      ; libname conts
+    push "libInit"              ; libname conts outname 
+    copy 2                      ; libname conts outname libname
+    cat                         ; libname conts outname
+    sys 12                      ; libname
     push "libInit"
     sys 13
+
+    push "libInit"              ; libname newname
+    copy 1                      ; libname newname libname
+    cat                         ; libname newname       
+    call                        ; libname
 end_init:
     ret
 
@@ -82,7 +92,6 @@ main:
     call get_lib_handle         ; libname libname handle
     call verify_lib_header      ; libname libname handle
     call load_lib_funcs         ; libname
-    disc 0                      ;
     call try_init
     ret
 

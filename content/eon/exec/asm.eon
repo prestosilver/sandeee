@@ -1,11 +1,12 @@
 #include "content/eon/libs/libload.eon"
-#include "content/eon/libs/asm.eon"
 
 fn processArgs() {
-    var file = getArg(1);
+    var file = 1;
+    asm "sys 8";
 
     if (file == 0) {
-        error("Bad Argument");
+        asm "push \"Bad Argument\"";
+        asm "sys 18";
     }
 
     return file;
@@ -14,12 +15,12 @@ fn processArgs() {
 fn main() {
     // load libs
     setupLibLoad();
-    loadLib("/libs/string.ell");
+    loadLib("/libs/asm.ell");
 
     // open input
     var infile = processArgs();
 
-    asmFile(infile, "out.eep");
+    _asmFile(infile, "out.eep");
 
     return 0;
 }

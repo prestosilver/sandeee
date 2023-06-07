@@ -1,3 +1,9 @@
+fn libInit() {
+    _libload("/libs/string.ell");
+
+    asm "ret";
+}
+
 fn TableCreate(keysize, valsize) {
     return @keysize & @valsize & @0 & @0;
 }

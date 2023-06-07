@@ -1,5 +1,37 @@
-#include "content/eon/libs/table.eon"
-#include "content/eon/libs/sys.eon"
+fn print(str) {
+    asm "sys 0";
+    asm "push 0";
+    asm "ret";
+}
+
+fn write(file, text) {
+    asm "sys 5";
+    asm "push 0";
+    asm "ret";
+}
+
+fn read(file, len) {
+    asm "sys 4";
+    asm "ret";
+}
+
+fn open(path) {
+    asm "sys 3";
+    asm "ret";
+}
+
+fn createOpen(path) {
+    asm "dup 0";
+    asm "sys 2";
+    asm "sys 3";
+    asm "ret";
+}
+
+fn close(file) {
+    asm "sys 7";
+    asm "push 0";
+    asm "ret";
+}
 
 fn stripLine(line) {
     var chr = 0;
@@ -116,8 +148,8 @@ fn getLineData(table, line) {
         name = name & @0;
     }
 
-    if (TableGet(table, name)) {
-        num = fromEntry(TableGet(table, name));
+    if (_TableGet(table, name)) {
+        num = fromEntry(_TableGet(table, name));
     }
 
     if (num < 256) {
@@ -135,7 +167,10 @@ fn processLine(table, line) {
     var enum = getLineEnum(stripped);
 
     if (enum == 255) {
-        error("Invalid Instruction " & stripped);
+        asm "push \"Invalid Instruction \"";
+        asm "dup 2";
+        asm "cat";
+        asm "sys 18";
     }
 
     var data = getLineData(table, stripped);
@@ -203,7 +238,7 @@ fn processConsts(table, infile) {
                 for (name = line - 1; _StringLength(name) < 20; 0) {
                     name = name & @0;
                 }
-                TablePut(table, name, toEntry(idx));
+                _TablePut(table, name, toEntry(idx));
             } else {
                 idx = idx + 1;
             }
@@ -214,7 +249,7 @@ fn processConsts(table, infile) {
                 for (name = line - 1; _StringLength(name) < 20; 0) {
                     name = name & @0;
                 }
-                TablePut(table, name, toEntry(idx));
+                _TablePut(table, name, toEntry(idx));
             } else {
                 idx = idx + 1;
             }
@@ -229,8 +264,14 @@ fn processConsts(table, infile) {
     return 0;
 }
 
+fn libInit() {
+    _libload("/libs/table.ell");
+
+    asm "ret";
+}
+
 fn asmFile(inname, outname) {
-    var table = TableCreate(20, 2);
+    var table = _TableCreate(20, 2);
 
     var inhandleb = open(inname);
     var inhandlea = open(inname);
