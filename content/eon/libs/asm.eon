@@ -118,9 +118,6 @@ fn getLineData(table, line) {
 
     if (tableGet(table, name)) {
         num = fromEntry(tableGet(table, name));
-        print(name);
-        print(num);
-        print("\\n");
     }
 
     if (num < 256) {
