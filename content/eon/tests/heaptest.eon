@@ -13,8 +13,9 @@ fn main() {
 
     var a = _HeapAlloc(128);
 
+    print("_HeapAlloc(128) = ");
     print(a);
-    print(reada(a));
+    print("\n"); 
 
     return 0;
 }

@@ -116,8 +116,8 @@ fn getLineData(table, line) {
         name = name & @0;
     }
 
-    if (tableGet(table, name)) {
-        num = fromEntry(tableGet(table, name));
+    if (TableGet(table, name)) {
+        num = fromEntry(TableGet(table, name));
     }
 
     if (num < 256) {
@@ -203,7 +203,7 @@ fn processConsts(table, infile) {
                 for (name = line - 1; _StringLength(name) < 20; 0) {
                     name = name & @0;
                 }
-                tablePut(table, name, toEntry(idx));
+                TablePut(table, name, toEntry(idx));
             } else {
                 idx = idx + 1;
             }
@@ -214,7 +214,7 @@ fn processConsts(table, infile) {
                 for (name = line - 1; _StringLength(name) < 20; 0) {
                     name = name & @0;
                 }
-                tablePut(table, name, toEntry(idx));
+                TablePut(table, name, toEntry(idx));
             } else {
                 idx = idx + 1;
             }
@@ -230,7 +230,7 @@ fn processConsts(table, infile) {
 }
 
 fn asmFile(inname, outname) {
-    var table = tableCreate(20, 2);
+    var table = TableCreate(20, 2);
 
     var inhandleb = open(inname);
     var inhandlea = open(inname);

@@ -119,7 +119,7 @@ fn parseVar(buff, idx, stack, varTable) {
             word = word & @0;
         }
 
-        tablePut(varTable, word, @stack);
+        _TablePut(varTable, word, @stack);
 
         oldidx = dup(idx);
 
@@ -298,7 +298,7 @@ fn parseFactor(buff, idx, stack, varTable) {
         newWord = newWord & @0;
     }
 
-    var variable = tableGet(varTable, newWord);
+    var variable = _TableGet(varTable, newWord);
     var index = 0;
 
     if (variable != "") {
@@ -638,7 +638,7 @@ fn parseFunction(buff, idx) {
 
     var done = 0;
     var stack = 0;
-    var varTable = tableCreate(20, 1);
+    var varTable = _TableCreate(20, 1);
 
     for (0; done == 0; 0) {
         word = nextWord(buff, idx);
@@ -650,7 +650,7 @@ fn parseFunction(buff, idx) {
 
             stack = stack + 1;
 
-            tablePut(varTable, word, @stack);
+            _TablePut(varTable, word, @stack);
 
             word = nextWord(buff, idx);
 

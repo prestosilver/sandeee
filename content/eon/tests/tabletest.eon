@@ -1,17 +1,29 @@
 #include "content/eon/libs/libload.eon"
-#include "content/eon/libs/table.eon"
 #include "content/eon/libs/sys.eon"
 
 fn main() {
     // load libs
     setupLibLoad();
     loadLib("/libs/string.ell");
+    loadLib("/libs/table.ell");
 
-    var table = tableCreate(2, 3);
 
-    tablePut(table, "lo", "lol");
+    print("_TableCreatae(2, 3) = ");
+    var table = _TableCreate(2, 3);
+    print(table);
+    print("\\n");
 
-    print(tableGet(table, "lo"));
+    print("_TablePut('lo', 'lol') = ");
+    print(_TablePut(table, "lo", "lol"));
+    print("\\n");
+    
+    print("table = ");
+    print(table);
+    print("\\n");
 
-    asm "ret";
+    print("_TableGet(table, 'lo') = ");
+    print(_TableGet(table, "lo"));
+    print("\\n");
+
+    return 0;
 }
