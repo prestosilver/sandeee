@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const options = @import("options");
 
 const states = @import("states/manager.zig");
 const diskState = @import("states/disks.zig");
@@ -375,6 +376,8 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 var isHeadless = false;
 
 pub fn main() anyerror!void {
+    std.log.info("Sandeee Version " ++ options.VersionText, .{options.SandEEEVersion});
+
     defer if (!builtin.link_libc or !allocator.useclib) {
         std.debug.assert(allocator.gpa.deinit() == .ok);
         std.log.debug("no leaks! :)", .{});

@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const options = @import("options");
 
 const win = @import("../drawers/window2d.zig");
 const sb = @import("../util/spritebatch.zig");
@@ -50,10 +51,13 @@ pub const WelcomeData = struct {
             .scale = 1,
         });
 
+        var versionText = try std.fmt.allocPrint(allocator.alloc, "(" ++ options.VersionText ++ ")", .{options.SandEEEVersion});
+        defer allocator.alloc.free(versionText);
+
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
-            .text = "(Demo Version)",
+            .text = versionText,
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - 1 * font.size),
             .scale = 0.5,
         });

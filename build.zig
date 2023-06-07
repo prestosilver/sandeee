@@ -30,11 +30,37 @@ pub fn build(b: *std.build.Builder) void {
         .optimize = b.standardOptimizeOption(.{}),
     });
 
+    const platform = if (exe.target.os_tag) |tag|
+        switch (tag) {
+            .windows => "win",
+            .linux => "linux",
+            else => "",
+        }
+    else
+        "linux";
+
+    const suffix = switch (exe.optimize) {
+        .Debug => "-dbg",
+        else => "",
+    };
+
     const networkModule = b.createModule(.{
         .source_file = .{ .path = "deps/zig-network/network.zig" },
     });
 
+    const options = b.addOptions();
+
+    options.addOption(std.builtin.Version, "SandEEEVersion", .{
+        .major = 0,
+        .minor = 0,
+        .patch = 466,
+    });
+    var versionText = std.fmt.allocPrint(b.allocator, "V.{s}-{{}}{s}", .{ platform, suffix }) catch return;
+
+    options.addOption([]const u8, "VersionText", versionText);
+
     exe.addModule("network", networkModule);
+    exe.addModule("options", options.createModule());
 
     _ = b.exec(&[_][]const u8{ "rm", "-rf", "content/disk" });
     _ = b.exec(&[_][]const u8{ "cp", "-r", "content/rawdisk", "content/disk" });
@@ -214,20 +240,6 @@ pub fn build(b: *std.build.Builder) void {
     });
 
     exe_tests.step.dependOn(&write_step.step);
-
-    const platform = if (exe.target.os_tag) |tag|
-        switch (tag) {
-            .windows => "win",
-            .linux => "linux",
-            else => "",
-        }
-    else
-        "linux";
-
-    const suffix = switch (exe.optimize) {
-        .Debug => "-dbg",
-        else => "",
-    };
 
     const branch = std.fmt.allocPrint(b.allocator, "prestosilver/sandeee-os:{s}{s}", .{ platform, suffix }) catch "";
 
