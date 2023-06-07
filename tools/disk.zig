@@ -61,7 +61,7 @@ pub const DiskStep = struct {
             }
         }
 
-        std.log.info("packed {} files", .{count});
+        // std.log.info("packed {} files", .{count});
 
         try std.fs.cwd().writeFile(self.output, (try files.toStr()).items);
     }

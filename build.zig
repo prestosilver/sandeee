@@ -15,7 +15,7 @@ const eonTestsFiles = [_][]const u8{ "pong", "paint", "fib", "tabletest", "heapt
 const asmExecFiles = [_][]const u8{ "time", "dump", "echo", "aplay", "libdump" };
 const eonExecFiles = [_][]const u8{ "eon", "stat", "player", "asm", "pix" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
-const eonLibFiles = [_][]const u8{ "heap", "table" };
+const eonLibFiles = [_][]const u8{ "heap", "table", "asm" };
 const wavSoundFiles = [_][]const u8{ "login", "message", "track1" };
 const pngImageFiles = [_][]const u8{ "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
@@ -30,18 +30,18 @@ pub fn build(b: *std.build.Builder) void {
         .optimize = b.standardOptimizeOption(.{}),
     });
 
-    const platform = if (exe.target.os_tag) |tag|
+    const versionPlatform = if (exe.target.os_tag) |tag|
         switch (tag) {
             .windows => "win",
-            .linux => "linux",
+            .linux => "lnx",
             else => "",
         }
     else
         "linux";
 
-    const suffix = switch (exe.optimize) {
+    const versionSuffix = switch (exe.optimize) {
         .Debug => "-dbg",
-        else => "",
+        else => "-pub",
     };
 
     const networkModule = b.createModule(.{
@@ -53,9 +53,9 @@ pub fn build(b: *std.build.Builder) void {
     options.addOption(std.builtin.Version, "SandEEEVersion", .{
         .major = 0,
         .minor = 0,
-        .patch = 466,
+        .patch = 481,
     });
-    var versionText = std.fmt.allocPrint(b.allocator, "V.{s}-{{}}{s}", .{ platform, suffix }) catch return;
+    var versionText = std.fmt.allocPrint(b.allocator, "V.{s}-{{}}{s}", .{ versionPlatform, versionSuffix }) catch return;
 
     options.addOption([]const u8, "VersionText", versionText);
 
@@ -238,6 +238,20 @@ pub fn build(b: *std.build.Builder) void {
             .path = "src/main.zig",
         },
     });
+
+    const platform = if (exe.target.os_tag) |tag|
+        switch (tag) {
+            .windows => "win",
+            .linux => "linux",
+            else => "",
+        }
+    else
+        "linux";
+
+    const suffix = switch (exe.optimize) {
+        .Debug => "-dbg",
+        else => "",
+    };
 
     exe_tests.step.dependOn(&write_step.step);
 

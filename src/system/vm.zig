@@ -13,6 +13,8 @@ pub const VM = struct {
         Memory,
         StackUnderflow,
         StackOverflow,
+        CallStackUnderflow,
+        CallStackOverflow,
         ValueMissing,
         StringMissing,
         InvalidOp,
@@ -653,19 +655,21 @@ pub const VM = struct {
 
                             return;
                         },
-                        // TODO decide
-                        // 11 => {
-                        //     var len = try self.popStack();
-                        //     defer self.free(&[_]StackEntry{len});
+                        // getfn
+                        11 => {
+                            var name = try self.popStack();
+                            defer self.free(&[_]StackEntry{name});
 
-                        //     if (len != .value) return error.ValueMissing;
+                            if (name != .string) return error.StringMissing;
 
-                        //     var adds = try self.allocator.create([]u8);
-                        //     adds.* = try self.allocator.alloc(u8, @intCast(usize, len.value.*));
-                        //     self.stack[self.rsp] = StackEntry{ .string = adds };
-                        //     self.rsp += 1;
-                        //     return;
-                        // },
+                            var val: []const u8 = "";
+
+                            if (self.functions.get(name.string.*)) |newVal| val = newVal.string;
+
+                            try self.pushStackS(val);
+
+                            return;
+                        },
                         // regfn
                         12 => {
                             var name = try self.popStack();
@@ -1068,12 +1072,16 @@ pub const VM = struct {
                 }
             },
             Operation.Code.Ret => {
+                if (self.retRsp == 0) return error.CallStackUnderflow;
+
                 self.retRsp -= 1;
                 self.pc = @intCast(usize, self.retStack[self.retRsp].location);
                 self.inside_fn = self.retStack[self.retRsp].function;
                 return;
             },
             Operation.Code.Call => {
+                if (self.retRsp >= self.retStack.len - 1) return error.CallStackOverflow;
+
                 if (op.string != null) {
                     self.retStack[self.retRsp].location = self.pc;
                     self.retStack[self.retRsp].function = self.inside_fn;
@@ -1084,10 +1092,26 @@ pub const VM = struct {
                     return;
                 }
 
+                if (op.value != null) {
+                    self.retStack[self.retRsp].location = self.pc;
+                    self.retStack[self.retRsp].function = self.inside_fn;
+                    self.pc = @intCast(usize, op.value.?);
+                    self.retRsp += 1;
+
+                    return;
+                }
+
+                var name = try self.popStack();
+                defer self.free(&[_]StackEntry{name});
+
+                if (name != .string) return error.StringMissing;
+
                 self.retStack[self.retRsp].location = self.pc;
                 self.retStack[self.retRsp].function = self.inside_fn;
-                self.pc = @intCast(usize, op.value.?);
+                self.pc = 0;
+                self.inside_fn = try self.allocator.dupe(u8, name.string.*);
                 self.retRsp += 1;
+
                 return;
             },
             Operation.Code.Cat => {

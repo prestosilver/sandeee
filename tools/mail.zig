@@ -23,7 +23,7 @@ pub fn emails(path: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         }
     }
 
-    std.log.info("packed {} emails", .{count});
+    // std.log.info("packed {} emails", .{count});
 
     var result = std.ArrayList(u8).init(alloc);
     try result.appendSlice(try manager.exportData());
