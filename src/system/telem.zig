@@ -24,8 +24,6 @@ pub const Telem = struct {
             if (conts.len != @sizeOf(Telem)) return;
 
             instance = std.mem.bytesToValue(Telem, conts[0..@sizeOf(Telem)]);
-
-            std.log.info("{}", .{instance});
         }
     }
 };
