@@ -309,7 +309,7 @@ pub const VM = struct {
                     }
                 }
 
-                toFree.len = idx;
+                toFree = self.allocator.realloc(toFree, idx) catch return;
 
                 for (toFree) |val| {
                     switch (val) {
