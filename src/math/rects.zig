@@ -34,3 +34,44 @@ pub fn newRect(x: f32, y: f32, w: f32, h: f32) Rectangle {
         .h = h,
     };
 }
+
+pub const UIRectangle = struct {
+    offsetXMin: f32,
+    offsetXMax: f32,
+    offsetYMin: f32,
+    offsetYMax: f32,
+
+    anchorXMin: f32,
+    anchorXMax: f32,
+    anchorYMin: f32,
+    anchorYMax: f32,
+
+    parent: *union(ParentType) {
+        Rect: Rectangle,
+        UIRect: UIRectangle,
+    },
+
+    pub const ParentType = enum {
+        Rect,
+        UIRect,
+    };
+
+    pub fn toRect(self: UIRectangle) Rectangle {
+        var parent = switch (self.parent) {
+            .Rect => self.parent.Rect,
+            .UIRect => self.parent.UIRect.toRect(),
+        };
+
+        const axmin = parent.x.float32 + (parent.width.float32 * self.anchorXMin);
+        const aymin = parent.y.float32 + (parent.height.float32 * self.anchorYMin);
+        const axmax = parent.x.float32 + (parent.width.float32 * self.anchorXMax);
+        const aymax = parent.y.float32 + (parent.height.float32 * self.anchorYMax);
+
+        return .{
+            .x = self.offsetXMin + axmin,
+            .y = self.offsetYMin + aymin,
+            .w = self.offsetXMax + axmax - self.offsetXMin - axmin,
+            .h = self.offsetYMax + aymax - self.offsetYMin - aymin,
+        };
+    }
+};
