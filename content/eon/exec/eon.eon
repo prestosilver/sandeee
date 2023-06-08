@@ -100,8 +100,19 @@ fn nextWord(buff, idx) {
     }
 
     copy = setSize(copy, length);
+    
+    var result = "";
+    var ch = "";
+    for (0; copy != ""; copy = copy + 1) {
+        ch = @copy;
+        result = result & @ch;
+        if (ch == 92) {
+            result = result - 1;   
+        }
+    }
 
-    return copy;
+
+    return result;
 }
 
 fn parseVar(buff, idx, stack, varTable) {
