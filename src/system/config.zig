@@ -5,16 +5,19 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 
 pub const SettingManager = struct {
-    settings: std.StringHashMap([]const u8),
+    settings: std.StringHashMap([]u8),
 
     pub fn init(self: *SettingManager) void {
-        self.*.settings = std.StringHashMap([]const u8).init(allocator.alloc);
+        self.*.settings = std.StringHashMap([]u8).init(allocator.alloc);
     }
 
     pub fn set(self: *SettingManager, setting: []const u8, value: []const u8) !void {
-        if (self.settings.get(setting)) |val|
-            allocator.alloc.free(val);
-        try self.*.settings.put(setting, try allocator.alloc.dupe(u8, value));
+        if (self.settings.getEntry(setting)) |val| {
+            allocator.alloc.free(val.key_ptr.*);
+            allocator.alloc.free(val.value_ptr.*);
+        }
+
+        try self.*.settings.put(try allocator.alloc.dupe(u8, setting), try allocator.alloc.dupe(u8, value));
 
         events.EventManager.instance.sendEvent(systemEvs.EventSetSetting{
             .setting = setting,
