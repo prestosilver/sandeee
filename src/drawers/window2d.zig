@@ -277,6 +277,10 @@ pub const WindowData = struct {
     }
 
     pub fn deinit(self: *WindowData) !void {
+        if (self.popup) |*popupData| {
+            try popupData.data.contents.deinit();
+        }
+
         try self.contents.deinit();
     }
 
