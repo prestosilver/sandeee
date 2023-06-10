@@ -1,7 +1,9 @@
+// modules
 const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");
 
+// states
 const states = @import("states/manager.zig");
 const diskState = @import("states/disks.zig");
 const loadingState = @import("states/loading.zig");
@@ -10,6 +12,7 @@ const crashState = @import("states/crash.zig");
 const installState = @import("states/installer.zig");
 const recoveryState = @import("states/recovery.zig");
 
+// utilities
 const fm = @import("util/files.zig");
 const font = @import("util/font.zig");
 const audio = @import("util/audio.zig");
@@ -22,15 +25,19 @@ const tex = @import("util/texture.zig");
 const texMan = @import("util/texmanager.zig");
 const panicHandler = @import("util/panic.zig");
 
+// events
 const inputEvs = @import("events/input.zig");
 const windowEvs = @import("events/window.zig");
 const systemEvs = @import("events/system.zig");
 
+// loader
 const worker = @import("loaders/worker.zig");
 
+// op math
 const vecs = @import("math/vecs.zig");
 const rect = @import("math/rects.zig");
 
+// drawers
 const wall = @import("drawers/wall2d.zig");
 const sprite = @import("drawers/sprite2d.zig");
 const bar = @import("drawers/bar2d.zig");
@@ -39,11 +46,13 @@ const cursor = @import("drawers/cursor2d.zig");
 const desk = @import("drawers/desk2d.zig");
 const notifs = @import("drawers/notification2d.zig");
 
+// misc system stuff
 const conf = @import("system/config.zig");
 const files = @import("system/files.zig");
 const headless = @import("system/headless.zig");
 const emails = @import("system/mail.zig");
 
+// not-op programming lang
 const c = @import("c.zig");
 
 // embed shaders
@@ -376,7 +385,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 var isHeadless = false;
 
 pub fn main() anyerror!void {
-    std.log.info("Sandeee Version " ++ options.VersionText, .{options.SandEEEVersion});
+    std.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
 
     defer if (!builtin.link_libc or !allocator.useclib) {
         std.debug.assert(allocator.gpa.deinit() == .ok);

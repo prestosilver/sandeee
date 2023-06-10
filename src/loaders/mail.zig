@@ -7,7 +7,7 @@ const c = @import("../c.zig");
 pub fn loadMail(self: *worker.WorkerQueueEntry(*const []const u8, *mail.EmailManager)) !bool {
     std.log.debug("load mail", .{});
 
-    self.out.* = mail.EmailManager.init();
+    self.out.* = try mail.EmailManager.init();
 
     try self.out.loadFromFolder(self.indata.*);
 

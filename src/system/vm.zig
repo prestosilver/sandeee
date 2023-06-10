@@ -687,6 +687,12 @@ pub const VM = struct {
                             var finalOps = try self.allocator.dupe(Operation, ops.items);
                             var finalName = try self.allocator.dupe(u8, name.string.*);
 
+                            if (self.functions.fetchRemove(finalName)) |entry| {
+                                self.allocator.free(entry.key);
+                                self.allocator.free(entry.value.ops);
+                                self.allocator.free(entry.value.string);
+                            }
+
                             try self.functions.put(finalName, .{
                                 .string = dup,
                                 .ops = finalOps,
@@ -705,9 +711,10 @@ pub const VM = struct {
                                 self.allocator.free(entry.key);
                                 self.allocator.free(entry.value.ops);
                                 self.allocator.free(entry.value.string);
+                                return;
                             }
 
-                            return;
+                            return error.FunctionMissing;
                         },
                         // resize heap
                         14 => {
@@ -1109,7 +1116,12 @@ pub const VM = struct {
                 self.retStack[self.retRsp].location = self.pc;
                 self.retStack[self.retRsp].function = self.inside_fn;
                 self.pc = 0;
-                self.inside_fn = try self.allocator.dupe(u8, name.string.*);
+                if (self.functions.getEntry(name.string.*)) |entry| {
+                    self.inside_fn = entry.key_ptr.*;
+                } else {
+                    return error.FunctionMissing;
+                }
+
                 self.retRsp += 1;
 
                 return;

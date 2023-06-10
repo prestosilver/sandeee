@@ -2,7 +2,7 @@ const std = @import("std");
 const mail = @import("../src/system/mail.zig");
 
 pub fn emails(path: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
-    var manager = mail.EmailManager.init();
+    var manager = try mail.EmailManager.init();
 
     var root = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
     var dir = try std.fs.cwd().openIterableDir(path, .{ .access_sub_paths = true });

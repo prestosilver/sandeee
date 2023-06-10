@@ -94,10 +94,10 @@ pub const EmailManager = struct {
     emails: std.ArrayList(Email),
     boxes: [][]const u8,
 
-    pub fn init() EmailManager {
+    pub fn init() !EmailManager {
         return EmailManager{
             .emails = std.ArrayList(Email).init(allocator.alloc),
-            .boxes = undefined,
+            .boxes = try allocator.alloc.alloc([]const u8, 0),
         };
     }
 
@@ -109,6 +109,12 @@ pub const EmailManager = struct {
             allocator.alloc.free(email.contents);
             allocator.alloc.free(email.conditionData);
         }
+
+        for (self.boxes) |*boxName| {
+            allocator.alloc.free(boxName.*);
+        }
+
+        allocator.alloc.free(self.boxes);
 
         self.emails.deinit();
     }
