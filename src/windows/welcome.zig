@@ -58,8 +58,7 @@ pub const WelcomeData = struct {
             .batch = batch,
             .shader = font_shader,
             .text = versionText,
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - 1 * font.size),
-            .scale = 0.5,
+            .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - 1.5 * font.size),
         });
     }
 
