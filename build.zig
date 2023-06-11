@@ -22,10 +22,10 @@ const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error"
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam" };
 
-const Version: std.builtin.Version = .{
-        .major = 0,
-        .minor = 0,
-        .patch = 481,
+var Version: std.builtin.Version = .{
+    .major = 0,
+    .minor = 0,
+    .patch = 0,
 };
 
 pub fn build(b: *std.build.Builder) void {
@@ -45,6 +45,10 @@ pub fn build(b: *std.build.Builder) void {
     else
         "linux";
 
+    var commit = b.exec(&.{ "git", "rev-list", "--all", "--count" });
+
+    Version.patch = std.fmt.parseInt(u32, commit[0..commit.len - 1], 0) catch 0;
+
     const versionSuffix = switch (exe.optimize) {
         .Debug => "-dbg",
         else => "-pub",
@@ -59,7 +63,7 @@ pub fn build(b: *std.build.Builder) void {
     options.addOption(std.builtin.Version, "SandEEEVersion", Version);
     var versionText = std.fmt.allocPrint(b.allocator, "V.{s}-{{}}{s}", .{ versionPlatform, versionSuffix }) catch return;
 
-    std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{s}-{}{s}", .{versionPlatform, Version, versionSuffix}) catch return) catch return;
+    std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{s}-{}{s}", .{ versionPlatform, Version, versionSuffix }) catch return) catch return;
 
     options.addOption([]const u8, "VersionText", versionText);
 
