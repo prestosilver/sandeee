@@ -643,7 +643,9 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             var stmt = (try reader.readUntilDelimiterOrEof(&stmt_buff, '\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
-                var toks = try lex_file(stmt[9 .. stmt.len - 1]);
+                var target = try std.mem.concat(allocator, u8, &.{"content/disk", stmt[9..stmt.len - 1]});
+
+                var toks = try lex_file(target);
                 defer toks.deinit();
 
                 _ = toks.pop();

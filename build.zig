@@ -16,11 +16,17 @@ const asmExecFiles = [_][]const u8{ "time", "dump", "echo", "aplay", "libdump" }
 const eonExecFiles = [_][]const u8{ "eon", "stat", "player", "asm", "pix" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "heap", "table", "asm" };
-const wavSoundFiles = [_][]const u8{ "login", "message", "track1" };
+const wavSoundFiles = [_][]const u8{ "login", "message" };
 const pngImageFiles = [_][]const u8{ "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
-const incLibsFiles = [_][]const u8{"libload"};
+const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam" };
+
+const Version: std.builtin.Version = .{
+        .major = 0,
+        .minor = 0,
+        .patch = 481,
+};
 
 pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable(.{
@@ -50,12 +56,10 @@ pub fn build(b: *std.build.Builder) void {
 
     const options = b.addOptions();
 
-    options.addOption(std.builtin.Version, "SandEEEVersion", .{
-        .major = 0,
-        .minor = 0,
-        .patch = 481,
-    });
+    options.addOption(std.builtin.Version, "SandEEEVersion", Version);
     var versionText = std.fmt.allocPrint(b.allocator, "V.{s}-{{}}{s}", .{ versionPlatform, versionSuffix }) catch return;
+
+    std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{s}-{}{s}", .{versionPlatform, Version, versionSuffix}) catch return) catch return;
 
     options.addOption([]const u8, "VersionText", versionText);
 
@@ -68,6 +72,12 @@ pub fn build(b: *std.build.Builder) void {
     _ = b.exec(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/disks" });
     if (exe.optimize == .Debug) {
         _ = b.exec(&[_][]const u8{ "cp", "-r", "content/disk_debug/prof", "content/disk" });
+    }
+
+    for (incLibsFiles) |file| {
+        var eonf = std.fmt.allocPrint(b.allocator, "content/eon/libs/{s}.eon", .{file}) catch "";
+        var libf = std.fmt.allocPrint(b.allocator, "content/disk/libs/inc/{s}.eon", .{file}) catch "";
+        _ = b.exec(&.{ "cp", eonf, libf });
     }
 
     // Includes
