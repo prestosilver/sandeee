@@ -19,6 +19,7 @@ const shell = @import("../system/shell.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const mail = @import("../system/mail.zig");
+const allocator = @import("../util/allocator.zig");
 
 pub const GSLoading = struct {
     const Self = @This();
@@ -84,6 +85,7 @@ pub const GSLoading = struct {
 
         // files
         try self.loader.enqueue(*?[]u8, *const u8, self.disk, &zero, worker.files.loadFiles);
+        defer allocator.alloc.free(self.disk.*.?);
 
         // settings
         try self.loader.enqueue(*const []const u8, *conf.SettingManager, &settingspath, self.settingManager, worker.settings.loadSettings);

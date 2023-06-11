@@ -278,6 +278,12 @@ pub const GSWindowed = struct {
             try window.data.deinit();
         }
 
+        if (self.popup) |*popup| {
+            try popup.data.contents.deinit();
+        }
+
+        try self.face.deinit();
+
         try files.write();
         try self.settingsManager.deinit();
 

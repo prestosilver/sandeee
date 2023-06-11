@@ -110,10 +110,6 @@ pub const EmailManager = struct {
             allocator.alloc.free(email.conditionData);
         }
 
-        for (self.boxes) |*boxName| {
-            allocator.alloc.free(boxName.*);
-        }
-
         allocator.alloc.free(self.boxes);
 
         self.emails.deinit();
@@ -171,6 +167,7 @@ pub const EmailManager = struct {
 
     pub fn saveStateFile(self: *EmailManager, path: []const u8) !void {
         var start = try allocator.alloc.alloc(u8, 1);
+        defer allocator.alloc.free(start);
 
         start[0] = @intCast(u8, self.boxes.len);
 
@@ -206,6 +203,7 @@ pub const EmailManager = struct {
             idx += 1;
 
             var names = try allocator.alloc.alloc([]const u8, total);
+            defer allocator.alloc.free(names);
 
             for (names) |*name| {
                 var len = conts[idx];

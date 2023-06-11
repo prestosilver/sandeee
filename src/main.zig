@@ -341,7 +341,10 @@ pub fn windowResize(event: inputEvs.EventWindowResize) bool {
 var paniced: bool = false;
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
-    if (paniced) std.os.exit(0);
+    if (paniced) {
+        std.log.info("second panic", .{});
+        std.os.exit(0);
+    }
     paniced = true;
 
     sb.scissor = null;
@@ -689,13 +692,7 @@ pub fn main() anyerror!void {
     // deinit the current state
     try gameStates.getPtr(currentState).deinit();
 
-    // free the disk if allocated
-    if (disk) |toFree| {
-        allocator.alloc.free(toFree);
-    }
-
     try biosFace.deinit();
-    try mainFace.deinit();
     try batch.textureManager.deinit();
 
     gfx.close(ctx);
