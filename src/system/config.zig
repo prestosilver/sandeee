@@ -12,10 +12,9 @@ pub const SettingManager = struct {
     }
 
     pub fn set(self: *SettingManager, setting: []const u8, value: []const u8) !void {
-        if (self.settings.getEntry(setting)) |val| {
-            _ = self.settings.remove(setting);
-            allocator.alloc.free(val.key_ptr.*);
-            allocator.alloc.free(val.value_ptr.*);
+        if (self.settings.fetchRemove(setting)) |val| {
+            allocator.alloc.free(val.key);
+            allocator.alloc.free(val.value);
         }
 
         try self.*.settings.put(try allocator.alloc.dupe(u8, setting), try allocator.alloc.dupe(u8, value));
