@@ -58,6 +58,7 @@ pub const GSWindowed = struct {
     desk: desk.Desk,
 
     popup: ?popups.Popup = null,
+    shell: shell.Shell = undefined,
 
     color: cols.Color = cols.newColor(0, 0, 0, 1),
 
@@ -265,6 +266,11 @@ pub const GSWindowed = struct {
 
         telem.Telem.instance.logins += 1;
         events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
+
+        if (self.settingsManager.get("startup_file")) |startupCmd| {
+            self.shell = .{ .root = files.root };
+            _ = self.shell.run(startupCmd, startupCmd) catch return;
+        }
     }
 
     pub fn deinit(self: *Self) !void {
@@ -299,6 +305,13 @@ pub const GSWindowed = struct {
         // setup vm data for update
         shell.frameTime = shell.VM_TIME;
         shell.vmsLeft = shell.vms;
+
+        if (self.shell.vm != null) {
+            var result = self.shell.updateVM() catch null;
+            if (result != null) {
+                result.?.data.deinit();
+            }
+        }
 
         // draw wallpaper
         try self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));

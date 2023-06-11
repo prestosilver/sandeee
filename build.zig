@@ -45,7 +45,7 @@ pub fn build(b: *std.build.Builder) void {
     else
         "linux";
 
-    var commit = b.exec(&.{ "git", "rev-list", "--all", "--count" });
+    var commit = b.exec(&.{ "git", "rev-list", "HEAD", "--count" });
 
     Version.patch = std.fmt.parseInt(u32, commit[0..commit.len - 1], 0) catch 0;
 
