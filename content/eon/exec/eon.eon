@@ -1,5 +1,5 @@
-#include "content/eon/libs/sys.eon"
-#include "content/eon/libs/libload.eon"
+#include "/libs/inc/sys.eon"
+#include "/libs/inc/libload.eon"
 
 fn isWhitespace(char) {
     if (@char == 32) return 1;
@@ -107,7 +107,17 @@ fn nextWord(buff, idx) {
         ch = @copy;
         result = result & @ch;
         if (ch == 92) {
-            result = result - 1;   
+            result = result - 1;
+            copy = copy + 1;
+            if (@copy == 110) {
+                result = result & @92;
+                result = result & @110;
+            } else if (@copy == 116) {
+                result = result & @92;
+                result = result & @116;
+            } else {
+                result = result & @copy;
+            }
         }
     }
 
@@ -152,10 +162,24 @@ fn parseVar(buff, idx, stack, varTable) {
     return "";
 }
 
+fn toString(number) {
+   if (number == 0) {
+       return "0";
+   }
+
+   var result = "";
+
+   for (0; number > 0; number = number / 10) {
+       result = result & @(48 + (number % 10));
+   }
+
+   return result;
+}
+
 fn parseFlow(buff, idx, stack, varTable) {
     var lastidx = dup(idx);
     var oldstack = dup(stack);
-    var flowidx = "" & lastidx;
+    var flowidx = toString(lastidx);
     var word = nextWord(buff, idx);
     var result = "";
     var last = "";
@@ -169,7 +193,7 @@ fn parseFlow(buff, idx, stack, varTable) {
                 stack = stack - 1;
                 result = result & "    jz if_" & flowidx & "_else\\n";
 
-                result = result & parseBlock(buff, idx, stack, varTable);
+                result = result & parseBlock(buff, idx, stack, varTable, 0);
 
                 stack = oldstack;
 
@@ -180,7 +204,7 @@ fn parseFlow(buff, idx, stack, varTable) {
 
                 word = nextWord(buff, idx);
                 if (word == "else") {
-                    result = result & parseBlock(buff, idx, stack, varTable);
+                    result = result & parseBlock(buff, idx, stack, varTable, 0);
 
                     stack = oldstack;
                 } else {
@@ -222,7 +246,7 @@ fn parseFlow(buff, idx, stack, varTable) {
         word = nextWord(buff, idx);
         if (word != ")") error("for expected ')'");
 
-        result = result & parseBlock(buff, idx, stack, varTable);
+        result = result & parseBlock(buff, idx, stack, varTable, 0);
 
         result = result & last & "    disc 0\\n    jmp for_" & flowidx & "_loop\\nfor_" & flowidx & "_end:\\n";
 
@@ -370,6 +394,11 @@ fn parseTerm(buff, idx, stack, varTable) {
             term = parseFactor(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    div\\n";
+            stack = stack - 1;
+        } else if (word == "%") {
+            term = parseFactor(buff, idx, stack, varTable);
+            result = result & term;
+            result = result & "    mod\\n";
             stack = stack - 1;
         } else {
             done = 1;
@@ -574,7 +603,7 @@ fn parseStmt(buff, idx, stack, varTable) {
     return "";
 }
 
-fn parseBlock(buff, idx, stack, varTable) {
+fn parseBlock(buff, idx, stack, varTable, function) {
     var old = dup(idx);
 
     var word = nextWord(buff, idx);
@@ -623,7 +652,7 @@ fn parseBlock(buff, idx, stack, varTable) {
 
     varTable = dup(tableCopy);
 
-    if (stack != 255) {
+    if (stack != 255 && function == 1) {
         for (0; stack > oldStack; stack = stack - 1) {
             code = code & "    disc 0\\n";
         }
@@ -675,7 +704,7 @@ fn parseFunction(buff, idx) {
 
     if (word != ")") error("Expected ')' got '" & word & "'");
 
-    var block = parseBlock(buff, idx, stack, varTable);
+    var block = parseBlock(buff, idx, stack, varTable, 1);
 
     if (block == "") return "";
 
@@ -750,28 +779,24 @@ fn preprocess(name, conts) {
     var nl = "\\n";
     var result = "";
     var line;
-    var name;
+    var newName;
     var file;
     var buff;
 
     for (line = split(conts, nl); line != 0; line = split(conts, nl)) {
          if (_StringStartsWith(line, "#include")) {
-             name = line + 10;
-             name = name - 1;
+             newName = line + 10;
+             newName = newName - 1;
 
-             file = open(name);
-             buff = read(file, fileSize(name));
+             file = open(newName);
+             buff = read(file, fileSize(newName));
              close(file);
 
-             result = result & preprocess(name, buff) & "\\n";
+             result = result & preprocess(newName, buff) & "\\n";
          } else {
              result = result & remcomment(line) & "\\n";
          }
     }
-
-    var tmp = createOpen("lol.eon");
-    write(tmp, result);
-    close(tmp);
 
     return result;
 }

@@ -1,5 +1,5 @@
-#include "content/eon/libs/libload.eon"
-#include "content/eon/libs/sys.eon"
+#include "/libs/inc/libload.eon"
+#include "/libs/inc/sys.eon"
 
 fn main() {
     setupLibLoad();

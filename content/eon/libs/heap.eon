@@ -1,4 +1,4 @@
-#include "content/eon/libs/sys.eon"
+#include "/libs/inc/sys.eon"
 
 fn libInit() {
     asm "push 1";

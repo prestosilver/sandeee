@@ -1,4 +1,4 @@
-#include "/libs/inc/asm.eon"
+#include "/libs/inc/sys.eon"
 #include "/libs/inc/libload.eon"
 
 fn isWhitespace(char) {
@@ -55,30 +55,27 @@ fn nextWord(buff, idx) {
             length = length + 2;
             idx = idx + 2;
         } else {
-            if ((@copy == 34) && (@char == 34)) {
-                length = length + 1;
-                idx = idx + 1;
-                if (length > 1) {
-                    done = 1;
+            ws = isWhitespace(char);
+            if (@copy == 34) {
+                if (@char == 34) {
+                    if (length > 0) {
+                        done = 1;
+                        length = length + 1;
+                        idx = idx + 1;
+                    }
                 }
             } else if (single(char)) {
-                if (length == 0) {
-                    idx = idx + 1;
+               if (length == 0) {
+                   idx = idx + 1;
 
-                    return char;
-                }
+                   return char;
+               }
 
-                done = 1;
+               done = 1;
             }
 
             if (@copy == 34) {
-                ws = (@char == 34);
-
-                if (length < 2) {
-                    ws = 0;
-                }
-            } else {
-                ws = isWhitespace(char);
+                ws = 0;
             }
 
             if (done == 0) {
@@ -103,8 +100,29 @@ fn nextWord(buff, idx) {
     }
 
     copy = setSize(copy, length);
+    
+    var result = "";
+    var ch = "";
+    for (0; copy != ""; copy = copy + 1) {
+        ch = @copy;
+        result = result & @ch;
+        if (ch == 92) {
+            result = result - 1;
+            copy = copy + 1;
+            if (@copy == 110) {
+                result = result & @92;
+                result = result & @110;
+            } else if (@copy == 116) {
+                result = result & @92;
+                result = result & @116;
+            } else {
+                result = result & @copy;
+            }
+        }
+    }
 
-    return copy;
+
+    return result;
 }
 
 fn parseVar(buff, idx, stack, varTable) {
@@ -116,15 +134,13 @@ fn parseVar(buff, idx, stack, varTable) {
     if (word == "var") {
         word = nextWord(buff, idx);
 
-        print("CREATE: " & word & "\n");
-
         stack = stack + 1;
 
         for (0; _StringLength(word) < 20; 0) {
             word = word & @0;
         }
 
-        tablePut(varTable, word, @stack);
+        _TablePut(varTable, word, @stack);
 
         oldidx = dup(idx);
 
@@ -146,10 +162,24 @@ fn parseVar(buff, idx, stack, varTable) {
     return "";
 }
 
+fn toString(number) {
+   if (number == 0) {
+       return "0";
+   }
+
+   var result = "";
+
+   for (0; number > 0; number = number / 10) {
+       result = result & @(48 + (number % 10));
+   }
+
+   return result;
+}
+
 fn parseFlow(buff, idx, stack, varTable) {
     var lastidx = dup(idx);
     var oldstack = dup(stack);
-    var flowidx = "" & lastidx;
+    var flowidx = toString(lastidx);
     var word = nextWord(buff, idx);
     var result = "";
     var last = "";
@@ -303,7 +333,7 @@ fn parseFactor(buff, idx, stack, varTable) {
         newWord = newWord & @0;
     }
 
-    var variable = tableGet(varTable, newWord);
+    var variable = _TableGet(varTable, newWord);
     var index = 0;
 
     if (variable != "") {
@@ -311,8 +341,6 @@ fn parseFactor(buff, idx, stack, varTable) {
         index = index + @"0";
 
         stack = stack + 1;
-
-        print("Read: " & word & "\n");
 
         return "    copy " &  @index & "\n";
     }
@@ -327,6 +355,9 @@ fn parseFactor(buff, idx, stack, varTable) {
         if (next == ")") {
             if (word == "dup") {
                 return result & "    dup 0\n    disc 1\n";
+            } else if (@word == 95) {
+                word = word + 1;
+                word = (@34) & word & (@34);
             }
 
             stack = oldStack + 1;
@@ -642,7 +673,7 @@ fn parseFunction(buff, idx) {
 
     var done = 0;
     var stack = 0;
-    var varTable = tableCreate(20, 1);
+    var varTable = _TableCreate(20, 1);
 
     for (0; done == 0; 0) {
         word = nextWord(buff, idx);
@@ -654,7 +685,7 @@ fn parseFunction(buff, idx) {
 
             stack = stack + 1;
 
-            tablePut(varTable, word, @stack);
+            _TablePut(varTable, word, @stack);
 
             word = nextWord(buff, idx);
 
@@ -695,7 +726,7 @@ fn parseFile(buff, idx) {
         } else if (word == "") {
             done = 1;
         } else {
-            //print(code & "\n");
+            print(code & "\n");
             error("Invalid word Encountered: '" & word & "'");
         }
     }
@@ -743,20 +774,20 @@ fn preprocess(name, conts) {
     var nl = "\n";
     var result = "";
     var line;
-    var fileName;
+    var newName;
     var file;
     var buff;
 
     for (line = split(conts, nl); line != 0; line = split(conts, nl)) {
-         if (_StringStartsWith(line, "\#include")) {
-             fileName = line + 10;
-             fileName = fileName - 1;
+         if (_StringStartsWith(line, "#include")) {
+             newName = line + 10;
+             newName = newName - 1;
 
-             file = open(name);
-             buff = read(file, fileSize(fileName));
+             file = open(newName);
+             buff = read(file, fileSize(newName));
              close(file);
 
-             result = result & preprocess(fileName, buff) & "\n";
+             result = result & preprocess(newName, buff) & "\n";
          } else {
              result = result & remcomment(line) & "\n";
          }
@@ -769,6 +800,7 @@ fn preprocess(name, conts) {
 fn main() {
     setupLibLoad();
     loadLib("/libs/string.ell");
+    loadLib("/libs/asm.ell");
 
     var fileName = getArg(1);
     var file = open(fileName);
@@ -790,7 +822,7 @@ fn main() {
 
     var fullName = fileName & ".asm";
 
-    asmFile(fullName, "out.eep");
+    _asmFile(fullName, "out.eep");
 
     return 0;
 }
