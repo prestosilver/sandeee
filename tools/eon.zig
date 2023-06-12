@@ -628,10 +628,9 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             if (char == '"') {
                 code[code.len - 1] = char;
                 prev = 'n';
-            } else if (char != '\\') {
-                code[code.len - 1] = char;
-                prev = char;
             } else {
+                code = try allocator.realloc(code, code.len + 1);
+                code[code.len - 1] = char;
                 prev = 'n';
             }
 
