@@ -31,7 +31,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
     while (true) {
         if (mainShell.vm != null) {
             shell.vmsLeft = shell.vms;
-            shell.frameTime = shell.VM_TIME;
+            shell.frameTime = 100000000;
 
             var result = try mainShell.updateVM();
             if (result != null) {

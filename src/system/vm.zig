@@ -215,7 +215,7 @@ pub const VM = struct {
     };
 
     pub fn deinit(self: *VM) !void {
-        var oldrsp = self.rsp;
+        const oldrsp = self.rsp;
         self.rsp = 0;
 
         self.free(self.stack[0..oldrsp]);
@@ -557,7 +557,7 @@ pub const VM = struct {
 
                             if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
 
-                            var fs = self.streams.items[@intCast(usize, idx.value.*)];
+                            const fs = self.streams.items[@intCast(usize, idx.value.*)];
                             if (fs == null) return error.InvalidStream;
 
                             var cont = try fs.?.Read(@intCast(u32, len.value.*));
@@ -579,7 +579,7 @@ pub const VM = struct {
 
                             if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
 
-                            var fs = self.streams.items[@intCast(usize, idx.value.*)];
+                            const fs = self.streams.items[@intCast(usize, idx.value.*)];
                             if (fs == null) return error.InvalidStream;
 
                             try fs.?.Write(str.string.*);
@@ -595,7 +595,7 @@ pub const VM = struct {
                             if (idx != .value) return error.ValueMissing;
 
                             if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
-                            var fs = self.streams.items[@intCast(usize, idx.value.*)];
+                            const fs = self.streams.items[@intCast(usize, idx.value.*)];
                             if (fs == null) return error.InvalidStream;
 
                             try fs.?.Flush();
@@ -610,7 +610,7 @@ pub const VM = struct {
                             if (idx != .value) return error.ValueMissing;
 
                             if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
-                            var fs = self.streams.items[@intCast(usize, idx.value.*)];
+                            const fs = self.streams.items[@intCast(usize, idx.value.*)];
                             if (fs == null) return error.InvalidStream;
 
                             try fs.?.Close();
@@ -723,7 +723,7 @@ pub const VM = struct {
 
                             if (size != .value) return error.ValueMissing;
 
-                            var start = self.heap.len;
+                            const start = self.heap.len;
                             self.heap = try self.allocator.realloc(self.heap, @intCast(usize, size.value.*));
 
                             if (start < self.heap.len)
@@ -811,7 +811,7 @@ pub const VM = struct {
                             if (num != .value) return error.ValueMissing;
                             if (self.rsp < num.value.*) return error.InvalidValue;
 
-                            var oldRsp = self.rsp;
+                            const oldRsp = self.rsp;
 
                             self.rsp = num.value.*;
 
@@ -940,7 +940,7 @@ pub const VM = struct {
 
                 if (a != .value) return error.ValueMissing;
 
-                var val: u64 = @floatToInt(u64, (std.math.sin(@intToFloat(f32, a.value.*) * (std.math.pi * 2) / 255) + 1.0) * 127.0);
+                const val: u64 = @floatToInt(u64, (std.math.sin(@intToFloat(f32, a.value.*) * (std.math.pi * 2) / 255) + 1.0) * 127.0);
 
                 try self.pushStackI(val);
 
@@ -952,7 +952,7 @@ pub const VM = struct {
 
                 if (a != .value) return error.ValueMissing;
 
-                var val: u64 = @floatToInt(u64, (std.math.cos(@intToFloat(f32, a.value.*) * (std.math.pi * 2) / 255) + 1.0) * 127.0);
+                const val: u64 = @floatToInt(u64, (std.math.cos(@intToFloat(f32, a.value.*) * (std.math.pi * 2) / 255) + 1.0) * 127.0);
 
                 try self.pushStackI(val);
 
@@ -1066,7 +1066,7 @@ pub const VM = struct {
                     if (a.string.len == 0) {
                         try self.pushStackI(0);
                     } else {
-                        var val = @intCast(u64, a.string.*[0]);
+                        const val = @intCast(u64, a.string.*[0]);
                         try self.pushStackI(val);
                     }
                     return;
@@ -1198,13 +1198,13 @@ pub const VM = struct {
                 ops.deinit();
                 return error.InvalidAsm;
             }
-            var code: Operation.Code = try std.meta.intToEnum(Operation.Code, conts[parsePtr]);
+            const code: Operation.Code = try std.meta.intToEnum(Operation.Code, conts[parsePtr]);
             parsePtr += 1;
             if (parsePtr >= conts.len) {
                 ops.deinit();
                 return error.InvalidAsm;
             }
-            var kind = conts[parsePtr];
+            const kind = conts[parsePtr];
             parsePtr += 1;
 
             if (kind == 1) {
@@ -1212,7 +1212,7 @@ pub const VM = struct {
                     ops.deinit();
                     return error.InvalidAsm;
                 }
-                var value = @bitCast(u64, conts[parsePtr..][0..8].*);
+                const value = @bitCast(u64, conts[parsePtr..][0..8].*);
 
                 parsePtr += 8;
 
@@ -1233,7 +1233,7 @@ pub const VM = struct {
                     ops.deinit();
                     return error.InvalidAsm;
                 }
-                var value = conts[parsePtr];
+                const value = conts[parsePtr];
                 parsePtr += 1;
 
                 try ops.append(VM.Operation{ .code = code, .value = @intCast(u64, value) });

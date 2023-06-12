@@ -54,6 +54,7 @@ pub const GSWindowed = struct {
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
     init: bool = false,
+    lastFrameTime: f32 = 1 / 60,
 
     desk: desk.Desk,
 
@@ -303,7 +304,7 @@ pub const GSWindowed = struct {
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
 
         // setup vm data for update
-        shell.frameTime = shell.VM_TIME;
+        shell.frameTime = @floatToInt(u64, self.lastFrameTime * std.time.ns_per_s * 0.5);
         shell.vmsLeft = shell.vms;
 
         if (self.shell.vm != null) {
@@ -397,6 +398,8 @@ pub const GSWindowed = struct {
     }
 
     pub fn update(self: *Self, dt: f32) !void {
+        self.lastFrameTime = dt;
+
         for (self.notifs.items, 0..) |*notif, idx| {
             try notif.data.update(dt);
 

@@ -46,7 +46,7 @@ pub const EventManager = struct {
 
         const name: []const u8 = @typeName(T);
         for (self.subs.items) |sub| {
-            var call = @ptrCast(*const fn (T) bool, sub.calls);
+            const call = @ptrCast(*const fn (T) bool, sub.calls);
             if (std.mem.eql(u8, sub.name, name) and call(data)) {
                 break;
             }
