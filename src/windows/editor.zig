@@ -11,7 +11,7 @@ const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
 const shd = @import("../util/shader.zig");
 const sp = @import("../drawers/sprite2d.zig");
-const cc = @import("../c.zig");
+const c = @import("../c.zig");
 const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
@@ -229,31 +229,31 @@ pub const EditorData = struct {
         if (!down) return;
 
         switch (keycode) {
-            cc.GLFW_KEY_S => {
-                if ((mods & cc.GLFW_MOD_CONTROL) != 0) {
+            c.GLFW_KEY_S => {
+                if ((mods & c.GLFW_MOD_CONTROL) != 0) {
                     try self.save();
 
                     return;
                 }
             },
-            cc.GLFW_KEY_TAB => {
+            c.GLFW_KEY_TAB => {
                 try self.buffer.insertSlice(self.cursorIdx, "  ");
                 self.cursor.x += 4;
                 self.modified = true;
             },
-            cc.GLFW_KEY_ENTER => {
+            c.GLFW_KEY_ENTER => {
                 try self.buffer.insert(self.cursorIdx, '\n');
                 self.cursor.x = 0;
                 self.cursor.y += 1;
                 self.modified = true;
             },
-            cc.GLFW_KEY_DELETE => {
+            c.GLFW_KEY_DELETE => {
                 if (self.cursorIdx < self.buffer.items.len) {
                     _ = self.buffer.orderedRemove(self.cursorIdx);
                 }
                 self.modified = true;
             },
-            cc.GLFW_KEY_BACKSPACE => {
+            c.GLFW_KEY_BACKSPACE => {
                 if (self.cursorIdx > 0) {
                     var ch = self.buffer.orderedRemove(self.cursorIdx - 1);
                     self.cursor.x -= 1;
@@ -264,18 +264,18 @@ pub const EditorData = struct {
                 }
                 self.modified = true;
             },
-            cc.GLFW_KEY_LEFT => {
+            c.GLFW_KEY_LEFT => {
                 self.cursor.x -= 1;
                 if (self.cursor.x < 0) self.cursor.x = 0;
             },
-            cc.GLFW_KEY_RIGHT => {
+            c.GLFW_KEY_RIGHT => {
                 self.cursor.x += 1;
             },
-            cc.GLFW_KEY_UP => {
+            c.GLFW_KEY_UP => {
                 self.cursor.y -= 1;
                 if (self.cursor.y < 0) self.cursor.y = 0;
             },
-            cc.GLFW_KEY_DOWN => {
+            c.GLFW_KEY_DOWN => {
                 self.cursor.y += 1;
             },
             else => {},
