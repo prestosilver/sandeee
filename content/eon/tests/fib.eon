@@ -18,7 +18,7 @@ fn printfib(idx) {
     print(idx);
     print(": ");
     print(val);
-    print("\\n");
+    print("\n");
 
     return 0;
 }

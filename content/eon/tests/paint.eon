@@ -97,7 +97,7 @@ fn processClick(win, texture, w, h) {
     print(x);
     print(", ");
     print(y);
-    print("\\n");
+    print("\n");
 
     var win_w = _WindowWidth(win);
     var win_h = _WindowHeight(win);
@@ -136,7 +136,7 @@ fn processClick(win, texture, w, h) {
     print(x);
     print(", ");
     print(y);
-    print("\\n");
+    print("\n");
 
     return 1;
 }

@@ -22,7 +22,7 @@ fn main() {
     var arg = getArg(1);
     print("Size: ");
     print(fileSize(arg));
-    print("B\\n");
+    print("B\n");
 
     return 0;
 }

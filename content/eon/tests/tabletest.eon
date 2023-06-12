@@ -11,19 +11,19 @@ fn main() {
     print("_TableCreatae(2, 3) = ");
     var table = _TableCreate(2, 3);
     print(table);
-    print("\\n");
+    print("\n");
 
     print("_TablePut('lo', 'lol') = ");
     print(_TablePut(table, "lo", "lol"));
-    print("\\n");
+    print("\n");
     
     print("table = ");
     print(table);
-    print("\\n");
+    print("\n");
 
     print("_TableGet(table, 'lo') = ");
     print(_TableGet(table, "lo"));
-    print("\\n");
+    print("\n");
 
     return 0;
 }

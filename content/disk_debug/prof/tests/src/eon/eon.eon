@@ -22,7 +22,7 @@ fn single(char) {
     return 0;
 }
 
-fn setSize(string, length) {
+fn setSize() {
     asm "size";
     asm "ret";
 }
@@ -134,7 +134,7 @@ fn parseVar(buff, idx, stack, varTable) {
     if (word == "var") {
         word = nextWord(buff, idx);
 
-        stack = stack + 1;
+        if (stack != 255) stack = stack + 1;
 
         for (0; _StringLength(word) < 20; 0) {
             word = word & @0;
@@ -147,7 +147,7 @@ fn parseVar(buff, idx, stack, varTable) {
         next = nextWord(buff, idx);
 
         if (next == "=") {
-            stack = stack - 1;
+           if (stack != 255) stack = stack - 1;
 
             return parseExpression(buff, idx, stack, varTable);
         }
@@ -190,10 +190,10 @@ fn parseFlow(buff, idx, stack, varTable) {
             result = result & parseExpression(buff, idx, stack, varTable);
             word = nextWord(buff, idx);
             if (word == ")") {
-                stack = stack - 1;
+                if (stack != 255) stack = stack - 1;
                 result = result & "    jz if_" & flowidx & "_else\n";
 
-                result = result & parseBlock(buff, idx, stack, varTable);
+                result = result & parseBlock(buff, idx, stack, varTable, 0);
 
                 stack = oldstack;
 
@@ -204,7 +204,7 @@ fn parseFlow(buff, idx, stack, varTable) {
 
                 word = nextWord(buff, idx);
                 if (word == "else") {
-                    result = result & parseBlock(buff, idx, stack, varTable);
+                    result = result & parseBlock(buff, idx, stack, varTable, 0);
 
                     stack = oldstack;
                 } else {
@@ -228,7 +228,7 @@ fn parseFlow(buff, idx, stack, varTable) {
         if (@word != 59) error("for expected 'sc1' got " & word);
 
         result = result & "    disc 0\nfor_" & flowidx & "_loop:\n";
-        stack = stack - 1;
+        if (stack != 255) stack = stack - 1;
 
         result = result & parseExpression(buff, idx, stack, varTable);
 
@@ -237,16 +237,16 @@ fn parseFlow(buff, idx, stack, varTable) {
 
         result = result & "    jz for_" & flowidx & "_end\n";
 
-        stack = stack - 1;
+        if (stack != 255) stack = stack - 1;
 
         last = parseExpression(buff, idx, stack, varTable);
 
-        stack = stack - 1;
+        if (stack != 255) stack = stack - 1;
 
         word = nextWord(buff, idx);
         if (word != ")") error("for expected ')'");
 
-        result = result & parseBlock(buff, idx, stack, varTable);
+        result = result & parseBlock(buff, idx, stack, varTable, 0);
 
         result = result & last & "    disc 0\n    jmp for_" & flowidx & "_loop\nfor_" & flowidx & "_end:\n";
 
@@ -280,7 +280,7 @@ fn parseBuiltin(buff, idx, stack, varTable) {
     if (word == "disc") {
         result = parseExpression(buff, idx, stack, varTable);
 
-        stack = stack - 1;
+        if (stack != 255) stack = stack - 1;
 
         return result & "    disc 0\n";
     }
@@ -318,12 +318,12 @@ fn parseFactor(buff, idx, stack, varTable) {
     }
 
     if (_StringIsNum(word)) {
-        stack = stack + 1;
+        if (stack != 255) stack = stack + 1;
         return "    push " & word & "\n";
     }
 
     if ((@word == 34) && (_StringEndsWith(word, @34))) {
-        stack = stack + 1;
+        if (stack != 255) stack = stack + 1;
         return "    push " & word & "\n";
     }
 
@@ -340,7 +340,7 @@ fn parseFactor(buff, idx, stack, varTable) {
         index = stack - @variable;
         index = index + @"0";
 
-        stack = stack + 1;
+        if (stack != 255) stack = stack + 1;
 
         return "    copy " &  @index & "\n";
     }
@@ -360,7 +360,7 @@ fn parseFactor(buff, idx, stack, varTable) {
                 word = (@34) & word & (@34);
             }
 
-            stack = oldStack + 1;
+            if (oldStack != 255) stack = oldStack + 1;
 
             return result & "    call " & word & "\n";
         }
@@ -389,12 +389,17 @@ fn parseTerm(buff, idx, stack, varTable) {
             term = parseFactor(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    mul\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == "/") {
             term = parseFactor(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    div\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
+        } else if (word == "%") {
+            term = parseFactor(buff, idx, stack, varTable);
+            result = result & term;
+            result = result & "    mod\n";
+            if (stack != 255) stack = stack - 1;
         } else {
             done = 1;
             idx = dup(lastidx);
@@ -422,12 +427,12 @@ fn parseSum(buff, idx, stack, varTable) {
             term = parseTerm(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    sub\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == "+") {
             term = parseTerm(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    add\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else {
             done = 1;
             idx = dup(lastidx);
@@ -455,42 +460,42 @@ fn parseExpression(buff, idx, stack, varTable) {
             term = parseSum(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    eq\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == "<") {
             term = parseSum(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    lt\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == ">") {
             term = parseSum(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    gt\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == "=") {
             term = parseSum(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    set\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == "&") {
             term = parseSum(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    cat\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == "!=") {
             term = parseSum(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    eq\n    not\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == "&&") {
             term = parseSum(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    and\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else if (word == "||") {
             term = parseSum(buff, idx, stack, varTable);
             result = result & term;
             result = result & "    or\n";
-            stack = stack - 1;
+            if (stack != 255) stack = stack - 1;
         } else {
             done = 1;
             idx = dup(lastidx);
@@ -530,7 +535,7 @@ fn verifyStmtStack(stack, start) {
     if (stack == 255) return "";
 
     if (stack + 1 == start) {
-        stack = stack - 1;
+        if (stack != 255) stack = stack - 1;
         return "    disc 0\n";
     }
 
@@ -598,17 +603,12 @@ fn parseStmt(buff, idx, stack, varTable) {
     return "";
 }
 
-fn parseBlock(buff, idx, stack, varTable) {
+fn parseBlock(buff, idx, stack, varTable, function) {
     var old = dup(idx);
 
     var word = nextWord(buff, idx);
 
-    if (word != "{") {
-        idx = dup(old);
-
-        return parseStmt(buff, idx, stack, varTable) & "    disc 0\n";
-    }
-
+    var oldStack = dup(stack);
     var code = "";
     var done = 0;
     var stmtdata;
@@ -616,7 +616,15 @@ fn parseBlock(buff, idx, stack, varTable) {
     var stackCopy;
 
     var tableCopy = dup(varTable);
-    var oldStack = dup(stack);
+
+    if (word != "{") {
+        idx = dup(old);
+
+        var result = parseStmt(buff, idx, stack, varTable) & "    disc 0\n";
+        stack = oldStack;
+
+        return result;
+    }
 
     for (0; done == 0; 0) {
         lastidx = dup(idx);
@@ -645,9 +653,9 @@ fn parseBlock(buff, idx, stack, varTable) {
         }
     }
 
-    varTable = dup(tableCopy);
+    varTable = tableCopy;
 
-    if (stack != 255) {
+    if ((stack != 255) && (function == 0)) {
         for (0; stack > oldStack; stack = stack - 1) {
             code = code & "    disc 0\n";
         }
@@ -683,7 +691,7 @@ fn parseFunction(buff, idx) {
                 word = word & @0;
             }
 
-            stack = stack + 1;
+            if (stack != 255) stack = stack + 1;
 
             _TablePut(varTable, word, @stack);
 
@@ -699,7 +707,7 @@ fn parseFunction(buff, idx) {
 
     if (word != ")") error("Expected ')' got '" & word & "'");
 
-    var block = parseBlock(buff, idx, stack, varTable);
+    var block = parseBlock(buff, idx, stack, varTable, 1);
 
     if (block == "") return "";
 
@@ -763,9 +771,7 @@ fn split(conts, delim) {
 }
 
 fn remcomment(line) {
-   var start = split(line, "\/\/");
-
-   return start;
+   return split(line, @47 & @47);
 }
 
 fn preprocess(name, conts) {
@@ -803,6 +809,13 @@ fn main() {
     loadLib("/libs/asm.ell");
 
     var fileName = getArg(1);
+    var fullName = fileName & ".asm";
+    var outName = "out.eep";
+
+    if (getArg(2) != "") {
+       outName = getArg(2);
+    }
+
     var file = open(fileName);
 
     var buff = read(file, fileSize(fileName));
@@ -812,7 +825,7 @@ fn main() {
 
     close(file);
 
-    var asmTmp = createOpen(fileName & ".asm");
+    var asmTmp = createOpen(fullName);
 
     var conts = preprocess(fileName, buff);
 
@@ -820,9 +833,7 @@ fn main() {
 
     close(asmTmp);
 
-    var fullName = fileName & ".asm";
-
-    _asmFile(fullName, "out.eep");
+    _asmFile(fullName, outName);
 
     return 0;
 }

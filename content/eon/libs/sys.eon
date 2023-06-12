@@ -1,9 +1,9 @@
-fn getArg(idx) {
+fn getArg() {
     asm "sys 8";
     asm "ret";
 }
 
-fn print(str) {
+fn print() {
     asm "sys 0";
     asm "push 0";
     asm "ret";
@@ -13,45 +13,45 @@ fn quit() {
     asm "sys 1";
 }
 
-fn open(path) {
+fn open() {
     asm "sys 3";
     asm "ret";
 }
 
-fn createOpen(path) {
+fn createOpen() {
     asm "dup 0";
     asm "sys 2";
     asm "sys 3";
     asm "ret";
 }
 
-fn close(file) {
+fn close() {
     asm "sys 7";
     asm "push 0";
     asm "ret";
 }
 
-fn write(file, text) {
+fn write() {
     asm "sys 5";
     asm "push 0";
     asm "ret";
 }
 
-fn read(file, len) {
+fn read() {
     asm "sys 4";
     asm "ret";
 }
 
-fn time(file, len) {
+fn time() {
     asm "sys 9";
     asm "ret";
 }
 
-fn error(msg) {
+fn error() {
     asm "sys 18";
 }
 
-fn fileSize(file) {
+fn fileSize() {
     asm "sys 19";
     asm "ret";
 }

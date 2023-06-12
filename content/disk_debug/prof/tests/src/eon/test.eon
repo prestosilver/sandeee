@@ -1,8 +1,4 @@
-fn print() {
-    asm "sys 0";
-
-    return 0;
-}
+#include "/libs/inc/sys.eon"
 
 fn main() {
     var lol = 10;

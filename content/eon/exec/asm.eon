@@ -4,7 +4,7 @@ fn processArgs() {
     var file = 1;
     asm "sys 8";
 
-    if (file == 0) {
+    if (file == "") {
         asm "push \"Bad Argument\"";
         asm "sys 18";
     }
@@ -17,10 +17,17 @@ fn main() {
     setupLibLoad();
     loadLib("/libs/asm.ell");
 
+    var outFile = 2;
+    asm "sys 8";
+
+    if (outFile == "") {
+       outFile = "out.eep";
+    }
+
     // open input
     var infile = processArgs();
 
-    _asmFile(infile, "out.eep");
+    _asmFile(infile, outFile);
 
     return 0;
 }

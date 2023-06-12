@@ -12,7 +12,7 @@ fn setupLibLoad() {
     return 0;
 }
 
-fn loadLib(name) {
+fn loadLib() {
     asm "dup 0";
     asm "call \"libload\"";
     asm "ret";

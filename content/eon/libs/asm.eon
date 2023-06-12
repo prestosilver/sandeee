@@ -280,15 +280,15 @@ fn asmFile(inname, outname) {
     var outhandle = createOpen(outname);
 
     // get consts
-    print("READ: " & inname & "\\n");
+    print("READ: " & inname & "\n");
     processConsts(table, inhandlea);
     close(inhandlea);
 
     // create out file
-    print("ASM: " & inname & "\\n");
+    print("ASM: " & inname & "\n");
     processFile(table, inhandleb, outhandle);
 
-    print("Wrote: '" & outname & "'\\n");
+    print("Wrote: '" & outname & "'\n");
 
     close(inhandleb);
     close(outhandle);
