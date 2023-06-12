@@ -33,7 +33,6 @@ pub fn Drawer(comptime T: type) type {
 }
 
 pub const QueueEntry = struct {
-    update: bool,
     shader: shd.Shader,
     texture: []const u8,
     verts: va.VertArray,
@@ -44,14 +43,15 @@ pub const QueueEntry = struct {
     pub fn GetHash(entry: *QueueEntry) void {
         if (entry.hash != null) return;
 
-        var hash: u32 = 1235;
+        var hash: u8 = 128;
 
         var casted: []const u8 = std.mem.asBytes(&entry.scissor);
         for (casted) |ch|
             hash = ((hash << 5) +% hash) +% ch;
 
-        for (entry.verts.items()) |*item| {
-            hash = ((hash << 5) +% hash) +% item.getHash();
+        for (0..entry.verts.hashLen()) |idx| {
+            hash = ((hash << 5) +% hash) +% entry.verts.array.items[idx * 6].getHash();
+            hash = ((hash << 5) +% hash) +% entry.verts.array.items[idx * 6 + 1].getHash();
         }
 
         entry.hash = hash;
@@ -69,7 +69,6 @@ pub const SpriteBatch = struct {
 
     pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: *shd.Shader, pos: vecs.Vector3) !void {
         var entry = QueueEntry{
-            .update = true,
             .texture = drawer.texture,
             .verts = try drawer.getVerts(pos),
             .shader = shader.*,
@@ -83,43 +82,15 @@ pub const SpriteBatch = struct {
         defer sb.queueLock.unlock();
 
         entry.scissor = sb.scissor;
-        if (sb.queue.len == 0) {
-            entry.texture = try allocator.alloc.dupe(u8, entry.texture);
-            sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
-            sb.queue[sb.queue.len - 1] = entry.*;
-        } else {
-            var last = &sb.queue[sb.queue.len - 1];
-            if (std.mem.eql(u8, last.texture, entry.texture) and
-                last.shader.id == entry.shader.id and
-                entry.scissor != null and last.scissor != null and
-                rect.Rectangle.equal(last.scissor.?, entry.scissor.?))
-            {
-                try last.verts.array.appendSlice(entry.verts.items());
-                entry.verts.deinit();
-            } else {
-                entry.texture = try allocator.alloc.dupe(u8, entry.texture);
-                sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
-                sb.queue[sb.queue.len - 1] = entry.*;
-            }
-        }
+
+        entry.texture = try allocator.alloc.dupe(u8, entry.texture);
+        sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
+        sb.queue[sb.queue.len - 1] = entry.*;
     }
 
     pub fn render(sb: *SpriteBatch) !void {
         sb.queueLock.lock();
         defer sb.queueLock.unlock();
-
-        if (sb.queue.len != 0) {
-            for (sb.queue, 0..) |_, idx| {
-                if (idx >= sb.prevQueue.len) break;
-                if (sb.queue[idx].verts.items().len == sb.prevQueue[idx].verts.items().len) {
-                    sb.queue[idx].GetHash();
-                    sb.prevQueue[idx].GetHash();
-                    sb.queue[idx].update = (sb.queue[idx].hash != sb.prevQueue[idx].hash);
-                } else {
-                    sb.queue[idx].update = true;
-                }
-            }
-        }
 
         c.glEnable(c.GL_BLEND);
         c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
@@ -193,7 +164,7 @@ pub const SpriteBatch = struct {
             ctex = targTex.tex;
             cshader = entry.shader.id;
 
-            if (entry.update and entry.verts.items().len != 0) {
+            if (entry.verts.items().len != 0) {
                 c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, entry.verts.items().len * @sizeOf(va.Vert)), entry.verts.items().ptr, c.GL_STREAM_DRAW);
             }
 

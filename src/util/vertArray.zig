@@ -29,9 +29,9 @@ pub const Vert = struct {
         };
     }
 
-    pub inline fn getHash(v: Vert) u32 {
+    pub inline fn getHash(v: Vert) u8 {
         var casted = std.mem.asBytes(&[_]f32{ v.x, v.y, v.u, v.v, v.r, v.g, v.b });
-        var hash: u32 = 1235;
+        var hash: u8 = 128;
         for (casted) |ch|
             hash = ((hash << 5) +% hash) +% ch;
 
@@ -55,6 +55,10 @@ pub const VertArray = struct {
 
     pub inline fn items(va: VertArray) []const Vert {
         return va.array.items;
+    }
+
+    pub inline fn hashLen(va: VertArray) usize {
+        return va.array.items.len / 6;
     }
 
     pub inline fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {

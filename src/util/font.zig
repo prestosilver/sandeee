@@ -289,7 +289,6 @@ pub const Font = struct {
         }
 
         var entry = sb.QueueEntry{
-            .update = true,
             .texture = self.tex,
             .verts = vertarray,
             .shader = params.shader.*,

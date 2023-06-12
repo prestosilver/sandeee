@@ -165,7 +165,6 @@ pub const PopupData = struct {
 
     pub fn drawContents(self: *PopupData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
         try batch.addEntry(&.{
-            .update = true,
             .texture = "",
             .verts = try va.VertArray.init(),
             .shader = shader.*,

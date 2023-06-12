@@ -412,7 +412,6 @@ pub const WindowData = struct {
         bnds.h -= 40;
 
         try batch.addEntry(&.{
-            .update = true,
             .texture = "",
             .verts = try va.VertArray.init(),
             .shader = shader.*,
