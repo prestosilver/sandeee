@@ -25,7 +25,7 @@ const mailDirs = [_][]const u8{ "inbox", "spam" };
 var Version: std.builtin.Version = .{
     .major = 0,
     .minor = 0,
-    .patch = 0,
+    .patch = undefined,
 };
 
 pub fn build(b: *std.build.Builder) void {
