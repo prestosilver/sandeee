@@ -17,8 +17,9 @@ const eonExecFiles = [_][]const u8{ "eon", "stat", "player", "asm", "pix" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "heap", "table", "asm" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
-const pngImageFiles = [_][]const u8{ "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
+const pngImageFiles = [_][]const u8{ "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "wall2", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
+const internalSoundFiles = [_][]const u8{"bios-blip"};
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam" };
 
@@ -47,7 +48,7 @@ pub fn build(b: *std.build.Builder) void {
 
     var commit = b.exec(&.{ "git", "rev-list", "HEAD", "--count" });
 
-    Version.patch = std.fmt.parseInt(u32, commit[0..commit.len - 1], 0) catch 0;
+    Version.patch = std.fmt.parseInt(u32, commit[0 .. commit.len - 1], 0) catch 0;
 
     const versionSuffix = switch (exe.optimize) {
         .Debug => "-dbg",
@@ -202,6 +203,15 @@ pub fn build(b: *std.build.Builder) void {
         var eraf = std.fmt.allocPrint(b.allocator, "src/images/{s}.eia", .{file}) catch "";
 
         var step = conv.ConvertStep.create(b, image.convert, pngf, eraf);
+
+        write_step.step.dependOn(&step.step);
+    }
+
+    for (internalSoundFiles) |file| {
+        var wavf = std.fmt.allocPrint(b.allocator, "content/audio/{s}.wav", .{file}) catch "";
+        var eraf = std.fmt.allocPrint(b.allocator, "src/sounds/{s}.era", .{file}) catch "";
+
+        var step = conv.ConvertStep.create(b, sound.convert, wavf, eraf);
 
         write_step.step.dependOn(&step.step);
     }

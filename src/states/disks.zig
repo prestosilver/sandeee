@@ -10,12 +10,13 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
+const audio = @import("../util/audio.zig");
 
 const c = @import("../c.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
-    const VERSION = "0.0.3";
+    const VERSION = "0.0.4";
     const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
 
     face: *font.Font,
@@ -24,6 +25,8 @@ pub const GSDisks = struct {
     sb: *sb.SpriteBatch,
     logo_sprite: sp.Sprite,
     disk: *?[]u8,
+    blipSound: *audio.Sound,
+    audioMan: *audio.Audio,
 
     remaining: f32 = 3,
     sel: usize = 0,
@@ -186,14 +189,17 @@ pub const GSDisks = struct {
         switch (key) {
             c.GLFW_KEY_ENTER => {
                 self.remaining = 0;
+                try self.audioMan.playSound(self.blipSound.*);
             },
             c.GLFW_KEY_DOWN => {
                 if (self.sel < self.disks.items.len - 1)
                     self.sel += 1;
+                try self.audioMan.playSound(self.blipSound.*);
             },
             c.GLFW_KEY_UP => {
                 if (self.sel != 0)
                     self.sel -= 1;
+                try self.audioMan.playSound(self.blipSound.*);
             },
             else => {
                 if (c.glfwGetKeyName(key, 0) == null) return false;
@@ -201,6 +207,7 @@ pub const GSDisks = struct {
                     if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
                         self.remaining = 0;
+                        try self.audioMan.playSound(self.blipSound.*);
                     }
                 }
             },

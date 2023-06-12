@@ -36,6 +36,7 @@ const worker = @import("loaders/worker.zig");
 // op math
 const vecs = @import("math/vecs.zig");
 const rect = @import("math/rects.zig");
+const col = @import("math/colors.zig");
 
 // drawers
 const wall = @import("drawers/wall2d.zig");
@@ -74,6 +75,8 @@ const biosImage = @embedFile("images/bios.eia");
 const sadImage = @embedFile("images/sad.eia");
 const errorImage = @embedFile("images/error.eia");
 
+const blipSoundData = @embedFile("sounds/bios-blip.era");
+
 const shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fragShader, .kind = c.GL_FRAGMENT_SHADER },
     shd.ShaderFile{ .contents = vertShader, .kind = c.GL_VERTEX_SHADER },
@@ -100,6 +103,10 @@ var currentState: systemEvs.State = .Disks;
 // create loader
 var loader_queue: std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)) = undefined;
 var loader = worker.WorkerContext{ .queue = &loader_queue };
+
+// create some fonts
+var biosFace: font.Font = undefined;
+var mainFace: font.Font = undefined;
 
 // shaders
 var font_shader: shd.Shader = undefined;
@@ -140,9 +147,24 @@ const full_quad = [_]c.GLfloat{
     1.0,  1.0,  0.0,
 };
 
+var finalFps: u32 = 60;
+
 pub fn blit() !void {
     // actual gl calls start here
     ctx.makeCurrent();
+
+    if (@import("builtin").mode == .Debug and biosFace.setup) {
+        var text = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{finalFps});
+        defer allocator.alloc.free(text);
+
+        try biosFace.draw(.{
+            .batch = &sb,
+            .text = text,
+            .shader = &font_shader,
+            .pos = vecs.newVec2(0, 0),
+            .color = col.newColor(1, 1, 1, 1),
+        });
+    }
 
     if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
         // for when minimized render nothing
@@ -440,18 +462,17 @@ pub fn main() anyerror!void {
     // setup the texture manager
     textureManager = texMan.TextureManager.init();
     batch.textureManager = &textureManager;
+    audioman = try audio.Audio.init();
 
     // init graphics
     ctx = try gfx.init("SandEEE");
     gfx.gContext = &ctx;
 
-    // create some fonts
-    var biosFace: font.Font = undefined;
-    var mainFace: font.Font = undefined;
-
     // setup fonts deinit
     biosFace.setup = false;
     mainFace.setup = false;
+
+    var blipSound: audio.Sound = audio.Sound.init(blipSoundData);
 
     // create the loaders queue
     loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
@@ -493,8 +514,6 @@ pub fn main() anyerror!void {
     try textureManager.putMem("sad", sadImage);
     try textureManager.putMem("error", errorImage);
 
-    audioman = try audio.Audio.init();
-
     // disks state
     var gsDisks = diskState.GSDisks{
         .sb = &sb,
@@ -502,6 +521,8 @@ pub fn main() anyerror!void {
         .font_shader = &font_shader,
         .face = &biosFace,
         .disk = &disk,
+        .blipSound = &blipSound,
+        .audioMan = &audioman,
         .logo_sprite = .{
             .texture = "bios",
             .data = sprite.SpriteData.new(
@@ -652,8 +673,13 @@ pub fn main() anyerror!void {
     // setup state machine
     var prev = currentState;
 
+    // fps tracker stats
+    var fps: usize = 0;
+    var timer: f64 = 0;
+
     // main loop
     while (gfx.poll(&ctx)) {
+
         // get the current state
         var state = gameStates.getPtr(prev);
 
@@ -663,10 +689,17 @@ pub fn main() anyerror!void {
         // pause the game on minimize
         if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) == 0) {
             // update the game state
-            try state.update(@floatCast(f32, currentTime - lastFrameTime));
+            try state.update(1.0 / @max(@as(f32, 1.0), @intToFloat(f32, finalFps)));
 
             // get tris
             try state.draw(gfx.gContext.size);
+        }
+
+        timer += currentTime - lastFrameTime;
+        if (timer > 1) {
+            finalFps = @floatToInt(u32, @intToFloat(f64, fps) / timer);
+            fps = 0;
+            timer = 0;
         }
 
         // the state changed
@@ -687,6 +720,7 @@ pub fn main() anyerror!void {
         } else {
             // render this is in else to fix single frame bugs
             try blit();
+            fps += 1;
 
             // update the time
             lastFrameTime = currentTime;
