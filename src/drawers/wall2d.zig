@@ -42,6 +42,16 @@ pub const WallData = struct {
             .Color => {
                 return result;
             },
+            .Fill => {
+                var wRatio: f32 = self.dims.x / size.x;
+                var hRatio: f32 = self.dims.y / size.y;
+                var maxRatio: f32 = @max(wRatio, hRatio);
+
+                pos.w = maxRatio * size.x;
+                pos.h = maxRatio * size.y;
+                pos.x = (self.dims.x - pos.w) / 2;
+                pos.y = (self.dims.y - pos.h) / 2;
+            },
             .Tile => {
                 pos.w = self.dims.x;
                 pos.h = self.dims.y;

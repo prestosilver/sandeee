@@ -269,6 +269,10 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
             wallpaper.data.mode = .Stretch;
         }
 
+        if (std.ascii.eqlIgnoreCase(event.value, "fill")) {
+            wallpaper.data.mode = .Fill;
+        }
+
         return true;
     }
 
