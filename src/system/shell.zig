@@ -199,57 +199,52 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var folderlen = folder.name.len;
         var cmdeep = try std.fmt.allocPrint(allocator.alloc, "{s}.eep", .{cmd});
         defer allocator.alloc.free(cmdeep);
 
-        for (folder.contents.items, 0..) |_, idx| {
-            var item = folder.contents.items[idx];
+        if (try folder.getFile(cmd)) |file| {
+            var line = std.ArrayList(u8).init(allocator.alloc);
+            defer line.deinit();
 
-            if (std.mem.eql(u8, cmd, item.name[folderlen..])) {
-                var line = std.ArrayList(u8).init(allocator.alloc);
-                defer line.deinit();
+            if ((try file.read(null)).len > 3 and std.mem.eql(u8, (try file.read(null))[0..4], ASM_HEADER)) {
+                return try self.runAsm(folder, cmd, param);
+            }
 
-                if ((try item.read(null)).len > 3 and std.mem.eql(u8, (try item.read(null))[0..4], ASM_HEADER)) {
-                    return try self.runAsm(folder, cmd, param);
-                }
-
-                if (std.mem.endsWith(u8, item.name, ".esh")) {
-                    for (try item.read(null)) |char| {
-                        if (char == '\n') {
-                            var res = try self.runLine(line.items);
-                            defer res.data.deinit();
-                            try result.data.appendSlice(res.data.items);
-                            if (result.data.items.len != 0)
-                                if (result.data.getLast() != '\n') try result.data.append('\n');
-                            try line.resize(0);
-                        } else {
-                            try line.append(char);
-                        }
+            if (std.mem.endsWith(u8, file.name, ".esh")) {
+                for (try file.read(null)) |char| {
+                    if (char == '\n') {
+                        var res = try self.runLine(line.items);
+                        defer res.data.deinit();
+                        try result.data.appendSlice(res.data.items);
+                        if (result.data.items.len != 0)
+                            if (result.data.getLast() != '\n') try result.data.append('\n');
+                        try line.resize(0);
+                    } else {
+                        try line.append(char);
                     }
-                    var res = try self.runLine(line.items);
-                    defer res.data.deinit();
-                    try result.data.appendSlice(res.data.items);
-                    if (result.data.items.len != 0 and result.data.getLast() != '\n') try result.data.append('\n');
-
-                    return result;
                 }
+                var res = try self.runLine(line.items);
+                defer res.data.deinit();
+                try result.data.appendSlice(res.data.items);
+                if (result.data.items.len != 0 and result.data.getLast() != '\n') try result.data.append('\n');
 
-                return error.InvalidFileType;
+                return result;
             }
 
-            if (std.mem.eql(u8, cmdeep, item.name[folderlen..])) {
-                var line = std.ArrayList(u8).init(allocator.alloc);
-                defer line.deinit();
+            result.data.deinit();
+            return error.InvalidFileType;
+        } else if (try folder.getFile(cmdeep)) |file| {
+            var line = std.ArrayList(u8).init(allocator.alloc);
+            defer line.deinit();
 
-                var cont = try item.read(null);
+            var cont = try file.read(null);
 
-                if (cont.len > 3 and std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
-                    return try self.runAsm(folder, cmdeep, param);
-                }
-
-                return error.InvalidFileType;
+            if (cont.len > 3 and std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
+                return try self.runAsm(folder, cmdeep, param);
             }
+
+            result.data.deinit();
+            return error.InvalidFileType;
         }
 
         result.data.deinit();
