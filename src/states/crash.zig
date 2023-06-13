@@ -77,6 +77,7 @@ pub const GSCrash = struct {
     pub fn update(_: *Self, _: f32) !void {}
 
     pub fn keypress(_: *Self, _: c_int, _: c_int, _: bool) !bool {
+        c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
         return false;
     }
 

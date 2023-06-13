@@ -163,6 +163,9 @@ pub const GSInstall = struct {
             c.GLFW_KEY_MINUS => {
                 try self.diskName.append('-');
             },
+            c.GLFW_KEY_SPACE => {
+                try self.diskName.append('_');
+            },
             c.GLFW_KEY_ENTER => {
                 switch (self.status) {
                     .Naming => {
