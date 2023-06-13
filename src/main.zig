@@ -644,6 +644,9 @@ pub fn main() anyerror!void {
         .sb = &sb,
         .font_shader = &font_shader,
         .face = &biosFace,
+        .blipSound = &blipSound,
+        .selectSound = &selectSound,
+        .audioMan = &audioman,
     };
 
     // done states setup

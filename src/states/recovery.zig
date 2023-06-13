@@ -9,6 +9,7 @@ const allocator = @import("../util/allocator.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const files = @import("../system/files.zig");
+const audio = @import("../util/audio.zig");
 
 const c = @import("../c.zig");
 
@@ -21,6 +22,9 @@ pub const GSRecovery = struct {
     sb: *batch.SpriteBatch,
     face: *font.Font,
     font_shader: *shd.Shader,
+    blipSound: *audio.Sound,
+    selectSound: *audio.Sound,
+    audioMan: *audio.Audio,
 
     sel: usize = 0,
     disks: std.ArrayList([]const u8) = undefined,
@@ -175,6 +179,7 @@ pub const GSRecovery = struct {
                 if (self.sub_sel) |sub_sel| {
                     if (sub_sel == UPDATE_MODES.len - 1) {
                         self.sub_sel = null;
+                        try self.audioMan.playSound(self.selectSound.*);
 
                         return false;
                     }
@@ -183,6 +188,7 @@ pub const GSRecovery = struct {
                         0 => {
                             try files.Folder.recoverDisk(self.disks.items[self.sel][2..]);
                             self.status = "Reinstalled";
+                            try self.audioMan.playSound(self.selectSound.*);
                         },
                         1 => {
                             var path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
@@ -202,8 +208,12 @@ pub const GSRecovery = struct {
                                     .targetState = .Disks,
                                 });
 
+                                try self.audioMan.playSound(self.selectSound.*);
+
                                 return false;
                             }
+
+                            try self.audioMan.playSound(self.selectSound.*);
                         },
                         else => {},
                     }
@@ -216,44 +226,61 @@ pub const GSRecovery = struct {
                         .targetState = .Disks,
                     });
 
+                    try self.audioMan.playSound(self.selectSound.*);
+
                     return false;
                 }
 
                 self.sub_sel = 0;
+
+                try self.audioMan.playSound(self.selectSound.*);
             },
             c.GLFW_KEY_DOWN => {
                 if (self.sub_sel) |sub_sel| {
-                    if (sub_sel < UPDATE_MODES.len - 1)
+                    if (sub_sel < UPDATE_MODES.len - 1) {
                         self.sub_sel.? += 1;
+
+                        try self.audioMan.playSound(self.blipSound.*);
+                    }
 
                     return false;
                 }
 
-                if (self.sel < self.disks.items.len - 1)
+                if (self.sel < self.disks.items.len - 1) {
                     self.sel += 1;
+                    try self.audioMan.playSound(self.blipSound.*);
+                }
             },
             c.GLFW_KEY_UP => {
                 if (self.sub_sel) |sub_sel| {
-                    if (sub_sel != 0)
+                    if (sub_sel != 0) {
                         self.sub_sel.? -= 1;
+                        try self.audioMan.playSound(self.blipSound.*);
+                    }
 
                     return false;
                 }
 
-                if (self.sel != 0)
+                if (self.sel != 0) {
                     self.sel -= 1;
+                    try self.audioMan.playSound(self.blipSound.*);
+                }
             },
             else => {
                 if (c.glfwGetKeyName(key, 0) == null) return false;
                 if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == 'X') {
                     if (self.sub_sel) |_| {
                         self.sub_sel = null;
+
+                        try self.audioMan.playSound(self.selectSound.*);
                         return false;
                     }
 
                     events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
+
+                    try self.audioMan.playSound(self.selectSound.*);
 
                     return false;
                 }
@@ -264,6 +291,8 @@ pub const GSRecovery = struct {
                     } else if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
                         self.sub_sel = 0;
+
+                        try self.audioMan.playSound(self.selectSound.*);
                     }
                 }
             },
