@@ -1,3 +1,5 @@
+const std = @import("std");
+
 pub const Color = struct {
     r: f32,
     g: f32,
@@ -13,6 +15,17 @@ pub const Color = struct {
         result.a = a.a + (b.a - a.a) * pc;
 
         return result;
+    }
+
+    pub fn contrast(c: Color) Color {
+        const gamma = 2.2;
+        const L = 0.2126 * std.math.pow(f32, c.r, gamma) + 0.7152 * std.math.pow(f32, c.g, gamma) + 0.0722 * std.math.pow(f32, c.b, gamma);
+
+        if (L > std.math.pow(f32, 0.5, gamma)) {
+            return newColor(0, 0, 0, 1);
+        } else {
+            return newColor(1, 1, 1, 1);
+        }
     }
 };
 

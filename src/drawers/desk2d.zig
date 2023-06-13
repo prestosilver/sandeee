@@ -190,10 +190,7 @@ pub const DeskData = struct {
 
     pub fn addText(_: *DeskData, batch: *sb.SpriteBatch, font_shader: *shd.Shader, font: *fnt.Font) !void {
         var position = vecs.newVec2(0, 0);
-        var textColor = gfx.gContext.color;
-        textColor.r = 1.0 - textColor.r;
-        textColor.g = 1.0 - textColor.g;
-        textColor.b = 1.0 - textColor.b;
+        var textColor = gfx.gContext.color.contrast();
 
         for (files.home.subfolders.items) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
