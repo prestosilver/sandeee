@@ -20,7 +20,10 @@ const CMDData = struct {
     const Self = @This();
 
     bt: []u8,
-    text: std.ArrayList(u8),
+    inputBuffer: [256]u8 = undefined,
+    inputIdx: u8 = 0,
+    history: std.ArrayList([]const u8),
+    historyIdx: usize = 0,
     shell: shell.Shell,
     bot: bool = false,
 
@@ -45,7 +48,7 @@ const CMDData = struct {
         if (self.shell.vm == null) {
             var shellPrompt = self.shell.getPrompt();
             defer allocator.alloc.free(shellPrompt);
-            var prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.text.items });
+            var prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.inputBuffer[0..self.inputIdx] });
             defer allocator.alloc.free(prompt);
             try font.draw(.{
                 .batch = batch,
@@ -109,7 +112,10 @@ const CMDData = struct {
         }
 
         if (code == '\n') return;
-        try self.text.append(@intCast(u8, code));
+        if (self.inputIdx < 255) {
+            self.inputBuffer[self.inputIdx] = @intCast(u8, code);
+            self.inputIdx += 1;
+        }
         _ = mods;
     }
 
@@ -122,24 +128,27 @@ const CMDData = struct {
 
         switch (code) {
             c.GLFW_KEY_ENTER => {
+                if (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.inputBuffer[0..self.inputIdx]))
+                    try self.history.append(try allocator.alloc.dupe(u8, self.inputBuffer[0..self.inputIdx]));
+
                 var shellPrompt = self.shell.getPrompt();
                 defer allocator.alloc.free(shellPrompt);
-                var prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shellPrompt, self.text.items });
+                var prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shellPrompt, self.inputBuffer[0..self.inputIdx] });
                 defer allocator.alloc.free(prompt);
                 var start = self.bt.len;
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + prompt.len);
                 std.mem.copy(u8, self.bt[start .. start + prompt.len], prompt);
 
-                var command = self.text.items;
+                var command = self.inputBuffer[0..self.inputIdx];
                 events.EventManager.instance.sendEvent(systemEvs.EventRunCmd{
                     .cmd = command,
                 });
 
-                if (std.mem.indexOf(u8, self.text.items, " ")) |size| {
+                if (std.mem.indexOf(u8, command, " ")) |size| {
                     command.len = size;
                 }
 
-                var al = self.shell.run(command, self.text.items) catch |err| {
+                var al = self.shell.run(command, self.inputBuffer[0..self.inputIdx]) catch |err| {
                     const msg = @errorName(err);
 
                     start = self.bt.len;
@@ -150,7 +159,8 @@ const CMDData = struct {
                     self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + msg.len);
                     std.mem.copy(u8, self.bt[start..], msg);
 
-                    self.text.clearAndFree();
+                    self.inputIdx = 0;
+                    self.historyIdx = self.history.items.len;
                     return;
                 };
 
@@ -168,10 +178,30 @@ const CMDData = struct {
                 }
                 al.data.deinit();
 
-                self.text.clearAndFree();
+                self.inputIdx = 0;
+                self.historyIdx = self.history.items.len;
+            },
+            c.GLFW_KEY_UP => {
+                if (self.historyIdx > 0) {
+                    self.historyIdx -= 1;
+                    self.inputIdx = @intCast(u8, self.history.items[self.historyIdx].len);
+                    @memcpy(self.inputBuffer[0..self.inputIdx], self.history.items[self.historyIdx]);
+                }
+            },
+            c.GLFW_KEY_DOWN => {
+                if (self.historyIdx < self.history.items.len) {
+                    self.historyIdx += 1;
+                    if (self.historyIdx == self.history.items.len) {
+                        self.inputIdx = 0;
+                    } else {
+                        self.inputIdx = @intCast(u8, self.history.items[self.historyIdx].len);
+                        @memcpy(self.inputBuffer[0..self.inputIdx], self.history.items[self.historyIdx]);
+                    }
+                }
             },
             c.GLFW_KEY_BACKSPACE => {
-                _ = self.text.popOrNull();
+                if (self.inputIdx != 0)
+                    self.inputIdx -= 1;
             },
             else => {},
         }
@@ -183,11 +213,19 @@ const CMDData = struct {
     pub fn focus(_: *Self) !void {}
 
     pub fn deinit(self: *Self) !void {
+        // free backtrace
         allocator.alloc.free(self.bt);
-        self.text.deinit();
-        if (self.shell.vm) |*vm| {
-            try vm.deinit();
+
+        // free vm
+        if (self.shell.vm) |*vm| try vm.deinit();
+
+        // free history
+        for (self.history.items) |item| {
+            allocator.alloc.free(item);
         }
+        self.history.deinit();
+
+        // free self
         allocator.alloc.destroy(self);
     }
 };
@@ -196,8 +234,8 @@ pub fn new() !win.WindowContents {
     const self = try allocator.alloc.create(CMDData);
 
     self.* = .{
-        .text = std.ArrayList(u8).init(allocator.alloc),
         .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh\x82\x82\x82l", .{}),
+        .history = try std.ArrayList([]const u8).initCapacity(allocator.alloc, 32),
         .shell = .{
             .root = files.home,
             .vm = null,
