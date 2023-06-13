@@ -76,6 +76,7 @@ const sadImage = @embedFile("images/sad.eia");
 const errorImage = @embedFile("images/error.eia");
 
 const blipSoundData = @embedFile("sounds/bios-blip.era");
+const selectSoundData = @embedFile("sounds/bios-select.era");
 
 const shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = fragShader, .kind = c.GL_FRAGMENT_SHADER },
@@ -473,6 +474,7 @@ pub fn main() anyerror!void {
     mainFace.setup = false;
 
     var blipSound: audio.Sound = audio.Sound.init(blipSoundData);
+    var selectSound: audio.Sound = audio.Sound.init(selectSoundData);
 
     // create the loaders queue
     loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
@@ -522,6 +524,7 @@ pub fn main() anyerror!void {
         .face = &biosFace,
         .disk = &disk,
         .blipSound = &blipSound,
+        .selectSound = &selectSound,
         .audioMan = &audioman,
         .logo_sprite = .{
             .texture = "bios",

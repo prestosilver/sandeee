@@ -26,6 +26,7 @@ pub const GSDisks = struct {
     logo_sprite: sp.Sprite,
     disk: *?[]u8,
     blipSound: *audio.Sound,
+    selectSound: *audio.Sound,
     audioMan: *audio.Audio,
 
     remaining: f32 = 3,
@@ -97,6 +98,7 @@ pub const GSDisks = struct {
         if (self.auto) self.remaining -= dt;
 
         if (self.remaining <= 0) {
+            try self.audioMan.playSound(self.selectSound.*);
             self.disk.* = null;
 
             if (self.disks.items.len > 1) {
@@ -189,17 +191,18 @@ pub const GSDisks = struct {
         switch (key) {
             c.GLFW_KEY_ENTER => {
                 self.remaining = 0;
-                try self.audioMan.playSound(self.blipSound.*);
             },
             c.GLFW_KEY_DOWN => {
-                if (self.sel < self.disks.items.len - 1)
+                if (self.sel < self.disks.items.len - 1) {
                     self.sel += 1;
-                try self.audioMan.playSound(self.blipSound.*);
+                    try self.audioMan.playSound(self.blipSound.*);
+                }
             },
             c.GLFW_KEY_UP => {
-                if (self.sel != 0)
+                if (self.sel != 0) {
                     self.sel -= 1;
-                try self.audioMan.playSound(self.blipSound.*);
+                    try self.audioMan.playSound(self.blipSound.*);
+                }
             },
             else => {
                 if (c.glfwGetKeyName(key, 0) == null) return false;
@@ -207,7 +210,6 @@ pub const GSDisks = struct {
                     if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
                         self.remaining = 0;
-                        try self.audioMan.playSound(self.blipSound.*);
                     }
                 }
             },
