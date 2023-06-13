@@ -61,9 +61,9 @@ float onOff(float a, float b, float c) {
 }
 
 float displace(vec2 look) {
-    float y = (look.y-mod(time/4.,1.));
+    float y = (look.y-mod(time/8.,1.));
     float window = 1./(1.+50.*y*y);
-    return sin(look.y*20. + time)/80.*onOff(4.,2.,.8)*(1.+cos(time*60.))*window;
+    return sin(look.y*20. + time/2.)/80.*onOff(4.,2.,.8)*(1.+cos(time*30.))*window;
 }
 
 float luma(vec3 color) {
@@ -118,7 +118,7 @@ void main()
     float d = length(xy);
     xy = mix(xy, distort(xy, vec2(1)), step(d, 1.5));
 
-    xy.x += displace(xy) * 0.125;
+    xy.x += displace(xy) * 0.0625;
 
     float bar = clamp(exp(1.0 - mod(((xy.y + 1) / 2) + time*0.2, 1.)), 1.0, 1.2) - 0.2;
 
