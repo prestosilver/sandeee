@@ -299,6 +299,18 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
         return true;
     }
 
+    if (std.mem.eql(u8, event.setting, "sound_volume")) {
+        audioman.volume = @intToFloat(f32, std.fmt.parseInt(i32, event.value, 0) catch 100) / 100.0;
+
+        return true;
+    }
+
+    if (std.mem.eql(u8, event.setting, "sound_muted")) {
+        audioman.muted = std.ascii.eqlIgnoreCase("yes", event.value);
+
+        return true;
+    }
+
     if (std.mem.eql(u8, event.setting, "crt_shader")) {
         var val: c_int = if (std.ascii.eqlIgnoreCase("yes", event.value)) 1 else 0;
 

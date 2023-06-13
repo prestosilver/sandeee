@@ -32,6 +32,8 @@ pub const Audio = struct {
     next: usize = 0,
     device: ?*c.ALCdevice,
     context: ?*c.ALCcontext,
+    volume: f32 = 1.0,
+    muted: bool = false,
 
     pub fn init() !Audio {
         var devicename = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
@@ -53,11 +55,14 @@ pub const Audio = struct {
     }
 
     pub fn playSound(self: *Audio, snd: Sound) !void {
+        if (self.muted) return;
+
         var sourceState: c.ALint = 0;
 
         c.alGetSourcei(self.sources[self.next], c.AL_SOURCE_STATE, &sourceState);
         if (sourceState != c.AL_PLAYING) {
             c.alSourcei(self.sources[self.next], c.AL_BUFFER, @intCast(c_int, snd.buffer));
+            c.alSourcef(self.sources[self.next], c.AL_GAIN, self.volume);
 
             c.alSourcePlay(self.sources[self.next]);
         }
