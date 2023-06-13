@@ -37,6 +37,12 @@ main:
     copy 1
     disc 2
     sub
+    push "\n\n--------\n"
+    sys 0
+    sys 0
+    push "ms\n"
+    sys 0
+    push "--------\n"
     sys 0
     sys 1
 
