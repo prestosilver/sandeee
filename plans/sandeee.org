@@ -2,62 +2,47 @@
 #+AUTHOR: prestosilver
 
 * TODO Programming game
-** TODO Windows
-*** TODO System files 'n stuff
-**** TODO Pseudo files
-***** TODO Implement
-***** TODO win/
-***** TODO gfx/
-***** TODO snd/
-*** TODO Settings & explore
+** DONE Windows
+*** DONE System files 'n stuff
+**** DONE Pseudo files
+***** DONE Implement
+***** DONE win/
+***** DONE gfx/
+***** DONE snd/
+*** DONE Settings & explore
 **** DONE design
-
-problaby based of win95 ofc
-
-**** TODO implement
+**** DONE implement
 ***** DONE Setup drawing
-CLOSED: [2023-01-15 Sun 19:48]
-
-***** TODO selection
-*** TODO Email
+***** DONE selection
+*** KILL Email
 **** DONE start
 **** DONE write file creator
 **** DONE parser
-CLOSED: [2023-01-20 Fri 19:19]
-
-**** TODO Word wrap
-*** TODO Editor
+**** DONE Word wrap
+*** DONE Editor
 **** DONE start
-**** TODO mouse
-** TODO Multiple languages
+**** DONE mouse
+** DONE Multiple languages
 *** DONE scripting
-CLOSED: [2023-01-20 Fri 15:32]
-
-*** TODO vm
-** TODO Challenges
+*** DONE vm
+** DONE Challenges
 *** DONE Hello World ofc
-** TODO Redo start menu
-** TODO C clone
+** KILL Redo start menu
+** DONE C clone
 *** DONE Start
 *** DONE else statements
-CLOSED: [2023-01-20 Fri 15:32]
-
 *** DONE VM support
-CLOSED: [2023-01-20 Fri 19:30]
-
-*** TODO Self host
-** TODO Assembler
-*** TODO Figure out string stuff
-** TODO Boot screen?
+*** DONE Self host
+** DONE Assembler
+*** DONE Figure out string stuff
+** DONE Boot screen?
 * DONE Fix name
-CLOSED: [2023-01-20 Fri 19:30]
-
-* TODO Bar
-** TODO Redo Logo
-** TODO Minimize
-** TODO Text
-* TODO resources
+* DONE Bar
+** DONE Redo Logo
+** DONE Minimize
+** DONE Text
+* DONE resources
 ** DONE Move images to disk
-** TODO Move font to disk
-*** TODO .eef files
-*** TODO remove freetype
+** DONE Move font to disk
+*** DONE .eef files
+*** DONE remove freetype
