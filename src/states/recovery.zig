@@ -100,7 +100,7 @@ pub const GSRecovery = struct {
         _ = size;
         var y: f32 = 100;
 
-        var titleLine = try std.fmt.allocPrint(allocator.alloc, "RecoverEEE v_{s}", .{VERSION});
+        var titleLine = try std.fmt.allocPrint(allocator.alloc, "Recover\x82\x82\x82 v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
             .batch = self.sb,
