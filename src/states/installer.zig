@@ -29,7 +29,7 @@ pub const GSInstall = struct {
     const Settings = [_][3][]const u8{
         .{ "What is the current Hour", "hour_value", "00" },
         .{ "What is the current Minute", "minute_value", "00" },
-        .{ "Do you like \x82\x82\x82 ", "evil_value", "Yes" },
+        .{ "Do you like \x82\x82\x82", "evil_value", "Yes" },
     };
     const MAX_VALUE_LEN = 128;
 

@@ -246,8 +246,6 @@ pub const Font = struct {
             if (params.maxlines != null)
                 params.batch.scissor.?.h =
                     @max(@as(f32, 0), @min(params.batch.scissor.?.h, params.pos.y + ((@intToFloat(f32, params.maxlines.?) - @intToFloat(f32, params.curLine)) * self.size) - params.batch.scissor.?.y));
-        } else {
-            // TODO: wrap
         }
 
         var vertarray = try va.VertArray.init();

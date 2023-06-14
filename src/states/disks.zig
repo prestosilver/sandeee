@@ -17,7 +17,7 @@ const c = @import("../c.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
-    const VERSION = "0.0.7";
+    const VERSION = "0.1.0";
     const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
 
     face: *font.Font,
