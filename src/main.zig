@@ -510,6 +510,10 @@ pub fn main() anyerror!void {
     // start setup states
     ctx.makeCurrent();
 
+    // enable crt by default
+    crt_shader.setInt("crt_enable", 1);
+    crt_shader.setInt("dither_enable", 1);
+
     // setup render texture for shaders
     c.glGenFramebuffers(1, &framebufferName);
     c.glGenBuffers(1, &quad_VertexArrayID);
