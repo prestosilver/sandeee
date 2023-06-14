@@ -1,4 +1,5 @@
 const std = @import("std");
+const options = @import("options");
 const shd = @import("../util/shader.zig");
 const sb = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
@@ -16,7 +17,7 @@ const c = @import("../c.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
-    const VERSION = "0.0.4";
+    const VERSION = "0.0.7";
     const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
 
     face: *font.Font,
@@ -79,14 +80,15 @@ pub const GSDisks = struct {
 
         try self.disks.resize(@min(self.disks.items.len, DISK_LIST.len));
 
-        try self.disks.append("+ New Disk");
+        try self.disks.append("N New Disk");
         if (self.disks.items.len > 1)
             try self.disks.append("R Recovery");
+        try self.disks.append("X Quit");
     }
 
     pub fn deinit(self: *Self) !void {
-        if (self.disks.items.len > 1) {
-            for (self.disks.items[0 .. self.disks.items.len - 2]) |item| {
+        if (self.disks.items.len > 2) {
+            for (self.disks.items[0 .. self.disks.items.len - 3]) |item| {
                 allocator.alloc.free(item);
             }
         }
@@ -101,19 +103,21 @@ pub const GSDisks = struct {
             try self.audioMan.playSound(self.selectSound.*);
             self.disk.* = null;
 
-            if (self.disks.items.len > 1) {
-                if (self.sel < self.disks.items.len - 1) {
+            if (self.disks.items.len > 2) {
+                if (self.sel < self.disks.items.len - 2) {
                     var sel = self.disks.items[self.sel];
 
                     self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
                     std.mem.copy(u8, self.disk.*.?, sel[2..]);
                 }
 
-                if (self.sel == self.disks.items.len - 2) {
+                if (self.sel == self.disks.items.len - 1) {
+                    c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+                } else if (self.sel == self.disks.items.len - 2) {
                     events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Installer,
                     });
-                } else if (self.sel == self.disks.items.len - 1) {
+                } else if (self.sel == self.disks.items.len - 3) {
                     events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Recovery,
                     });
@@ -123,9 +127,13 @@ pub const GSDisks = struct {
                     });
                 }
             } else {
-                events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                    .targetState = .Installer,
-                });
+                if (self.sel == 0) {
+                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Installer,
+                    });
+                } else {
+                    c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+                }
                 return;
             }
         }

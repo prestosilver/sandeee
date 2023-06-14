@@ -25,6 +25,7 @@ pub const EmailManager = struct {
 
         viewed: bool = false,
         isComplete: bool = false,
+        show: bool = true,
         condition: Condition = .None,
         box: u8 = 0,
         id: u8 = 0,
@@ -77,6 +78,8 @@ pub const EmailManager = struct {
                 } else if (std.mem.eql(u8, line, "view")) {
                     result.condition = .View;
                     result.conditionData = try allocator.alloc.dupe(u8, "");
+                } else if (std.mem.eql(u8, line, "hide")) {
+                    result.show = false;
                 } else {
                     try contents.appendSlice(line);
                     try contents.appendSlice("\n");
@@ -115,6 +118,18 @@ pub const EmailManager = struct {
         self.emails.deinit();
     }
 
+    pub fn getPc(self: *EmailManager, box: usize) u8 {
+        var total: f32 = 0;
+        var comp: f32 = 0;
+        for (self.emails.items) |email| {
+            if (email.box != box) continue;
+            total += 1;
+            if (email.isComplete) comp += 1;
+        }
+
+        return @floatToInt(u8, comp / total);
+    }
+
     pub fn getEmailUnlocks(self: *EmailManager, email: *Email) bool {
         for (self.emails.items) |dep| {
             if (dep.box != email.box) continue;
@@ -127,6 +142,8 @@ pub const EmailManager = struct {
     }
 
     pub fn getEmailVisible(self: *EmailManager, email: *Email) bool {
+        if (!email.show) return false;
+
         for (self.emails.items) |dep| {
             if (dep.box != email.box) continue;
             if (std.mem.indexOf(u8, email.deps, &.{dep.id})) |_| {
@@ -160,6 +177,14 @@ pub const EmailManager = struct {
             email.viewed = true;
 
             if (email.condition == .View) {
+                self.setEmailComplete(email);
+            }
+        }
+    }
+
+    pub fn updateLogins(self: *EmailManager, logins: u64) !void {
+        for (self.emails.items) |*email| {
+            if (email.condition == .Logins and logins >= try std.fmt.parseInt(u64, email.conditionData, 0)) {
                 self.setEmailComplete(email);
             }
         }
@@ -243,6 +268,7 @@ pub const EmailManager = struct {
             var start = result.len;
 
             var idStr = std.mem.toBytes(email.id);
+            var show = std.mem.toBytes(email.show);
             var fromLen = std.mem.toBytes(email.from.len)[0..4];
             var depsLen = std.mem.toBytes(email.deps.len)[0..4];
             var condsLen = std.mem.toBytes(email.conditionData.len)[0..4];
@@ -254,6 +280,7 @@ pub const EmailManager = struct {
                 u8,
                 &[_][]const u8{
                     &idStr,
+                    &show,
                     &.{@enumToInt(email.condition)},
                     condsLen,
                     email.conditionData,
@@ -305,6 +332,9 @@ pub const EmailManager = struct {
                     self.emails.items[idx].isComplete = false;
 
                     self.emails.items[idx].id = conts[fidx];
+                    fidx += 1;
+
+                    self.emails.items[idx].show = conts[fidx] != 0;
                     fidx += 1;
 
                     self.emails.items[idx].box = @intCast(u8, boxid);

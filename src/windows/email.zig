@@ -132,11 +132,13 @@ const EmailData = struct {
 
         for (emailManager.boxes, 0..) |box, idx| {
             var pos = vecs.newVec2(bnds.x + 20, bnds.y + 106 + font.size * @intToFloat(f32, idx));
+            var text = try std.fmt.allocPrint(allocator.alloc, "[{d:0>2}%] {s}", .{ emailManager.getPc(idx), box });
+            defer allocator.alloc.free(text);
 
             try font.draw(.{
                 .batch = batch,
                 .shader = font_shader,
-                .text = box,
+                .text = text,
                 .pos = pos,
             });
         }

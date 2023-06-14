@@ -266,7 +266,7 @@ pub const GSWindowed = struct {
         try telem.Telem.load();
 
         telem.Telem.instance.logins += 1;
-        events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
+        try self.emailManager.updateLogins(telem.Telem.instance.logins);
 
         if (self.settingsManager.get("startup_file")) |startupCmd| {
             self.shell = .{ .root = files.root };
