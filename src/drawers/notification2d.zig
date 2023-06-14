@@ -55,7 +55,7 @@ pub const NotificationData = struct {
         self.time = @max(@as(f32, 0), self.time - dt);
     }
 
-    pub fn getVerts(self: *NotificationData, pos: vecs.Vector3) !va.VertArray {
+    pub fn getVerts(self: *const NotificationData, pos: vecs.Vector3) !va.VertArray {
         _ = self;
         var target2d = wins.deskSize.sub(.{ .x = 260, .y = 100 + 80 * pos.x });
 

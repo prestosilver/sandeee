@@ -241,13 +241,17 @@ pub const Folder = struct {
         }
     }
 
-    fn sortList(comptime T: type, a: T, b: T) bool {
+    fn sortFiles(_: bool, a: *File, b: *File) bool {
+        return std.mem.lessThan(u8, a.name, b.name);
+    }
+
+    fn sortFolders(_: bool, a: *Folder, b: *Folder) bool {
         return std.mem.lessThan(u8, a.name, b.name);
     }
 
     fn fixFolders(self: *Folder) void {
-        std.sort.sort(*Folder, self.subfolders.items, *Folder, sortList);
-        std.sort.sort(*File, self.contents.items, *File, sortList);
+        std.sort.insertion(*Folder, self.subfolders.items, true, sortFolders);
+        std.sort.insertion(*File, self.contents.items, true, sortFiles);
         for (self.subfolders.items, 0..) |_, idx| {
             self.subfolders.items[idx].parent = self;
             self.subfolders.items[idx].fixFolders();

@@ -283,7 +283,7 @@ pub const VM = struct {
         self.allocator.destroy(val);
     }
 
-    pub fn free(self: *VM, vals: []StackEntry) void {
+    pub fn free(self: *VM, vals: []const StackEntry) void {
         switch (vals.len) {
             0 => return,
             1 => {

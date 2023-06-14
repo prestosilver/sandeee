@@ -70,7 +70,7 @@ pub const GSRecovery = struct {
 
         var und: u8 = undefined;
 
-        std.sort.sort([]const u8, self.disks.items, und, sortDisksLt);
+        std.sort.insertion([]const u8, self.disks.items, und, sortDisksLt);
 
         for (self.disks.items, 0..) |_, idx| {
             var copy = self.disks.items[idx];

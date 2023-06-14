@@ -23,7 +23,7 @@ pub const CursorData = struct {
         };
     }
 
-    pub fn getVerts(self: *CursorData, pos: vecs.Vector3) !va.VertArray {
+    pub fn getVerts(self: *const CursorData, pos: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init();
 
         var xo: f64 = 0;

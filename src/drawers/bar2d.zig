@@ -314,7 +314,7 @@ pub const BarData = struct {
         c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
     }
 
-    pub fn getVerts(self: *BarData, _: vecs.Vector3) !va.VertArray {
+    pub fn getVerts(self: *const BarData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init();
         var pos = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
 

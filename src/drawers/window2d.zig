@@ -404,6 +404,13 @@ pub const WindowData = struct {
     }
 
     pub fn drawContents(self: *WindowData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
+        if (self.full) {
+            self.pos.w = deskSize.x;
+            self.pos.h = deskSize.y - 38;
+            self.pos.x = 0;
+            self.pos.y = 0;
+        }
+
         if (self.min) return;
         var bnds = self.pos;
         bnds.x += 6;
@@ -469,20 +476,13 @@ pub const WindowData = struct {
         return self.contents.char(codepoint, mods);
     }
 
-    pub fn getVerts(self: *WindowData, _: vecs.Vector3) !va.VertArray {
+    pub fn getVerts(self: *const WindowData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init();
         var sprite: u8 = 0;
         if (self.min) return result;
 
         if (self.active) {
             sprite = 1;
-        }
-
-        if (self.full) {
-            self.pos.w = deskSize.x;
-            self.pos.h = deskSize.y - 38;
-            self.pos.x = 0;
-            self.pos.y = 0;
         }
 
         var close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);

@@ -30,7 +30,7 @@ pub const WallData = struct {
         try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
     }
 
-    pub fn getVerts(self: *WallData, _: vecs.Vector3) !va.VertArray {
+    pub fn getVerts(self: *const WallData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init();
         var pos: rect.Rectangle = undefined;
         var source = rect.newRect(0, 0, 1, 1);

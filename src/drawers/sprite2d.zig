@@ -16,7 +16,7 @@ pub const SpriteData = struct {
         };
     }
 
-    pub fn getVerts(self: *SpriteData, pos: vecs.Vector3) !va.VertArray {
+    pub fn getVerts(self: *const SpriteData, pos: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init();
 
         try result.append(vecs.Vector3.add(pos, vecs.newVec3(0, self.size.y, 0)), vecs.newVec2(self.source.x, self.source.y + self.source.h), self.color);

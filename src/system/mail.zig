@@ -344,7 +344,7 @@ pub const EmailManager = struct {
                     self.emails.items[idx].contents = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                     fidx += len;
                 }
-                std.sort.insertionSort(Email, self.emails.items[start..], false, Email.lessThan);
+                std.sort.insertion(Email, self.emails.items[start..], false, Email.lessThan);
             }
         }
     }

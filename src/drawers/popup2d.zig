@@ -174,7 +174,7 @@ pub const PopupData = struct {
         try self.contents.draw(batch, shader, self.scissor(), font);
     }
 
-    pub fn getVerts(self: *PopupData, _: vecs.Vector3) !va.VertArray {
+    pub fn getVerts(self: *const PopupData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init();
         var sprite: u8 = 1;
 

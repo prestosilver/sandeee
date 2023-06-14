@@ -19,7 +19,7 @@ pub fn Drawer(comptime T: type) type {
         texture: []const u8,
         data: T,
 
-        pub inline fn getVerts(self: *Self, pos: vecs.Vector3) !va.VertArray {
+        pub inline fn getVerts(self: *const Self, pos: vecs.Vector3) !va.VertArray {
             return self.data.getVerts(pos);
         }
 
@@ -67,7 +67,7 @@ pub const SpriteBatch = struct {
     scissor: ?rect.Rectangle = null,
     size: *vecs.Vector2,
 
-    pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *T, shader: *shd.Shader, pos: vecs.Vector3) !void {
+    pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *const T, shader: *shd.Shader, pos: vecs.Vector3) !void {
         var entry = QueueEntry{
             .texture = drawer.texture,
             .verts = try drawer.getVerts(pos),
@@ -77,15 +77,16 @@ pub const SpriteBatch = struct {
         try sb.addEntry(&entry);
     }
 
-    pub fn addEntry(sb: *SpriteBatch, entry: *QueueEntry) !void {
+    pub fn addEntry(sb: *SpriteBatch, entry: *const QueueEntry) !void {
         sb.queueLock.lock();
         defer sb.queueLock.unlock();
+        var newEntry = entry.*;
 
-        entry.scissor = sb.scissor;
+        newEntry.scissor = sb.scissor;
+        newEntry.texture = try allocator.alloc.dupe(u8, entry.texture);
 
-        entry.texture = try allocator.alloc.dupe(u8, entry.texture);
         sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
-        sb.queue[sb.queue.len - 1] = entry.*;
+        sb.queue[sb.queue.len - 1] = newEntry;
     }
 
     pub fn render(sb: *SpriteBatch) !void {

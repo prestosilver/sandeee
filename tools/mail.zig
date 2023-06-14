@@ -13,7 +13,7 @@ pub fn emails(path: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
 
     while (entry) |file| : (entry = walker.next() catch null) {
         switch (file.kind) {
-            .File => {
+            .file => {
                 var f = try root.openFile(file.path, .{});
                 defer f.close();
                 try manager.append(try mail.EmailManager.Email.parseTxt(f));
