@@ -115,11 +115,11 @@ pub const GSDisks = struct {
                     c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
                 } else if (self.sel == self.disks.items.len - 2) {
                     events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Installer,
+                        .targetState = .Recovery,
                     });
                 } else if (self.sel == self.disks.items.len - 3) {
                     events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Recovery,
+                        .targetState = .Installer,
                     });
                 } else {
                     events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
