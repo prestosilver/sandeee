@@ -645,6 +645,8 @@ pub fn main() anyerror!void {
         .sb = &sb,
         .font_shader = &font_shader,
         .face = &biosFace,
+        .selectSound = &selectSound,
+        .audioMan = &audioman,
         .load_sprite = .{
             .texture = "load",
             .data = sprite.SpriteData.new(

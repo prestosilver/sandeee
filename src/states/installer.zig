@@ -11,32 +11,49 @@ const c = @import("../c.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const files = @import("../system/files.zig");
+const audio = @import("../util/audio.zig");
 
-const VERSION = "0.0.1";
+const VERSION = "0.1.0";
 const INSTALL_TIME = 1.5;
 
 pub const GSInstall = struct {
     const Self = @This();
 
-    const Status = enum {
+    const Status = enum(u8) {
         Naming,
+        Settings,
         Installing,
         Done,
     };
+
+    const Settings = [_][3][]const u8{
+        .{ "What is the current Hour", "hour_value", "00" },
+        .{ "What is the current Minute", "minute_value", "00" },
+        .{ "Do you like \x82\x82\x82 ", "evil_value", "Yes" },
+    };
+    const MAX_VALUE_LEN = 128;
 
     shader: *shd.Shader,
     sb: *batch.SpriteBatch,
     face: *font.Font,
     font_shader: *shd.Shader,
     load_sprite: sp.Sprite,
+    selectSound: *audio.Sound,
+    audioMan: *audio.Audio,
 
+    settingValues: [Settings.len][MAX_VALUE_LEN]u8 = undefined,
+    settingLens: [Settings.len]u8 = [_]u8{0} ** Settings.len,
     timer: f32 = 1,
+    settingId: usize = 0,
     status: Status = .Naming,
     diskName: std.ArrayList(u8) = undefined,
+    offset: f32 = 0,
 
     pub fn setup(self: *Self) !void {
         gfx.gContext.color = cols.newColor(0, 0, 0.3333, 1);
 
+        self.settingId = 0;
+        self.offset = 0;
         self.timer = 1;
         self.status = .Naming;
         self.diskName = std.ArrayList(u8).init(allocator.alloc);
@@ -48,7 +65,8 @@ pub const GSInstall = struct {
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        var y: f32 = 100;
+        var y: f32 = 100 - self.offset;
+        defer self.offset = @max(@as(f32, 0), (y + self.offset) - (size.y - 100));
 
         var titleLine = try std.fmt.allocPrint(allocator.alloc, "Sand\x82\x82\x82 Installer v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
@@ -78,7 +96,30 @@ pub const GSInstall = struct {
             .color = cols.newColor(1, 1, 1, 1),
         });
 
-        if (self.status == .Naming) return;
+        if (@enumToInt(self.status) < @enumToInt(Status.Settings)) return;
+
+        y += self.face.size * 2;
+        for (0..self.settingId + 1) |idx| {
+            if (idx > Settings.len) return;
+            var text = try std.fmt.allocPrint(allocator.alloc, "{s}? [{s}] {s}", .{
+                Settings[idx][0],
+                Settings[idx][2],
+                self.settingValues[idx][0..self.settingLens[idx]],
+            });
+            defer allocator.alloc.free(text);
+
+            try self.face.draw(.{
+                .batch = self.sb,
+                .shader = self.font_shader,
+                .text = text,
+                .pos = vecs.newVec2(100, y),
+                .color = cols.newColor(1, 1, 1, 1),
+            });
+            y += self.face.size * 1;
+        }
+
+        if (@enumToInt(self.status) < @enumToInt(Status.Installing)) return;
+
         y += self.face.size * 2;
         try self.face.draw(.{
             .batch = self.sb,
@@ -93,7 +134,8 @@ pub const GSInstall = struct {
         if (self.status == .Installing) self.load_sprite.data.size.x *= 1 - self.timer;
         try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(100, y, 0));
 
-        if (self.status == .Installing) return;
+        if (@enumToInt(self.status) < @enumToInt(Status.Done)) return;
+
         y += self.face.size * 2;
         try self.face.draw(.{
             .batch = self.sb,
@@ -136,46 +178,86 @@ pub const GSInstall = struct {
         }
     }
 
+    pub fn appendChar(self: *Self, char: u8) !void {
+        switch (self.status) {
+            .Naming => {
+                try self.diskName.append(char);
+            },
+            .Settings => {
+                if (self.settingLens[self.settingId] < MAX_VALUE_LEN) {
+                    self.settingValues[self.settingId][self.settingLens[self.settingId]] = char;
+                    self.settingLens[self.settingId] += 1;
+                }
+            },
+            else => {},
+        }
+    }
+
+    pub fn removeChar(self: *Self) !void {
+        switch (self.status) {
+            .Naming => {
+                _ = self.diskName.popOrNull();
+            },
+            .Settings => {
+                if (self.settingLens[self.settingId] > 0) {
+                    self.settingLens[self.settingId] -= 1;
+                }
+            },
+            else => {},
+        }
+    }
+
     pub fn keypress(self: *Self, keycode: c_int, mods: c_int, down: bool) !bool {
         if (!down) return false;
         switch (keycode) {
             c.GLFW_KEY_A...c.GLFW_KEY_Z => {
-                switch (self.status) {
-                    .Naming => {
-                        if ((mods & c.GLFW_MOD_SHIFT) != 0) {
-                            try self.diskName.append(@intCast(u8, keycode - c.GLFW_KEY_A) + 'A');
-                        } else {
-                            try self.diskName.append(@intCast(u8, keycode - c.GLFW_KEY_A) + 'a');
-                        }
-                    },
-                    else => {},
+                if ((mods & c.GLFW_MOD_SHIFT) != 0) {
+                    try self.appendChar(@intCast(u8, keycode - c.GLFW_KEY_A) + 'A');
+                } else {
+                    try self.appendChar(@intCast(u8, keycode - c.GLFW_KEY_A) + 'a');
                 }
             },
             c.GLFW_KEY_0...c.GLFW_KEY_9 => {
-                try self.diskName.append(@intCast(u8, keycode - c.GLFW_KEY_0) + '0');
+                try self.appendChar(@intCast(u8, keycode - c.GLFW_KEY_0) + '0');
             },
             c.GLFW_KEY_PERIOD => {
-                try self.diskName.append('.');
+                try self.appendChar('.');
             },
             c.GLFW_KEY_BACKSPACE => {
-                _ = self.diskName.popOrNull();
+                try self.removeChar();
             },
             c.GLFW_KEY_MINUS => {
-                try self.diskName.append('-');
+                try self.appendChar('-');
             },
             c.GLFW_KEY_SPACE => {
-                try self.diskName.append('_');
+                try self.appendChar('_');
             },
             c.GLFW_KEY_ENTER => {
                 switch (self.status) {
                     .Naming => {
+                        try self.audioMan.playSound(self.selectSound.*);
+
                         if (self.diskName.items.len == 0) return false;
                         if (std.mem.containsAtLeast(u8, self.diskName.items, 1, ".")) {
                             if (!std.mem.endsWith(u8, self.diskName.items, ".eee")) return false;
                         } else {
                             try self.diskName.appendSlice(".eee");
                         }
-                        self.status = .Installing;
+                        self.status = .Settings;
+                    },
+                    .Settings => {
+                        try self.audioMan.playSound(self.selectSound.*);
+
+                        if (self.settingLens[self.settingId] == 0) {
+                            self.settingLens[self.settingId] = @intCast(u8, Settings[self.settingId][2].len);
+                            @memcpy(self.settingValues[self.settingId][0..self.settingLens[self.settingId]], Settings[self.settingId][2]);
+                        }
+
+                        self.settingId += 1;
+                        if (self.settingId >= Settings.len) {
+                            self.status = .Installing;
+                            self.settingId -= 1;
+                        }
                     },
                     else => {},
                 }
