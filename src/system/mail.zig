@@ -127,7 +127,7 @@ pub const EmailManager = struct {
             if (email.isComplete) comp += 1;
         }
 
-        return @floatToInt(u8, comp / total);
+        return @floatToInt(u8, comp / total * 100);
     }
 
     pub fn getEmailUnlocks(self: *EmailManager, email: *Email) bool {

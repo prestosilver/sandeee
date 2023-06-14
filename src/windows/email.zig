@@ -130,25 +130,33 @@ const EmailData = struct {
             });
         }
 
+        self.sel.data.size.x = 100;
+        self.sel.data.size.y = font.size;
+
+        try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + 106 + font.size * @intToFloat(f32, self.box), 0));
+
         for (emailManager.boxes, 0..) |box, idx| {
-            var pos = vecs.newVec2(bnds.x + 20, bnds.y + 106 + font.size * @intToFloat(f32, idx));
-            var text = try std.fmt.allocPrint(allocator.alloc, "[{d:0>2}%] {s}", .{ emailManager.getPc(idx), box });
-            defer allocator.alloc.free(text);
+            const pos = vecs.newVec2(bnds.x + 2, bnds.y + 106 + font.size * @intToFloat(f32, idx));
 
-            try font.draw(.{
-                .batch = batch,
-                .shader = font_shader,
-                .text = text,
-                .pos = pos,
-            });
+            if (idx == self.box) {
+                var text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], emailManager.getPc(idx) });
+                defer allocator.alloc.free(text);
+
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = font_shader,
+                    .text = text,
+                    .pos = pos,
+                });
+            } else {
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = font_shader,
+                    .text = box,
+                    .pos = pos,
+                });
+            }
         }
-
-        try font.draw(.{
-            .batch = batch,
-            .shader = font_shader,
-            .text = ">",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 106 + font.size * @intToFloat(f32, self.box)),
-        });
     }
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {

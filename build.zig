@@ -24,7 +24,7 @@ const pngImageFiles = [_][]const u8{ "notif", "bar", "editor", "email", "explore
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const internalSoundFiles = [_][]const u8{ "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
-const mailDirs = [_][]const u8{ "inbox", "spam" };
+const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
 var Version: std.builtin.Version = .{
     .major = 0,
@@ -108,8 +108,14 @@ pub fn build(b: *std.build.Builder) void {
     b.installArtifact(exe);
 
     var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
-    var email_step = conv.ConvertStep.create(b, emails.emails, "content/mail/inbox/", "content/disk/cont/mail/inbox.eme");
-    var email_spam_step = conv.ConvertStep.create(b, emails.emails, "content/mail/spam/", "content/disk/cont/mail/spam.eme");
+
+    for (mailDirs) |folder| {
+        var input = std.fmt.allocPrint(b.allocator, "content/mail/{s}/", .{folder}) catch "";
+        var output = std.fmt.allocPrint(b.allocator, "content/disk/cont/mail/{s}.eme", .{folder}) catch "";
+
+        var step = conv.ConvertStep.create(b, emails.emails, input, output);
+        write_step.step.dependOn(&step.step);
+    }
 
     if (exe.optimize == .Debug) {
         for (asmTestsFiles) |file| {
@@ -224,9 +230,6 @@ pub fn build(b: *std.build.Builder) void {
 
     write_step.step.dependOn(&fontStep.step);
     write_step.step.dependOn(&biosFontStep.step);
-    write_step.step.dependOn(&email_step.step);
-
-    email_step.step.dependOn(&email_spam_step.step);
 
     exe.step.dependOn(&write_step.step);
 

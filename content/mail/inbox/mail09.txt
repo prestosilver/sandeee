@@ -2,6 +2,8 @@ id: 9
 deps: 8
 from: prestosilver
 sub: Demo Complete
+view
+
 Thanks for playing the SandEEE demo. In the full version expect:
 
  - More quests
