@@ -226,11 +226,11 @@ pub const GSWindowed = struct {
         win.WindowContents.shader = self.shader;
         shell.shader = self.shader;
 
-        events.EventManager.instance.registerListener(windowEvs.EventCreatePopup, createPopup);
-        events.EventManager.instance.registerListener(windowEvs.EventClosePopup, closePopup);
-        events.EventManager.instance.registerListener(windowEvs.EventCreateWindow, createWindow);
-        events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
-        events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
+        try events.EventManager.instance.registerListener(windowEvs.EventCreatePopup, createPopup);
+        try events.EventManager.instance.registerListener(windowEvs.EventClosePopup, closePopup);
+        try events.EventManager.instance.registerListener(windowEvs.EventCreateWindow, createWindow);
+        try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
+        try events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
 
         if (self.settingsManager.getBool("show_welcome")) {
             var window = win.Window.new("win", win.WindowData{

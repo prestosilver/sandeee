@@ -343,19 +343,19 @@ pub fn runCmdEvent(event: systemEvs.EventRunCmd) bool {
 pub fn setupEvents() !void {
     events.EventManager.init();
 
-    events.EventManager.instance.registerListener(inputEvs.EventWindowResize, windowResize);
-    events.EventManager.instance.registerListener(inputEvs.EventMouseScroll, mouseScroll);
-    events.EventManager.instance.registerListener(inputEvs.EventMouseMove, mouseMove);
-    events.EventManager.instance.registerListener(inputEvs.EventMouseDown, mouseDown);
-    events.EventManager.instance.registerListener(inputEvs.EventMouseUp, mouseUp);
-    events.EventManager.instance.registerListener(inputEvs.EventKeyDown, keyDown);
-    events.EventManager.instance.registerListener(inputEvs.EventKeyChar, keyChar);
-    events.EventManager.instance.registerListener(inputEvs.EventKeyUp, keyUp);
+    try events.EventManager.instance.registerListener(inputEvs.EventWindowResize, windowResize);
+    try events.EventManager.instance.registerListener(inputEvs.EventMouseScroll, mouseScroll);
+    try events.EventManager.instance.registerListener(inputEvs.EventMouseMove, mouseMove);
+    try events.EventManager.instance.registerListener(inputEvs.EventMouseDown, mouseDown);
+    try events.EventManager.instance.registerListener(inputEvs.EventMouseUp, mouseUp);
+    try events.EventManager.instance.registerListener(inputEvs.EventKeyDown, keyDown);
+    try events.EventManager.instance.registerListener(inputEvs.EventKeyChar, keyChar);
+    try events.EventManager.instance.registerListener(inputEvs.EventKeyUp, keyUp);
 
-    events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
-    events.EventManager.instance.registerListener(systemEvs.EventStateChange, changeState);
-    events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
-    events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
+    try events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
+    try events.EventManager.instance.registerListener(systemEvs.EventStateChange, changeState);
+    try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
+    try events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
 }
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {

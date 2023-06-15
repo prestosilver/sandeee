@@ -4,10 +4,10 @@ const allocator = @import("allocator.zig");
 pub const EventManager = struct {
     pub var instance: EventManager = undefined;
 
-    subs: std.ArrayList(Listener(*void)),
+    subs: std.StringHashMap([]Listener(*void)),
 
     pub fn init() void {
-        var subs = std.ArrayList(Listener(*void)).init(allocator.alloc);
+        var subs = std.StringHashMap([]Listener(*void)).init(allocator.alloc);
 
         instance = EventManager{
             .subs = subs,
@@ -15,39 +15,53 @@ pub const EventManager = struct {
     }
 
     pub fn deinit() void {
+        var iter = instance.subs.iterator();
+        while (iter.next()) |item| {
+            allocator.alloc.free(item.value_ptr.*);
+        }
+
         instance.subs.deinit();
     }
 
     fn Listener(comptime T: type) type {
         return struct {
-            name: []const u8,
             calls: *const fn (T) bool,
         };
     }
 
-    pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) bool) void {
-        for (self.subs.items) |*item| {
-            if (@ptrToInt(item.calls) == @ptrToInt(callee)) {
-                return;
+    pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) bool) !void {
+        const call = @ptrCast(*const fn (*void) bool, callee);
+
+        if (self.subs.getPtr(@typeName(T))) |list| {
+            for (list.*) |*item| {
+                if (@ptrToInt(item.calls) == @ptrToInt(callee)) {
+                    return;
+                }
             }
+
+            var listener = Listener(*void){
+                .calls = call,
+            };
+
+            list.* = try allocator.alloc.realloc(list.*, list.len + 1);
+            list.*[list.len - 1] = listener;
+        } else {
+            var list = try allocator.alloc.alloc(Listener(*void), 1);
+            list[0] = Listener(*void){
+                .calls = call,
+            };
+
+            try self.subs.put(@typeName(T), list);
         }
-
-        var call = @ptrCast(*const fn (*void) bool, callee);
-        var listener = Listener(*void){
-            .name = @typeName(T),
-            .calls = call,
-        };
-
-        self.subs.append(listener) catch {};
     }
 
-    pub fn sendEvent(self: *EventManager, data: anytype) void {
+    pub inline fn sendEvent(self: *EventManager, data: anytype) void {
         const T = @TypeOf(data);
-
         const name: []const u8 = @typeName(T);
-        for (self.subs.items) |sub| {
+
+        for (self.subs.get(name) orelse return) |sub| {
             const call = @ptrCast(*const fn (T) bool, sub.calls);
-            if (std.mem.eql(u8, sub.name, name) and call(data)) {
+            if (call(data)) {
                 break;
             }
         }
