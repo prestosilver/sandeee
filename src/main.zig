@@ -690,6 +690,7 @@ pub fn main() anyerror!void {
     desk.deskSize = &gfx.gContext.size;
     windowedState.GSWindowed.deskSize = &gfx.gContext.size;
     wallpaper = &gsWindowed.wallpaper;
+    bar.settingsManager = &settingManager;
 
     // update the frame timer
     var lastFrameTime = c.glfwGetTime();
@@ -745,10 +746,10 @@ pub fn main() anyerror!void {
             // render this is in else to fix single frame bugs
             try blit();
             fps += 1;
-
-            // update the time
-            lastFrameTime = currentTime;
         }
+
+        // upda:Telescope projects<cr>te the time
+        lastFrameTime = currentTime;
     }
 
     // deinit the current state
