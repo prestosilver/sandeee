@@ -15,12 +15,15 @@ const c = @import("../c.zig");
 const allocator = @import("../util/allocator.zig");
 const popups = @import("popup2d.zig");
 const files = @import("../system/files.zig");
+const settings = @import("../system/config.zig");
 
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
 
 const TOTAL_SPRITES: f32 = 13;
 const TEX_SIZE: f32 = 32;
+
+pub var settingsManager: *settings.SettingManager = undefined;
 
 pub const BarData = struct {
     screendims: *vecs.Vector2,
@@ -71,9 +74,12 @@ pub const BarData = struct {
         });
 
         var ts = std.time.timestamp();
-        var hours = @intCast(u64, ts) / std.time.s_per_hour % 12;
-        var mins = @intCast(u64, ts) / std.time.s_per_min % 60;
-        var clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{ hours, mins });
+        var hours = @intCast(i64, @intCast(u64, ts) / std.time.s_per_hour) - settingsManager.getInt("hour_offset");
+        var mins = @intCast(i64, @intCast(u64, ts) / std.time.s_per_min) - settingsManager.getInt("minute_offset");
+        var clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{
+            @intCast(u8, @rem(hours, 24)),
+            @intCast(u8, @rem(mins, 60)),
+        });
         defer allocator.alloc.free(clockString);
 
         var clockSize = font.sizeText(.{ .text = clockString });
