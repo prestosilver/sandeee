@@ -27,8 +27,8 @@ pub const GSInstall = struct {
     };
 
     const Settings = [_][3][]const u8{
-        .{ "What is the current Hour", "hour_value", "00" },
-        .{ "What is the current Minute", "minute_value", "00" },
+        .{ "What is the current Hour", "", "00" },
+        .{ "What is the current Minute", "", "00" },
         .{ "Do you like \x82\x82\x82", "evil_value", "Yes" },
     };
     const MAX_VALUE_LEN = 128;
@@ -52,6 +52,8 @@ pub const GSInstall = struct {
     pub fn setup(self: *Self) !void {
         gfx.gContext.color = cols.newColor(0, 0, 0.3333, 1);
 
+        @memset(&self.settingLens, 0);
+
         self.settingId = 0;
         self.offset = 0;
         self.timer = 1;
@@ -62,6 +64,19 @@ pub const GSInstall = struct {
 
     pub fn deinit(self: *Self) !void {
         self.diskName.deinit();
+    }
+
+    pub fn updateSettingsVals(self: *Self) ![]const u8 {
+        var ts = std.time.timestamp();
+        var aHours = @intCast(u64, ts) / std.time.s_per_hour % 24;
+        var aMins = @intCast(u64, ts) / std.time.s_per_min % 60;
+        const inputHours = std.fmt.parseInt(i8, self.settingValues[0][0..self.settingLens[0]], 0) catch 0;
+        const inputMins = std.fmt.parseInt(i8, self.settingValues[1][0..self.settingLens[1]], 0) catch 0;
+
+        var hoursOffset = @intCast(i8, aHours) - inputHours;
+        var minsOffset = @intCast(i8, aMins) - inputMins;
+
+        return std.fmt.allocPrint(allocator.alloc, "hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hoursOffset, minsOffset });
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
@@ -165,12 +180,17 @@ pub const GSInstall = struct {
                 self.timer = 3;
                 self.status = .Done;
 
-                try files.Folder.setupDisk(self.diskName.items);
+                var vals = try self.updateSettingsVals();
+                defer allocator.alloc.free(vals);
+                std.log.info("{s}", .{vals});
+
+                try files.Folder.setupDisk(self.diskName.items, vals);
             }
         } else if (self.status == .Done) {
             self.timer -= dt;
             if (self.timer < 0) {
                 self.timer = 0;
+
                 events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                     .targetState = .Disks,
                 });

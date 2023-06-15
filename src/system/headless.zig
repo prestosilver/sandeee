@@ -11,7 +11,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
     defer diskpath.deinit();
 
     if (std.fs.cwd().access(diskpath.items, .{}) catch null == null) {
-        try files.Folder.setupDisk(DISK);
+        try files.Folder.setupDisk(DISK, "");
     }
 
     try files.Folder.init(DISK);

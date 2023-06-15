@@ -74,8 +74,8 @@ pub const BarData = struct {
         });
 
         var ts = std.time.timestamp();
-        var hours = @intCast(i64, @intCast(u64, ts) / std.time.s_per_hour) - settingsManager.getInt("hour_offset");
-        var mins = @intCast(i64, @intCast(u64, ts) / std.time.s_per_min) - settingsManager.getInt("minute_offset");
+        var hours = @intCast(i64, @intCast(u64, ts) / std.time.s_per_hour) - settingsManager.getInt("hours_offset");
+        var mins = @intCast(i64, @intCast(u64, ts) / std.time.s_per_min) - settingsManager.getInt("minutes_offset");
         var clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{
             @intCast(u8, @rem(hours, 24)),
             @intCast(u8, @rem(mins, 60)),

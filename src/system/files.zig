@@ -90,7 +90,7 @@ pub const Folder = struct {
         }
     }
 
-    pub fn setupDisk(diskName: []const u8) !void {
+    pub fn setupDisk(diskName: []const u8, settings: []const u8) !void {
         root = try allocator.alloc.create(Folder);
         defer root.deinit();
 
@@ -107,6 +107,12 @@ pub const Folder = struct {
         var recovery = try d.openFile("content/recovery.eee", .{});
         defer recovery.close();
         try loadDisk(recovery);
+        var conf = try root.getFile("/conf/system.cfg") orelse return error.FileNotFound;
+        var conts = try conf.read(null);
+
+        var settingsOut = try std.mem.concat(allocator.alloc, u8, &.{ conts, "\n", settings });
+
+        try conf.write(settingsOut, null);
 
         var out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskName});
         defer allocator.alloc.free(out);
