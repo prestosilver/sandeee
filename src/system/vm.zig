@@ -1291,7 +1291,7 @@ pub const VM = struct {
 
                 return func.*.ops[self.pc];
             }
-            //std.log.err("'{s}', {any}", .{inside, self.functions.get(inside)});
+            std.log.err("'{s}', {any}", .{ inside, self.functions.get(inside) });
             return error.UnknownFunction;
         } else {
             if (self.code.?.len <= self.pc) return null;
