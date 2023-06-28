@@ -149,13 +149,14 @@ const full_quad = [_]c.GLfloat{
 };
 
 var finalFps: u32 = 60;
+var showFps: bool = false;
 
 pub fn blit() !void {
     // actual gl calls start here
     ctx.makeCurrent();
 
-    if (@import("builtin").mode == .Debug and biosFace.setup) {
-        var text = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{finalFps});
+    if (showFps and biosFace.setup) {
+        const text = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{finalFps});
         defer allocator.alloc.free(text);
 
         try biosFace.draw(.{
@@ -239,6 +240,10 @@ pub fn changeState(event: systemEvs.EventStateChange) bool {
 }
 
 pub fn keyDown(event: inputEvs.EventKeyDown) bool {
+    if (event.key == c.GLFW_KEY_F12) {
+        showFps = !showFps;
+    }
+
     return gameStates.getPtr(currentState).keypress(event.key, event.mods, true) catch false;
 }
 
@@ -312,7 +317,7 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
     }
 
     if (std.mem.eql(u8, event.setting, "crt_shader")) {
-        var val: c_int = if (std.ascii.eqlIgnoreCase("yes", event.value)) 1 else 0;
+        const val: c_int = if (std.ascii.eqlIgnoreCase("yes", event.value)) 1 else 0;
 
         gfx.gContext.makeCurrent();
         crt_shader.setInt("crt_enable", val);
@@ -381,9 +386,10 @@ var paniced: bool = false;
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     if (paniced) {
-        std.log.info("second panic", .{});
+        std.log.err("second panic", .{});
         std.os.exit(0);
     }
+
     paniced = true;
 
     sb.scissor = null;
@@ -391,7 +397,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     errorState = @enumToInt(currentState);
     gameStates.getPtr(@intToEnum(systemEvs.State, errorState)).deinit() catch {};
 
-    var st = panicHandler.log();
+    const st = panicHandler.log();
     errorMsg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ msg, st }) catch {
         std.os.exit(0);
     };
@@ -426,7 +432,13 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
 var isHeadless = false;
 
-pub fn main() anyerror!void {
+pub fn main() void {
+    mainErr() catch |err| {
+        @panic(@errorName(err));
+    };
+}
+
+pub fn mainErr() anyerror!void {
     std.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
 
     defer if (!builtin.link_libc or !allocator.useclib) {
@@ -706,10 +718,10 @@ pub fn main() anyerror!void {
     while (gfx.poll(&ctx)) {
 
         // get the current state
-        var state = gameStates.getPtr(prev);
+        const state = gameStates.getPtr(prev);
 
         // get the time & update
-        var currentTime = c.glfwGetTime();
+        const currentTime = c.glfwGetTime();
 
         // pause the game on minimize
         if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) == 0) {
@@ -748,7 +760,7 @@ pub fn main() anyerror!void {
             fps += 1;
         }
 
-        // upda:Telescope projects<cr>te the time
+        // update the time
         lastFrameTime = currentTime;
     }
 
