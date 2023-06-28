@@ -126,7 +126,7 @@ pub const Folder = struct {
         try root.write(file);
     }
 
-    pub fn recoverDisk(diskName: []const u8) !void {
+    pub fn recoverDisk(diskName: []const u8, overrideSettings: bool) !void {
         root = try allocator.alloc.create(Folder);
         defer root.deinit();
 
@@ -142,6 +142,7 @@ pub const Folder = struct {
 
         var out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskName});
         defer allocator.alloc.free(out);
+
         {
             var outFile = try d.openFile(out, .{});
             defer outFile.close();
@@ -149,7 +150,22 @@ pub const Folder = struct {
             var recovery = try d.openFile("content/recovery.eee", .{});
             defer recovery.close();
             try loadDisk(outFile);
-            try loadDisk(recovery);
+            if (!overrideSettings) {
+                var settingsFile = try root.getFile("/conf/system.cfg");
+                var settings: ?[]const u8 = null;
+
+                if (settingsFile) |file| {
+                    settings = try file.read(null);
+                }
+
+                try loadDisk(recovery);
+                if (settings) |cfg| {
+                    settingsFile = try root.getFile("/conf/system.cfg");
+                    try settingsFile.?.write(cfg, null);
+                }
+            } else {
+                try loadDisk(recovery);
+            }
         }
 
         var file = try std.fs.cwd().createFile(out, .{});

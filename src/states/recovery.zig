@@ -94,7 +94,7 @@ pub const GSRecovery = struct {
 
     pub fn update(_: *Self, _: f32) !void {}
 
-    const UPDATE_MODES = [_][*:0]const u8{ "R Reinstall System Files", "D Delete disk", "X Back" };
+    const UPDATE_MODES = [_][*:0]const u8{ "R Reinstall System Files", "R Reinstall System Files and Default Settings", "D Delete disk", "X Back" };
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         _ = size;
@@ -186,11 +186,16 @@ pub const GSRecovery = struct {
 
                     switch (sub_sel) {
                         0 => {
-                            try files.Folder.recoverDisk(self.disks.items[self.sel][2..]);
+                            try files.Folder.recoverDisk(self.disks.items[self.sel][2..], false);
                             self.status = "Reinstalled";
                             try self.audioMan.playSound(self.selectSound.*);
                         },
                         1 => {
+                            try files.Folder.recoverDisk(self.disks.items[self.sel][2..], true);
+                            self.status = "Reinstalled";
+                            try self.audioMan.playSound(self.selectSound.*);
+                        },
+                        2 => {
                             var path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
                             defer allocator.alloc.free(path);
 
