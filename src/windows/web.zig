@@ -244,7 +244,7 @@ pub const WebData = struct {
         }
 
         if (!self.loading) drawConts: {
-            var pos = vecs.newVec2(0, -props.scroll.?.value + 34);
+            var pos = vecs.newVec2(0, -props.scroll.?.value + 50);
 
             if (self.conts == null) {
                 _ = try std.Thread.spawn(.{}, loadPage, .{self});
@@ -358,11 +358,33 @@ pub const WebData = struct {
                     var size = font.sizeText(.{ .text = line, .scale = scale });
 
                     if (self.add_links) {
-                        var link = WebData.WebLink{
-                            .url = url,
-                            .pos = rect.newRect(6 + pos.x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
-                        };
-                        try self.links.append(link);
+                        switch (ali) {
+                            .Left => {
+                                var link = WebData.WebLink{
+                                    .url = url,
+                                    .pos = rect.newRect(6 + pos.x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
+                                };
+                                try self.links.append(link);
+                            },
+                            .Center => {
+                                var x = (bnds.w - size.x) / 2 - 7;
+
+                                var link = WebData.WebLink{
+                                    .url = url,
+                                    .pos = rect.newRect(x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
+                                };
+                                try self.links.append(link);
+                            },
+                            .Right => {
+                                var x = (bnds.w - size.x) - 7;
+
+                                var link = WebData.WebLink{
+                                    .url = url,
+                                    .pos = rect.newRect(x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
+                                };
+                                try self.links.append(link);
+                            },
+                        }
                     }
                 }
 
@@ -383,26 +405,26 @@ pub const WebData = struct {
                         });
                     },
                     .Center => {
-                        var x = (bnds.x - size.x) / 2;
+                        var x = (bnds.w - size.x) / 2;
 
                         try font.draw(.{
                             .batch = batch,
                             .shader = font_shader,
                             .text = line,
-                            .pos = vecs.newVec2(x, bnds.y + 6 + pos.y),
+                            .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
                             .color = color,
                             .scale = scale,
                             .wrap = bnds.w,
                         });
                     },
                     .Right => {
-                        var x = (bnds.x - size.x);
+                        var x = (bnds.w - size.x);
 
                         try font.draw(.{
                             .batch = batch,
                             .shader = font_shader,
                             .text = line,
-                            .pos = vecs.newVec2(x, bnds.y + 6 + pos.y),
+                            .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
                             .color = color,
                             .scale = scale,
                             .wrap = bnds.w,
