@@ -268,7 +268,7 @@ pub const ExplorerData = struct {
 pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(ExplorerData);
 
-    var ym = @intToFloat(f32, self.icons.len);
+    var ym = @as(f32, @floatFromInt(self.icons.len));
 
     self.* = .{
         .focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
@@ -302,10 +302,10 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     };
 
     for (self.icons, 0..) |_, idx| {
-        var i = @intToFloat(f32, idx);
+        var i = @as(f32, @floatFromInt(idx));
 
         self.icons[idx] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0 / 32.0, i / @intToFloat(f32, self.icons.len), 1.0, 1.0 / @intToFloat(f32, self.icons.len)),
+            rect.newRect(0 / 32.0, i / @as(f32, @floatFromInt(self.icons.len)), 1.0, 1.0 / @as(f32, @floatFromInt(self.icons.len))),
             vecs.newVec2(64, 64),
         ));
     }

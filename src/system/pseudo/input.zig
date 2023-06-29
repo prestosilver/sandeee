@@ -29,8 +29,7 @@ pub fn readInputWin(vmInstance: ?*vm.VM) ![]const u8 {
         for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
             var item = &pwindows.windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @typeInfo(*vmWin.VMData).Pointer.alignment;
-                var self = @ptrCast(*vmWin.VMData, @alignCast(alignment, item.data.contents.ptr));
+                var self: *vmWin.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                 if (self.idx == aid[0]) {
                     result = try allocator.alloc.realloc(result, self.input.len * 2);
@@ -60,17 +59,16 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
         for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
             var item = &pwindows.windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @typeInfo(*vmWin.VMData).Pointer.alignment;
-                var self = @ptrCast(*vmWin.VMData, @alignCast(alignment, item.data.contents.ptr));
+                var self: *vmWin.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                 if (self.idx == aid[0]) {
                     result[0] = 255;
                     if (self.mousebtn != null) {
-                        result[0] = @intCast(u8, self.mousebtn.?);
+                        result[0] = @as(u8, @intCast(self.mousebtn.?));
                         self.mousebtn = null;
                     }
-                    std.mem.writeIntBig(u16, result[1..3], @floatToInt(u16, self.mousepos.x));
-                    std.mem.writeIntBig(u16, result[3..5], @floatToInt(u16, self.mousepos.y));
+                    std.mem.writeIntBig(u16, result[1..3], @as(u16, @intFromFloat(self.mousepos.x)));
+                    std.mem.writeIntBig(u16, result[3..5], @as(u16, @intFromFloat(self.mousepos.y)));
 
                     return result;
                 }

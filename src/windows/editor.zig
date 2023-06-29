@@ -74,7 +74,7 @@ pub const EditorData = struct {
             var nr: usize = 1;
 
             if (self.cursor.x < 0) self.cursor.x = 0;
-            self.cursorIdx = @floatToInt(usize, self.cursor.x);
+            self.cursorIdx = @as(usize, @intFromFloat(self.cursor.x));
             self.prevIdx = 0;
 
             props.scroll.?.maxy = -bnds.h + 36;
@@ -82,13 +82,13 @@ pub const EditorData = struct {
             var splitIter = std.mem.split(u8, self.buffer.items, "\n");
 
             while (splitIter.next()) |line| {
-                if (nr - 1 < @floatToInt(usize, self.cursor.y)) {
+                if (nr - 1 < @as(usize, @intFromFloat(self.cursor.y))) {
                     self.cursorIdx += line.len + 1;
                     self.prevIdx += line.len + 1;
                 }
 
-                if (nr - 1 == @floatToInt(usize, self.cursor.y)) {
-                    self.cursor.x = @min(self.cursor.x, @intToFloat(f32, line.len));
+                if (nr - 1 == @as(usize, @intFromFloat(self.cursor.y))) {
+                    self.cursor.x = @min(self.cursor.x, @as(f32, @floatFromInt(line.len)));
                 }
 
                 if (y > bnds.y - font.size and y < bnds.y + bnds.h) {
@@ -107,9 +107,9 @@ pub const EditorData = struct {
                         .pos = vecs.newVec2(bnds.x + 6, y),
                     });
 
-                    if (nr - 1 == @floatToInt(i32, self.cursor.y)) {
+                    if (nr - 1 == @as(i32, @intFromFloat(self.cursor.y))) {
                         var posx = font.sizeText(.{
-                            .text = line[0..@floatToInt(usize, self.cursor.x)],
+                            .text = line[0..@as(usize, @intFromFloat(self.cursor.x))],
                         }).x;
                         try font.draw(.{
                             .batch = batch,
@@ -126,8 +126,8 @@ pub const EditorData = struct {
                 nr += 1;
             }
 
-            if (self.cursor.y > @intToFloat(f32, nr - 2)) {
-                self.cursor.y = @intToFloat(f32, nr - 2);
+            if (self.cursor.y > @as(f32, @floatFromInt(nr - 2))) {
+                self.cursor.y = @as(f32, @floatFromInt(nr - 2));
             }
         }
 
@@ -195,7 +195,7 @@ pub const EditorData = struct {
 
     pub fn submit(file: ?*files.File, data: *anyopaque) !void {
         if (file) |target| {
-            var self = @ptrCast(*Self, @alignCast(@alignOf(Self), data));
+            var self: *Self = @ptrCast(@alignCast(data));
             self.file = target;
         }
     }
@@ -219,7 +219,7 @@ pub const EditorData = struct {
     pub fn char(self: *Self, code: u32, _: i32) !void {
         if (code == '\n') return;
 
-        try self.buffer.insert(self.cursorIdx, @intCast(u8, code));
+        try self.buffer.insert(self.cursorIdx, @as(u8, @intCast(code)));
         self.cursor.x += 1;
         self.modified = true;
     }
@@ -259,7 +259,7 @@ pub const EditorData = struct {
                     self.cursor.x -= 1;
                     if (ch == '\n') {
                         self.cursor.y -= 1;
-                        self.cursor.x = @intToFloat(f32, self.prevIdx - 1);
+                        self.cursor.x = @as(f32, @floatFromInt(self.prevIdx - 1));
                     }
                 }
                 self.modified = true;

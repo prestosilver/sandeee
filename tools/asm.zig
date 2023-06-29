@@ -131,7 +131,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                             try result.appendSlice(&std.mem.toBytes(value));
                         } else {
                             try result.appendSlice("\x03");
-                            try result.appendSlice(&std.mem.toBytes(@intCast(u8, value)));
+                            try result.appendSlice(&std.mem.toBytes(@as(u8, @intCast(value))));
                         }
                     }
                 }
@@ -143,7 +143,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                 try result.appendSlice(&std.mem.toBytes(int));
             } else {
                 try result.appendSlice("\x03");
-                try result.appendSlice(&std.mem.toBytes(@intCast(u8, int)));
+                try result.appendSlice(&std.mem.toBytes(@as(u8, @intCast(int))));
             }
         }
     }
@@ -195,7 +195,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         }
     }
 
-    try toc.append(@intCast(u8, toc_count));
+    try toc.append(@as(u8, @intCast(toc_count)));
 
     inreader.close();
     inreader = try std.fs.cwd().openFile(in, .{});
@@ -216,10 +216,10 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                 if (l[0] == '_') {
                     if (prev_toc != 0) {
                         var len = data.items.len - prev_toc + 1;
-                        try toc.append(@intCast(u8, len / 256));
-                        try toc.append(@intCast(u8, len % 256));
+                        try toc.append(@as(u8, @intCast(len / 256)));
+                        try toc.append(@as(u8, @intCast(len % 256)));
                     }
-                    try toc.append(@intCast(u8, l.len - 2));
+                    try toc.append(@as(u8, @intCast(l.len - 2)));
                     try toc.appendSlice(l[1 .. l.len - 1]);
                     try toc.append(0);
                     prev_toc = data.items.len + 1;
@@ -311,7 +311,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                             try data.appendSlice(&std.mem.toBytes(value));
                         } else {
                             try data.appendSlice("\x03");
-                            try data.appendSlice(&std.mem.toBytes(@intCast(u8, value)));
+                            try data.appendSlice(&std.mem.toBytes(@as(u8, @intCast(value))));
                         }
                     }
                 }
@@ -323,15 +323,15 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                 try data.appendSlice(&std.mem.toBytes(int));
             } else {
                 try data.appendSlice("\x03");
-                try data.appendSlice(&std.mem.toBytes(@intCast(u8, int)));
+                try data.appendSlice(&std.mem.toBytes(@as(u8, @intCast(int))));
             }
         }
     }
     var len = data.items.len - prev_toc + 1;
-    try toc.append(@intCast(u8, len / 256));
-    try toc.append(@intCast(u8, len % 256));
+    try toc.append(@as(u8, @intCast(len / 256)));
+    try toc.append(@as(u8, @intCast(len % 256)));
 
-    try result.append(@intCast(u8, toc.items.len + 5));
+    try result.append(@as(u8, @intCast(toc.items.len + 5)));
     try result.appendSlice(toc.items);
     try result.appendSlice(data.items);
 

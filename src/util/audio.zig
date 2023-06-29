@@ -15,7 +15,7 @@ pub const Sound = struct {
         };
 
         c.alGenBuffers(1, &result.buffer);
-        c.alBufferData(result.buffer, c.AL_FORMAT_MONO8, &data[0], @intCast(c_int, data.len), 44100);
+        c.alBufferData(result.buffer, c.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
 
         return result;
     }
@@ -61,7 +61,7 @@ pub const Audio = struct {
 
         c.alGetSourcei(self.sources[self.next], c.AL_SOURCE_STATE, &sourceState);
         if (sourceState != c.AL_PLAYING) {
-            c.alSourcei(self.sources[self.next], c.AL_BUFFER, @intCast(c_int, snd.buffer));
+            c.alSourcei(self.sources[self.next], c.AL_BUFFER, @as(c_int, @intCast(snd.buffer)));
             c.alSourcef(self.sources[self.next], c.AL_GAIN, self.volume);
 
             c.alSourcePlay(self.sources[self.next]);

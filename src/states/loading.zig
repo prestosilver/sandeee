@@ -116,7 +116,7 @@ pub const GSLoading = struct {
         self.loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
         self.loader.run(&self.load_progress) catch {
             self.done.storeUnchecked(true);
-            @panic("BootEEE failed, Problaby missing file");
+            @panic("Boot\x82\x82\x82 failed, Problaby missing file");
         };
 
         // setup some pointers
@@ -154,11 +154,12 @@ pub const GSLoading = struct {
         try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
 
         // progress bar
-        // self.load_sprite.data.size.x = (self.load_progress * 320 + self.load_sprite.data.size.x) / 2;
+        self.load_sprite.data.size.x = (self.load_progress * 320 * 0.9 + self.load_sprite.data.size.x * 0.1);
+        try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
 
-        for (0..@floatToInt(usize, self.load_progress * 32)) |idx| {
-            try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x + @intToFloat(f32, 10 * idx), logoOff.y + 100, 0));
-        }
+        //for (0..@floatToInt(usize, self.load_progress * 32)) |idx| {
+        //    try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x + @intToFloat(f32, 10 * idx), logoOff.y + 100, 0));
+        //}
     }
 
     pub fn keypress(_: *Self, _: c_int, _: c_int, _: bool) !bool {

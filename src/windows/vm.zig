@@ -130,7 +130,7 @@ pub const VMData = struct {
         }
 
         if (self.debug) {
-            var val = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{@floatToInt(i32, self.fps)});
+            var val = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
             defer allocator.alloc.free(val);
 
             try font.draw(.{

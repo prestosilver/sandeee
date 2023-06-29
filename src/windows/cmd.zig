@@ -76,9 +76,9 @@ const CMDData = struct {
 
         var lines = std.mem.splitBackwards(u8, self.bt, "\n");
 
-        var y = bnds.y + bnds.h - @intToFloat(f32, idx) * font.size - 6 + offset;
+        var y = bnds.y + bnds.h - @as(f32, @floatFromInt(idx)) * font.size - 6 + offset;
 
-        var height: f32 = @intToFloat(f32, idx) * font.size;
+        var height: f32 = @as(f32, @floatFromInt(idx)) * font.size;
 
         while (lines.next()) |line| {
             height += font.sizeText(.{ .text = line, .wrap = bnds.w - 12 }).y;
@@ -106,14 +106,14 @@ const CMDData = struct {
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
         if (self.shell.vm != null) {
-            try self.shell.vm.?.input.append(@intCast(u8, code));
+            try self.shell.vm.?.input.append(@as(u8, @intCast(code)));
 
             return;
         }
 
         if (code == '\n') return;
         if (self.inputIdx < 255) {
-            self.inputBuffer[self.inputIdx] = @intCast(u8, code);
+            self.inputBuffer[self.inputIdx] = @as(u8, @intCast(code));
             self.inputIdx += 1;
         }
         _ = mods;
@@ -184,7 +184,7 @@ const CMDData = struct {
             c.GLFW_KEY_UP => {
                 if (self.historyIdx > 0) {
                     self.historyIdx -= 1;
-                    self.inputIdx = @intCast(u8, self.history.items[self.historyIdx].len);
+                    self.inputIdx = @as(u8, @intCast(self.history.items[self.historyIdx].len));
                     @memcpy(self.inputBuffer[0..self.inputIdx], self.history.items[self.historyIdx]);
                 }
             },
@@ -194,7 +194,7 @@ const CMDData = struct {
                     if (self.historyIdx == self.history.items.len) {
                         self.inputIdx = 0;
                     } else {
-                        self.inputIdx = @intCast(u8, self.history.items[self.historyIdx].len);
+                        self.inputIdx = @as(u8, @intCast(self.history.items[self.historyIdx].len));
                         @memcpy(self.inputBuffer[0..self.inputIdx], self.history.items[self.historyIdx]);
                     }
                 }

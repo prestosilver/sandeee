@@ -66,7 +66,7 @@ pub const PopupTextPick = struct {
             self.err = "";
 
             self.text = try allocator.alloc.realloc(self.text, self.text.len + 1);
-            self.text[self.text.len - 1] = @intCast(u8, keycode);
+            self.text[self.text.len - 1] = @as(u8, @intCast(keycode));
         }
     }
 

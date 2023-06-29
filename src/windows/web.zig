@@ -15,6 +15,7 @@ const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
+const settings = @import("settings.zig");
 
 const SCROLL = 30;
 
@@ -26,6 +27,12 @@ pub const WebData = struct {
     pub const WebLink = struct {
         url: []const u8,
         pos: rect.Rectangle,
+    };
+
+    pub const Align = enum {
+        Left,
+        Center,
+        Right,
     };
 
     highlight: sprite.Sprite,
@@ -86,15 +93,23 @@ pub const WebData = struct {
                     try headers.append("User-Agent", "SandEEE/0.0");
                     try headers.append("Connection", "Close");
 
-                    var req = try client.request(.GET, uri, headers, .{});
+                    var req = client.request(.GET, uri, headers, .{}) catch |err| {
+                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                        return;
+                    };
                     defer req.deinit();
 
-                    try req.start();
-                    try req.wait();
+                    req.start() catch |err| {
+                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                        return;
+                    };
+                    req.wait() catch |err| {
+                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                        return;
+                    };
 
                     if (req.response.status != .ok) {
-                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @enumToInt(req.response.status), @tagName(req.response.status) });
-
+                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @intFromEnum(req.response.status), @tagName(req.response.status) });
                         return;
                     }
 
@@ -158,11 +173,11 @@ pub const WebData = struct {
         var req = try client.request(.GET, uri, headers, .{});
         defer req.deinit();
 
-        try req.start();
-        try req.wait();
+        req.start() catch return;
+        req.wait() catch return;
 
         if (req.response.status != .ok) {
-            // self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {}", .{req.response.status});
+            self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {}", .{req.response.status});
             return;
         }
 
@@ -185,7 +200,7 @@ pub const WebData = struct {
         var adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
         adds.* = .{
             .text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ files.home.name, name }),
-            .data = @ptrCast(*anyopaque, output),
+            .data = @as(*anyopaque, @ptrCast(output)),
             .submit = &submit,
             .prompt = "Pick a path to save the file",
         };
@@ -205,7 +220,7 @@ pub const WebData = struct {
     }
 
     pub fn submit(file: []const u8, data: *anyopaque) !void {
-        var conts = @ptrCast(*[]const u8, @alignCast(@alignOf(*[]const u8), data));
+        var conts: *[]const u8 = @ptrCast(@alignCast(data));
 
         _ = try files.root.newFile(file);
         if (try files.root.getFile(file)) |target| {
@@ -240,28 +255,39 @@ pub const WebData = struct {
 
             var iter = std.mem.split(u8, cont, "\n");
 
-            var texid: [6]u8 = undefined;
-            texid[0] = 'w';
-            texid[1] = 'e';
-            texid[2] = 'b';
-            texid[3] = '_';
+            var texid: [6]u8 = .{ 'w', 'e', 'b', '_', 0, 0 };
             texid[4] = 0;
             texid[5] = self.web_idx;
 
             // draw text
-            while (iter.next()) |line| {
+            while (iter.next()) |fullLine| {
+                var line = fullLine;
+                var ali: Align = .Left;
+
+                if (std.mem.startsWith(u8, fullLine, ":center:")) {
+                    ali = .Center;
+                    line = fullLine[8..];
+                } else if (std.mem.startsWith(u8, fullLine, ":left:")) {
+                    ali = .Left;
+                    line = fullLine[6..];
+                } else if (std.mem.startsWith(u8, fullLine, ":right:")) {
+                    ali = .Right;
+                    line = fullLine[7..];
+                }
+
+                line = std.mem.trim(u8, line, &std.ascii.whitespace);
+
                 var scale: f32 = 1;
-                var text = line;
                 var color = col.newColor(0, 0, 0, 1);
 
                 if (std.mem.startsWith(u8, line, "- ") and std.mem.endsWith(u8, line, " -")) {
                     scale = 3.0;
-                    text = line[2 .. line.len - 2];
+                    line = line[2 .. line.len - 2];
                 }
 
                 if (std.mem.startsWith(u8, line, "-- ") and std.mem.endsWith(u8, line, " --")) {
                     scale = 2.0;
-                    text = line[3 .. line.len - 3];
+                    line = line[3 .. line.len - 3];
                 }
 
                 if (std.mem.startsWith(u8, line, "[") and std.mem.endsWith(u8, line, "]")) {
@@ -277,16 +303,47 @@ pub const WebData = struct {
                         _ = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                     }
 
-                    var size = sb.textureManager.get(&texid).?.size.mul(2);
-                    try batch.draw(sprite.Sprite, &.{
-                        .texture = &texid,
-                        .data = .{
-                            .source = rect.newRect(0, 0, 1, 1),
-                            .size = size,
+                    const size = sb.textureManager.get(&texid).?.size.mul(2 * scale);
+
+                    switch (ali) {
+                        .Center => {
+                            var x = (bnds.w - size.x) / 2;
+
+                            try batch.draw(sprite.Sprite, &.{
+                                .texture = &texid,
+                                .data = .{
+                                    .source = rect.newRect(0, 0, 1, 1),
+                                    .size = size,
+                                },
+                            }, self.shader, vecs.newVec3(bnds.x + 6 + x, bnds.y + 6 + pos.y, 0));
+                            texid[4] += 1;
+                            pos.y += size.y;
                         },
-                    }, self.shader, vecs.newVec3(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y, 0));
-                    texid[4] += 1;
-                    pos.y += size.y;
+                        .Left => {
+                            try batch.draw(sprite.Sprite, &.{
+                                .texture = &texid,
+                                .data = .{
+                                    .source = rect.newRect(0, 0, 1, 1),
+                                    .size = size,
+                                },
+                            }, self.shader, vecs.newVec3(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y, 0));
+                            texid[4] += 1;
+                            pos.y += size.y;
+                        },
+                        .Right => {
+                            var x = bnds.w - size.x;
+
+                            try batch.draw(sprite.Sprite, &.{
+                                .texture = &texid,
+                                .data = .{
+                                    .source = rect.newRect(0, 0, 1, 1),
+                                    .size = size,
+                                },
+                            }, self.shader, vecs.newVec3(bnds.x + 6 + x, bnds.y + 6 + pos.y, 0));
+                            texid[4] += 1;
+                            pos.y += size.y;
+                        },
+                    }
                     continue;
                 }
 
@@ -294,11 +351,11 @@ pub const WebData = struct {
                     color = col.newColor(0, 0, 1, 1);
                     var linkcont = line[2..];
                     var linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
-                    text = linkcont[0..linkidx];
-                    text = std.mem.trim(u8, text, &std.ascii.whitespace);
+                    line = linkcont[0..linkidx];
+                    line = std.mem.trim(u8, line, &std.ascii.whitespace);
                     var url = linkcont[linkidx + 1 ..];
                     url = std.mem.trim(u8, url, &std.ascii.whitespace);
-                    var size = font.sizeText(.{ .text = text, .scale = scale });
+                    var size = font.sizeText(.{ .text = line, .scale = scale });
 
                     if (self.add_links) {
                         var link = WebData.WebLink{
@@ -311,17 +368,49 @@ pub const WebData = struct {
 
                 if (pos.y > bnds.h + bnds.y and !self.add_links) continue;
 
-                try font.draw(.{
-                    .batch = batch,
-                    .shader = font_shader,
-                    .text = text,
-                    .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
-                    .color = color,
-                    .scale = scale,
-                    .wrap = bnds.w,
-                });
+                var size = font.sizeText(.{ .text = line, .scale = scale, .wrap = bnds.w });
 
-                pos.y += font.sizeText(.{ .text = text, .scale = scale, .wrap = bnds.w }).y;
+                switch (ali) {
+                    .Left => {
+                        try font.draw(.{
+                            .batch = batch,
+                            .shader = font_shader,
+                            .text = line,
+                            .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
+                            .color = color,
+                            .scale = scale,
+                            .wrap = bnds.w,
+                        });
+                    },
+                    .Center => {
+                        var x = (bnds.x - size.x) / 2;
+
+                        try font.draw(.{
+                            .batch = batch,
+                            .shader = font_shader,
+                            .text = line,
+                            .pos = vecs.newVec2(x, bnds.y + 6 + pos.y),
+                            .color = color,
+                            .scale = scale,
+                            .wrap = bnds.w,
+                        });
+                    },
+                    .Right => {
+                        var x = (bnds.x - size.x);
+
+                        try font.draw(.{
+                            .batch = batch,
+                            .shader = font_shader,
+                            .text = line,
+                            .pos = vecs.newVec2(x, bnds.y + 6 + pos.y),
+                            .color = color,
+                            .scale = scale,
+                            .wrap = bnds.w,
+                        });
+                    },
+                }
+
+                pos.y += size.y;
                 pos.x = 0;
             }
 
@@ -493,7 +582,7 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
                 vecs.newVec2(20, 20),
             )),
         },
-        .path = "@sandeee.org:/index.edf",
+        .path = settings.settingManager.get("web_home") orelse "@sandeee.org:/index.edf",
         .conts = null,
         .shader = shader,
         .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),

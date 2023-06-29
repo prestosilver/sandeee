@@ -152,8 +152,7 @@ pub const Shell = struct {
         });
 
         if (param.len > 5) {
-            const alignment = @alignOf(wins.editor.EditorData);
-            var edself = @ptrCast(*wins.editor.EditorData, @alignCast(alignment, window.data.contents.ptr));
+            var edself: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
 
             edself.file = try self.root.getFile(param[5..]);
             edself.buffer.clearAndFree();
@@ -183,8 +182,7 @@ pub const Shell = struct {
         });
 
         if (param.len > 4) {
-            const alignment = @typeInfo(*wins.web.WebData).Pointer.alignment;
-            var webself = @ptrCast(*wins.web.WebData, @alignCast(alignment, window.data.contents.ptr));
+            var webself: *wins.web.WebData = @ptrCast(@alignCast(window.data.contents.ptr));
 
             webself.path = try allocator.alloc.dupe(u8, param[4..]);
         }

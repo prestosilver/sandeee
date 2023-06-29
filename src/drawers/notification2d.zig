@@ -25,7 +25,7 @@ pub const NotificationData = struct {
         source.y /= TOTAL_SPRITES;
         source.h /= TOTAL_SPRITES;
 
-        source.y += 1.0 / TOTAL_SPRITES * @intToFloat(f32, sprite);
+        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
         try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
         try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), color);
@@ -36,7 +36,7 @@ pub const NotificationData = struct {
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32, color: cols.Color) !void {
-        var sc = @intToFloat(f32, scale);
+        var sc = @as(f32, @floatFromInt(scale));
 
         try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE), color);
         try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE), color);
@@ -73,7 +73,7 @@ pub const NotificationData = struct {
             icon.data.size.x = 60;
             icon.data.size.y = 60;
 
-            var pos = wins.deskSize.sub(.{ .x = 255, .y = 95 + 80 * @intToFloat(f32, idx) });
+            var pos = wins.deskSize.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
 
             try batch.draw(
                 spr.Sprite,
@@ -87,7 +87,7 @@ pub const NotificationData = struct {
             .batch = batch,
             .shader = font_shader,
             .text = self.title,
-            .pos = wins.deskSize.sub(.{ .x = 180, .y = 100 + 80 * @intToFloat(f32, idx) }),
+            .pos = wins.deskSize.sub(.{ .x = 180, .y = 100 + 80 * @as(f32, @floatFromInt(idx)) }),
             .color = cols.newColor(0, 0, 0, 1),
             .wrap = 160,
             .maxlines = 1,
@@ -97,7 +97,7 @@ pub const NotificationData = struct {
             .batch = batch,
             .shader = font_shader,
             .text = self.text,
-            .pos = wins.deskSize.sub(.{ .x = 180, .y = 100 - font.size + 80 * @intToFloat(f32, idx) }),
+            .pos = wins.deskSize.sub(.{ .x = 180, .y = 100 - font.size + 80 * @as(f32, @floatFromInt(idx)) }),
             .color = cols.newColor(0, 0, 0, 1),
             .wrap = 160,
             .maxlines = 3,

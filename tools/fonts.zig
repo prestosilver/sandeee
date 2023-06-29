@@ -27,8 +27,8 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var chw = image.width / 16;
     var chh = image.height / 16 + SPACING;
 
-    try result.append(@intCast(u8, chw));
-    try result.append(@intCast(u8, chh));
+    try result.append(@as(u8, @intCast(chw)));
+    try result.append(@as(u8, @intCast(chh)));
     try result.append(1);
 
     for (0..16) |x| {

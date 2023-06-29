@@ -54,35 +54,33 @@ pub const PopupData = struct {
             if (ptr_info != .Pointer) @compileError("ptr must be a pointer");
             if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
 
-            const alignment = ptr_info.Pointer.alignment;
-
             const gen = struct {
                 fn drawImpl(pointer: *anyopaque, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
-                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
                     return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, shader, bnds, font });
                 }
 
                 fn keyImpl(pointer: *anyopaque, keycode: c_int, mods: c_int, down: bool) !void {
-                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
                     return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
                 }
 
                 fn charImpl(pointer: *anyopaque, keycode: u32, mods: i32) !void {
-                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
                     return @call(.auto, ptr_info.Pointer.child.char, .{ self, keycode, mods });
                 }
 
                 fn deinitImpl(pointer: *anyopaque) !void {
-                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
                     return @call(.auto, ptr_info.Pointer.child.deinit, .{self});
                 }
 
                 fn clickImpl(pointer: *anyopaque, mousepos: vecs.Vector2) !void {
-                    const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
                     return @call(.auto, ptr_info.Pointer.child.click, .{ self, mousepos });
                 }
@@ -115,7 +113,7 @@ pub const PopupData = struct {
         source.y /= TOTAL_SPRITES;
         source.h /= TOTAL_SPRITES;
 
-        source.y += 1.0 / TOTAL_SPRITES * @intToFloat(f32, sprite);
+        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
         try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
         try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), color);
@@ -126,7 +124,7 @@ pub const PopupData = struct {
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32, color: cols.Color) !void {
-        var sc = @intToFloat(f32, scale);
+        var sc = @as(f32, @floatFromInt(scale));
 
         try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE), color);
         try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE), color);

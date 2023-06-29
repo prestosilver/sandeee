@@ -37,7 +37,7 @@ pub const BarData = struct {
         source.y /= TOTAL_SPRITES;
         source.h /= TOTAL_SPRITES;
 
-        source.y += 1.0 / TOTAL_SPRITES * @intToFloat(f32, sprite);
+        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
         try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
         try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), cols.newColor(1, 1, 1, 1));
@@ -48,7 +48,7 @@ pub const BarData = struct {
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32) !void {
-        var sc = @intToFloat(f32, scale);
+        var sc = @as(f32, @floatFromInt(scale));
 
         try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE));
         try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE));
@@ -74,11 +74,11 @@ pub const BarData = struct {
         });
 
         var ts = std.time.timestamp();
-        var hours = @intCast(i64, @intCast(u64, ts) / std.time.s_per_hour) - settingsManager.getInt("hours_offset");
-        var mins = @intCast(i64, @intCast(u64, ts) / std.time.s_per_min) - settingsManager.getInt("minutes_offset");
+        var hours = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_hour)) - settingsManager.getInt("hours_offset");
+        var mins = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_min)) - settingsManager.getInt("minutes_offset");
         var clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{
-            @intCast(u8, @rem(hours, 24)),
-            @intCast(u8, @rem(mins, 60)),
+            @as(u8, @intCast(@rem(hours, 24))),
+            @as(u8, @intCast(@rem(mins, 60))),
         });
         defer allocator.alloc.free(clockString);
 
@@ -95,7 +95,7 @@ pub const BarData = struct {
         self.btns = 0;
 
         for (windows.items) |window| {
-            pos.x = 3 * self.height + 10 + 4 * (self.height * @intToFloat(f32, window.data.idx));
+            pos.x = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
             try font.draw(.{
                 .batch = batch,
                 .shader = font_shader,
@@ -113,7 +113,7 @@ pub const BarData = struct {
             try batch.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
 
             for (0..10) |i| {
-                var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
+                var y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 var text: []const u8 = "";
                 switch (i) {
                     0 => text = "Cmd",
@@ -147,7 +147,7 @@ pub const BarData = struct {
             var newTop: ?u32 = null;
 
             for (windows.items, 0..) |*window, idx| {
-                var offset = 3 * self.height + 10 + 4 * (self.height * @intToFloat(f32, window.data.idx));
+                var offset = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
 
                 var btnBnds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
 
@@ -159,14 +159,14 @@ pub const BarData = struct {
                         window.data.active = false;
                     } else {
                         window.data.active = true;
-                        newTop = @intCast(u32, idx);
+                        newTop = @as(u32, @intCast(idx));
                     }
                 } else {
                     window.data.active = false;
                 }
             }
             if (newTop) |top| {
-                var swap = windows.orderedRemove(@intCast(usize, top));
+                var swap = windows.orderedRemove(@as(usize, @intCast(top)));
                 try swap.data.contents.focus();
                 try windows.append(swap);
             }
@@ -174,7 +174,7 @@ pub const BarData = struct {
 
         if (self.btnActive) {
             for (0..10) |i| {
-                var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
+                var y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 var item = rect.newRect(36, y, 160, 67);
                 if (item.contains(pos)) {
                     added = true;
@@ -344,7 +344,7 @@ pub const BarData = struct {
             try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
 
             for (0..10) |i| {
-                var y = self.screendims.y - 466 - self.height + 67 * @intToFloat(f32, i);
+                var y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 var iconpos = rect.newRect(36, y + 2, 64, 64);
 
                 switch (i) {
@@ -374,8 +374,8 @@ pub const BarData = struct {
             }
         }
 
-        for (0..@intCast(usize, self.btns)) |i| {
-            var b = rect.newRect(self.height * @intToFloat(f32, i * 4 + 3), self.screendims.y - self.height, 4 * self.height, self.height);
+        for (0..@as(usize, @intCast(self.btns))) |i| {
+            var b = rect.newRect(self.height * @as(f32, @floatFromInt(i * 4 + 3)), self.screendims.y - self.height, 4 * self.height, self.height);
             try addUiQuad(&result, 1, b, 2, 6, 6, 6, 6);
         }
 

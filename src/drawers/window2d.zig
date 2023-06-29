@@ -172,8 +172,6 @@ pub const WindowContents = struct {
         if (ptr_info != .Pointer) @compileError("ptr must be a pointer");
         if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
 
-        const alignment = ptr_info.Pointer.alignment;
-
         const gen = struct {
             fn drawImpl(
                 pointer: *anyopaque,
@@ -183,49 +181,49 @@ pub const WindowContents = struct {
                 font: *fnt.Font,
                 props: *WindowProps,
             ) anyerror!void {
-                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font, props });
             }
 
             fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
-                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
             }
 
             fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
-                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.char, .{ self, codepoint, mods });
             }
 
             fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: c_int) !void {
-                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.click, .{ self, size, pos, btn });
             }
 
             fn scrollImpl(pointer: *anyopaque, x: f32, y: f32) !void {
-                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.scroll, .{ self, x, y });
             }
 
             fn moveImpl(pointer: *anyopaque, x: f32, y: f32) !void {
-                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.move, .{ self, x, y });
             }
 
             fn focusImpl(pointer: *anyopaque) !void {
-                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.focus, .{self});
             }
 
             fn deinitImpl(pointer: *anyopaque) !void {
-                const self = @ptrCast(Ptr, @alignCast(alignment, pointer));
+                const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.deinit, .{self});
             }
@@ -290,7 +288,7 @@ pub const WindowData = struct {
         source.y /= TOTAL_SPRITES;
         source.h /= TOTAL_SPRITES;
 
-        source.y += 1.0 / TOTAL_SPRITES * @intToFloat(f32, sprite);
+        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
         try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
         try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), color);
@@ -301,7 +299,7 @@ pub const WindowData = struct {
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32, color: cols.Color) !void {
-        var sc = @intToFloat(f32, scale);
+        var sc = @as(f32, @floatFromInt(scale));
 
         try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE), color);
         try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE), color);

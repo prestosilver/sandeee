@@ -12,20 +12,18 @@ const events = @import("../../util/events.zig");
 const windowEvs = @import("../../events/window.zig");
 const c = @import("../../c.zig");
 
-pub const PopupFolderPick = struct {
+pub const PopupConfirm = struct {
     const Self = @This();
 
-    path: []u8,
-    submit: *const fn (?*files.Folder, *anyopaque) anyerror!void,
-    err: []const u8 = "",
-    data: *anyopaque,
+    message: []const u8,
+    buttons: [][]const u8,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
         try font.draw(.{
             .batch = batch,
             .shader = shader,
             .pos = bnds.location(),
-            .text = "Enter the files path:",
+            .text = self.message,
         });
 
         try font.draw(.{
@@ -58,20 +56,11 @@ pub const PopupFolderPick = struct {
             if (try files.root.getFolder(self.path)) |folder| {
                 try self.submit(folder, self.data);
                 events.em.sendEvent(windowEvs.EventClosePopup{});
-            } else {
-                self.err = "Folder Not Found";
             }
         }
     }
 
-    pub fn char(self: *Self, keycode: u32, _: i32) !void {
-        if (keycode < 256) {
-            self.err = "";
-
-            self.path = try allocator.alloc.realloc(self.path, self.path.len + 1);
-            self.path[self.path.len - 1] = @as(u8, @intCast(keycode));
-        }
-    }
+    pub fn char(_: *Self, _: u32, _: i32) !void {}
 
     pub fn click(_: *Self, _: vecs.Vector2) !void {}
 

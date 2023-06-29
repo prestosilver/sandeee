@@ -50,10 +50,10 @@ pub const Font = struct {
 
         if (!std.mem.eql(u8, data[0..4], "efnt")) return error.BadFile;
 
-        var charWidth = @intCast(c_uint, data[4]);
-        var charHeight = @intCast(c_uint, data[5]);
+        var charWidth = @as(c_uint, @intCast(data[4]));
+        var charHeight = @as(c_uint, @intCast(data[5]));
 
-        var atlasSize = vec.newVec2(128 * @intToFloat(f32, charWidth), 2 * @intToFloat(f32, charHeight));
+        var atlasSize = vec.newVec2(128 * @as(f32, @floatFromInt(charWidth)), 2 * @as(f32, @floatFromInt(charHeight)));
 
         var result: Font = undefined;
         var texture: c.GLuint = undefined;
@@ -66,57 +66,57 @@ pub const Font = struct {
 
         c.glPixelStorei(c.GL_UNPACK_ALIGNMENT, 1);
 
-        c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, @floatToInt(c_int, atlasSize.x), @floatToInt(c_int, atlasSize.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+        c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, @as(c_int, @intFromFloat(atlasSize.x)), @as(c_int, @intFromFloat(atlasSize.y)), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
 
         var x: c_uint = 0;
 
         for (0..128) |i| {
             var chStart = 4 + 3 + (charWidth * charHeight * i);
 
-            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @intCast(c_int, x), 0, @intCast(c_int, charWidth), @intCast(c_int, charHeight), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
+            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), 0, @as(c_int, @intCast(charWidth)), @as(c_int, @intCast(charHeight)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
 
             result.chars[i + 128] = Char{
                 .size = vec.newVec2(
-                    @intToFloat(f32, charWidth) * 2,
-                    @intToFloat(f32, charHeight) * 2,
+                    @as(f32, @floatFromInt(charWidth)) * 2,
+                    @as(f32, @floatFromInt(charHeight)) * 2,
                 ),
                 .bearing = vec.newVec2(
                     0,
-                    @intToFloat(f32, data[6]) * 2,
+                    @as(f32, @floatFromInt(data[6])) * 2,
                 ),
-                .ax = @intToFloat(f32, charWidth) * 2 - 4,
+                .ax = @as(f32, @floatFromInt(charWidth)) * 2 - 4,
                 .ay = 0,
-                .tx = @intToFloat(f32, x) / atlasSize.x,
+                .tx = @as(f32, @floatFromInt(x)) / atlasSize.x,
                 .ty = 0.5,
-                .tw = @intToFloat(f32, charWidth) / atlasSize.x,
-                .th = @intToFloat(f32, charHeight) / atlasSize.y,
+                .tw = @as(f32, @floatFromInt(charWidth)) / atlasSize.x,
+                .th = @as(f32, @floatFromInt(charHeight)) / atlasSize.y,
             };
 
             chStart = 4 + 3 + (charWidth * charHeight * (i + 128));
 
-            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @intCast(c_int, x), @intCast(c_int, charHeight), @intCast(c_int, charWidth), @intCast(c_int, charHeight), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
+            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), @as(c_int, @intCast(charHeight)), @as(c_int, @intCast(charWidth)), @as(c_int, @intCast(charHeight)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
 
             result.chars[i] = Char{
                 .size = vec.newVec2(
-                    @intToFloat(f32, charWidth) * 2,
-                    @intToFloat(f32, charHeight) * 2,
+                    @as(f32, @floatFromInt(charWidth)) * 2,
+                    @as(f32, @floatFromInt(charHeight)) * 2,
                 ),
                 .bearing = vec.newVec2(
                     0,
-                    @intToFloat(f32, data[6]) * 2,
+                    @as(f32, @floatFromInt(data[6])) * 2,
                 ),
-                .ax = @intToFloat(f32, charWidth) * 2 - 4,
+                .ax = @as(f32, @floatFromInt(charWidth)) * 2 - 4,
                 .ay = 0,
-                .tx = @intToFloat(f32, x) / atlasSize.x,
+                .tx = @as(f32, @floatFromInt(x)) / atlasSize.x,
                 .ty = 0,
-                .tw = @intToFloat(f32, charWidth) / atlasSize.x,
-                .th = @intToFloat(f32, charHeight) / atlasSize.y,
+                .tw = @as(f32, @floatFromInt(charWidth)) / atlasSize.x,
+                .th = @as(f32, @floatFromInt(charHeight)) / atlasSize.y,
             };
 
             x += charWidth;
         }
 
-        result.size = @intToFloat(f32, charHeight * 2);
+        result.size = @as(f32, @floatFromInt(charHeight * 2));
 
         result.tex = try std.fmt.allocPrint(allocator.alloc, "font{}", .{fontId});
 
@@ -174,7 +174,7 @@ pub const Font = struct {
                                 split += 1;
                             }
 
-                            line = @floatToInt(usize, (pos.y - start.y) / (self.size * params.scale));
+                            line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
                             try self.draw(.{
                                 .batch = params.batch,
                                 .shader = params.shader,
@@ -195,7 +195,7 @@ pub const Font = struct {
 
                             size = self.sizeText(.{ .text = spaced, .scale = params.scale });
                         }
-                        line = @floatToInt(usize, (pos.y - start.y) / (self.size * params.scale));
+                        line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
                         try self.draw(.{
                             .batch = params.batch,
                             .shader = params.shader,
@@ -214,7 +214,7 @@ pub const Font = struct {
                         pos.x = start.x;
                     }
                 }
-                line = @floatToInt(usize, (pos.y - start.y) / (self.size * params.scale));
+                line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
                 try self.draw(.{
                     .batch = params.batch,
                     .shader = params.shader,
@@ -245,7 +245,7 @@ pub const Font = struct {
                     @max(@as(f32, 0), @min(params.batch.scissor.?.w, params.pos.x + params.wrap.? - params.batch.scissor.?.x));
             if (params.maxlines != null)
                 params.batch.scissor.?.h =
-                    @max(@as(f32, 0), @min(params.batch.scissor.?.h, params.pos.y + ((@intToFloat(f32, params.maxlines.?) - @intToFloat(f32, params.curLine)) * self.size) - params.batch.scissor.?.y));
+                    @max(@as(f32, 0), @min(params.batch.scissor.?.h, params.pos.y + ((@as(f32, @floatFromInt(params.maxlines.?)) - @as(f32, @floatFromInt(params.curLine))) * self.size) - params.batch.scissor.?.y));
         }
 
         var vertarray = try va.VertArray.init();

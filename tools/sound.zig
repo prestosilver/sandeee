@@ -28,8 +28,8 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             continue;
         }
         if (std.mem.eql(u8, &name, "fmt ")) {
-            chanels = @intCast(u8, section[10]); //HACK 99% of wavs have 2 chanels
-            sr = @intCast(u8, section[14] >> 3);
+            chanels = @as(u8, @intCast(section[10])); //HACK 99% of wavs have 2 chanels
+            sr = @as(u8, @intCast(section[14] >> 3));
 
             continue;
         }
@@ -42,10 +42,10 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             } else {
                 for (0..section.len) |idx| {
                     if ((chanels * sr) == 0 or idx % (chanels * sr) == 0) {
-                        var tmp: i16 = @intCast(i16, @bitCast(i8, section[idx + sr - 1]));
+                        var tmp: i16 = @as(i16, @intCast(@as(i8, @bitCast(section[idx + sr - 1]))));
                         tmp += 128;
 
-                        try result.append(@intCast(u8, tmp));
+                        try result.append(@as(u8, @intCast(tmp)));
                     }
                 }
             }

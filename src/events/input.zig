@@ -63,5 +63,5 @@ pub fn framebufferSizeCallback(_: ?*c.GLFWwindow, width: c_int, height: c_int) c
 }
 
 pub fn scrollCallback(_: ?*c.GLFWwindow, x: f64, y: f64) callconv(.C) void {
-    ev.EventManager.instance.sendEvent(EventMouseScroll{ .x = @floatCast(f32, x), .y = @floatCast(f32, y) });
+    ev.EventManager.instance.sendEvent(EventMouseScroll{ .x = @as(f32, @floatCast(x)), .y = @as(f32, @floatCast(y)) });
 }

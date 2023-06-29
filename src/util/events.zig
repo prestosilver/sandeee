@@ -30,11 +30,11 @@ pub const EventManager = struct {
     }
 
     pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) bool) !void {
-        const call = @ptrCast(*const fn (*void) bool, callee);
+        const call = @as(*const fn (*void) bool, @ptrCast(callee));
 
         if (self.subs.getPtr(@typeName(T))) |list| {
             for (list.*) |*item| {
-                if (@ptrToInt(item.calls) == @ptrToInt(callee)) {
+                if (@intFromPtr(item.calls) == @intFromPtr(callee)) {
                     return;
                 }
             }
@@ -60,7 +60,7 @@ pub const EventManager = struct {
         const name: []const u8 = @typeName(T);
 
         for (self.subs.get(name) orelse return) |sub| {
-            const call = @ptrCast(*const fn (T) bool, sub.calls);
+            const call = @as(*const fn (T) bool, @ptrCast(sub.calls));
             if (call(data)) {
                 break;
             }

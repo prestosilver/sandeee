@@ -34,7 +34,7 @@ pub fn newTextureSize(size: vecs.Vector2) Texture {
     c.glGenTextures(1, &result.tex);
     c.glBindTexture(c.GL_TEXTURE_2D, result.tex);
 
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @floatToInt(c_int, size.x), @floatToInt(c_int, size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @as(c_int, @intFromFloat(size.x)), @as(c_int, @intFromFloat(size.y)), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
 
     return result;
 }
@@ -55,8 +55,8 @@ pub fn newTextureMem(mem: []const u8) !Texture {
         .y = 0,
     } };
 
-    var width = @intCast(c_int, mem[4]) + @intCast(c_int, mem[5]) * 256;
-    var height = @intCast(c_int, mem[6]) + @intCast(c_int, mem[7]) * 256;
+    var width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
+    var height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
 
     if (mem.len / 4 - 2 != width * height) {
         std.log.info("expected {} got {}", .{ width * height * 4 + 4, mem.len });
@@ -64,8 +64,8 @@ pub fn newTextureMem(mem: []const u8) !Texture {
         return error.WrongSize;
     }
 
-    result.size.x = @intToFloat(f32, width);
-    result.size.y = @intToFloat(f32, height);
+    result.size.x = @as(f32, @floatFromInt(width));
+    result.size.y = @as(f32, @floatFromInt(height));
 
     c.glGenTextures(1, &result.tex);
     c.glBindTexture(c.GL_TEXTURE_2D, result.tex);
@@ -96,8 +96,8 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
     gfx.gContext.makeCurrent();
     defer gfx.gContext.makeNotCurrent();
 
-    var width = @intCast(c_int, mem[4]) + @intCast(c_int, mem[5]) * 256;
-    var height = @intCast(c_int, mem[6]) + @intCast(c_int, mem[7]) * 256;
+    var width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
+    var height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
 
     if (mem.len / 4 - 2 != width * height) {
         std.log.info("expected {} got {}", .{ width * height * 4 + 4, mem.len });
@@ -105,8 +105,8 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
         return error.WrongSize;
     }
 
-    tex.size.x = @intToFloat(f32, width);
-    tex.size.y = @intToFloat(f32, height);
+    tex.size.x = @as(f32, @floatFromInt(width));
+    tex.size.y = @as(f32, @floatFromInt(height));
 
     c.glBindTexture(c.GL_TEXTURE_2D, tex.tex);
 

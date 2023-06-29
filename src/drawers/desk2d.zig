@@ -31,7 +31,7 @@ pub const DeskData = struct {
         source.y /= TOTAL_SPRITES;
         source.h /= TOTAL_SPRITES;
 
-        source.y += 1.0 / TOTAL_SPRITES * @intToFloat(f32, sprite);
+        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
         try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
         try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), cols.newColor(1, 1, 1, 1));
@@ -83,8 +83,7 @@ pub const DeskData = struct {
                         .active = true,
                     });
 
-                    const alignment = @alignOf(wins.explorer.ExplorerData);
-                    var explorerSelf = @ptrCast(*wins.explorer.ExplorerData, @alignCast(alignment, window.data.contents.ptr));
+                    var explorerSelf: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
 
                     explorerSelf.shell.root = folder;
 

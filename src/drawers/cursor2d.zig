@@ -36,12 +36,12 @@ pub const CursorData = struct {
             yo -= self.size.y / 2;
         }
 
-        var x = @floatCast(f32, xo);
-        var y = @floatCast(f32, yo);
+        var x = @as(f32, @floatCast(xo));
+        var y = @as(f32, @floatCast(yo));
 
         var source = self.source;
-        source.w /= @intToFloat(f32, self.total);
-        source.x += source.w * @intToFloat(f32, self.index);
+        source.w /= @as(f32, @floatFromInt(self.total));
+        source.x += source.w * @as(f32, @floatFromInt(self.index));
 
         if (self.flip) {
             try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);

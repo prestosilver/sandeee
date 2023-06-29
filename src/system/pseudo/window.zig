@@ -58,12 +58,11 @@ pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
         for (windowsPtr.*.items, 0..) |_, idx| {
             var item = &windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+                var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aid[0]) {
-                    var x = std.mem.asBytes(&@floatToInt(u16, item.data.pos.w));
-                    var y = std.mem.asBytes(&@floatToInt(u16, item.data.pos.h));
+                    var x = std.mem.asBytes(&@as(u16, @intFromFloat(item.data.pos.w)));
+                    var y = std.mem.asBytes(&@as(u16, @intFromFloat(item.data.pos.h)));
                     std.mem.copy(u8, result[0..2], x);
                     std.mem.copy(u8, result[2..4], y);
                     return result;
@@ -81,12 +80,11 @@ pub fn writeWinSize(data: []const u8, vmInstance: ?*vm.VM) !void {
         for (windowsPtr.*.items, 0..) |_, idx| {
             var item = &windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+                var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aid[0]) {
-                    var x = @intToFloat(f32, @ptrCast(*const u16, @alignCast(@alignOf(u16), &data[0])).*);
-                    var y = @intToFloat(f32, @ptrCast(*const u16, @alignCast(@alignOf(u16), &data[2])).*);
+                    var x = @as(f32, @floatFromInt(@as(*const u16, @ptrCast(@alignCast(&data[0]))).*));
+                    var y = @as(f32, @floatFromInt(@as(*const u16, @ptrCast(@alignCast(&data[2]))).*));
                     item.data.pos.w = x;
                     item.data.pos.h = y;
 
@@ -115,8 +113,7 @@ pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) !void {
         for (windowsPtr.*.items, 0..) |_, idx| {
             var item = &windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+                var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aid) {
                     try item.data.deinit();
@@ -138,8 +135,7 @@ pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
         for (windowsPtr.*.items, 0..) |_, idx| {
             var item = &windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+                var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aid[0]) {
                     result[0] = 1;
@@ -170,24 +166,23 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
         for (windowsPtr.*.items, 0..) |_, idx| {
             var item = &windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+                var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aaid[0]) {
                     if (std.mem.eql(u8, data[0..3], "min")) {
                         if (data[3..].len < 4) {
                             return;
                         }
-                        var x = @intToFloat(f32, std.mem.bytesAsValue(u16, data[3..5]).*);
-                        var y = @intToFloat(f32, std.mem.bytesAsValue(u16, data[5..7]).*);
+                        var x = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[3..5]).*));
+                        var y = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[5..7]).*));
                         item.data.contents.props.size.min.x = x;
                         item.data.contents.props.size.min.y = y;
                     } else if (std.mem.eql(u8, data[0..3], "max")) {
                         if (data[3..].len < 4) {
                             return;
                         }
-                        var x = @intToFloat(f32, std.mem.bytesAsValue(u16, data[3..5]).*);
-                        var y = @intToFloat(f32, std.mem.bytesAsValue(u16, data[5..7]).*);
+                        var x = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[3..5]).*));
+                        var y = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[5..7]).*));
                         item.data.contents.props.size.max = .{ .x = x, .y = y };
                     }
                     return;
@@ -211,8 +206,7 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
     for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-            const alignment = @alignOf(vmwin.VMData);
-            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+            var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
             if (self.idx == aid) {
                 self.flip();
@@ -231,8 +225,7 @@ pub fn readWinTitle(vmInstance: ?*vm.VM) ![]const u8 {
         for (windowsPtr.*.items, 0..) |_, idx| {
             var item = &windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const alignment = @alignOf(vmwin.VMData);
-                var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+                var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aaid[0]) {
                     return allocator.alloc.dupe(u8, item.data.contents.props.info.name);
@@ -251,8 +244,7 @@ pub fn writeWinTitle(id: []const u8, _: ?*vm.VM) !void {
     for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+            var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
             if (self.idx == aid) {
                 try item.data.contents.props.setTitle(id[1..]);
@@ -278,24 +270,23 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
     var aid = data[1];
 
     var dst = rect.newRect(
-        @intToFloat(f32, std.mem.bytesToValue(u64, data[2..10])),
-        @intToFloat(f32, std.mem.bytesToValue(u64, data[10..18])),
-        @intToFloat(f32, std.mem.bytesToValue(u64, data[18..26])),
-        @intToFloat(f32, std.mem.bytesToValue(u64, data[26..34])),
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[2..10]))),
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[10..18]))),
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[18..26]))),
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[26..34]))),
     );
 
     var src = rect.newRect(
-        @intToFloat(f32, std.mem.bytesToValue(u64, data[34..42])) / 1024,
-        @intToFloat(f32, std.mem.bytesToValue(u64, data[42..50])) / 1024,
-        @intToFloat(f32, std.mem.bytesToValue(u64, data[50..58])) / 1024,
-        @intToFloat(f32, std.mem.bytesToValue(u64, data[58..66])) / 1024,
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[34..42]))) / 1024,
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[42..50]))) / 1024,
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[50..58]))) / 1024,
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[58..66]))) / 1024,
     );
 
     for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+            var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
             if (self.idx == aid) {
                 return self.addRect(data[0..1], src, dst);
@@ -318,8 +309,8 @@ pub fn writeWinText(data: []const u8, _: ?*vm.VM) !void {
     var aid = data[0];
 
     var dst = vecs.newVec2(
-        @intToFloat(f32, std.mem.bytesToValue(u16, data[1..3])),
-        @intToFloat(f32, std.mem.bytesToValue(u16, data[3..5])),
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u16, data[1..3]))),
+        @as(f32, @floatFromInt(std.mem.bytesToValue(u16, data[3..5]))),
     );
 
     var text = data[5..];
@@ -327,8 +318,7 @@ pub fn writeWinText(data: []const u8, _: ?*vm.VM) !void {
     for (windowsPtr.*.items, 0..) |_, idx| {
         var item = &windowsPtr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-            const alignment = @typeInfo(*vmwin.VMData).Pointer.alignment;
-            var self = @ptrCast(*vmwin.VMData, @alignCast(alignment, item.data.contents.ptr));
+            var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
             if (self.idx == aid) {
                 return self.addText(dst, text);

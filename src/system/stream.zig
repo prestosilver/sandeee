@@ -51,7 +51,7 @@ pub const FileStream = struct {
     }
 
     pub fn Read(self: *FileStream, len: u32) ![]const u8 {
-        var target = @intCast(usize, len);
+        var target = @as(usize, @intCast(len));
         if (target + self.offset > self.contents.len) {
             target = self.contents.len - self.offset;
         }
@@ -61,7 +61,7 @@ pub const FileStream = struct {
 
         std.mem.copy(u8, result, input);
 
-        self.offset += @intCast(u32, target);
+        self.offset += @as(u32, @intCast(target));
 
         return result;
     }
@@ -73,7 +73,7 @@ pub const FileStream = struct {
 
         std.mem.copy(u8, self.contents[self.offset .. self.offset + data.len], data);
 
-        self.offset += @intCast(u32, data.len);
+        self.offset += @as(u32, @intCast(data.len));
         self.updated = true;
     }
 

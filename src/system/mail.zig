@@ -127,7 +127,7 @@ pub const EmailManager = struct {
             if (email.isComplete) comp += 1;
         }
 
-        return @floatToInt(u8, comp / total * 100);
+        return @as(u8, @intFromFloat(comp / total * 100));
     }
 
     pub fn getEmailUnlocks(self: *EmailManager, email: *Email) bool {
@@ -194,12 +194,12 @@ pub const EmailManager = struct {
         var start = try allocator.alloc.alloc(u8, 1);
         defer allocator.alloc.free(start);
 
-        start[0] = @intCast(u8, self.boxes.len);
+        start[0] = @as(u8, @intCast(self.boxes.len));
 
         for (self.boxes) |boxname| {
             var sidx = start.len;
             start = try allocator.alloc.realloc(start, start.len + boxname.len + 1);
-            start[sidx] = @intCast(u8, boxname.len);
+            start[sidx] = @as(u8, @intCast(boxname.len));
             std.mem.copy(u8, start[sidx + 1 ..], boxname);
         }
 
@@ -209,8 +209,8 @@ pub const EmailManager = struct {
         std.mem.copy(u8, conts[0..start.len], start);
 
         for (self.emails.items) |*email| {
-            if (email.viewed) conts[start.len + @intCast(usize, email.box) * 256 + email.id] |= 1 << 0;
-            if (email.isComplete) conts[start.len + @intCast(usize, email.box) * 256 + email.id] |= 1 << 1;
+            if (email.viewed) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 0;
+            if (email.isComplete) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 1;
         }
 
         _ = try files.root.newFile(path);
@@ -281,7 +281,7 @@ pub const EmailManager = struct {
                 &[_][]const u8{
                     &idStr,
                     &show,
-                    &.{@enumToInt(email.condition)},
+                    &.{@intFromEnum(email.condition)},
                     condsLen,
                     email.conditionData,
                     depsLen,
@@ -322,7 +322,7 @@ pub const EmailManager = struct {
 
                 var start = self.emails.items.len;
 
-                var count = @bitCast(u32, conts[fidx .. fidx + 4][0..4].*);
+                var count = @as(u32, @bitCast(conts[fidx .. fidx + 4][0..4].*));
                 try self.emails.resize(start + count);
 
                 fidx += 4;
@@ -337,38 +337,38 @@ pub const EmailManager = struct {
                     self.emails.items[idx].show = conts[fidx] != 0;
                     fidx += 1;
 
-                    self.emails.items[idx].box = @intCast(u8, boxid);
+                    self.emails.items[idx].box = @as(u8, @intCast(boxid));
 
-                    self.emails.items[idx].condition = @intToEnum(Email.Condition, conts[fidx]);
+                    self.emails.items[idx].condition = @as(Email.Condition, @enumFromInt(conts[fidx]));
                     fidx += 1;
 
                     const kind = *align(1) const u32;
 
-                    var len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                    var len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                     fidx += 4;
 
                     self.emails.items[idx].conditionData = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                     fidx += len;
 
-                    len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                    len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                     fidx += 4;
 
                     self.emails.items[idx].deps = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                     fidx += len;
 
-                    len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                    len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                     fidx += 4;
 
                     self.emails.items[idx].from = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                     fidx += len;
 
-                    len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                    len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                     fidx += 4;
 
                     self.emails.items[idx].subject = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                     fidx += len;
 
-                    len = @ptrCast(kind, conts[fidx .. fidx + 4]).*;
+                    len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                     fidx += 4;
 
                     self.emails.items[idx].contents = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);

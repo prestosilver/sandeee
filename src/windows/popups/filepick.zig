@@ -69,7 +69,7 @@ pub const PopupFilePick = struct {
             self.err = "";
 
             self.path = try allocator.alloc.realloc(self.path, self.path.len + 1);
-            self.path[self.path.len - 1] = @intCast(u8, keycode);
+            self.path[self.path.len - 1] = @as(u8, @intCast(keycode));
         }
     }
 

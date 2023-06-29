@@ -160,9 +160,9 @@ pub const GSWindowed = struct {
                 globalSelf.color.g = 0;
                 globalSelf.color.b = 0;
             } else {
-                globalSelf.color.r = @intToFloat(f32, std.fmt.parseInt(u8, event.value[0..2], 16) catch 0) / 255;
-                globalSelf.color.g = @intToFloat(f32, std.fmt.parseInt(u8, event.value[2..4], 16) catch 0) / 255;
-                globalSelf.color.b = @intToFloat(f32, std.fmt.parseInt(u8, event.value[4..6], 16) catch 0) / 255;
+                globalSelf.color.r = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[0..2], 16) catch 0)) / 255;
+                globalSelf.color.g = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[2..4], 16) catch 0)) / 255;
+                globalSelf.color.b = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[4..6], 16) catch 0)) / 255;
             }
 
             gfx.gContext.color = globalSelf.color;
@@ -304,7 +304,7 @@ pub const GSWindowed = struct {
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
 
         // setup vm data for update
-        shell.frameTime = @floatToInt(u64, self.lastFrameTime * std.time.ns_per_s * 0.5);
+        shell.frameTime = @as(u64, @intFromFloat(self.lastFrameTime * std.time.ns_per_s * 0.5));
         shell.vmsLeft = shell.vms;
 
         if (self.shell.vm != null) {
@@ -362,7 +362,7 @@ pub const GSWindowed = struct {
 
         // draw notifications
         for (self.notifs.items, 0..) |*notif, idx| {
-            try self.sb.draw(notifications.Notification, notif, self.shader, vecs.newVec3(@intToFloat(f32, idx), 0, 0));
+            try self.sb.draw(notifications.Notification, notif, self.shader, vecs.newVec3(@as(f32, @floatFromInt(idx)), 0, 0));
             try notif.data.drawContents(self.sb, self.shader, self.face, self.font_shader, idx);
         }
 
@@ -547,14 +547,14 @@ pub const GSWindowed = struct {
                     pos.h += 20;
 
                     if (pos.contains(self.mousepos)) {
-                        newTop = @intCast(u32, idx);
+                        newTop = @as(u32, @intCast(idx));
                     }
 
                     self.windows.items[idx].data.active = false;
                 }
 
                 if (newTop) |top| {
-                    var swap = self.windows.orderedRemove(@intCast(usize, top));
+                    var swap = self.windows.orderedRemove(@as(usize, @intCast(top)));
                     swap.data.active = true;
                     try swap.data.contents.focus();
                     var mode = swap.data.getDragMode(self.mousepos);
@@ -717,7 +717,7 @@ pub const GSWindowed = struct {
             pos.h += 20;
 
             if (pos.contains(self.mousepos)) {
-                newTop = @intCast(u32, idx);
+                newTop = @as(u32, @intCast(idx));
             }
         }
 

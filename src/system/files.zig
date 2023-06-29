@@ -221,10 +221,10 @@ pub const Folder = struct {
 
         var len = [4]u8{ 0, 0, 0, 0 };
 
-        std.mem.writeIntBig(u32, &len, @intCast(u32, folders.items.len));
+        std.mem.writeIntBig(u32, &len, @as(u32, @intCast(folders.items.len)));
         _ = try writer.write(&len);
         for (folders.items) |folder| {
-            std.mem.writeIntBig(u32, &len, @intCast(u32, folder.name.len));
+            std.mem.writeIntBig(u32, &len, @as(u32, @intCast(folder.name.len)));
             _ = try writer.write(&len);
             _ = try writer.write(folder.name);
         }
@@ -233,13 +233,13 @@ pub const Folder = struct {
         defer files.deinit();
         try self.getFiles(&files);
 
-        std.mem.writeIntBig(u32, &len, @intCast(u32, files.items.len));
+        std.mem.writeIntBig(u32, &len, @as(u32, @intCast(files.items.len)));
         _ = try writer.write(&len);
         for (files.items) |file| {
-            std.mem.writeIntBig(u32, &len, @intCast(u32, file.name.len));
+            std.mem.writeIntBig(u32, &len, @as(u32, @intCast(file.name.len)));
             _ = try writer.write(&len);
             _ = try writer.write(file.name);
-            std.mem.writeIntBig(u32, &len, @intCast(u32, file.contents.len));
+            std.mem.writeIntBig(u32, &len, @as(u32, @intCast(file.contents.len)));
             _ = try writer.write(&len);
             _ = try writer.write(file.contents);
         }
@@ -574,10 +574,10 @@ pub const Folder = struct {
 
         var len = [4]u8{ 0, 0, 0, 0 };
 
-        std.mem.writeIntBig(u32, &len, @intCast(u32, folders.items.len));
+        std.mem.writeIntBig(u32, &len, @as(u32, @intCast(folders.items.len)));
         try result.appendSlice(&len);
         for (folders.items) |folder| {
-            std.mem.writeIntBig(u32, &len, @intCast(u32, folder.name.len));
+            std.mem.writeIntBig(u32, &len, @as(u32, @intCast(folder.name.len)));
             try result.appendSlice(&len);
             try result.appendSlice(folder.name);
         }
@@ -586,13 +586,13 @@ pub const Folder = struct {
         defer files.deinit();
         try self.getFiles(&files);
 
-        std.mem.writeIntBig(u32, &len, @intCast(u32, files.items.len));
+        std.mem.writeIntBig(u32, &len, @as(u32, @intCast(files.items.len)));
         try result.appendSlice(&len);
         for (files.items) |file| {
-            std.mem.writeIntBig(u32, &len, @intCast(u32, file.name.len));
+            std.mem.writeIntBig(u32, &len, @as(u32, @intCast(file.name.len)));
             try result.appendSlice(&len);
             try result.appendSlice(file.name);
-            std.mem.writeIntBig(u32, &len, @intCast(u32, file.contents.len));
+            std.mem.writeIntBig(u32, &len, @as(u32, @intCast(file.contents.len)));
             try result.appendSlice(&len);
             try result.appendSlice(file.contents);
         }

@@ -642,7 +642,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             var stmt = (try reader.readUntilDelimiterOrEof(&stmt_buff, '\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
-                var target = try std.mem.concat(allocator, u8, &.{"content/disk", stmt[9..stmt.len - 1]});
+                var target = try std.mem.concat(allocator, u8, &.{ "content/disk", stmt[9 .. stmt.len - 1] });
 
                 var toks = try lex_file(target);
                 defer toks.deinit();
@@ -1299,7 +1299,7 @@ pub fn parseProgram(tokens: []Token) !Program {
 
     if (tokens[idx].kind != .TOKEN_EOF) {
         for (tokens[idx..]) |tok|
-            std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
+            std.log.info("toks: {} '{s}'", .{ @intFromEnum(tok.kind), tok.value });
 
         return error.ExpectedEOF;
     }

@@ -64,7 +64,7 @@ pub fn init(name: [*c]const u8) !Context {
 
     c.glfwSwapInterval(1);
 
-    if (c.gladLoadGLLoader(@ptrCast(c.GLADloadproc, &c.glfwGetProcAddress)) == 0) {
+    if (c.gladLoadGLLoader(@as(c.GLADloadproc, @ptrCast(&c.glfwGetProcAddress))) == 0) {
         return error.GLADInitFailed;
     }
 
@@ -83,7 +83,7 @@ pub fn init(name: [*c]const u8) !Context {
         .window = win,
         .color = col.newColorRGBA(0, 0, 0, 255),
         .shaders = shaders,
-        .size = vecs.newVec2(@intToFloat(f32, w), @intToFloat(f32, h)),
+        .size = vecs.newVec2(@as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h))),
     };
 }
 
@@ -113,17 +113,17 @@ pub fn regShader(ctx: *Context, s: shd.Shader) !void {
 }
 
 pub fn resize(w: i32, h: i32) !void {
-    gContext.size = vecs.newVec2(@intToFloat(f32, w), @intToFloat(f32, h));
+    gContext.size = vecs.newVec2(@as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)));
 
     c.glViewport(0, 0, w, h);
 
-    var proj = try mat4.Mat4.ortho(0, @intToFloat(f32, w), @intToFloat(f32, h), 0, 100, -1);
+    var proj = try mat4.Mat4.ortho(0, @as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)), 0, 100, -1);
     defer proj.deinit();
 
     for (gContext.shaders.items) |shader| {
         shader.setMat4("projection", proj);
-        shader.setFloat("screen_width", @intToFloat(f32, w));
-        shader.setFloat("screen_height", @intToFloat(f32, h));
+        shader.setFloat("screen_width", @as(f32, @floatFromInt(w)));
+        shader.setFloat("screen_height", @as(f32, @floatFromInt(h)));
     }
 }
 

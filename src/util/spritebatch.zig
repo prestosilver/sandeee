@@ -100,14 +100,14 @@ pub const SpriteBatch = struct {
             var target = sb.queue.len;
 
             if (target < sb.buffers.len) {
-                c.glDeleteBuffers(@intCast(c.GLint, sb.buffers.len - target), &sb.buffers[target]);
+                c.glDeleteBuffers(@as(c.GLint, @intCast(sb.buffers.len - target)), &sb.buffers[target]);
                 sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
             } else if (target > sb.buffers.len) {
                 var old = sb.buffers.len;
 
                 sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
 
-                c.glGenBuffers(@intCast(c.GLint, target - old), &sb.buffers[old]);
+                c.glGenBuffers(@as(c.GLint, @intCast(target - old)), &sb.buffers[old]);
             }
         }
 
@@ -127,10 +127,10 @@ pub const SpriteBatch = struct {
             if (uscissor and entry.scissor != null) {
                 c.glEnable(c.GL_SCISSOR_TEST);
                 c.glScissor(
-                    @floatToInt(c_int, @round(entry.scissor.?.x)),
-                    @floatToInt(c_int, @round(sb.size.y - entry.scissor.?.y - entry.scissor.?.h)),
-                    @floatToInt(c_int, @round(entry.scissor.?.w)),
-                    @floatToInt(c_int, @round(entry.scissor.?.h)),
+                    @as(c_int, @intFromFloat(@round(entry.scissor.?.x))),
+                    @as(c_int, @intFromFloat(@round(sb.size.y - entry.scissor.?.y - entry.scissor.?.h))),
+                    @as(c_int, @intFromFloat(@round(entry.scissor.?.w))),
+                    @as(c_int, @intFromFloat(@round(entry.scissor.?.h))),
                 );
             } else if (uscissor) {
                 c.glDisable(c.GL_SCISSOR_TEST);
@@ -166,17 +166,17 @@ pub const SpriteBatch = struct {
             cshader = entry.shader.id;
 
             if (entry.verts.items().len != 0) {
-                c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, entry.verts.items().len * @sizeOf(va.Vert)), entry.verts.items().ptr, c.GL_STREAM_DRAW);
+                c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(entry.verts.items().len * @sizeOf(va.Vert))), entry.verts.items().ptr, c.GL_STREAM_DRAW);
             }
 
             c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
-            c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @intToPtr(*anyopaque, 3 * @sizeOf(f32)));
-            c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @intToPtr(*anyopaque, 5 * @sizeOf(f32)));
+            c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @as(*anyopaque, @ptrFromInt(3 * @sizeOf(f32))));
+            c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @as(*anyopaque, @ptrFromInt(5 * @sizeOf(f32))));
             c.glEnableVertexAttribArray(0);
             c.glEnableVertexAttribArray(1);
             c.glEnableVertexAttribArray(2);
 
-            c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c.GLsizei, entry.verts.items().len));
+            c.glDrawArrays(c.GL_TRIANGLES, 0, @as(c.GLsizei, @intCast(entry.verts.items().len)));
         }
         if (cscissor != null)
             c.glDisable(c.GL_SCISSOR_TEST);

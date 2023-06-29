@@ -42,7 +42,7 @@ pub const WorkerContext = struct {
             allocator.alloc.destroy(work_node);
             prog += 1;
 
-            progress.* = @intToFloat(f32, prog) / @intToFloat(f32, ctx.total);
+            progress.* = @as(f32, @floatFromInt(prog)) / @as(f32, @floatFromInt(ctx.total));
         }
 
         progress.* = 1;
@@ -70,7 +70,7 @@ pub const WorkerContext = struct {
             },
         };
 
-        self.queue.put(@ptrCast(*WorkerQueueNode(*void, *void), node));
+        self.queue.put(@as(*WorkerQueueNode(*void, *void), @ptrCast(node)));
         self.total += 1;
     }
 };

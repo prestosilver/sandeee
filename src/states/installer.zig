@@ -68,13 +68,13 @@ pub const GSInstall = struct {
 
     pub fn updateSettingsVals(self: *Self) ![]const u8 {
         var ts = std.time.timestamp();
-        var aHours = @intCast(u64, ts) / std.time.s_per_hour % 24;
-        var aMins = @intCast(u64, ts) / std.time.s_per_min % 60;
+        var aHours = @as(u64, @intCast(ts)) / std.time.s_per_hour % 24;
+        var aMins = @as(u64, @intCast(ts)) / std.time.s_per_min % 60;
         const inputHours = std.fmt.parseInt(i8, self.settingValues[0][0..self.settingLens[0]], 0) catch 0;
         const inputMins = std.fmt.parseInt(i8, self.settingValues[1][0..self.settingLens[1]], 0) catch 0;
 
-        var hoursOffset = @intCast(i8, aHours) - inputHours;
-        var minsOffset = @intCast(i8, aMins) - inputMins;
+        var hoursOffset = @as(i8, @intCast(aHours)) - inputHours;
+        var minsOffset = @as(i8, @intCast(aMins)) - inputMins;
 
         return std.fmt.allocPrint(allocator.alloc, "hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hoursOffset, minsOffset });
     }
@@ -111,7 +111,7 @@ pub const GSInstall = struct {
             .color = cols.newColor(1, 1, 1, 1),
         });
 
-        if (@enumToInt(self.status) < @enumToInt(Status.Settings)) return;
+        if (@intFromEnum(self.status) < @intFromEnum(Status.Settings)) return;
 
         y += self.face.size * 2;
         for (0..self.settingId + 1) |idx| {
@@ -133,7 +133,7 @@ pub const GSInstall = struct {
             y += self.face.size * 1;
         }
 
-        if (@enumToInt(self.status) < @enumToInt(Status.Installing)) return;
+        if (@intFromEnum(self.status) < @intFromEnum(Status.Installing)) return;
 
         y += self.face.size * 2;
         try self.face.draw(.{
@@ -149,7 +149,7 @@ pub const GSInstall = struct {
         if (self.status == .Installing) self.load_sprite.data.size.x *= 1 - self.timer;
         try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(100, y, 0));
 
-        if (@enumToInt(self.status) < @enumToInt(Status.Done)) return;
+        if (@intFromEnum(self.status) < @intFromEnum(Status.Done)) return;
 
         y += self.face.size * 2;
         try self.face.draw(.{
@@ -161,7 +161,7 @@ pub const GSInstall = struct {
         });
         y += self.face.size * 1;
 
-        var rebootLine = try std.fmt.allocPrint(allocator.alloc, "Rebooting in {}", .{@floatToInt(u32, 0.5 + self.timer)});
+        var rebootLine = try std.fmt.allocPrint(allocator.alloc, "Rebooting in {}", .{@as(u32, @intFromFloat(0.5 + self.timer))});
         defer allocator.alloc.free(rebootLine);
 
         try self.face.draw(.{
@@ -232,13 +232,13 @@ pub const GSInstall = struct {
         switch (keycode) {
             c.GLFW_KEY_A...c.GLFW_KEY_Z => {
                 if ((mods & c.GLFW_MOD_SHIFT) != 0) {
-                    try self.appendChar(@intCast(u8, keycode - c.GLFW_KEY_A) + 'A');
+                    try self.appendChar(@as(u8, @intCast(keycode - c.GLFW_KEY_A)) + 'A');
                 } else {
-                    try self.appendChar(@intCast(u8, keycode - c.GLFW_KEY_A) + 'a');
+                    try self.appendChar(@as(u8, @intCast(keycode - c.GLFW_KEY_A)) + 'a');
                 }
             },
             c.GLFW_KEY_0...c.GLFW_KEY_9 => {
-                try self.appendChar(@intCast(u8, keycode - c.GLFW_KEY_0) + '0');
+                try self.appendChar(@as(u8, @intCast(keycode - c.GLFW_KEY_0)) + '0');
             },
             c.GLFW_KEY_PERIOD => {
                 try self.appendChar('.');
@@ -269,7 +269,7 @@ pub const GSInstall = struct {
                         try self.audioMan.playSound(self.selectSound.*);
 
                         if (self.settingLens[self.settingId] == 0) {
-                            self.settingLens[self.settingId] = @intCast(u8, Settings[self.settingId][2].len);
+                            self.settingLens[self.settingId] = @as(u8, @intCast(Settings[self.settingId][2].len));
                             @memcpy(self.settingValues[self.settingId][0..self.settingLens[self.settingId]], Settings[self.settingId][2]);
                         }
 

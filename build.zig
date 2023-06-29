@@ -26,7 +26,7 @@ const internalSoundFiles = [_][]const u8{ "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
-var Version: std.builtin.Version = .{
+var Version: std.SemanticVersion = .{
     .major = 0,
     .minor = 0,
     .patch = undefined,
@@ -64,7 +64,7 @@ pub fn build(b: *std.build.Builder) void {
 
     const options = b.addOptions();
 
-    options.addOption(std.builtin.Version, "SandEEEVersion", Version);
+    options.addOption(std.SemanticVersion, "SandEEEVersion", Version);
     var versionText = std.fmt.allocPrint(b.allocator, "V.{s}-{{}}{s}", .{ versionPlatform, versionSuffix }) catch return;
 
     std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{s}-{}{s}", .{ versionPlatform, Version, versionSuffix }) catch return) catch return;

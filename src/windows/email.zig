@@ -133,10 +133,10 @@ const EmailData = struct {
         self.sel.data.size.x = 100;
         self.sel.data.size.y = font.size;
 
-        try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + 106 + font.size * @intToFloat(f32, self.box), 0));
+        try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + 106 + font.size * @as(f32, @floatFromInt(self.box)), 0));
 
         for (emailManager.boxes, 0..) |box, idx| {
-            const pos = vecs.newVec2(bnds.x + 2, bnds.y + 106 + font.size * @intToFloat(f32, idx));
+            const pos = vecs.newVec2(bnds.x + 2, bnds.y + 106 + font.size * @as(f32, @floatFromInt(idx)));
 
             if (idx == self.box) {
                 var text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], emailManager.getPc(idx) });
@@ -199,7 +199,7 @@ const EmailData = struct {
 
     pub fn submit(file: ?*files.File, data: *anyopaque) !void {
         if (file) |target| {
-            var self = @ptrCast(*Self, @alignCast(@alignOf(Self), data));
+            var self: *Self = @ptrCast(@alignCast(data));
 
             var conts = try target.read(null);
 
@@ -265,7 +265,7 @@ const EmailData = struct {
                         if (email.box != self.box) continue;
                         if (!emailManager.getEmailVisible(email)) continue;
 
-                        var bnds = rect.newRect(106, @intToFloat(f32, y), size.x - 106, 24);
+                        var bnds = rect.newRect(106, @as(f32, @floatFromInt(y)), size.x - 106, 24);
 
                         y += 24;
 
@@ -284,7 +284,7 @@ const EmailData = struct {
                     if (bnds.contains(mousepos)) {
                         var id = (mousepos.y - 106.0) / 24.0;
 
-                        self.box = @intCast(u8, @floatToInt(i32, id + 0.5));
+                        self.box = @as(u8, @intCast(@as(i32, @intFromFloat(id + 0.5))));
 
                         self.viewing = null;
 

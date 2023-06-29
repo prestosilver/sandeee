@@ -278,7 +278,7 @@ const SettingsData = struct {
     }
 
     pub fn submit(val: []u8, data: *anyopaque) !void {
-        var self = @ptrCast(*Self, @alignCast(@alignOf(Self), data));
+        var self: *Self = @ptrCast(@alignCast(data));
         try settingManager.set(self.value, val);
         try settingManager.save();
     }
@@ -332,7 +332,7 @@ const SettingsData = struct {
 pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     var self = try allocator.alloc.create(SettingsData);
 
-    var ym = @intToFloat(f32, self.icons.len);
+    var ym = @as(f32, @floatFromInt(self.icons.len));
 
     self.* = .{
         .shader = shader,
@@ -355,10 +355,10 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     };
 
     for (self.icons, 0..) |_, idx| {
-        var i = @intToFloat(f32, idx);
+        var i = @as(f32, @floatFromInt(idx));
 
         self.icons[idx] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0 / 32.0, i / @intToFloat(f32, self.icons.len), 1.0, 1.0 / @intToFloat(f32, self.icons.len)),
+            rect.newRect(0 / 32.0, i / @as(f32, @floatFromInt(self.icons.len)), 1.0, 1.0 / @as(f32, @floatFromInt(self.icons.len))),
             vecs.newVec2(64, 64),
         ));
     }

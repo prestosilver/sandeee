@@ -183,7 +183,7 @@ pub fn blit() !void {
 
     // clear the window
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @floatToInt(i32, ctx.size.x), @floatToInt(i32, ctx.size.y), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
 
     // Poor filtering. Needed !
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
@@ -192,7 +192,7 @@ pub fn blit() !void {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
 
     c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
-    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @floatToInt(i32, ctx.size.x), @floatToInt(i32, ctx.size.y));
+    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)));
     c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
 
     c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
@@ -214,7 +214,7 @@ pub fn blit() !void {
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
 
     c.glUseProgram(crt_shader.id);
-    crt_shader.setFloat("time", @floatCast(f32, c.glfwGetTime()));
+    crt_shader.setFloat("time", @as(f32, @floatCast(c.glfwGetTime())));
 
     c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
     c.glEnableVertexAttribArray(0);
@@ -267,12 +267,12 @@ pub fn mouseUp(_: inputEvs.EventMouseUp) bool {
 }
 
 pub fn mouseMove(event: inputEvs.EventMouseMove) bool {
-    gameStates.getPtr(currentState).mousemove(vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y))) catch return false;
+    gameStates.getPtr(currentState).mousemove(vecs.newVec2(@as(f32, @floatCast(event.x)), @as(f32, @floatCast(event.y)))) catch return false;
     return false;
 }
 
 pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
-    gameStates.getPtr(currentState).mousescroll(vecs.newVec2(@floatCast(f32, event.x), @floatCast(f32, event.y))) catch return false;
+    gameStates.getPtr(currentState).mousescroll(vecs.newVec2(@as(f32, @floatCast(event.x)), @as(f32, @floatCast(event.y)))) catch return false;
     return false;
 }
 
@@ -305,7 +305,7 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
     }
 
     if (std.mem.eql(u8, event.setting, "sound_volume")) {
-        audioman.volume = @intToFloat(f32, std.fmt.parseInt(i32, event.value, 0) catch 100) / 100.0;
+        audioman.volume = @as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0;
 
         return true;
     }
@@ -319,10 +319,12 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
     if (std.mem.eql(u8, event.setting, "crt_shader")) {
         const val: c_int = if (std.ascii.eqlIgnoreCase("yes", event.value)) 1 else 0;
 
-        gfx.gContext.makeCurrent();
-        crt_shader.setInt("crt_enable", val);
-        crt_shader.setInt("dither_enable", val);
-        gfx.gContext.makeNotCurrent();
+        if (isCrt) {
+            gfx.gContext.makeCurrent();
+            crt_shader.setInt("crt_enable", val);
+            crt_shader.setInt("dither_enable", val);
+            gfx.gContext.makeNotCurrent();
+        }
 
         std.log.info("crt: {}", .{val});
 
@@ -394,8 +396,8 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
     sb.scissor = null;
 
-    errorState = @enumToInt(currentState);
-    gameStates.getPtr(@intToEnum(systemEvs.State, errorState)).deinit() catch {};
+    errorState = @intFromEnum(currentState);
+    gameStates.getPtr(@as(systemEvs.State, @enumFromInt(errorState))).deinit() catch {};
 
     const st = panicHandler.log();
     errorMsg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ msg, st }) catch {
@@ -431,6 +433,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 }
 
 var isHeadless = false;
+var isCrt = true;
 
 pub fn main() void {
     mainErr() catch |err| {
@@ -461,6 +464,8 @@ pub fn mainErr() anyerror!void {
             std.log.debug("chdir: {s}", .{path});
 
             try std.process.changeCurDir(path);
+        } else if (std.mem.eql(u8, arg, "--no-crt")) {
+            isCrt = false;
         } else if (std.mem.eql(u8, arg, "--headless")) {
             isHeadless = true;
         } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
@@ -523,14 +528,14 @@ pub fn mainErr() anyerror!void {
     ctx.makeCurrent();
 
     // enable crt by default
-    crt_shader.setInt("crt_enable", 1);
-    crt_shader.setInt("dither_enable", 1);
+    crt_shader.setInt("crt_enable", if (isCrt) 1 else 0);
+    crt_shader.setInt("dither_enable", if (isCrt) 1 else 0);
 
     // setup render texture for shaders
     c.glGenFramebuffers(1, &framebufferName);
     c.glGenBuffers(1, &quad_VertexArrayID);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
-    c.glBufferData(c.GL_ARRAY_BUFFER, @intCast(c.GLsizeiptr, full_quad.len * @sizeOf(f32)), &full_quad, c.GL_DYNAMIC_DRAW);
+    c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(full_quad.len * @sizeOf(f32))), &full_quad, c.GL_DYNAMIC_DRAW);
     c.glGenTextures(1, &renderedTexture);
     c.glGenRenderbuffers(1, &depthrenderbuffer);
 
@@ -584,7 +589,7 @@ pub fn mainErr() anyerror!void {
             .texture = "load",
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(10, 10),
+                vecs.newVec2(0, 15),
             ),
         },
         .shader = &shader,
@@ -734,7 +739,7 @@ pub fn mainErr() anyerror!void {
 
         timer += currentTime - lastFrameTime;
         if (timer > 1) {
-            finalFps = @floatToInt(u32, @intToFloat(f64, fps) / timer);
+            finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / timer));
             fps = 0;
             timer = 0;
         }
