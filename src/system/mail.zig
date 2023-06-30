@@ -312,7 +312,7 @@ pub const EmailManager = struct {
             self.boxes = try allocator.alloc.alloc([]u8, fileList.items.len);
 
             for (fileList.items, 0..) |file, boxid| {
-                std.log.info("load emails: {s}", .{file.name});
+                std.log.debug("load emails: {s}", .{file.name});
 
                 self.boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
 

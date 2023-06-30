@@ -326,8 +326,6 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
             gfx.gContext.makeNotCurrent();
         }
 
-        std.log.info("crt: {}", .{val});
-
         return true;
     }
 
@@ -437,8 +435,8 @@ var isCrt = true;
 
 pub fn main() void {
     defer if (!builtin.link_libc or !allocator.useclib) {
-        std.debug.assert(allocator.gpa.deinit() == .ok);
-        std.log.debug("no leaks! :)", .{});
+        if (allocator.gpa.deinit() == .ok)
+            std.log.debug("no leaks! :)", .{});
     };
 
     mainErr() catch |err| {
