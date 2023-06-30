@@ -68,7 +68,7 @@ pub const WindowContents = struct {
 
     const VTable = struct {
         draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font, *WindowProps) anyerror!void,
-        click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, i32) anyerror!void,
+        click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, ?i32) anyerror!void,
         key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
         char: *const fn (*anyopaque, u32, i32) anyerror!void,
         scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
@@ -124,7 +124,7 @@ pub const WindowContents = struct {
         return self.vtable.char(self.ptr, codepoint, mods);
     }
 
-    pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
+    pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (self.props.scroll) |*scrollData| {
             self.scrolling = false;
             if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scrollData.offsetStart + 14) {
@@ -203,7 +203,7 @@ pub const WindowContents = struct {
                 return @call(.auto, ptr_info.Pointer.child.char, .{ self, codepoint, mods });
             }
 
-            fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: c_int) !void {
+            fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: ?c_int) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.click, .{ self, size, pos, btn });
@@ -441,7 +441,7 @@ pub const WindowData = struct {
         return bnds;
     }
 
-    pub fn click(self: *WindowData, mousepos: vecs.Vector2, btn: i32) !void {
+    pub fn click(self: *WindowData, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (self.min) return;
         var bnds = self.pos;
         bnds.x += 4;

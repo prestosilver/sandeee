@@ -142,8 +142,10 @@ pub const EditorData = struct {
         try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
-        switch (btn) {
+    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
+        if (btn == null) return;
+
+        switch (btn.?) {
             0 => {
                 var open = rect.newRect(0, 0, 32, 32);
                 if (open.contains(mousepos)) {

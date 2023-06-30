@@ -70,7 +70,7 @@ pub const WelcomeData = struct {
         _ = self;
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, _: i32) !void {
+    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, _: ?i32) !void {
         _ = pos;
         _ = self;
     }

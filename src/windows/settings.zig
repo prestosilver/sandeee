@@ -283,8 +283,10 @@ const SettingsData = struct {
         try settingManager.save();
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
-        switch (btn) {
+    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
+        if (btn == null) return;
+
+        switch (btn.?) {
             0 => {
                 if (self.lastAction != null) {
                     self.lastAction = .{

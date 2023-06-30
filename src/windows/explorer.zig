@@ -210,8 +210,9 @@ pub const ExplorerData = struct {
 
     pub fn scroll(_: *Self, _: f32, _: f32) void {}
 
-    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: i32) !void {
+    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (self.shell.vm != null) return;
+        if (btn == null) return;
 
         if (mousepos.y < 36) {
             if (rect.newRect(0, 0, 28, 28).contains(mousepos)) {
@@ -222,7 +223,7 @@ pub const ExplorerData = struct {
             return;
         }
 
-        switch (btn) {
+        switch (btn.?) {
             0 => {
                 if (self.lastAction != null and mousepos.distSq(self.lastAction.?.pos) < 100) {
                     self.lastAction = .{

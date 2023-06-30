@@ -618,7 +618,9 @@ pub const WebData = struct {
         }
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, _: i32) !void {
+    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, btn: ?i32) !void {
+        if (btn == null) return;
+
         if (pos.y < 36) {
             if (rect.newRect(0, 0, 28, 28).contains(pos)) {
                 try self.back();
