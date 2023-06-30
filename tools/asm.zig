@@ -113,8 +113,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                         try result.appendSlice("\x02");
                         try result.appendSlice("\x00");
                     } else {
-                        var target_tmp = try alloc.alloc(u8, std.mem.replacementSize(u8, target[1 .. target.len - 1], "\\n", "\n"));
-                        _ = std.mem.replace(u8, target[1 .. target.len - 1], "\\n", "\n", target_tmp);
+                        var target_tmp = try std.zig.string_literal.parseAlloc(alloc, target);
 
                         try result.appendSlice("\x02");
                         try result.appendSlice(target_tmp);
@@ -282,8 +281,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                 while (target[0] == ' ') target = target[1..];
                 while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
                 if (target[0] == '"' and target[target.len - 1] == '"') {
-                    var target_tmp = try alloc.alloc(u8, std.mem.replacementSize(u8, target[1 .. target.len - 1], "\\n", "\n"));
-                    _ = std.mem.replace(u8, target[1 .. target.len - 1], "\\n", "\n", target_tmp);
+                    var target_tmp = try std.zig.string_literal.parseAlloc(alloc, target);
 
                     try data.appendSlice("\x02");
                     try data.appendSlice(target_tmp);
