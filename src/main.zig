@@ -436,6 +436,11 @@ var isHeadless = false;
 var isCrt = true;
 
 pub fn main() void {
+    defer if (!builtin.link_libc or !allocator.useclib) {
+        std.debug.assert(allocator.gpa.deinit() == .ok);
+        std.log.debug("no leaks! :)", .{});
+    };
+
     mainErr() catch |err| {
         @panic(@errorName(err));
     };
@@ -443,11 +448,6 @@ pub fn main() void {
 
 pub fn mainErr() anyerror!void {
     std.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
-
-    defer if (!builtin.link_libc or !allocator.useclib) {
-        std.debug.assert(allocator.gpa.deinit() == .ok);
-        std.log.debug("no leaks! :)", .{});
-    };
 
     // setup the headless command
     var headlessCmd: ?[]const u8 = null;
