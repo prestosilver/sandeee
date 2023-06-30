@@ -1,14 +1,9 @@
 id: 9
-deps: 8
-from: prestosilver
-sub: Demo Complete
+deps: 3
+from: ERIC_L@eee.org
+sub: EEEEEEEEEEEEEON
 view
 
-Thanks for playing the SandEEE demo. In the full version expect:
+EON IS OP, YOU SHOULD LEARN IT.
 
- - More quests
- - A full story
- - EON (You'll see)
- - Networking
-
-and remember EEE sees all.
+ERIC WUZ HERE!!!

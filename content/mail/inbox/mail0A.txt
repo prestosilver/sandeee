@@ -1,0 +1,27 @@
+id: 10
+deps: 9
+from: ERIC_L@eee.org
+sub: EEEEEEEEEEEEEON PLZ
+submit: runs=Hello World!
+
+SUBMIT A COMPILED EON HELLO WORLD PLZ.
+EON REQUIRES A main FUNCTION.
+
+FUNCTIONS IN EON ARE DEFINED WITH THE SYNTAX:
+
+// this is a comment
+fn name() {
+    // you can call functions like this
+    callFunction(args);
+    return 0;
+}
+
+THEY ALSO REQUIRE YOU TO RETURN.
+YOU CAN IMPORT THE print FUNCTION WITH THE CODE:
+
+#include "/libs/inc/sys.eon"
+
+THAT SHOULD BE EVERYTHING YOU NEED TO KNOW.
+EON PROGRAMS ARE COMPILED WITH THE eon COMMAND.
+
+ERIC WUZ HERE!!!
