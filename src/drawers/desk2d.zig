@@ -87,7 +87,7 @@ pub const DeskData = struct {
 
                     explorerSelf.shell.root = folder;
 
-                    events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                    try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
                     self.sel = null;
 

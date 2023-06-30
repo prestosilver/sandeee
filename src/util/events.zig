@@ -25,12 +25,12 @@ pub const EventManager = struct {
 
     fn Listener(comptime T: type) type {
         return struct {
-            calls: *const fn (T) bool,
+            calls: *const fn (T) anyerror!void,
         };
     }
 
-    pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) bool) !void {
-        const call = @as(*const fn (*void) bool, @ptrCast(callee));
+    pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) anyerror!void) !void {
+        const call = @as(*const fn (*void) anyerror!void, @ptrCast(callee));
 
         if (self.subs.getPtr(@typeName(T))) |list| {
             for (list.*) |*item| {
@@ -55,15 +55,13 @@ pub const EventManager = struct {
         }
     }
 
-    pub inline fn sendEvent(self: *EventManager, data: anytype) void {
+    pub inline fn sendEvent(self: *EventManager, data: anytype) !void {
         const T = @TypeOf(data);
         const name: []const u8 = @typeName(T);
 
         for (self.subs.get(name) orelse return) |sub| {
-            const call = @as(*const fn (T) bool, @ptrCast(sub.calls));
-            if (call(data)) {
-                break;
-            }
+            const call = @as(*const fn (T) anyerror!void, @ptrCast(sub.calls));
+            try call(data);
         }
     }
 };

@@ -140,7 +140,7 @@ const CMDData = struct {
                 std.mem.copy(u8, self.bt[start .. start + prompt.len], prompt);
 
                 var command = self.inputBuffer[0..self.inputIdx];
-                events.EventManager.instance.sendEvent(systemEvs.EventRunCmd{
+                try events.EventManager.instance.sendEvent(systemEvs.EventRunCmd{
                     .cmd = command,
                 });
 

@@ -179,7 +179,7 @@ const EmailData = struct {
             .submit = &submit,
         };
 
-        events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
             .popup = .{
                 .texture = "win",
                 .data = .{
@@ -237,7 +237,7 @@ const EmailData = struct {
                 }
 
                 if (good) {
-                    emailManager.setEmailComplete(selected);
+                    try emailManager.setEmailComplete(selected);
                 }
             }
         }
@@ -281,7 +281,7 @@ const EmailData = struct {
 
                         if (bnds.contains(mousepos)) {
                             if (self.selected != null and email == self.selected.?) {
-                                emailManager.viewEmail(email);
+                                try emailManager.viewEmail(email);
                                 self.selected = null;
                                 self.viewing = email;
                             } else {

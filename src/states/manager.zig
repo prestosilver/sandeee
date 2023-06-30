@@ -9,7 +9,7 @@ pub const GameState = struct {
         deinit: *const fn (*anyopaque) anyerror!void,
         draw: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
         update: *const fn (*anyopaque, f32) anyerror!void,
-        keypress: *const fn (*anyopaque, c_int, c_int, bool) anyerror!bool,
+        keypress: *const fn (*anyopaque, c_int, c_int, bool) anyerror!void,
         keychar: *const fn (*anyopaque, u32, i32) anyerror!void,
         mousepress: *const fn (*anyopaque, c_int) anyerror!void,
         mouserelease: *const fn (*anyopaque) anyerror!void,
@@ -41,7 +41,7 @@ pub const GameState = struct {
         return state.vtable.update(state.ptr, dt);
     }
 
-    pub fn keypress(state: *Self, key: c_int, mods: c_int, down: bool) anyerror!bool {
+    pub fn keypress(state: *Self, key: c_int, mods: c_int, down: bool) anyerror!void {
         return state.vtable.keypress(state.ptr, key, mods, down);
     }
 
@@ -97,7 +97,7 @@ pub const GameState = struct {
                 return @call(.auto, ptr_info.Pointer.child.update, .{ self, dt });
             }
 
-            fn keypressImpl(pointer: *anyopaque, key: c_int, mods: c_int, down: bool) anyerror!bool {
+            fn keypressImpl(pointer: *anyopaque, key: c_int, mods: c_int, down: bool) anyerror!void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.auto, ptr_info.Pointer.child.keypress, .{ self, key, mods, down });

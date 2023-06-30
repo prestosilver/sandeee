@@ -7,12 +7,12 @@ const allocator = @import("../util/allocator.zig");
 const DISK = "headless.eee";
 
 pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.File) anyerror!void {
-    var diskpath = fm.getContentPath("disks/headless.eee");
+    var diskpath = try fm.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
 
-    if (std.fs.cwd().access(diskpath.items, .{}) catch null == null) {
+    std.fs.cwd().access(diskpath.items, .{}) catch {
         try files.Folder.setupDisk(DISK, "");
-    }
+    };
 
     try files.Folder.init(DISK);
 

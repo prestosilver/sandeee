@@ -1326,7 +1326,7 @@ pub const VM = struct {
 
         self.yield = false;
 
-        events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
+        try events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
 
         return self.done();
     }

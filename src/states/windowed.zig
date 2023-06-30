@@ -67,46 +67,46 @@ pub const GSWindowed = struct {
 
     var globalSelf: *Self = undefined;
 
-    fn createPopup(event: windowEvs.EventCreatePopup) bool {
+    fn createPopup(event: windowEvs.EventCreatePopup) !void {
         if (event.global) {
             globalSelf.popup = event.popup;
-            return false;
+            return;
         }
 
         for (globalSelf.windows.items) |*window| {
             if (window.data.active) {
                 window.data.popup = event.popup;
 
-                return false;
+                return;
             }
         }
 
-        return false;
+        return;
     }
 
-    fn closePopup(_: windowEvs.EventClosePopup) bool {
+    fn closePopup(_: windowEvs.EventClosePopup) !void {
         if (globalSelf.popup) |*popup| {
-            popup.data.contents.deinit() catch {};
+            try popup.data.contents.deinit();
             globalSelf.popup = null;
 
-            return false;
+            return;
         }
 
         for (globalSelf.windows.items) |*window| {
             if (window.data.active) {
                 if (window.data.popup) |*popup| {
-                    popup.data.contents.deinit() catch {};
+                    try popup.data.contents.deinit();
                 }
                 window.data.popup = null;
 
-                return false;
+                return;
             }
         }
 
-        return false;
+        return;
     }
 
-    fn createWindow(event: windowEvs.EventCreateWindow) bool {
+    fn createWindow(event: windowEvs.EventCreateWindow) !void {
         var target = vecs.newVec2(100, 100);
 
         for (globalSelf.windows.items, 0..) |_, idx| {
@@ -116,10 +116,7 @@ pub const GSWindowed = struct {
                 target = globalSelf.openWindow;
         }
 
-        globalSelf.windows.append(event.window) catch {
-            std.log.err("couldn't create window!", .{});
-            return false;
-        };
+        try globalSelf.windows.append(event.window);
 
         if (event.center) {
             target.x = (deskSize.x - event.window.data.pos.w) / 2;
@@ -133,11 +130,11 @@ pub const GSWindowed = struct {
         globalSelf.openWindow.x = target.x + 25;
         globalSelf.openWindow.y = target.y + 25;
 
-        return false;
+        return;
     }
 
-    pub fn notification(event: windowEvs.EventNotification) bool {
-        globalSelf.notifs.append(
+    pub fn notification(event: windowEvs.EventNotification) !void {
+        try globalSelf.notifs.append(
             .{
                 .texture = "notif",
                 .data = .{
@@ -146,13 +143,13 @@ pub const GSWindowed = struct {
                     .icon = event.icon,
                 },
             },
-        ) catch {};
+        );
 
-        return false;
+        return;
     }
 
-    pub fn settingSet(event: systemEvs.EventSetSetting) bool {
-        if (!globalSelf.init) return false;
+    pub fn settingSet(event: systemEvs.EventSetSetting) !void {
+        if (!globalSelf.init) return;
 
         if (std.mem.eql(u8, event.setting, "wallpaper_color")) {
             if (event.value.len != 6) {
@@ -167,15 +164,15 @@ pub const GSWindowed = struct {
 
             gfx.gContext.color = globalSelf.color;
 
-            return true;
+            return;
         }
         if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
-            var texture = batch.textureManager.textures.getPtr("wall") orelse return false;
-            tex.uploadTextureFile(texture, event.value) catch return false;
+            var texture = batch.textureManager.textures.getPtr("wall") orelse return;
+            tex.uploadTextureFile(texture, event.value) catch return;
 
-            return true;
+            return;
         }
-        return false;
+        return;
     }
 
     pub fn setup(self: *Self) !void {
@@ -250,14 +247,14 @@ pub const GSWindowed = struct {
                 .active = true,
             });
 
-            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = true });
+            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = true });
         }
 
         self.desk.data.shell.root = files.home;
         desk.settingsManager = self.settingsManager;
 
         if (self.settingsManager.get("wallpaper_color")) |color| {
-            _ = settingSet(.{
+            try settingSet(.{
                 .setting = "wallpaper_color",
                 .value = color,
             });
@@ -469,17 +466,17 @@ pub const GSWindowed = struct {
         }
     }
 
-    pub fn keypress(self: *Self, key: c_int, mods: c_int, down: bool) !bool {
+    pub fn keypress(self: *Self, key: c_int, mods: c_int, down: bool) !void {
         if (self.bar.data.btnActive and !down) {
             self.bar.data.btnActive = false;
 
-            return false;
+            return;
         }
 
         if (self.popup) |*popup| {
             try popup.data.contents.key(key, mods, down);
 
-            return false;
+            return;
         }
 
         for (self.windows.items) |*window| {
@@ -488,13 +485,11 @@ pub const GSWindowed = struct {
             if (window.data.popup) |*popup| {
                 try popup.data.contents.key(key, mods, down);
 
-                return false;
+                return;
             }
 
-            return window.data.key(key, mods, down);
+            _ = try window.data.key(key, mods, down);
         }
-
-        return false;
     }
 
     pub fn keychar(self: *Self, code: u32, mods: c_int) !void {

@@ -90,6 +90,8 @@ pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) !void {
     var x = std.mem.bytesToValue(u16, data[1..3]);
     var y = std.mem.bytesToValue(u16, data[3..5]);
 
+    // std.log.debug("setPixel {}, {}", .{ x, y });
+
     texture.?.setPixel(x, y, cols.newColorRGBA(data[5], data[6], data[7], data[8]));
 
     gfx.gContext.makeNotCurrent();

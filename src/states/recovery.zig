@@ -163,16 +163,16 @@ pub const GSRecovery = struct {
         }
     }
 
-    pub fn keypress(self: *Self, key: c_int, _: c_int, down: bool) !bool {
-        if (!down) return false;
+    pub fn keypress(self: *Self, key: c_int, _: c_int, down: bool) !void {
+        if (!down) return;
         switch (key) {
             c.GLFW_KEY_ESCAPE => {
                 if (self.sub_sel != null) self.sub_sel = null else {
-                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
 
-                    return false;
+                    return;
                 }
             },
             c.GLFW_KEY_ENTER => {
@@ -181,7 +181,7 @@ pub const GSRecovery = struct {
                         self.sub_sel = null;
                         try self.audioMan.playSound(self.selectSound.*);
 
-                        return false;
+                        return;
                     }
 
                     switch (sub_sel) {
@@ -209,13 +209,13 @@ pub const GSRecovery = struct {
                             self.sel = 0;
 
                             if (self.disks.items.len == 1) {
-                                events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                                try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                                     .targetState = .Disks,
                                 });
 
                                 try self.audioMan.playSound(self.selectSound.*);
 
-                                return false;
+                                return;
                             }
 
                             try self.audioMan.playSound(self.selectSound.*);
@@ -223,17 +223,17 @@ pub const GSRecovery = struct {
                         else => {},
                     }
 
-                    return false;
+                    return;
                 }
 
                 if (self.sel == self.disks.items.len - 1) {
-                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
 
                     try self.audioMan.playSound(self.selectSound.*);
 
-                    return false;
+                    return;
                 }
 
                 self.sub_sel = 0;
@@ -248,7 +248,7 @@ pub const GSRecovery = struct {
                         try self.audioMan.playSound(self.blipSound.*);
                     }
 
-                    return false;
+                    return;
                 }
 
                 if (self.sel < self.disks.items.len - 1) {
@@ -263,7 +263,7 @@ pub const GSRecovery = struct {
                         try self.audioMan.playSound(self.blipSound.*);
                     }
 
-                    return false;
+                    return;
                 }
 
                 if (self.sel != 0) {
@@ -272,22 +272,22 @@ pub const GSRecovery = struct {
                 }
             },
             else => {
-                if (c.glfwGetKeyName(key, 0) == null) return false;
+                if (c.glfwGetKeyName(key, 0) == null) return;
                 if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == 'X') {
                     if (self.sub_sel) |_| {
                         self.sub_sel = null;
 
                         try self.audioMan.playSound(self.selectSound.*);
-                        return false;
+                        return;
                     }
 
-                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
 
                     try self.audioMan.playSound(self.selectSound.*);
 
-                    return false;
+                    return;
                 }
 
                 if (self.sub_sel != null) {
@@ -304,8 +304,6 @@ pub const GSRecovery = struct {
                 }
             },
         }
-
-        return false;
     }
 
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}

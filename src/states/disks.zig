@@ -114,21 +114,21 @@ pub const GSDisks = struct {
                 if (self.sel == self.disks.items.len - 1) {
                     c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
                 } else if (self.sel == self.disks.items.len - 2) {
-                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Recovery,
                     });
                 } else if (self.sel == self.disks.items.len - 3) {
-                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Installer,
                     });
                 } else {
-                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Loading,
                     });
                 }
             } else {
                 if (self.sel == 0) {
-                    events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Installer,
                     });
                 } else {
@@ -192,8 +192,8 @@ pub const GSDisks = struct {
         allocator.alloc.free(line);
     }
 
-    pub fn keypress(self: *Self, key: c_int, _: c_int, down: bool) !bool {
-        if (!down) return false;
+    pub fn keypress(self: *Self, key: c_int, _: c_int, down: bool) !void {
+        if (!down) return;
 
         self.auto = false;
         switch (key) {
@@ -213,7 +213,7 @@ pub const GSDisks = struct {
                 }
             },
             else => {
-                if (c.glfwGetKeyName(key, 0) == null) return false;
+                if (c.glfwGetKeyName(key, 0) == null) return;
                 for (self.disks.items, 0..) |disk, idx| {
                     if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
@@ -223,7 +223,7 @@ pub const GSDisks = struct {
             },
         }
 
-        return false;
+        return;
     }
 
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}

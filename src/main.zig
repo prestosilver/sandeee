@@ -232,56 +232,49 @@ pub fn blit() !void {
     ctx.makeNotCurrent();
 }
 
-pub fn changeState(event: systemEvs.EventStateChange) bool {
+pub fn changeState(event: systemEvs.EventStateChange) !void {
     std.log.debug("ChangeState: {}", .{event.targetState});
 
     currentState = event.targetState;
-    return true;
 }
 
-pub fn keyDown(event: inputEvs.EventKeyDown) bool {
+pub fn keyDown(event: inputEvs.EventKeyDown) !void {
     if (event.key == c.GLFW_KEY_F12) {
         showFps = !showFps;
     }
 
-    return gameStates.getPtr(currentState).keypress(event.key, event.mods, true) catch false;
+    try gameStates.getPtr(currentState).keypress(event.key, event.mods, true);
 }
 
-pub fn keyUp(event: inputEvs.EventKeyUp) bool {
-    return gameStates.getPtr(currentState).keypress(event.key, event.mods, false) catch false;
+pub fn keyUp(event: inputEvs.EventKeyUp) !void {
+    try gameStates.getPtr(currentState).keypress(event.key, event.mods, false);
 }
 
-pub fn keyChar(event: inputEvs.EventKeyChar) bool {
-    gameStates.getPtr(currentState).keychar(event.codepoint, event.mods) catch return false;
-    return false;
+pub fn keyChar(event: inputEvs.EventKeyChar) !void {
+    try gameStates.getPtr(currentState).keychar(event.codepoint, event.mods);
 }
 
-pub fn mouseDown(event: inputEvs.EventMouseDown) bool {
-    gameStates.getPtr(currentState).mousepress(event.btn) catch return false;
-    return false;
+pub fn mouseDown(event: inputEvs.EventMouseDown) !void {
+    try gameStates.getPtr(currentState).mousepress(event.btn);
 }
 
-pub fn mouseUp(_: inputEvs.EventMouseUp) bool {
-    gameStates.getPtr(currentState).mouserelease() catch return false;
-    return false;
+pub fn mouseUp(_: inputEvs.EventMouseUp) !void {
+    try gameStates.getPtr(currentState).mouserelease();
 }
 
-pub fn mouseMove(event: inputEvs.EventMouseMove) bool {
-    gameStates.getPtr(currentState).mousemove(vecs.newVec2(@as(f32, @floatCast(event.x)), @as(f32, @floatCast(event.y)))) catch return false;
-    return false;
+pub fn mouseMove(event: inputEvs.EventMouseMove) !void {
+    try gameStates.getPtr(currentState).mousemove(vecs.newVec2(@as(f32, @floatCast(event.x)), @as(f32, @floatCast(event.y))));
 }
 
-pub fn mouseScroll(event: inputEvs.EventMouseScroll) bool {
-    gameStates.getPtr(currentState).mousescroll(vecs.newVec2(@as(f32, @floatCast(event.x)), @as(f32, @floatCast(event.y)))) catch return false;
-    return false;
+pub fn mouseScroll(event: inputEvs.EventMouseScroll) !void {
+    try gameStates.getPtr(currentState).mousescroll(vecs.newVec2(@as(f32, @floatCast(event.x)), @as(f32, @floatCast(event.y))));
 }
 
-pub fn notification(_: windowEvs.EventNotification) bool {
-    audioman.playSound(message_snd) catch {};
-    return false;
+pub fn notification(_: windowEvs.EventNotification) !void {
+    try audioman.playSound(message_snd);
 }
 
-pub fn settingSet(event: systemEvs.EventSetSetting) bool {
+pub fn settingSet(event: systemEvs.EventSetSetting) !void {
     if (std.mem.eql(u8, event.setting, "wallpaper_mode")) {
         wallpaper.data.mode = .Color;
 
@@ -301,19 +294,19 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
             wallpaper.data.mode = .Fill;
         }
 
-        return true;
+        return;
     }
 
     if (std.mem.eql(u8, event.setting, "sound_volume")) {
         audioman.volume = @as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0;
 
-        return true;
+        return;
     }
 
     if (std.mem.eql(u8, event.setting, "sound_muted")) {
         audioman.muted = std.ascii.eqlIgnoreCase("yes", event.value);
 
-        return true;
+        return;
     }
 
     if (std.mem.eql(u8, event.setting, "crt_shader")) {
@@ -326,23 +319,19 @@ pub fn settingSet(event: systemEvs.EventSetSetting) bool {
             gfx.gContext.makeNotCurrent();
         }
 
-        return true;
+        return;
     }
-
-    return false;
 }
 
-pub fn runCmdEvent(event: systemEvs.EventRunCmd) bool {
+pub fn runCmdEvent(event: systemEvs.EventRunCmd) !void {
     for (emailManager.emails.items) |*email| {
         if (!emailManager.getEmailVisible(email)) continue;
         if (email.condition != .Run) continue;
 
         if (std.ascii.eqlIgnoreCase(email.conditionData, event.cmd)) {
-            emailManager.setEmailComplete(email);
+            try emailManager.setEmailComplete(email);
         }
     }
-
-    return false;
 }
 
 pub fn setupEvents() !void {
@@ -370,16 +359,13 @@ pub fn drawLoading(self: *loadingState.GSLoading) void {
 
         blit() catch {};
     }
-
-    return;
 }
 
-pub fn windowResize(event: inputEvs.EventWindowResize) bool {
+pub fn windowResize(event: inputEvs.EventWindowResize) !void {
     ctx.makeCurrent();
-    gfx.resize(event.w, event.h) catch {};
-    ctx.makeNotCurrent();
+    defer ctx.makeNotCurrent();
 
-    return false;
+    try gfx.resize(event.w, event.h);
 }
 
 var paniced: bool = false;
@@ -518,9 +504,7 @@ pub fn mainErr() anyerror!void {
 
     // load bios
     var prog: f32 = 0;
-    loader.run(&prog) catch {
-        @panic("Preload Failed");
-    };
+    try loader.run(&prog);
 
     // start setup states
     ctx.makeCurrent();

@@ -154,30 +154,30 @@ pub const EmailManager = struct {
         return true;
     }
 
-    pub fn setEmailComplete(self: *EmailManager, email: *Email) void {
+    pub fn setEmailComplete(self: *EmailManager, email: *Email) !void {
         email.isComplete = true;
         if (self.getEmailUnlocks(email)) {
             for (self.emails.items) |*dep| {
                 if (dep.box != email.box) continue;
                 if (std.mem.indexOf(u8, dep.deps, &.{email.id})) |_| {
                     if (self.getEmailVisible(dep))
-                        events.EventManager.instance.sendEvent(windowEvs.EventNotification{
+                        try events.EventManager.instance.sendEvent(windowEvs.EventNotification{
                             .title = "You got mail",
                             .text = dep.subject,
                             .icon = emailWin.notif,
                         });
                 }
             }
-            events.EventManager.instance.sendEvent(systemEvs.EventEmailRecv{});
+            try events.EventManager.instance.sendEvent(systemEvs.EventEmailRecv{});
         }
     }
 
-    pub fn viewEmail(self: *EmailManager, email: *Email) void {
+    pub fn viewEmail(self: *EmailManager, email: *Email) !void {
         if (!email.viewed) {
             email.viewed = true;
 
             if (email.condition == .View) {
-                self.setEmailComplete(email);
+                try self.setEmailComplete(email);
             }
         }
     }
@@ -185,7 +185,7 @@ pub const EmailManager = struct {
     pub fn updateLogins(self: *EmailManager, logins: u64) !void {
         for (self.emails.items) |*email| {
             if (email.condition == .Logins and logins >= try std.fmt.parseInt(u64, email.conditionData, 0)) {
-                self.setEmailComplete(email);
+                try self.setEmailComplete(email);
             }
         }
     }

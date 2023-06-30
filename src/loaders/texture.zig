@@ -20,9 +20,7 @@ pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []co
     var texture = tex.newTextureSize(.{ .x = 0, .y = 0 });
     gfx.gContext.makeNotCurrent();
 
-    tex.uploadTextureFile(&texture, path) catch {
-        return error.LoadError;
-    };
+    try tex.uploadTextureFile(&texture, path);
 
     try textureManager.put(self.out.*, texture);
 

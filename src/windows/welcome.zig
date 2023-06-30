@@ -101,7 +101,7 @@ pub fn new() !win.WindowContents {
         },
     };
 
-    var result = win.WindowContents.init(self, "Welcome", "Welcome To Sand\x82\x82\x82", col.newColorRGBA(192, 192, 192, 255));
+    var result = try win.WindowContents.init(self, "Welcome", "Welcome To Sand\x82\x82\x82", col.newColorRGBA(192, 192, 192, 255));
     result.props.size.min = vecs.newVec2(600, 350);
     result.props.size.max = vecs.newVec2(600, 350);
 

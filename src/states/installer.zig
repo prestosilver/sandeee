@@ -191,7 +191,7 @@ pub const GSInstall = struct {
             if (self.timer < 0) {
                 self.timer = 0;
 
-                events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                     .targetState = .Disks,
                 });
             }
@@ -227,8 +227,8 @@ pub const GSInstall = struct {
         }
     }
 
-    pub fn keypress(self: *Self, keycode: c_int, mods: c_int, down: bool) !bool {
-        if (!down) return false;
+    pub fn keypress(self: *Self, keycode: c_int, mods: c_int, down: bool) !void {
+        if (!down) return;
         switch (keycode) {
             c.GLFW_KEY_A...c.GLFW_KEY_Z => {
                 if ((mods & c.GLFW_MOD_SHIFT) != 0) {
@@ -257,9 +257,9 @@ pub const GSInstall = struct {
                     .Naming => {
                         try self.audioMan.playSound(self.selectSound.*);
 
-                        if (self.diskName.items.len == 0) return false;
+                        if (self.diskName.items.len == 0) return;
                         if (std.mem.containsAtLeast(u8, self.diskName.items, 1, ".")) {
-                            if (!std.mem.endsWith(u8, self.diskName.items, ".eee")) return false;
+                            if (!std.mem.endsWith(u8, self.diskName.items, ".eee")) return;
                         } else {
                             try self.diskName.appendSlice(".eee");
                         }
@@ -284,7 +284,6 @@ pub const GSInstall = struct {
             },
             else => {},
         }
-        return false;
     }
 
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}

@@ -170,7 +170,7 @@ pub const WindowContents = struct {
         return self.vtable.deinit(self.ptr);
     }
 
-    pub fn init(ptr: anytype, kind: []const u8, name: []const u8, clearColor: cols.Color) Self {
+    pub fn init(ptr: anytype, kind: []const u8, name: []const u8, clearColor: cols.Color) !Self {
         const Ptr = @TypeOf(ptr);
         const ptr_info = @typeInfo(Ptr);
 
@@ -250,7 +250,7 @@ pub const WindowContents = struct {
             .props = .{
                 .info = .{
                     .kind = kind,
-                    .name = allocator.alloc.dupe(u8, name) catch "",
+                    .name = try allocator.alloc.dupe(u8, name),
                 },
             },
             .vtable = &gen.vtable,

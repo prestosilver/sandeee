@@ -57,7 +57,7 @@ pub const PopupTextPick = struct {
 
         if (keycode == c.GLFW_KEY_ENTER) {
             try self.submit(self.text, self.data);
-            events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
+            try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
         }
     }
 

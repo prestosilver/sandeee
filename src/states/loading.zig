@@ -139,7 +139,7 @@ pub const GSLoading = struct {
     }
 
     pub fn update(self: *Self, _: f32) !void {
-        events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+        try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
             .targetState = .Windowed,
         });
 
@@ -162,10 +162,7 @@ pub const GSLoading = struct {
         //}
     }
 
-    pub fn keypress(_: *Self, _: c_int, _: c_int, _: bool) !bool {
-        return false;
-    }
-
+    pub fn keypress(_: *Self, _: c_int, _: c_int, _: bool) !void {}
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
     pub fn mousepress(_: *Self, _: c_int) !void {}
     pub fn mouserelease(_: *Self) !void {}
