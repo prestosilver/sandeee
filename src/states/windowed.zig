@@ -623,6 +623,19 @@ pub const GSWindowed = struct {
     pub fn mouserelease(self: *Self) !void {
         self.dragging = null;
         self.down = false;
+
+        for (self.windows.items) |*window| {
+            if (!window.data.active) continue;
+
+            if (window.data.popup) |*popup| {
+                if (popup.data.click(self.mousepos)) {
+                    window.data.popup = null;
+                }
+                return;
+            }
+
+            return window.data.click(self.mousepos, null);
+        }
     }
 
     pub fn mousemove(self: *Self, pos: vecs.Vector2) !void {
