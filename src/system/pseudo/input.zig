@@ -54,6 +54,7 @@ pub fn writeInputWin(_: []const u8, _: ?*vm.VM) !void {
 
 pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
     var result = try allocator.alloc.alloc(u8, 5);
+    @memset(result, 0);
 
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
@@ -65,10 +66,12 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
                     result[0] = 255;
                     if (self.mousebtn != null) {
                         result[0] = @as(u8, @intCast(self.mousebtn.?));
-                        self.mousebtn = null;
                     }
-                    std.mem.writeIntBig(u16, result[1..3], @as(u16, @intFromFloat(self.mousepos.x)));
-                    std.mem.writeIntBig(u16, result[3..5], @as(u16, @intFromFloat(self.mousepos.y)));
+                    if (self.mousepos.y > 0 and self.mousepos.y < 20000)
+                        std.mem.writeIntBig(u16, result[3..5], @as(u16, @intFromFloat(self.mousepos.y)));
+
+                    if (self.mousepos.x > 0 and self.mousepos.x < 20000)
+                        std.mem.writeIntBig(u16, result[1..3], @as(u16, @intFromFloat(self.mousepos.x)));
 
                     return result;
                 }
@@ -76,7 +79,6 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
         }
     }
 
-    @memset(result, 0);
     return result;
 }
 
