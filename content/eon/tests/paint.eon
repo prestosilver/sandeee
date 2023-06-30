@@ -76,11 +76,92 @@ fn getclick() {
     asm "ret";
 }
 
-fn processClick(win, texture, w, h) {
+fn drawLineLow(texture, ax, ay, bx, by, color) {
+    if (bx > 65535) return 0;
+
+    var dx = bx - ax;
+    var dy = by - ay;
+
+    var yi = 1;
+    if (dy > 65535) {
+        yi = 0 - yi;
+        dy = 0 - dy;
+    }
+
+    var D = 2 * dy - dx;
+
+    var y = ay;
+    var x = 0;
+    for (x = ax; x < bx; x = x + 1) {
+        setPixel(texture, x, y, color);
+        if (D < 255) {
+            y = y + yi;
+            D = D + 2 * (dy - dx);
+        } else {
+          D = D + 2 * dy;
+        }
+    }
+
+    return 0;
+}
+
+fn drawLineHigh(texture, ax, ay, bx, by, color) {
+    if (by > 65535) return 0;
+
+    var dx = bx - ax;
+    var dy = by - ay;
+
+    var xi = 1;
+    if (dx > 65535) {
+        xi = 0 - xi;
+        dx = 0 - dx;
+    }
+
+    var D = 2 * dx - dy;
+
+    var x = ax;
+    var y = 0;
+    for (y = ay; y < by; y = y + 1) {
+        setPixel(texture, x, y, color);
+        if (D < 255) {
+            x = x + xi;
+            D = D + 2 * (dx - dy);
+        } else {
+            D = D + 2 * dx;
+        }
+    }
+
+    return 0;
+}
+
+fn abs(v) {
+   if (v > 65535) {
+       return 0 - v;
+   }
+   return v;
+}
+
+fn drawLine(texture, ax, ay, bx, by, color) {
+    if (abs(ay - by) < abs(ax - bx)) {
+        if (ax > bx) {
+            drawLineLow(texture, bx, by, ax, ay, color);
+        } else {
+            drawLineLow(texture, ax, ay, bx, by, color);
+        }
+    } else {
+        if (ay > by) {
+            drawLineHigh(texture, bx, by, ax, ay, color);
+        } else {
+            drawLineHigh(texture, ax, ay, bx, by, color);
+        }
+    }
+
+    return 0;
+}
+
+fn processClick(win, texture, w, h, oldx, oldy) {
     var clickData = getclick();
     var btn = @clickData;
-
-    if (btn == 255) return 0;
 
     var x = @(clickData + 2);
     var y = @(clickData + 4);
@@ -132,14 +213,17 @@ fn processClick(win, texture, w, h) {
     y = y / (target_h);
 
     if (btn == 0) {
-        setPixel(texture, x, y, "\x01\x01\x01\xff");
+        drawLine(texture, dup(x), dup(y), oldx, oldy, "\x01\x01\x01\xff");
     } else if (btn == 1) {
-        setPixel(texture, x, y, "\xff\xff\xff\xff");
+        drawLine(texture, dup(x), dup(y), oldx, oldy, "\xff\xff\xff\xff");
     } else {
         print("button: ");
         print(btn);
         print("\n");
     }
+
+    oldx = x;
+    oldy = y;
 
     return 1;
 }
@@ -159,8 +243,11 @@ fn main() {
     var w = _TextureWidth(content);
     var h = _TextureHeight(content);
 
+    var x = 0;
+    var y = 0;
+
     for (0; _WindowOpen(); 1) {
-        processClick(window, texture, w, h);
+        processClick(window, texture, w, h, x, y);
 
         render(window, texture, w * 2, h * 2);
     }
