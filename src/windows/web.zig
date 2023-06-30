@@ -29,10 +29,17 @@ pub const WebData = struct {
         pos: rect.Rectangle,
     };
 
-    pub const Align = enum {
-        Left,
-        Center,
-        Right,
+    pub const Style = struct {
+        pub const Align = enum {
+            Left,
+            Center,
+            Right,
+        };
+
+        ali: Align = .Left,
+        scale: f32 = 1.0,
+        color: col.Color = col.newColor(0, 0, 0, 1),
+        locked: bool = false,
     };
 
     highlight: sprite.Sprite,
@@ -53,18 +60,22 @@ pub const WebData = struct {
     add_links: bool = false,
     web_idx: u8,
 
+    styles: std.StringArrayHashMap(Style),
+
     pub fn loadPage(self: *Self) !void {
         if (self.loading) return;
 
-        if (self.path) |path| {
-            self.loading = true;
-            defer {
-                self.loading = false;
-                self.add_imgs = true;
-                self.add_links = true;
-                self.links.clearAndFree();
-            }
+        self.loading = true;
+        defer {
+            self.loading = false;
+            self.add_imgs = true;
+            self.add_links = true;
+            self.links.clearAndFree();
+        }
 
+        self.resetStyles() catch {};
+
+        if (self.path) |path| {
             switch (path[0]) {
                 '@' => {
                     var idx = std.mem.indexOf(u8, path, ":") orelse {
@@ -133,6 +144,14 @@ pub const WebData = struct {
                 },
             }
         }
+
+        var iter = std.mem.split(u8, self.conts orelse return, "\n");
+
+        while (iter.next()) |fullLine| {
+            if (std.mem.startsWith(u8, fullLine, "#Style ")) {
+                try self.loadStyle(fullLine["#Style ".len..]);
+            }
+        }
     }
 
     pub fn loadimage(self: *Self, path: []const u8, target: []const u8) !void {
@@ -190,6 +209,88 @@ pub const WebData = struct {
 
         self.add_links = true;
         self.links.clearAndFree();
+    }
+
+    pub fn loadStyle(self: *Self, url: []const u8) !void {
+        var target_path = try allocator.alloc.dupe(u8, url);
+
+        if (std.mem.indexOf(u8, url, ":") == null) {
+            allocator.alloc.free(target_path);
+            var idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
+
+            target_path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ self.path.?[1..idx], url[1..] });
+        }
+
+        var idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
+
+        var client = std.http.Client{ .allocator = allocator.alloc };
+        defer client.deinit();
+
+        const uri = std.Uri{
+            .scheme = "http",
+            .user = null,
+            .password = null,
+            .host = target_path[1..idx],
+            .port = 80,
+            .path = target_path[idx + 1 ..],
+            .query = null,
+            .fragment = null,
+        };
+
+        var headers = std.http.Headers{ .allocator = allocator.alloc };
+        defer headers.deinit();
+
+        try headers.append("User-Agent", "SandEEE/0.0");
+        try headers.append("Connection", "Close");
+
+        var req = try client.request(.GET, uri, headers, .{});
+        defer req.deinit();
+
+        req.start() catch return;
+        req.wait() catch return;
+
+        var fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
+        defer allocator.alloc.free(fconts);
+
+        var iter = std.mem.split(u8, fconts, "\n");
+        try self.styles.put("", .{});
+        var currentStyle: *Style = self.styles.getPtr("") orelse unreachable;
+
+        while (iter.next()) |fullLine| {
+            if (std.mem.startsWith(u8, fullLine, "#")) {
+                try self.styles.put(try allocator.alloc.dupe(u8, fullLine[1..]), .{});
+                currentStyle = self.styles.getPtr(fullLine[1..]) orelse unreachable;
+            }
+            if (std.mem.startsWith(u8, fullLine, "align: ")) {
+                if (std.mem.eql(u8, fullLine, "align: Center")) {
+                    currentStyle.ali = .Center;
+                }
+                if (std.mem.eql(u8, fullLine, "align: Left")) {
+                    currentStyle.ali = .Left;
+                }
+                if (std.mem.eql(u8, fullLine, "align: Right")) {
+                    currentStyle.ali = .Right;
+                }
+            }
+            if (std.mem.startsWith(u8, fullLine, "scale: ")) {
+                currentStyle.scale = std.fmt.parseFloat(f32, fullLine["scale: ".len..]) catch 1.0;
+            }
+        }
+    }
+
+    pub fn resetStyles(self: *Self) !void {
+        var copy = try self.styles.clone();
+        defer copy.deinit();
+
+        self.styles.clearAndFree();
+        var styleIter = copy.iterator();
+        while (styleIter.next()) |style| {
+            if (style.value_ptr.locked) {
+                try self.styles.put(style.key_ptr.*, style.value_ptr.*);
+            } else {
+                allocator.alloc.free(style.key_ptr.*);
+            }
+        }
     }
 
     pub fn saveDialog(self: *Self, outputData: []const u8, name: []const u8) !void {
@@ -261,32 +362,32 @@ pub const WebData = struct {
 
             // draw text
             while (iter.next()) |fullLine| {
-                var line = fullLine;
-                var ali: Align = .Left;
-
-                if (std.mem.startsWith(u8, fullLine, ":center:")) {
-                    ali = .Center;
-                    line = fullLine[8..];
-                } else if (std.mem.startsWith(u8, fullLine, ":left:")) {
-                    ali = .Left;
-                    line = fullLine[6..];
-                } else if (std.mem.startsWith(u8, fullLine, ":right:")) {
-                    ali = .Right;
-                    line = fullLine[7..];
+                if (std.mem.startsWith(u8, fullLine, "#")) {
+                    continue;
                 }
 
-                line = std.mem.trim(u8, line, &std.ascii.whitespace);
+                var line = fullLine;
+                var style: Style = .{};
 
-                var scale: f32 = 1;
-                var color = col.newColor(0, 0, 0, 1);
+                var styleIter = self.styles.iterator();
+
+                while (styleIter.next()) |styleData| {
+                    var name = try std.fmt.allocPrint(allocator.alloc, ":{s}:", .{styleData.key_ptr.*});
+                    defer allocator.alloc.free(name);
+                    if (std.mem.startsWith(u8, fullLine, name)) {
+                        style = styleData.value_ptr.*;
+                        line = fullLine[name.len..];
+                        line = std.mem.trim(u8, line, &std.ascii.whitespace);
+                    }
+                }
 
                 if (std.mem.startsWith(u8, line, "- ") and std.mem.endsWith(u8, line, " -")) {
-                    scale = 3.0;
+                    style.scale *= 3.0;
                     line = line[2 .. line.len - 2];
                 }
 
                 if (std.mem.startsWith(u8, line, "-- ") and std.mem.endsWith(u8, line, " --")) {
-                    scale = 2.0;
+                    style.scale *= 2.0;
                     line = line[3 .. line.len - 3];
                 }
 
@@ -303,9 +404,9 @@ pub const WebData = struct {
                         _ = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                     }
 
-                    const size = sb.textureManager.get(&texid).?.size.mul(2 * scale);
+                    const size = sb.textureManager.get(&texid).?.size.mul(2 * style.scale);
 
-                    switch (ali) {
+                    switch (style.ali) {
                         .Center => {
                             var x = (bnds.w - size.x) / 2;
 
@@ -348,17 +449,17 @@ pub const WebData = struct {
                 }
 
                 if (std.mem.startsWith(u8, line, "> ")) {
-                    color = col.newColor(0, 0, 1, 1);
+                    style.color = col.newColor(0, 0, 1, 1);
                     var linkcont = line[2..];
                     var linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
                     line = linkcont[0..linkidx];
                     line = std.mem.trim(u8, line, &std.ascii.whitespace);
                     var url = linkcont[linkidx + 1 ..];
                     url = std.mem.trim(u8, url, &std.ascii.whitespace);
-                    var size = font.sizeText(.{ .text = line, .scale = scale });
+                    var size = font.sizeText(.{ .text = line, .scale = style.scale });
 
                     if (self.add_links) {
-                        switch (ali) {
+                        switch (style.ali) {
                             .Left => {
                                 var link = WebData.WebLink{
                                     .url = url,
@@ -390,17 +491,17 @@ pub const WebData = struct {
 
                 if (pos.y > bnds.h + bnds.y and !self.add_links) continue;
 
-                var size = font.sizeText(.{ .text = line, .scale = scale, .wrap = bnds.w });
+                var size = font.sizeText(.{ .text = line, .scale = style.scale, .wrap = bnds.w });
 
-                switch (ali) {
+                switch (style.ali) {
                     .Left => {
                         try font.draw(.{
                             .batch = batch,
                             .shader = font_shader,
                             .text = line,
                             .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
-                            .color = color,
-                            .scale = scale,
+                            .color = style.color,
+                            .scale = style.scale,
                             .wrap = bnds.w,
                         });
                     },
@@ -412,8 +513,8 @@ pub const WebData = struct {
                             .shader = font_shader,
                             .text = line,
                             .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
-                            .color = color,
-                            .scale = scale,
+                            .color = style.color,
+                            .scale = style.scale,
                             .wrap = bnds.w,
                         });
                     },
@@ -425,8 +526,8 @@ pub const WebData = struct {
                             .shader = font_shader,
                             .text = line,
                             .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
-                            .color = color,
-                            .scale = scale,
+                            .color = style.color,
+                            .scale = style.scale,
                             .wrap = bnds.w,
                         });
                     },
@@ -610,9 +711,25 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
         .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),
         .hist = std.ArrayList([]const u8).init(allocator.alloc),
         .web_idx = web_idx,
+        .styles = std.StringArrayHashMap(WebData.Style).init(allocator.alloc),
     };
 
     web_idx += 1;
+
+    try self.styles.put("center", .{
+        .ali = .Center,
+        .locked = true,
+    });
+
+    try self.styles.put("left", .{
+        .ali = .Left,
+        .locked = true,
+    });
+
+    try self.styles.put("right", .{
+        .ali = .Right,
+        .locked = true,
+    });
 
     return win.WindowContents.init(self, "web", "Xplorer", col.newColor(1, 1, 1, 1));
 }
