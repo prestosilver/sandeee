@@ -603,7 +603,8 @@ pub const GSWindowed = struct {
         }
 
         for (self.windows.items) |*window| {
-            if (!window.data.active and !window.data.full) continue;
+            if (!window.data.active) continue;
+
             try self.desk.data.click(self.shader, null);
 
             if (window.data.popup) |*popup| {
