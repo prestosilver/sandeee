@@ -59,7 +59,12 @@ const EmailData = struct {
 
             for (emailManager.emails.items) |*email| {
                 if (email.box != self.box) continue;
-                if (!emailManager.getEmailVisible(email)) continue;
+                var color = col.newColor(0, 0, 0, 1);
+                if (@import("builtin").mode == .Debug) {
+                    if (!emailManager.getEmailVisible(email)) color.a = 0.5;
+                } else {
+                    if (!emailManager.getEmailVisible(email)) continue;
+                }
 
                 var text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
@@ -86,6 +91,7 @@ const EmailData = struct {
                     .shader = font_shader,
                     .text = text,
                     .pos = vecs.newVec2(bnds.x + 112 + 20, y - 4),
+                    .color = color,
                 });
 
                 try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 112, y + font.size, 0));
@@ -263,7 +269,9 @@ const EmailData = struct {
 
                     for (emailManager.emails.items) |*email| {
                         if (email.box != self.box) continue;
-                        if (!emailManager.getEmailVisible(email)) continue;
+                        if (@import("builtin").mode != .Debug) {
+                            if (!emailManager.getEmailVisible(email)) continue;
+                        }
 
                         var bnds = rect.newRect(106, @as(f32, @floatFromInt(y)), size.x - 106, 24);
 
