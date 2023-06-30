@@ -24,7 +24,7 @@ fn setPixel(tex, x, y, color) {
     var xs = toShort(x);
     var ys = toShort(y);
     
-    write(file, tex & xs & ys);
+    write(file, tex & xs & ys & color);
 
     close(file);
 
@@ -87,13 +87,11 @@ fn processClick(win, texture, w, h) {
 
     var xo = @(clickData + 1);
     var yo = @(clickData + 3);
-    xo = xo * 256;
-    yo = yo * 256;
 
-    x = x + xo;
-    y = y + yo;
+    x = x + xo * 256;
+    y = y + yo * 256;
 
-    print("mouse_pos: ");
+    print("mouse_uv: ");
     print(x);
     print(", ");
     print(y);
@@ -122,21 +120,26 @@ fn processClick(win, texture, w, h) {
     var target_x = win_w - target_w;
     var target_y = win_h - target_h;
 
+    target_x = target_x / 2;
+    target_y = target_y / 2;
+
     x = x - target_x;
     x = x * w;
-    x = x / (target_x + target_w);
+    x = x / (target_w);
 
     y = y - target_y;
     y = y * h;
-    y = y / (target_y + target_h);
+    y = y / (target_h);
 
-    setPixel(texture, x, y, "0000");
-
-    print("texture_pos: ");
-    print(x);
-    print(", ");
-    print(y);
-    print("\n");
+    if (btn == 0) {
+        setPixel(texture, x, y, "\x01\x01\x01\xff");
+    } else if (btn == 1) {
+        setPixel(texture, x, y, "\xff\xff\xff\xff");
+    } else {
+        print("button: ");
+        print(btn);
+        print("\n");
+    }
 
     return 1;
 }
