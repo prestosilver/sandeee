@@ -24,7 +24,7 @@ pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []co
         return error.LoadError;
     };
 
-    try textureManager.textures.put(self.out.*, texture);
+    try textureManager.put(self.out.*, texture);
 
     return true;
 }

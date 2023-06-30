@@ -15,18 +15,23 @@ pub const TextureManager = struct {
         var iter = self.textures.iterator();
 
         while (iter.next()) |entry| {
+            allocator.alloc.free(entry.key_ptr.*);
             entry.value_ptr.deinit();
         }
 
         self.textures.deinit();
     }
 
-    pub fn putMem(self: *TextureManager, name: []const u8, texture: []const u8) !void {
-        if (self.textures.fetchRemove(name)) |old| {
-            old.value.deinit();
-        }
+    pub fn put(self: *TextureManager, name: []const u8, texture: tex.Texture) !void {
+        var new = self.textures.getKey(name) orelse try allocator.alloc.dupe(u8, name);
 
-        try self.textures.put(name, try tex.newTextureMem(texture));
+        try self.textures.put(new, texture);
+    }
+
+    pub fn putMem(self: *TextureManager, name: []const u8, texture: []const u8) !void {
+        var new = self.textures.getKey(name) orelse try allocator.alloc.dupe(u8, name);
+
+        try self.textures.put(new, try tex.newTextureMem(texture));
     }
 
     pub fn get(self: *TextureManager, name: []const u8) ?*tex.Texture {

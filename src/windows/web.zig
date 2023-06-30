@@ -159,6 +159,7 @@ pub const WebData = struct {
         defer allocator.alloc.free(path);
 
         var target_path = try allocator.alloc.dupe(u8, path);
+        defer allocator.alloc.free(target_path);
 
         if (std.mem.indexOf(u8, path, ":") == null) {
             allocator.alloc.free(target_path);
@@ -213,6 +214,7 @@ pub const WebData = struct {
 
     pub fn loadStyle(self: *Self, url: []const u8) !void {
         var target_path = try allocator.alloc.dupe(u8, url);
+        defer allocator.alloc.free(target_path);
 
         if (std.mem.indexOf(u8, url, ":") == null) {
             allocator.alloc.free(target_path);
@@ -253,7 +255,7 @@ pub const WebData = struct {
         defer allocator.alloc.free(fconts);
 
         var iter = std.mem.split(u8, fconts, "\n");
-        try self.styles.put("", .{});
+        try self.styles.put("", .{ .locked = true });
         var currentStyle: *Style = self.styles.getPtr("") orelse unreachable;
 
         while (iter.next()) |fullLine| {
@@ -396,7 +398,7 @@ pub const WebData = struct {
                         gfx.gContext.makeCurrent();
                         defer gfx.gContext.makeNotCurrent();
 
-                        try sb.textureManager.putMem(try allocator.alloc.dupe(u8, &texid), @embedFile("../images/error.eia"));
+                        try sb.textureManager.putMem(&texid, @embedFile("../images/error.eia"));
 
                         sb.textureManager.get(&texid).?.size =
                             sb.textureManager.get(&texid).?.size.div(4);
@@ -623,7 +625,7 @@ pub const WebData = struct {
             }
 
             if (rect.newRect(30, 0, 28, 28).contains(pos)) {
-                if (self.conts != null) {
+                if (self.conts != null and !self.loading) {
                     allocator.alloc.free(self.conts.?);
                     self.conts = null;
                 }
@@ -668,7 +670,24 @@ pub const WebData = struct {
     pub fn focus(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
+        // styles
+        var styleIter = self.styles.iterator();
+        while (styleIter.next()) |style| {
+            if (!style.value_ptr.locked) {
+                allocator.alloc.free(style.key_ptr.*);
+            }
+        }
+
+        self.styles.deinit();
+
+        if (self.conts) |conts| {
+            allocator.alloc.free(conts);
+        }
+
+        // links
         self.links.deinit();
+
+        // self
         allocator.alloc.destroy(self);
     }
 };

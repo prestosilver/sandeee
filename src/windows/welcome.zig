@@ -92,6 +92,8 @@ pub const WelcomeData = struct {
 pub fn new() !win.WindowContents {
     var self = try allocator.alloc.create(WelcomeData);
 
+    // TODO: disable button
+
     self.* = .{
         .shell = .{
             .root = files.home,

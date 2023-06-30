@@ -120,7 +120,7 @@ pub const Font = struct {
 
         result.tex = try std.fmt.allocPrint(allocator.alloc, "font{}", .{fontId});
 
-        try sb.textureManager.textures.put(result.tex, .{
+        try sb.textureManager.put(result.tex, .{
             .tex = texture,
             .size = atlasSize,
         });

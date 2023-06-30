@@ -187,6 +187,9 @@ pub const VMData = struct {
     pub fn focus(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
+        self.flip();
+        self.flip();
+
         self.rects[0].deinit();
         self.rects[1].deinit();
 
