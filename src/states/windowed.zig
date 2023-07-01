@@ -516,7 +516,7 @@ pub const GSWindowed = struct {
 
     pub fn mousepress(self: *Self, btn: c_int) !void {
         if (self.popup) |*popup| {
-            if (popup.data.click(self.mousepos)) {
+            if (try popup.data.click(self.mousepos)) {
                 self.popup = null;
             }
 
@@ -603,7 +603,7 @@ pub const GSWindowed = struct {
             try self.desk.data.click(self.shader, null);
 
             if (window.data.popup) |*popup| {
-                if (popup.data.click(self.mousepos)) {
+                if (try popup.data.click(self.mousepos)) {
                     window.data.popup = null;
                 }
                 return;
@@ -623,7 +623,7 @@ pub const GSWindowed = struct {
             if (!window.data.active) continue;
 
             if (window.data.popup) |*popup| {
-                if (popup.data.click(self.mousepos)) {
+                if (try popup.data.click(self.mousepos)) {
                     window.data.popup = null;
                 }
                 return;

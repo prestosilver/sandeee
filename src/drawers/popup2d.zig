@@ -187,7 +187,7 @@ pub const PopupData = struct {
         return result;
     }
 
-    pub fn click(self: *PopupData, mousepos: vecs.Vector2) bool {
+    pub fn click(self: *PopupData, mousepos: vecs.Vector2) !bool {
         var pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
         var close = rect.newRect(pos.x + self.size.x - 64, pos.y, 64, 64);
         close.h = 26;
@@ -202,7 +202,7 @@ pub const PopupData = struct {
         if (clickPos.x < 0 or clickPos.y < 34) return false;
         if (clickPos.x > self.size.x or clickPos.y > self.size.y) return false;
 
-        self.contents.click(clickPos) catch {};
+        try self.contents.click(clickPos);
 
         return false;
     }
