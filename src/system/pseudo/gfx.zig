@@ -70,7 +70,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
     var texture = sb.textureManager.get(&.{idx});
     if (texture == null) return;
 
-    tex.uploadTextureMem(texture.?, image) catch return error.UploadError;
+    try tex.uploadTextureMem(texture.?, image);
 }
 
 // /fake/gfx/pixel
