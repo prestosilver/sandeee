@@ -73,7 +73,7 @@ pub const WebData = struct {
             self.links.clearAndFree();
         }
 
-        self.resetStyles() catch {};
+        try self.resetStyles();
 
         if (self.path) |path| {
             switch (path[0]) {
@@ -255,7 +255,6 @@ pub const WebData = struct {
         defer allocator.alloc.free(fconts);
 
         var iter = std.mem.split(u8, fconts, "\n");
-        try self.styles.put("", .{ .locked = true });
         var currentStyle: *Style = self.styles.getPtr("") orelse unreachable;
 
         while (iter.next()) |fullLine| {
@@ -277,6 +276,16 @@ pub const WebData = struct {
             if (std.mem.startsWith(u8, fullLine, "scale: ")) {
                 currentStyle.scale = std.fmt.parseFloat(f32, fullLine["scale: ".len..]) catch 1.0;
             }
+            if (std.mem.startsWith(u8, fullLine, "color: ")) {
+                var val = std.fmt.parseInt(u32, fullLine["color: ".len..], 16) catch 0xFF0000;
+                currentStyle.color = col.newColorRGBA(
+                    @intCast((val >> 16) & 0xFF),
+                    @intCast((val >> 8) & 0xFF),
+                    @intCast((val >> 0) & 0xFF),
+                    0xFF,
+                );
+                std.log.info("color: {}", .{currentStyle.color});
+            }
         }
     }
 
@@ -293,6 +302,8 @@ pub const WebData = struct {
                 allocator.alloc.free(style.key_ptr.*);
             }
         }
+
+        try self.styles.put("", .{ .locked = true });
     }
 
     pub fn saveDialog(self: *Self, outputData: []const u8, name: []const u8) !void {
@@ -369,7 +380,7 @@ pub const WebData = struct {
                 }
 
                 var line = fullLine;
-                var style: Style = .{};
+                var style: Style = self.styles.get("") orelse .{};
 
                 var styleIter = self.styles.iterator();
 
