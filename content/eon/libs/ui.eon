@@ -1,3 +1,11 @@
-fn drawButton(win, bnds, label) {
+fn DrawBar(win, uiTex) {
+    var width = _WindowWidth(dup(win));
+    
+    var dest = _MakeRect(0, 0, width, 40);
+
+    var src = _MakeRect(512, 0, 128, 512);
+
+    _WindowRender(win, uiTex, dest, src);
+
     return 0;
 }

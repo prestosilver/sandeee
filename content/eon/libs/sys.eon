@@ -31,6 +31,12 @@ fn close() {
     asm "ret";
 }
 
+fn flush() {
+    asm "sys 6";
+    asm "push 0";
+    asm "ret";
+}
+
 fn write() {
     asm "sys 5";
     asm "push 0";

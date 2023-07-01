@@ -37,6 +37,10 @@ _MakeRect: ; x y w h
     ret
 
 _WindowRender: ; tex win source dest
+    dup 3
+    dup 3
+    dup 3
+    dup 3
     cat
     cat
     cat
@@ -46,6 +50,10 @@ _WindowRender: ; tex win source dest
     dup 2
     sys 5
     sys 7
+    disc 0
+    disc 0
+    disc 0
+    disc 0
     disc 0
     push 0
     ret

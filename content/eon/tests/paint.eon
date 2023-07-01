@@ -27,38 +27,59 @@ fn setPixel(tex, x, y, color) {
     write(file, tex & xs & ys & color);
 
     close(file);
+    
+    file = open("/fake/gfx/upload");
+    write(file, tex);
+    close(file);
 
     return 0;
 }
 
-fn render(win, tex, w, h) {
-    var source = _MakeRect(0, 0, 1024, 1024);
-    var win_w = _WindowWidth(win);
-    var win_h = _WindowHeight(win);
+fn setSquare(tex, x, y, r, color) {
+    var px;
+    var py;
 
-    var ratio = 1000;
+    var stopx = x + r;    
+    var stopy = y + r;    
 
-    var width_ratio = win_w * 1000;
-    width_ratio = width_ratio / w;
-    var height_ratio = win_h * 1000;
-    height_ratio = height_ratio / h;
+    var file = open("/fake/gfx/pixel");
+    write(file, tex);
 
-    ratio = width_ratio;
-    if (ratio > height_ratio) {
-        ratio = height_ratio;
+    for (px = dup(x); px < stopx; px = px + 1) {
+        for (py = dup(y); py < stopy; py = py + 1) {
+            write(file, toShort(px) & toShort(py) & color);
+        }
     }
 
-    var target_w = ratio * w;
+    close(file);
+    
+    file = open("/fake/gfx/upload");
+    write(file, tex);
+    close(file);
+
+    return 0;
+}
+
+fn render(win, menuTex, tex, imgx, imgy, imgs, w, h) {
+    var source = _MakeRect(0, 0, 1024, 1024);
+    
+    var xo = imgx * imgs;
+    xo = xo / 1000;
+    var yo = imgy * imgs;
+    yo = yo / 1000;
+
+    var target_w = imgs * w;
     target_w = target_w / 1000;
-    var target_h = ratio * h;
+
+    var target_h = imgs * h;
     target_h = target_h / 1000;
 
-    var target_x = win_w - target_w;
-    var target_y = win_h - target_h;
-
-    var dest = _MakeRect(target_x / 2, target_y / 2, target_w, target_h);
+    var dest = _MakeRect(xo, yo + 32, target_w, target_h);
     
+    _DrawBar(win, menuTex);
+
     _WindowRender(win, tex, dest, source);
+
     _WindowFlip(win);
 
     return 0;
@@ -93,7 +114,7 @@ fn drawLineLow(texture, ax, ay, bx, by, color) {
     var y = ay;
     var x = 0;
     for (x = ax; x < bx; x = x + 1) {
-        setPixel(texture, x, y, color);
+        setSquare(texture, x - 1, y - 1, 3, color);
         if (D < 255) {
             y = y + yi;
             D = D + 2 * (dy - dx);
@@ -122,7 +143,7 @@ fn drawLineHigh(texture, ax, ay, bx, by, color) {
     var x = ax;
     var y = 0;
     for (y = ay; y < by; y = y + 1) {
-        setPixel(texture, x, y, color);
+        setSquare(texture, x - 1, y - 1, 3, color);
         if (D < 255) {
             x = x + xi;
             D = D + 2 * (dx - dy);
@@ -159,7 +180,7 @@ fn drawLine(texture, ax, ay, bx, by, color) {
     return 0;
 }
 
-fn processClick(win, texture, w, h, oldx, oldy) {
+fn processClick(win, texture, imgx, imgy, imgs, w, h, oldx, oldy) {
     var clickData = getclick();
     var btn = @clickData;
 
@@ -172,58 +193,56 @@ fn processClick(win, texture, w, h, oldx, oldy) {
     x = x + xo * 256;
     y = y + yo * 256;
 
-    print("mouse_uv: ");
-    print(x);
-    print(", ");
-    print(y);
-    print("\n");
+    y = y - 32;
 
-    var win_w = _WindowWidth(win);
-    var win_h = _WindowHeight(win);
+    var xs = dup(x);
+    var ys = dup(y);
 
-    var ratio = 1000;
+    xo = imgx * imgs;
+    xo = xo / 1000;
+    x = x - xo;
+    x = x * 1000;
+    x = x / imgs;
 
-    var width_ratio = win_w * 1000;
-    width_ratio = width_ratio / (w * 2);
-    var height_ratio = win_h * 1000;
-    height_ratio = height_ratio / (h * 2);
+    yo = imgy * imgs;
+    yo = yo / 1000;
+    y = y - yo;
+    y = y * 1000;
+    y = y / imgs;
 
-    ratio = width_ratio;
-    if (ratio > height_ratio) {
-        ratio = height_ratio;
-    }
-
-    var target_w = ratio * (w * 2);
-    target_w = target_w / 1000;
-    var target_h = ratio * (h * 2);
-    target_h = target_h / 1000;
-
-    var target_x = win_w - target_w;
-    var target_y = win_h - target_h;
-
-    target_x = target_x / 2;
-    target_y = target_y / 2;
-
-    x = x - target_x;
-    x = x * w;
-    x = x / (target_w);
-
-    y = y - target_y;
-    y = y * h;
-    y = y / (target_h);
+    xo = oldx - x;
+    yo = oldy - y;
 
     if (btn == 0) {
         drawLine(texture, dup(x), dup(y), oldx, oldy, "\x01\x01\x01\xff");
     } else if (btn == 1) {
         drawLine(texture, dup(x), dup(y), oldx, oldy, "\xff\xff\xff\xff");
-    } else {
-        print("button: ");
-        print(btn);
-        print("\n");
+    } else if (btn == 2) {
+        if ((imgx - xo) < 65535) {
+            imgx = imgx - xo;
+        }
+        if ((imgy - yo) < 65535) {
+            imgy = imgy - yo;
+        }
+
+        x = dup(xs);
+        y = dup(ys);
+
+        xo = imgx * imgs;
+        xo = xo / 1000;
+        x = x - xo;
+        x = x * 1000;
+        x = x / imgs;
+
+        yo = imgy * imgs;
+        yo = yo / 1000;
+        y = y - yo;
+        y = y * 1000;
+        y = y / imgs;
     }
 
-    oldx = x;
-    oldy = y;
+    oldx = dup(x);
+    oldy = dup(y);
 
     return 1;
 }
@@ -232,13 +251,16 @@ fn main() {
     setupLibLoad();
     loadLib("/libs/window.ell");
     loadLib("/libs/texture.ell");
+    loadLib("/libs/ui.ell");
 
     var input = processArgs();
     var window = _WindowCreate();
     var texture = _TextureCreate();
+    var menuTex = _TextureCreate();
     var content = _TextureRead(input);
+    _TextureUpload(_TextureRead("/cont/imgs/ui.eia"), menuTex);
     _TextureUpload(content, texture);
-    _SetWindowTitle(window, "EEE Image Array Editor" & input);
+    _SetWindowTitle(window, "EEE Image Array Editor - " & input);
 
     var w = _TextureWidth(content);
     var h = _TextureHeight(content);
@@ -246,12 +268,17 @@ fn main() {
     var x = 0;
     var y = 0;
 
-    for (0; _WindowOpen(); 1) {
-        processClick(window, texture, w, h, x, y);
+    var imgx = 0;
+    var imgy = 0;
+    var imgs = 2000;
 
-        render(window, texture, w * 2, h * 2);
+    for (0; _WindowOpen(); 1) {
+        processClick(window, texture, imgx, imgy, imgs, w, h, x, y);
+
+        render(window, menuTex, texture, imgx, imgy, imgs, w, h);
     }
 
+    _TextureDestroy(menuTex);
     _TextureDestroy(texture);
     _WindowDestroy(window);
 
