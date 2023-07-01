@@ -713,7 +713,7 @@ pub fn mainErr() anyerror!void {
         // pause the game on minimize
         if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) == 0) {
             // update the game state
-            try state.update(1.0 / 60.0);
+            try state.update(@floatCast(currentTime - lastFrameTime));
 
             // get tris
             try state.draw(gfx.gContext.size);
