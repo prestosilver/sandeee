@@ -353,6 +353,13 @@ pub const WindowData = struct {
             return DragMode.Move;
         }
 
+        if (self.contents.props.size.max != null and
+            self.contents.props.size.max.?.x == self.contents.props.size.min.x and
+            self.contents.props.size.max.?.y == self.contents.props.size.min.y)
+        {
+            return DragMode.None;
+        }
+
         var bottom = self.pos;
         bottom.y += bottom.h - RESIZE_PAD;
         bottom.h = RESIZE_PAD * 2;
