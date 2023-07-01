@@ -152,7 +152,7 @@ pub const SpriteBatch = struct {
                     @panic("texture not found");
                 }
             else
-                &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0) };
+                &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0), .buffer = undefined };
 
             if (ctex != targTex.tex)
                 c.glBindTexture(c.GL_TEXTURE_2D, targTex.tex);

@@ -263,11 +263,17 @@ pub fn readWinRender(_: ?*vm.VM) ![]const u8 {
 }
 
 pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
-    if (data.len < 66) return;
+    if (data.len < 66) {
+        std.log.info("{}", .{data.len});
+        return;
+    }
 
-    if (sb.textureManager.get(data[0..1]) == null) return;
+    if (sb.textureManager.get(data[1..2]) == null) {
+        std.log.info("{any}", .{data[1..2]});
+        return;
+    }
 
-    var aid = data[1];
+    var aid = data[0];
 
     var dst = rect.newRect(
         @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[2..10]))),
@@ -289,7 +295,7 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
             var self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
             if (self.idx == aid) {
-                return self.addRect(data[0..1], src, dst);
+                return self.addRect(data[1..2], src, dst);
             }
         }
     }

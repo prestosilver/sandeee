@@ -4,19 +4,48 @@ const c = @import("../c.zig");
 const files = @import("../system/files.zig");
 const gfx = @import("graphics.zig");
 const cols = @import("../math/colors.zig");
+const allocator = @import("allocator.zig");
 
 pub const Texture = struct {
     tex: c.GLuint,
     size: vecs.Vector2,
+    oldSize: vecs.Vector2 = vecs.newVec2(0, 0),
+    buffer: [][4]u8,
 
     pub fn deinit(self: *const Texture) void {
         c.glDeleteTextures(1, &self.tex);
     }
 
-    pub fn setPixel(self: *const Texture, x: i32, y: i32, color: cols.Color) void {
-        c.glBindTexture(c.GL_TEXTURE_2D, self.tex);
-        c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, x, y, 1, 1, c.GL_RGBA, c.GL_FLOAT, &color.r);
-        c.glBindTexture(c.GL_TEXTURE_2D, 0);
+    pub fn setPixel(self: *const Texture, x: i32, y: i32, color: [4]u8) void {
+        if (x >= @as(i32, @intFromFloat(self.size.x)) or y >= @as(i32, @intFromFloat(self.size.y))) return;
+
+        const idx: usize = @intCast(x + @as(i32, @intFromFloat(self.size.x)) * y);
+
+        self.buffer[idx] = color;
+    }
+
+    pub fn upload(self: *Texture) void {
+        if (self.tex == 0) {
+            c.glGenTextures(1, &self.tex);
+
+            c.glBindTexture(c.GL_TEXTURE_2D, self.tex);
+
+            c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
+            c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
+        } else {
+            c.glBindTexture(c.GL_TEXTURE_2D, self.tex);
+        }
+
+        if (self.size.x == self.oldSize.x and
+            self.size.y == self.oldSize.y)
+        {
+            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, 0, 0, @intFromFloat(self.size.x), @intFromFloat(self.size.y), c.GL_RGBA, c.GL_UNSIGNED_BYTE, self.buffer.ptr);
+        } else {
+            c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @intFromFloat(self.size.x), @intFromFloat(self.size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, self.buffer.ptr);
+            self.oldSize = self.size;
+        }
+
+        c.glGenerateMipmap(c.GL_TEXTURE_2D);
     }
 };
 
@@ -25,16 +54,14 @@ pub const imageError = error{
     NotFound,
 };
 
-pub fn newTextureSize(size: vecs.Vector2) Texture {
+pub fn newTextureSize(size: vecs.Vector2) !Texture {
     var result = Texture{
+        .buffer = try allocator.alloc.alloc([4]u8, @intFromFloat(size.x * size.y)),
         .tex = 0,
         .size = size,
     };
 
-    c.glGenTextures(1, &result.tex);
-    c.glBindTexture(c.GL_TEXTURE_2D, result.tex);
-
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @as(c_int, @intFromFloat(size.x)), @as(c_int, @intFromFloat(size.y)), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+    result.upload();
 
     return result;
 }
@@ -50,13 +77,17 @@ pub fn newTextureFile(file: []const u8) !Texture {
 }
 
 pub fn newTextureMem(mem: []const u8) !Texture {
-    var result = Texture{ .tex = 0, .size = vecs.Vector2{
-        .x = 0,
-        .y = 0,
-    } };
-
     var width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
     var height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
+
+    var result = Texture{
+        .buffer = try allocator.alloc.alloc([4]u8, @intCast(width * height)),
+        .tex = 0,
+        .size = vecs.Vector2{
+            .x = @floatFromInt(width),
+            .y = @floatFromInt(height),
+        },
+    };
 
     if (mem.len / 4 - 2 != width * height) {
         std.log.info("expected {} got {}", .{ width * height * 4 + 4, mem.len });
@@ -64,18 +95,9 @@ pub fn newTextureMem(mem: []const u8) !Texture {
         return error.WrongSize;
     }
 
-    result.size.x = @as(f32, @floatFromInt(width));
-    result.size.y = @as(f32, @floatFromInt(height));
+    @memcpy(std.mem.sliceAsBytes(result.buffer), mem[8..]);
 
-    c.glGenTextures(1, &result.tex);
-    c.glBindTexture(c.GL_TEXTURE_2D, result.tex);
-
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
-
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, &mem[8]);
-
-    c.glGenerateMipmap(c.GL_TEXTURE_2D);
+    result.upload();
 
     return result;
 }
@@ -105,19 +127,17 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
         return error.WrongSize;
     }
 
+    tex.buffer = try allocator.alloc.realloc(tex.buffer, @intCast(width * height));
+
     tex.size.x = @as(f32, @floatFromInt(width));
     tex.size.y = @as(f32, @floatFromInt(height));
 
-    c.glBindTexture(c.GL_TEXTURE_2D, tex.tex);
+    @memcpy(std.mem.sliceAsBytes(tex.buffer), mem[8..]);
 
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
-
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, width, height, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, &mem[8]);
-
-    c.glGenerateMipmap(c.GL_TEXTURE_2D);
+    tex.upload();
 }
 
 pub fn freeTexture(tex: *Texture) void {
+    allocator.alloc.free(tex.buffer);
     c.glDeleteTextures(1, &tex.tex);
 }

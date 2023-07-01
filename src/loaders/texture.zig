@@ -17,7 +17,7 @@ pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []co
     std.log.debug("load tex: {s}", .{path});
 
     gfx.gContext.makeCurrent();
-    var texture = tex.newTextureSize(.{ .x = 0, .y = 0 });
+    var texture = try tex.newTextureSize(.{ .x = 0, .y = 0 });
     gfx.gContext.makeNotCurrent();
 
     try tex.uploadTextureFile(&texture, path);

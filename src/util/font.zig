@@ -123,6 +123,7 @@ pub const Font = struct {
         try sb.textureManager.put(result.tex, .{
             .tex = texture,
             .size = atlasSize,
+            .buffer = undefined,
         });
 
         fontId += 1;

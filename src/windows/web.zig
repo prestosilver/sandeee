@@ -130,7 +130,7 @@ pub const WebData = struct {
                     if (!std.mem.endsWith(u8, self.path.?, "edf")) {
                         try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[(std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0) + 1 ..]);
 
-                        try self.back();
+                        try self.back(true);
                         return;
                     }
 
@@ -284,7 +284,6 @@ pub const WebData = struct {
                     @intCast((val >> 0) & 0xFF),
                     0xFF,
                 );
-                std.log.info("color: {}", .{currentStyle.color});
             }
         }
     }
@@ -616,7 +615,9 @@ pub const WebData = struct {
         self.highlight_idx = 0;
     }
 
-    pub fn back(self: *Self) !void {
+    pub fn back(self: *Self, force: bool) !void {
+        if (self.loading and !force) return;
+
         if (self.hist.popOrNull()) |last| {
             self.path = last;
             if (self.conts != null) {
@@ -634,7 +635,7 @@ pub const WebData = struct {
 
         if (pos.y < 36) {
             if (rect.newRect(0, 0, 28, 28).contains(pos)) {
-                try self.back();
+                try self.back(false);
             }
 
             if (rect.newRect(30, 0, 28, 28).contains(pos)) {
@@ -683,6 +684,9 @@ pub const WebData = struct {
     pub fn focus(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
+        // FIXME: DONT STOP TIME
+        while (self.loading) {}
+
         // styles
         var styleIter = self.styles.iterator();
         while (styleIter.next()) |style| {
