@@ -18,9 +18,9 @@ const eonTestsFiles = [_][]const u8{ "pong", "paint", "fib", "tabletest", "heapt
 const asmExecFiles = [_][]const u8{ "time", "dump", "echo", "aplay", "libdump" };
 const eonExecFiles = [_][]const u8{ "eon", "stat", "player", "asm", "pix" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
-const eonLibFiles = [_][]const u8{ "heap", "table", "asm" };
-const wavSoundFiles = [_][]const u8{ "login", "message", "redbone" };
-const pngImageFiles = [_][]const u8{ "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "wall2", "barlogo", "cursor", "scroll", "connectris" };
+const eonLibFiles = [_][]const u8{ "ui", "heap", "table", "asm" };
+const wavSoundFiles = [_][]const u8{ "login", "message" };
+const pngImageFiles = [_][]const u8{ "ui", "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "wall2", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const internalSoundFiles = [_][]const u8{ "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
@@ -32,7 +32,7 @@ var Version: std.SemanticVersion = .{
     .patch = undefined,
 };
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.build.Builder) !void {
     const exe = b.addExecutable(.{
         .name = "sandeee",
         .root_source_file = .{ .path = "src/main.zig" },
@@ -53,9 +53,11 @@ pub fn build(b: *std.build.Builder) void {
 
     Version.patch = std.fmt.parseInt(u32, commit[0 .. commit.len - 1], 0) catch 0;
 
+    var isDemo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
+
     const versionSuffix = switch (exe.optimize) {
-        .Debug => "-dbg",
-        else => "-pub",
+        .Debug => if (isDemo) "-dbg-demo" else "-dbg",
+        else => if (isDemo) "-pub-demo" else "-pub",
     };
 
     const networkModule = b.createModule(.{
@@ -70,6 +72,7 @@ pub fn build(b: *std.build.Builder) void {
     std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{s}-{}{s}", .{ versionPlatform, Version, versionSuffix }) catch return) catch return;
 
     options.addOption([]const u8, "VersionText", versionText);
+    options.addOption(bool, "IsDemo", isDemo);
 
     exe.addModule("network", networkModule);
     exe.addModule("options", options.createModule());
@@ -279,8 +282,8 @@ pub fn build(b: *std.build.Builder) void {
         "linux";
 
     const suffix = switch (exe.optimize) {
-        .Debug => "-dbg",
-        else => "",
+        .Debug => if (isDemo) "-dbg-new-demo" else "-dbg",
+        else => if (isDemo) "-new-demo" else "",
     };
 
     exe_tests.step.dependOn(&write_step.step);
