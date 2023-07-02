@@ -1,0 +1,48 @@
+#+TITLE: SandeeeOS Plans
+#+AUTHOR: prestosilver
+
+* TODO Programming game
+** DONE Windows
+*** DONE System files 'n stuff
+**** DONE Pseudo files
+***** DONE Implement
+***** DONE win/
+***** DONE gfx/
+***** DONE snd/
+*** DONE Settings & explore
+**** DONE design
+**** DONE implement
+***** DONE Setup drawing
+***** DONE selection
+*** KILL Email
+**** DONE start
+**** DONE write file creator
+**** DONE parser
+**** DONE Word wrap
+*** DONE Editor
+**** DONE start
+**** DONE mouse
+** DONE Multiple languages
+*** DONE scripting
+*** DONE vm
+** DONE Challenges
+*** DONE Hello World ofc
+** KILL Redo start menu
+** DONE C clone
+*** DONE Start
+*** DONE else statements
+*** DONE VM support
+*** DONE Self host
+** DONE Assembler
+*** DONE Figure out string stuff
+** DONE Boot screen?
+* DONE Fix name
+* DONE Bar
+** DONE Redo Logo
+** DONE Minimize
+** DONE Text
+* DONE resources
+** DONE Move images to disk
+** DONE Move font to disk
+*** DONE .eef files
+*** DONE remove freetype
