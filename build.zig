@@ -14,13 +14,16 @@ const emails = @import("tools/mail.zig");
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
 const eonTestsFiles = [_][]const u8{ "pong", "paint", "fib", "tabletest", "heaptest", "stringtest", "paren" };
 
+// demo overrides
+const mailDirsDemo = [_][]const u8{"inbox"};
+
 // all builds
 const asmExecFiles = [_][]const u8{ "time", "dump", "echo", "aplay", "libdump" };
 const eonExecFiles = [_][]const u8{ "eon", "stat", "player", "asm", "pix" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "ui", "heap", "table", "asm" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
-const pngImageFiles = [_][]const u8{ "ui", "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "wall2", "barlogo", "cursor", "scroll", "connectris" };
+const pngImageFiles = [_][]const u8{ "ui", "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const internalSoundFiles = [_][]const u8{ "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
@@ -112,7 +115,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     var write_step = diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
 
-    for (mailDirs) |folder| {
+    for (if (isDemo) &mailDirsDemo else &mailDirs) |folder| {
         var input = std.fmt.allocPrint(b.allocator, "content/mail/{s}/", .{folder}) catch "";
         var output = std.fmt.allocPrint(b.allocator, "content/disk/cont/mail/{s}.eme", .{folder}) catch "";
 
