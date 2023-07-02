@@ -1,4 +1,5 @@
 const std = @import("std");
+const options = @import("options");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const win = @import("../drawers/window2d.zig");
@@ -622,16 +623,7 @@ pub const GSWindowed = struct {
         self.down = false;
 
         for (self.windows.items) |*window| {
-            if (!window.data.active) continue;
-
-            if (window.data.popup) |*popup| {
-                if (try popup.data.click(self.mousepos)) {
-                    window.data.popup = null;
-                }
-                return;
-            }
-
-            return window.data.click(self.mousepos, null);
+            try window.data.click(self.mousepos, null);
         }
     }
 
@@ -708,10 +700,11 @@ pub const GSWindowed = struct {
                     .y = window.data.pos.y + 36,
                 }));
             }
-        }
-        for (self.windows.items) |*window| {
-            if (!window.data.active) continue;
-            try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
+
+            for (self.windows.items) |*window| {
+                if (!window.data.active) continue;
+                try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
+            }
         }
     }
 

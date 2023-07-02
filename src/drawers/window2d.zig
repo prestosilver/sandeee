@@ -74,6 +74,8 @@ pub const WindowContents = struct {
         scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
         move: *const fn (*anyopaque, f32, f32) anyerror!void,
 
+        moveResize: *const fn (*anyopaque, *rect.Rectangle) anyerror!void,
+
         focus: *const fn (*anyopaque) anyerror!void,
         deinit: *const fn (*anyopaque) anyerror!void,
     };
@@ -227,6 +229,12 @@ pub const WindowContents = struct {
                 return @call(.auto, ptr_info.Pointer.child.focus, .{self});
             }
 
+            fn moveResizeImpl(pointer: *anyopaque, bnds: *rect.Rectangle) !void {
+                const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                return @call(.auto, ptr_info.Pointer.child.moveResize, .{ self, bnds });
+            }
+
             fn deinitImpl(pointer: *anyopaque) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
@@ -239,6 +247,7 @@ pub const WindowContents = struct {
                 .char = charImpl,
                 .click = clickImpl,
                 .scroll = scrollImpl,
+                .moveResize = moveResizeImpl,
                 .move = moveImpl,
                 .focus = focusImpl,
                 .deinit = deinitImpl,

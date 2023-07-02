@@ -30,6 +30,7 @@ pub const ExplorerData = struct {
         SingleLeft,
         DoubleLeft,
     };
+
     const ExplorerMouseAction = struct {
         kind: ExplorerMouseActionType,
         pos: vecs.Vector2,
@@ -245,6 +246,7 @@ pub const ExplorerData = struct {
 
     pub fn move(_: *Self, _: f32, _: f32) !void {}
     pub fn focus(_: *Self) !void {}
+    pub fn moveResize(_: *Self, _: *rect.Rectangle) !void {}
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
         _ = mods;

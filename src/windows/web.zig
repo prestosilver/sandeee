@@ -682,6 +682,13 @@ pub const WebData = struct {
 
     pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
     pub fn focus(_: *Self) !void {}
+    pub fn moveResize(self: *Self, bnds: *rect.Rectangle) !void {
+        _ = bnds;
+        if (self.loading) return;
+
+        self.links.clearAndFree();
+        self.add_links = true;
+    }
 
     pub fn deinit(self: *Self) void {
         // FIXME: DONT STOP TIME

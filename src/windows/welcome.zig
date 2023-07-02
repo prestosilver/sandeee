@@ -102,6 +102,7 @@ pub const WelcomeData = struct {
 
     pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
     pub fn focus(_: *Self) !void {}
+    pub fn moveResize(_: *Self, _: *rect.Rectangle) !void {}
 
     pub fn deinit(self: *Self) void {
         allocator.alloc.destroy(self);
