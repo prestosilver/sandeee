@@ -1,4 +1,5 @@
 const std = @import("std");
+const options = @import("options");
 const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const fake = @import("pseudo/all.zig");
@@ -605,6 +606,8 @@ pub fn toStr() !std.ArrayList(u8) {
 }
 
 pub fn write() !void {
+    if (options.IsDemo) return;
+
     if (rootOut) |output| {
         var file = try std.fs.cwd().createFile(output, .{});
 

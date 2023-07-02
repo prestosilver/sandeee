@@ -14,14 +14,16 @@ const tex = @import("../util/texture.zig");
 const col = @import("../math/colors.zig");
 const files = @import("../system/files.zig");
 
+const DEMO_TIME = 6e+11;
+
 pub const WelcomeData = struct {
     const Self = @This();
 
     shell: shell.Shell,
+    timer: std.time.Timer,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
-        _ = self;
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
@@ -39,7 +41,7 @@ pub const WelcomeData = struct {
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
-            .text = "  \x80 You can open Xplore anytime for help",
+            .text = if (options.IsDemo) "  \x80 This demo will not save progress." else "  \x80 You can open Xplore anytime for help",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 5 * font.size),
             .scale = 1,
         });
@@ -50,6 +52,23 @@ pub const WelcomeData = struct {
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 7 * font.size),
             .scale = 1,
         });
+
+        if (options.IsDemo) {
+            var remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
+            if (remaining < 0) @panic("Demo Over");
+
+            var demoText = try std.fmt.allocPrint(allocator.alloc, "{} seconds remianing.", .{@as(usize, @intFromFloat(remaining / 1e+9))});
+            defer allocator.alloc.free(demoText);
+
+            try font.draw(.{
+                .batch = batch,
+                .shader = font_shader,
+                .text = demoText,
+                .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 10 * font.size),
+                .scale = 2,
+                .color = col.newColor(1, 0, 0, 1),
+            });
+        }
 
         var versionText = try std.fmt.allocPrint(allocator.alloc, "(" ++ options.VersionText ++ ")", .{options.SandEEEVersion});
         defer allocator.alloc.free(versionText);
@@ -94,11 +113,12 @@ pub fn new() !win.WindowContents {
 
     // TODO: disable button
 
-    self.* = .{
+    self.* = WelcomeData{
         .shell = .{
             .root = files.home,
             .vm = null,
         },
+        .timer = try std.time.Timer.start(),
     };
 
     var result = try win.WindowContents.init(self, "Welcome", "Welcome To Sand\x82\x82\x82", col.newColorRGBA(192, 192, 192, 255));
