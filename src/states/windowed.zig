@@ -567,11 +567,15 @@ pub const GSWindowed = struct {
                             } else {
                                 swap.data.oldpos = swap.data.pos;
                             }
+
                             swap.data.full = !swap.data.full;
+                            try swap.data.contents.moveResize(&swap.data.pos);
+
                             try self.windows.append(swap);
                         },
                         .Min => {
                             swap.data.min = !swap.data.min;
+
                             try self.windows.append(swap);
                         },
                         else => {
@@ -619,7 +623,11 @@ pub const GSWindowed = struct {
     }
 
     pub fn mouserelease(self: *Self) !void {
-        self.dragging = null;
+        if (self.dragging) |dragging| {
+            try dragging.data.contents.moveResize(&dragging.data.pos);
+            self.dragging = null;
+        }
+
         self.down = false;
 
         for (self.windows.items) |*window| {
@@ -700,7 +708,9 @@ pub const GSWindowed = struct {
                     .y = window.data.pos.y + 36,
                 }));
             }
+        }
 
+        if (self.dragmode == .None) {
             for (self.windows.items) |*window| {
                 if (!window.data.active) continue;
                 try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);

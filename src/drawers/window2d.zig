@@ -167,6 +167,10 @@ pub const WindowContents = struct {
         return self.vtable.focus(self.ptr);
     }
 
+    pub fn moveResize(self: *Self, bnds: *rect.Rectangle) !void {
+        return self.vtable.moveResize(self.ptr, bnds);
+    }
+
     pub fn deinit(self: *Self) !void {
         allocator.alloc.free(self.props.info.name);
         return self.vtable.deinit(self.ptr);
