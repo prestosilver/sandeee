@@ -104,7 +104,7 @@ pub const VM = struct {
 
     inline fn pushStackI(self: *VM, value: u64) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        var val = self.allocator.create(u64) catch return error.Memory;
+        const val = self.allocator.create(u64) catch return error.Memory;
         val.* = value;
 
         self.stack[self.rsp] = StackEntry{ .value = val };
@@ -113,7 +113,7 @@ pub const VM = struct {
 
     inline fn pushStackS(self: *VM, string: []const u8) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        var appendString = self.allocator.create([]u8) catch return error.Memory;
+        const appendString = self.allocator.create([]u8) catch return error.Memory;
 
         appendString.* = self.allocator.dupe(u8, string) catch return error.Memory;
 
@@ -293,7 +293,7 @@ pub const VM = struct {
                 }
             },
             else => {
-                var toFree = self.allocator.alloc(StackEntry, vals.len) catch return;
+                const toFree = self.allocator.alloc(StackEntry, vals.len) catch return;
                 defer self.allocator.free(toFree);
 
                 var idx: usize = 0;
@@ -311,9 +311,7 @@ pub const VM = struct {
                     }
                 }
 
-                toFree = self.allocator.realloc(toFree, idx) catch return;
-
-                for (toFree) |val| {
+                for (toFree[0..idx]) |val| {
                     switch (val) {
                         .value => self.freeValue(val.value),
                         .string => self.freeString(val.string),
@@ -346,8 +344,8 @@ pub const VM = struct {
                 }
             },
             Operation.Code.Add => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ b, a });
 
                 if (a != .value) return error.ValueMissing;
@@ -367,8 +365,8 @@ pub const VM = struct {
                 }
             },
             Operation.Code.Sub => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ b, a });
 
                 if (a != .value) return error.ValueMissing;
@@ -388,8 +386,8 @@ pub const VM = struct {
                 }
             },
             Operation.Code.Size => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ b, a });
 
                 if (a != .value) return error.ValueMissing;
@@ -403,7 +401,7 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Len => {
-                var a = try self.popStack();
+                const a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
                 if (a != .string) return error.StringMissing;
@@ -415,14 +413,14 @@ pub const VM = struct {
             Operation.Code.Copy => {
                 if (op.value == null) return error.ValueMissing;
 
-                var a = try self.findStack(op.value.?);
+                const a = try self.findStack(op.value.?);
                 try self.pushStack(a);
                 return;
             },
             Operation.Code.Dup => {
                 if (op.value == null) return error.ValueMissing;
 
-                var a = try self.findStack(op.value.?);
+                const a = try self.findStack(op.value.?);
                 if (a == .string) {
                     try self.pushStackS(a.string.*);
                     return;
@@ -440,7 +438,7 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Jz => {
-                var a = try self.popStack();
+                const a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
                 if (a == .string) {
@@ -458,7 +456,7 @@ pub const VM = struct {
                 }
             },
             Operation.Code.Jnz => {
-                var a = try self.popStack();
+                const a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
                 if (a == .string) {
@@ -480,7 +478,7 @@ pub const VM = struct {
                     switch (op.value.?) {
                         // print
                         0 => {
-                            var a = try self.popStack();
+                            const a = try self.popStack();
                             defer self.free(&[_]StackEntry{a});
 
                             if (a == .string) {
@@ -490,7 +488,7 @@ pub const VM = struct {
                             }
 
                             if (a == .value) {
-                                var str = try std.fmt.allocPrint(self.allocator, "{}", .{a.value.*});
+                                const str = try std.fmt.allocPrint(self.allocator, "{}", .{a.value.*});
                                 defer self.allocator.free(str);
 
                                 try self.out.appendSlice(str);
@@ -521,7 +519,7 @@ pub const VM = struct {
                         },
                         // create file
                         2 => {
-                            var path = try self.popStack();
+                            const path = try self.popStack();
                             defer self.free(&[_]StackEntry{path});
 
                             if (path != .string) return error.StringMissing;
@@ -536,7 +534,7 @@ pub const VM = struct {
                         },
                         // open file
                         3 => {
-                            var path = try self.popStack();
+                            const path = try self.popStack();
                             defer self.free(&[_]StackEntry{path});
 
                             if (path != .string) return error.StringMissing;
@@ -548,8 +546,8 @@ pub const VM = struct {
                         },
                         // read
                         4 => {
-                            var len = try self.popStack();
-                            var idx = try self.popStack();
+                            const len = try self.popStack();
+                            const idx = try self.popStack();
                             defer self.free(&[_]StackEntry{ len, idx });
 
                             if (len != .value) return error.ValueMissing;
@@ -560,7 +558,7 @@ pub const VM = struct {
                             const fs = self.streams.items[@as(usize, @intCast(idx.value.*))];
                             if (fs == null) return error.InvalidStream;
 
-                            var cont = try fs.?.Read(@as(u32, @intCast(len.value.*)));
+                            const cont = try fs.?.Read(@as(u32, @intCast(len.value.*)));
                             defer self.allocator.free(cont);
 
                             try self.pushStackS(cont);
@@ -570,8 +568,8 @@ pub const VM = struct {
                         // write file
                         5 => {
                             if (self.checker) return;
-                            var str = try self.popStack();
-                            var idx = try self.popStack();
+                            const str = try self.popStack();
+                            const idx = try self.popStack();
                             defer self.free(&[_]StackEntry{ str, idx });
 
                             if (str != .string) return error.StringMissing;
@@ -589,7 +587,7 @@ pub const VM = struct {
                         // flush file
                         6 => {
                             if (self.checker) return;
-                            var idx = try self.popStack();
+                            const idx = try self.popStack();
                             defer self.free(&[_]StackEntry{idx});
 
                             if (idx != .value) return error.ValueMissing;
@@ -604,7 +602,7 @@ pub const VM = struct {
                         },
                         // close file
                         7 => {
-                            var idx = try self.popStack();
+                            const idx = try self.popStack();
                             defer self.free(&[_]StackEntry{idx});
 
                             if (idx != .value) return error.ValueMissing;
@@ -620,7 +618,7 @@ pub const VM = struct {
                         },
                         // arg
                         8 => {
-                            var idx = try self.popStack();
+                            const idx = try self.popStack();
                             defer self.free(&[_]StackEntry{idx});
 
                             if (idx != .value) return error.ValueMissing;
@@ -642,14 +640,12 @@ pub const VM = struct {
                         },
                         // checkfn
                         10 => {
-                            var name = try self.popStack();
+                            const name = try self.popStack();
                             defer self.free(&[_]StackEntry{name});
 
                             if (name != .string) return error.StringMissing;
 
-                            var val: u64 = 0;
-
-                            if (self.functions.contains(name.string.*)) val = 1;
+                            const val: u64 = if (self.functions.contains(name.string.*)) 1 else 0;
 
                             try self.pushStackI(val);
 
@@ -657,7 +653,7 @@ pub const VM = struct {
                         },
                         // getfn
                         11 => {
-                            var name = try self.popStack();
+                            const name = try self.popStack();
                             defer self.free(&[_]StackEntry{name});
 
                             if (name != .string) return error.StringMissing;
@@ -672,20 +668,20 @@ pub const VM = struct {
                         },
                         // regfn
                         12 => {
-                            var name = try self.popStack();
-                            var func = try self.popStack();
+                            const name = try self.popStack();
+                            const func = try self.popStack();
                             defer self.free(&[_]StackEntry{ name, func });
 
                             if (func != .string) return error.StringMissing;
                             if (name != .string) return error.StringMissing;
 
-                            var dup = try self.allocator.dupe(u8, func.string.*);
+                            const dup = try self.allocator.dupe(u8, func.string.*);
 
-                            var ops = try self.stringToOps(dup);
+                            const ops = try self.stringToOps(dup);
                             defer ops.deinit();
 
-                            var finalOps = try self.allocator.dupe(Operation, ops.items);
-                            var finalName = try self.allocator.dupe(u8, name.string.*);
+                            const finalOps = try self.allocator.dupe(Operation, ops.items);
+                            const finalName = try self.allocator.dupe(u8, name.string.*);
 
                             if (self.functions.fetchRemove(finalName)) |entry| {
                                 self.allocator.free(entry.key);
@@ -702,7 +698,7 @@ pub const VM = struct {
                         },
                         // clear function
                         13 => {
-                            var name = try self.popStack();
+                            const name = try self.popStack();
                             defer self.free(&[_]StackEntry{name});
 
                             if (name != .string) return error.StringMissing;
@@ -718,7 +714,7 @@ pub const VM = struct {
                         },
                         // resize heap
                         14 => {
-                            var size = try self.popStack();
+                            const size = try self.popStack();
                             defer self.free(&[_]StackEntry{size});
 
                             if (size != .value) return error.ValueMissing;
@@ -733,8 +729,8 @@ pub const VM = struct {
                         },
                         // read heap
                         15 => {
-                            var size = try self.popStack();
-                            var start = try self.popStack();
+                            const size = try self.popStack();
+                            const start = try self.popStack();
                             defer self.free(&[_]StackEntry{ start, size });
 
                             if (start != .value) return error.ValueMissing;
@@ -746,8 +742,8 @@ pub const VM = struct {
                         },
                         // write heap
                         16 => {
-                            var data = try self.popStack();
-                            var start = try self.popStack();
+                            const data = try self.popStack();
+                            const start = try self.popStack();
                             defer self.free(&[_]StackEntry{ start, data });
 
                             if (start != .value) return error.ValueMissing;
@@ -764,12 +760,12 @@ pub const VM = struct {
                         },
                         // error
                         18 => {
-                            var msg = try self.popStack();
+                            const msg = try self.popStack();
                             defer self.free(&[_]StackEntry{msg});
 
                             if (msg != .string) return error.StringMissing;
 
-                            var msgString = try self.getOp();
+                            const msgString = try self.getOp();
                             defer self.allocator.free(msgString);
 
                             try self.out.appendSlice("Error: ");
@@ -782,7 +778,7 @@ pub const VM = struct {
                         },
                         // file size
                         19 => {
-                            var path = try self.popStack();
+                            const path = try self.popStack();
                             defer self.free(&[_]StackEntry{path});
 
                             if (path != .string) return error.StringMissing;
@@ -805,7 +801,7 @@ pub const VM = struct {
                         },
                         // setrsp
                         20 => {
-                            var num = try self.popStack();
+                            const num = try self.popStack();
                             defer self.free(&[_]StackEntry{num});
 
                             if (num != .value) return error.ValueMissing;
@@ -836,8 +832,8 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Mul => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a != .value) return error.ValueMissing;
@@ -848,8 +844,8 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Div => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a != .value) return error.ValueMissing;
@@ -862,8 +858,8 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Mod => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a != .value) return error.ValueMissing;
@@ -876,8 +872,8 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.And => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a != .value) return error.ValueMissing;
@@ -888,8 +884,8 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Or => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a != .value) return error.ValueMissing;
@@ -900,7 +896,7 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Neg => {
-                var a = try self.popStack();
+                const a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
                 if (a != .value) return error.ValueMissing;
@@ -910,8 +906,8 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Xor => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a != .value) return error.ValueMissing;
@@ -922,20 +918,19 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Not => {
-                var a = try self.popStack();
+                const a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
                 if (a != .value) return error.ValueMissing;
 
-                var val: u64 = 0;
-                if (a.value.* == 0) val = 1;
+                const val: u64 = if (a.value.* == 0) 1 else 0;
 
                 try self.pushStackI(val);
 
                 return;
             },
             Operation.Code.Sin => {
-                var a = try self.popStack();
+                const a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
                 if (a != .value) return error.ValueMissing;
@@ -947,7 +942,7 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Cos => {
-                var a = try self.popStack();
+                const a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
                 if (a != .value) return error.ValueMissing;
@@ -959,8 +954,8 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Asign => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
 
                 defer self.free(&[_]StackEntry{ b, a });
 
@@ -977,13 +972,13 @@ pub const VM = struct {
 
                 switch (op.value.?) {
                     0 => {
-                        var disc = try self.popStack();
+                        const disc = try self.popStack();
                         defer self.free(&[_]StackEntry{disc});
                     },
                     else => {
-                        var items = self.stack[self.rsp - @as(usize, @intCast(op.value.?)) .. self.rsp];
+                        const items = self.stack[self.rsp - @as(usize, @intCast(op.value.?)) .. self.rsp];
                         self.rsp -= @as(u8, @intCast(op.value.?));
-                        var disc = try self.popStack();
+                        const disc = try self.popStack();
                         defer self.free(&[_]StackEntry{disc});
 
                         std.mem.copyForwards(StackEntry, self.stack[self.rsp .. self.rsp + items.len], items);
@@ -994,14 +989,13 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Eq => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a == .string) {
                     if (b == .string) {
-                        var val: u64 = 0;
-                        if (std.mem.eql(u8, a.string.*, b.string.*)) val = 1;
+                        const val: u64 = if (std.mem.eql(u8, a.string.*, b.string.*)) 1 else 0;
                         try self.pushStackI(val);
                         return;
                     }
@@ -1025,41 +1019,38 @@ pub const VM = struct {
                     }
 
                     if (b == .value) {
-                        var val: u64 = 0;
-                        if (a.value.* == b.value.*) val = 1;
+                        const val: u64 = if (a.value.* == b.value.*) 1 else 0;
                         try self.pushStackI(val);
                         return;
                     }
                 }
             },
             Operation.Code.Less => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a != .value) return error.ValueMissing;
                 if (b != .value) return error.ValueMissing;
 
-                var val: u64 = 0;
-                if (a.value.* > b.value.*) val = 1;
+                const val: u64 = if (a.value.* > b.value.*) 1 else 0;
                 try self.pushStackI(val);
                 return;
             },
             Operation.Code.Greater => {
-                var a = try self.popStack();
-                var b = try self.popStack();
+                const a = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{ a, b });
 
                 if (a != .value) return error.ValueMissing;
                 if (b != .value) return error.ValueMissing;
 
-                var val: u64 = 0;
-                if (a.value.* < b.value.*) val = 1;
+                const val: u64 = if (a.value.* < b.value.*) 1 else 0;
                 try self.pushStackI(val);
                 return;
             },
             Operation.Code.Getb => {
-                var a = try self.popStack();
+                const a = try self.popStack();
                 defer self.free(&[_]StackEntry{a});
 
                 if (a == .string) {
@@ -1108,7 +1099,7 @@ pub const VM = struct {
                     return;
                 }
 
-                var name = try self.popStack();
+                const name = try self.popStack();
                 defer self.free(&[_]StackEntry{name});
 
                 if (name != .string) return error.StringMissing;
@@ -1127,15 +1118,15 @@ pub const VM = struct {
                 return;
             },
             Operation.Code.Cat => {
-                var b = try self.popStack();
-                var a = try self.popStack();
+                const b = try self.popStack();
+                const a = try self.popStack();
 
                 defer self.free(&[_]StackEntry{ b, a });
 
                 if (a != .string) return error.StringMissing;
 
                 if (b == .string) {
-                    var appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, b.string.* });
+                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, b.string.* });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
@@ -1144,7 +1135,7 @@ pub const VM = struct {
                 }
 
                 if (b == .value) {
-                    var appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, std.mem.asBytes(b.value) });
+                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, std.mem.asBytes(b.value) });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
@@ -1153,12 +1144,12 @@ pub const VM = struct {
                 }
             },
             Operation.Code.Create => {
-                var b = try self.popStack();
+                const b = try self.popStack();
                 defer self.free(&[_]StackEntry{b});
 
                 if (b != .value) return error.ValueMissing;
 
-                var adds = try self.allocator.alloc(u8, @as(usize, @intCast(b.value.*)));
+                const adds = try self.allocator.alloc(u8, @as(usize, @intCast(b.value.*)));
                 defer self.allocator.free(adds);
                 @memset(adds, 0);
                 try self.pushStackS(adds);
@@ -1171,13 +1162,13 @@ pub const VM = struct {
     }
 
     pub fn loadList(self: *VM, ops: []Operation) !void {
-        var list = try self.allocator.alloc(Operation, ops.len);
+        const list = try self.allocator.alloc(Operation, ops.len);
 
         for (ops, 0..) |_, idx| {
             list[idx] = ops[idx];
 
             if (ops[idx].string != null) {
-                var str = try self.allocator.alloc(u8, ops[idx].string.?.len);
+                const str = try self.allocator.alloc(u8, ops[idx].string.?.len);
 
                 for (ops[idx].string.?, 0..) |_, jdx| {
                     str[jdx] = ops[idx].string.?[jdx];
@@ -1249,7 +1240,7 @@ pub const VM = struct {
     }
 
     pub fn loadString(self: *VM, conts: []const u8) !void {
-        var ops = try self.stringToOps(conts);
+        const ops = try self.stringToOps(conts);
         defer ops.deinit();
 
         try self.loadList(ops.items);
@@ -1266,20 +1257,16 @@ pub const VM = struct {
                 oper = func.*.ops[self.pc - 1];
             } else {
                 if (@intFromEnum(oper.code) < @intFromEnum(Operation.Code.Last)) {
-                    var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper });
-                    return result;
+                    return try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper });
                 } else {
-                    var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: ?", .{ self.inside_fn, self.pc });
-                    return result;
+                    return try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: ?", .{ self.inside_fn, self.pc });
                 }
             }
         } else {
             oper = self.code.?[self.pc - 1];
         }
 
-        var result = try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper });
-
-        return result;
+        return try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper });
     }
 
     pub fn getOper(self: *VM) !?Operation {
@@ -1302,7 +1289,7 @@ pub const VM = struct {
     }
 
     pub fn runStep(self: *VM) !bool {
-        var oper = try self.getOper() orelse return true;
+        const oper = try self.getOper() orelse return true;
 
         try self.runOp(oper);
 
