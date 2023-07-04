@@ -2,6 +2,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");
+const steam = @import("steam");
 
 // states
 const states = @import("states/manager.zig");
@@ -55,6 +56,8 @@ const emails = @import("system/mail.zig");
 
 // not-op programming lang
 const c = @import("c.zig");
+
+const useSteam = options.IsSteam;
 
 // embed shaders
 const vertShader = @embedFile("shaders/vert.glsl");
@@ -150,6 +153,9 @@ const full_quad = [_]c.GLfloat{
 
 var finalFps: u32 = 60;
 var showFps: bool = false;
+
+var steamUserStats: *const steam.SteamUserStats = undefined;
+var steamUtils: *const steam.SteamUtils = undefined;
 
 pub fn blit() !void {
     // actual gl calls start here
@@ -432,6 +438,19 @@ pub fn main() void {
 
 pub fn mainErr() anyerror!void {
     std.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
+
+    if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
+        return; // steam will relaunch the game from the steam client.
+    }
+
+    if (steam.init()) {
+        var user = steam.getUser() orelse return error.SteamInit;
+        const steamId = user.getSteamId();
+        steamUtils = steam.getSteamUtils();
+        steamUserStats = steam.getUserStats();
+        _ = steamId;
+        _ = steamUtils;
+    }
 
     // setup the headless command
     var headlessCmd: ?[]const u8 = null;

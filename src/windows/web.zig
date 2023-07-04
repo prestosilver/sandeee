@@ -16,6 +16,7 @@ const events = @import("../util/events.zig");
 const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const settings = @import("settings.zig");
+const steam = @import("steam");
 
 const SCROLL = 30;
 
@@ -138,6 +139,11 @@ pub const WebData = struct {
                 },
                 '/' => {
                     self.conts = try ((try files.root.getFile(path)) orelse return).read(null);
+                },
+                '$' => {
+                    var query = steam.createQueryAllUGCRequest(0, 0, 0, steam.STEAM_APP_ID, 1);
+                    _ = query;
+                    self.conts = try allocator.alloc.dupe(u8, "lolol");
                 },
                 else => {
                     self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: Invalid Url protocol", .{});
