@@ -87,6 +87,32 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
     try tex.uploadTextureMem(texture.?, image);
 }
 
+// /fake/gfx/save
+
+pub fn readGfxSave(_: ?*vm.VM) ![]const u8 {
+    return allocator.alloc.alloc(u8, 0);
+}
+
+pub fn writeGfxSave(data: []const u8, vmInstance: ?*vm.VM) !void {
+    var idx = data[0];
+    var image = data[1..];
+
+    var texture = sb.textureManager.get(&.{idx});
+    if (texture == null) return;
+
+    if (vmInstance) |vmi| {
+        _ = try vmi.root.newFile(image);
+        var conts = try std.mem.concat(allocator.alloc, u8, &.{
+            "eimg",
+            std.mem.asBytes(&@as(i16, @intFromFloat(texture.?.size.x))),
+            std.mem.asBytes(&@as(i16, @intFromFloat(texture.?.size.y))),
+            std.mem.sliceAsBytes(texture.?.buffer),
+        });
+
+        try vmi.root.writeFile(image, conts, null);
+    }
+}
+
 // /fake/gfx/pixel
 
 pub fn readGfxPixel(_: ?*vm.VM) ![]const u8 {
@@ -165,6 +191,17 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
         .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxUpload,
         .pseudoWrite = writeGfxUpload,
+        .parent = undefined,
+    };
+
+    try result.contents.append(file);
+
+    file = try allocator.alloc.create(files.File);
+    file.* = .{
+        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/save", .{}),
+        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
+        .pseudoRead = readGfxSave,
+        .pseudoWrite = writeGfxSave,
         .parent = undefined,
     };
 

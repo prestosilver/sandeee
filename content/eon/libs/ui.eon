@@ -1,4 +1,4 @@
-fn DrawBar(win, uiTex) {
+fn DrawBarBg(win, uiTex) {
     var width = _WindowWidth(dup(win));
     
     var dest = _MakeRect(0, 0, width, 40);
@@ -6,6 +6,16 @@ fn DrawBar(win, uiTex) {
     var src = _MakeRect(512, 0, 128, 512);
 
     _WindowRender(win, uiTex, dest, src);
+
+    return 0;
+}
+
+fn DrawBarIcon(win, iconTex, iconSrc, idx) {
+    var x = idx * 40;
+
+    var dest = _MakeRect(2 + x, 2, 32, 32);
+
+    _WindowRender(win, iconTex, dest, iconSrc);
 
     return 0;
 }

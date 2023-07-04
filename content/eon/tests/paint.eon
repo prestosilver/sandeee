@@ -60,7 +60,7 @@ fn setSquare(tex, x, y, r, color) {
     return 0;
 }
 
-fn render(win, menuTex, tex, imgx, imgy, imgs, w, h) {
+fn render(win, menuTex, iconTex, tex, imgx, imgy, imgs, w, h) {
     var source = _MakeRect(0, 0, 1024, 1024);
     
     var xo = imgx * imgs;
@@ -76,11 +76,24 @@ fn render(win, menuTex, tex, imgx, imgy, imgs, w, h) {
 
     var dest = _MakeRect(xo, yo + 32, target_w, target_h);
     
-    _DrawBar(win, menuTex);
+    _DrawBarBg(win, menuTex);
+    _DrawBarIcon(win, iconTex, _MakeRect(128, 0, 128, 128), 0);
+    _DrawBarIcon(win, iconTex, _MakeRect(0, 0, 128, 128), 1);
+    _DrawBarIcon(win, iconTex, _MakeRect(256, 0, 128, 128), 2);
+
+    _WindowText(win, 124, 4, "BRUSH_SIZE: 3");
 
     _WindowRender(win, tex, dest, source);
 
     _WindowFlip(win);
+
+    return 0;
+}
+
+fn save(tex, target) {
+    _TextureExport(tex, target);
+
+    print("saved as " & target & "\n");
 
     return 0;
 }
@@ -109,11 +122,12 @@ fn drawLineLow(texture, ax, ay, bx, by, color) {
         dy = 0 - dy;
     }
 
+    var menuTex = _TextureCreate();
     var D = 2 * dy - dx;
 
-    var y = ay;
+    var y = dup(ay);
     var x = 0;
-    for (x = ax; x < bx; x = x + 1) {
+    for (x = dup(ax); x < bx; x = x + 1) {
         setSquare(texture, x - 1, y - 1, 3, color);
         if (D < 255) {
             y = y + yi;
@@ -140,9 +154,9 @@ fn drawLineHigh(texture, ax, ay, bx, by, color) {
 
     var D = 2 * dx - dy;
 
-    var x = ax;
+    var x = dup(ax);
     var y = 0;
-    for (y = ay; y < by; y = y + 1) {
+    for (y = dup(ay); y < by; y = y + 1) {
         setSquare(texture, x - 1, y - 1, 3, color);
         if (D < 255) {
             x = x + xi;
@@ -193,6 +207,25 @@ fn processClick(win, texture, imgx, imgy, imgs, w, h, oldx, oldy) {
     x = x + xo * 256;
     y = y + yo * 256;
 
+    if ((y < 32) && (btn == 0)) {
+        if (x < 44) {
+            return 0;
+        }
+        if (x < 84) {
+            save(texture, "image.eia");
+
+            return 0;
+        }
+
+        print("Unknown click ");
+        print(x);
+        print(", ");
+        print(y);
+        print("\n");
+
+        return 0;
+    }
+
     y = y - 32;
 
     var xs = dup(x);
@@ -214,9 +247,9 @@ fn processClick(win, texture, imgx, imgy, imgs, w, h, oldx, oldy) {
     yo = oldy - y;
 
     if (btn == 0) {
-        drawLine(texture, dup(x), dup(y), oldx, oldy, "\x01\x01\x01\xff");
+        drawLine(texture, x, y, oldx, oldy, "\x01\x01\x01\xff");
     } else if (btn == 1) {
-        drawLine(texture, dup(x), dup(y), oldx, oldy, "\xff\xff\xff\xff");
+        drawLine(texture, x, y, oldx, oldy, "\xff\xff\xff\xff");
     } else if (btn == 2) {
         if ((imgx - xo) < 65535) {
             imgx = imgx - xo;
@@ -257,8 +290,10 @@ fn main() {
     var window = _WindowCreate();
     var texture = _TextureCreate();
     var menuTex = _TextureCreate();
+    var iconTex = _TextureCreate();
     var content = _TextureRead(input);
     _TextureUpload(_TextureRead("/cont/imgs/ui.eia"), menuTex);
+    _TextureUpload(_TextureRead("/cont/imgs/icons.eia"), iconTex);
     _TextureUpload(content, texture);
     _SetWindowTitle(window, "EEE Image Array Editor - " & input);
 
@@ -275,7 +310,7 @@ fn main() {
     for (0; _WindowOpen(); 1) {
         processClick(window, texture, imgx, imgy, imgs, w, h, x, y);
 
-        render(window, menuTex, texture, imgx, imgy, imgs, w, h);
+        render(window, menuTex, iconTex, texture, imgx, imgy, imgs, w, h);
     }
 
     _TextureDestroy(menuTex);
@@ -284,4 +319,3 @@ fn main() {
 
     return 0;
 }
-
