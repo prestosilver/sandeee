@@ -5,14 +5,20 @@ const font = @import("../util/font.zig");
 const c = @import("../c.zig");
 const gfx = @import("../util/graphics.zig");
 const allocator = @import("../util/allocator.zig");
+const conf = @import("../system/config.zig");
+
+pub var settingManager: *conf.SettingManager = undefined;
 
 pub fn loadFontPath(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font)) !bool {
-    std.log.debug("load font: {s}", .{self.indata.*});
+    var path = conf.SettingManager.get(settingManager, self.indata.*) orelse
+        self.indata.*;
+
+    std.log.debug("load font: {s}", .{path});
 
     gfx.gContext.makeCurrent();
     defer gfx.gContext.makeNotCurrent();
 
-    self.out.* = try font.Font.init(self.indata.*);
+    self.out.* = try font.Font.init(path);
 
     return true;
 }

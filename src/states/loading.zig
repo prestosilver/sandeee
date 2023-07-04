@@ -42,7 +42,7 @@ pub const GSLoading = struct {
     const loginpath: []const u8 = "/cont/snds/login.era";
     const messagepath: []const u8 = "/cont/snds/message.era";
     const settingspath: []const u8 = "/conf/system.cfg";
-    const fontpath: []const u8 = "/cont/fnts/main.eff";
+    const fontpath: []const u8 = "system_font";
     const zero: u8 = 0;
     const delay: u64 = 300;
 
@@ -82,6 +82,8 @@ pub const GSLoading = struct {
 
         worker.texture.settingManager = self.settingManager;
         worker.texture.textureManager = self.textureManager;
+
+        worker.font.settingManager = self.settingManager;
 
         // files
         try self.loader.enqueue(*?[]u8, *const u8, self.disk, &zero, worker.files.loadFiles);
