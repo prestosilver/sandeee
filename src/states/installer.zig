@@ -182,7 +182,6 @@ pub const GSInstall = struct {
 
                 var vals = try self.updateSettingsVals();
                 defer allocator.alloc.free(vals);
-                std.log.info("{s}", .{vals});
 
                 try files.Folder.setupDisk(self.diskName.items, vals);
             }
