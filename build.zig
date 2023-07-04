@@ -31,8 +31,9 @@ const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
 var Version: std.SemanticVersion = .{
     .major = 0,
-    .minor = 0,
-    .patch = undefined,
+    .minor = 1,
+    .patch = 0,
+    .build = "",
 };
 
 pub fn build(b: *std.build.Builder) !void {
@@ -43,41 +44,39 @@ pub fn build(b: *std.build.Builder) !void {
         .optimize = b.standardOptimizeOption(.{}),
     });
 
-    const versionPlatform = if (exe.target.os_tag) |tag|
-        switch (tag) {
-            .windows => "win",
-            .linux => "lnx",
-            else => "",
-        }
-    else
-        "lnx";
-
     var commit = b.exec(&.{ "git", "rev-list", "HEAD", "--count" });
 
-    Version.patch = std.fmt.parseInt(u32, commit[0 .. commit.len - 1], 0) catch 0;
-
     var isDemo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
+    var isSteam = b.option(bool, "steam", "Makes SandEEE build a steam build") orelse false;
 
     const versionSuffix = switch (exe.optimize) {
-        .Debug => if (isDemo) "-dbg-demo" else "-dbg",
-        else => if (isDemo) "-pub-demo" else "-pub",
+        .Debug => if (isDemo) "D0DE" else "00DE",
+        else => if (isDemo) "D000" else "0000",
     };
+
+    Version.build = b.fmt("{s}{X:0>4}", .{ versionSuffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
 
     const networkModule = b.createModule(.{
         .source_file = .{ .path = "deps/zig-network/network.zig" },
     });
 
+    const steamModule = b.createModule(.{
+        .source_file = .{ .path = "steam/steam.zig" },
+    });
+
     const options = b.addOptions();
 
+    var versionText = std.fmt.allocPrint(b.allocator, "Ver. {{}}", .{}) catch return;
+
+    std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{}", .{Version}) catch return) catch return;
+
     options.addOption(std.SemanticVersion, "SandEEEVersion", Version);
-    var versionText = std.fmt.allocPrint(b.allocator, "V.{s}-{{}}{s}", .{ versionPlatform, versionSuffix }) catch return;
-
-    std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{s}-{}{s}", .{ versionPlatform, Version, versionSuffix }) catch return) catch return;
-
     options.addOption([]const u8, "VersionText", versionText);
     options.addOption(bool, "IsDemo", isDemo);
+    options.addOption(bool, "IsSteam", isSteam);
 
     exe.addModule("network", networkModule);
+    exe.addModule("steam", steamModule);
     exe.addModule("options", options.createModule());
 
     _ = b.exec(&[_][]const u8{ "rm", "-rf", "content/disk" });
@@ -96,6 +95,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     // Includes
     exe.addIncludePath("deps/include");
+    exe.addIncludePath("deps/steam_sdk/public/");
     if (exe.target.os_tag != null and exe.target.os_tag.? == .windows) {
         exe.addObjectFile("content/app.res.obj");
         exe.addLibraryPath("deps/lib");
@@ -231,10 +231,12 @@ pub fn build(b: *std.build.Builder) !void {
         write_step.step.dependOn(&step.step);
     }
 
-    var fontStep = conv.ConvertStep.create(b, font.convert, "content/images/font.png", "content/disk/cont/fnts/main.eff");
-    var biosFontStep = conv.ConvertStep.create(b, font.convert, "content/images/bios_font.png", "src/images/main.eff");
+    var fontStep = conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans.png", "content/disk/cont/fnts/SandEEESans.eff");
+    var font2xStep = conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans2x.png", "content/disk/cont/fnts/SandEEESans2x.eff");
+    var biosFontStep = conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans2x.png", "src/images/main.eff");
 
     write_step.step.dependOn(&fontStep.step);
+    write_step.step.dependOn(&font2xStep.step);
     write_step.step.dependOn(&biosFontStep.step);
 
     exe.step.dependOn(&write_step.step);
