@@ -8,6 +8,8 @@ const systemEvs = @import("../events/system.zig");
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
 
+pub var syslock = std.Thread.Mutex{};
+
 pub const VM = struct {
     const VMError = error{
         Memory,
@@ -474,6 +476,9 @@ pub const VM = struct {
                 }
             },
             Operation.Code.Sys => {
+                syslock.lock();
+                defer syslock.unlock();
+
                 if (op.value != null) {
                     switch (op.value.?) {
                         // print

@@ -382,7 +382,7 @@ pub const GSWindowed = struct {
 
             try popup.data.drawName(self.font_shader, self.face, self.sb);
 
-            // update scisor region
+            // update scissor region
             self.sb.scissor = popup.data.scissor();
 
             try popup.data.drawContents(self.font_shader, self.face, self.sb);
@@ -393,6 +393,12 @@ pub const GSWindowed = struct {
 
         // draw cursor
         try self.sb.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
+
+        for (shell.threads.items) |thread| {
+            thread.join();
+        }
+
+        shell.threads.clearAndFree();
     }
 
     pub fn update(self: *Self, dt: f32) !void {

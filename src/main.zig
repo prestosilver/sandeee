@@ -53,6 +53,7 @@ const conf = @import("system/config.zig");
 const files = @import("system/files.zig");
 const headless = @import("system/headless.zig");
 const emails = @import("system/mail.zig");
+const shell = @import("system/shell.zig");
 
 // not-op programming lang
 const c = @import("c.zig");
@@ -367,6 +368,7 @@ pub fn drawLoading(self: *loadingState.GSLoading) void {
         self.draw(gfx.gContext.size) catch {};
 
         blit() catch {};
+        std.Thread.yield() catch {};
     }
 }
 
@@ -552,6 +554,9 @@ pub fn mainErr() anyerror!void {
     try textureManager.putMem("load", loadImage);
     try textureManager.putMem("sad", sadImage);
     try textureManager.putMem("error", errorImage);
+
+    shell.threads = std.ArrayList(std.Thread).init(allocator.alloc);
+    defer shell.threads.deinit();
 
     // disks state
     var gsDisks = diskState.GSDisks{

@@ -25,6 +25,10 @@ pub var frameTime: u64 = 0;
 pub var vms: usize = 0;
 pub var vmsLeft: usize = 0;
 
+pub var vmLock = std.Thread.Mutex{};
+
+pub var threads: std.ArrayList(std.Thread) = undefined;
+
 const ShellError = error{
     FileNotFound,
     MissingParameter,
@@ -372,69 +376,64 @@ pub const Shell = struct {
     }
 
     pub fn updateVM(self: *Shell) !?Result {
-        var timer = try std.time.Timer.start();
-        timer.reset();
+        if (self.vm) |*vmInst| {
+            if (vmInst.stopped) {
+                var result: Result = Result{
+                    .data = std.ArrayList(u8).init(allocator.alloc),
+                };
 
-        if (self.vm.?.runTime(frameTime / vmsLeft, @import("builtin").mode == .Debug) catch |err| {
+                try result.data.appendSlice(vmInst.out.items);
+
+                try vmInst.deinit();
+                self.vm = null;
+                vms -= 1;
+                vmsLeft -= 1;
+
+                return result;
+            }
+
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
 
-            try result.data.appendSlice(self.vm.?.out.items);
+            try result.data.appendSlice(vmInst.out.items);
+            vmInst.out.clearAndFree();
+
+            try threads.append(try std.Thread.spawn(.{}, vmThread, .{self}));
+
+            return result;
+        }
+
+        vmsLeft -= 1;
+
+        return null;
+    }
+
+    pub fn vmThread(self: *Shell) !void {
+        defer {
+            vmLock.lock();
+            vmsLeft -= 1;
+            vmLock.unlock();
+        }
+
+        if (self.vm.?.runTime(frameTime, @import("builtin").mode == .Debug) catch |err| {
+            self.vm.?.stopped = true;
 
             var errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});
             defer allocator.alloc.free(errString);
 
-            try result.data.appendSlice(errString);
+            try self.vm.?.out.appendSlice(errString);
 
             var msgString = try self.vm.?.getOp();
             defer allocator.alloc.free(msgString);
 
-            try result.data.appendSlice(msgString);
+            try self.vm.?.out.appendSlice(msgString);
 
-            try self.vm.?.deinit();
-            self.vm = null;
-            vms -= 1;
-            vmsLeft -= 1;
-
-            if (frameTime < timer.read()) {
-                frameTime = 0;
-            } else {
-                frameTime -= timer.read();
-            }
-
-            return result;
+            return;
         }) {
-            var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
-            };
-
-            try result.data.appendSlice(self.vm.?.out.items);
-
-            try self.vm.?.deinit();
-            self.vm = null;
-            vms -= 1;
-            vmsLeft -= 1;
-
-            if (frameTime < timer.read()) {
-                frameTime = 0;
-            } else {
-                frameTime -= timer.read();
-            }
-
-            return result;
+            return;
         }
-        vmsLeft -= 1;
-
-        var usedTime = timer.read();
-
-        if (frameTime < usedTime) {
-            frameTime = 0;
-        } else {
-            frameTime -= usedTime;
-        }
-
-        return null;
+        return;
     }
 
     pub fn runLine(self: *Shell, line: []const u8) !Result {

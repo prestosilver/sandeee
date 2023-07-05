@@ -11,6 +11,7 @@ const shd = @import("../util/shader.zig");
 const fnt = @import("../util/font.zig");
 const spr = @import("../drawers/sprite2d.zig");
 const allocator = @import("../util/allocator.zig");
+const vm = @import("../system/vm.zig");
 const c = @import("../c.zig");
 
 pub const VMData = struct {
@@ -99,6 +100,9 @@ pub const VMData = struct {
     }
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        vm.syslock.lock();
+        defer vm.syslock.unlock();
+
         _ = props;
         const rects = if (self.back) self.rects[1] else self.rects[0];
 
