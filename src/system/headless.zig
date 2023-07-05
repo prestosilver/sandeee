@@ -120,7 +120,7 @@ test "Headless scripts" {
     var err: ?anyerror!void = null;
 
     while (try iter.next()) |entry| {
-        if (entry.kind != .File) continue;
+        if (entry.kind != .file) continue;
 
         _ = try logging.write("# ");
         _ = try logging.write(entry.path);

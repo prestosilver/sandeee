@@ -4,10 +4,6 @@
 fn processArgs() {
     var file = getArg(1);
 
-    if (file == 0) {
-       error("Missing File");
-    }
-
     return file;
 }
 
@@ -60,7 +56,7 @@ fn setSquare(tex, x, y, r, color) {
     return 0;
 }
 
-fn render(win, menuTex, iconTex, tex, imgx, imgy, imgs, w, h) {
+fn render(win, menuTex, iconTex, ttex, tex, imgx, imgy, imgs, w, h) {
     var source = _MakeRect(0, 0, 1024, 1024);
     
     var xo = imgx * imgs;
@@ -74,7 +70,9 @@ fn render(win, menuTex, iconTex, tex, imgx, imgy, imgs, w, h) {
     var target_h = imgs * h;
     target_h = target_h / 1000;
 
-    var dest = _MakeRect(xo, yo + 32, target_w, target_h);
+    var dest = _MakeRect(xo, yo + 40, target_w, target_h);
+
+    _WindowRender(win, ttex, dest, _MakeRect(0, 0, 64 * w, 64 * h));
     
     _DrawBarBg(win, menuTex);
     _DrawBarIcon(win, iconTex, _MakeRect(128, 0, 128, 128), 0);
@@ -194,7 +192,7 @@ fn drawLine(texture, ax, ay, bx, by, color) {
     return 0;
 }
 
-fn processClick(win, texture, imgx, imgy, imgs, w, h, oldx, oldy) {
+fn processClick(win, texture, filename, imgx, imgy, imgs, w, h, oldx, oldy) {
     var clickData = getclick();
     var btn = @clickData;
 
@@ -207,12 +205,12 @@ fn processClick(win, texture, imgx, imgy, imgs, w, h, oldx, oldy) {
     x = x + xo * 256;
     y = y + yo * 256;
 
-    if ((y < 32) && (btn == 0)) {
+    if ((y < 40) && (btn == 0)) {
         if (x < 44) {
             return 0;
         }
         if (x < 84) {
-            save(texture, "image.eia");
+            save(texture, filename);
 
             return 0;
         }
@@ -226,7 +224,7 @@ fn processClick(win, texture, imgx, imgy, imgs, w, h, oldx, oldy) {
         return 0;
     }
 
-    y = y - 32;
+    y = y - 40;
 
     var xs = dup(x);
     var ys = dup(y);
@@ -258,8 +256,8 @@ fn processClick(win, texture, imgx, imgy, imgs, w, h, oldx, oldy) {
             imgy = imgy - yo;
         }
 
-        x = dup(xs);
-        y = dup(ys);
+        x = xs;
+        y = ys;
 
         xo = imgx * imgs;
         xo = xo / 1000;
@@ -280,25 +278,41 @@ fn processClick(win, texture, imgx, imgy, imgs, w, h, oldx, oldy) {
     return 1;
 }
 
+fn textureNew(w, h) {
+    return "eimg" & toShort(w) & toShort(h) & (new (w * h * 4));
+}
+
 fn main() {
     setupLibLoad();
     loadLib("/libs/window.ell");
     loadLib("/libs/texture.ell");
     loadLib("/libs/ui.ell");
 
-    var input = processArgs();
+    var file = processArgs();
+
     var window = _WindowCreate();
     var texture = _TextureCreate();
     var menuTex = _TextureCreate();
     var iconTex = _TextureCreate();
-    var content = _TextureRead(input);
+    var transTex = _TextureCreate();
+    _TextureUpload(_TextureRead("/cont/imgs/transparent.eia"), transTex);
     _TextureUpload(_TextureRead("/cont/imgs/ui.eia"), menuTex);
     _TextureUpload(_TextureRead("/cont/imgs/icons.eia"), iconTex);
-    _TextureUpload(content, texture);
-    _SetWindowTitle(window, "EEE Image Array Editor - " & input);
+    var cont = "";
+    var w = 0;
+    var h = 0;
+    if (file != "") {
+        cont = _TextureRead(file);
+    } else {
+        file = "image.eia";
+        cont = textureNew(100, 100);
+    }
 
-    var w = _TextureWidth(content);
-    var h = _TextureHeight(content);
+    _TextureUpload(cont, texture);
+    w = _TextureWidth(cont);
+    h = _TextureHeight(cont);
+
+    _SetWindowTitle(window, "EEE Image Array Editor - " & file);
 
     var x = 0;
     var y = 0;
@@ -308,9 +322,9 @@ fn main() {
     var imgs = 2000;
 
     for (0; _WindowOpen(); 1) {
-        processClick(window, texture, imgx, imgy, imgs, w, h, x, y);
+        processClick(window, texture, file, imgx, imgy, imgs, w, h, x, y);
 
-        render(window, menuTex, iconTex, texture, imgx, imgy, imgs, w, h);
+        render(window, menuTex, iconTex, transTex, texture, imgx, imgy, imgs, w, h);
     }
 
     _TextureDestroy(menuTex);
