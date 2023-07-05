@@ -50,7 +50,7 @@ pub const VMData = struct {
     };
 
     pub fn addRect(self: *VMData, texture: []const u8, src: rect.Rectangle, dst: rect.Rectangle) !void {
-        var appends: VMDataEntry = .{
+        const appends: VMDataEntry = .{
             .Rect = .{
                 .loc = vecs.newVec3(dst.x, dst.y, 0),
                 .s = spr.Sprite{
@@ -65,7 +65,7 @@ pub const VMData = struct {
     }
 
     pub fn addText(self: *VMData, dst: vecs.Vector2, text: []const u8) !void {
-        var appends: VMDataEntry = .{
+        const appends: VMDataEntry = .{
             .Text = .{
                 .pos = dst,
                 .text = try allocator.alloc.dupe(u8, text),
@@ -83,8 +83,7 @@ pub const VMData = struct {
     }
 
     pub fn clear(self: *VMData) void {
-        var rects = &self.rects[0];
-        if (!self.back) rects = &self.rects[1];
+        const rects = if (!self.back) &self.rects[1] else &self.rects[0];
         for (rects.items) |item| {
             switch (item) {
                 .Text => {
@@ -101,8 +100,7 @@ pub const VMData = struct {
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
-        var rects = self.rects[0];
-        if (self.back) rects = self.rects[1];
+        const rects = if (self.back) self.rects[1] else self.rects[0];
 
         for (rects.items, 0..) |_, idx| {
             switch (rects.items[idx]) {
@@ -130,7 +128,7 @@ pub const VMData = struct {
         }
 
         if (self.debug) {
-            var val = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
+            const val = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
             defer allocator.alloc.free(val);
 
             try font.draw(.{
@@ -151,9 +149,10 @@ pub const VMData = struct {
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (!down) {
-            var newInput = try allocator.alloc.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
+            const newInput = try allocator.alloc.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
+            defer allocator.alloc.free(self.input);
+
             _ = std.mem.replace(i32, self.input, &.{keycode}, &.{}, newInput);
-            allocator.alloc.free(self.input);
             self.input = newInput;
 
             return;
