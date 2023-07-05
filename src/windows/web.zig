@@ -41,6 +41,17 @@ pub const WebData = struct {
         scale: f32 = 1.0,
         color: col.Color = col.newColor(0, 0, 0, 1),
         locked: bool = false,
+        suffix: ?[]const u8 = null,
+        prefix: ?[]const u8 = null,
+
+        pub fn free(self: *const Style) void {
+            if (self.suffix) |suffix| {
+                allocator.alloc.free(suffix);
+            }
+            if (self.prefix) |prefix| {
+                allocator.alloc.free(prefix);
+            }
+        }
     };
 
     highlight: sprite.Sprite,
@@ -279,6 +290,12 @@ pub const WebData = struct {
                     currentStyle.ali = .Right;
                 }
             }
+            if (std.mem.startsWith(u8, fullLine, "suffix: ")) {
+                currentStyle.suffix = try allocator.alloc.dupe(u8, fullLine[8..]);
+            }
+            if (std.mem.startsWith(u8, fullLine, "prefix: ")) {
+                currentStyle.prefix = try allocator.alloc.dupe(u8, fullLine[8..]);
+            }
             if (std.mem.startsWith(u8, fullLine, "scale: ")) {
                 currentStyle.scale = std.fmt.parseFloat(f32, fullLine["scale: ".len..]) catch 1.0;
             }
@@ -304,6 +321,7 @@ pub const WebData = struct {
             if (style.value_ptr.locked) {
                 try self.styles.put(style.key_ptr.*, style.value_ptr.*);
             } else {
+                style.value_ptr.free();
                 allocator.alloc.free(style.key_ptr.*);
             }
         }
@@ -466,6 +484,10 @@ pub const WebData = struct {
                     continue;
                 }
 
+                if (std.mem.startsWith(u8, line, "|")) {
+                    line = line[1..];
+                }
+
                 if (std.mem.startsWith(u8, line, "> ")) {
                     style.color = col.newColor(0, 0, 1, 1);
                     var linkcont = line[2..];
@@ -509,14 +531,21 @@ pub const WebData = struct {
 
                 if (pos.y > bnds.h + bnds.y and !self.add_links) continue;
 
-                var size = font.sizeText(.{ .text = line, .scale = style.scale, .wrap = bnds.w });
+                var aline = try std.fmt.allocPrint(allocator.alloc, "{s}{s}{s}", .{
+                    style.prefix orelse "",
+                    line,
+                    style.suffix orelse "",
+                });
+                defer allocator.alloc.free(aline);
+
+                var size = font.sizeText(.{ .text = aline, .scale = style.scale, .wrap = bnds.w });
 
                 switch (style.ali) {
                     .Left => {
                         try font.draw(.{
                             .batch = batch,
                             .shader = font_shader,
-                            .text = line,
+                            .text = aline,
                             .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
                             .color = style.color,
                             .scale = style.scale,
@@ -529,7 +558,7 @@ pub const WebData = struct {
                         try font.draw(.{
                             .batch = batch,
                             .shader = font_shader,
-                            .text = line,
+                            .text = aline,
                             .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
                             .color = style.color,
                             .scale = style.scale,
@@ -542,7 +571,7 @@ pub const WebData = struct {
                         try font.draw(.{
                             .batch = batch,
                             .shader = font_shader,
-                            .text = line,
+                            .text = aline,
                             .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
                             .color = style.color,
                             .scale = style.scale,
@@ -704,6 +733,7 @@ pub const WebData = struct {
         var styleIter = self.styles.iterator();
         while (styleIter.next()) |style| {
             if (!style.value_ptr.locked) {
+                style.value_ptr.free();
                 allocator.alloc.free(style.key_ptr.*);
             }
         }
