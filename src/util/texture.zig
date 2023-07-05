@@ -7,7 +7,7 @@ const cols = @import("../math/colors.zig");
 const allocator = @import("allocator.zig");
 
 pub const Texture = struct {
-    tex: c.GLuint,
+    tex: c.GLuint = 0,
     size: vecs.Vector2,
     oldSize: vecs.Vector2 = vecs.newVec2(0, 0),
     buffer: [][4]u8,
@@ -16,7 +16,7 @@ pub const Texture = struct {
         c.glDeleteTextures(1, &self.tex);
     }
 
-    pub fn setPixel(self: *const Texture, x: i32, y: i32, color: [4]u8) void {
+    pub inline fn setPixel(self: *const Texture, x: i32, y: i32, color: [4]u8) void {
         if (x >= @as(i32, @intFromFloat(self.size.x)) or y >= @as(i32, @intFromFloat(self.size.y))) return;
 
         const idx: usize = @intCast(x + @as(i32, @intFromFloat(self.size.x)) * y);
@@ -35,6 +35,8 @@ pub const Texture = struct {
         } else {
             c.glBindTexture(c.GL_TEXTURE_2D, self.tex);
         }
+
+        if (self.size.x == 0 or self.size.y == 0) return;
 
         if (self.size.x == self.oldSize.x and
             self.size.y == self.oldSize.y)
@@ -57,11 +59,8 @@ pub const imageError = error{
 pub fn newTextureSize(size: vecs.Vector2) !Texture {
     var result = Texture{
         .buffer = try allocator.alloc.alloc([4]u8, @intFromFloat(size.x * size.y)),
-        .tex = 0,
         .size = size,
     };
-
-    result.upload();
 
     return result;
 }
@@ -82,7 +81,6 @@ pub fn newTextureMem(mem: []const u8) !Texture {
 
     var result = Texture{
         .buffer = try allocator.alloc.alloc([4]u8, @intCast(width * height)),
-        .tex = 0,
         .size = vecs.Vector2{
             .x = @floatFromInt(width),
             .y = @floatFromInt(height),

@@ -160,6 +160,16 @@ var steamUtils: *const steam.SteamUtils = undefined;
 pub fn blit() !void {
     // actual gl calls start here
     ctx.makeCurrent();
+    defer ctx.makeNotCurrent();
+
+    if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
+        // for when minimized render nothing
+        gfx.clear(&ctx);
+
+        gfx.swap(&ctx);
+
+        return;
+    }
 
     if (showFps and biosFace.setup) {
         const text = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{finalFps});
@@ -172,17 +182,6 @@ pub fn blit() !void {
             .pos = vecs.newVec2(0, 0),
             .color = col.newColor(1, 1, 1, 1),
         });
-    }
-
-    if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
-        // for when minimized render nothing
-        gfx.clear(&ctx);
-
-        gfx.swap(&ctx);
-
-        ctx.makeNotCurrent();
-
-        return;
     }
 
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
@@ -233,9 +232,6 @@ pub fn blit() !void {
 
     // swap buffer
     gfx.swap(&ctx);
-
-    // actual gl calls done
-    ctx.makeNotCurrent();
 }
 
 pub fn changeState(event: systemEvs.EventStateChange) !void {
@@ -320,9 +316,10 @@ pub fn settingSet(event: systemEvs.EventSetSetting) !void {
 
         if (isCrt) {
             gfx.gContext.makeCurrent();
+            defer gfx.gContext.makeNotCurrent();
+
             crt_shader.setInt("crt_enable", val);
             crt_shader.setInt("dither_enable", val);
-            gfx.gContext.makeNotCurrent();
         }
 
         return;
@@ -360,6 +357,12 @@ pub fn setupEvents() !void {
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {
     while (!self.done.load(.SeqCst)) {
+        {
+            ctx.makeCurrent();
+            defer ctx.makeNotCurrent();
+            _ = gfx.poll(&ctx);
+        }
+
         // render loading screen
         self.draw(gfx.gContext.size) catch {};
 
@@ -755,7 +758,7 @@ pub fn mainErr() anyerror!void {
             try gameStates.getPtr(currentState).setup();
 
             // disable events on loading screen
-            inputEvs.setup(ctx.window, currentState != .Loading);
+            //inputEvs.setup(ctx.window, currentState != .Loading);
 
             sb.queueLock.lock();
             try sb.clear();

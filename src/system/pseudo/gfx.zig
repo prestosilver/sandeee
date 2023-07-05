@@ -20,13 +20,14 @@ pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
 
     result[0] = texIdx;
 
-    gfx.gContext.makeCurrent();
+    {
+        gfx.gContext.makeCurrent();
+        defer gfx.gContext.makeNotCurrent();
 
-    var id = try allocator.alloc.dupe(u8, result);
+        var id = try allocator.alloc.dupe(u8, result);
 
-    try sb.textureManager.put(id, try tex.newTextureSize(vecs.newVec2(0, 0)));
-
-    gfx.gContext.makeNotCurrent();
+        try sb.textureManager.put(id, try tex.newTextureSize(vecs.newVec2(0, 0)));
+    }
 
     texIdx = texIdx +% 1;
 
@@ -48,11 +49,12 @@ pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
     var texture = sb.textureManager.get(&.{idx});
     if (texture == null) return;
 
-    gfx.gContext.makeCurrent();
+    {
+        gfx.gContext.makeCurrent();
+        defer gfx.gContext.makeNotCurrent();
 
-    tex.freeTexture(texture.?);
-
-    gfx.gContext.makeNotCurrent();
+        tex.freeTexture(texture.?);
+    }
 
     _ = sb.textureManager.textures.remove(&.{idx});
 }
@@ -122,14 +124,14 @@ pub fn readGfxPixel(_: ?*vm.VM) ![]const u8 {
 pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) !void {
     var idx = data[0];
 
-    var texture = sb.textureManager.get(&.{idx});
+    const texture = sb.textureManager.get(&.{idx});
     if (texture == null) return;
 
     var tmp = data[1..];
 
     while (tmp.len > 7) {
-        var x = std.mem.bytesToValue(u16, tmp[0..2]);
-        var y = std.mem.bytesToValue(u16, tmp[2..4]);
+        const x = std.mem.bytesToValue(u16, tmp[0..2]);
+        const y = std.mem.bytesToValue(u16, tmp[2..4]);
 
         texture.?.setPixel(x, y, tmp[4..8].*);
 
