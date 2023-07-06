@@ -173,7 +173,7 @@ pub fn blit() !void {
     }
 
     if (showFps and biosFace.setup) {
-        const text = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{finalFps});
+        const text = try std.fmt.allocPrint(allocator.alloc, "FPS: {}\nVMS: {}", .{ finalFps, shell.vms });
         defer allocator.alloc.free(text);
 
         try biosFace.draw(.{
