@@ -1,14 +1,17 @@
-fn getArg() {
+// gets the nth argument
+fn getArg() { // arguments: n
     asm "sys 8";
     asm "ret";
 }
 
-fn print() {
+// prints a string or number
+fn print() { // arguments: value
     asm "sys 0";
     asm "push 0";
     asm "ret";
 }
 
+// stops execution
 fn quit() {
     asm "sys 1";
 }
@@ -46,6 +49,16 @@ fn write() {
 fn read() {
     asm "sys 4";
     asm "ret";
+}
+
+fn readAll(file) {
+    var f = open(file);
+    var size = fileSize(file);
+
+    var result = read(f, size);
+    close(f);
+
+    return result;
 }
 
 fn time() {

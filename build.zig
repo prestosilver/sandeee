@@ -13,13 +13,14 @@ const emails = @import("tools/mail.zig");
 // debug only
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
 const eonTestsFiles = [_][]const u8{ "pong", "paint", "fib", "tabletest", "heaptest", "stringtest", "paren" };
+const eonTestSrcs = [_][]const u8{ "eon", "pix" };
 
 // demo overrides
 const mailDirsDemo = [_][]const u8{"inbox"};
 
 // all builds
 const asmExecFiles = [_][]const u8{ "time", "dump", "echo", "aplay", "libdump" };
-const eonExecFiles = [_][]const u8{ "eon", "stat", "player", "asm", "pix" };
+const eonExecFiles = [_][]const u8{ "epkman", "eon", "stat", "player", "asm", "pix" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "ui", "heap", "table", "asm" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
@@ -143,6 +144,12 @@ pub fn build(b: *std.build.Builder) !void {
             step.step.dependOn(&compStep.step);
 
             write_step.step.dependOn(&step.step);
+        }
+
+        for (eonTestSrcs) |file| {
+            var eonf = std.fmt.allocPrint(b.allocator, "content/eon/exec/{s}.eon", .{file}) catch "";
+            var libf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/src/eon/{s}.eon", .{file}) catch "";
+            _ = b.exec(&.{ "cp", eonf, libf });
         }
     }
 

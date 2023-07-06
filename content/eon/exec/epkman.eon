@@ -1,0 +1,110 @@
+#include "/libs/inc/libload.eon"
+#include "/libs/inc/sys.eon"
+
+fn fileSize(file) {
+    asm "sys 19";
+    asm "ret";
+}
+
+fn toShort(val) {
+    var result = @val;
+    val = val / 256;
+
+    return (@val) & result;
+}
+
+fn readShort(file) {
+    var res = @read(file, 1);
+    var smal = @read(file, 1);
+
+    return (res * 256) + smal;
+}
+
+fn fileSizeS(file) {
+    var size = fileSize(file);
+
+    return toShort(size);
+}
+
+fn epkStart(execName) {
+    var execNameLen = execName;
+    asm "len";
+
+    var result = "";
+    result = result & toShort(execNameLen);
+    result = result & execName;
+    result = result & fileSizeS(execName);
+    result = result & readAll(execName);
+
+    return result;
+}
+
+fn epkAdd(epk, file) {
+    var fileLen = file;
+    asm "len";
+
+    epk = epk & toShort(fileLen);
+    epk = epk & file;
+    epk = epk & fileSizeS(file);
+    epk = epk & readAll(file);
+
+    return 0;
+}
+
+fn unpack(file) {
+    var done = 0;
+    var fileh = open(file);
+    var outh = 0;
+    var nameSize = 0;
+    var name = "";
+    var contSize = 0;
+    var cont = "";
+
+    if (read(fileh, 4) != "epak") {
+        error("Invalid File");
+    }
+
+    nameSize = readShort(fileh);
+
+    while (nameSize != 0) {
+        name = read(fileh, nameSize);
+        contSize = readShort(fileh);
+        cont = read(fileh, contSize);
+
+        print(name);
+
+        outh = createOpen(name);
+        write(outh, cont);
+        close(outh);
+
+        nameSize = readShort(fileh);
+    }
+
+    return 0;
+}
+
+fn main() {
+    var op = getArg(1);
+
+    if (op == "pack") {
+        var out = getArg(2);
+        var epk = epkStart(getArg(3));
+
+        var i;
+        var arg = getArg(4);
+        for (i = 4; arg != ""; 0) {
+            print("add " & arg & "\n");
+            epkAdd(epk, arg);
+            i = i + 1;
+            arg = getArg(i);
+        }
+
+        var outFile = createOpen(out);
+        write(outFile, epk);
+        close(outFile);
+    } else {
+        unpack(op);
+    }
+
+    return 0;
+}
