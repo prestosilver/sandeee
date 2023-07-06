@@ -1,0 +1,7 @@
+#include "/libs/inc/sys.eon"
+
+fn main() {
+    createOpen("");
+
+    return 0;
+}
