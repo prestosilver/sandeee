@@ -21,11 +21,8 @@ pub var shader: *shd.Shader = undefined;
 
 pub const ASM_HEADER = "EEEp";
 
-pub var frameTime: u64 = 0;
+pub var frameEnd: u64 = 0;
 pub var vms: usize = 0;
-pub var vmsLeft: usize = 0;
-
-pub var vmLock = std.Thread.Mutex{};
 
 pub var threads: std.ArrayList(std.Thread) = undefined;
 
@@ -351,7 +348,6 @@ pub const Shell = struct {
 
                 self.vm = try vm.VM.init(allocator.alloc, self.root, params, false);
                 vms += 1;
-                vmsLeft += 1;
 
                 var ops = cont[4..];
 
@@ -361,7 +357,6 @@ pub const Shell = struct {
                     try self.vm.?.deinit();
                     self.vm = null;
                     vms -= 1;
-                    vmsLeft -= 1;
 
                     return err;
                 };
@@ -387,7 +382,6 @@ pub const Shell = struct {
                 try vmInst.deinit();
                 self.vm = null;
                 vms -= 1;
-                vmsLeft -= 1;
 
                 return result;
             }
@@ -404,19 +398,17 @@ pub const Shell = struct {
             return result;
         }
 
-        vmsLeft -= 1;
-
         return null;
     }
 
     pub fn vmThread(self: *Shell) !void {
-        defer {
-            vmLock.lock();
-            vmsLeft -= 1;
-            vmLock.unlock();
+        var time: u64 = @intCast(std.time.nanoTimestamp());
+
+        if (frameEnd < time) {
+            return;
         }
 
-        if (self.vm.?.runTime(frameTime, @import("builtin").mode == .Debug) catch |err| {
+        if (self.vm.?.runTime(frameEnd - time, @import("builtin").mode == .Debug) catch |err| {
             self.vm.?.stopped = true;
 
             var errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});

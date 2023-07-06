@@ -302,8 +302,7 @@ pub const GSWindowed = struct {
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
 
         // setup vm data for update
-        shell.frameTime = @as(u64, @intFromFloat(self.lastFrameTime * std.time.ns_per_s * 0.5));
-        shell.vmsLeft = shell.vms;
+        shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat(self.lastFrameTime * std.time.ns_per_s * 0.5));
 
         if (self.shell.vm != null) {
             var result = self.shell.updateVM() catch null;
