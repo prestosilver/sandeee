@@ -529,7 +529,7 @@ pub const VM = struct {
 
                             if (path != .string) return error.StringMissing;
 
-                            if (path.string.*[0] == '/') {
+                            if (path.string.len > 0 and path.string.*[0] == '/') {
                                 _ = try files.root.newFile(path.string.*);
                             } else {
                                 _ = try self.root.newFile(path.string.*);

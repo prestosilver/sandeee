@@ -39,9 +39,6 @@ pub const Font = struct {
     pub fn deinit(self: *Font) !void {
         if (!self.setup) return;
 
-        var texture = sb.textureManager.textures.fetchRemove(self.tex);
-        texture.?.value.deinit();
-
         allocator.alloc.free(self.tex);
     }
 
@@ -123,7 +120,7 @@ pub const Font = struct {
         try sb.textureManager.put(result.tex, .{
             .tex = texture,
             .size = atlasSize,
-            .buffer = undefined,
+            .buffer = try allocator.alloc.alloc([4]u8, 0),
         });
 
         fontId += 1;

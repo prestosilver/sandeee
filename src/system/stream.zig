@@ -20,11 +20,8 @@ pub const FileStream = struct {
 
         if (path.len == 0) return error.FileMissing;
 
-        var folder = root;
-        if (path[0] == '/') {
-            folder = files.root;
-        }
-        var file = try folder.getFile(path);
+        const folder = if (path[0] == '/') files.root else root;
+        const file = try folder.getFile(path);
 
         if (file == null) {
             allocator.alloc.destroy(result);
@@ -33,7 +30,7 @@ pub const FileStream = struct {
         }
 
         result.path = try allocator.alloc.alloc(u8, file.?.name.len);
-        var cont = try file.?.read(vmInstance);
+        const cont = try file.?.read(vmInstance);
         result.contents = try allocator.alloc.alloc(u8, cont.len);
         result.updated = false;
         result.vmInstance = vmInstance;
@@ -56,8 +53,8 @@ pub const FileStream = struct {
             target = self.contents.len - self.offset;
         }
 
-        var result = try allocator.alloc.alloc(u8, target);
-        var input = self.contents[self.offset .. self.offset + target];
+        const result = try allocator.alloc.alloc(u8, target);
+        const input = self.contents[self.offset .. self.offset + target];
 
         std.mem.copy(u8, result, input);
 
@@ -67,7 +64,7 @@ pub const FileStream = struct {
     }
 
     pub fn Write(self: *FileStream, data: []const u8) !void {
-        var targetsize = self.offset + data.len;
+        const targetsize = self.offset + data.len;
 
         self.contents = try allocator.alloc.realloc(self.contents, targetsize);
 

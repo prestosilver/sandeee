@@ -13,6 +13,7 @@ pub const Texture = struct {
     buffer: [][4]u8,
 
     pub fn deinit(self: *const Texture) void {
+        allocator.alloc.free(self.buffer);
         c.glDeleteTextures(1, &self.tex);
     }
 
@@ -133,9 +134,4 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
     @memcpy(std.mem.sliceAsBytes(tex.buffer), mem[8..]);
 
     tex.upload();
-}
-
-pub fn freeTexture(tex: *Texture) void {
-    allocator.alloc.free(tex.buffer);
-    c.glDeleteTextures(1, &tex.tex);
 }

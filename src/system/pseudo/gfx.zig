@@ -24,9 +24,7 @@ pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
         gfx.gContext.makeCurrent();
         defer gfx.gContext.makeNotCurrent();
 
-        var id = try allocator.alloc.dupe(u8, result);
-
-        try sb.textureManager.put(id, try tex.newTextureSize(vecs.newVec2(0, 0)));
+        try sb.textureManager.put(result, try tex.newTextureSize(vecs.newVec2(0, 0)));
     }
 
     texIdx = texIdx +% 1;
@@ -53,10 +51,13 @@ pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
         gfx.gContext.makeCurrent();
         defer gfx.gContext.makeNotCurrent();
 
-        tex.freeTexture(texture.?);
+        if (texture) |text| text.deinit();
     }
 
-    _ = sb.textureManager.textures.remove(&.{idx});
+    const key = sb.textureManager.textures.getKeyPtr(&.{idx});
+    allocator.alloc.free(key.?.*);
+
+    _ = sb.textureManager.textures.removeByPtr(key.?);
 }
 
 // /fake/gfx/upload
@@ -104,12 +105,13 @@ pub fn writeGfxSave(data: []const u8, vmInstance: ?*vm.VM) !void {
 
     if (vmInstance) |vmi| {
         _ = try vmi.root.newFile(image);
-        var conts = try std.mem.concat(allocator.alloc, u8, &.{
+        const conts = try std.mem.concat(allocator.alloc, u8, &.{
             "eimg",
             std.mem.asBytes(&@as(i16, @intFromFloat(texture.?.size.x))),
             std.mem.asBytes(&@as(i16, @intFromFloat(texture.?.size.y))),
             std.mem.sliceAsBytes(texture.?.buffer),
         });
+        defer allocator.alloc.free(conts);
 
         try vmi.root.writeFile(image, conts, null);
     }
