@@ -20,6 +20,7 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const mail = @import("../system/mail.zig");
 const allocator = @import("../util/allocator.zig");
+const builtin = @import("builtin");
 
 pub const GSLoading = struct {
     const Self = @This();
@@ -44,7 +45,8 @@ pub const GSLoading = struct {
     const settingspath: []const u8 = "/conf/system.cfg";
     const fontpath: []const u8 = "system_font";
     const zero: u8 = 0;
-    const delay: u64 = 300;
+    const delay: u64 = if (builtin.mode == .Debug) 0 else 150;
+    const tdelay: u64 = if (builtin.mode == .Debug) 0 else 25;
 
     load_progress: f32 = 0,
     login_snd: audio.Sound = undefined,
@@ -78,12 +80,16 @@ pub const GSLoading = struct {
 
     pub fn setup(self: *Self) !void {
         self.done.storeUnchecked(false);
-        defer self.done.storeUnchecked(true);
+
+        self.load_sprite.data.size.x = 0;
 
         worker.texture.settingManager = self.settingManager;
         worker.texture.textureManager = self.textureManager;
 
         worker.font.settingManager = self.settingManager;
+
+        // delay
+        try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
 
         // files
         try self.loader.enqueue(*?[]u8, *const u8, self.disk, &zero, worker.files.loadFiles);
@@ -95,6 +101,9 @@ pub const GSLoading = struct {
         // textures
         for (&textureNames) |*textureEntry| {
             try self.loader.enqueue(*const []const u8, *const []const u8, &textureEntry[0], &textureEntry[1], worker.texture.loadTexture);
+
+            // delay
+            try self.loader.enqueue(*const u64, *const u8, &tdelay, &zero, worker.delay.loadDelay);
         }
 
         // delay
@@ -104,20 +113,22 @@ pub const GSLoading = struct {
         try self.loader.enqueue(*const []const u8, *audio.Sound, &loginpath, &self.login_snd, worker.sound.loadSound);
         try self.loader.enqueue(*const []const u8, *audio.Sound, &messagepath, self.message_snd, worker.sound.loadSound);
 
+        // delay
+        try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
+
         // mail
         try self.loader.enqueue(*const []const u8, *mail.EmailManager, &mailpath, self.emailManager, worker.mail.loadMail);
 
-        // fonts
-        try self.loader.enqueue(*const []const u8, *font.Font, &fontpath, self.face, worker.font.loadFontPath);
-
         // delay
         try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
+
+        // fonts
+        try self.loader.enqueue(*const []const u8, *font.Font, &fontpath, self.face, worker.font.loadFontPath);
 
         self.load_progress = 0;
 
         self.loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
         self.loader.run(&self.load_progress) catch {
-            self.done.storeUnchecked(true);
             @panic("Boot\x82\x82\x82 failed, Problaby missing file");
         };
 
@@ -156,12 +167,11 @@ pub const GSLoading = struct {
         try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
 
         // progress bar
-        self.load_sprite.data.size.x = (self.load_progress * 320 * 0.9 + self.load_sprite.data.size.x * 0.1);
+        self.load_sprite.data.size.x = (self.load_progress * 320 * 0.5 + self.load_sprite.data.size.x * 0.5);
         try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
 
-        //for (0..@floatToInt(usize, self.load_progress * 32)) |idx| {
-        //    try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x + @intToFloat(f32, 10 * idx), logoOff.y + 100, 0));
-        //}
+        if (self.load_sprite.data.size.x > 310)
+            self.done.storeUnchecked(true);
     }
 
     pub fn keypress(_: *Self, _: c_int, _: c_int, _: bool) !void {}
