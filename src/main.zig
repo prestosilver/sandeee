@@ -361,7 +361,8 @@ pub fn drawLoading(self: *loadingState.GSLoading) void {
         {
             ctx.makeCurrent();
             defer ctx.makeNotCurrent();
-            _ = gfx.poll(&ctx);
+            if (!gfx.poll(&ctx))
+                self.done.storeUnchecked(true);
         }
 
         // render loading screen
@@ -379,15 +380,10 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
     try gfx.resize(event.w, event.h);
 }
 
-var paniced: bool = false;
+var panicLock = std.Thread.Mutex{};
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
-    if (paniced) {
-        std.log.err("second panic", .{});
-        std.os.exit(0);
-    }
-
-    paniced = true;
+    panicLock.lock();
 
     sb.scissor = null;
 
@@ -420,7 +416,6 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
         state.update(1.0 / 60.0) catch break;
         state.draw(gfx.gContext.size) catch break;
-
         blit() catch break;
     }
 
@@ -761,9 +756,6 @@ pub fn mainErr() anyerror!void {
 
             // run setup
             try gameStates.getPtr(currentState).setup();
-
-            // disable events on loading screen
-            //inputEvs.setup(ctx.window, currentState != .Loading);
 
             sb.queueLock.lock();
             try sb.clear();
