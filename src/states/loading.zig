@@ -128,9 +128,7 @@ pub const GSLoading = struct {
         self.load_progress = 0;
 
         self.loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
-        self.loader.run(&self.load_progress) catch {
-            @panic("Boot\x82\x82\x82 failed, Problaby missing file");
-        };
+        try self.loader.run(&self.load_progress);
 
         // setup some pointers
         pseudo.snd.audioPtr = self.audio_man;
@@ -161,7 +159,7 @@ pub const GSLoading = struct {
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        var logoOff = size.sub(self.logo_sprite.data.size).div(2);
+        const logoOff = size.sub(self.logo_sprite.data.size).div(2);
 
         // draw the logo
         try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));

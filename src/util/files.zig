@@ -12,7 +12,7 @@ pub fn getContentPath(file: []const u8) !std.ArrayList(u8) {
         return result;
     }
 
-    var first = try std.process.getCwdAlloc(allocator.alloc);
+    const first = try std.process.getCwdAlloc(allocator.alloc);
     defer allocator.alloc.free(first);
 
     try result.appendSlice(first);

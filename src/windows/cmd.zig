@@ -35,20 +35,18 @@ const CMDData = struct {
         }
 
         if (self.bt.len > MAX_SIZE) {
-            var newbt = try allocator.alloc.dupe(u8, self.bt[self.bt.len - MAX_SIZE ..]);
+            const newbt = try allocator.alloc.dupe(u8, self.bt[self.bt.len - MAX_SIZE ..]);
             allocator.alloc.free(self.bt);
             self.bt = newbt;
         }
 
         var idx: usize = 0;
-        var offset = props.scroll.?.maxy - props.scroll.?.value;
-
-        if (self.bot) offset = 0;
+        const offset = if (self.bot) 0 else props.scroll.?.maxy - props.scroll.?.value;
 
         if (self.shell.vm == null) {
-            var shellPrompt = self.shell.getPrompt();
+            const shellPrompt = self.shell.getPrompt();
             defer allocator.alloc.free(shellPrompt);
-            var prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.inputBuffer[0..self.inputIdx] });
+            const prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.inputBuffer[0..self.inputIdx] });
             defer allocator.alloc.free(prompt);
             try font.draw(.{
                 .batch = batch,
@@ -59,8 +57,9 @@ const CMDData = struct {
             });
             idx += 1;
         } else {
-            var result = try self.shell.updateVM();
-            var start = self.bt.len;
+            const start = self.bt.len;
+
+            const result = try self.shell.updateVM();
             if (result != null) {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.items.len);
                 std.mem.copy(u8, self.bt[start..], result.?.data.items);
@@ -131,11 +130,12 @@ const CMDData = struct {
                 if (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.inputBuffer[0..self.inputIdx]))
                     try self.history.append(try allocator.alloc.dupe(u8, self.inputBuffer[0..self.inputIdx]));
 
-                var shellPrompt = self.shell.getPrompt();
+                const shellPrompt = self.shell.getPrompt();
                 defer allocator.alloc.free(shellPrompt);
-                var prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shellPrompt, self.inputBuffer[0..self.inputIdx] });
+                const prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shellPrompt, self.inputBuffer[0..self.inputIdx] });
                 defer allocator.alloc.free(prompt);
                 var start = self.bt.len;
+
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + prompt.len);
                 std.mem.copy(u8, self.bt[start .. start + prompt.len], prompt);
 
@@ -148,7 +148,7 @@ const CMDData = struct {
                     command.len = size;
                 }
 
-                var al = self.shell.run(command, self.inputBuffer[0..self.inputIdx]) catch |err| {
+                const al = self.shell.run(command, self.inputBuffer[0..self.inputIdx]) catch |err| {
                     const msg = @errorName(err);
 
                     start = self.bt.len;

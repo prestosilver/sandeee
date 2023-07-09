@@ -45,7 +45,7 @@ pub const QueueEntry = struct {
 
         var hash: u8 = 128;
 
-        var casted: []const u8 = std.mem.asBytes(&entry.scissor);
+        const casted: []const u8 = std.mem.asBytes(&entry.scissor);
         for (casted) |ch|
             hash = ((hash << 5) +% hash) +% ch;
 
@@ -68,7 +68,7 @@ pub const SpriteBatch = struct {
     size: *vecs.Vector2,
 
     pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *const T, shader: *shd.Shader, pos: vecs.Vector3) !void {
-        var entry = QueueEntry{
+        const entry = QueueEntry{
             .texture = drawer.texture,
             .verts = try drawer.getVerts(pos),
             .shader = shader.*,
@@ -97,13 +97,13 @@ pub const SpriteBatch = struct {
         c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
         if (sb.buffers.len != sb.queue.len) {
-            var target = sb.queue.len;
+            const target = sb.queue.len;
 
             if (target < sb.buffers.len) {
                 c.glDeleteBuffers(@as(c.GLint, @intCast(sb.buffers.len - target)), &sb.buffers[target]);
                 sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
             } else if (target > sb.buffers.len) {
-                var old = sb.buffers.len;
+                const old = sb.buffers.len;
 
                 sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
 
@@ -145,10 +145,9 @@ pub const SpriteBatch = struct {
 
             if (entry.texture.len == 0) continue;
 
-            var targTex = if (!std.mem.eql(u8, entry.texture, "none"))
+            const targTex = if (!std.mem.eql(u8, entry.texture, "none"))
                 textureManager.get(entry.texture) orelse
                     textureManager.get("error") orelse {
-                    sb.queueLock.unlock();
                     @panic("texture not found");
                 }
             else
@@ -185,8 +184,7 @@ pub const SpriteBatch = struct {
     }
 
     pub fn clear(sb: *SpriteBatch) !void {
-        for (sb.prevQueue, 0..) |_, idx| {
-            var e = sb.prevQueue[idx];
+        for (sb.prevQueue) |*e| {
             e.verts.deinit();
             allocator.alloc.free(e.texture);
         }
@@ -197,13 +195,11 @@ pub const SpriteBatch = struct {
     }
 
     pub fn deinit(sb: SpriteBatch) void {
-        for (sb.prevQueue, 0..) |_, idx| {
-            var e = sb.prevQueue[idx];
+        for (sb.prevQueue) |*e| {
             e.verts.deinit();
             allocator.alloc.free(e.texture);
         }
-        for (sb.queue, 0..) |_, idx| {
-            var e = sb.queue[idx];
+        for (sb.queue) |*e| {
             e.verts.deinit();
             allocator.alloc.free(e.texture);
         }
@@ -214,9 +210,9 @@ pub const SpriteBatch = struct {
     }
 
     pub fn init(size: *vecs.Vector2) !SpriteBatch {
-        var buffer = try allocator.alloc.alloc(c.GLuint, 0);
-        var q = try allocator.alloc.alloc(QueueEntry, 0);
-        var pq = try allocator.alloc.alloc(QueueEntry, 0);
+        const buffer = try allocator.alloc.alloc(c.GLuint, 0);
+        const q = try allocator.alloc.alloc(QueueEntry, 0);
+        const pq = try allocator.alloc.alloc(QueueEntry, 0);
 
         return SpriteBatch{
             .prevQueue = pq,

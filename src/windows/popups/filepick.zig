@@ -55,12 +55,13 @@ pub const PopupFilePick = struct {
         }
 
         if (keycode == c.GLFW_KEY_ENTER) {
-            if (try files.root.getFile(self.path)) |file| {
-                try self.submit(file, self.data);
-                try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
-            } else {
+            const file = files.root.getFile(self.path) catch {
                 self.err = "File Not Found";
-            }
+                return;
+            };
+
+            try self.submit(file, self.data);
+            try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
         }
     }
 

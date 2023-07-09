@@ -30,7 +30,7 @@ pub const Vert = struct {
     }
 
     pub inline fn getHash(v: Vert) u8 {
-        var casted = std.mem.asBytes(&[_]f32{ v.x, v.y, v.u, v.v, v.r, v.g, v.b });
+        const casted = std.mem.asBytes(&[_]f32{ v.x, v.y, v.u, v.v, v.r, v.g, v.b });
         var hash: u8 = 128;
         for (casted) |ch|
             hash = ((hash << 5) +% hash) +% ch;
@@ -43,10 +43,9 @@ pub const VertArray = struct {
     array: std.ArrayList(Vert),
 
     pub inline fn init() !VertArray {
-        var result = VertArray{
+        return VertArray{
             .array = std.ArrayList(Vert).init(allocator.alloc),
         };
-        return result;
     }
 
     pub inline fn deinit(va: *VertArray) void {

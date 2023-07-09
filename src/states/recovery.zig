@@ -36,9 +36,9 @@ pub const GSRecovery = struct {
     const TEXT_COLOR = cols.newColor(1, 1, 1, 1);
 
     pub fn getDate(name: []const u8) i128 {
-        var path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;
+        const path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;
         defer allocator.alloc.free(path);
-        var file = std.fs.cwd().openFile(path, .{}) catch return 0;
+        const file = std.fs.cwd().openFile(path, .{}) catch return 0;
         defer file.close();
         return (file.metadata() catch return 0).modified();
     }
@@ -61,19 +61,19 @@ pub const GSRecovery = struct {
         var iter = dir.iterate();
 
         while (try iter.next()) |item| {
-            var entry = try allocator.alloc.alloc(u8, item.name.len);
+            const entry = try allocator.alloc.alloc(u8, item.name.len);
 
             std.mem.copy(u8, entry, item.name);
 
             try self.disks.append(entry);
         }
 
-        var und: u8 = undefined;
+        const und: u8 = undefined;
 
         std.sort.insertion([]const u8, self.disks.items, und, sortDisksLt);
 
         for (self.disks.items, 0..) |_, idx| {
-            var copy = self.disks.items[idx];
+            const copy = self.disks.items[idx];
             defer allocator.alloc.free(copy);
 
             self.disks.items[idx] = try std.fmt.allocPrint(allocator.alloc, "{c} {s}", .{ DISK_LIST[idx], copy });
@@ -100,7 +100,7 @@ pub const GSRecovery = struct {
         _ = size;
         var y: f32 = 100;
 
-        var titleLine = try std.fmt.allocPrint(allocator.alloc, "Recover\x82\x82\x82 v_{s}", .{VERSION});
+        const titleLine = try std.fmt.allocPrint(allocator.alloc, "Recover\x82\x82\x82 v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
             .batch = self.sb,
@@ -122,7 +122,7 @@ pub const GSRecovery = struct {
 
         if (self.sub_sel) |sub_sel| {
             for (UPDATE_MODES, 0..) |mode, idx| {
-                var line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{mode});
+                const line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{mode});
                 defer allocator.alloc.free(line);
 
                 if (idx == sub_sel) {
@@ -144,7 +144,7 @@ pub const GSRecovery = struct {
 
         if (self.disks.items.len != 0) {
             for (self.disks.items, 0..) |disk, idx| {
-                var line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{disk});
+                const line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{disk});
                 defer allocator.alloc.free(line);
 
                 if (idx == self.sel) {
@@ -196,7 +196,7 @@ pub const GSRecovery = struct {
                             try self.audioMan.playSound(self.selectSound.*);
                         },
                         2 => {
-                            var path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
+                            const path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
                             defer allocator.alloc.free(path);
 
                             self.status = "Deleted";

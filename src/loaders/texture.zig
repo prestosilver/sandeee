@@ -11,7 +11,7 @@ pub var settingManager: *conf.SettingManager = undefined;
 pub var textureManager: *texMan.TextureManager = undefined;
 
 pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []const u8)) !bool {
-    var path = conf.SettingManager.get(settingManager, self.indata.*) orelse
+    const path = conf.SettingManager.get(settingManager, self.indata.*) orelse
         self.indata.*;
 
     var texture = try tex.newTextureSize(.{ .x = 0, .y = 0 });

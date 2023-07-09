@@ -53,7 +53,7 @@ pub const DeskData = struct {
     pub fn checkIconSkip(name: []const u8) bool {
         if (settingsManager.getBool("explorer_hidden")) return true;
 
-        var idx = std.mem.lastIndexOf(u8, name, "/") orelse 0;
+        const idx = std.mem.lastIndexOf(u8, name, "/") orelse 0;
 
         return name[idx + 1] != '_';
     }
@@ -72,7 +72,7 @@ pub const DeskData = struct {
 
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
-                    var window = win.Window.new("win", win.WindowData{
+                    const window = win.Window.new("win", win.WindowData{
                         .source = rect.Rectangle{
                             .x = 0.0,
                             .y = 0.0,
@@ -83,7 +83,7 @@ pub const DeskData = struct {
                         .active = true,
                     });
 
-                    var explorerSelf: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
+                    const explorerSelf: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
 
                     explorerSelf.shell.root = folder;
 
@@ -108,7 +108,7 @@ pub const DeskData = struct {
                 if (self.sel != null and self.sel == idx) {
                     const index = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
 
-                    var cmd = file.name[index + 1 ..];
+                    const cmd = file.name[index + 1 ..];
 
                     _ = self.shell.run(cmd, cmd) catch {
                         //TODO: popup
@@ -167,13 +167,13 @@ pub const DeskData = struct {
     }
 
     pub fn addIconText(batch: *sb.SpriteBatch, position: vecs.Vector2, name: []const u8, font_shader: *shd.Shader, font: *fnt.Font, textColor: cols.Color) !void {
-        var idx = std.mem.lastIndexOf(u8, name[0..], "/") orelse 0;
+        const idx = std.mem.lastIndexOf(u8, name[0..], "/") orelse 0;
 
-        var size = font.sizeText(.{
+        const size = font.sizeText(.{
             .text = name[idx + 1 ..],
         });
 
-        var offsetx = (SPACING.x - size.x) / 2;
+        const offsetx = (SPACING.x - size.x) / 2;
 
         try font.draw(.{
             .batch = batch,
@@ -188,8 +188,9 @@ pub const DeskData = struct {
     }
 
     pub fn addText(_: *DeskData, batch: *sb.SpriteBatch, font_shader: *shd.Shader, font: *fnt.Font) !void {
+        const textColor = gfx.gContext.color.contrast();
+
         var position = vecs.newVec2(0, 0);
-        var textColor = gfx.gContext.color.contrast();
 
         for (files.home.subfolders.items) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
@@ -210,7 +211,7 @@ pub const DeskData = struct {
 
     pub fn updateVm(self: *DeskData) !void {
         if (self.shell.vm != null) {
-            var result = self.shell.updateVM() catch null;
+            const result = self.shell.updateVM() catch null;
             if (result != null) {
                 result.?.data.deinit();
             }

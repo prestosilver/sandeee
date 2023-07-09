@@ -356,8 +356,11 @@ pub fn setupEvents() !void {
     try events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
 }
 
+var panicLock = std.Thread.Mutex{};
+var paniced = false;
+
 pub fn drawLoading(self: *loadingState.GSLoading) void {
-    while (!self.done.load(.SeqCst)) {
+    while (!self.done.load(.SeqCst) and !paniced) {
         {
             ctx.makeCurrent();
             defer ctx.makeNotCurrent();
@@ -380,9 +383,9 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
     try gfx.resize(event.w, event.h);
 }
 
-var panicLock = std.Thread.Mutex{};
-
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    paniced = true;
+
     panicLock.lock();
 
     sb.scissor = null;
@@ -411,9 +414,10 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     // run setup
     gameStates.getPtr(.Crash).setup() catch {};
 
-    while (gfx.poll(&ctx)) {
-        var state = gameStates.getPtr(.Crash);
+    // get crash state
+    const state = gameStates.getPtr(.Crash);
 
+    while (gfx.poll(&ctx)) {
         state.update(1.0 / 60.0) catch break;
         state.draw(gfx.gContext.size) catch break;
         blit() catch break;
@@ -432,7 +436,7 @@ pub fn main() void {
     };
 
     mainErr() catch |err| {
-        @panic(@errorName(err));
+        panic(@errorName(err), @errorReturnTrace(), null);
     };
 }
 
@@ -463,7 +467,7 @@ pub fn mainErr() anyerror!void {
 
     while (args.next()) |arg| {
         if (std.mem.eql(u8, arg, "--cwd")) {
-            var path = args.next().?;
+            const path = args.next().?;
             std.log.debug("chdir: {s}", .{path});
 
             try std.process.changeCurDir(path);
@@ -472,11 +476,11 @@ pub fn mainErr() anyerror!void {
         } else if (std.mem.eql(u8, arg, "--headless")) {
             isHeadless = true;
         } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
-            var script = args.next().?;
-            var buff = try allocator.alloc.alloc(u8, 1024);
-            var file = try std.fs.cwd().openFile(script, .{});
+            const script = args.next().?;
+            const buff = try allocator.alloc.alloc(u8, 1024);
+            const file = try std.fs.cwd().openFile(script, .{});
 
-            var len = try file.readAll(buff);
+            const len = try file.readAll(buff);
             headlessCmd = buff[0..len];
             file.close();
 

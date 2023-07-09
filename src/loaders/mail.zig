@@ -11,7 +11,7 @@ pub fn loadMail(self: *worker.WorkerQueueEntry(*const []const u8, *mail.EmailMan
 
     try self.out.loadFromFolder(self.indata.*);
 
-    try self.out.loadStateFile("/conf/emails.bin");
+    self.out.loadStateFile("/conf/emails.bin") catch {};
 
     return true;
 }

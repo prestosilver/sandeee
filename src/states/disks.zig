@@ -36,9 +36,9 @@ pub const GSDisks = struct {
     disks: std.ArrayList([]const u8) = undefined,
 
     pub fn getDate(name: []const u8) i128 {
-        var path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;
+        const path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;
         defer allocator.alloc.free(path);
-        var file = std.fs.cwd().openFile(path, .{}) catch return 0;
+        const file = std.fs.cwd().openFile(path, .{}) catch return 0;
         defer file.close();
         return (file.metadata() catch return 0).modified();
     }
@@ -62,17 +62,17 @@ pub const GSDisks = struct {
         var iter = dir.iterate();
 
         while (try iter.next()) |item| {
-            var entry = try allocator.alloc.dupe(u8, item.name);
+            const entry = try allocator.alloc.dupe(u8, item.name);
 
             try self.disks.append(entry);
         }
 
-        var und: u8 = undefined;
+        const und: u8 = undefined;
 
         std.sort.insertion([]const u8, self.disks.items, und, sortDisksLt);
 
         for (self.disks.items, 0..) |_, idx| {
-            var copy = self.disks.items[idx];
+            const copy = self.disks.items[idx];
             defer allocator.alloc.free(copy);
 
             self.disks.items[idx] = try std.fmt.allocPrint(allocator.alloc, "{c} {s}", .{ DISK_LIST[idx], copy });
@@ -105,7 +105,7 @@ pub const GSDisks = struct {
 
             if (self.disks.items.len > 2) {
                 if (self.sel < self.disks.items.len - 2) {
-                    var sel = self.disks.items[self.sel];
+                    const sel = self.disks.items[self.sel];
 
                     self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
                     std.mem.copy(u8, self.disk.*.?, sel[2..]);

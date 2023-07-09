@@ -26,7 +26,7 @@ pub fn log() []const u8 {
 
         const index = std.mem.indexOf(u8, li.file_name, "sandeee/") orelse 0;
         // Good backtrace, print with the source location of the log
-        var adds = std.fmt.allocPrint(allocator.alloc, "{s}:{d}\n", .{ li.file_name[index..], li.line }) catch return result;
+        const adds = std.fmt.allocPrint(allocator.alloc, "{s}:{d}\n", .{ li.file_name[index..], li.line }) catch return result;
         defer allocator.alloc.free(adds);
         var start = result.len;
         result = allocator.alloc.realloc(result, result.len + adds.len) catch return result;

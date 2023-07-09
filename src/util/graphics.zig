@@ -49,16 +49,16 @@ pub fn init(name: [*c]const u8) !Context {
         return error.GLFWInitFailed;
     }
 
-    var monitor = c.glfwGetPrimaryMonitor();
+    const monitor = c.glfwGetPrimaryMonitor();
 
-    var mode = c.glfwGetVideoMode(monitor)[0];
+    const mode = c.glfwGetVideoMode(monitor)[0];
 
     c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
     c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
     c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
     c.glfwWindowHint(c.GLFW_REFRESH_RATE, 60);
 
-    var win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
+    const win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
 
     c.glfwMakeContextCurrent(win);
 
@@ -68,7 +68,7 @@ pub fn init(name: [*c]const u8) !Context {
         return error.GLADInitFailed;
     }
 
-    var shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
+    const shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
 
     var w: c_int = 0;
     var h: c_int = 0;
@@ -104,8 +104,7 @@ pub fn swap(ctx: *Context) void {
 pub fn regShader(ctx: *Context, s: shd.Shader) !void {
     try ctx.shaders.append(s);
 
-    var proj = try mat4.Mat4.ortho(0, ctx.size.x, ctx.size.y, 0, 100, -1);
-    defer proj.deinit();
+    const proj = try mat4.Mat4.ortho(0, ctx.size.x, ctx.size.y, 0, 100, -1);
 
     s.setMat4("projection", proj);
     s.setFloat("screen_width", ctx.size.x);
@@ -117,8 +116,7 @@ pub fn resize(w: i32, h: i32) !void {
 
     c.glViewport(0, 0, w, h);
 
-    var proj = try mat4.Mat4.ortho(0, @as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)), 0, 100, -1);
-    defer proj.deinit();
+    const proj = try mat4.Mat4.ortho(0, @as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)), 0, 100, -1);
 
     for (gContext.shaders.items) |shader| {
         shader.setMat4("projection", proj);

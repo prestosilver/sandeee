@@ -62,19 +62,19 @@ pub const GSInstall = struct {
         self.load_sprite.data.color.b = 0;
     }
 
-    pub fn deinit(self: *Self) !void {
-        self.diskName.deinit();
+    pub fn deinit(_: *Self) !void {
+        //self.diskName.deinit();
     }
 
     pub fn updateSettingsVals(self: *Self) ![]const u8 {
-        var ts = std.time.timestamp();
-        var aHours = @as(u64, @intCast(ts)) / std.time.s_per_hour % 24;
-        var aMins = @as(u64, @intCast(ts)) / std.time.s_per_min % 60;
+        const ts = std.time.timestamp();
+        const aHours = @as(u64, @intCast(ts)) / std.time.s_per_hour % 24;
+        const aMins = @as(u64, @intCast(ts)) / std.time.s_per_min % 60;
         const inputHours = std.fmt.parseInt(i8, self.settingValues[0][0..self.settingLens[0]], 0) catch 0;
         const inputMins = std.fmt.parseInt(i8, self.settingValues[1][0..self.settingLens[1]], 0) catch 0;
 
-        var hoursOffset = @as(i8, @intCast(aHours)) - inputHours;
-        var minsOffset = @as(i8, @intCast(aMins)) - inputMins;
+        const hoursOffset = @as(i8, @intCast(aHours)) - inputHours;
+        const minsOffset = @as(i8, @intCast(aMins)) - inputMins;
 
         return std.fmt.allocPrint(allocator.alloc, "hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hoursOffset, minsOffset });
     }
@@ -83,7 +83,7 @@ pub const GSInstall = struct {
         var y: f32 = 100 - self.offset;
         defer self.offset = @max(@as(f32, 0), (y + self.offset) - (size.y - 100));
 
-        var titleLine = try std.fmt.allocPrint(allocator.alloc, "Sand\x82\x82\x82 Installer v_{s}", .{VERSION});
+        const titleLine = try std.fmt.allocPrint(allocator.alloc, "Sand\x82\x82\x82 Installer v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
             .batch = self.sb,
@@ -116,7 +116,7 @@ pub const GSInstall = struct {
         y += self.face.size * 2;
         for (0..self.settingId + 1) |idx| {
             if (idx > Settings.len) return;
-            var text = try std.fmt.allocPrint(allocator.alloc, "{s}? [{s}] {s}", .{
+            const text = try std.fmt.allocPrint(allocator.alloc, "{s}? [{s}] {s}", .{
                 Settings[idx][0],
                 Settings[idx][2],
                 self.settingValues[idx][0..self.settingLens[idx]],
@@ -161,7 +161,7 @@ pub const GSInstall = struct {
         });
         y += self.face.size * 1;
 
-        var rebootLine = try std.fmt.allocPrint(allocator.alloc, "Rebooting in {}", .{@as(u32, @intFromFloat(0.5 + self.timer))});
+        const rebootLine = try std.fmt.allocPrint(allocator.alloc, "Rebooting in {}", .{@as(u32, @intFromFloat(0.5 + self.timer))});
         defer allocator.alloc.free(rebootLine);
 
         try self.face.draw(.{
@@ -180,7 +180,7 @@ pub const GSInstall = struct {
                 self.timer = 3;
                 self.status = .Done;
 
-                var vals = try self.updateSettingsVals();
+                const vals = try self.updateSettingsVals();
                 defer allocator.alloc.free(vals);
 
                 try files.Folder.setupDisk(self.diskName.items, vals);

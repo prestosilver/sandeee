@@ -50,11 +50,11 @@ pub const GSCrash = struct {
             .color = cols.newColor(1, 1, 1, 1),
         });
 
-        var offset = self.face.sizeText(.{
+        const offset = self.face.sizeText(.{
             .text = self.message.*,
         }).y;
 
-        var stateLine = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prevState.*});
+        const stateLine = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prevState.*});
         defer allocator.alloc.free(stateLine);
 
         try self.face.draw(.{

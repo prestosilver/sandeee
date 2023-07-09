@@ -63,10 +63,10 @@ pub const Vector2 = struct {
     }
 
     pub inline fn setAngle(a: Vector2, angle: f32) f32 {
-        var magnitude = a.mag;
+        const magnitude = a.mag;
 
-        var x = @cos(angle);
-        var y = @sin(angle);
+        const x = @cos(angle);
+        const y = @sin(angle);
 
         return Vector2{
             .x = x * magnitude,

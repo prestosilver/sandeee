@@ -8,7 +8,7 @@ const pwindows = @import("window.zig");
 // /fake/inp/char
 
 pub fn readInputChar(vmInstance: ?*vm.VM) ![]const u8 {
-    var result = try allocator.alloc.alloc(u8, 1);
+    const result = try allocator.alloc.alloc(u8, 1);
 
     result[0] = 0;
 
@@ -27,9 +27,9 @@ pub fn readInputWin(vmInstance: ?*vm.VM) ![]const u8 {
     var result = try allocator.alloc.alloc(u8, 0);
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
-            var item = &pwindows.windowsPtr.*.items[idx];
+            const item = &pwindows.windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                var self: *vmWin.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
+                const self: *vmWin.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                 if (self.idx == aid[0]) {
                     result = try allocator.alloc.realloc(result, self.input.len * 2);
@@ -53,14 +53,14 @@ pub fn writeInputWin(_: []const u8, _: ?*vm.VM) !void {
 // /fake/inp/mouse
 
 pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
-    var result = try allocator.alloc.alloc(u8, 5);
+    const result = try allocator.alloc.alloc(u8, 5);
     @memset(result, 0);
 
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
-            var item = &pwindows.windowsPtr.*.items[idx];
+            const item = &pwindows.windowsPtr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                var self: *vmWin.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
+                const self: *vmWin.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                 if (self.idx == aid[0]) {
                     result[0] = 255;
@@ -87,7 +87,7 @@ pub fn writeInputMouse(_: []const u8, _: ?*vm.VM) !void {
 }
 
 pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
-    var result = try allocator.alloc.create(files.Folder);
+    const result = try allocator.alloc.create(files.Folder);
     result.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/inp/", .{}),
         .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),

@@ -54,10 +54,10 @@ pub const WelcomeData = struct {
         });
 
         if (options.IsDemo) {
-            var remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
+            const remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
             if (remaining < 0) @panic("Demo Over");
 
-            var demoText = try std.fmt.allocPrint(allocator.alloc, "{} seconds remianing.", .{@as(usize, @intFromFloat(remaining / 1e+9))});
+            const demoText = try std.fmt.allocPrint(allocator.alloc, "{} seconds remianing.", .{@as(usize, @intFromFloat(remaining / 1e+9))});
             defer allocator.alloc.free(demoText);
 
             try font.draw(.{
@@ -70,7 +70,7 @@ pub const WelcomeData = struct {
             });
         }
 
-        var versionText = try std.fmt.allocPrint(allocator.alloc, "(" ++ options.VersionText ++ ")", .{options.SandEEEVersion});
+        const versionText = try std.fmt.allocPrint(allocator.alloc, "(" ++ options.VersionText ++ ")", .{options.SandEEEVersion});
         defer allocator.alloc.free(versionText);
 
         try font.draw(.{
@@ -110,7 +110,7 @@ pub const WelcomeData = struct {
 };
 
 pub fn new() !win.WindowContents {
-    var self = try allocator.alloc.create(WelcomeData);
+    const self = try allocator.alloc.create(WelcomeData);
 
     // TODO: disable button
 

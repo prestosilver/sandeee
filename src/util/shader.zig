@@ -11,13 +11,13 @@ pub const Shader = struct {
     id: c.GLuint = 0,
 
     pub fn new(comptime total: u32, files: [total]ShaderFile) !Shader {
-        var prog = c.glCreateProgram();
+        const prog = c.glCreateProgram();
         var success: c.GLint = 0;
 
         for (files) |file| {
-            var code = [1][*c]const u8{file.contents};
+            const code = [1][*c]const u8{file.contents};
 
-            var shader = c.glCreateShader(file.kind);
+            const shader = c.glCreateShader(file.kind);
             defer c.glDeleteShader(shader);
             c.glShaderSource(shader, 1, &code, null);
             c.glCompileShader(shader);
@@ -55,15 +55,15 @@ pub const Shader = struct {
     pub fn setMat4(self: Shader, name: [*c]const u8, value: mat4.Mat4) void {
         c.glUseProgram(self.id);
 
-        var loc = c.glGetUniformLocation(self.id, name);
+        const loc = c.glGetUniformLocation(self.id, name);
 
-        c.glUniformMatrix4fv(loc, 1, 0, &value.data.items[0]);
+        c.glUniformMatrix4fv(loc, 1, 0, &value.data);
     }
 
     pub fn setInt(self: Shader, name: [*c]const u8, value: c_int) void {
         c.glUseProgram(self.id);
 
-        var loc = c.glGetUniformLocation(self.id, name);
+        const loc = c.glGetUniformLocation(self.id, name);
 
         c.glUniform1i(loc, value);
     }
@@ -71,7 +71,7 @@ pub const Shader = struct {
     pub fn setFloat(self: Shader, name: [*c]const u8, value: f32) void {
         c.glUseProgram(self.id);
 
-        var loc = c.glGetUniformLocation(self.id, name);
+        const loc = c.glGetUniformLocation(self.id, name);
 
         c.glUniform1f(loc, value);
     }

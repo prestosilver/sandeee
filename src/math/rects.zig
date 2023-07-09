@@ -57,7 +57,7 @@ pub const UIRectangle = struct {
     };
 
     pub fn toRect(self: UIRectangle) Rectangle {
-        var parent = switch (self.parent) {
+        const parent = switch (self.parent) {
             .Rect => self.parent.Rect,
             .UIRect => self.parent.UIRect.toRect(),
         };

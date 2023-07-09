@@ -7,7 +7,7 @@ const allocator = @import("../util/allocator.zig");
 const DISK = "headless.eee";
 
 pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.File) anyerror!void {
-    var diskpath = try fm.getContentPath("disks/headless.eee");
+    const diskpath = try fm.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
 
     std.fs.cwd().access(diskpath.items, .{}) catch {
@@ -20,9 +20,11 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
     var mainShell = shell.Shell{ .root = files.home };
 
-    var stdin = std.io.getStdIn().reader();
-    var stdout = logging orelse std.io.getStdOut();
+    const stdin = std.io.getStdIn().reader();
+    const stdout = logging orelse std.io.getStdOut();
     var buffer: [512]u8 = undefined;
+
+    shell.threads = std.ArrayList(std.Thread).init(allocator.alloc);
 
     _ = try stdout.write("Welcome To ShEEEl\n");
 
@@ -32,7 +34,12 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
         if (mainShell.vm != null) {
             shell.frameEnd = std.math.maxInt(u64);
 
-            var result = try mainShell.updateVM();
+            const result = try mainShell.updateVM();
+            for (shell.threads.items) |thread| {
+                thread.join();
+            }
+            shell.threads.clearAndFree();
+
             if (result != null) {
                 _ = try stdout.write(result.?.data.items);
                 if (result.?.data.items.len == 0 or result.?.data.getLast() != '\n')
@@ -46,7 +53,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
             continue;
         }
 
-        var prompt = mainShell.getPrompt();
+        const prompt = mainShell.getPrompt();
 
         _ = try stdout.write(prompt);
 

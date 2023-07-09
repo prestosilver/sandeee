@@ -7,7 +7,7 @@ const c = @import("../c.zig");
 
 pub fn loadSound(self: *worker.WorkerQueueEntry(*const []const u8, *audio.Sound)) !bool {
     std.log.debug("load sound: {s}", .{self.indata.*});
-    self.out.* = audio.Sound.init(try (try files.root.getFile(self.indata.*)).?.read(null));
+    self.out.* = audio.Sound.init(try (try files.root.getFile(self.indata.*)).read(null));
 
     return true;
 }

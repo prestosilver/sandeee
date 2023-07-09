@@ -39,14 +39,14 @@ pub const EventManager = struct {
                 }
             }
 
-            var listener = Listener(*void){
+            const listener = Listener(*void){
                 .calls = call,
             };
 
             list.* = try allocator.alloc.realloc(list.*, list.len + 1);
             list.*[list.len - 1] = listener;
         } else {
-            var list = try allocator.alloc.alloc(Listener(*void), 1);
+            const list = try allocator.alloc.alloc(Listener(*void), 1);
             list[0] = Listener(*void){
                 .calls = call,
             };

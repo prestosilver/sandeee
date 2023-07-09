@@ -20,7 +20,7 @@ pub const Sound = struct {
         return result;
     }
 
-    pub fn deinit(self: *Sound) void {
+    pub fn deinit(self: *const Sound) void {
         c.alDeleteBuffers(1, &self.buffer);
     }
 };
@@ -36,7 +36,7 @@ pub const Audio = struct {
     muted: bool = false,
 
     pub fn init() !Audio {
-        var devicename = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
+        const devicename = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
 
         var result = Audio{
             .sources = undefined,

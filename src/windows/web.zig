@@ -90,7 +90,7 @@ pub const WebData = struct {
         if (self.path) |path| {
             switch (path[0]) {
                 '@' => {
-                    var idx = std.mem.indexOf(u8, path, ":") orelse {
+                    const idx = std.mem.indexOf(u8, path, ":") orelse {
                         self.conts = "Bad Remote";
 
                         return;
@@ -136,7 +136,7 @@ pub const WebData = struct {
                         return;
                     }
 
-                    var fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
+                    const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
                     defer allocator.alloc.free(fconts);
 
                     if (!std.mem.endsWith(u8, self.path.?, "edf")) {
@@ -149,10 +149,10 @@ pub const WebData = struct {
                     self.conts = try allocator.alloc.dupe(u8, fconts);
                 },
                 '/' => {
-                    self.conts = try ((try files.root.getFile(path)) orelse return).read(null);
+                    self.conts = try (try files.root.getFile(path)).read(null);
                 },
                 '$' => {
-                    var query = steam.createQueryAllUGCRequest(0, 0, 0, steam.STEAM_APP_ID, 1);
+                    const query = steam.createQueryAllUGCRequest(0, 0, 0, steam.STEAM_APP_ID, 1);
                     _ = query;
                     self.conts = try allocator.alloc.dupe(u8, "lolol");
                 },
@@ -180,12 +180,12 @@ pub const WebData = struct {
 
         if (std.mem.indexOf(u8, path, ":") == null) {
             allocator.alloc.free(target_path);
-            var idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
+            const idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
 
             target_path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ self.path.?[1..idx], path[1..] });
         }
 
-        var idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
+        const idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
 
         var client = std.http.Client{ .allocator = allocator.alloc };
         defer client.deinit();
@@ -218,10 +218,10 @@ pub const WebData = struct {
             return;
         }
 
-        var fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
+        const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
         defer allocator.alloc.free(fconts);
 
-        var texture = sb.textureManager.get(target).?;
+        const texture = sb.textureManager.get(target).?;
 
         try tex.uploadTextureMem(texture, fconts);
 
@@ -235,12 +235,12 @@ pub const WebData = struct {
 
         if (std.mem.indexOf(u8, url, ":") == null) {
             allocator.alloc.free(target_path);
-            var idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
+            const idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
 
             target_path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ self.path.?[1..idx], url[1..] });
         }
 
-        var idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
+        const idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
 
         var client = std.http.Client{ .allocator = allocator.alloc };
         defer client.deinit();
@@ -268,7 +268,7 @@ pub const WebData = struct {
         req.start() catch return;
         req.wait() catch return;
 
-        var fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
+        const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
         defer allocator.alloc.free(fconts);
 
         var iter = std.mem.split(u8, fconts, "\n");
@@ -300,7 +300,7 @@ pub const WebData = struct {
                 currentStyle.scale = std.fmt.parseFloat(f32, fullLine["scale: ".len..]) catch 1.0;
             }
             if (std.mem.startsWith(u8, fullLine, "color: ")) {
-                var val = std.fmt.parseInt(u32, fullLine["color: ".len..], 16) catch 0xFF0000;
+                const val = std.fmt.parseInt(u32, fullLine["color: ".len..], 16) catch 0xFF0000;
                 currentStyle.color = col.newColorRGBA(
                     @intCast((val >> 16) & 0xFF),
                     @intCast((val >> 8) & 0xFF),
@@ -331,10 +331,10 @@ pub const WebData = struct {
 
     pub fn saveDialog(self: *Self, outputData: []const u8, name: []const u8) !void {
         _ = self;
-        var output = try allocator.alloc.create([]const u8);
+        const output = try allocator.alloc.create([]const u8);
         output.* = outputData;
 
-        var adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+        const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
         adds.* = .{
             .text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ files.home.name, name }),
             .data = @as(*anyopaque, @ptrCast(output)),
@@ -357,15 +357,15 @@ pub const WebData = struct {
     }
 
     pub fn submit(file: []const u8, data: *anyopaque) !void {
-        var conts: *[]const u8 = @ptrCast(@alignCast(data));
+        const conts: *[]const u8 = @ptrCast(@alignCast(data));
 
         _ = try files.root.newFile(file);
-        if (try files.root.getFile(file)) |target| {
-            try target.write(conts.*, null);
+        const target = try files.root.getFile(file);
 
-            allocator.alloc.free(conts.*);
-            allocator.alloc.destroy(conts);
-        }
+        try target.write(conts.*, null);
+
+        allocator.alloc.free(conts.*);
+        allocator.alloc.destroy(conts);
     }
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
@@ -381,6 +381,8 @@ pub const WebData = struct {
         }
 
         if (!self.loading) drawConts: {
+            const webWidth = bnds.w - 14;
+
             var pos = vecs.newVec2(0, -props.scroll.?.value + 50);
 
             if (self.conts == null) {
@@ -388,7 +390,7 @@ pub const WebData = struct {
                 break :drawConts;
             }
 
-            var cont = self.conts orelse "Error Loading Page";
+            const cont = self.conts orelse "Error Loading Page";
 
             var iter = std.mem.split(u8, cont, "\n");
 
@@ -408,7 +410,7 @@ pub const WebData = struct {
                 var styleIter = self.styles.iterator();
 
                 while (styleIter.next()) |styleData| {
-                    var name = try std.fmt.allocPrint(allocator.alloc, ":{s}:", .{styleData.key_ptr.*});
+                    const name = try std.fmt.allocPrint(allocator.alloc, ":{s}:", .{styleData.key_ptr.*});
                     defer allocator.alloc.free(name);
                     if (std.mem.startsWith(u8, fullLine, name)) {
                         style = styleData.value_ptr.*;
@@ -444,7 +446,7 @@ pub const WebData = struct {
 
                     switch (style.ali) {
                         .Center => {
-                            var x = (bnds.w - size.x) / 2;
+                            const x = (webWidth - size.x) / 2;
 
                             try batch.draw(sprite.Sprite, &.{
                                 .texture = &texid,
@@ -468,7 +470,7 @@ pub const WebData = struct {
                             pos.y += size.y;
                         },
                         .Right => {
-                            var x = bnds.w - size.x;
+                            const x = webWidth - size.x;
 
                             try batch.draw(sprite.Sprite, &.{
                                 .texture = &texid,
@@ -490,36 +492,36 @@ pub const WebData = struct {
 
                 if (std.mem.startsWith(u8, line, "> ")) {
                     style.color = col.newColor(0, 0, 1, 1);
-                    var linkcont = line[2..];
-                    var linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
+                    const linkcont = line[2..];
+                    const linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
                     line = linkcont[0..linkidx];
                     line = std.mem.trim(u8, line, &std.ascii.whitespace);
                     var url = linkcont[linkidx + 1 ..];
                     url = std.mem.trim(u8, url, &std.ascii.whitespace);
-                    var size = font.sizeText(.{ .text = line, .scale = style.scale });
+                    const size = font.sizeText(.{ .text = line, .scale = style.scale });
 
                     if (self.add_links) {
                         switch (style.ali) {
                             .Left => {
-                                var link = WebData.WebLink{
+                                const link = WebData.WebLink{
                                     .url = url,
                                     .pos = rect.newRect(6 + pos.x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
                                 };
                                 try self.links.append(link);
                             },
                             .Center => {
-                                var x = (bnds.w - size.x) / 2 - 7;
+                                const x = (webWidth - size.x) / 2 - 7;
 
-                                var link = WebData.WebLink{
+                                const link = WebData.WebLink{
                                     .url = url,
                                     .pos = rect.newRect(x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
                                 };
                                 try self.links.append(link);
                             },
                             .Right => {
-                                var x = (bnds.w - size.x) - 7;
+                                const x = (webWidth - size.x) - 7;
 
-                                var link = WebData.WebLink{
+                                const link = WebData.WebLink{
                                     .url = url,
                                     .pos = rect.newRect(x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
                                 };
@@ -531,14 +533,14 @@ pub const WebData = struct {
 
                 if (pos.y > bnds.h + bnds.y and !self.add_links) continue;
 
-                var aline = try std.fmt.allocPrint(allocator.alloc, "{s}{s}{s}", .{
+                const aline = try std.fmt.allocPrint(allocator.alloc, "{s}{s}{s}", .{
                     style.prefix orelse "",
                     line,
                     style.suffix orelse "",
                 });
                 defer allocator.alloc.free(aline);
 
-                var size = font.sizeText(.{ .text = aline, .scale = style.scale, .wrap = bnds.w });
+                const size = font.sizeText(.{ .text = aline, .scale = style.scale, .wrap = webWidth });
 
                 switch (style.ali) {
                     .Left => {
@@ -549,11 +551,11 @@ pub const WebData = struct {
                             .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
                             .color = style.color,
                             .scale = style.scale,
-                            .wrap = bnds.w,
+                            .wrap = webWidth,
                         });
                     },
                     .Center => {
-                        var x = (bnds.w - size.x) / 2;
+                        const x = (webWidth - size.x) / 2;
 
                         try font.draw(.{
                             .batch = batch,
@@ -562,11 +564,11 @@ pub const WebData = struct {
                             .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
                             .color = style.color,
                             .scale = style.scale,
-                            .wrap = bnds.w,
+                            .wrap = webWidth,
                         });
                     },
                     .Right => {
-                        var x = (bnds.w - size.x);
+                        const x = (webWidth - size.x);
 
                         try font.draw(.{
                             .batch = batch,
@@ -575,7 +577,7 @@ pub const WebData = struct {
                             .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
                             .color = style.color,
                             .scale = style.scale,
-                            .wrap = bnds.w,
+                            .wrap = webWidth,
                         });
                     },
                 }
@@ -588,7 +590,7 @@ pub const WebData = struct {
 
             // draw highlight for url
             if (self.highlight_idx != 0 and self.links.items.len >= self.highlight_idx) {
-                var hlpos = self.links.items[self.highlight_idx - 1].pos;
+                const hlpos = self.links.items[self.highlight_idx - 1].pos;
 
                 self.highlight.data.size.x = hlpos.w;
                 self.highlight.data.size.y = hlpos.h;
@@ -612,7 +614,7 @@ pub const WebData = struct {
         try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 66, bnds.y + 2, 0));
         try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 8, bnds.y + 2, 0));
 
-        var tmp = batch.scissor;
+        const tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 34, 28);
         if (self.path) |file| {
             try font.draw(.{
@@ -753,7 +755,7 @@ pub const WebData = struct {
 };
 
 pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
-    var self = try allocator.alloc.create(WebData);
+    const self = try allocator.alloc.create(WebData);
 
     self.* = .{
         .highlight = sprite.Sprite.new(texture, sprite.SpriteData.new(

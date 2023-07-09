@@ -11,7 +11,7 @@ pub const Telem = struct {
     instructionCalls: u128 = 0,
 
     pub fn save() !void {
-        var conts = std.mem.asBytes(&instance);
+        const conts = std.mem.asBytes(&instance);
 
         _ = try files.root.newFile(PATH);
         try files.root.writeFile(PATH, conts, null);
@@ -19,7 +19,7 @@ pub const Telem = struct {
 
     pub fn load() !void {
         if (files.root.getFile(PATH) catch null) |file| {
-            var conts = try file.read(null);
+            const conts = try file.read(null);
 
             if (conts.len != @sizeOf(Telem)) return;
 

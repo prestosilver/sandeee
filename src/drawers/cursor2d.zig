@@ -36,8 +36,8 @@ pub const CursorData = struct {
             yo -= self.size.y / 2;
         }
 
-        var x = @as(f32, @floatCast(xo));
-        var y = @as(f32, @floatCast(yo));
+        const x = @as(f32, @floatCast(xo));
+        const y = @as(f32, @floatCast(yo));
 
         var source = self.source;
         source.w /= @as(f32, @floatFromInt(self.total));

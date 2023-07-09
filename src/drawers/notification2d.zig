@@ -36,7 +36,7 @@ pub const NotificationData = struct {
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32, color: cols.Color) !void {
-        var sc = @as(f32, @floatFromInt(scale));
+        const sc = @as(f32, @floatFromInt(scale));
 
         try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE), color);
         try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE), color);
@@ -57,11 +57,11 @@ pub const NotificationData = struct {
 
     pub fn getVerts(self: *const NotificationData, pos: vecs.Vector3) !va.VertArray {
         _ = self;
-        var target2d = wins.deskSize.sub(.{ .x = 260, .y = 100 + 80 * pos.x });
+        const target2d = wins.deskSize.sub(.{ .x = 260, .y = 100 + 80 * pos.x });
 
         var result = try va.VertArray.init();
 
-        var targetpos = vecs.newVec3(target2d.x, target2d.y, 0);
+        const targetpos = vecs.newVec3(target2d.x, target2d.y, 0);
 
         try addUiQuad(&result, 0, rect.newRect(targetpos.x, targetpos.y, 250, 70), 2, 1, 1, 1, 1, cols.newColor(1, 1, 1, 1));
 
@@ -73,7 +73,7 @@ pub const NotificationData = struct {
             icon.data.size.x = 60;
             icon.data.size.y = 60;
 
-            var pos = wins.deskSize.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
+            const pos = wins.deskSize.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
 
             try batch.draw(
                 spr.Sprite,

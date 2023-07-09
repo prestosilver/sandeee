@@ -198,7 +198,7 @@ pub const VMData = struct {
 };
 
 pub fn new(idx: u8, shader: *shd.Shader) !win.WindowContents {
-    var self = try allocator.alloc.create(VMData);
+    const self = try allocator.alloc.create(VMData);
 
     self.* = .{
         .idx = idx,

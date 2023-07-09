@@ -42,8 +42,8 @@ pub const EditorData = struct {
         }
 
         if (self.file) |file| {
-            var idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
-            var title = try std.fmt.allocPrint(allocator.alloc, "\x82\x82\x82DT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
+            const idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
+            const title = try std.fmt.allocPrint(allocator.alloc, "\x82\x82\x82DT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
             defer allocator.alloc.free(title);
 
             try props.setTitle(title);
@@ -98,7 +98,7 @@ pub const EditorData = struct {
                         .text = line,
                         .pos = vecs.newVec2(bnds.x + 70, y),
                     });
-                    var linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
+                    const linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
                     defer allocator.alloc.free(linenr);
                     try font.draw(.{
                         .batch = batch,
@@ -108,7 +108,7 @@ pub const EditorData = struct {
                     });
 
                     if (nr - 1 == @as(i32, @intFromFloat(self.cursor.y))) {
-                        var posx = font.sizeText(.{
+                        const posx = font.sizeText(.{
                             .text = line[0..@as(usize, @intFromFloat(self.cursor.x))],
                         }).x;
                         try font.draw(.{
@@ -147,9 +147,9 @@ pub const EditorData = struct {
 
         switch (btn.?) {
             0 => {
-                var open = rect.newRect(0, 0, 32, 32);
+                const open = rect.newRect(0, 0, 32, 32);
                 if (open.contains(mousepos)) {
-                    var adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+                    const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
                     adds.* = .{
                         .path = try allocator.alloc.dupe(u8, files.home.name),
                         .data = self,
@@ -169,7 +169,7 @@ pub const EditorData = struct {
                         },
                     });
                 }
-                var saveBnds = rect.newRect(32, 0, 32, 32);
+                const saveBnds = rect.newRect(32, 0, 32, 32);
                 if (saveBnds.contains(mousepos)) {
                     try self.save();
                 }
@@ -188,7 +188,7 @@ pub const EditorData = struct {
     pub fn save(self: *Self) !void {
         if (self.file != null) {
             allocator.alloc.free(self.file.?.contents);
-            var buff = try allocator.alloc.alloc(u8, self.buffer.items.len);
+            const buff = try allocator.alloc.alloc(u8, self.buffer.items.len);
             std.mem.copy(u8, buff, self.buffer.items);
             self.file.?.contents = buff;
             self.modified = false;
@@ -197,7 +197,7 @@ pub const EditorData = struct {
 
     pub fn submit(file: ?*files.File, data: *anyopaque) !void {
         if (file) |target| {
-            var self: *Self = @ptrCast(@alignCast(data));
+            const self: *Self = @ptrCast(@alignCast(data));
             self.file = target;
         }
     }
@@ -257,7 +257,7 @@ pub const EditorData = struct {
             },
             c.GLFW_KEY_BACKSPACE => {
                 if (self.cursorIdx > 0) {
-                    var ch = self.buffer.orderedRemove(self.cursorIdx - 1);
+                    const ch = self.buffer.orderedRemove(self.cursorIdx - 1);
                     self.cursor.x -= 1;
                     if (ch == '\n') {
                         self.cursor.y -= 1;

@@ -31,9 +31,9 @@ pub const Font = struct {
     };
 
     pub fn init(path: []const u8) !Font {
-        if (try files.root.getFile(path)) |file|
-            return initMem(try file.read(null));
-        return error.NotFound;
+        const file = try files.root.getFile(path);
+
+        return initMem(try file.read(null));
     }
 
     pub fn deinit(self: *Font) !void {
@@ -47,10 +47,10 @@ pub const Font = struct {
 
         if (!std.mem.eql(u8, data[0..4], "efnt")) return error.BadFile;
 
-        var charWidth = @as(c_uint, @intCast(data[4]));
-        var charHeight = @as(c_uint, @intCast(data[5]));
+        const charWidth = @as(c_uint, @intCast(data[4]));
+        const charHeight = @as(c_uint, @intCast(data[5]));
 
-        var atlasSize = vec.newVec2(128 * @as(f32, @floatFromInt(charWidth)), 2 * @as(f32, @floatFromInt(charHeight)));
+        const atlasSize = vec.newVec2(128 * @as(f32, @floatFromInt(charWidth)), 2 * @as(f32, @floatFromInt(charHeight)));
 
         var result: Font = undefined;
         var texture: c.GLuint = undefined;
@@ -157,7 +157,7 @@ pub const Font = struct {
         if (params.wrap) |maxSize| {
             if (maxSize <= 0) return;
             var iter = std.mem.split(u8, params.text, " ");
-            var spaceSize = self.sizeText(.{ .text = " ", .scale = params.scale }).x;
+            const spaceSize = self.sizeText(.{ .text = " ", .scale = params.scale }).x;
             var line: usize = 0;
 
             while (iter.next()) |word| {
@@ -235,7 +235,7 @@ pub const Font = struct {
         if (params.maxlines != null and
             params.curLine >= params.maxlines.?) return;
 
-        var startscissor = params.batch.scissor;
+        const startscissor = params.batch.scissor;
 
         if (params.batch.scissor != null) {
             if (params.wrap != null)
@@ -249,19 +249,18 @@ pub const Font = struct {
         var vertarray = try va.VertArray.init();
 
         for (params.text) |ach| {
-            var ch = ach;
-            if (ch == '\n' and params.newLines) {
+            if (ach == '\n' and params.newLines) {
                 pos.y += self.size * params.scale;
                 pos.x = start.x;
                 continue;
             }
 
-            var char = self.chars[ch];
-            if (ch != ' ') {
-                var w = char.size.x * params.scale;
-                var h = char.size.y * params.scale;
-                var xpos = pos.x + char.bearing.x * params.scale;
-                var ypos = pos.y + char.bearing.y * params.scale;
+            const char = self.chars[ach];
+            if (ach != ' ') {
+                const w = char.size.x * params.scale;
+                const h = char.size.y * params.scale;
+                const xpos = pos.x + char.bearing.x * params.scale;
+                const ypos = pos.y + char.bearing.y * params.scale;
                 srect.x = char.tx;
                 srect.y = char.ty;
                 srect.w = char.tw;
@@ -284,7 +283,7 @@ pub const Font = struct {
             params.origin.?.* = pos;
         }
 
-        var entry = sb.QueueEntry{
+        const entry = sb.QueueEntry{
             .texture = self.tex,
             .verts = vertarray,
             .shader = params.shader.*,
@@ -307,7 +306,7 @@ pub const Font = struct {
 
         if (params.wrap) |maxSize| {
             var iter = std.mem.split(u8, params.text, " ");
-            var spaceSize = self.sizeText(.{
+            const spaceSize = self.sizeText(.{
                 .text = " ",
                 .scale = params.scale,
             }).x;
@@ -361,18 +360,14 @@ pub const Font = struct {
         var maxx: f32 = 0;
 
         for (params.text) |ach| {
-            var ch = ach;
-            if (ch == '\n') {
+            if (ach == '\n') {
                 maxx = @max(result.x, maxx);
                 result.y += self.size * params.scale;
                 result.x = 0;
                 continue;
             }
 
-            if (ch > 127) ch = '?';
-            if (ch < 32) ch = '?';
-
-            var char = self.chars[ch];
+            const char = self.chars[ach];
             result.x += char.ax * params.scale;
             result.y += char.ay * params.scale;
         }

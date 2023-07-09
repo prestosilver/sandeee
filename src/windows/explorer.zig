@@ -50,7 +50,7 @@ pub const ExplorerData = struct {
     lastAction: ?ExplorerMouseAction = null,
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
-        var result = try allocator.alloc.alloc(ExplorerIcon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len);
+        const result = try allocator.alloc.alloc(ExplorerIcon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len);
         var idx: usize = 0;
 
         for (self.shell.root.subfolders.items) |folder| {
@@ -87,12 +87,12 @@ pub const ExplorerData = struct {
             }
         }
 
-        var title = try std.fmt.allocPrint(allocator.alloc, "{s}", .{self.shell.root.name});
+        const title = try std.fmt.allocPrint(allocator.alloc, "{s}", .{self.shell.root.name});
         defer allocator.alloc.free(title);
         try props.setTitle(title);
 
         if (self.shell.vm != null) {
-            var result = self.shell.updateVM() catch null;
+            const result = self.shell.updateVM() catch null;
             if (result != null) {
                 result.?.data.deinit();
             }
@@ -101,7 +101,7 @@ pub const ExplorerData = struct {
         var x: f32 = 0;
         var y: f32 = -props.scroll.?.value + 36;
 
-        var icons = try self.getIcons();
+        const icons = try self.getIcons();
         defer allocator.alloc.free(icons);
 
         const hidden = settings.settingManager.getBool("explorer_hidden");
@@ -109,12 +109,12 @@ pub const ExplorerData = struct {
         for (icons, 0..) |icon, idx| {
             if (!hidden and icon.name[0] == '_') continue;
 
-            var size = font.sizeText(.{
+            const size = font.sizeText(.{
                 .text = icon.name,
                 .wrap = 100,
                 .turnicate = true,
             }).x;
-            var xo = (128 - size) / 2;
+            const xo = (128 - size) / 2;
 
             try font.draw(.{
                 .batch = batch,
@@ -137,7 +137,7 @@ pub const ExplorerData = struct {
                             self.selected = idx + 1;
                         },
                         .DoubleLeft => {
-                            var newPath = try self.shell.root.getFolder(icon.name);
+                            const newPath = self.shell.root.getFolder(icon.name) catch null;
                             if (newPath != null) {
                                 self.shell.root = newPath.?;
                                 self.selected = 0;
@@ -167,7 +167,7 @@ pub const ExplorerData = struct {
 
             try batch.draw(sprite.Sprite, &self.gray, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-            var size = font.sizeText(.{
+            const size = font.sizeText(.{
                 .text = "Running VM",
             });
 
@@ -190,7 +190,7 @@ pub const ExplorerData = struct {
         try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
         try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 4, bnds.y + 2, 0));
 
-        var tmp = batch.scissor;
+        const tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 4 - 34, 28);
         try font.draw(.{
             .batch = batch,
@@ -269,9 +269,9 @@ pub const ExplorerData = struct {
 };
 
 pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
-    var self = try allocator.alloc.create(ExplorerData);
+    const self = try allocator.alloc.create(ExplorerData);
 
-    var ym = @as(f32, @floatFromInt(self.icons.len));
+    const ym = @as(f32, @floatFromInt(self.icons.len));
 
     self.* = .{
         .focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
@@ -305,7 +305,7 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     };
 
     for (self.icons, 0..) |_, idx| {
-        var i = @as(f32, @floatFromInt(idx));
+        const i = @as(f32, @floatFromInt(idx));
 
         self.icons[idx] = sprite.Sprite.new(texture, sprite.SpriteData.new(
             rect.newRect(0 / 32.0, i / @as(f32, @floatFromInt(self.icons.len)), 1.0, 1.0 / @as(f32, @floatFromInt(self.icons.len))),

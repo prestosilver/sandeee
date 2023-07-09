@@ -16,31 +16,25 @@ pub const FileStream = struct {
     vmInstance: ?*vm.VM,
 
     pub fn Open(root: *files.Folder, path: []const u8, vmInstance: ?*vm.VM) !*FileStream {
-        var result = try allocator.alloc.create(FileStream);
-
         if (path.len == 0) return error.FileMissing;
 
         const folder = if (path[0] == '/') files.root else root;
         const file = try folder.getFile(path);
 
-        if (file == null) {
-            allocator.alloc.destroy(result);
+        const result = try allocator.alloc.create(FileStream);
 
-            return error.FileMissing;
-        }
-
-        result.path = try allocator.alloc.alloc(u8, file.?.name.len);
-        const cont = try file.?.read(vmInstance);
+        result.path = try allocator.alloc.alloc(u8, file.name.len);
+        const cont = try file.read(vmInstance);
         result.contents = try allocator.alloc.alloc(u8, cont.len);
         result.updated = false;
         result.vmInstance = vmInstance;
 
         std.mem.copy(u8, result.contents, cont);
-        std.mem.copy(u8, result.path, file.?.name);
+        std.mem.copy(u8, result.path, file.name);
 
         result.offset = 0;
 
-        if (file.?.pseudoRead != null) {
+        if (file.pseudoRead != null) {
             allocator.alloc.free(cont);
         }
 

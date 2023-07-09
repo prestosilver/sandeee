@@ -23,7 +23,7 @@ pub fn readSndPlay(_: ?*vm.VM) ![]const u8 {
 pub fn writeSndPlay(data: []const u8, _: ?*vm.VM) !void {
     if (data.len == 0) return;
 
-    var snd = audio.Sound.init(data);
+    const snd = audio.Sound.init(data);
     defer snd.deinit();
 
     try audioPtr.playSound(snd);
@@ -32,7 +32,7 @@ pub fn writeSndPlay(data: []const u8, _: ?*vm.VM) !void {
 // /fake/win
 
 pub fn setupFakeSnd(parent: *files.Folder) !*files.Folder {
-    var result = try allocator.alloc.create(files.Folder);
+    const result = try allocator.alloc.create(files.Folder);
     result.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/snd/", .{}),
         .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),

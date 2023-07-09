@@ -23,13 +23,13 @@ pub const TextureManager = struct {
     }
 
     pub fn put(self: *TextureManager, name: []const u8, texture: tex.Texture) !void {
-        var new = self.textures.getKey(name) orelse try allocator.alloc.dupe(u8, name);
+        const new = self.textures.getKey(name) orelse try allocator.alloc.dupe(u8, name);
 
         try self.textures.put(new, texture);
     }
 
     pub fn putMem(self: *TextureManager, name: []const u8, texture: []const u8) !void {
-        var new = self.textures.getKey(name) orelse try allocator.alloc.dupe(u8, name);
+        const new = self.textures.getKey(name) orelse try allocator.alloc.dupe(u8, name);
 
         try self.textures.put(new, try tex.newTextureMem(texture));
     }

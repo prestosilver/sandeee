@@ -168,7 +168,7 @@ pub const GSWindowed = struct {
             return;
         }
         if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
-            var texture = batch.textureManager.textures.getPtr("wall") orelse return;
+            const texture = batch.textureManager.textures.getPtr("wall") orelse return;
             tex.uploadTextureFile(texture, event.value) catch return;
 
             return;
@@ -231,7 +231,7 @@ pub const GSWindowed = struct {
         try events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
 
         if (self.settingsManager.getBool("show_welcome")) {
-            var window = win.Window.new("win", win.WindowData{
+            const window = win.Window.new("win", win.WindowData{
                 .source = rect.Rectangle{
                     .x = 0.0,
                     .y = 0.0,
@@ -305,7 +305,7 @@ pub const GSWindowed = struct {
         shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat(self.lastFrameTime * std.time.ns_per_s * 0.5));
 
         if (self.shell.vm != null) {
-            var result = self.shell.updateVM() catch null;
+            const result = self.shell.updateVM() catch null;
             if (result != null) {
                 result.?.data.deinit();
             }
@@ -365,7 +365,7 @@ pub const GSWindowed = struct {
 
         // draw popup if exists
         if (self.popup) |*popup| {
-            var clearSprite = sp.Sprite{
+            const clearSprite = sp.Sprite{
                 .texture = "none",
                 .data = .{
                     .size = vecs.newVec2(deskSize.x, deskSize.y),
@@ -435,14 +435,16 @@ pub const GSWindowed = struct {
             for (self.windows.items, 0..) |_, idx| {
                 if (self.windows.items[idx].data.min) continue;
 
-                var pos = self.windows.items[idx].data.pos;
-                pos.x -= 10;
-                pos.y -= 10;
-                pos.w += 20;
-                pos.h += 20;
+                const windowPos = self.windows.items[idx].data.pos;
+                const pos = rect.Rectangle{
+                    .x = windowPos.x - 10,
+                    .y = windowPos.y - 10,
+                    .w = windowPos.w + 20,
+                    .h = windowPos.h + 20,
+                };
 
                 if (pos.contains(self.mousepos)) {
-                    var mode = self.windows.items[idx].data.getDragMode(self.mousepos);
+                    const mode = self.windows.items[idx].data.getDragMode(self.mousepos);
                     self.cursor.data.flip = switch (mode) {
                         .None => false,
                         .Move => false,
@@ -541,11 +543,13 @@ pub const GSWindowed = struct {
                 for (self.windows.items, 0..) |_, idx| {
                     if (self.windows.items[idx].data.min) continue;
 
-                    var pos = self.windows.items[idx].data.pos;
-                    pos.x -= 10;
-                    pos.y -= 10;
-                    pos.w += 20;
-                    pos.h += 20;
+                    const windowPos = self.windows.items[idx].data.pos;
+                    const pos = rect.Rectangle{
+                        .x = windowPos.x - 10,
+                        .y = windowPos.y - 10,
+                        .w = windowPos.w + 20,
+                        .h = windowPos.h + 20,
+                    };
 
                     if (pos.contains(self.mousepos)) {
                         newTop = @as(u32, @intCast(idx));
@@ -558,7 +562,7 @@ pub const GSWindowed = struct {
                     var swap = self.windows.orderedRemove(@as(usize, @intCast(top)));
                     swap.data.active = true;
                     try swap.data.contents.focus();
-                    var mode = swap.data.getDragMode(self.mousepos);
+                    const mode = swap.data.getDragMode(self.mousepos);
 
                     switch (mode) {
                         .Close => {
@@ -588,7 +592,7 @@ pub const GSWindowed = struct {
                             if (!swap.data.full) {
                                 self.dragmode = mode;
                                 self.dragging = &self.windows.items[self.windows.items.len - 1];
-                                var start = self.dragging.?.data.pos;
+                                const start = self.dragging.?.data.pos;
                                 self.draggingStart = switch (self.dragmode) {
                                     win.DragMode.None => vecs.newVec2(0, 0),
                                     win.DragMode.Close => vecs.newVec2(0, 0),
@@ -646,8 +650,8 @@ pub const GSWindowed = struct {
         if (self.popup != null) return;
 
         if (self.dragging) |dragging| {
-            var old = dragging.data.pos;
-            var winpos = pos.add(self.draggingStart);
+            const old = dragging.data.pos;
+            const winpos = pos.add(self.draggingStart);
 
             switch (self.dragmode) {
                 .None => {},
@@ -729,11 +733,13 @@ pub const GSWindowed = struct {
         for (self.windows.items, 0..) |_, idx| {
             if (self.windows.items[idx].data.min) continue;
 
-            var pos = self.windows.items[idx].data.pos;
-            pos.x -= 10;
-            pos.y -= 10;
-            pos.w += 20;
-            pos.h += 20;
+            const windowPos = self.windows.items[idx].data.pos;
+            const pos = rect.Rectangle{
+                .x = windowPos.x - 10,
+                .y = windowPos.y - 10,
+                .w = windowPos.w + 20,
+                .h = windowPos.h + 20,
+            };
 
             if (pos.contains(self.mousepos)) {
                 newTop = @as(u32, @intCast(idx));

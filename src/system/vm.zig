@@ -789,20 +789,18 @@ pub const VM = struct {
                             if (path != .string) return error.StringMissing;
 
                             if (path.string.*[0] == '/') {
-                                if (try files.root.getFile(path.string.*)) |file| {
-                                    try self.pushStackI(file.size());
+                                const file = try files.root.getFile(path.string.*);
 
-                                    return;
-                                }
-                            }
-
-                            if (try self.root.getFile(path.string.*)) |file| {
                                 try self.pushStackI(file.size());
 
                                 return;
                             }
 
-                            return error.FileMissing;
+                            const file = try self.root.getFile(path.string.*);
+
+                            try self.pushStackI(file.size());
+
+                            return;
                         },
                         // setrsp
                         20 => {

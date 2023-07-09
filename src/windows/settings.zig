@@ -170,7 +170,7 @@ const SettingsData = struct {
                         switch (action.kind) {
                             .SingleLeft => {
                                 self.value = settingManager.get(item.key) orelse "";
-                                var adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+                                const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
                                 adds.* = .{
                                     .prompt = item.setting,
                                     .text = try allocator.alloc.dupe(u8, self.value),
@@ -200,7 +200,7 @@ const SettingsData = struct {
                 }
 
                 // draw value
-                var value = settingManager.get(item.key);
+                const value = settingManager.get(item.key);
                 if (value) |val| {
                     try font.draw(.{
                         .batch = batch,
@@ -240,8 +240,8 @@ const SettingsData = struct {
         var y: f32 = 0;
 
         for (SettingsData.panels, 0..) |panel, idx| {
-            var size = font.sizeText(.{ .text = panel.name });
-            var xo = (128 - size.x) / 2;
+            const size = font.sizeText(.{ .text = panel.name });
+            const xo = (128 - size.x) / 2;
 
             try font.draw(.{
                 .batch = batch,
@@ -278,7 +278,7 @@ const SettingsData = struct {
     }
 
     pub fn submit(val: []u8, data: *anyopaque) !void {
-        var self: *Self = @ptrCast(@alignCast(data));
+        const self: *Self = @ptrCast(@alignCast(data));
         try settingManager.set(self.value, val);
         try settingManager.save();
     }
@@ -333,9 +333,9 @@ const SettingsData = struct {
 };
 
 pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
-    var self = try allocator.alloc.create(SettingsData);
+    const self = try allocator.alloc.create(SettingsData);
 
-    var ym = @as(f32, @floatFromInt(self.icons.len));
+    const ym = @as(f32, @floatFromInt(self.icons.len));
 
     self.* = .{
         .shader = shader,
@@ -358,7 +358,7 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     };
 
     for (self.icons, 0..) |_, idx| {
-        var i = @as(f32, @floatFromInt(idx));
+        const i = @as(f32, @floatFromInt(idx));
 
         self.icons[idx] = sprite.Sprite.new(texture, sprite.SpriteData.new(
             rect.newRect(0 / 32.0, i / @as(f32, @floatFromInt(self.icons.len)), 1.0, 1.0 / @as(f32, @floatFromInt(self.icons.len))),

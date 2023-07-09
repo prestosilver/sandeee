@@ -49,18 +49,15 @@ pub const Shell = struct {
             };
 
             if (param[3] == '/') {
-                if (try files.root.getFolder(param[4..])) |folder| {
-                    self.root = folder;
-                    return result;
-                }
-            }
-
-            if (try self.root.getFolder(param[3..])) |folder| {
+                const folder = try files.root.getFolder(param[4..]);
                 self.root = folder;
                 return result;
             }
 
-            return error.FileNotFound;
+            const folder = try self.root.getFolder(param[3..]);
+            self.root = folder;
+
+            return result;
         } else {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
@@ -73,33 +70,30 @@ pub const Shell = struct {
 
     fn ls(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
-            if (try self.root.getFolder(param[3..])) |folder| {
-                var result: Result = Result{
-                    .data = std.ArrayList(u8).init(allocator.alloc),
-                };
+            const folder = try self.root.getFolder(param[3..]);
+            var result: Result = Result{
+                .data = std.ArrayList(u8).init(allocator.alloc),
+            };
 
-                var rootlen = folder.name.len;
+            const rootlen = folder.name.len;
 
-                for (folder.subfolders.items) |item| {
-                    try result.data.appendSlice(item.name[rootlen..]);
-                    try result.data.append(' ');
-                }
-
-                for (folder.contents.items) |item| {
-                    try result.data.appendSlice(item.name[rootlen..]);
-                    try result.data.append(' ');
-                }
-
-                return result;
-            } else {
-                return error.FileNotFound;
+            for (folder.subfolders.items) |item| {
+                try result.data.appendSlice(item.name[rootlen..]);
+                try result.data.append(' ');
             }
+
+            for (folder.contents.items) |item| {
+                try result.data.appendSlice(item.name[rootlen..]);
+                try result.data.append(' ');
+            }
+
+            return result;
         } else {
             var result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
             };
 
-            var rootlen = self.root.name.len;
+            const rootlen = self.root.name.len;
 
             for (self.root.subfolders.items) |item| {
                 try result.data.appendSlice(item.name[rootlen..]);
@@ -120,7 +114,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new("win", win.WindowData{
+        const window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
@@ -141,7 +135,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new("win", win.WindowData{
+        const window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
@@ -153,7 +147,7 @@ pub const Shell = struct {
         });
 
         if (param.len > 5) {
-            var edself: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
+            const edself: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
 
             edself.file = try self.root.getFile(param[5..]);
             edself.buffer.clearAndFree();
@@ -171,7 +165,7 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var window = win.Window.new("win", win.WindowData{
+        const window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
@@ -183,7 +177,7 @@ pub const Shell = struct {
         });
 
         if (param.len > 4) {
-            var webself: *wins.web.WebData = @ptrCast(@alignCast(window.data.contents.ptr));
+            const webself: *wins.web.WebData = @ptrCast(@alignCast(window.data.contents.ptr));
 
             webself.path = try allocator.alloc.dupe(u8, param[4..]);
         }
@@ -197,64 +191,53 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        var cmdeep = try std.fmt.allocPrint(allocator.alloc, "{s}.eep", .{cmd});
-        defer allocator.alloc.free(cmdeep);
+        const file = folder.getFile(cmd) catch |err| {
+            if (std.mem.endsWith(u8, cmd, ".eep")) return err;
 
-        if (try folder.getFile(cmd)) |file| {
-            var line = std.ArrayList(u8).init(allocator.alloc);
-            defer line.deinit();
+            const cmdeep = try std.fmt.allocPrint(allocator.alloc, "{s}.eep", .{cmd});
+            defer allocator.alloc.free(cmdeep);
 
-            if ((try file.read(null)).len > 3 and std.mem.eql(u8, (try file.read(null))[0..4], ASM_HEADER)) {
-                return try self.runAsm(folder, cmd, param);
-            }
+            return self.runFileInFolder(folder, cmdeep, param);
+        };
 
-            if (std.mem.endsWith(u8, file.name, ".esh")) {
-                for (try file.read(null)) |char| {
-                    if (char == '\n') {
-                        var res = try self.runLine(line.items);
-                        defer res.data.deinit();
-                        try result.data.appendSlice(res.data.items);
-                        if (result.data.items.len != 0)
-                            if (result.data.getLast() != '\n') try result.data.append('\n');
-                        try line.resize(0);
-                    } else {
-                        try line.append(char);
-                    }
+        var line = std.ArrayList(u8).init(allocator.alloc);
+        defer line.deinit();
+
+        if ((try file.read(null)).len > 3 and std.mem.eql(u8, (try file.read(null))[0..4], ASM_HEADER)) {
+            return try self.runAsm(folder, cmd, param);
+        }
+
+        if (std.mem.endsWith(u8, file.name, ".esh")) {
+            for (try file.read(null)) |char| {
+                if (char == '\n') {
+                    const res = try self.runLine(line.items);
+                    defer res.data.deinit();
+                    try result.data.appendSlice(res.data.items);
+                    if (result.data.items.len != 0)
+                        if (result.data.getLast() != '\n') try result.data.append('\n');
+                    try line.resize(0);
+                } else {
+                    try line.append(char);
                 }
-                var res = try self.runLine(line.items);
-                defer res.data.deinit();
-                try result.data.appendSlice(res.data.items);
-                if (result.data.items.len != 0 and result.data.getLast() != '\n') try result.data.append('\n');
-
-                return result;
             }
+            const res = try self.runLine(line.items);
+            defer res.data.deinit();
+            try result.data.appendSlice(res.data.items);
+            if (result.data.items.len != 0 and result.data.getLast() != '\n') try result.data.append('\n');
 
-            result.data.deinit();
-            return error.InvalidFileType;
-        } else if (try folder.getFile(cmdeep)) |file| {
-            var line = std.ArrayList(u8).init(allocator.alloc);
-            defer line.deinit();
-
-            var cont = try file.read(null);
-
-            if (cont.len > 3 and std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
-                return try self.runAsm(folder, cmdeep, param);
-            }
-
-            result.data.deinit();
-            return error.InvalidFileType;
+            return result;
         }
 
         result.data.deinit();
-        return error.FileNotFound;
+        return error.InvalidFileType;
     }
 
     pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) !Result {
         return self.runFileInFolder(files.exec, cmd, param) catch
             self.runFileInFolder(self.root, cmd, param) catch {
-            if (try self.root.getFile(cmd) != null) {
-                var opens = try opener.openFile(cmd);
-                var params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ opens, param });
+            if (self.root.getFile(cmd) catch null != null) {
+                const opens = try opener.openFile(cmd);
+                const params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ opens, param });
                 defer allocator.alloc.free(params);
 
                 return self.run(opens, params);
@@ -289,13 +272,13 @@ pub const Shell = struct {
         };
 
         if (param.len > 4) {
-            if (try self.root.newFile(param[4..])) {
-                try result.data.appendSlice("created");
-                return result;
-            } else {
+            self.root.newFile(param[4..]) catch |err| {
                 result.data.deinit();
-                return error.FileNotFound;
-            }
+                return err;
+            };
+
+            try result.data.appendSlice("created");
+            return result;
         }
 
         return error.MissingParameter;
@@ -307,13 +290,13 @@ pub const Shell = struct {
         };
 
         if (param.len > 4) {
-            if (try self.root.newFolder(param[4..])) {
-                try result.data.appendSlice("created");
-                return result;
-            } else {
+            self.root.newFolder(param[4..]) catch |err| {
                 result.data.deinit();
-                return error.FileNotFound;
-            }
+                return err;
+            };
+
+            try result.data.appendSlice("created");
+            return result;
         }
 
         return error.MissingParameter;
@@ -335,11 +318,11 @@ pub const Shell = struct {
         };
 
         for (folder.contents.items, 0..) |_, idx| {
-            var rootlen = folder.name.len;
-            var item = folder.contents.items[idx];
+            const rootlen = folder.name.len;
+            const item = folder.contents.items[idx];
 
             if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
-                var cont = try item.read(null);
+                const cont = try item.read(null);
                 if (cont.len < 4 or !std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
                     result.data.deinit();
 
@@ -349,7 +332,7 @@ pub const Shell = struct {
                 self.vm = try vm.VM.init(allocator.alloc, self.root, params, false);
                 vms += 1;
 
-                var ops = cont[4..];
+                const ops = cont[4..];
 
                 self.vm.?.loadString(ops) catch |err| {
                     result.data.deinit();
@@ -402,7 +385,7 @@ pub const Shell = struct {
     }
 
     pub fn vmThread(self: *Shell) !void {
-        var time: u64 = @intCast(std.time.nanoTimestamp());
+        const time: u64 = @intCast(std.time.nanoTimestamp());
 
         if (frameEnd < time) {
             return;
@@ -411,12 +394,12 @@ pub const Shell = struct {
         if (self.vm.?.runTime(frameEnd - time, @import("builtin").mode == .Debug) catch |err| {
             self.vm.?.stopped = true;
 
-            var errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});
+            const errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});
             defer allocator.alloc.free(errString);
 
             try self.vm.?.out.appendSlice(errString);
 
-            var msgString = try self.vm.?.getOp();
+            const msgString = try self.vm.?.getOp();
             defer allocator.alloc.free(msgString);
 
             try self.vm.?.out.appendSlice(msgString);
@@ -455,7 +438,7 @@ pub const Shell = struct {
         };
 
         if (params.len > 4) {
-            self.root.removeFile(params[4..], null) catch |err| {
+            self.root.removeFile(params[4..]) catch |err| {
                 result.data.deinit();
                 return err;
             };
@@ -515,18 +498,18 @@ pub const Shell = struct {
             return self.run(command.items, out.data.items);
         }
         if (std.mem.eql(u8, cmd, "cls")) {
-            var result: Result = Result{
+            const result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
+                .clear = true,
             };
-            result.clear = true;
 
             return result;
         }
         if (std.mem.eql(u8, cmd, "exit")) {
-            var result: Result = Result{
+            const result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
+                .exit = true,
             };
-            result.exit = true;
 
             return result;
         }

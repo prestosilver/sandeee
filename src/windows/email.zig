@@ -66,7 +66,7 @@ const EmailData = struct {
                     if (!emailManager.getEmailVisible(email)) continue;
                 }
 
-                var text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
+                const text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
 
                 if (self.selected != null and email == self.selected.?) {
@@ -105,9 +105,9 @@ const EmailData = struct {
             try batch.draw(sprite.Sprite, &self.reply, self.shader, vecs.newVec3(bnds.x + 104, bnds.y, 0));
             try batch.draw(sprite.Sprite, &self.back, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 26, 0));
 
-            var email = self.viewing.?;
+            const email = self.viewing.?;
 
-            var from = try std.fmt.allocPrint(allocator.alloc, "from: {s}", .{email.from});
+            const from = try std.fmt.allocPrint(allocator.alloc, "from: {s}", .{email.from});
             defer allocator.alloc.free(from);
             try font.draw(.{
                 .batch = batch,
@@ -116,7 +116,7 @@ const EmailData = struct {
                 .pos = vecs.newVec2(bnds.x + 112 + 28, bnds.y),
             });
 
-            var text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
+            const text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
             defer allocator.alloc.free(text);
             try font.draw(.{
                 .batch = batch,
@@ -125,7 +125,7 @@ const EmailData = struct {
                 .pos = vecs.newVec2(bnds.x + 112 + 28, bnds.y + font.size),
             });
 
-            var y = bnds.y + 8 + font.size * 2;
+            const y = bnds.y + 8 + font.size * 2;
 
             try font.draw(.{
                 .batch = batch,
@@ -145,7 +145,7 @@ const EmailData = struct {
             const pos = vecs.newVec2(bnds.x + 2, bnds.y + 106 + font.size * @as(f32, @floatFromInt(idx)));
 
             if (idx == self.box) {
-                var text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], emailManager.getPc(idx) });
+                const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], emailManager.getPc(idx) });
                 defer allocator.alloc.free(text);
 
                 try font.draw(.{
@@ -172,7 +172,7 @@ const EmailData = struct {
     }
 
     pub fn submitFile(self: *Self) !void {
-        var adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+        const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
         adds.* = .{
             .path = try allocator.alloc.dupe(u8, files.home.name),
             .data = self,
@@ -205,9 +205,9 @@ const EmailData = struct {
 
     pub fn submit(file: ?*files.File, data: *anyopaque) !void {
         if (file) |target| {
-            var self: *Self = @ptrCast(@alignCast(data));
+            const self: *Self = @ptrCast(@alignCast(data));
 
-            var conts = try target.read(null);
+            const conts = try target.read(null);
 
             if (self.viewing) |selected| {
                 if (selected.condition != .Submit) return;
@@ -216,10 +216,10 @@ const EmailData = struct {
                 var good = true;
 
                 while (iter.next()) |cond| {
-                    var idx = std.mem.indexOf(u8, cond, "=") orelse cond.len - 1;
-                    var name = cond[0..idx];
+                    const idx = std.mem.indexOf(u8, cond, "=") orelse cond.len - 1;
+                    const name = cond[0..idx];
                     if (std.mem.eql(u8, name, "conts")) {
-                        var targetText = cond[idx + 1 ..];
+                        const targetText = cond[idx + 1 ..];
                         good = good and std.ascii.eqlIgnoreCase(targetText, conts);
                     }
                     if (std.mem.eql(u8, name, "runs")) {
@@ -230,7 +230,7 @@ const EmailData = struct {
                         try vmInstance.loadString(conts[4..]);
 
                         try vmInstance.runAll();
-                        var targetText = cond[idx + 1 ..];
+                        const targetText = cond[idx + 1 ..];
 
                         good = good and std.ascii.eqlIgnoreCase(vmInstance.out.items, targetText);
                     }
@@ -249,13 +249,13 @@ const EmailData = struct {
         switch (btn.?) {
             0 => {
                 if (self.viewing) |_| {
-                    var replyBnds = rect.newRect(106, 0, 26, 26);
+                    const replyBnds = rect.newRect(106, 0, 26, 26);
 
                     if (replyBnds.contains(mousepos)) {
                         try self.submitFile();
                     }
 
-                    var backBnds = rect.newRect(106, 26, 26, 10);
+                    const backBnds = rect.newRect(106, 26, 26, 10);
 
                     if (backBnds.contains(mousepos)) {
                         self.viewing = null;
@@ -263,7 +263,7 @@ const EmailData = struct {
                     }
                 }
 
-                var contBnds = rect.newRect(106, 0, size.x - 106, size.y);
+                const contBnds = rect.newRect(106, 0, size.x - 106, size.y);
                 if (contBnds.contains(mousepos)) {
                     if (self.viewing != null) return;
 
@@ -275,7 +275,7 @@ const EmailData = struct {
                             if (!emailManager.getEmailVisible(email)) continue;
                         }
 
-                        var bnds = rect.newRect(106, @as(f32, @floatFromInt(y)), size.x - 106, 24);
+                        const bnds = rect.newRect(106, @as(f32, @floatFromInt(y)), size.x - 106, 24);
 
                         y += 24;
 
@@ -290,9 +290,9 @@ const EmailData = struct {
                         }
                     }
                 } else {
-                    var bnds = rect.newRect(0, 106, 106, size.y - 106);
+                    const bnds = rect.newRect(0, 106, 106, size.y - 106);
                     if (bnds.contains(mousepos)) {
-                        var id = (mousepos.y - 106.0) / 24.0;
+                        const id = (mousepos.y - 106.0) / 24.0;
 
                         self.box = @as(u8, @intCast(@as(i32, @intFromFloat(id + 0.5))));
 
@@ -321,7 +321,7 @@ const EmailData = struct {
 };
 
 pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
-    var self = try allocator.alloc.create(EmailData);
+    const self = try allocator.alloc.create(EmailData);
 
     self.* = .{
         .divy = sprite.Sprite.new(texture, sprite.SpriteData.new(

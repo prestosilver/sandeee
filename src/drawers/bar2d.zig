@@ -48,7 +48,7 @@ pub const BarData = struct {
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32) !void {
-        var sc = @as(f32, @floatFromInt(scale));
+        const sc = @as(f32, @floatFromInt(scale));
 
         try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE));
         try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE));
@@ -73,17 +73,17 @@ pub const BarData = struct {
             .pos = pos.location(),
         });
 
-        var ts = std.time.timestamp();
-        var hours = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_hour)) - settingsManager.getInt("hours_offset");
-        var mins = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_min)) - settingsManager.getInt("minutes_offset");
-        var clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{
+        const ts = std.time.timestamp();
+        const hours = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_hour)) - settingsManager.getInt("hours_offset");
+        const mins = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_min)) - settingsManager.getInt("minutes_offset");
+        const clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{
             @as(u8, @intCast(@rem(hours, 24))),
             @as(u8, @intCast(@rem(mins, 60))),
         });
         defer allocator.alloc.free(clockString);
 
-        var clockSize = font.sizeText(.{ .text = clockString });
-        var clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
+        const clockSize = font.sizeText(.{ .text = clockString });
+        const clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
 
         try font.draw(.{
             .batch = batch,
@@ -113,21 +113,19 @@ pub const BarData = struct {
             try batch.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
 
             for (0..10) |i| {
-                var y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
-                var text: []const u8 = "";
-                switch (i) {
-                    0 => text = "Cmd",
-                    1 => text = "\x82\x82\x82Mail",
-                    2 => text = "\x82\x82\x82DT",
-                    3 => text = "Files",
-                    4 => text = "Xplore",
-                    5 => text = "Settings",
-                    6 => text = "Log out",
-                    else => continue,
-                }
-                var height = font.size * 1;
-                y += std.math.floor((67 - height) / 2);
-                var textpos = vecs.newVec2(100, y);
+                const height = font.size * 1;
+                const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i)) + std.math.floor((67 - height) / 2);
+                const text = switch (i) {
+                    0 => "Cmd",
+                    1 => "\x82\x82\x82Mail",
+                    2 => "\x82\x82\x82DT",
+                    3 => "Files",
+                    4 => "Xplore",
+                    5 => "Settings",
+                    6 => "Log out",
+                    else => "",
+                };
+                const textpos = vecs.newVec2(100, y);
                 try font.draw(.{
                     .batch = batch,
                     .shader = font_shader,
@@ -139,7 +137,7 @@ pub const BarData = struct {
     }
 
     pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), shader: *shd.Shader, pos: vecs.Vector2) !bool {
-        var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
+        const btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;
 
@@ -147,9 +145,9 @@ pub const BarData = struct {
             var newTop: ?u32 = null;
 
             for (windows.items, 0..) |*window, idx| {
-                var offset = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
+                const offset = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
 
-                var btnBnds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
+                const btnBnds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
 
                 if (btnBnds.contains(pos)) {
                     if (window.data.active or window.data.min) {
@@ -174,13 +172,13 @@ pub const BarData = struct {
 
         if (self.btnActive) {
             for (0..10) |i| {
-                var y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
-                var item = rect.newRect(36, y, 160, 67);
+                const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
+                const item = rect.newRect(36, y, 160, 67);
                 if (item.contains(pos)) {
                     added = true;
                     switch (i) {
                         0 => {
-                            var window = win.Window.new("win", win.WindowData{
+                            const window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -194,7 +192,7 @@ pub const BarData = struct {
                             try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         1 => {
-                            var window = win.Window.new("win", win.WindowData{
+                            const window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -208,7 +206,7 @@ pub const BarData = struct {
                             try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         2 => {
-                            var window = win.Window.new("win", win.WindowData{
+                            const window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -222,7 +220,7 @@ pub const BarData = struct {
                             try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         3 => {
-                            var window = win.Window.new("win", win.WindowData{
+                            const window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -236,7 +234,7 @@ pub const BarData = struct {
                             try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         4 => {
-                            var window = win.Window.new("win", win.WindowData{
+                            const window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -250,7 +248,7 @@ pub const BarData = struct {
                             try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         5 => {
-                            var window = win.Window.new("win", win.WindowData{
+                            const window = win.Window.new("win", win.WindowData{
                                 .source = rect.Rectangle{
                                     .x = 0.0,
                                     .y = 0.0,
@@ -264,7 +262,7 @@ pub const BarData = struct {
                             try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
                         },
                         6 => {
-                            var adds = try allocator.alloc.create(popups.all.quit.PopupQuit);
+                            const adds = try allocator.alloc.create(popups.all.quit.PopupQuit);
                             adds.* = .{
                                 .shader = shader,
                                 .icons = .{
@@ -310,7 +308,7 @@ pub const BarData = struct {
             self.btnActive = false;
         }
 
-        var bnds = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
+        const bnds = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
 
         return bnds.contains(pos) or added;
     }
@@ -322,11 +320,11 @@ pub const BarData = struct {
 
     pub fn getVerts(self: *const BarData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init();
-        var pos = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
+        const pos = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
 
         try addUiQuad(&result, 0, pos, 2, 3, 3, 3, 3);
 
-        var btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
+        const btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
         try addUiQuad(&result, 1, btn, 2, 6, 6, 6, 6);
 
         var icon = btn;
@@ -339,13 +337,13 @@ pub const BarData = struct {
         try addQuad(&result, 3, icon, rect.newRect(0, 0, 1, 1));
 
         if (self.btnActive) {
-            var menu = rect.newRect(0, self.screendims.y - 466 - self.height, 300, 466);
+            const menu = rect.newRect(0, self.screendims.y - 466 - self.height, 300, 466);
 
             try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
 
             for (0..10) |i| {
-                var y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
-                var iconpos = rect.newRect(36, y + 2, 64, 64);
+                const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
+                const iconpos = rect.newRect(36, y + 2, 64, 64);
 
                 switch (i) {
                     0 => {
@@ -375,7 +373,7 @@ pub const BarData = struct {
         }
 
         for (0..@as(usize, @intCast(self.btns))) |i| {
-            var b = rect.newRect(self.height * @as(f32, @floatFromInt(i * 4 + 3)), self.screendims.y - self.height, 4 * self.height, self.height);
+            const b = rect.newRect(self.height * @as(f32, @floatFromInt(i * 4 + 3)), self.screendims.y - self.height, 4 * self.height, self.height);
             try addUiQuad(&result, 1, b, 2, 6, 6, 6, 6);
         }
 

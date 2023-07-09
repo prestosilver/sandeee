@@ -20,7 +20,7 @@ pub const WallData = struct {
     mode: Mode = .Center,
 
     fn addQuad(arr: *va.VertArray, pos: rect.Rectangle, src: rect.Rectangle) !void {
-        var source = src;
+        const source = src;
 
         try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
         try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), cols.newColor(1, 1, 1, 1));
@@ -35,17 +35,17 @@ pub const WallData = struct {
         var pos: rect.Rectangle = undefined;
         var source = rect.newRect(0, 0, 1, 1);
 
-        var par = @fieldParentPtr(sb.Drawer(WallData), "data", self);
-        var size = (sb.textureManager.textures.get(par.texture) orelse return result).size;
+        const par = @fieldParentPtr(sb.Drawer(WallData), "data", self);
+        const size = (sb.textureManager.textures.get(par.texture) orelse return result).size;
 
         switch (self.mode) {
             .Color => {
                 return result;
             },
             .Fill => {
-                var wRatio: f32 = self.dims.x / size.x;
-                var hRatio: f32 = self.dims.y / size.y;
-                var maxRatio: f32 = @max(wRatio, hRatio);
+                const wRatio: f32 = self.dims.x / size.x;
+                const hRatio: f32 = self.dims.y / size.y;
+                const maxRatio: f32 = @max(wRatio, hRatio);
 
                 pos.w = maxRatio * size.x;
                 pos.h = maxRatio * size.y;

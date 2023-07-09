@@ -58,27 +58,22 @@ pub const imageError = error{
 };
 
 pub fn newTextureSize(size: vecs.Vector2) !Texture {
-    var result = Texture{
+    return Texture{
         .buffer = try allocator.alloc.alloc([4]u8, @intFromFloat(size.x * size.y)),
         .size = size,
     };
-
-    return result;
 }
 
 pub fn newTextureFile(file: []const u8) !Texture {
-    var image = try files.root.getFile(file);
-
-    if (image == null) return error.NotFound;
-
-    var cont = try image.?.read(null);
+    const image = try files.root.getFile(file);
+    const cont = try image.?.read(null);
 
     return newTextureMem(cont);
 }
 
 pub fn newTextureMem(mem: []const u8) !Texture {
-    var width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
-    var height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
+    const width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
+    const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
 
     var result = Texture{
         .buffer = try allocator.alloc.alloc([4]u8, @intCast(width * height)),
@@ -104,11 +99,11 @@ pub fn newTextureMem(mem: []const u8) !Texture {
 const errorImage = @embedFile("../images/error.eia");
 
 pub fn uploadTextureFile(tex: *Texture, file: []const u8) !void {
-    var image = try files.root.getFile(file);
+    const image = files.root.getFile(file) catch {
+        return uploadTextureMem(tex, errorImage);
+    };
 
-    if (image == null) return uploadTextureMem(tex, errorImage);
-
-    var cont = try image.?.read(null);
+    const cont = try image.read(null);
 
     return uploadTextureMem(tex, cont);
 }
@@ -117,8 +112,8 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
     gfx.gContext.makeCurrent();
     defer gfx.gContext.makeNotCurrent();
 
-    var width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
-    var height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
+    const width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
+    const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
 
     if (mem.len / 4 - 2 != width * height) {
         std.log.info("expected {} got {}", .{ width * height * 4 + 4, mem.len });

@@ -12,28 +12,24 @@ pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.Sett
 
     self.out.init();
 
-    var ofile = try files.root.getFile(self.indata.*);
+    const file = try files.root.getFile(self.indata.*);
 
-    if (ofile) |file| {
-        var cont = try file.read(null);
-        var iter = std.mem.split(u8, cont, "\n");
+    const cont = try file.read(null);
+    var iter = std.mem.split(u8, cont, "\n");
 
-        while (iter.next()) |line| {
-            var comment = std.mem.split(u8, line, "#");
-            var aline = comment.first();
+    while (iter.next()) |line| {
+        var comment = std.mem.split(u8, line, "#");
+        const aline = comment.first();
 
-            var eqls = std.mem.split(u8, aline, "=");
-            var key = eqls.first();
-            var value = eqls.rest();
-            var tkey = std.mem.trim(u8, key, " ");
-            var tvalue = std.mem.trim(u8, value, " ");
+        var eqls = std.mem.split(u8, aline, "=");
+        const key = eqls.first();
+        const value = eqls.rest();
+        const tkey = std.mem.trim(u8, key, " ");
+        const tvalue = std.mem.trim(u8, value, " ");
 
-            if (tvalue.len > 1 and tvalue[0] == '"' and tvalue[tvalue.len - 1] == '"') {
-                try self.out.set(tkey, tvalue[1 .. tvalue.len - 1]);
-            }
+        if (tvalue.len > 1 and tvalue[0] == '"' and tvalue[tvalue.len - 1] == '"') {
+            try self.out.set(tkey, tvalue[1 .. tvalue.len - 1]);
         }
-    } else {
-        return false;
     }
 
     return true;

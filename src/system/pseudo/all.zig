@@ -7,7 +7,7 @@ pub const gfx = @import("gfx.zig");
 pub const snd = @import("snd.zig");
 
 pub fn setupFake(parent: *files.Folder) !*files.Folder {
-    var result = try allocator.alloc.create(files.Folder);
+    const result = try allocator.alloc.create(files.Folder);
     result.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/", .{}),
         .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),

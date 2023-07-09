@@ -45,7 +45,7 @@ pub const EmailManager = struct {
             };
 
             var buf_reader = std.io.bufferedReader(file.reader());
-            var in_stream = buf_reader.reader();
+            const in_stream = buf_reader.reader();
             var contents = std.ArrayList(u8).init(allocator.alloc);
             defer contents.deinit();
 
@@ -56,11 +56,11 @@ pub const EmailManager = struct {
                 } else if (std.mem.startsWith(u8, line, "box: ")) {
                     result.box = try std.fmt.parseInt(u8, line[5..], 0);
                 } else if (std.mem.startsWith(u8, line, "from: ")) {
-                    var sub = try allocator.alloc.alloc(u8, line.len - 6);
+                    const sub = try allocator.alloc.alloc(u8, line.len - 6);
                     std.mem.copy(u8, sub, line[6..]);
                     result.from = sub;
                 } else if (std.mem.startsWith(u8, line, "sub: ")) {
-                    var sub = try allocator.alloc.alloc(u8, line.len - 5);
+                    const sub = try allocator.alloc.alloc(u8, line.len - 5);
                     std.mem.copy(u8, sub, line[5..]);
                     result.subject = sub;
                 } else if (std.mem.startsWith(u8, line, "deps: ")) {
@@ -86,7 +86,7 @@ pub const EmailManager = struct {
                 }
             }
 
-            var str_contents = try allocator.alloc.dupe(u8, contents.items);
+            const str_contents = try allocator.alloc.dupe(u8, contents.items);
 
             result.contents = str_contents;
 
@@ -197,13 +197,13 @@ pub const EmailManager = struct {
         start[0] = @as(u8, @intCast(self.boxes.len));
 
         for (self.boxes) |boxname| {
-            var sidx = start.len;
+            const sidx = start.len;
             start = try allocator.alloc.realloc(start, start.len + boxname.len + 1);
             start[sidx] = @as(u8, @intCast(boxname.len));
             std.mem.copy(u8, start[sidx + 1 ..], boxname);
         }
 
-        var conts = try allocator.alloc.alloc(u8, start.len + 256 * self.boxes.len);
+        const conts = try allocator.alloc.alloc(u8, start.len + 256 * self.boxes.len);
         @memset(conts, 0);
 
         std.mem.copy(u8, conts[0..start.len], start);
@@ -220,35 +220,35 @@ pub const EmailManager = struct {
     }
 
     pub fn loadStateFile(self: *EmailManager, path: []const u8) !void {
-        if (try files.root.getFile(path)) |file| {
-            var conts = try file.read(null);
-            var idx: usize = 0;
+        const file = try files.root.getFile(path);
 
-            var total = conts[idx];
+        const conts = try file.read(null);
+        var idx: usize = 0;
+
+        const total = conts[idx];
+        idx += 1;
+
+        const names = try allocator.alloc.alloc([]const u8, total);
+        defer allocator.alloc.free(names);
+
+        for (names) |*name| {
+            const len = conts[idx];
             idx += 1;
 
-            var names = try allocator.alloc.alloc([]const u8, total);
-            defer allocator.alloc.free(names);
+            name.* = conts[idx .. idx + len];
+            idx += len;
+        }
 
-            for (names) |*name| {
-                var len = conts[idx];
-                idx += 1;
+        const startidx = idx;
 
-                name.* = conts[idx .. idx + len];
-                idx += len;
-            }
+        for (names, 0..) |name, nameidx| {
+            for (self.boxes, 0..) |boxname, boxidx| {
+                if (std.mem.eql(u8, boxname, name)) {
+                    for (self.emails.items) |*email| {
+                        if (email.box != boxidx) continue;
 
-            var startidx = idx;
-
-            for (names, 0..) |name, nameidx| {
-                for (self.boxes, 0..) |boxname, boxidx| {
-                    if (std.mem.eql(u8, boxname, name)) {
-                        for (self.emails.items) |*email| {
-                            if (email.box != boxidx) continue;
-
-                            email.viewed = (conts[startidx + email.id + 256 * nameidx] & (1 << 0)) != 0;
-                            email.isComplete = (conts[startidx + email.id + 256 * nameidx] & (1 << 1)) != 0;
-                        }
+                        email.viewed = (conts[startidx + email.id + 256 * nameidx] & (1 << 0)) != 0;
+                        email.isComplete = (conts[startidx + email.id + 256 * nameidx] & (1 << 1)) != 0;
                     }
                 }
             }
@@ -262,20 +262,20 @@ pub const EmailManager = struct {
     pub fn exportData(self: *EmailManager) ![]u8 {
         var result = try allocator.alloc.alloc(u8, 4);
 
-        var len = std.mem.toBytes(self.emails.items.len)[0..4];
+        const len = std.mem.toBytes(self.emails.items.len)[0..4];
         std.mem.copy(u8, result, len);
         for (self.emails.items) |email| {
-            var start = result.len;
+            const start = result.len;
 
-            var idStr = std.mem.toBytes(email.id);
-            var show = std.mem.toBytes(email.show);
-            var fromLen = std.mem.toBytes(email.from.len)[0..4];
-            var depsLen = std.mem.toBytes(email.deps.len)[0..4];
-            var condsLen = std.mem.toBytes(email.conditionData.len)[0..4];
-            var subjectLen = std.mem.toBytes(email.subject.len)[0..4];
-            var contentLen = std.mem.toBytes(email.contents.len)[0..4];
+            const idStr = std.mem.toBytes(email.id);
+            const show = std.mem.toBytes(email.show);
+            const fromLen = std.mem.toBytes(email.from.len)[0..4];
+            const depsLen = std.mem.toBytes(email.deps.len)[0..4];
+            const condsLen = std.mem.toBytes(email.conditionData.len)[0..4];
+            const subjectLen = std.mem.toBytes(email.subject.len)[0..4];
+            const contentLen = std.mem.toBytes(email.contents.len)[0..4];
 
-            var appends = try std.mem.concat(
+            const appends = try std.mem.concat(
                 allocator.alloc,
                 u8,
                 &[_][]const u8{
@@ -304,78 +304,77 @@ pub const EmailManager = struct {
     }
 
     pub fn loadFromFolder(self: *EmailManager, path: []const u8) !void {
-        if (try files.root.getFolder(path)) |folder| {
-            var fileList = std.ArrayList(*files.File).init(allocator.alloc);
-            defer fileList.deinit();
-            try folder.getFiles(&fileList);
+        const folder = try files.root.getFolder(path);
+        var fileList = std.ArrayList(*const files.File).init(allocator.alloc);
+        defer fileList.deinit();
+        try folder.getFiles(&fileList);
 
-            self.boxes = try allocator.alloc.alloc([]u8, fileList.items.len);
+        self.boxes = try allocator.alloc.alloc([]u8, fileList.items.len);
 
-            for (fileList.items, 0..) |file, boxid| {
-                std.log.debug("load emails: {s}", .{file.name});
+        for (fileList.items, 0..) |file, boxid| {
+            std.log.debug("load emails: {s}", .{file.name});
 
-                self.boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
+            self.boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
 
-                var conts = try file.read(null);
+            const conts = try file.read(null);
 
-                var fidx: usize = 0;
+            var fidx: usize = 0;
 
-                var start = self.emails.items.len;
+            const start = self.emails.items.len;
 
-                var count = @as(u32, @bitCast(conts[fidx .. fidx + 4][0..4].*));
-                try self.emails.resize(start + count);
+            const count = @as(u32, @bitCast(conts[fidx .. fidx + 4][0..4].*));
+            try self.emails.resize(start + count);
 
+            fidx += 4;
+
+            for (start..start + count) |idx| {
+                self.emails.items[idx].viewed = false;
+                self.emails.items[idx].isComplete = false;
+
+                self.emails.items[idx].id = conts[fidx];
+                fidx += 1;
+
+                self.emails.items[idx].show = conts[fidx] != 0;
+                fidx += 1;
+
+                self.emails.items[idx].box = @as(u8, @intCast(boxid));
+
+                self.emails.items[idx].condition = @as(Email.Condition, @enumFromInt(conts[fidx]));
+                fidx += 1;
+
+                const kind = *align(1) const u32;
+
+                var len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                 fidx += 4;
 
-                for (start..start + count) |idx| {
-                    self.emails.items[idx].viewed = false;
-                    self.emails.items[idx].isComplete = false;
+                self.emails.items[idx].conditionData = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
 
-                    self.emails.items[idx].id = conts[fidx];
-                    fidx += 1;
+                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                fidx += 4;
 
-                    self.emails.items[idx].show = conts[fidx] != 0;
-                    fidx += 1;
+                self.emails.items[idx].deps = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
 
-                    self.emails.items[idx].box = @as(u8, @intCast(boxid));
+                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                fidx += 4;
 
-                    self.emails.items[idx].condition = @as(Email.Condition, @enumFromInt(conts[fidx]));
-                    fidx += 1;
+                self.emails.items[idx].from = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
 
-                    const kind = *align(1) const u32;
+                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                fidx += 4;
 
-                    var len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                    fidx += 4;
+                self.emails.items[idx].subject = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
 
-                    self.emails.items[idx].conditionData = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
-                    fidx += len;
+                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                fidx += 4;
 
-                    len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                    fidx += 4;
-
-                    self.emails.items[idx].deps = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
-                    fidx += len;
-
-                    len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                    fidx += 4;
-
-                    self.emails.items[idx].from = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
-                    fidx += len;
-
-                    len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                    fidx += 4;
-
-                    self.emails.items[idx].subject = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
-                    fidx += len;
-
-                    len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                    fidx += 4;
-
-                    self.emails.items[idx].contents = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
-                    fidx += len;
-                }
-                std.sort.insertion(Email, self.emails.items[start..], false, Email.lessThan);
+                self.emails.items[idx].contents = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
             }
+            std.sort.insertion(Email, self.emails.items[start..], false, Email.lessThan);
         }
     }
 };

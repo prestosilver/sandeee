@@ -95,7 +95,7 @@ pub const WindowContents = struct {
         if (self.props.scroll) |scrolldat| {
             if (scrolldat.maxy <= 0) return;
 
-            var scrollPc = scrolldat.value / scrolldat.maxy;
+            const scrollPc = scrolldat.value / scrolldat.maxy;
 
             scrollSp[1].data.size.y = bnds.h - scrolldat.offsetStart - (12 * 2) + 2;
 
@@ -317,7 +317,7 @@ pub const WindowData = struct {
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32, color: cols.Color) !void {
-        var sc = @as(f32, @floatFromInt(scale));
+        const sc = @as(f32, @floatFromInt(scale));
 
         try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE), color);
         try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE), color);
@@ -379,7 +379,7 @@ pub const WindowData = struct {
         bottom.x -= RESIZE_PAD;
         bottom.w += RESIZE_PAD * 2;
 
-        var bot = bottom.contains(mousepos);
+        const bot = bottom.contains(mousepos);
 
         var left = self.pos;
         left.w = RESIZE_PAD * 2;
@@ -413,8 +413,11 @@ pub const WindowData = struct {
     pub fn drawName(self: *WindowData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
         if (self.min) return;
 
-        var color = cols.newColorRGBA(197, 197, 197, 255);
-        if (self.active) color = cols.newColorRGBA(255, 255, 255, 255);
+        const color = if (self.active)
+            cols.newColorRGBA(255, 255, 255, 255)
+        else
+            cols.newColorRGBA(197, 197, 197, 255);
+
         try font.draw(.{
             .batch = batch,
             .shader = shader,
@@ -508,13 +511,13 @@ pub const WindowData = struct {
             sprite = 1;
         }
 
-        var close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);
-        var full = rect.newRect(self.pos.x + self.pos.w - 86, self.pos.y, 64, 64);
-        var min = rect.newRect(self.pos.x + self.pos.w - 108, self.pos.y, 64, 64);
+        const close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);
+        const full = rect.newRect(self.pos.x + self.pos.w - 86, self.pos.y, 64, 64);
+        const min = rect.newRect(self.pos.x + self.pos.w - 108, self.pos.y, 64, 64);
 
         try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
-        var maxAlpha: f32 = if (self.contents.props.size.max == null) 1.0 else 0.75;
+        const maxAlpha: f32 = if (self.contents.props.size.max == null) 1.0 else 0.75;
         try addUiQuad(&result, 4, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
         try addUiQuad(&result, 5, full, 2, 3, 3, 17, 3, cols.newColor(maxAlpha, maxAlpha, maxAlpha, 1));
         try addUiQuad(&result, 6, min, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
