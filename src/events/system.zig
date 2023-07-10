@@ -4,6 +4,7 @@ pub const State = enum {
     Installer,
     Recovery,
     Windowed,
+    Logout,
 
     Crash,
 };

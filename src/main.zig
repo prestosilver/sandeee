@@ -12,6 +12,7 @@ const windowedState = @import("states/windowed.zig");
 const crashState = @import("states/crash.zig");
 const installState = @import("states/installer.zig");
 const recoveryState = @import("states/recovery.zig");
+const logoutState = @import("states/logout.zig");
 
 // utilities
 const fm = @import("util/files.zig");
@@ -505,11 +506,12 @@ pub fn mainErr() anyerror!void {
     // setup the texture manager
     textureManager = texMan.TextureManager.init();
     batch.textureManager = &textureManager;
-    audioman = try audio.Audio.init();
 
     // init graphics
     ctx = try gfx.init("SandEEE");
     gfx.gContext = &ctx;
+
+    audioman = try audio.Audio.init();
 
     // setup fonts deinit
     biosFace.setup = false;
@@ -687,6 +689,14 @@ pub fn mainErr() anyerror!void {
         },
     };
 
+    // logout state
+    var gsLogout = logoutState.GSLogout{
+        .shader = &shader,
+        .font_shader = &font_shader,
+        .face = &biosFace,
+        .sb = &sb,
+    };
+
     // recovery state
     var gsRecovery = recoveryState.GSRecovery{
         .shader = &shader,
@@ -709,6 +719,7 @@ pub fn mainErr() anyerror!void {
     gameStates.set(.Loading, states.GameState.init(&gsLoading));
     gameStates.set(.Windowed, states.GameState.init(&gsWindowed));
     gameStates.set(.Crash, states.GameState.init(&gsCrash));
+    gameStates.set(.Logout, states.GameState.init(&gsLogout));
     gameStates.set(.Recovery, states.GameState.init(&gsRecovery));
     gameStates.set(.Installer, states.GameState.init(&gsInstall));
 
