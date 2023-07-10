@@ -86,7 +86,12 @@ pub const Folder = struct {
             const contbuffer: []u8 = try allocator.alloc.alloc(u8, contsize);
             defer allocator.alloc.free(contbuffer);
             _ = try file.read(contbuffer);
-            try root.newFile(namebuffer);
+            root.newFile(namebuffer) catch |err| {
+                switch (err) {
+                    error.FileExists => {},
+                    else => return err,
+                }
+            };
             try root.writeFile(namebuffer, contbuffer, null);
         }
     }
