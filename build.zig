@@ -32,7 +32,7 @@ const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
 var Version: std.SemanticVersion = .{
     .major = 0,
-    .minor = 1,
+    .minor = 2,
     .patch = 0,
     .build = "",
 };
