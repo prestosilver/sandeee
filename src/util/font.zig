@@ -303,6 +303,7 @@ pub const Font = struct {
 
     pub fn sizeText(self: *Font, params: sizeParams) vec.Vector2 {
         var result = vec.newVec2(0, 0);
+        var maxx: f32 = 0;
 
         if (params.wrap) |maxSize| {
             var iter = std.mem.split(u8, params.text, " ");
@@ -345,6 +346,7 @@ pub const Font = struct {
                         result.x += spaceSize;
                         continue;
                     } else {
+                        maxx = @max(maxx, result.x);
                         result.x = 0;
                         result.y += params.scale * self.size;
                     }
@@ -353,11 +355,10 @@ pub const Font = struct {
                 result.x += spaceSize;
             }
             result.y += self.size * params.scale;
+            result.x = @max(maxx, result.x);
 
             return result;
         }
-
-        var maxx: f32 = 0;
 
         for (params.text) |ach| {
             if (ach == '\n') {
@@ -369,7 +370,6 @@ pub const Font = struct {
 
             const char = self.chars[ach];
             result.x += char.ax * params.scale;
-            result.y += char.ay * params.scale;
         }
 
         result.y += self.size * params.scale;
