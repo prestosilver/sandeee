@@ -32,22 +32,25 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
     while (true) {
         if (mainShell.vm != null) {
-            shell.frameEnd = std.math.maxInt(u64);
+            // setup vm data for update
+            shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat(1 * std.time.ns_per_s * 0.5));
 
             const result = try mainShell.updateVM();
+            if (result != null) {
+                _ = try stdout.write(result.?.data.items);
+                result.?.data.deinit();
+            } else {
+                _ = try stdout.write(mainShell.vm.?.out.items);
+                mainShell.vm.?.out.clearAndFree();
+            }
+
             for (shell.threads.items) |thread| {
                 thread.join();
             }
             shell.threads.clearAndFree();
 
-            if (result != null) {
-                _ = try stdout.write(result.?.data.items);
-                if (result.?.data.items.len == 0 or result.?.data.getLast() != '\n')
-                    _ = try stdout.write("\n");
-                result.?.data.deinit();
-            } else {
-                _ = try stdout.write(mainShell.vm.?.out.items);
-                mainShell.vm.?.out.clearAndFree();
+            if (mainShell.vm == null) {
+                _ = try stdout.write("\n");
             }
 
             continue;
