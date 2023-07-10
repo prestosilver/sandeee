@@ -100,10 +100,7 @@ pub fn writeGfxSave(data: []const u8, vmInstance: ?*vm.VM) !void {
     const texture = sb.textureManager.get(&.{idx}) orelse return;
 
     if (vmInstance) |vmi| {
-        vmi.root.newFile(image) catch |err| switch (err) {
-            error.FileExists => {},
-            else => return err,
-        };
+        try vmi.root.newFile(image);
 
         const conts = try std.mem.concat(allocator.alloc, u8, &.{
             "eimg",
