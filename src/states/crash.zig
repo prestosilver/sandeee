@@ -25,7 +25,7 @@ pub const GSCrash = struct {
 
     pub fn setup(_: *Self) !void {
         try files.write();
-        gfx.gContext.color = cols.newColor(0.3333, 0, 0, 1);
+        gfx.gContext.color = cols.newColor(0.25, 0, 0, 1);
     }
 
     pub fn deinit(_: *Self) !void {}
