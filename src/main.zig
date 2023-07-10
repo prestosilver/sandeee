@@ -102,6 +102,15 @@ const clear_shader_files = [2]shd.ShaderFile{
     shd.ShaderFile{ .contents = clearVertShader, .kind = c.GL_VERTEX_SHADER },
 };
 
+const full_quad = [_]c.GLfloat{
+    -1.0, -1.0, 0.0,
+    1.0,  -1.0, 0.0,
+    -1.0, 1.0,  0.0,
+    -1.0, 1.0,  0.0,
+    1.0,  -1.0, 0.0,
+    1.0,  1.0,  0.0,
+};
+
 var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
 var currentState: systemEvs.State = .Disks;
 
@@ -122,39 +131,39 @@ var shader: shd.Shader = undefined;
 // the selected disk
 var disk: ?[]u8 = null;
 
+// wallpaper stuff
 var wallpaper: *wall.Wallpaper = undefined;
-
-var message_snd: audio.Sound = undefined;
 
 // managers
 var settingManager: conf.SettingManager = undefined;
 var textureManager: texMan.TextureManager = undefined;
 var emailManager: emails.EmailManager = undefined;
 
+// gfx stuff
 var ctx: gfx.Context = undefined;
 var sb: batch.SpriteBatch = undefined;
-var audioman: audio.Audio = undefined;
 
+// sounds
+var audioman: audio.Audio = undefined;
+var message_snd: audio.Sound = undefined;
+
+// for panic
 var errorMsg: []const u8 = "Error: Unknown error";
 var errorState: u8 = 0;
+var panicLock = std.Thread.Mutex{};
+var paniced = false;
 
+// for shader rect
 var framebufferName: c.GLuint = 0;
 var quad_VertexArrayID: c.GLuint = 0;
 var renderedTexture: c.GLuint = 0;
 var depthrenderbuffer: c.GLuint = 0;
 
-const full_quad = [_]c.GLfloat{
-    -1.0, -1.0, 0.0,
-    1.0,  -1.0, 0.0,
-    -1.0, 1.0,  0.0,
-    -1.0, 1.0,  0.0,
-    1.0,  -1.0, 0.0,
-    1.0,  1.0,  0.0,
-};
-
+// fps tracking
 var finalFps: u32 = 60;
 var showFps: bool = false;
 
+// steam
 var steamUserStats: *const steam.SteamUserStats = undefined;
 var steamUtils: *const steam.SteamUtils = undefined;
 
@@ -355,9 +364,6 @@ pub fn setupEvents() !void {
     try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
     try events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
 }
-
-var panicLock = std.Thread.Mutex{};
-var paniced = false;
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {
     while (!self.done.load(.SeqCst) and !paniced) {
