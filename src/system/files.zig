@@ -284,6 +284,7 @@ pub const Folder = struct {
 
     pub fn newFile(self: *Folder, name: []const u8) !void {
         if (self.protected) return error.FolderProtected;
+        if (name.len == 0) return error.InvalidName;
 
         const first = std.mem.indexOf(u8, name, "/");
 
@@ -381,7 +382,7 @@ pub const Folder = struct {
 
     pub fn removeFile(self: *Folder, name: []const u8) !void {
         if (self.protected) return error.FolderProtected;
-        if (name.len == 0) return;
+        if (name.len == 0) return error.InvalidName;
 
         if (std.mem.endsWith(u8, name, "/")) return self.newFolder(name[0 .. name.len - 1]);
 
@@ -417,6 +418,8 @@ pub const Folder = struct {
     }
 
     pub fn getFile(self: *Folder, name: []const u8) !*File {
+        if (name.len == 0) return error.InvalidName;
+
         const first = std.mem.indexOf(u8, name, "/");
         if (first) |index| {
             const folder = name[0..index];
@@ -451,7 +454,7 @@ pub const Folder = struct {
 
     pub fn getFolder(self: *Folder, name: []const u8) !*Folder {
         if (std.mem.eql(u8, name, "..")) return self.parent;
-        if (std.mem.eql(u8, name, "")) return self;
+        if (name.len == 0) return self;
 
         const first = std.mem.indexOf(u8, name, "/");
         if (first) |index| {

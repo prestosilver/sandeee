@@ -107,6 +107,7 @@ pub const ExplorerData = struct {
         const hidden = settings.settingManager.getBool("explorer_hidden");
 
         for (icons, 0..) |icon, idx| {
+            if (icon.name.len == 0) continue;
             if (!hidden and icon.name[0] == '_') continue;
 
             const size = font.sizeText(.{
