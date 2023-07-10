@@ -1310,6 +1310,7 @@ pub const VM = struct {
 
         while (timer.read() < ns and !self.done() and !self.yield) {
             if (try self.runStep()) {
+                self.stopped = true;
                 return true;
             }
         }
