@@ -26,7 +26,7 @@ const eonLibFiles = [_][]const u8{ "ui", "heap", "table", "asm" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
 const pngImageFiles = [_][]const u8{ "transparent", "wall2", "icons", "ui", "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
-const internalSoundFiles = [_][]const u8{ "bios-blip", "bios-select" };
+const internalSoundFiles = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
