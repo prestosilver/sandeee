@@ -252,16 +252,29 @@ pub const Shell = struct {
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
 
-        try result.data.appendSlice("Sh\x82\x82\x82ll Help:\n");
-        try result.data.appendSlice("=============\n");
-        try result.data.appendSlice("help - prints this\n");
-        try result.data.appendSlice("run - runs a command\n");
-        try result.data.appendSlice("ls - lists the current folder\n");
-        try result.data.appendSlice("cd - changes the current folder\n");
-        try result.data.appendSlice("$run - runs the output of a command\n");
-        try result.data.appendSlice("asm - runs a file\n");
-        try result.data.appendSlice("edit - opens an editor with the file open\n");
-        try result.data.appendSlice("cmd - opens cmd");
+        try result.data.appendSlice("" ++
+            "Sh\x82\x82\x82ll Help:\n" ++
+            "=============\n" ++
+            "\n" ++
+            "Commands\n" ++
+            "--------\n" ++
+            "help - prints this\n" ++
+            "ls   - lists the contents of the current folder\n" ++
+            "cd   - changes the current folder\n" ++
+            "new  - creates a new file\n" ++
+            "dnew - creates a new folder\n" ++
+            "rem  - removes a file\n" ++
+            "drem - removes a file\n" ++
+            "cls  - clears the terminal\n" ++
+            "exit - closes the terminal\n" ++
+            "\n" ++
+            "Applications\n" ++
+            "------------\n" ++
+            "cmd  - opens cmd\n" ++
+            "edit - opens the text editor\n" ++
+            "web  - opens the web browser\n" ++
+            "\n" ++
+            "You can also run any file in /exec with its name.\n");
 
         return result;
     }
@@ -284,7 +297,7 @@ pub const Shell = struct {
         return error.MissingParameter;
     }
 
-    pub fn dir(self: *Shell, param: []const u8) !Result {
+    pub fn dnew(self: *Shell, param: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
@@ -457,46 +470,11 @@ pub const Shell = struct {
         }
         if (std.mem.eql(u8, cmd, "help")) return self.help(params);
         if (std.mem.eql(u8, cmd, "ls")) return self.ls(params);
-        if (std.mem.eql(u8, cmd, "new")) return self.new(params);
-        if (std.mem.eql(u8, cmd, "dir")) return self.dir(params);
-        if (std.mem.eql(u8, cmd, "rem")) return self.rem(params);
         if (std.mem.eql(u8, cmd, "cd")) return self.cd(params);
+        if (std.mem.eql(u8, cmd, "new")) return self.new(params);
+        if (std.mem.eql(u8, cmd, "dnew")) return self.dnew(params);
+        if (std.mem.eql(u8, cmd, "rem")) return self.rem(params);
 
-        if (std.mem.eql(u8, cmd, "$run")) {
-            if (params.len < 6) {
-                return error.ExpectedParameter;
-            }
-
-            var out: Result = undefined;
-
-            {
-                var command = std.ArrayList(u8).init(allocator.alloc);
-                defer command.deinit();
-
-                for (params[5..]) |char| {
-                    if (char == ' ') {
-                        break;
-                    } else {
-                        try command.append(char);
-                    }
-                }
-                out = try self.run(command.items, params[5..]);
-            }
-
-            defer out.data.deinit();
-
-            var command = std.ArrayList(u8).init(allocator.alloc);
-            defer command.deinit();
-
-            for (out.data.items) |char| {
-                if (char == ' ') {
-                    break;
-                } else {
-                    try command.append(char);
-                }
-            }
-            return self.run(command.items, out.data.items);
-        }
         if (std.mem.eql(u8, cmd, "cls")) {
             const result: Result = Result{
                 .data = std.ArrayList(u8).init(allocator.alloc),
@@ -513,13 +491,7 @@ pub const Shell = struct {
 
             return result;
         }
-        if (std.mem.eql(u8, cmd, "run")) {
-            if (params.len < 5) {
-                return error.ExpectedParameter;
-            }
 
-            return self.runLine(params[4..]);
-        }
         return self.runFile(cmd, params);
     }
 };

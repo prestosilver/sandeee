@@ -235,7 +235,7 @@ pub fn new() !win.WindowContents {
     const self = try allocator.alloc.create(CMDData);
 
     self.* = .{
-        .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh\x82\x82\x82l", .{}),
+        .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh\x82\x82\x82l\nUse help to list possible commands\n", .{}),
         .history = try std.ArrayList([]const u8).initCapacity(allocator.alloc, 32),
         .shell = .{
             .root = files.home,
