@@ -1,0 +1,55 @@
+const std = @import("std");
+const eon = @import("eon.zig");
+const asma = @import("asm.zig");
+const textures = @import("textures.zig");
+
+// converts a eep to a epk
+pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    var result = std.ArrayList(u8).init(alloc);
+
+    try result.appendSlice("epak");
+
+    var split = std.mem.split(u8, in, ";");
+
+    while (split.next()) |item| {
+        const idx = std.mem.indexOf(u8, item, ":") orelse return error.BadInput;
+        const name = item[idx + 1 ..];
+        const nameLen: u16 = @intCast(name.len);
+
+        try result.append(std.mem.asBytes(&nameLen)[1]);
+        try result.append(std.mem.asBytes(&nameLen)[0]);
+        try result.appendSlice(name);
+
+        const ext = item[idx - 4 .. idx];
+
+        if (std.mem.eql(u8, ext, ".asm")) {
+            const data = try asma.compile(item[0..idx], alloc);
+            defer data.deinit();
+
+            const dataLen: u16 = @intCast(data.items.len);
+
+            try result.append(std.mem.asBytes(&dataLen)[1]);
+            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.appendSlice(data.items);
+
+            continue;
+        }
+
+        if (std.mem.eql(u8, ext, ".png")) {
+            const data = try textures.convert(item[0..idx], alloc);
+            defer data.deinit();
+
+            const dataLen: u16 = @intCast(data.items.len);
+
+            try result.append(std.mem.asBytes(&dataLen)[1]);
+            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.appendSlice(data.items);
+
+            continue;
+        }
+
+        return error.BadInput;
+    }
+
+    return result;
+}

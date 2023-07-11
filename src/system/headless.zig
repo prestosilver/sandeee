@@ -33,7 +33,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
     while (true) {
         if (mainShell.vm != null) {
             // setup vm data for update
-            shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat(1 * std.time.ns_per_s * 0.5));
+            shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat(1.0 / 60.0 * std.time.ns_per_s));
 
             const result = try mainShell.updateVM();
             if (result != null) {

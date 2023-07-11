@@ -1,6 +1,7 @@
 const std = @import("std");
 const mail = @import("src/system/mail.zig");
 const comp = @import("tools/asm.zig");
+const epk = @import("tools/epk.zig");
 const sound = @import("tools/sound.zig");
 const image = @import("tools/textures.zig");
 const diskStep = @import("tools/disk.zig");
@@ -12,8 +13,8 @@ const emails = @import("tools/mail.zig");
 
 // debug only
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
-const eonTestsFiles = [_][]const u8{ "bugs", "pong", "paint", "fib", "tabletest", "heaptest", "stringtest", "paren" };
-const eonTestSrcs = [_][]const u8{ "eon", "pix" };
+const eonTestsFiles = [_][]const u8{ "bugs", "pong", "paint", "tabletest", "heaptest", "stringtest", "paren" };
+const eonTestSrcs = [_][]const u8{ "eon", "pix", "fib" };
 
 // demo overrides
 const mailDirsDemo = [_][]const u8{"inbox"};
@@ -29,6 +30,18 @@ const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error"
 const internalSoundFiles = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
+
+const wwwFiles = [_]WWWStepData{
+    .{ .inputFiles = "content/asm/eon/pong.asm:pong.eep;content/images/pong.png:pong.eia", .outputFile = "www/downloads/games/pong.epk", .converter = epk.convert },
+};
+
+// www data
+const WWWStepData = struct {
+    inputFiles: []const u8,
+    outputFile: []const u8,
+
+    converter: *const fn ([]const u8, std.mem.Allocator) anyerror!std.ArrayList(u8),
+};
 
 var Version: std.SemanticVersion = .{
     .major = 0,
@@ -269,6 +282,14 @@ pub fn build(b: *std.build.Builder) !void {
         b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
+    }
+
+    const www_step = b.step("www", "Build the website");
+
+    for (wwwFiles) |file| {
+        const step = conv.ConvertStep.create(b, file.converter, file.inputFiles, file.outputFile);
+
+        www_step.dependOn(&step.step);
     }
 
     const run_step = b.step("run", "Run the app");
