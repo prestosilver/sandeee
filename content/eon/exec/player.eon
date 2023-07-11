@@ -12,7 +12,7 @@ fn processArgs() {
 }
 
 fn render(win, tex, time) {
-    _WindowText(win, 0, 0, "" & time);
+    _WindowText(win, 0, 0, "Test");
     _WindowFlip(win);
 
     return 0;
@@ -41,12 +41,24 @@ fn main() {
 
     _playSound(inData);
 
-    var time = _StringLength(inData);
+    var songTime = 10 * _StringLength(inData);
 
-    time = time / 44100;
+    songTime = songTime / 441;
 
-    for (0; _WindowOpen(); 1) {
-        render(window, texture, time);
+    var targTime = songTime + time();
+    var running = 1;
+    var curTime;
+
+    print(songTime);
+
+    for (0; _WindowOpen() && running; 1) {
+        render(window, texture, songTime);
+
+        curTime = time();
+
+        if (curTime > targTime) {
+            running = 0;
+        }
     }
 
     _TextureDestroy(texture);
@@ -54,4 +66,5 @@ fn main() {
 
     return 0;
 }
+
 

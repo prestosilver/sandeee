@@ -133,7 +133,7 @@ var shader: shd.Shader = undefined;
 var disk: ?[]u8 = null;
 
 // wallpaper stuff
-var wallpaper: *wall.Wallpaper = undefined;
+var wallpaper: wall.Wallpaper = undefined;
 
 // managers
 var settingManager: conf.SettingManager = undefined;
@@ -565,6 +565,11 @@ pub fn mainErr() anyerror!void {
     shell.threads = std.ArrayList(std.Thread).init(allocator.alloc);
     defer shell.threads.deinit();
 
+    wallpaper = wall.Wallpaper.new("wall", wall.WallData{
+        .dims = &gfx.gContext.size,
+        .mode = .Center,
+    });
+
     // disks state
     var gsDisks = diskState.GSDisks{
         .sb = &sb,
@@ -645,10 +650,7 @@ pub fn mainErr() anyerror!void {
                 6,
             ),
         },
-        .wallpaper = wall.Wallpaper.new("wall", wall.WallData{
-            .dims = &gfx.gContext.size,
-            .mode = .Center,
-        }),
+        .wallpaper = &wallpaper,
         .bar = bar.Bar.new("bar", bar.BarData{
             .height = 38,
             .screendims = &gfx.gContext.size,
@@ -695,6 +697,8 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .face = &biosFace,
         .sb = &sb,
+        .wallpaper = &wallpaper,
+        .clearShader = &clear_shader,
     };
 
     // recovery state
@@ -731,7 +735,6 @@ pub fn mainErr() anyerror!void {
     win.deskSize = &gfx.gContext.size;
     desk.deskSize = &gfx.gContext.size;
     windowedState.GSWindowed.deskSize = &gfx.gContext.size;
-    wallpaper = &gsWindowed.wallpaper;
     bar.settingsManager = &settingManager;
 
     // update the frame timer
