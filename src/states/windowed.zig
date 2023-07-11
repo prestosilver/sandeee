@@ -43,7 +43,7 @@ pub const GSWindowed = struct {
     notifs: std.ArrayList(notifications.Notification) = undefined,
     openWindow: vecs.Vector2 = vecs.newVec2(0, 0),
 
-    wallpaper: wall.Wallpaper,
+    wallpaper: *wall.Wallpaper,
     bar: bar.Bar,
     sb: *batch.SpriteBatch,
     shader: *shd.Shader,
@@ -312,7 +312,7 @@ pub const GSWindowed = struct {
         }
 
         // draw wallpaper
-        try self.sb.draw(wall.Wallpaper, &self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
+        try self.sb.draw(wall.Wallpaper, self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
         try self.sb.draw(desk.Desk, &self.desk, self.shader, vecs.newVec3(0, 0, 0));
         try self.desk.data.addText(self.sb, self.font_shader, self.face);
         try self.desk.data.updateVm();

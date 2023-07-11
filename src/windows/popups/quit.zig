@@ -8,6 +8,7 @@ const cols = @import("../../math/colors.zig");
 const files = @import("../../system/files.zig");
 const vecs = @import("../../math/vecs.zig");
 const fnt = @import("../../util/font.zig");
+const logoutState = @import("../../states/logout.zig");
 const events = @import("../../util/events.zig");
 const windowEvs = @import("../../events/window.zig");
 const systemEvs = @import("../../events/system.zig");
@@ -43,12 +44,16 @@ pub const PopupQuit = struct {
         if (self.done) |rets| {
             switch (rets) {
                 0 => {
+                    logoutState.target = .Bios;
                     try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Disks,
+                        .targetState = .Logout,
                     });
                 },
                 1 => {
-                    c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+                    logoutState.target = .Quit;
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Logout,
+                    });
                 },
                 else => return,
             }

@@ -112,6 +112,7 @@ pub const Folder = struct {
         const conts = try conf.read(null);
 
         const settingsOut = try std.mem.concat(allocator.alloc, u8, &.{ conts, "\n", settings });
+        defer allocator.alloc.free(settingsOut);
 
         try conf.write(settingsOut, null);
 
