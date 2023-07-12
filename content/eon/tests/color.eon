@@ -1,0 +1,14 @@
+#include "/libs/inc/sys.eon"
+
+fn main() {
+    print("\xf8lol\n");
+    print("\xf9lol\n");
+    print("\xfalol\n");
+    print("\xfblol\n");
+    print("\xfclol\n");
+    print("\xfdlol\n");
+    print("\xfelol\n");
+    print("\xfflol\n");
+
+    return 0;
+}
