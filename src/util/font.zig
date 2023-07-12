@@ -12,6 +12,17 @@ const c = @import("../c.zig");
 
 var fontId: u8 = 0;
 
+const FONT_COLORS = [8]col.Color{
+    .{ .r = 0, .g = 0, .b = 0, .a = 1 },
+    .{ .r = 1, .g = 1, .b = 1, .a = 1 },
+    .{ .r = 1, .g = 0, .b = 0, .a = 1 },
+    .{ .r = 1, .g = 1, .b = 0, .a = 1 },
+    .{ .r = 0, .g = 1, .b = 0, .a = 1 },
+    .{ .r = 0, .g = 1, .b = 1, .a = 1 },
+    .{ .r = 0, .g = 0, .b = 1, .a = 1 },
+    .{ .r = 1, .g = 0, .b = 1, .a = 1 },
+};
+
 pub const Font = struct {
     tex: []const u8,
     size: f32,
@@ -147,6 +158,7 @@ pub const Font = struct {
     pub fn draw(self: *Font, params: drawParams) !void {
         var pos = if (params.origin) |orig| orig.* else params.pos;
         var srect = rect.newRect(0, 0, 1, 1);
+        var color = params.color;
         pos.x = @round(pos.x);
         pos.y = @round(pos.y);
 
@@ -179,7 +191,7 @@ pub const Font = struct {
                                 .text = spaced[0 .. split - 1],
                                 .pos = start,
                                 .origin = &pos,
-                                .color = params.color,
+                                .color = color,
                                 .scale = params.scale,
                                 .wrap = null,
                                 .maxlines = params.maxlines,
@@ -200,7 +212,7 @@ pub const Font = struct {
                             .text = spaced,
                             .pos = start,
                             .origin = &pos,
-                            .color = params.color,
+                            .color = color,
                             .scale = params.scale,
                             .wrap = null,
                             .maxlines = params.maxlines,
@@ -219,7 +231,7 @@ pub const Font = struct {
                     .text = word,
                     .pos = start,
                     .origin = &pos,
-                    .color = params.color,
+                    .color = color,
                     .scale = params.scale,
                     .wrap = null,
                     .maxlines = params.maxlines,
@@ -255,6 +267,11 @@ pub const Font = struct {
                 continue;
             }
 
+            if (ach & 0xF8 == 0xF8) {
+                color = FONT_COLORS[@intCast(ach & 0x07)];
+                continue;
+            }
+
             const char = self.chars[ach];
             if (ach != ' ') {
                 const w = char.size.x * params.scale;
@@ -266,13 +283,13 @@ pub const Font = struct {
                 srect.w = char.tw;
                 srect.h = char.th;
 
-                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), params.color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), params.color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), params.color);
+                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
 
-                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), params.color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), params.color);
-                try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), params.color);
+                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
+                try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
             }
 
             pos.x += char.ax * params.scale;
@@ -361,6 +378,10 @@ pub const Font = struct {
         }
 
         for (params.text) |ach| {
+            if (ach & 0xF8 == 0xF8) {
+                continue;
+            }
+
             if (ach == '\n') {
                 maxx = @max(result.x, maxx);
                 result.y += self.size * params.scale;
