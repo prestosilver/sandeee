@@ -241,9 +241,9 @@ pub const Shell = struct {
     pub fn runFile(self: *Shell, cmd: []const u8, param: []const u8) !Result {
         return self.runFileInFolder(files.exec, cmd, param) catch
             self.runFileInFolder(self.root, cmd, param) catch {
-            if (self.root.getFile(cmd) catch null != null) {
+            if (self.root.getFile(cmd) catch null) |file| {
                 const opens = try opener.openFile(cmd);
-                const params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ opens, param });
+                const params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ opens, file.name });
                 defer allocator.alloc.free(params);
 
                 return self.run(params);
