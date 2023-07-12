@@ -1388,9 +1388,6 @@ pub fn compileEon(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var tokens = try lex_file(in);
     defer tokens.deinit();
 
-    //for (tokens.items) |tok|
-    //    std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
-
     var prog = try parseProgram(tokens.items);
 
     var result = std.ArrayList(u8).init(alloc);
@@ -1406,9 +1403,6 @@ pub fn compileEonLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
 
     var tokens = try lex_file(in);
     defer tokens.deinit();
-
-    // for (tokens.items) |tok|
-    //     std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
 
     var prog = try parseProgram(tokens.items);
 
