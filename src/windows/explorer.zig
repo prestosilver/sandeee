@@ -143,7 +143,7 @@ pub const ExplorerData = struct {
                                 self.shell.root = newPath.?;
                                 self.selected = 0;
                             } else {
-                                _ = self.shell.run(icon.name, icon.name) catch {
+                                _ = self.shell.run(icon.name) catch {
                                     //TODO: popup
                                 };
                             }

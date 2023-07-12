@@ -80,11 +80,8 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
         }
 
         var command = std.mem.trim(u8, data, "\r\n ");
-        if (std.mem.indexOf(u8, command, " ")) |idx| {
-            command.len = idx;
-        }
 
-        var result = mainShell.run(command, data) catch |err| {
+        var result = mainShell.run(command) catch |err| {
             const msg = @errorName(err);
 
             _ = try stdout.write("Error: ");

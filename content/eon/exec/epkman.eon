@@ -176,7 +176,7 @@ fn main() {
         var outFile = createOpen(out);
         write(outFile, epk);
         close(outFile);
-    } else {
+    } else if (op == "unpack") {
         unpack(op);
     }
 

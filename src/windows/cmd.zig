@@ -16,7 +16,7 @@ const c = @import("../c.zig");
 
 const MAX_SIZE = 10000;
 
-const CMDData = struct {
+pub const CMDData = struct {
     const Self = @This();
 
     bt: []u8,
@@ -139,16 +139,7 @@ const CMDData = struct {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + prompt.len);
                 std.mem.copy(u8, self.bt[start .. start + prompt.len], prompt);
 
-                var command = self.inputBuffer[0..self.inputIdx];
-                try events.EventManager.instance.sendEvent(systemEvs.EventRunCmd{
-                    .cmd = command,
-                });
-
-                if (std.mem.indexOf(u8, command, " ")) |size| {
-                    command.len = size;
-                }
-
-                const al = self.shell.run(command, self.inputBuffer[0..self.inputIdx]) catch |err| {
+                const al = self.shell.run(self.inputBuffer[0..self.inputIdx]) catch |err| {
                     const msg = @errorName(err);
 
                     start = self.bt.len;

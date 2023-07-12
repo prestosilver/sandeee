@@ -268,7 +268,7 @@ pub const GSWindowed = struct {
 
         if (self.settingsManager.get("startup_file")) |startupCmd| {
             self.shell = .{ .root = files.root };
-            _ = self.shell.run(startupCmd, startupCmd) catch return;
+            _ = self.shell.run(startupCmd) catch return;
         }
     }
 

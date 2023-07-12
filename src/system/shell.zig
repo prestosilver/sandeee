@@ -109,7 +109,7 @@ pub const Shell = struct {
         }
     }
 
-    pub fn runCmd(_: *Shell, _: []const u8) !Result {
+    pub fn runCmd(_: *Shell, param: []const u8) !Result {
         var result: Result = Result{
             .data = std.ArrayList(u8).init(allocator.alloc),
         };
@@ -124,6 +124,12 @@ pub const Shell = struct {
             .contents = try wins.cmd.new(),
             .active = true,
         });
+
+        if (param.len > 5) {
+            const cmdself: *wins.cmd.CMDData = @ptrCast(@alignCast(window.data.contents.ptr));
+
+            _ = try cmdself.shell.run(param[4..]);
+        }
 
         try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
@@ -240,7 +246,7 @@ pub const Shell = struct {
                 const params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ opens, param });
                 defer allocator.alloc.free(params);
 
-                return self.run(opens, params);
+                return self.run(params);
             } else {
                 return error.FileNotFound;
             }
@@ -433,16 +439,7 @@ pub const Shell = struct {
             return result;
         }
 
-        var command = std.ArrayList(u8).init(allocator.alloc);
-        defer command.deinit();
-        for (line) |char| {
-            if (char == ' ') {
-                break;
-            } else {
-                try command.append(char);
-            }
-        }
-        return self.run(command.items, line);
+        return self.run(line);
     }
 
     pub fn rem(self: *Shell, params: []const u8) !Result {
@@ -462,7 +459,10 @@ pub const Shell = struct {
         return error.MissingParameter;
     }
 
-    pub fn run(self: *Shell, cmd: []const u8, params: []const u8) !Result {
+    pub fn run(self: *Shell, params: []const u8) anyerror!Result {
+        const idx = std.mem.indexOf(u8, params, " ") orelse params.len;
+        const cmd = params[0..idx];
+
         if (!@import("builtin").is_test) {
             if (std.mem.eql(u8, cmd, "cmd")) return self.runCmd(params);
             if (std.mem.eql(u8, cmd, "edit")) return self.runEdit(params);

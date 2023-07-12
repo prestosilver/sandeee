@@ -13,7 +13,7 @@ const emails = @import("tools/mail.zig");
 
 // debug only
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
-const eonTestsFiles = [_][]const u8{ "bugs", "pong", "paint", "tabletest", "heaptest", "stringtest", "paren" };
+const eonTestsFiles = [_][]const u8{ "color", "bugs", "pong", "paint", "tabletest", "heaptest", "stringtest", "paren" };
 const eonTestSrcs = [_][]const u8{ "eon", "pix", "fib" };
 
 // demo overrides

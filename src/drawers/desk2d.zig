@@ -110,7 +110,7 @@ pub const DeskData = struct {
 
                     const cmd = file.name[index + 1 ..];
 
-                    _ = self.shell.run(cmd, cmd) catch {
+                    _ = self.shell.run(cmd) catch {
                         //TODO: popup
                     };
 
