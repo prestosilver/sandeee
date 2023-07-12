@@ -177,7 +177,9 @@ fn main() {
         write(outFile, epk);
         close(outFile);
     } else if (op == "unpack") {
-        unpack(op);
+        var out = getArg(2);
+
+        unpack(out);
     }
 
     return 0;
