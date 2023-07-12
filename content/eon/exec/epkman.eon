@@ -51,7 +51,77 @@ fn epkAdd(epk, file) {
     return 0;
 }
 
+fn getclick() {
+    asm "push \"/fake/inp/mouse\"";
+    asm "sys 3";
+    asm "copy 0";
+    asm "push 100000";
+    asm "sys 4";
+    asm "copy 1";
+    asm "sys 7";
+    asm "disc 1";
+    asm "ret";
+}
+
+fn processClick(good) {
+    var clickData = getclick();
+    
+    if (@clickData == 255) {
+        return 0;
+    }
+
+    var x = @(clickData + 2);
+    var y = @(clickData + 4);
+    var xo = @(clickData + 1);
+    var yo = @(clickData + 3);
+
+    x = x + xo * 256;
+    y = y + yo * 256;
+    
+    if (y > 35) {
+        good = 1;
+
+        if (x > 200) {
+            good = 0;
+        }
+
+        return 1;
+    }
+
+    return 0;
+}
+
+fn confirm(file) {
+    var window = _WindowCreate();
+    var done = 0;
+    var good;
+
+    _SetWindowRule("min", 300, 100);
+    _SetWindowRule("max", 300, 100);
+    _SetWindowTitle(window, "EPK Unpack");
+    _SetWindowSize(300, 100);
+
+    while (_WindowOpen() && (done == 0)) {
+        done = processClick(good);
+        
+        _WindowText(window, 10, 10, "Install " & file);
+
+        _WindowText(window, 75, 30, "Ok");
+        _WindowText(window, 200, 30, "Cancel");
+
+        _WindowFlip(window);
+    }
+    
+    _WindowDestroy(window);
+
+    return good;
+}
+
 fn unpack(file) {
+    if (confirm(file) == 0) {
+        return 0;
+    }
+
     var done = 0;
     var fileh = open(file);
     var outh = 0;
@@ -84,6 +154,10 @@ fn unpack(file) {
 }
 
 fn main() {
+    setupLibLoad();
+    loadLib("/libs/window.ell");
+    loadLib("/libs/texture.ell");
+
     var op = getArg(1);
 
     if (op == "pack") {

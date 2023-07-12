@@ -25,14 +25,16 @@ const eonExecFiles = [_][]const u8{ "epkman", "eon", "stat", "player", "asm", "p
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "ui", "heap", "table", "asm" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
-const pngImageFiles = [_][]const u8{ "transparent", "wall2", "icons", "ui", "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll", "connectris" };
+const pngImageFiles = [_][]const u8{ "icons", "ui", "notif", "bar", "editor", "email", "explorer", "window", "web", "wall", "barlogo", "cursor", "scroll" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const internalSoundFiles = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
 const wwwFiles = [_]WWWStepData{
-    .{ .inputFiles = "content/asm/eon/pong.asm:pong.eep;content/images/pong.png:pong.eia", .outputFile = "www/downloads/games/pong.epk", .converter = epk.convert },
+    .{ .inputFiles = "content/asm/eon/pong.asm:/exec/pong.eep;content/images/pong.png:/cont/imgs/pong.eia", .outputFile = "www/downloads/games/pong.epk", .converter = epk.convert },
+    .{ .inputFiles = "content/asm/eon/connectris.asm:/exec/connectris.eep;content/images/connectris.png:/cont/imgs/connectris.eia", .outputFile = "www/downloads/games/connectris.epk", .converter = epk.convert },
+    .{ .inputFiles = "content/asm/eon/paint.asm:/exec/paint.eep;content/images/transparent.png:/cont/imgs/transparent.eia", .outputFile = "www/downloads/tools/paint.epk", .converter = epk.convert },
 };
 
 // www data
@@ -288,6 +290,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     for (wwwFiles) |file| {
         const step = conv.ConvertStep.create(b, file.converter, file.inputFiles, file.outputFile);
+        step.step.dependOn(&write_step.step);
 
         www_step.dependOn(&step.step);
     }

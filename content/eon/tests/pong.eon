@@ -180,7 +180,7 @@ fn main() {
 
     var test = "";
 
-    _TextureUpload(_TextureRead("pong.eia"), texture);
+    _TextureUpload(_TextureRead("/cont/imgs/pong.eia"), texture);
 
     for (0; _WindowOpen(); 1) {
         dt = time() - lastTime;

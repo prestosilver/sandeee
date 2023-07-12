@@ -91,7 +91,7 @@ pub const WebData = struct {
             switch (path[0]) {
                 '@' => {
                     const idx = std.mem.indexOf(u8, path, ":") orelse {
-                        self.conts = "Bad Remote";
+                        self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
 
                         return;
                     };
