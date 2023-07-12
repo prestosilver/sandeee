@@ -245,9 +245,9 @@ fn processClick(win, texture, filename, imgx, imgy, imgs, w, h, oldx, oldy) {
     yo = oldy - y;
 
     if (btn == 0) {
-        drawLine(texture, x, y, oldx, oldy, "\x01\x01\x01\xff");
+        drawLine(texture, oldx, oldy, x, y, "\x01\x01\x01\xff");
     } else if (btn == 1) {
-        drawLine(texture, x, y, oldx, oldy, "\xff\xff\xff\xff");
+        drawLine(texture, oldx, oldy, x, y, "\xff\xff\xff\xff");
     } else if (btn == 2) {
         if ((imgx - xo) < 65535) {
             imgx = imgx - xo;
