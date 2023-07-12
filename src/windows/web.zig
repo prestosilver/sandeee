@@ -149,7 +149,7 @@ pub const WebData = struct {
                     self.conts = try allocator.alloc.dupe(u8, fconts);
                 },
                 '/' => {
-                    self.conts = try (try files.root.getFile(path)).read(null);
+                    self.conts = try allocator.alloc.dupe(u8, try (try files.root.getFile(path)).read(null));
                 },
                 '$' => {
                     const query = steam.createQueryAllUGCRequest(0, 0, 0, steam.STEAM_APP_ID, 1);
