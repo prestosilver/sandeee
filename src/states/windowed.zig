@@ -403,6 +403,13 @@ pub const GSWindowed = struct {
     pub fn update(self: *Self, dt: f32) !void {
         self.lastFrameTime = dt;
 
+        for (self.windows.items, 0..) |window, idx| {
+            if (window.data.shouldClose) {
+                _ = self.windows.orderedRemove(idx);
+                break;
+            }
+        }
+
         for (self.notifs.items, 0..) |*notif, idx| {
             try notif.data.update(dt);
 

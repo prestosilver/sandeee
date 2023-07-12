@@ -16,6 +16,8 @@ const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 
+const HL_KEYWORD = [_][]const u8{ "var", "fn" };
+
 pub const EditorData = struct {
     const Self = @This();
 
@@ -81,7 +83,25 @@ pub const EditorData = struct {
 
             var splitIter = std.mem.split(u8, self.buffer.items, "\n");
 
-            while (splitIter.next()) |line| {
+            while (splitIter.next()) |rawLine| {
+                var line = try allocator.alloc.dupe(u8, rawLine);
+                defer allocator.alloc.free(line);
+
+                for (HL_KEYWORD) |keyword| {
+                    const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+                        &.{0xF8 + 7},
+                        keyword,
+                        &.{0xF8 + 0},
+                    });
+                    defer allocator.alloc.free(replacement);
+
+                    const oldLine = line;
+                    defer allocator.alloc.free(oldLine);
+
+                    line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
+                    _ = std.mem.replace(u8, oldLine, keyword, replacement, line);
+                }
+
                 if (nr - 1 < @as(usize, @intFromFloat(self.cursor.y))) {
                     self.cursorIdx += line.len + 1;
                     self.prevIdx += line.len + 1;

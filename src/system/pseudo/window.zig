@@ -12,6 +12,7 @@ const shd = @import("../../util/shader.zig");
 const vm = @import("../vm.zig");
 const vecs = @import("../../math/vecs.zig");
 const sb = @import("../../util/spritebatch.zig");
+const windowedState = @import("../../states/windowed.zig");
 
 pub var wintex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
@@ -116,8 +117,7 @@ pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) !void {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aid) {
-                    try item.data.deinit();
-                    _ = windowsPtr.*.orderedRemove(idx);
+                    item.data.shouldClose = true;
                     return;
                 }
             }

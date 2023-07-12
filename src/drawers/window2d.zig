@@ -282,6 +282,7 @@ pub const WindowData = struct {
     min: bool = false,
     idx: usize = 0,
     popup: ?popup.Popup = null,
+    shouldClose: bool = false,
 
     contents: WindowContents,
 
