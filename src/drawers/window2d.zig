@@ -97,12 +97,12 @@ pub const WindowContents = struct {
 
             const scrollPc = scrolldat.value / scrolldat.maxy;
 
-            scrollSp[1].data.size.y = bnds.h - scrolldat.offsetStart - (12 * 2) + 2;
+            scrollSp[1].data.size.y = bnds.h - scrolldat.offsetStart - (20 * 2 - 2) + 2;
 
-            try batch.draw(spr.Sprite, &scrollSp[0], shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + scrolldat.offsetStart, 0));
-            try batch.draw(spr.Sprite, &scrollSp[1], shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + scrolldat.offsetStart + 12, 0));
-            try batch.draw(spr.Sprite, &scrollSp[2], shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-            try batch.draw(spr.Sprite, &scrollSp[3], shader, vecs.newVec3(bnds.x + bnds.w - 12, (bnds.h - scrolldat.offsetStart - (10 * 2) - 26) * scrollPc + bnds.y + scrolldat.offsetStart + 10, 0));
+            try batch.draw(spr.Sprite, &scrollSp[0], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scrolldat.offsetStart, 0));
+            try batch.draw(spr.Sprite, &scrollSp[1], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scrolldat.offsetStart + 20, 0));
+            try batch.draw(spr.Sprite, &scrollSp[2], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + bnds.h - 20 + 2, 0));
+            try batch.draw(spr.Sprite, &scrollSp[3], shader, vecs.newVec3(bnds.x + bnds.w - 20, (bnds.h - scrolldat.offsetStart - (20 * 2) - 30 + 4) * scrollPc + bnds.y + scrolldat.offsetStart + 20 - 2, 0));
         }
     }
 

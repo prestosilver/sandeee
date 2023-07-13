@@ -190,34 +190,34 @@ pub const GSWindowed = struct {
         globalSelf = self;
 
         win.WindowContents.scrollSp[0] = .{
-            .texture = "scroll",
+            .texture = "ui",
             .data = .{
-                .source = rect.newRect(0, 0, 7.0 / 16.0, 6.0 / 16.0),
-                .size = vecs.newVec2(14, 12),
+                .source = rect.newRect(0, 0, 2.0 / 8.0, 2.0 / 8.0),
+                .size = vecs.newVec2(20, 20),
             },
         };
 
         win.WindowContents.scrollSp[1] = .{
-            .texture = "scroll",
+            .texture = "ui",
             .data = .{
-                .source = rect.newRect(0, 6.0 / 16.0, 7.0 / 16.0, 4.0 / 16.0),
-                .size = vecs.newVec2(14, 64),
+                .source = rect.newRect(0, 2.0 / 8.0, 2.0 / 8.0, 1.0 / 8.0),
+                .size = vecs.newVec2(20, 64),
             },
         };
 
         win.WindowContents.scrollSp[2] = .{
-            .texture = "scroll",
+            .texture = "ui",
             .data = .{
-                .source = rect.newRect(0, 10.0 / 16.0, 7.0 / 16.0, 6.0 / 16.0),
-                .size = vecs.newVec2(14, 12),
+                .source = rect.newRect(0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
+                .size = vecs.newVec2(20, 20),
             },
         };
 
         win.WindowContents.scrollSp[3] = .{
-            .texture = "scroll",
+            .texture = "ui",
             .data = .{
-                .source = rect.newRect(7.0 / 16.0, 0.0 / 16.0, 7.0 / 16.0, 14.0 / 16.0),
-                .size = vecs.newVec2(14, 28),
+                .source = rect.newRect(0, 3.0 / 8.0, 2.0 / 8.0, 3.0 / 8.0),
+                .size = vecs.newVec2(20, 30),
             },
         };
 
