@@ -21,7 +21,9 @@ pub const CMDData = struct {
 
     bt: []u8,
     inputBuffer: [256]u8 = undefined,
+    inputLen: u8 = 0,
     inputIdx: u8 = 0,
+
     history: std.ArrayList([]const u8),
     historyIdx: usize = 0,
     shell: shell.Shell,
@@ -46,13 +48,25 @@ pub const CMDData = struct {
         if (self.shell.vm == null) {
             const shellPrompt = self.shell.getPrompt();
             defer allocator.alloc.free(shellPrompt);
-            const prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.inputBuffer[0..self.inputIdx] });
+            const prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.inputBuffer[0..self.inputLen] });
             defer allocator.alloc.free(prompt);
             try font.draw(.{
                 .batch = batch,
                 .shader = shader,
                 .text = prompt,
                 .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6 + offset),
+                .color = col.newColor(1, 1, 1, 1),
+            });
+            try font.draw(.{
+                .batch = batch,
+                .shader = shader,
+                .text = "|",
+                .pos = vecs.newVec2(
+                    bnds.x + font.sizeText(.{
+                        .text = prompt[0 .. shellPrompt.len + self.inputIdx],
+                    }).x,
+                    bnds.y + bnds.h - font.size - 6 + offset,
+                ),
                 .color = col.newColor(1, 1, 1, 1),
             });
             idx += 1;
@@ -111,8 +125,10 @@ pub const CMDData = struct {
         }
 
         if (code == '\n') return;
-        if (self.inputIdx < 255) {
+        if (self.inputLen < 255) {
+            std.mem.copyBackwards(u8, self.inputBuffer[self.inputIdx + 1 ..], self.inputBuffer[self.inputIdx..255]);
             self.inputBuffer[self.inputIdx] = @as(u8, @intCast(code));
+            self.inputLen += 1;
             self.inputIdx += 1;
         }
         _ = mods;
@@ -127,19 +143,19 @@ pub const CMDData = struct {
 
         switch (code) {
             c.GLFW_KEY_ENTER => {
-                if (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.inputBuffer[0..self.inputIdx]))
-                    try self.history.append(try allocator.alloc.dupe(u8, self.inputBuffer[0..self.inputIdx]));
+                if (self.inputLen != 0 and (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.inputBuffer[0..self.inputLen])))
+                    try self.history.append(try allocator.alloc.dupe(u8, self.inputBuffer[0..self.inputLen]));
 
                 const shellPrompt = self.shell.getPrompt();
                 defer allocator.alloc.free(shellPrompt);
-                const prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shellPrompt, self.inputBuffer[0..self.inputIdx] });
+                const prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shellPrompt, self.inputBuffer[0..self.inputLen] });
                 defer allocator.alloc.free(prompt);
                 var start = self.bt.len;
 
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + prompt.len);
                 std.mem.copy(u8, self.bt[start .. start + prompt.len], prompt);
 
-                const al = self.shell.run(self.inputBuffer[0..self.inputIdx]) catch |err| {
+                const al = self.shell.run(self.inputBuffer[0..self.inputLen]) catch |err| {
                     const msg = @errorName(err);
 
                     start = self.bt.len;
@@ -150,6 +166,7 @@ pub const CMDData = struct {
                     self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + msg.len);
                     std.mem.copy(u8, self.bt[start..], msg);
 
+                    self.inputLen = 0;
                     self.inputIdx = 0;
                     self.historyIdx = self.history.items.len;
                     return;
@@ -169,30 +186,53 @@ pub const CMDData = struct {
                 }
                 al.data.deinit();
 
+                self.inputLen = 0;
                 self.inputIdx = 0;
                 self.historyIdx = self.history.items.len;
             },
             c.GLFW_KEY_UP => {
                 if (self.historyIdx > 0) {
                     self.historyIdx -= 1;
-                    self.inputIdx = @as(u8, @intCast(self.history.items[self.historyIdx].len));
-                    @memcpy(self.inputBuffer[0..self.inputIdx], self.history.items[self.historyIdx]);
+                    self.inputLen = @as(u8, @intCast(self.history.items[self.historyIdx].len));
+                    self.inputIdx = self.inputLen;
+                    @memcpy(self.inputBuffer[0..self.inputLen], self.history.items[self.historyIdx]);
                 }
             },
             c.GLFW_KEY_DOWN => {
                 if (self.historyIdx < self.history.items.len) {
                     self.historyIdx += 1;
                     if (self.historyIdx == self.history.items.len) {
+                        self.inputLen = 0;
                         self.inputIdx = 0;
                     } else {
-                        self.inputIdx = @as(u8, @intCast(self.history.items[self.historyIdx].len));
-                        @memcpy(self.inputBuffer[0..self.inputIdx], self.history.items[self.historyIdx]);
+                        self.inputLen = @as(u8, @intCast(self.history.items[self.historyIdx].len));
+                        self.inputIdx = self.inputLen;
+                        @memcpy(self.inputBuffer[0..self.inputLen], self.history.items[self.historyIdx]);
                     }
                 }
             },
-            c.GLFW_KEY_BACKSPACE => {
-                if (self.inputIdx != 0)
+            c.GLFW_KEY_LEFT => {
+                if (self.inputIdx != 0) {
                     self.inputIdx -= 1;
+                }
+            },
+            c.GLFW_KEY_RIGHT => {
+                if (self.inputIdx != self.inputLen) {
+                    self.inputIdx += 1;
+                }
+            },
+            c.GLFW_KEY_BACKSPACE => {
+                if (self.inputIdx != 0) {
+                    self.inputLen -= 1;
+                    self.inputIdx -= 1;
+                    std.mem.copyForwards(u8, self.inputBuffer[self.inputIdx..255], self.inputBuffer[self.inputIdx + 1 ..]);
+                }
+            },
+            c.GLFW_KEY_DELETE => {
+                if (self.inputIdx != self.inputLen) {
+                    std.mem.copyForwards(u8, self.inputBuffer[self.inputIdx..255], self.inputBuffer[self.inputIdx + 1 ..]);
+                    self.inputLen -= 1;
+                }
             },
             else => {},
         }

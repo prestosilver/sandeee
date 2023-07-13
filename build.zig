@@ -31,6 +31,7 @@ const internalSoundFiles = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
+// the website
 const wwwFiles = [_]WWWStepData{
     .{ .inputFiles = "content/asm/eon/pong.asm:/exec/pong.eep;content/images/pong.png:/cont/imgs/pong.eia", .outputFile = "www/downloads/games/pong.epk", .converter = epk.convert },
     .{ .inputFiles = "content/asm/eon/connectris.asm:/exec/connectris.eep;content/images/connectris.png:/cont/imgs/connectris.eia", .outputFile = "www/downloads/games/connectris.epk", .converter = epk.convert },
