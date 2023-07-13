@@ -16,7 +16,9 @@ const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 
-const HL_KEYWORD = [_][]const u8{ "var", "fn" };
+const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else " };
+const HL_KEYWORD2 = [_][]const u8{"#include"};
+const COMMENT_START = "//";
 
 pub const EditorData = struct {
     const Self = @This();
@@ -87,28 +89,64 @@ pub const EditorData = struct {
                 var line = try allocator.alloc.dupe(u8, rawLine);
                 defer allocator.alloc.free(line);
 
-                for (HL_KEYWORD) |keyword| {
-                    const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                        &.{0xF8 + 7},
-                        keyword,
-                        &.{0xF8 + 0},
-                    });
-                    defer allocator.alloc.free(replacement);
+                if (line.len != 0) {
+                    for (HL_KEYWORD1) |keyword| {
+                        const comment = std.mem.indexOf(u8, line, COMMENT_START) orelse line.len;
 
-                    const oldLine = line;
-                    defer allocator.alloc.free(oldLine);
+                        const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+                            &.{0xFE},
+                            keyword,
+                            &.{0xF8},
+                        });
+                        defer allocator.alloc.free(replacement);
 
-                    line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
-                    _ = std.mem.replace(u8, oldLine, keyword, replacement, line);
+                        const oldLine = line;
+                        defer allocator.alloc.free(oldLine);
+
+                        const repSize = std.mem.replacementSize(u8, line[0..comment], keyword, replacement);
+
+                        line = try allocator.alloc.alloc(u8, repSize + (line.len - comment));
+                        _ = std.mem.replace(u8, oldLine[0..comment], keyword, replacement, line);
+                        @memcpy(line[repSize..], oldLine[comment..]);
+                    }
+
+                    for (HL_KEYWORD2) |keyword| {
+                        const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+                            &.{0xF5},
+                            keyword,
+                            &.{0xF8},
+                        });
+                        defer allocator.alloc.free(replacement);
+
+                        const oldLine = line;
+                        defer allocator.alloc.free(oldLine);
+
+                        line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
+                        _ = std.mem.replace(u8, oldLine, keyword, replacement, line);
+                    }
+
+                    {
+                        const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+                            &.{0xF1},
+                            COMMENT_START,
+                        });
+                        defer allocator.alloc.free(replacement);
+
+                        const oldLine = line;
+                        defer allocator.alloc.free(oldLine);
+
+                        line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, COMMENT_START, replacement));
+                        _ = std.mem.replace(u8, oldLine, COMMENT_START, replacement, line);
+                    }
                 }
 
                 if (nr - 1 < @as(usize, @intFromFloat(self.cursor.y))) {
-                    self.cursorIdx += line.len + 1;
-                    self.prevIdx += line.len + 1;
+                    self.cursorIdx += rawLine.len + 1;
+                    self.prevIdx += rawLine.len + 1;
                 }
 
                 if (nr - 1 == @as(usize, @intFromFloat(self.cursor.y))) {
-                    self.cursor.x = @min(self.cursor.x, @as(f32, @floatFromInt(line.len)));
+                    self.cursor.x = @min(self.cursor.x, @as(f32, @floatFromInt(rawLine.len)));
                 }
 
                 if (y > bnds.y - font.size and y < bnds.y + bnds.h) {
@@ -129,7 +167,7 @@ pub const EditorData = struct {
 
                     if (nr - 1 == @as(i32, @intFromFloat(self.cursor.y))) {
                         const posx = font.sizeText(.{
-                            .text = line[0..@as(usize, @intFromFloat(self.cursor.x))],
+                            .text = rawLine[0..@as(usize, @intFromFloat(self.cursor.x))],
                         }).x;
                         try font.draw(.{
                             .batch = batch,
@@ -219,6 +257,9 @@ pub const EditorData = struct {
         if (file) |target| {
             const self: *Self = @ptrCast(@alignCast(data));
             self.file = target;
+
+            self.buffer.clearAndFree();
+            try self.buffer.appendSlice(try self.file.?.read(null));
         }
     }
 
@@ -260,7 +301,7 @@ pub const EditorData = struct {
             },
             c.GLFW_KEY_TAB => {
                 try self.buffer.insertSlice(self.cursorIdx, "  ");
-                self.cursor.x += 4;
+                self.cursor.x += 2;
                 self.modified = true;
             },
             c.GLFW_KEY_ENTER => {
