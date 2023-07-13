@@ -12,7 +12,15 @@ const c = @import("../c.zig");
 
 var fontId: u8 = 0;
 
-const FONT_COLORS = [8]col.Color{
+const FONT_COLORS = [16]col.Color{
+    .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1 },
+    .{ .r = 0.5, .g = 0.5, .b = 0.5, .a = 1 },
+    .{ .r = 0.5, .g = 0.0, .b = 0.0, .a = 1 },
+    .{ .r = 0.5, .g = 0.5, .b = 0.0, .a = 1 },
+    .{ .r = 0.0, .g = 0.5, .b = 0.0, .a = 1 },
+    .{ .r = 0.0, .g = 0.5, .b = 0.5, .a = 1 },
+    .{ .r = 0.0, .g = 0.0, .b = 0.5, .a = 1 },
+    .{ .r = 0.5, .g = 0.0, .b = 0.5, .a = 1 },
     .{ .r = 0, .g = 0, .b = 0, .a = 1 },
     .{ .r = 1, .g = 1, .b = 1, .a = 1 },
     .{ .r = 1, .g = 0, .b = 0, .a = 1 },
@@ -267,8 +275,8 @@ pub const Font = struct {
                 continue;
             }
 
-            if (ach & 0xF8 == 0xF8) {
-                color = FONT_COLORS[@intCast(ach & 0x07)];
+            if (ach & 0xF0 == 0xF0) {
+                color = FONT_COLORS[@intCast(ach & 0x0F)];
                 continue;
             }
 
@@ -378,7 +386,7 @@ pub const Font = struct {
         }
 
         for (params.text) |ach| {
-            if (ach & 0xF8 == 0xF8) {
+            if (ach & 0xF0 == 0xF0) {
                 continue;
             }
 
