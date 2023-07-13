@@ -155,7 +155,11 @@ pub const Shell = struct {
         if (param.len > 5) {
             const edself: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
 
-            edself.file = try self.root.getFile(param[5..]);
+            if (param[5] == '/')
+                edself.file = try files.root.getFile(param[5..])
+            else
+                edself.file = try self.root.getFile(param[5..]);
+
             edself.buffer.clearAndFree();
             if (edself.file == null) return result;
             try edself.buffer.appendSlice(try edself.file.?.read(null));
