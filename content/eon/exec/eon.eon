@@ -309,14 +309,6 @@ fn parseBuiltin(buff, idx, stack, varTable) {
         return result & "    ret\n";
     }
 
-    if (word == "disc") {
-        result = parseExpression(buff, idx, stack, varTable);
-
-        if (stack != 255) stack = stack - 1;
-
-        return result & "    disc 0\n";
-    }
-
     if (word == "asm") {
         word = nextWord(buff, idx);
 
