@@ -141,7 +141,7 @@ fn unpack(file) {
         contSize = readShort(fileh);
         cont = read(fileh, contSize);
 
-        print(name);
+        print(name & "\n");
 
         outh = createOpen(name);
         write(outh, cont);
