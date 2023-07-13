@@ -4,6 +4,7 @@ const files = @import("files.zig");
 const vm = @import("vm.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
+const systemEvs = @import("../events/system.zig");
 const wins = @import("../windows/all.zig");
 const win = @import("../drawers/window2d.zig");
 const tex = @import("../util/texture.zig");
@@ -464,6 +465,10 @@ pub const Shell = struct {
     }
 
     pub fn run(self: *Shell, params: []const u8) anyerror!Result {
+        try events.EventManager.instance.sendEvent(systemEvs.EventRunCmd{
+            .cmd = params,
+        });
+
         const idx = std.mem.indexOf(u8, params, " ") orelse params.len;
         const cmd = params[0..idx];
 
