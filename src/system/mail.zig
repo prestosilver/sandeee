@@ -51,6 +51,8 @@ pub const EmailManager = struct {
 
             var buf: [1024]u8 = undefined;
             while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+                _ = std.mem.replace(u8, line, "EEE", "\x82\x82\x82", line);
+
                 if (std.mem.startsWith(u8, line, "id: ")) {
                     result.id = try std.fmt.parseInt(u8, line[4..], 0);
                 } else if (std.mem.startsWith(u8, line, "box: ")) {
