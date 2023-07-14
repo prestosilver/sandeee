@@ -24,10 +24,9 @@ pub const EditorData = struct {
     const Self = @This();
 
     buffer: std.ArrayList(u8),
-    menuTop: sp.Sprite,
-    menuDiv: sp.Sprite,
+    menubar: sp.Sprite,
     numLeft: sp.Sprite,
-    numDiv: sp.Sprite,
+    numRight: sp.Sprite,
     icons: [2]sp.Sprite,
     shader: *shd.Shader,
 
@@ -41,7 +40,7 @@ pub const EditorData = struct {
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 34,
+                .offsetStart = 40,
             };
         }
 
@@ -53,35 +52,36 @@ pub const EditorData = struct {
             try props.setTitle(title);
         }
 
-        self.menuTop.data.size.x = bnds.w + 4;
-        self.menuDiv.data.size.x = bnds.w + 4;
+        self.menubar.data.size.x = bnds.w;
 
-        self.numLeft.data.size.y = bnds.h - 34;
-        self.numDiv.data.size.y = bnds.h - 34;
+        self.numLeft.data.size.y = bnds.h - 40;
+        self.numRight.data.size.y = bnds.h - 40;
 
         // draw number sidebar
-        try batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 34, 0));
-        try batch.draw(sp.Sprite, &self.numDiv, self.shader, vecs.newVec3(bnds.x + 62, bnds.y + 34, 0));
+        try batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 40, 0));
+
+        // draw number sidebar
+        try batch.draw(sp.Sprite, &self.numRight, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
 
         // draw file text
         if (self.file != null) {
             if (self.clickPos) |clicked| {
-                self.cursor.y = @divFloor(clicked.y - 32 + props.scroll.?.value, font.size);
-                self.cursor.x = @round((clicked.x - 70) / font.sizeText(.{
+                self.cursor.y = @divFloor(clicked.y - 40 + props.scroll.?.value, font.size);
+                self.cursor.x = @round((clicked.x - 82) / font.sizeText(.{
                     .text = "A",
                 }).x);
                 self.clickPos = null;
             }
 
             // draw lines
-            var y = bnds.y + 32 - props.scroll.?.value;
+            var y = bnds.y + 40 - props.scroll.?.value;
             var nr: usize = 1;
 
             if (self.cursor.x < 0) self.cursor.x = 0;
             self.cursorIdx = @as(usize, @intFromFloat(self.cursor.x));
             self.prevIdx = 0;
 
-            props.scroll.?.maxy = -bnds.h + 36;
+            props.scroll.?.maxy = -bnds.h + 40;
 
             var splitIter = std.mem.split(u8, self.buffer.items, "\n");
 
@@ -154,7 +154,7 @@ pub const EditorData = struct {
                         .batch = batch,
                         .shader = shader,
                         .text = line,
-                        .pos = vecs.newVec2(bnds.x + 70, y),
+                        .pos = vecs.newVec2(bnds.x + 82, y),
                     });
                     const linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
                     defer allocator.alloc.free(linenr);
@@ -173,7 +173,7 @@ pub const EditorData = struct {
                             .batch = batch,
                             .shader = shader,
                             .text = "|",
-                            .pos = vecs.newVec2(bnds.x + 70 + posx - 6, y),
+                            .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
                         });
                     }
                 }
@@ -192,12 +192,11 @@ pub const EditorData = struct {
         if (self.cursorIdx > self.buffer.items.len) self.cursorIdx = self.buffer.items.len - 1;
 
         // draw toolbar
-        try batch.draw(sp.Sprite, &self.menuTop, self.shader, vecs.newVec3(bnds.x - 2, bnds.y - 2, 0));
-        try batch.draw(sp.Sprite, &self.menuDiv, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 32, 0));
+        try batch.draw(sp.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
         // draw toolbar icons
-        try batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 34, bnds.y, 0));
-        try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
+        try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 4, 0));
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
@@ -349,33 +348,29 @@ pub const EditorData = struct {
     pub fn moveResize(_: *Self, _: *rect.Rectangle) !void {}
 };
 
-pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
+pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(EditorData);
 
     self.* = .{
-        .menuTop = sp.Sprite.new(texture, sp.SpriteData.new(
-            rect.newRect(19.0 / 32.0, 0.0 / 32.0, 13.0 / 32.0, 2.0 / 32.0),
-            vecs.newVec2(100, 34),
+        .menubar = sp.Sprite.new("ui", sp.SpriteData.new(
+            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
+            vecs.newVec2(0, 40.0),
         )),
-        .menuDiv = sp.Sprite.new(texture, sp.SpriteData.new(
-            rect.newRect(19.0 / 32.0, 2.0 / 32.0, 13.0 / 32.0, 1.0 / 32.0),
-            vecs.newVec2(100, 2),
+        .numLeft = sp.Sprite.new("ui", sp.SpriteData.new(
+            rect.newRect(4.0 / 8.0, 4.0 / 8.0, 2.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(40, 0),
         )),
-        .numLeft = sp.Sprite.new(texture, sp.SpriteData.new(
-            rect.newRect(16.0 / 32.0, 3.0 / 32.0, 2.0 / 32.0, 13.0 / 32.0),
-            vecs.newVec2(64, 100),
-        )),
-        .numDiv = sp.Sprite.new(texture, sp.SpriteData.new(
-            rect.newRect(18.0 / 32.0, 3.0 / 32.0, 1.0 / 32.0, 13.0 / 32.0),
-            vecs.newVec2(2, 100),
+        .numRight = sp.Sprite.new("ui", sp.SpriteData.new(
+            rect.newRect(4.0 / 8.0, 4.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(40, 0),
         )),
         .icons = .{
-            sp.Sprite.new(texture, sp.SpriteData.new(
-                rect.newRect(0, 0, 16.0 / 32.0, 16.0 / 32.0),
+            sp.Sprite.new("icons", sp.SpriteData.new(
+                rect.newRect(0, 0, 1.0 / 8.0, 1.0 / 8.0),
                 vecs.newVec2(32, 32),
             )),
-            sp.Sprite.new(texture, sp.SpriteData.new(
-                rect.newRect(0, 16.0 / 32.0, 16.0 / 32.0, 16.0 / 32.0),
+            sp.Sprite.new("icons", sp.SpriteData.new(
+                rect.newRect(1.0 / 8.0, 0, 1.0 / 8.0, 1.0 / 8.0),
                 vecs.newVec2(32, 32),
             )),
         },

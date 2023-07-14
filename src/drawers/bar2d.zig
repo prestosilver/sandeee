@@ -213,7 +213,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.editor.new("editor", shader),
+                                .contents = try wins.editor.new(shader),
                                 .active = true,
                             });
 

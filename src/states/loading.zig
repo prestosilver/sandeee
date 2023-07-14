@@ -27,11 +27,9 @@ pub const GSLoading = struct {
 
     const textureNames = [_][2][]const u8{
         .{ "window_frame_path", "win" },
-        .{ "web_texture_path", "web" },
         .{ "wallpaper_path", "wall" },
         .{ "bar_texture_path", "bar" },
         .{ "notif_texture_path", "notif" },
-        .{ "editor_texture_path", "editor" },
         .{ "ui_texture_path", "ui" },
         .{ "icons_texture_path", "icons" },
         .{ "email_texture_path", "email" },
