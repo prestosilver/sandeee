@@ -20,14 +20,16 @@ uniform float bleeding_range_x = 3;
 uniform float bleeding_range_y = 3;
 
 // Scanline
-uniform float lines_distance = 4.0;
-uniform float scan_size = 3.0;
-uniform float scanline_alpha = 0.85;
-uniform float lines_velocity = -2.0;
+uniform float lines_distance = 2.0;
+uniform float scan_size = 1.0;
+uniform float scanline_alpha = 0.5;
+uniform float lines_velocity = 0.0;
 
 #define COLOR_STEPS 8.0
 #define GAMMA 2
 #define distortion 0.075
+#define START_TIME 3.00
+#define MAXB 0.6
 
 vec2 distort(vec2 coord, const vec2 ratio)
 {
@@ -131,9 +133,11 @@ void main()
     get_color_bleeding(current_color,color_left);
     vec4 c = current_color+color_left;
     get_color_scanline(SCREEN_UV.xy,c,time);
-    
+
     c = mix(vec4(0, 0, 0, 1), c, smoothstep(0 - pixel_size_y, 0, xy.y) * (1.0 - smoothstep(1, 1 + pixel_size_y, xy.y)) * smoothstep(0 - pixel_size_x, 0, xy.x) * (1.0 - smoothstep(1, 1 + pixel_size_x, xy.x)));
 
-    color = c;
-    color = pow(color, vec4(1.0 / GAMMA));
+    float mul = clamp(time / START_TIME, 0, MAXB);
+
+    color = vec4(c.rgb, c.a * mul);
+    color = pow(color, vec4(vec3(1.0 / GAMMA), 1.0));
 }

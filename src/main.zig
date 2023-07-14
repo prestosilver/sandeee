@@ -183,7 +183,14 @@ pub fn blit() !void {
     }
 
     if (showFps and biosFace.setup) {
-        const text = try std.fmt.allocPrint(allocator.alloc, "FPS: {}\nVMS: {}", .{ finalFps, shell.vms });
+        const text = try std.fmt.allocPrint(allocator.alloc, "{s}FPS: {}\n{s}VMS: {}\n{s}STA: {}", .{
+            if (finalFps < 58) "\xFA" else "\xF9",
+            finalFps,
+            if (shell.vms == 0) "\xF1" else "\xF9",
+            shell.vms,
+            "\xF9",
+            @intFromEnum(currentState),
+        });
         defer allocator.alloc.free(text);
 
         try biosFace.draw(.{
@@ -196,16 +203,6 @@ pub fn blit() !void {
     }
 
     c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
-
-    // clear the window
-    c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
-
-    // Poor filtering. Needed !
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
 
     c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
     c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)));
@@ -238,15 +235,26 @@ pub fn blit() !void {
 
     c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
 
-    c.glFlush();
-    c.glFinish();
-
     // swap buffer
     gfx.swap(&ctx);
+
+    // rerender the last frame
+    c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
+    c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
+
+    c.glUseProgram(crt_shader.id);
+    crt_shader.setFloat("time", @as(f32, @floatCast(c.glfwGetTime())));
+
+    c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
+    c.glEnableVertexAttribArray(0);
+    c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
+
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
 }
 
 pub fn changeState(event: systemEvs.EventStateChange) !void {
-    std.log.debug("ChangeState: {}", .{event.targetState});
+    std.log.debug("ChangeState: {s}", .{@tagName(event.targetState)});
 
     currentState = event.targetState;
 }
@@ -388,6 +396,18 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
     defer ctx.makeNotCurrent();
 
     try gfx.resize(event.w, event.h);
+
+    c.glfwSetTime(0);
+
+    // clear the window
+    c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+
+    // Poor filtering. Needed !
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
@@ -551,6 +571,16 @@ pub fn mainErr() anyerror!void {
     c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(full_quad.len * @sizeOf(f32))), &full_quad, c.GL_DYNAMIC_DRAW);
     c.glGenTextures(1, &renderedTexture);
     c.glGenRenderbuffers(1, &depthrenderbuffer);
+
+    // clear the window
+    c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+
+    // Poor filtering. Needed !
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
 
     // create the sprite batch
     sb = try batch.SpriteBatch.init(&gfx.gContext.size);
@@ -738,7 +768,7 @@ pub fn mainErr() anyerror!void {
     bar.settingsManager = &settingManager;
 
     // update the frame timer
-    var lastFrameTime = c.glfwGetTime();
+    var lastFrameTime: f64 = 0;
 
     // setup state machine
     var prev = currentState;
@@ -746,6 +776,8 @@ pub fn mainErr() anyerror!void {
     // fps tracker stats
     var fps: usize = 0;
     var timer: f64 = 0;
+
+    c.glfwSetTime(0);
 
     // main loop
     while (gfx.poll(&ctx)) {
@@ -759,7 +791,7 @@ pub fn mainErr() anyerror!void {
         // pause the game on minimize
         if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) == 0) {
             // update the game state
-            try state.update(@floatCast(currentTime - lastFrameTime));
+            try state.update(@max(1 / 60, @as(f32, @floatCast(currentTime - lastFrameTime))));
 
             // get tris
             try state.draw(gfx.gContext.size);
