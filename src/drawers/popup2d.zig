@@ -58,31 +58,31 @@ pub const PopupData = struct {
                 fn drawImpl(pointer: *anyopaque, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, shader, bnds, font });
+                    return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, batch, shader, bnds, font });
                 }
 
                 fn keyImpl(pointer: *anyopaque, keycode: c_int, mods: c_int, down: bool) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
+                    return @call(.always_inline, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
                 }
 
                 fn charImpl(pointer: *anyopaque, keycode: u32, mods: i32) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.auto, ptr_info.Pointer.child.char, .{ self, keycode, mods });
+                    return @call(.always_inline, ptr_info.Pointer.child.char, .{ self, keycode, mods });
                 }
 
                 fn deinitImpl(pointer: *anyopaque) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.auto, ptr_info.Pointer.child.deinit, .{self});
+                    return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});
                 }
 
                 fn clickImpl(pointer: *anyopaque, mousepos: vecs.Vector2) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.auto, ptr_info.Pointer.child.click, .{ self, mousepos });
+                    return @call(.always_inline, ptr_info.Pointer.child.click, .{ self, mousepos });
                 }
 
                 const vtable = VTable{

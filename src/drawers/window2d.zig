@@ -194,55 +194,55 @@ pub const WindowContents = struct {
             ) anyerror!void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font, props });
+                return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font, props });
             }
 
             fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
+                return @call(.always_inline, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
             }
 
             fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.char, .{ self, codepoint, mods });
+                return @call(.always_inline, ptr_info.Pointer.child.char, .{ self, codepoint, mods });
             }
 
             fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: ?c_int) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.click, .{ self, size, pos, btn });
+                return @call(.always_inline, ptr_info.Pointer.child.click, .{ self, size, pos, btn });
             }
 
             fn scrollImpl(pointer: *anyopaque, x: f32, y: f32) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.scroll, .{ self, x, y });
+                return @call(.always_inline, ptr_info.Pointer.child.scroll, .{ self, x, y });
             }
 
             fn moveImpl(pointer: *anyopaque, x: f32, y: f32) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.move, .{ self, x, y });
+                return @call(.always_inline, ptr_info.Pointer.child.move, .{ self, x, y });
             }
 
             fn focusImpl(pointer: *anyopaque) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.focus, .{self});
+                return @call(.always_inline, ptr_info.Pointer.child.focus, .{self});
             }
 
             fn moveResizeImpl(pointer: *anyopaque, bnds: *rect.Rectangle) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.moveResize, .{ self, bnds });
+                return @call(.always_inline, ptr_info.Pointer.child.moveResize, .{ self, bnds });
             }
 
             fn deinitImpl(pointer: *anyopaque) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.auto, ptr_info.Pointer.child.deinit, .{self});
+                return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});
             }
 
             const vtable = VTable{
