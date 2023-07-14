@@ -1,0 +1,8 @@
+id: 1
+from: EEE
+deps: 0
+sub: EEE saw you.
+view
+Would you like to work for EEE, if you would just view this email.
+
+EEE

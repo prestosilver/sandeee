@@ -3,7 +3,7 @@ const files = @import("files.zig");
 const allocator = @import("../util/allocator.zig");
 
 pub const Telem = struct {
-    pub const PATH = "/_telem";
+    pub const PATH = "/_priv/telem";
 
     pub var instance: Telem = .{};
 

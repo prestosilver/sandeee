@@ -277,7 +277,7 @@ pub const GSWindowed = struct {
 
         try telem.Telem.save();
 
-        try self.emailManager.saveStateFile("conf/emails.bin");
+        try self.emailManager.saveStateFile("/_priv/emails.bin");
 
         for (self.windows.items) |*window| {
             try window.data.deinit();

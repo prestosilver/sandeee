@@ -220,7 +220,9 @@ const EmailData = struct {
                     const name = cond[0..idx];
                     if (std.mem.eql(u8, name, "conts")) {
                         const targetText = cond[idx + 1 ..];
-                        good = good and std.ascii.eqlIgnoreCase(targetText, conts);
+                        const targetConts = std.mem.trim(u8, conts, &.{'\n'});
+
+                        good = good and std.ascii.eqlIgnoreCase(targetText, targetConts);
                     }
                     if (std.mem.eql(u8, name, "runs")) {
                         if (!std.mem.startsWith(u8, conts, "EEEp")) return;
