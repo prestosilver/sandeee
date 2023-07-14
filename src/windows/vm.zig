@@ -25,7 +25,7 @@ pub const VMData = struct {
     frameCounter: f32 = 0,
     time: f32 = 0,
     fps: f32 = 0,
-    debug: bool = builtin.mode == .Debug,
+    debug: bool = false,
     input: []i32,
     mousebtn: ?i32 = null,
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
@@ -165,7 +165,7 @@ pub const VMData = struct {
         self.input = try allocator.alloc.realloc(self.input, self.input.len + 1);
         self.input[self.input.len - 1] = keycode;
 
-        if (keycode == c.GLFW_KEY_F1) {
+        if (keycode == c.GLFW_KEY_F10) {
             self.debug = !self.debug;
         }
     }
