@@ -153,11 +153,11 @@ pub const VMData = struct {
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (!down) {
-            const newInput = try allocator.alloc.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
-            defer allocator.alloc.free(self.input);
+            const oldInput = self.input;
+            defer allocator.alloc.free(oldInput);
 
-            _ = std.mem.replace(i32, self.input, &.{keycode}, &.{}, newInput);
-            self.input = newInput;
+            self.input = try allocator.alloc.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
+            _ = std.mem.replace(i32, oldInput, &.{keycode}, &.{}, self.input);
 
             return;
         }
