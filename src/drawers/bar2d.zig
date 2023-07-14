@@ -241,7 +241,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.web.new("web", shader),
+                                .contents = try wins.web.new(shader),
                                 .active = true,
                             });
 

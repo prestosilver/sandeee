@@ -98,6 +98,9 @@ pub fn clear(ctx: *Context) void {
 }
 
 pub fn swap(ctx: *Context) void {
+    c.glFinish();
+    c.glFlush();
+
     c.glfwSwapBuffers(ctx.window);
 }
 

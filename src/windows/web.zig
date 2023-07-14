@@ -371,7 +371,7 @@ pub const WebData = struct {
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 32,
+                .offsetStart = 40,
             };
         }
 
@@ -608,11 +608,10 @@ pub const WebData = struct {
         self.menubar.data.size.x = bnds.w;
         try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 64, bnds.y + 2, 0));
-        self.text_box[1].data.size.x = bnds.w - 8 - 66;
-
-        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 66, bnds.y + 2, 0));
-        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 8, bnds.y + 2, 0));
+        self.text_box[0].data.size.x = bnds.w - 76;
+        self.text_box[1].data.size.x = bnds.w - 80;
+        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 72, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
 
         const tmp = batch.scissor;
         batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 34, 28);
@@ -621,7 +620,7 @@ pub const WebData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = file,
-                .pos = vecs.newVec2(bnds.x + 68, bnds.y + 8),
+                .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
                 .wrap = bnds.w,
             });
         } else {
@@ -629,15 +628,15 @@ pub const WebData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = "Error",
-                .pos = vecs.newVec2(bnds.x + 68, bnds.y + 8),
+                .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
                 .wrap = bnds.w,
             });
         }
         batch.scissor = tmp;
 
-        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
+        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 4, 0));
 
-        try batch.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 36, bnds.y + 6, 0));
+        try batch.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
     }
 
     pub fn scroll(_: *Self, _: f32, _: f32) void {}
@@ -670,12 +669,12 @@ pub const WebData = struct {
     pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, btn: ?i32) !void {
         if (btn == null) return;
 
-        if (pos.y < 36) {
-            if (rect.newRect(0, 0, 28, 28).contains(pos)) {
+        if (pos.y < 40) {
+            if (rect.newRect(0, 0, 38, 40).contains(pos)) {
                 try self.back(false);
             }
 
-            if (rect.newRect(30, 0, 28, 28).contains(pos)) {
+            if (rect.newRect(38, 0, 38, 40).contains(pos)) {
                 if (self.conts != null and !self.loading) {
                     allocator.alloc.free(self.conts.?);
                     self.conts = null;
@@ -754,36 +753,36 @@ pub const WebData = struct {
     }
 };
 
-pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
+pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(WebData);
 
     self.* = .{
-        .highlight = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(15.0 / 32.0, 7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0),
-            vecs.newVec2(0.0, 0.0),
+        .highlight = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(2.0, 28),
         )),
-        .menubar = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(14.0 / 32.0, 7.0 / 32.0, 1.0 / 32.0, 18.0 / 32.0),
-            vecs.newVec2(0.0, 36.0),
+        .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
+            vecs.newVec2(0.0, 40.0),
         )),
         .text_box = .{
-            sprite.Sprite.new(texture, sprite.SpriteData.new(
-                rect.newRect(15.0 / 32.0, 10.0 / 32.0, 1.0 / 32.0, 14.0 / 32.0),
-                vecs.newVec2(2.0, 28.0),
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(2.0, 32.0),
             )),
-            sprite.Sprite.new(texture, sprite.SpriteData.new(
-                rect.newRect(16.0 / 32.0, 10.0 / 32.0, 1.0 / 32.0, 14.0 / 32.0),
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
                 vecs.newVec2(2.0, 28),
             )),
         },
         .icons = .{
-            sprite.Sprite.new(texture, sprite.SpriteData.new(
-                rect.newRect(0.0 / 32.0, 22.0 / 32.0, 11.0 / 32.0, 10.0 / 32.0),
-                vecs.newVec2(22, 20),
+            sprite.Sprite.new("icons", sprite.SpriteData.new(
+                rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(32, 32),
             )),
-            sprite.Sprite.new(texture, sprite.SpriteData.new(
-                rect.newRect(22.0 / 32.0, 22.0 / 32.0, 10.0 / 32.0, 10.0 / 32.0),
-                vecs.newVec2(20, 20),
+            sprite.Sprite.new("icons", sprite.SpriteData.new(
+                rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(32, 32),
             )),
         },
         .path = settings.settingManager.get("web_home") orelse "@sandeee.org:/index.edf",
