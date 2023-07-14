@@ -11,7 +11,7 @@ fn DrawBarBg(win, uiTex) {
 }
 
 fn DrawBarIcon(win, iconTex, iconSrc, idx) {
-    var x = idx * 40;
+    var x = idx * 36;
 
     var dest = _MakeRect(2 + x, 2, 32, 32);
 
