@@ -75,9 +75,9 @@ pub const CMDData = struct {
 
             const result = try self.shell.updateVM();
             if (result != null) {
-                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.items.len);
-                std.mem.copy(u8, self.bt[start..], result.?.data.items);
-                result.?.data.deinit();
+                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.len);
+                std.mem.copy(u8, self.bt[start..], result.?.data);
+                allocator.alloc.free(result.?.data);
                 idx += 1;
             } else {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.shell.vm.?.out.items.len);
@@ -172,7 +172,9 @@ pub const CMDData = struct {
                     return;
                 };
 
-                if (al.data.items.len == 0 and self.shell.vm == null)
+                defer allocator.alloc.free(al.data);
+
+                if (al.data.len == 0 and self.shell.vm == null)
                     self.bt = try allocator.alloc.realloc(self.bt, self.bt.len - 1);
 
                 if (al.clear) {
@@ -181,10 +183,9 @@ pub const CMDData = struct {
                 } else {
                     start = self.bt.len;
 
-                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + al.data.items.len);
-                    std.mem.copy(u8, self.bt[start..], al.data.items);
+                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + al.data.len);
+                    std.mem.copy(u8, self.bt[start..], al.data);
                 }
-                al.data.deinit();
 
                 self.inputLen = 0;
                 self.inputIdx = 0;

@@ -307,7 +307,7 @@ pub const GSWindowed = struct {
         if (self.shell.vm != null) {
             const result = self.shell.updateVM() catch null;
             if (result != null) {
-                result.?.data.deinit();
+                allocator.alloc.free(result.?.data);
             }
         }
 

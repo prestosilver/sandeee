@@ -48,6 +48,25 @@ pub const File = struct {
         allocator.alloc.free(self.contents);
         allocator.alloc.destroy(self);
     }
+
+    pub fn copyTo(self: *File, target: *Folder) !void {
+        if (self.parent.protected) return error.FolderProtected;
+        if (target.protected) return error.FolderProtected;
+
+        const lastIdx = std.mem.lastIndexOf(u8, self.name, "/") orelse return error.UnknownError;
+        const name = self.name[lastIdx + 1 ..];
+
+        const clone = try allocator.alloc.create(File);
+        clone.* = .{
+            .parent = target,
+            .name = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ target.name, name }),
+            .contents = try allocator.alloc.dupe(u8, self.contents),
+        };
+
+        try target.contents.append(clone);
+
+        root.fixFolders();
+    }
 };
 
 pub const Folder = struct {
@@ -416,6 +435,22 @@ pub const Folder = struct {
             }
         }
         return error.FileNotFound;
+    }
+
+    pub fn removeFolder(self: *Folder, name: []const u8) !void {
+        const folder = try self.getFolder(name);
+
+        if (folder.subfolders.items.len != 0 or
+            folder.contents.items.len != 0)
+            return error.FolderNotEmpty;
+
+        for (folder.parent.subfolders.items, 0..) |subfolder, idx| {
+            if (std.mem.eql(u8, subfolder.name, folder.name)) {
+                _ = folder.parent.subfolders.orderedRemove(idx);
+                return;
+            }
+        }
+        return error.FolderNotFound;
     }
 
     pub fn getFile(self: *Folder, name: []const u8) !*File {

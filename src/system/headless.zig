@@ -37,8 +37,8 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
             const result = try mainShell.updateVM();
             if (result != null) {
-                _ = try stdout.write(result.?.data.items);
-                result.?.data.deinit();
+                _ = try stdout.write(result.?.data);
+                allocator.alloc.free(result.?.data);
             } else {
                 _ = try stdout.write(mainShell.vm.?.out.items);
                 mainShell.vm.?.out.clearAndFree();
@@ -95,17 +95,17 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
             continue;
         };
 
+        defer allocator.alloc.free(result.data);
+
         if (result.exit) {
             break;
         } else {
-            if (result.data.items.len != 0) {
-                _ = try stdout.write(result.data.items);
-                if (result.data.getLast() != '\n')
+            if (result.data.len != 0) {
+                _ = try stdout.write(result.data);
+                if (result.data[result.data.len - 1] != '\n')
                     _ = try stdout.write("\n");
             }
         }
-
-        result.data.deinit();
     }
 
     return;

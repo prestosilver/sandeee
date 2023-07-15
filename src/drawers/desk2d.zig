@@ -14,6 +14,7 @@ const windowEvs = @import("../events/window.zig");
 const shell = @import("../system/shell.zig");
 const config = @import("../system/config.zig");
 const std = @import("std");
+const allocator = @import("../util/allocator.zig");
 
 const TOTAL_SPRITES = 6.0;
 const SPACING = vecs.newVec2(128, 100);
@@ -213,7 +214,7 @@ pub const DeskData = struct {
         if (self.shell.vm != null) {
             const result = self.shell.updateVM() catch null;
             if (result != null) {
-                result.?.data.deinit();
+                allocator.alloc.free(result.?.data);
             }
         }
     }

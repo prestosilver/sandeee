@@ -13,7 +13,7 @@ const rect = @import("../math/rects.zig");
 const opener = @import("opener.zig");
 
 const Result = struct {
-    data: std.ArrayList(u8),
+    data: []u8,
     exit: bool = false,
     clear: bool = false,
 };
@@ -45,76 +45,73 @@ pub const Shell = struct {
 
     pub fn cd(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
-            var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
-            };
-
             if (param[3] == '/') {
                 const folder = try files.root.getFolder(param[4..]);
                 self.root = folder;
-                return result;
+                return .{
+                    .data = try allocator.alloc.dupe(u8, ""),
+                };
             }
 
             const folder = try self.root.getFolder(param[3..]);
             self.root = folder;
 
-            return result;
-        } else {
-            var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
+            return .{
+                .data = try allocator.alloc.dupe(u8, ""),
             };
+        } else {
             self.root = files.home;
 
-            return result;
+            return .{
+                .data = try allocator.alloc.dupe(u8, ""),
+            };
         }
     }
 
     fn ls(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
             const folder = try self.root.getFolder(param[3..]);
-            var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
-            };
+            var resultData = std.ArrayList(u8).init(allocator.alloc);
+            defer resultData.deinit();
 
             const rootlen = folder.name.len;
 
             for (folder.subfolders.items) |item| {
-                try result.data.appendSlice(item.name[rootlen..]);
-                try result.data.append(' ');
+                try resultData.appendSlice(item.name[rootlen..]);
+                try resultData.append(' ');
             }
 
             for (folder.contents.items) |item| {
-                try result.data.appendSlice(item.name[rootlen..]);
-                try result.data.append(' ');
+                try resultData.appendSlice(item.name[rootlen..]);
+                try resultData.append(' ');
             }
 
-            return result;
-        } else {
-            var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
+            return .{
+                .data = try allocator.alloc.dupe(u8, resultData.items),
             };
+        } else {
+            var resultData = std.ArrayList(u8).init(allocator.alloc);
+            defer resultData.deinit();
 
             const rootlen = self.root.name.len;
 
             for (self.root.subfolders.items) |item| {
-                try result.data.appendSlice(item.name[rootlen..]);
-                try result.data.append(' ');
+                try resultData.appendSlice(item.name[rootlen..]);
+                try resultData.append(' ');
             }
 
             for (self.root.contents.items) |item| {
-                try result.data.appendSlice(item.name[rootlen..]);
-                try result.data.append(' ');
+                try resultData.appendSlice(item.name[rootlen..]);
+                try resultData.append(' ');
             }
 
-            return result;
+            return .{
+                .data = try allocator.alloc.dupe(u8, resultData.items),
+            };
         }
     }
 
     pub fn runCmd(_: *Shell, param: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
-
         const window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
@@ -134,14 +131,12 @@ pub const Shell = struct {
 
         try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
-        return result;
+        return .{
+            .data = try allocator.alloc.dupe(u8, ""),
+        };
     }
 
     pub fn runEdit(self: *Shell, param: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
-
         const window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
@@ -162,20 +157,21 @@ pub const Shell = struct {
                 edself.file = try self.root.getFile(param[5..]);
 
             edself.buffer.clearAndFree();
-            if (edself.file == null) return result;
+            if (edself.file == null) return .{
+                .data = try allocator.alloc.dupe(u8, ""),
+            };
             try edself.buffer.appendSlice(try edself.file.?.read(null));
         }
+
         try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
-        return result;
+        return .{
+            .data = try allocator.alloc.dupe(u8, ""),
+        };
     }
 
     pub fn runWeb(self: *Shell, param: []const u8) !Result {
         _ = self;
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
-
         const window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
@@ -192,15 +188,17 @@ pub const Shell = struct {
 
             webself.path = try allocator.alloc.dupe(u8, param[4..]);
         }
+
         try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
-        return result;
+        return .{
+            .data = try allocator.alloc.dupe(u8, ""),
+        };
     }
 
     pub fn runFileInFolder(self: *Shell, folder: *files.Folder, cmd: []const u8, param: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
+        var resultData = std.ArrayList(u8).init(allocator.alloc);
+        defer resultData.deinit();
 
         const file = folder.getFile(cmd) catch |err| {
             if (std.mem.endsWith(u8, cmd, ".eep")) return err;
@@ -222,24 +220,25 @@ pub const Shell = struct {
             for (try file.read(null)) |char| {
                 if (char == '\n') {
                     const res = try self.runLine(line.items);
-                    defer res.data.deinit();
-                    try result.data.appendSlice(res.data.items);
-                    if (result.data.items.len != 0)
-                        if (result.data.getLast() != '\n') try result.data.append('\n');
+                    defer allocator.alloc.free(res.data);
+                    try resultData.appendSlice(res.data);
+                    if (resultData.items.len != 0)
+                        if (resultData.getLast() != '\n') try resultData.append('\n');
                     try line.resize(0);
                 } else {
                     try line.append(char);
                 }
             }
             const res = try self.runLine(line.items);
-            defer res.data.deinit();
-            try result.data.appendSlice(res.data.items);
-            if (result.data.items.len != 0 and result.data.getLast() != '\n') try result.data.append('\n');
+            defer allocator.alloc.free(res.data);
+            try resultData.appendSlice(res.data);
+            if (resultData.items.len != 0 and resultData.getLast() != '\n') try resultData.append('\n');
 
-            return result;
+            return .{
+                .data = try allocator.alloc.dupe(u8, resultData.items),
+            };
         }
 
-        result.data.deinit();
         return error.InvalidFileType;
     }
 
@@ -259,88 +258,66 @@ pub const Shell = struct {
     }
 
     pub fn help(_: *Shell, _: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
+        return .{
+            .data = try allocator.alloc.dupe(u8, "" ++
+                "Sh\x82\x82\x82ll Help:\n" ++
+                "=============\n" ++
+                "\n" ++
+                "Commands\n" ++
+                "--------\n" ++
+                "help - prints this\n" ++
+                "ls   - lists the contents of the current folder\n" ++
+                "cd   - changes the current folder\n" ++
+                "new  - creates a new file\n" ++
+                "dnew - creates a new folder\n" ++
+                "rem  - removes a file\n" ++
+                "drem - removes a folder\n" ++
+                "cpy  - copies a file\n" ++
+                "dcpy - copies a folder\n" ++
+                "cls  - clears the terminal\n" ++
+                "exit - closes the terminal\n" ++
+                "\n" ++
+                "Applications\n" ++
+                "------------\n" ++
+                "cmd  - opens cmd\n" ++
+                "edit - opens the text editor\n" ++
+                "web  - opens the web browser\n" ++
+                "\n" ++
+                "You can also run any file in /exec with its name.\n"),
         };
-
-        try result.data.appendSlice("" ++
-            "Sh\x82\x82\x82ll Help:\n" ++
-            "=============\n" ++
-            "\n" ++
-            "Commands\n" ++
-            "--------\n" ++
-            "help - prints this\n" ++
-            "ls   - lists the contents of the current folder\n" ++
-            "cd   - changes the current folder\n" ++
-            "new  - creates a new file\n" ++
-            "dnew - creates a new folder\n" ++
-            "rem  - removes a file\n" ++
-            "drem - removes a file\n" ++
-            "cls  - clears the terminal\n" ++
-            "exit - closes the terminal\n" ++
-            "\n" ++
-            "Applications\n" ++
-            "------------\n" ++
-            "cmd  - opens cmd\n" ++
-            "edit - opens the text editor\n" ++
-            "web  - opens the web browser\n" ++
-            "\n" ++
-            "You can also run any file in /exec with its name.\n");
-
-        return result;
     }
 
     pub fn new(self: *Shell, param: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
-
         if (param.len > 4) {
-            self.root.newFile(param[4..]) catch |err| {
-                result.data.deinit();
-                return err;
-            };
+            try self.root.newFile(param[4..]);
 
-            try result.data.appendSlice("created");
-            return result;
+            return .{
+                .data = try allocator.alloc.dupe(u8, "created"),
+            };
         }
 
         return error.MissingParameter;
     }
 
     pub fn dnew(self: *Shell, param: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
+        if (param.len > 5) {
+            try self.root.newFolder(param[5..]);
 
-        if (param.len > 4) {
-            self.root.newFolder(param[4..]) catch |err| {
-                result.data.deinit();
-                return err;
+            return .{
+                .data = try allocator.alloc.dupe(u8, "created"),
             };
-
-            try result.data.appendSlice("created");
-            return result;
         }
 
         return error.MissingParameter;
     }
 
     pub fn todo(_: *Shell, _: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
+        return .{
+            .data = try allocator.alloc.dupe(u8, "Unimplemented"),
         };
-
-        try result.data.appendSlice("Unimplemented");
-
-        return result;
     }
 
     pub fn runAsm(self: *Shell, folder: *files.Folder, cmd: []const u8, params: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
-
         for (folder.contents.items, 0..) |_, idx| {
             const rootlen = folder.name.len;
             const item = folder.contents.items[idx];
@@ -348,8 +325,6 @@ pub const Shell = struct {
             if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
                 const cont = try item.read(null);
                 if (cont.len < 4 or !std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
-                    result.data.deinit();
-
                     return error.BadASMFile;
                 }
 
@@ -359,8 +334,6 @@ pub const Shell = struct {
                 const ops = cont[4..];
 
                 self.vm.?.loadString(ops) catch |err| {
-                    result.data.deinit();
-
                     try self.vm.?.deinit();
                     self.vm = null;
                     vms -= 1;
@@ -368,11 +341,11 @@ pub const Shell = struct {
                     return err;
                 };
 
-                return result;
+                return .{
+                    .data = try allocator.alloc.dupe(u8, ""),
+                };
             }
         }
-
-        result.data.deinit();
 
         return error.FileNotFound;
     }
@@ -381,10 +354,8 @@ pub const Shell = struct {
         if (self.vm) |*vmInst| {
             if (vmInst.stopped) {
                 var result: Result = Result{
-                    .data = std.ArrayList(u8).init(allocator.alloc),
+                    .data = try allocator.alloc.dupe(u8, vmInst.out.items),
                 };
-
-                try result.data.appendSlice(vmInst.out.items);
 
                 try vmInst.deinit();
                 self.vm = null;
@@ -394,10 +365,9 @@ pub const Shell = struct {
             }
 
             var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
+                .data = try allocator.alloc.dupe(u8, vmInst.out.items),
             };
 
-            try result.data.appendSlice(vmInst.out.items);
             vmInst.out.clearAndFree();
 
             try threads.append(try std.Thread.spawn(.{}, vmThread, .{self}));
@@ -437,28 +407,73 @@ pub const Shell = struct {
 
     pub fn runLine(self: *Shell, line: []const u8) !Result {
         if (line.len == 0) {
-            var result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
+            return .{
+                .data = try allocator.alloc.dupe(u8, ""),
             };
-
-            return result;
         }
 
         return self.run(line);
     }
 
-    pub fn rem(self: *Shell, params: []const u8) !Result {
-        var result: Result = Result{
-            .data = std.ArrayList(u8).init(allocator.alloc),
-        };
-
+    pub fn cpy(self: *Shell, params: []const u8) !Result {
         if (params.len > 4) {
-            self.root.removeFile(params[4..]) catch |err| {
-                result.data.deinit();
-                return err;
+            var iter = std.mem.split(u8, params, " ");
+            _ = iter.next();
+            const input = iter.next() orelse return error.MissingParameter;
+            const output = iter.next() orelse return error.MissingParameter;
+
+            const root = if (input.len != 0 and input[0] == '/')
+                files.root
+            else
+                self.root;
+
+            const oroot = if (output.len != 0 and output[0] == '/')
+                files.root
+            else
+                self.root;
+
+            const file = try root.getFile(input);
+            const targ = try oroot.getFolder(output);
+
+            try file.copyTo(targ);
+
+            return .{
+                .data = try allocator.alloc.dupe(u8, "copied"),
             };
-            try result.data.appendSlice("removed");
-            return result;
+        }
+
+        return error.MissingParameter;
+    }
+
+    pub fn rem(self: *Shell, params: []const u8) !Result {
+        if (params.len > 5) {
+            var iter = std.mem.split(u8, params, " ");
+            _ = iter.next();
+
+            while (iter.next()) |folder| {
+                try self.root.removeFile(folder);
+            }
+
+            return .{
+                .data = try allocator.alloc.dupe(u8, "removed"),
+            };
+        }
+
+        return error.MissingParameter;
+    }
+
+    pub fn drem(self: *Shell, params: []const u8) !Result {
+        if (params.len > 5) {
+            var iter = std.mem.split(u8, params, " ");
+            _ = iter.next();
+
+            while (iter.next()) |folder| {
+                try self.root.removeFolder(folder);
+            }
+
+            return .{
+                .data = try allocator.alloc.dupe(u8, "removed"),
+            };
         }
 
         return error.MissingParameter;
@@ -483,10 +498,13 @@ pub const Shell = struct {
         if (std.mem.eql(u8, cmd, "new")) return self.new(params);
         if (std.mem.eql(u8, cmd, "dnew")) return self.dnew(params);
         if (std.mem.eql(u8, cmd, "rem")) return self.rem(params);
+        if (std.mem.eql(u8, cmd, "drem")) return self.drem(params);
+        if (std.mem.eql(u8, cmd, "cpy")) return self.cpy(params);
+        if (std.mem.eql(u8, cmd, "dcpy")) return self.todo(params);
 
         if (std.mem.eql(u8, cmd, "cls")) {
             const result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
+                .data = try allocator.alloc.dupe(u8, ""),
                 .clear = true,
             };
 
@@ -494,7 +512,7 @@ pub const Shell = struct {
         }
         if (std.mem.eql(u8, cmd, "exit")) {
             const result: Result = Result{
-                .data = std.ArrayList(u8).init(allocator.alloc),
+                .data = try allocator.alloc.dupe(u8, ""),
                 .exit = true,
             };
 
