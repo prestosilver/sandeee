@@ -29,7 +29,7 @@ uniform float lines_velocity = 0.0;
 #define GAMMA 2
 #define distortion 0.075
 #define START_TIME 3.00
-#define MAXB 0.6
+#define MAXB 0.75
 
 vec2 distort(vec2 coord, const vec2 ratio)
 {
