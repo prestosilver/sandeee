@@ -255,8 +255,8 @@ pub fn blit() !void {
 
 pub fn changeState(event: systemEvs.EventStateChange) !void {
     std.log.debug("ChangeState: {s}", .{@tagName(event.targetState)});
-
     currentState = event.targetState;
+    c.glfwSetTime(0);
 }
 
 pub fn keyDown(event: inputEvs.EventKeyDown) !void {

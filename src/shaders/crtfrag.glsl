@@ -20,15 +20,15 @@ uniform float bleeding_range_x = 3;
 uniform float bleeding_range_y = 3;
 
 // Scanline
-uniform float lines_distance = 2.0;
-uniform float scan_size = 1.0;
-uniform float scanline_alpha = 0.5;
-uniform float lines_velocity = 0.0;
+uniform float lines_distance = 4.0;
+uniform float scan_size = 3.0;
+uniform float scanline_alpha = 0.85;
+uniform float lines_velocity = -2.0;
 
 #define COLOR_STEPS 8.0
 #define GAMMA 2
 #define distortion 0.075
-#define START_TIME 3.00
+#define START_TIME 1.00
 #define MAXB 0.75
 
 vec2 distort(vec2 coord, const vec2 ratio)
@@ -119,7 +119,6 @@ void main()
 
     float d = length(xy);
     xy = mix(xy, distort(xy, vec2(1)), step(d, 1.5));
-
     xy.x += displace(xy) * 0.0625;
 
     float bar = clamp(exp(1.0 - mod(((xy.y + 1) / 2) + time*0.2, 1.)), 1.0, 1.2) - 0.2;
