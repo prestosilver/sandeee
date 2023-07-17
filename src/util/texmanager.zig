@@ -11,7 +11,7 @@ pub const TextureManager = struct {
         };
     }
 
-    pub fn deinit(self: *TextureManager) !void {
+    pub fn deinit(self: *TextureManager) void {
         var iter = self.textures.iterator();
 
         while (iter.next()) |entry| {

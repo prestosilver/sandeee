@@ -134,7 +134,6 @@ void main()
     get_color_scanline(SCREEN_UV.xy,c,time);
 
     c = mix(vec4(0, 0, 0, 1), c, smoothstep(0 - pixel_size_y, 0, xy.y) * (1.0 - smoothstep(1, 1 + pixel_size_y, xy.y)) * smoothstep(0 - pixel_size_x, 0, xy.x) * (1.0 - smoothstep(1, 1 + pixel_size_x, xy.x)));
-
     float mul = clamp(time / START_TIME, 0, MAXB);
 
     color = vec4(c.rgb, c.a * mul);

@@ -256,7 +256,6 @@ pub fn blit() !void {
 pub fn changeState(event: systemEvs.EventStateChange) !void {
     std.log.debug("ChangeState: {s}", .{@tagName(event.targetState)});
     currentState = event.targetState;
-    c.glfwSetTime(0);
 }
 
 pub fn keyDown(event: inputEvs.EventKeyDown) !void {
@@ -354,24 +353,6 @@ pub fn runCmdEvent(event: systemEvs.EventRunCmd) !void {
             try emailManager.setEmailComplete(email);
         }
     }
-}
-
-pub fn setupEvents() !void {
-    events.EventManager.init();
-
-    try events.EventManager.instance.registerListener(inputEvs.EventWindowResize, windowResize);
-    try events.EventManager.instance.registerListener(inputEvs.EventMouseScroll, mouseScroll);
-    try events.EventManager.instance.registerListener(inputEvs.EventMouseMove, mouseMove);
-    try events.EventManager.instance.registerListener(inputEvs.EventMouseDown, mouseDown);
-    try events.EventManager.instance.registerListener(inputEvs.EventMouseUp, mouseUp);
-    try events.EventManager.instance.registerListener(inputEvs.EventKeyDown, keyDown);
-    try events.EventManager.instance.registerListener(inputEvs.EventKeyChar, keyChar);
-    try events.EventManager.instance.registerListener(inputEvs.EventKeyUp, keyUp);
-
-    try events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
-    try events.EventManager.instance.registerListener(systemEvs.EventStateChange, changeState);
-    try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
-    try events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
 }
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {
@@ -592,6 +573,7 @@ pub fn mainErr() anyerror!void {
     try textureManager.putMem("sad", sadImage);
     try textureManager.putMem("error", errorImage);
 
+    // setup shell threads
     shell.threads = std.ArrayList(std.Thread).init(allocator.alloc);
     defer shell.threads.deinit();
 
@@ -746,7 +728,24 @@ pub fn mainErr() anyerror!void {
     ctx.makeNotCurrent();
 
     // setup event system
-    try setupEvents();
+    events.EventManager.init();
+    defer events.EventManager.deinit();
+
+    // add input management event handlers
+    try events.EventManager.instance.registerListener(inputEvs.EventWindowResize, windowResize);
+    try events.EventManager.instance.registerListener(inputEvs.EventMouseScroll, mouseScroll);
+    try events.EventManager.instance.registerListener(inputEvs.EventMouseMove, mouseMove);
+    try events.EventManager.instance.registerListener(inputEvs.EventMouseDown, mouseDown);
+    try events.EventManager.instance.registerListener(inputEvs.EventMouseUp, mouseUp);
+    try events.EventManager.instance.registerListener(inputEvs.EventKeyDown, keyDown);
+    try events.EventManager.instance.registerListener(inputEvs.EventKeyChar, keyChar);
+    try events.EventManager.instance.registerListener(inputEvs.EventKeyUp, keyUp);
+
+    // add system event handlers
+    try events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
+    try events.EventManager.instance.registerListener(systemEvs.EventStateChange, changeState);
+    try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
+    try events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
 
     // setup game states
     gameStates.set(.Disks, states.GameState.init(&gsDisks));
@@ -830,10 +829,9 @@ pub fn mainErr() anyerror!void {
     try gameStates.getPtr(currentState).deinit();
 
     try biosFace.deinit();
-    try batch.textureManager.deinit();
+    batch.textureManager.deinit();
 
     gfx.close(ctx);
-    events.EventManager.deinit();
     sb.deinit();
 }
 

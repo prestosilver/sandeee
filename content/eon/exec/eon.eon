@@ -128,7 +128,6 @@ fn nextWord(buff, idx) {
         }
     }
 
-
     return result;
 }
 
