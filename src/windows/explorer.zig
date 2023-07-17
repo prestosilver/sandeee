@@ -38,10 +38,9 @@ pub const ExplorerData = struct {
     };
 
     shader: *shd.Shader,
-    icons: [6]sprite.Sprite,
+    icons: [4]sprite.Sprite,
     text_box: [2]sprite.Sprite,
     menubar: sprite.Sprite,
-    focus: sprite.Sprite,
     gray: sprite.Sprite,
     shell: shell.Shell,
 
@@ -56,7 +55,7 @@ pub const ExplorerData = struct {
         for (self.shell.root.subfolders.items) |folder| {
             result[idx] = ExplorerIcon{
                 .name = folder.name[self.shell.root.name.len .. folder.name.len - 1],
-                .icon = 3,
+                .icon = 2,
             };
             idx += 1;
         }
@@ -64,7 +63,7 @@ pub const ExplorerData = struct {
         for (self.shell.root.contents.items) |file| {
             result[idx] = ExplorerIcon{
                 .name = file.name[self.shell.root.name.len..],
-                .icon = 4,
+                .icon = 1,
             };
             idx += 1;
         }
@@ -129,7 +128,7 @@ pub const ExplorerData = struct {
             try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
             if (idx + 1 == self.selected)
-                try batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
+                try batch.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
             if (self.lastAction != null) {
                 if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
@@ -185,25 +184,24 @@ pub const ExplorerData = struct {
         self.menubar.data.size.x = bnds.w;
         try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 32, bnds.y + 2, 0));
-        self.text_box[1].data.size.x = bnds.w - 4 - 34;
-
-        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 34, bnds.y + 2, 0));
-        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 4, bnds.y + 2, 0));
+        self.text_box[0].data.size.x = bnds.w - 36;
+        self.text_box[1].data.size.x = bnds.w - 40;
+        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 36, bnds.y + 2, 0));
+        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
 
         const tmp = batch.scissor;
-        batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 4 - 34, 28);
+        batch.scissor = rect.newRect(bnds.x + 42, bnds.y + 4, bnds.w - 4 - 34, 28);
         try font.draw(.{
             .batch = batch,
             .shader = font_shader,
             .text = self.shell.root.name,
-            .pos = vecs.newVec2(bnds.x + 36, bnds.y + 8),
+            .pos = vecs.newVec2(bnds.x + 42, bnds.y + 8),
             .color = col.newColor(0, 0, 0, 1),
         });
 
         batch.scissor = tmp;
 
-        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 6, 0));
+        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
     }
 
     pub fn deinit(self: *Self) void {
@@ -269,31 +267,25 @@ pub const ExplorerData = struct {
     }
 };
 
-pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
+pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(ExplorerData);
 
-    const ym = @as(f32, @floatFromInt(self.icons.len));
-
     self.* = .{
-        .focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
+        .gray = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(72.0, 72.0),
         )),
-        .gray = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(7.0 / 32.0, 6.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
-            vecs.newVec2(72.0, 72.0),
-        )),
-        .menubar = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(17.0 / 32.0, 0.0 / 32.0 / ym, 1.0 / 32.0, 18.0 / 32.0 / ym),
-            vecs.newVec2(0.0, 36.0),
+        .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
+            vecs.newVec2(0.0, 40.0),
         )),
         .text_box = .{
-            sprite.Sprite.new(texture, sprite.SpriteData.new(
-                rect.newRect(18.0 / 32.0, 0.0 / 32.0 / ym, 0.0 / 32.0, 14.0 / 32.0 / ym),
-                vecs.newVec2(2.0, 28.0),
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(2.0, 32.0),
             )),
-            sprite.Sprite.new(texture, sprite.SpriteData.new(
-                rect.newRect(19.0 / 32.0, 0.0 / 32.0 / ym, 0.0 / 32.0, 14.0 / 32.0 / ym),
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
                 vecs.newVec2(2.0, 28.0),
             )),
         },
@@ -306,17 +298,17 @@ pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
     };
 
     for (self.icons, 0..) |_, idx| {
-        const i = @as(f32, @floatFromInt(idx));
+        const i = @as(f32, @floatFromInt(idx)) - 1;
 
-        self.icons[idx] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0 / 32.0, i / @as(f32, @floatFromInt(self.icons.len)), 1.0, 1.0 / @as(f32, @floatFromInt(self.icons.len))),
+        self.icons[idx] = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
+            rect.newRect(i / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(64, 64),
         ));
     }
 
-    self.icons[0] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-        rect.newRect(0.0 / 32.0, 21.0 / 32.0 / ym, 10.0 / 32.0, 11.0 / 32.0 / ym),
-        vecs.newVec2(20.0, 22.0),
+    self.icons[0] = sprite.Sprite.new("icons", sprite.SpriteData.new(
+        rect.newRect(3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+        vecs.newVec2(32.0, 32.0),
     ));
 
     return win.WindowContents.init(self, "explorer", "Files", col.newColor(1, 1, 1, 1));

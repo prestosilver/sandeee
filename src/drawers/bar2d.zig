@@ -227,7 +227,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.explorer.new("explorer", shader),
+                                .contents = try wins.explorer.new(shader),
                                 .active = true,
                             });
 
@@ -255,7 +255,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.settings.new("explorer", shader),
+                                .contents = try wins.settings.new(shader),
                                 .active = true,
                             });
 

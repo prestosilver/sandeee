@@ -16,7 +16,6 @@ const config = @import("../system/config.zig");
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 
-const TOTAL_SPRITES = 6.0;
 const SPACING = vecs.newVec2(128, 100);
 
 pub var deskSize: *vecs.Vector2 = undefined;
@@ -29,10 +28,13 @@ pub const DeskData = struct {
     fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
         var source = src;
 
-        source.y /= TOTAL_SPRITES;
-        source.h /= TOTAL_SPRITES;
+        source.y /= 8;
+        source.h /= 8;
 
-        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
+        source.x /= 8;
+        source.w /= 8;
+
+        source.x += 1.0 / 8.0 * @as(f32, @floatFromInt(sprite));
 
         try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
         try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), cols.newColor(1, 1, 1, 1));
@@ -80,7 +82,7 @@ pub const DeskData = struct {
                             .w = 1.0,
                             .h = 1.0,
                         },
-                        .contents = try wins.explorer.new("explorer", shader),
+                        .contents = try wins.explorer.new(shader),
                         .active = true,
                     });
 
@@ -137,11 +139,11 @@ pub const DeskData = struct {
         for (files.home.subfolders.items) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
-            try addQuad(&result, 3, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
+            try addQuad(&result, 1, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
 
             if (self.sel) |sel| {
                 if (idx == sel)
-                    try addQuad(&result, 0, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0));
+                    try addQuad(&result, 2, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0));
             }
 
             idx += 1;
@@ -152,11 +154,11 @@ pub const DeskData = struct {
         for (files.home.contents.items) |file| {
             if (!checkIconSkip(file.name)) continue;
 
-            try addQuad(&result, 4, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
+            try addQuad(&result, 0, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
 
             if (self.sel) |sel| {
                 if (idx == sel)
-                    try addQuad(&result, 0, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0));
+                    try addQuad(&result, 2, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0));
             }
 
             idx += 1;

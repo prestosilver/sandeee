@@ -39,8 +39,6 @@ const SettingsData = struct {
 
     shader: *shd.Shader,
     icons: [6]sprite.Sprite,
-    scroll: [3]sprite.Sprite,
-    focus: sprite.Sprite,
 
     focused: ?usize = null,
     selection: usize = 0,
@@ -51,10 +49,10 @@ const SettingsData = struct {
     value: []const u8,
 
     const panels = [_]SettingPanel{
-        SettingPanel{ .name = "Graphics", .icon = 1 },
-        SettingPanel{ .name = "Sounds", .icon = 2 },
+        SettingPanel{ .name = "Graphics", .icon = 2 },
+        SettingPanel{ .name = "Sounds", .icon = 1 },
         SettingPanel{ .name = "Explorer", .icon = 3 },
-        SettingPanel{ .name = "System", .icon = 5 },
+        SettingPanel{ .name = "System", .icon = 0 },
     };
 
     const Setting = struct {
@@ -221,20 +219,8 @@ const SettingsData = struct {
                 pos.y += font.size;
             }
 
-            self.scroll[1].data.size.y = bnds.h - 20;
-
-            try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
-            try batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
-            try batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
-
             return;
         }
-
-        self.scroll[1].data.size.y = bnds.h - 20;
-
-        try batch.draw(sprite.Sprite, &self.scroll[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y - 2, 0));
-        try batch.draw(sprite.Sprite, &self.scroll[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + 10, 0));
-        try batch.draw(sprite.Sprite, &self.scroll[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 12, bnds.y + bnds.h - 10, 0));
 
         var x: f32 = 0;
         var y: f32 = 0;
@@ -253,7 +239,7 @@ const SettingsData = struct {
             try batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
             if (idx + 1 == self.selection)
-                try batch.draw(sprite.Sprite, &self.focus, self.shader, vecs.newVec3(bnds.x + x + 2 + 16, bnds.y + y + 2, 0));
+                try batch.draw(sprite.Sprite, &self.icons[4], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
             if (self.lastAction) |action| {
                 if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(action.pos)) {
@@ -332,36 +318,23 @@ const SettingsData = struct {
     }
 };
 
-pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
+pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(SettingsData);
 
     const ym = @as(f32, @floatFromInt(self.icons.len));
+    _ = ym;
 
     self.* = .{
         .shader = shader,
         .icons = undefined,
-        .scroll = .{ sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0 / 32.0, 0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
-            vecs.newVec2(14.0, 12.0),
-        )), sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0 / 32.0, 6.0 / 32.0 / ym, 7.0 / 32.0, 4.0 / 32.0 / ym),
-            vecs.newVec2(14.0, 64),
-        )), sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0 / 32.0, 10.0 / 32.0 / ym, 7.0 / 32.0, 6.0 / 32.0 / ym),
-            vecs.newVec2(14.0, 12.0),
-        )) },
-        .focus = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(7.0 / 32.0, 3.0 / 32.0 / ym, 3.0 / 32.0, 3.0 / 32.0 / ym),
-            vecs.newVec2(72.0, 72.0),
-        )),
         .value = "",
     };
 
     for (self.icons, 0..) |_, idx| {
         const i = @as(f32, @floatFromInt(idx));
 
-        self.icons[idx] = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0 / 32.0, i / @as(f32, @floatFromInt(self.icons.len)), 1.0, 1.0 / @as(f32, @floatFromInt(self.icons.len))),
+        self.icons[idx] = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
+            rect.newRect(i / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(64, 64),
         ));
     }

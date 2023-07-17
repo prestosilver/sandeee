@@ -32,8 +32,8 @@ pub const GSLoading = struct {
         .{ "notif_texture_path", "notif" },
         .{ "ui_texture_path", "ui" },
         .{ "icons_texture_path", "icons" },
+        .{ "bigicons_texture_path", "big_icons" },
         .{ "email_texture_path", "email" },
-        .{ "explorer_texture_path", "explorer" },
         .{ "cursor_texture_path", "cursor" },
         .{ "bar_logo_path", "barlogo" },
     };

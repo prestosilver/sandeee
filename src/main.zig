@@ -666,7 +666,7 @@ pub fn mainErr() anyerror!void {
             ),
         },
         .desk = .{
-            .texture = "explorer",
+            .texture = "big_icons",
             .data = .{
                 .shell = .{
                     .root = undefined,

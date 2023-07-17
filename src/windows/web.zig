@@ -634,9 +634,9 @@ pub const WebData = struct {
         }
         batch.scissor = tmp;
 
-        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 4, 0));
+        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
 
-        try batch.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
+        try batch.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 2, 0));
     }
 
     pub fn scroll(_: *Self, _: f32, _: f32) void {}
