@@ -212,6 +212,7 @@ fn parseFlow(buff, idx, stack, varTable) {
     var lastidx = dup(idx);
     var oldstack = dup(stack);
     var flowidx = toString(lastidx);
+    var tableCopy = dup(varTable);
     var word = nextWord(buff, idx);
     var result = "";
     var last = "";
@@ -229,21 +230,21 @@ fn parseFlow(buff, idx, stack, varTable) {
 
                 stack = dup(oldstack);
 
-                result &= "jmp if_" & flowidx & "_end\n";
-                result &= "if_" & flowidx & "_else:\n";
-
                 last = dup(idx);
 
                 word = nextWord(buff, idx);
                 if (word == "else") {
+                    result &= "jmp if_" & flowidx & "_end\n";
+                    result &= "if_" & flowidx & "_else:\n";
                     result &= parseBlock(buff, idx, stack, varTable, 0);
+                    result &= "if_" & flowidx & "_end:\n";
 
                     stack = dup(oldstack);
                 } else {
+                    result &= "if_" & flowidx & "_else:\n";
                     idx = dup(last);
                 }
 
-                result &= "if_" & flowidx & "_end:\n";
                 stack = dup(oldstack);
 
                 return result;
@@ -277,13 +278,9 @@ fn parseFlow(buff, idx, stack, varTable) {
         word = nextWord(buff, idx);
         if (word != "(") error("for expected '('");
 
-        result = parseExpression(buff, idx, stack, varTable);
+        result = parseStmt(buff, idx, stack, varTable);
 
-        word = nextWord(buff, idx);
-        if (@word != 59) error("for expected 'sc1' got " & word);
-
-        result &= "disc 0\nfor_" & flowidx & "_loop:\n";
-        if (stack != 255) stack -= 1;
+        result &= "for_" & flowidx & "_loop:\n";
 
         result &= parseExpression(buff, idx, stack, varTable);
 
@@ -306,6 +303,7 @@ fn parseFlow(buff, idx, stack, varTable) {
         result &= last & "disc 0\njmp for_" & flowidx & "_loop\nfor_" & flowidx & "_end:\n";
 
         stack = oldstack;
+        varTable = tableCopy;
 
         return result;
     }

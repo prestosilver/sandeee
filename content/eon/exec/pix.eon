@@ -60,7 +60,7 @@ fn main() {
     var w = _TextureWidth(content);
     var h = _TextureHeight(content);
 
-    for (0; _WindowOpen(); 1) {
+    while (_WindowOpen()) {
         render(window, texture, w * 2, h * 2);
     }
 

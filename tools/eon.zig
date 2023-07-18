@@ -549,21 +549,20 @@ const Statement = struct {
 
                 var result = try allocator.alloc(u8, 0);
 
-                var adds = try self.exprs.?[0].toAsm(map, idx);
+                var adds = try self.blks.?[0][0].toAsm(map, idx);
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 std.mem.copy(u8, result[start_res..], adds);
 
                 allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    disc 0\nblock_{}_loop:\n", .{block});
+                adds = try std.fmt.allocPrint(allocator, "block_{}_loop:\n", .{block});
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 std.mem.copy(u8, result[start_res..], adds);
-                idx.* -= 1;
 
                 allocator.free(adds);
-                adds = try self.exprs.?[1].toAsm(map, idx);
+                adds = try self.exprs.?[0].toAsm(map, idx);
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 std.mem.copy(u8, result[start_res..], adds);
@@ -575,7 +574,7 @@ const Statement = struct {
                 std.mem.copy(u8, result[start_res..], adds);
                 idx.* -= 1;
 
-                for (self.blks.?[0]) |*stmt| {
+                for (self.blks.?[1]) |*stmt| {
                     allocator.free(adds);
                     adds = try stmt.toAsm(map, idx);
                     start_res = result.len;
@@ -584,7 +583,7 @@ const Statement = struct {
                 }
 
                 allocator.free(adds);
-                adds = try self.exprs.?[2].toAsm(map, idx);
+                adds = try self.exprs.?[1].toAsm(map, idx);
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 std.mem.copy(u8, result[start_res..], adds);
@@ -971,6 +970,14 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                 });
                 code = try allocator.alloc(u8, 0);
             } else if (!std.mem.eql(u8, code, "\"")) {
+                if (code[0] == '-' and code.len != 1) {
+                    try result.append(.{
+                        .kind = .TOKEN_NEG,
+                        .value = code[0..1],
+                    });
+                    code = code[1..];
+                }
+
                 var isIdent = true;
 
                 for (code) |ch| {
@@ -1110,6 +1117,18 @@ pub fn parseFactor(tokens: []Token, idx: *usize) !Expression {
             idx.* += 1;
             return result;
         }
+    } else if (tokens[idx.*].kind == .TOKEN_NEG) {
+        var ident = &tokens[idx.*];
+        idx.* += 1;
+        var b = try allocator.alloc(Expression, 1);
+        b[0] = try parseFactor(tokens, idx);
+
+        result = .{
+            .a = &emptyExpr,
+            .op = ident,
+            .b = b,
+        };
+        return result;
     } else if (tokens[idx.*].kind == .TOKEN_AT or
         tokens[idx.*].kind == .TOKEN_KEYWORD_NEW)
     {
@@ -1266,21 +1285,23 @@ pub fn parseStatement(tokens: []Token, idx: *usize) !Statement {
 
         return result;
     } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_FOR) {
+        var isvar = false;
+        _ = isvar;
+
         idx.* += 1;
         if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
         idx.* += 1;
-        var exprs = try allocator.alloc(Expression, 3);
+        var exprs = try allocator.alloc(Expression, 2);
+        var blks = try allocator.alloc([]Statement, 2);
+        blks[0] = try allocator.alloc(Statement, 1);
+        blks[0][0] = try parseStatement(tokens, idx);
         exprs[0] = try parseExpression(tokens, idx);
         if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.Semi;
         idx.* += 1;
         exprs[1] = try parseExpression(tokens, idx);
-        if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.Semi;
-        idx.* += 1;
-        exprs[2] = try parseExpression(tokens, idx);
         if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
         idx.* += 1;
-        var blks = try allocator.alloc([]Statement, 1);
-        blks[0] = try parseBlock(tokens, idx);
+        blks[1] = try parseBlock(tokens, idx);
 
         result = .{
             .kind = .STMT_FOR,

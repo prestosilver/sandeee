@@ -130,11 +130,10 @@ fn update(ax, bx, ballx, bally,
         }
     }
 
-    var key = getkey();
     var keycode = 0;
     var adds = 0;
     
-    for (0; _StringLength(key) != 0; key = key + 2) {
+    for (var key = getkey(); _StringLength(key) != 0; key = key + 2) {
         keycode = @dup(key);
         adds = key + 1;
         adds = @adds;
@@ -182,7 +181,7 @@ fn main() {
 
     _TextureUpload(_TextureRead("/cont/imgs/pong.eia"), texture);
 
-    for (0; _WindowOpen(); 1) {
+    while (_WindowOpen()) {
         dt = time() - lastTime;
         lastTime = time();
 

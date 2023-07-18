@@ -116,8 +116,8 @@ fn drawLineLow(texture, ax, ay, bx, by, color) {
 
     var yi = 1;
     if (dy > 65535) {
-        yi = 0 - yi;
-        dy = 0 - dy;
+        yi = -yi;
+        dy = -dy;
     }
 
     var menuTex = _TextureCreate();
@@ -146,8 +146,8 @@ fn drawLineHigh(texture, ax, ay, bx, by, color) {
 
     var xi = 1;
     if (dx > 65535) {
-        xi = 0 - xi;
-        dx = 0 - dx;
+        xi = -xi;
+        dx = -dx;
     }
 
     var D = 2 * dx - dy;
@@ -169,7 +169,7 @@ fn drawLineHigh(texture, ax, ay, bx, by, color) {
 
 fn abs(v) {
    if (v > 65535) {
-       return 0 - v;
+       return -v;
    }
    return v;
 }
@@ -202,8 +202,8 @@ fn processClick(win, texture, filename, imgx, imgy, imgs, w, h, oldx, oldy) {
     var xo = @(clickData + 1);
     var yo = @(clickData + 3);
 
-    x = x + xo * 256;
-    y = y + yo * 256;
+    x += xo * 256;
+    y += yo * 256;
 
     if ((y < 40) && (btn == 0)) {
         if (x < 44) {
@@ -224,20 +224,20 @@ fn processClick(win, texture, filename, imgx, imgy, imgs, w, h, oldx, oldy) {
         return 0;
     }
 
-    y = y - 40;
+    y -= 40;
 
     var xs = dup(x);
     var ys = dup(y);
 
     xo = imgx * imgs;
     xo = xo / 1000;
-    x = x - xo;
+    x -= xo;
     x = x * 1000;
     x = x / imgs;
 
     yo = imgy * imgs;
     yo = yo / 1000;
-    y = y - yo;
+    y -= yo;
     y = y * 1000;
     y = y / imgs;
 
@@ -250,10 +250,10 @@ fn processClick(win, texture, filename, imgx, imgy, imgs, w, h, oldx, oldy) {
         drawLine(texture, oldx, oldy, x, y, "\xff\xff\xff\xff");
     } else if (btn == 2) {
         if ((imgx - xo) < 65535) {
-            imgx = imgx - xo;
+            imgx -= xo;
         }
         if ((imgy - yo) < 65535) {
-            imgy = imgy - yo;
+            imgy -= yo;
         }
 
         x = xs;
@@ -261,13 +261,13 @@ fn processClick(win, texture, filename, imgx, imgy, imgs, w, h, oldx, oldy) {
 
         xo = imgx * imgs;
         xo = xo / 1000;
-        x = x - xo;
+        x -= xo;
         x = x * 1000;
         x = x / imgs;
 
         yo = imgy * imgs;
         yo = yo / 1000;
-        y = y - yo;
+        y -= yo;
         y = y * 1000;
         y = y / imgs;
     }
@@ -321,7 +321,7 @@ fn main() {
     var imgy = 0;
     var imgs = 2000;
 
-    for (0; _WindowOpen(); 1) {
+    while (_WindowOpen()) {
         processClick(window, texture, file, imgx, imgy, imgs, w, h, x, y);
 
         render(window, menuTex, iconTex, transTex, texture, imgx, imgy, imgs, w, h);
