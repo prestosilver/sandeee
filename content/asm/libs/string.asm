@@ -36,15 +36,12 @@ split_end:                      ; str trg idx
 
 
 _StringStartsWith:              ; str start
-    copy 1                      ; str start str
-    copy 2                      ; str start str str
-    call "StringLength"         ; str start str strlen
-    copy 2                      ; str start str strlen start
-    call "StringLength"         ; str start str strlen startlen
-    sub                         ; str start str strextra
-    sub                         ; str start strstart
-    disc 2                      ; start strstart
-    eq
+    dup 1                       ; str start str
+    copy 1                      ; str start str start
+    call "StringLength"         ; str start str startlen
+    size                        ; str start strstart 
+    eq                          ; str same
+    disc 1                      ; same
     ret
 
 _StringEndsWith:                ; str start
