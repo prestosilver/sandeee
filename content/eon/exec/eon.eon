@@ -175,12 +175,12 @@ fn parseVar(buff, idx, stack, varTable) {
             return parseExpression(buff, idx, stack, varTable);
         }
 
-        idx = dup(oldidx);
+        idx = oldidx;
 
         return "push 0\n";
     }
 
-    idx = dup(lastidx);
+    idx = lastidx;
 
     return "";
 }
@@ -239,13 +239,13 @@ fn parseFlow(buff, idx, stack, varTable) {
                     result &= parseBlock(buff, idx, stack, varTable, 0);
                     result &= "if_" & flowidx & "_end:\n";
 
-                    stack = dup(oldstack);
+                    stack = oldstack;
                 } else {
                     result &= "if_" & flowidx & "_else:\n";
-                    idx = dup(last);
+                    idx = last;
                 }
 
-                stack = dup(oldstack);
+                stack = oldstack;
 
                 return result;
             }
@@ -308,7 +308,7 @@ fn parseFlow(buff, idx, stack, varTable) {
         return result;
     }
 
-    idx = dup(lastidx);
+    idx = lastidx;
 
     return "";
 }
@@ -341,7 +341,7 @@ fn parseBuiltin(buff, idx, stack, varTable) {
     }
 
 
-    idx = dup(lastidx);
+    idx = lastidx;
 
     return "";
 }
@@ -350,6 +350,12 @@ fn parseFactor(buff, idx, stack, varTable) {
     var lastidx = dup(idx);
     var word = nextWord(buff, idx);
     var result = "";
+
+    if (word == "return") {
+        idx = lastidx;
+
+        return "";
+    }
 
     if (word == "(") {
         result = parseExpression(buff, idx, stack, varTable);
@@ -417,7 +423,7 @@ fn parseFactor(buff, idx, stack, varTable) {
         }
     }
 
-    idx = dup(lastidx);
+    idx = lastidx;
 
     return "";
 }
@@ -453,7 +459,7 @@ fn parseTerm(buff, idx, stack, varTable) {
             if (stack != 255) stack -= 1;
         } else {
             done = 1;
-            idx = dup(lastidx);
+            idx = lastidx;
         }
     }
 
@@ -491,7 +497,7 @@ fn parseSum(buff, idx, stack, varTable) {
             if (stack != 255) stack -= 1;
         } else {
             done = 1;
-            idx = dup(lastidx);
+            idx = lastidx;
         }
     }
 
@@ -576,7 +582,7 @@ fn parseExpression(buff, idx, stack, varTable) {
             if (stack != 255) stack = stack - 1;
         } else {
             done = 1;
-            idx = dup(lastidx);
+            idx = lastidx;
         }
     }
 
@@ -602,7 +608,7 @@ fn parseCall(buff, idx, stack, varTable) {
             result &= term;
         } else {
             done = 1;
-            idx = dup(lastidx);
+            idx = lastidx;
         }
     }
 
@@ -675,8 +681,8 @@ fn parseStmt(buff, idx, stack, varTable) {
         return parsed;
     }
 
-    idx = dup(lastidx);
-    stack = dup(oldStack);
+    idx = lastidx;
+    stack = oldStack;
 
     return "";
 }
@@ -738,7 +744,7 @@ fn parseBlock(buff, idx, stack, varTable, function) {
         }
     }
 
-    varTable = dup(tableCopy);
+    varTable = tableCopy;
 
     if ((stack != 255) && (function == 0)) {
         for (0; stack > oldStack; stack = stack - 1) {
@@ -862,12 +868,11 @@ fn preprocess(name, conts) {
 
     var nl = "\n";
     var result = "";
-    var line;
     var newName;
     var file;
     var buff;
 
-    for (line = split(conts, nl); (conts != "") || (line != ""); line = split(conts, nl)) {
+    for (var line = split(conts, nl); (conts != "") || (line != ""); line = split(conts, nl)) {
         if (_StringStartsWith(line, "#include")) {
             newName = line + 10;
             newName = newName - 1;
