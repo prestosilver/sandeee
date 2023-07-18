@@ -29,6 +29,31 @@ pub const CMDData = struct {
     shell: shell.Shell,
     bot: bool = false,
 
+    pub fn processBT(self: *Self) !void {
+        const oldbt = self.bt;
+        defer allocator.alloc.free(oldbt);
+
+        self.bt = try allocator.alloc.alloc(u8, self.bt.len);
+        var idx: usize = 0;
+
+        for (oldbt) |ch| {
+            switch (ch) {
+                '\r' => {
+                    if (std.mem.lastIndexOf(u8, self.bt[0..idx], "\n")) |newidx|
+                        idx = newidx + 1
+                    else
+                        idx = 0;
+                },
+                else => {
+                    self.bt[idx] = ch;
+                    idx += 1;
+                },
+            }
+        }
+
+        self.bt = try allocator.alloc.realloc(self.bt, idx);
+    }
+
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
@@ -78,11 +103,13 @@ pub const CMDData = struct {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.len);
                 std.mem.copy(u8, self.bt[start..], result.?.data);
                 allocator.alloc.free(result.?.data);
+                try self.processBT();
                 idx += 1;
             } else {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.shell.vm.?.out.items.len);
                 std.mem.copy(u8, self.bt[start..], self.shell.vm.?.out.items);
                 self.shell.vm.?.out.clearAndFree();
+                try self.processBT();
             }
             self.bot = true;
         }
@@ -190,6 +217,8 @@ pub const CMDData = struct {
                 self.inputLen = 0;
                 self.inputIdx = 0;
                 self.historyIdx = self.history.items.len;
+
+                try self.processBT();
             },
             c.GLFW_KEY_UP => {
                 if (self.historyIdx > 0) {
