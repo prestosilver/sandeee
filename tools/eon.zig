@@ -30,6 +30,13 @@ const TokenKind = enum {
     TOKEN_BIT_NOT,
     TOKEN_NOT,
 
+    TOKEN_SUBREL,
+    TOKEN_ADDREL,
+    TOKEN_MULREL,
+    TOKEN_DIVREL,
+    TOKEN_MODREL,
+    TOKEN_CATREL,
+
     TOKEN_ADD,
     TOKEN_MUL,
     TOKEN_DIV,
@@ -143,6 +150,18 @@ const Expression = struct {
                     std.mem.copy(u8, result[start_res..], adds);
                     return result;
                 },
+                .TOKEN_SUBREL => {
+                    idx.* -= 1;
+                    var adds = "    copy 1\n" ++
+                        "    copy 1\n" ++
+                        "    sub\n" ++
+                        "    disc 1\n" ++
+                        "    set\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
                 .TOKEN_NEG => {
                     if (self.a.len != 0) {
                         idx.* -= 1;
@@ -174,6 +193,18 @@ const Expression = struct {
                 },
                 .TOKEN_AT => {
                     var adds = "    getb\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
+                .TOKEN_ADDREL => {
+                    idx.* -= 1;
+                    var adds = "    copy 1\n" ++
+                        "    copy 1\n" ++
+                        "    add\n" ++
+                        "    disc 1\n" ++
+                        "    set\n";
                     var start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
@@ -222,6 +253,18 @@ const Expression = struct {
                 .TOKEN_OR => {
                     idx.* -= 1;
                     var adds = "    or\n";
+                    var start_res = result.len;
+                    result = try allocator.realloc(result, result.len + adds.len);
+                    std.mem.copy(u8, result[start_res..], adds);
+                    return result;
+                },
+                .TOKEN_CATREL => {
+                    idx.* -= 1;
+                    var adds = "    copy 1\n" ++
+                        "    copy 1\n" ++
+                        "    cat\n" ++
+                        "    disc 1\n" ++
+                        "    set\n";
                     var start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
@@ -710,7 +753,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             continue;
         }
 
-        if (code.len != 0 and (std.mem.indexOf(u8, " @{}();,\t\n-~![]", charStr) != null or std.mem.indexOf(u8, " @{}();,\t\n-~![]", code[code.len - 1 ..]) != null)) {
+        if (code.len != 0 and (std.mem.indexOf(u8, " @{}();,\t\n~![]", charStr) != null or std.mem.indexOf(u8, " @{}();,\t\n~![]", code[code.len - 1 ..]) != null)) {
             if (std.mem.eql(u8, code, "{")) {
                 try result.append(.{
                     .kind = .TOKEN_OPEN_BRACE,
@@ -825,9 +868,21 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "+=")) {
+                try result.append(.{
+                    .kind = .TOKEN_ADDREL,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
             } else if (std.mem.eql(u8, code, "+")) {
                 try result.append(.{
                     .kind = .TOKEN_ADD,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "-=")) {
+                try result.append(.{
+                    .kind = .TOKEN_SUBREL,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
@@ -876,6 +931,12 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             } else if (std.mem.eql(u8, code, "&")) {
                 try result.append(.{
                     .kind = .TOKEN_CAT,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "&=")) {
+                try result.append(.{
+                    .kind = .TOKEN_CATREL,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
@@ -1079,7 +1140,6 @@ pub fn parseSum(tokens: []Token, idx: *usize) !Expression {
 
     if (tokens[idx.*].kind == .TOKEN_ADD or
         tokens[idx.*].kind == .TOKEN_CAT or
-        tokens[idx.*].kind == .TOKEN_ASSIGN or
         tokens[idx.*].kind == .TOKEN_NEG)
     {
         var op = &tokens[idx.*];
@@ -1117,7 +1177,11 @@ pub fn parseExpression(tokens: []Token, idx: *usize) anyerror!Expression {
         tokens[idx.*].kind == .TOKEN_LT or
         tokens[idx.*].kind == .TOKEN_GT or
         tokens[idx.*].kind == .TOKEN_EQ or
-        tokens[idx.*].kind == .TOKEN_NEQ)
+        tokens[idx.*].kind == .TOKEN_NEQ or
+        tokens[idx.*].kind == .TOKEN_ASSIGN or
+        tokens[idx.*].kind == .TOKEN_ADDREL or
+        tokens[idx.*].kind == .TOKEN_CATREL or
+        tokens[idx.*].kind == .TOKEN_SUBREL)
     {
         var op = &tokens[idx.*];
         idx.* += 1;
@@ -1403,6 +1467,9 @@ pub fn compileEonLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
 
     var tokens = try lex_file(in);
     defer tokens.deinit();
+
+    // for (tokens.items) |tok|
+    //     std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
 
     var prog = try parseProgram(tokens.items);
 

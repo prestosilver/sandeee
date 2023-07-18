@@ -39,7 +39,7 @@ fn renderMap(map, win, tex) {
     for (y = 0; y < 24; y = y + 1) {
         for (x = 0; x < 8; x = x + 1) {
             pos = y * 8;
-            pos = pos + x;
+            pos += x;
             id = map + pos;
 
             if (@id) {

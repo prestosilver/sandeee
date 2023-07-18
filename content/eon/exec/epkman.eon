@@ -31,10 +31,10 @@ fn epkStart(execName) {
     asm "len";
 
     var result = "";
-    result = result & toShort(execNameLen);
-    result = result & execName;
-    result = result & fileSizeS(execName);
-    result = result & readAll(execName);
+    result &= toShort(execNameLen);
+    result &= execName;
+    result &= fileSizeS(execName);
+    result &= readAll(execName);
 
     return result;
 }
@@ -43,10 +43,10 @@ fn epkAdd(epk, file) {
     var fileLen = file;
     asm "len";
 
-    epk = epk & toShort(fileLen);
-    epk = epk & file;
-    epk = epk & fileSizeS(file);
-    epk = epk & readAll(file);
+    epk &= toShort(fileLen);
+    epk &= file;
+    epk &= fileSizeS(file);
+    epk &= readAll(file);
 
     return 0;
 }
@@ -75,8 +75,8 @@ fn processClick(good) {
     var xo = @(clickData + 1);
     var yo = @(clickData + 3);
 
-    x = x + xo * 256;
-    y = y + yo * 256;
+    x += xo * 256;
+    y += yo * 256;
     
     if (y > 35) {
         good = 1;
@@ -169,7 +169,7 @@ fn main() {
         for (i = 4; arg != ""; 0) {
             print("add " & arg & "\n");
             epkAdd(epk, arg);
-            i = i + 1;
+            i += 1;
             arg = getArg(i);
         }
 

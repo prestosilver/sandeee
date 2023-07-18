@@ -178,10 +178,11 @@ fn processLine(table, line) {
     return @enum & data;
 }
 
-fn processFile(table, infile, outfile) {
+fn processFile(totalLines, table, infile, outfile) {
     write(outfile, "EEEp");
 
     var line = "";
+    var currentLine = 0;
 
     var chr = read(infile, 1);
     var done = 0;
@@ -196,6 +197,14 @@ fn processFile(table, infile, outfile) {
         } else if (@chr == 10) {
             if (_StringLast(line) != 58) {
                 write(outfile, processLine(table, line));
+            }
+
+            currentLine = currentLine + 1;
+            if (currentLine % 100 == 0) {
+                print(currentLine);
+                print("/");
+                print(totalLines);
+                print("\n");
             }
 
             line = "";
@@ -219,6 +228,7 @@ fn toEntry(val) {
 }
 
 fn processConsts(table, infile) {
+    var totalLines = 0;
     var line = "";
 
     var chr = read(infile, 1);
@@ -243,6 +253,7 @@ fn processConsts(table, infile) {
                 idx = idx + 1;
             }
 
+            totalLines = totalLines + 1;
             line = "";
         } else if (chr == "") {
             if (_StringLast(line) == 58) {
@@ -261,7 +272,7 @@ fn processConsts(table, infile) {
         }
     }
 
-    return 0;
+    return totalLines;
 }
 
 fn libInit() {
@@ -280,13 +291,13 @@ fn asmFile(inname, outname) {
     var outhandle = createOpen(outname);
 
     // get consts
-    print("READ: " & inname & "\n");
-    processConsts(table, inhandlea);
+    print("PASS1: " & inname & "\n");
+    var totalLines = processConsts(table, inhandlea);
     close(inhandlea);
 
     // create out file
-    print("ASM: " & inname & "\n");
-    processFile(table, inhandleb, outhandle);
+    print("PASS2: " & inname & "\n");
+    processFile(totalLines, table, inhandleb, outhandle);
 
     print("Wrote: '" & outname & "'\n");
 
