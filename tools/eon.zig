@@ -326,9 +326,9 @@ const Expression = struct {
                     return result;
                 },
                 .TOKEN_IDENT => {
-                    for (0..map.max) |i| {
-                        if (std.mem.eql(u8, map.vars[i].name, self.op.?.value)) {
-                            var adds = try std.fmt.allocPrint(allocator, "    copy {}\n", .{idx.* - 1 - map.vars[i].idx});
+                    for (map.vars) |mapvar| {
+                        if (std.mem.eql(u8, mapvar.name, self.op.?.value)) {
+                            var adds = try std.fmt.allocPrint(allocator, "    copy {}\n", .{idx.* - 1 - mapvar.idx});
                             var start_res = result.len;
                             result = try allocator.realloc(result, result.len + adds.len);
                             std.mem.copy(u8, result[start_res..], adds);
@@ -381,7 +381,6 @@ const Statement = struct {
                     result = try std.fmt.allocPrint(allocator, "    push 0\n", .{});
                     idx.* += 1;
                 }
-                map.max += 1;
                 map.vars = try allocator.realloc(map.vars, map.vars.len + 1);
                 map.vars[map.vars.len - 1] = .{
                     .name = self.name.?,
@@ -391,8 +390,8 @@ const Statement = struct {
             },
             .STMT_COND => {
                 var start = idx.*;
-                var map_start = map.max;
                 var block = block_id;
+                var map_start = try allocator.dupe(Var, map.vars);
                 block_id += 1;
 
                 var result = try allocator.alloc(u8, 0);
@@ -420,7 +419,7 @@ const Statement = struct {
 
                 while (start != idx.*) {
                     allocator.free(adds);
-                    adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
+                    adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
@@ -432,7 +431,6 @@ const Statement = struct {
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 std.mem.copy(u8, result[start_res..], adds);
-                map.max = map_start;
 
                 if (self.blks.?.len > 1) {
                     for (self.blks.?[1]) |*stmt| {
@@ -445,7 +443,7 @@ const Statement = struct {
 
                     for (start..idx.*) |_| {
                         allocator.free(adds);
-                        adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
+                        adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                         start_res = result.len;
                         result = try allocator.realloc(result, result.len + adds.len);
                         std.mem.copy(u8, result[start_res..], adds);
@@ -458,6 +456,8 @@ const Statement = struct {
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 std.mem.copy(u8, result[start_res..], adds);
+
+                map.vars = map_start;
 
                 return result;
             },
@@ -489,8 +489,8 @@ const Statement = struct {
             },
             .STMT_WHILE => {
                 var start = idx.*;
-                var map_start = map.max;
                 var block = block_id;
+                var map_start = try allocator.dupe(Var, map.vars);
                 block_id += 1;
 
                 var result = try allocator.alloc(u8, 0);
@@ -530,20 +530,20 @@ const Statement = struct {
 
                 while (start != idx.*) {
                     allocator.free(adds);
-                    adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
+                    adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
                     idx.* -= 1;
                 }
 
-                map.max = map_start;
+                map.vars = map_start;
 
                 return result;
             },
             .STMT_FOR => {
                 var start = idx.*;
-                var map_start = map.max;
+                var map_start = try allocator.dupe(Var, map.vars);
                 var block = block_id;
                 block_id += 1;
 
@@ -597,14 +597,14 @@ const Statement = struct {
 
                 while (start != idx.*) {
                     allocator.free(adds);
-                    adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
+                    adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     std.mem.copy(u8, result[start_res..], adds);
                     idx.* -= 1;
                 }
 
-                map.max = map_start;
+                map.vars = map_start;
 
                 return result;
             },
@@ -654,7 +654,7 @@ const FunctionDecl = struct {
     fn toAsm(self: *FunctionDecl, lib: bool) ![]const u8 {
         var prefix = if (lib) "_" else "";
         var result = try std.fmt.allocPrint(allocator, "{s}{s}:\n", .{ prefix, self.ident });
-        var map = VarMap{ .max = self.params.len, .vars = try allocator.alloc(Var, self.params.len) };
+        var map = VarMap{ .vars = try allocator.alloc(Var, self.params.len) };
         for (self.params, 0..) |param, idx| {
             map.vars[idx] = .{
                 .name = param.name,
@@ -700,7 +700,6 @@ const Var = struct {
 };
 
 const VarMap = struct {
-    max: usize,
     vars: []Var,
 };
 
