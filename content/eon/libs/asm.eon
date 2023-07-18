@@ -34,8 +34,7 @@ fn close(file) {
 }
 
 fn stripLine(line) {
-    var chr = 0;
-    for (chr = @line; chr == 32; chr = @line) {
+    for (var chr = @line; chr == 32; chr = @line) {
         line = line + 1;
     }
 
@@ -122,8 +121,7 @@ fn fromEntry(entry) {
 }
 
 fn getLineData(table, line) {
-    var chr = 0;
-    for (chr = @line; chr != 32; chr = @line) {
+    for (var chr = @line; chr != 32; chr = @line) {
         line = line + 1;
         if (_StringLength(line) == 0) {
             return @0;
@@ -143,7 +141,6 @@ fn getLineData(table, line) {
 
     var num = _StringToNum(line);
     var name = "";
-
     for (name = dup(line); _StringLength(name) < 20; 0) {
         name = name & @0;
     }
@@ -184,13 +181,14 @@ fn processFile(totalLines, table, infile, outfile) {
     var line = "";
     var currentLine = 0;
 
-    var chr = read(infile, 1);
     var done = 0;
-    for (chr = chr; done == 0; chr = read(infile, 1)) {
+    for (var chr = read(infile, 1); done == 0; chr = read(infile, 1)) {
         if (@chr == 92) {
             chr = read(infile, 1);
             if (@chr == 110) {
                 line = line & @10;
+            } else if (@chr == 114) {
+                line = line & @13;
             } else {
                 line = line & chr;
             }
@@ -198,13 +196,14 @@ fn processFile(totalLines, table, infile, outfile) {
             if (_StringLast(line) != 58) {
                 write(outfile, processLine(table, line));
             }
+                
+            currentLine += 1;
 
-            currentLine = currentLine + 1;
-            if (currentLine % 100 == 0) {
+            if (currentLine % 5 == 0) {
+                print("\r");
                 print(currentLine);
                 print("/");
                 print(totalLines);
-                print("\n");
             }
 
             line = "";
@@ -212,6 +211,12 @@ fn processFile(totalLines, table, infile, outfile) {
             if (_StringLast(line) != 58) {
                 write(outfile, processLine(table, line));
             }
+                
+            print("\r");
+            print(currentLine);
+            print("/");
+            print(totalLines);
+            print("\n");
 
             line = "";
             done = 1;
@@ -231,11 +236,10 @@ fn processConsts(table, infile) {
     var totalLines = 0;
     var line = "";
 
-    var chr = read(infile, 1);
     var name = "";
     var idx = 0;
     var done = 0;
-    for (chr = chr; done == 0; chr = read(infile, 1)) {
+    for (var chr = read(infile, 1); done == 0; chr = read(infile, 1)) {
         if (@chr == 92) {
             chr = read(infile, 1);
             if (@chr == 78) {
