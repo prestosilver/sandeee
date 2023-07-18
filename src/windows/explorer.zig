@@ -176,7 +176,7 @@ pub const ExplorerData = struct {
                 .shader = font_shader,
                 .text = "Running VM",
                 .pos = vecs.newVec2(bnds.x + (bnds.w - size.x) / 2, bnds.y + (bnds.h - size.y) / 2),
-                .color = col.newColor(1, 1, 1, 1),
+                .color = col.newColor(0, 0, 0, 1),
             });
         }
 
@@ -272,7 +272,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .gray = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(72.0, 72.0),
         )),
         .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
