@@ -19,6 +19,7 @@ const events = @import("../util/events.zig");
 const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else " };
 const HL_KEYWORD2 = [_][]const u8{"#include"};
 const COMMENT_START = "//";
+const STRING_START = "\"";
 
 pub const EditorData = struct {
     const Self = @This();
@@ -137,6 +138,36 @@ pub const EditorData = struct {
 
                         line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, COMMENT_START, replacement));
                         _ = std.mem.replace(u8, oldLine, COMMENT_START, replacement, line);
+                    }
+
+                    {
+                        const oldLine = line;
+                        defer allocator.alloc.free(oldLine);
+
+                        const count = std.mem.count(u8, line, STRING_START);
+
+                        line = try allocator.alloc.alloc(u8, line.len + count);
+
+                        var idx: usize = 0;
+                        var inString = false;
+
+                        for (oldLine) |ch| {
+                            if (ch == STRING_START[0] and !inString) {
+                                inString = !inString;
+                                line[idx] = '\xf4';
+                                idx = idx + 1;
+                                line[idx] = ch;
+                                idx = idx + 1;
+                                continue;
+                            }
+                            line[idx] = ch;
+                            idx = idx + 1;
+                            if (ch == STRING_START[0] and inString) {
+                                inString = !inString;
+                                line[idx] = '\xf8';
+                                idx = idx + 1;
+                            }
+                        }
                     }
                 }
 
