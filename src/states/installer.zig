@@ -13,7 +13,7 @@ const systemEvs = @import("../events/system.zig");
 const files = @import("../system/files.zig");
 const audio = @import("../util/audio.zig");
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 const INSTALL_TIME = 1.5;
 
 pub const GSInstall = struct {
@@ -29,6 +29,7 @@ pub const GSInstall = struct {
     const Settings = [_][3][]const u8{
         .{ "What is the current Hour", "", "00" },
         .{ "What is the current Minute", "", "00" },
+        .{ "Do you want to keep the CRT Shader", "crt_shader", "Yes" },
         .{ "Do you like \x82\x82\x82", "evil_value", "Yes" },
     };
     const MAX_VALUE_LEN = 128;
@@ -62,10 +63,6 @@ pub const GSInstall = struct {
         self.load_sprite.data.color.b = 0;
     }
 
-    pub fn deinit(_: *Self) !void {
-        //self.diskName.deinit();
-    }
-
     pub fn updateSettingsVals(self: *Self) ![]const u8 {
         const ts = std.time.timestamp();
         const aHours = @as(u64, @intCast(ts)) / std.time.s_per_hour % 24;
@@ -76,7 +73,16 @@ pub const GSInstall = struct {
         const hoursOffset = @as(i8, @intCast(aHours)) - inputHours;
         const minsOffset = @as(i8, @intCast(aMins)) - inputMins;
 
-        return std.fmt.allocPrint(allocator.alloc, "hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hoursOffset, minsOffset });
+        var result = try std.fmt.allocPrint(allocator.alloc, "hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hoursOffset, minsOffset });
+        for (Settings[2..], self.settingValues[2..], self.settingLens[2..]) |setting, value, len| {
+            const oldResult = result;
+            defer allocator.alloc.free(oldResult);
+
+            const val = if (len == 0) setting[2] else value[0..len];
+            result = try std.fmt.allocPrint(allocator.alloc, "{s}{s} = \"{s}\"\n", .{ oldResult, setting[1], val });
+        }
+
+        return result;
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
@@ -128,9 +134,13 @@ pub const GSInstall = struct {
                 .shader = self.font_shader,
                 .text = text,
                 .pos = vecs.newVec2(100, y),
+                .wrap = gfx.gContext.size.x - 200,
                 .color = cols.newColor(1, 1, 1, 1),
             });
-            y += self.face.size * 1;
+            y += self.face.sizeText(.{
+                .text = text,
+                .wrap = gfx.gContext.size.x - 200,
+            }).y;
         }
 
         if (@intFromEnum(self.status) < @intFromEnum(Status.Installing)) return;
@@ -139,7 +149,7 @@ pub const GSInstall = struct {
         try self.face.draw(.{
             .batch = self.sb,
             .shader = self.font_shader,
-            .text = "Installing",
+            .text = "Installing...",
             .pos = vecs.newVec2(100, y),
             .color = cols.newColor(1, 1, 1, 1),
         });
@@ -285,6 +295,7 @@ pub const GSInstall = struct {
         }
     }
 
+    pub fn deinit(_: *Self) !void {}
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
     pub fn mousepress(_: *Self, _: c_int) !void {}
     pub fn mouserelease(_: *Self) !void {}
