@@ -8,12 +8,15 @@ const pwindows = @import("window.zig");
 // /fake/inp/char
 
 pub fn readInputChar(vmInstance: ?*vm.VM) ![]const u8 {
-    const result = try allocator.alloc.alloc(u8, 1);
+    if (vmInstance.?.input.items.len != 0) {
+        const result = try allocator.alloc.alloc(u8, 1);
 
-    result[0] = 0;
+        result[0] = vmInstance.?.input.orderedRemove(0);
 
-    if (vmInstance.?.input.items.len != 0)
-        result[0] = vmInstance.?.input.orderedRemove(vmInstance.?.input.items.len - 1);
+        return result;
+    }
+
+    const result = try allocator.alloc.alloc(u8, 0);
 
     return result;
 }

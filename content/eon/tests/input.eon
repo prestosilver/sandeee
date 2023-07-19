@@ -1,0 +1,9 @@
+#include "/libs/inc/sys.eon"
+
+fn main() {
+    var name = readStr("Enter your name: ");
+
+    print("Hello " & name & "!");
+
+    return 0;
+}

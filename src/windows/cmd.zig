@@ -121,9 +121,9 @@ pub const CMDData = struct {
         var height: f32 = @as(f32, @floatFromInt(idx)) * font.size;
 
         while (lines.next()) |line| {
-            height += font.sizeText(.{ .text = line, .wrap = bnds.w - 12 }).y;
+            height += font.sizeText(.{ .text = line, .wrap = bnds.w - 30 }).y;
             if (y < bnds.y) continue;
-            y -= font.sizeText(.{ .text = line, .wrap = bnds.w - 12 }).y;
+            y -= font.sizeText(.{ .text = line, .wrap = bnds.w - 30 }).y;
 
             try font.draw(.{
                 .batch = batch,
@@ -131,7 +131,7 @@ pub const CMDData = struct {
                 .text = line,
                 .pos = vecs.newVec2(bnds.x + 6, y),
                 .color = col.newColor(1, 1, 1, 1),
-                .wrap = bnds.w - 12,
+                .wrap = bnds.w - 30,
             });
         }
 
@@ -163,13 +163,31 @@ pub const CMDData = struct {
 
     pub fn key(self: *Self, code: i32, mods: i32, down: bool) !void {
         _ = mods;
-        if (self.shell.vm != null) return;
         if (!down) return;
+        if (self.shell.vm != null) {
+            switch (code) {
+                c.GLFW_KEY_ENTER => {
+                    try self.shell.vm.?.input.append('\n');
+                },
+                c.GLFW_KEY_BACKSPACE => {
+                    try self.shell.vm.?.input.append('\x08');
+                },
+                else => {},
+            }
+
+            return;
+        }
 
         self.bot = true;
 
         switch (code) {
             c.GLFW_KEY_ENTER => {
+                if (self.shell.vm != null) {
+                    try self.shell.vm.?.input.append('\n');
+
+                    return;
+                }
+
                 if (self.inputLen != 0 and (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.inputBuffer[0..self.inputLen])))
                     try self.history.append(try allocator.alloc.dupe(u8, self.inputBuffer[0..self.inputLen]));
 
