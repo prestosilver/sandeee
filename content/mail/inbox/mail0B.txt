@@ -2,17 +2,17 @@ id: 11
 deps: 9
 from: ERIC_L@eee.org
 sub: FIB
-submit: runs=Hello World!
+submit: input=0;runs=1;input=1;runs=1;input=6;runs=13
 
 ALL I WANT IS A FIB CALCULATOR.
 MAKE ONE FOR ME???
 
 FIB IS A SEQUENCE IM TOO LAZY TO SPELL.
 EACH ITEM IS THE SUM OF THE PREVIOUS TWO.
-ALSO FIB(0) = 1 AND FIB(1) = 1.
+I ALMOST FORGOT fib(0) = 1 AND fib(1) = 1.
 
 JUST SEND ME A PROGRAM THAT PROMPTS THE INDEX AND RETURNS FIB(INDEX).
 
-O ALSO YOU CAN IMPORT read FROM /libs/inc/sys.eon.
+O ALSO YOU CAN IMPORT readInt FROM /libs/inc/sys.eon.
 
 ERIC WUZ HERE!!!
