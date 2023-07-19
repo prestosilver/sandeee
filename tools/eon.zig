@@ -22,6 +22,8 @@ const TokenKind = enum {
     TOKEN_KEYWORD_CONTINUE,
     TOKEN_KEYWORD_NEW,
 
+    TOKEN_KEYWORD_FNSET,
+
     TOKEN_IDENT,
     TOKEN_INT_LIT,
     TOKEN_STRING_LIT,
@@ -788,6 +790,12 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
+            } else if (std.mem.eql(u8, code, "fnset")) {
+                try result.append(.{
+                    .kind = .TOKEN_KEYWORD_FNSET,
+                    .value = code,
+                });
+                code = try allocator.alloc(u8, 0);
             } else if (std.mem.eql(u8, code, "fn")) {
                 try result.append(.{
                     .kind = .TOKEN_KEYWORD_FN,
@@ -1412,13 +1420,12 @@ pub fn parseFunctionParam(tokens: []Token, idx: *usize) !FunctionParam {
     return result;
 }
 
-pub fn parseFunctionDecl(tokens: []Token, idx: *usize) !FunctionDecl {
+pub fn parseFunctionDecl(fnPrefix: *[]const u8, tokens: []Token, idx: *usize) !FunctionDecl {
     var result: FunctionDecl = undefined;
     if (tokens[idx.*].kind != .TOKEN_KEYWORD_FN) return error.ExpectedType;
-    result.ret = tokens[idx.*].value;
     idx.* += 1;
     if (tokens[idx.*].kind != .TOKEN_IDENT) return error.ExpectedIdent;
-    result.ident = tokens[idx.*].value;
+    result.ident = try std.fmt.allocPrint(allocator, "{s}{s}", .{ fnPrefix.*, tokens[idx.*].value });
     idx.* += 1;
     if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
     idx.* += 1;
@@ -1442,17 +1449,37 @@ pub fn parseFunctionDecl(tokens: []Token, idx: *usize) !FunctionDecl {
     return result;
 }
 
-pub fn parseProgram(tokens: []Token) !Program {
+pub fn parseProgram(fnPrefix: *[]const u8, tokens: []Token) !Program {
     var result: Program = undefined;
     var idx: usize = 0;
     result = .{
         .funcs = try allocator.alloc(FunctionDecl, 0),
     };
 
-    while (parseFunctionDecl(tokens, &idx) catch null) |func| {
-        result.funcs = try allocator.realloc(result.funcs, result.funcs.len + 1);
-        result.funcs[result.funcs.len - 1] = func;
+    while (true) {
+        if (parseFunctionDecl(fnPrefix, tokens, &idx) catch null) |func| {
+            result.funcs = try allocator.realloc(result.funcs, result.funcs.len + 1);
+            result.funcs[result.funcs.len - 1] = func;
+        } else if (tokens[idx].kind == .TOKEN_KEYWORD_FNSET) {
+            idx += 1;
+            if (tokens[idx].kind != .TOKEN_IDENT) return error.ExpectedIdent;
+            const oldPrefix = fnPrefix.*;
+            defer allocator.free(oldPrefix);
+            fnPrefix.* = try std.fmt.allocPrint(allocator, "{s}.", .{tokens[idx].value});
+            idx += 1;
+            if (tokens[idx].kind != .TOKEN_OPEN_BRACE) return error.ExpectedIdent;
+            idx += 1;
+        } else if (tokens[idx].kind == .TOKEN_CLOSE_BRACE) {
+            idx += 1;
+            const dotidx = if (std.mem.lastIndexOf(u8, fnPrefix.*[0 .. fnPrefix.*.len - 1], ".")) |ind| ind + 1 else 0;
+
+            fnPrefix.* = try allocator.dupe(u8, fnPrefix.*[0..dotidx]);
+        } else {
+            break;
+        }
     }
+
+    if (fnPrefix.len != 0) return error.POOPIE;
 
     if (tokens[idx].kind != .TOKEN_EOF) {
         for (tokens[idx..]) |tok|
@@ -1467,12 +1494,14 @@ pub fn parseProgram(tokens: []Token) !Program {
 }
 
 pub fn compileEon(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    var fnPrefix: []const u8 = "";
+
     allocator = alloc;
 
     var tokens = try lex_file(in);
     defer tokens.deinit();
 
-    var prog = try parseProgram(tokens.items);
+    var prog = try parseProgram(&fnPrefix, tokens.items);
 
     var result = std.ArrayList(u8).init(alloc);
 
@@ -1483,6 +1512,8 @@ pub fn compileEon(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
 }
 
 pub fn compileEonLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    var fnPrefix: []const u8 = "";
+
     allocator = alloc;
 
     var tokens = try lex_file(in);
@@ -1491,7 +1522,7 @@ pub fn compileEonLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
     // for (tokens.items) |tok|
     //     std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
 
-    var prog = try parseProgram(tokens.items);
+    var prog = try parseProgram(&fnPrefix, tokens.items);
 
     var result = std.ArrayList(u8).init(alloc);
 
