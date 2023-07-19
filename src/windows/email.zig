@@ -203,6 +203,7 @@ const EmailData = struct {
         }
     }
 
+    // TODO: Thread
     pub fn submit(file: ?*files.File, data: *anyopaque) !void {
         if (file) |target| {
             const self: *Self = @ptrCast(@alignCast(data));
