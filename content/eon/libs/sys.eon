@@ -104,3 +104,36 @@ fn readStr(prompt) {
 
     return result;
 }
+
+fn readInt() {
+    var file = 0;
+    var done = 0;
+    var result = 0;
+    var ch = "";
+
+    while (done == 0) {
+        file = open("/fake/inp/char");
+
+        ch = read(file, 1);
+
+        if ((@ch > 47) && (@ch < 58)) {
+            if (ch != "") {
+                result = result * 10;
+                result += @ch - 48;
+            }
+                
+            print("\r");
+            print(result);
+        } else if (ch == "\n") {
+            done = 1;
+        } else if (ch == @8) {
+            result = result / 10;
+        }
+
+        close(file);
+    }
+
+    print("\n");
+
+    return result;
+}

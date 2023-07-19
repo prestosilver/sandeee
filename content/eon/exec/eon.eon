@@ -131,6 +131,9 @@ fn nextWord(buff, idx) {
             if (@copy == 110) {
                 result &= @92;
                 result &= @110;
+            } else if (@copy == 114) {
+                result &= @92;
+                result &= @114;
             } else if (@copy == 116) {
                 result &= @92;
                 result &= @116;
