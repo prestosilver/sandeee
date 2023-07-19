@@ -329,7 +329,8 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     try toc.append(@as(u8, @intCast(len / 256)));
     try toc.append(@as(u8, @intCast(len % 256)));
 
-    try result.append(@as(u8, @intCast(toc.items.len + 5)));
+    try result.append(@as(u8, @intCast((toc.items.len + 6) / 256)));
+    try result.append(@as(u8, @intCast((toc.items.len + 6) % 256)));
     try result.appendSlice(toc.items);
     try result.appendSlice(data.items);
 
