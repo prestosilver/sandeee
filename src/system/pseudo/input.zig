@@ -20,6 +20,7 @@ pub fn readInputChar(vmInstance: ?*vm.VM) ![]const u8 {
 
     return result;
 }
+
 pub fn writeInputChar(_: []const u8, _: ?*vm.VM) !void {
     return;
 }

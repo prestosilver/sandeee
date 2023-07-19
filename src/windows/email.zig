@@ -214,6 +214,8 @@ const EmailData = struct {
                 var iter = std.mem.split(u8, selected.conditionData, ";");
 
                 var good = true;
+                var input = std.ArrayList(u8).init(allocator.alloc);
+                defer input.deinit();
 
                 while (iter.next()) |cond| {
                     const idx = std.mem.indexOf(u8, cond, "=") orelse cond.len - 1;
@@ -223,18 +225,24 @@ const EmailData = struct {
                         const targetConts = std.mem.trim(u8, conts, &.{'\n'});
 
                         good = good and std.ascii.eqlIgnoreCase(targetText, targetConts);
-                    }
-                    if (std.mem.eql(u8, name, "runs")) {
+                    } else if (std.mem.eql(u8, name, "input")) {
+                        input.clearAndFree();
+                        try input.appendSlice(cond[idx + 1 ..]);
+                    } else if (std.mem.eql(u8, name, "runs")) {
                         if (!std.mem.startsWith(u8, conts, "EEEp")) return;
                         var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
                         defer vmInstance.deinit() catch {};
+
+                        try vmInstance.input.appendSlice(input.items);
+                        try vmInstance.input.append('\n');
 
                         try vmInstance.loadString(conts[4..]);
 
                         try vmInstance.runAll();
                         const targetText = cond[idx + 1 ..];
+                        const trimmed = std.mem.trimLeft(u8, vmInstance.out.items, " \n");
 
-                        good = good and std.ascii.eqlIgnoreCase(vmInstance.out.items, targetText);
+                        good = good and std.ascii.endsWithIgnoreCase(trimmed, targetText);
                     }
                 }
 
