@@ -148,19 +148,22 @@ pub const GSDisks = struct {
         pos.y += self.logo_sprite.data.size.y;
 
         if (self.auto) {
-            line = try std.fmt.allocPrint(allocator.alloc, "Boot\x82\x82\x82 V_{s} Booting to default in {}s", .{ VERSION, @as(i32, @intFromFloat(self.remaining + 0.5)) });
+            line = try std.fmt.allocPrint(allocator.alloc, "Boot\x82\x82\x82 V_{s}\nBooting to default in {}s", .{ VERSION, @as(i32, @intFromFloat(self.remaining + 0.5)) });
         } else {
-            line = try std.fmt.allocPrint(allocator.alloc, "Boot\x82\x82\x82 V_{s}", .{VERSION});
+            line = try std.fmt.allocPrint(allocator.alloc, "Boot\x82\x82\x82 V_{s}\nAutoboot canceled", .{VERSION});
         }
 
         try self.face.draw(.{
             .batch = self.sb,
             .shader = self.font_shader,
             .text = line,
+            .wrap = gfx.gContext.size.x - 200,
             .pos = pos,
             .color = TEXT_COLOR,
         });
-        pos.y += self.face.size * 2;
+
+        pos.y += self.face.size * 3;
+
         try self.face.draw(.{
             .batch = self.sb,
             .shader = self.font_shader,
