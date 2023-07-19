@@ -74,3 +74,33 @@ fn fileSize() {
     asm "sys 19";
     asm "ret";
 }
+
+fn readStr(prompt) {
+    var file = 0;
+    var done = 0;
+    var result = "";
+    var ch = "";
+
+    print(prompt);
+
+    while (done == 0) {
+        file = open("/fake/inp/char");
+
+        ch = read(file, 1);
+
+        if (ch == "\n") {
+            done = 1;
+        } else if (ch == @8) {
+            result -= 1;
+        } else {
+            print("\r" & prompt & result);
+            result &= ch;
+        }
+
+        close(file);
+    }
+
+    print("\n");
+
+    return result;
+}
