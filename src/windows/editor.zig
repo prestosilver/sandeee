@@ -38,6 +38,93 @@ pub const EditorData = struct {
     modified: bool = false,
     file: ?*files.File = null,
 
+    pub fn hlLine(rawLine: []const u8) ![]const u8 {
+        var line = try allocator.alloc.dupe(u8, rawLine);
+
+        if (line.len == 0) return line;
+
+        for (HL_KEYWORD1) |keyword| {
+            const comment = std.mem.indexOf(u8, line, COMMENT_START) orelse line.len;
+
+            const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+                &.{0xFE},
+                keyword,
+                &.{0xF8},
+            });
+            defer allocator.alloc.free(replacement);
+
+            const oldLine = line;
+            defer allocator.alloc.free(oldLine);
+
+            const repSize = std.mem.replacementSize(u8, line[0..comment], keyword, replacement);
+
+            line = try allocator.alloc.alloc(u8, repSize + (line.len - comment));
+            _ = std.mem.replace(u8, oldLine[0..comment], keyword, replacement, line);
+            @memcpy(line[repSize..], oldLine[comment..]);
+        }
+
+        for (HL_KEYWORD2) |keyword| {
+            const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+                &.{0xF5},
+                keyword,
+                &.{0xF8},
+            });
+            defer allocator.alloc.free(replacement);
+
+            const oldLine = line;
+            defer allocator.alloc.free(oldLine);
+
+            line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
+            _ = std.mem.replace(u8, oldLine, keyword, replacement, line);
+        }
+
+        {
+            const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+                &.{0xF1},
+                COMMENT_START,
+            });
+            defer allocator.alloc.free(replacement);
+
+            const oldLine = line;
+            defer allocator.alloc.free(oldLine);
+
+            line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, COMMENT_START, replacement));
+            _ = std.mem.replace(u8, oldLine, COMMENT_START, replacement, line);
+        }
+
+        {
+            const oldLine = line;
+            defer allocator.alloc.free(oldLine);
+
+            const count = std.mem.count(u8, line, STRING_START);
+
+            line = try allocator.alloc.alloc(u8, line.len + count);
+
+            var idx: usize = 0;
+            var inString = false;
+
+            for (oldLine) |ch| {
+                if (ch == STRING_START[0] and !inString) {
+                    inString = !inString;
+                    line[idx] = '\xf4';
+                    idx = idx + 1;
+                    line[idx] = ch;
+                    idx = idx + 1;
+                    continue;
+                }
+                line[idx] = ch;
+                idx = idx + 1;
+                if (ch == STRING_START[0] and inString) {
+                    inString = !inString;
+                    line[idx] = '\xf8';
+                    idx = idx + 1;
+                }
+            }
+        }
+
+        return line;
+    }
+
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
@@ -87,90 +174,6 @@ pub const EditorData = struct {
             var splitIter = std.mem.split(u8, self.buffer.items, "\n");
 
             while (splitIter.next()) |rawLine| {
-                var line = try allocator.alloc.dupe(u8, rawLine);
-                defer allocator.alloc.free(line);
-
-                if (line.len != 0) {
-                    for (HL_KEYWORD1) |keyword| {
-                        const comment = std.mem.indexOf(u8, line, COMMENT_START) orelse line.len;
-
-                        const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                            &.{0xFE},
-                            keyword,
-                            &.{0xF8},
-                        });
-                        defer allocator.alloc.free(replacement);
-
-                        const oldLine = line;
-                        defer allocator.alloc.free(oldLine);
-
-                        const repSize = std.mem.replacementSize(u8, line[0..comment], keyword, replacement);
-
-                        line = try allocator.alloc.alloc(u8, repSize + (line.len - comment));
-                        _ = std.mem.replace(u8, oldLine[0..comment], keyword, replacement, line);
-                        @memcpy(line[repSize..], oldLine[comment..]);
-                    }
-
-                    for (HL_KEYWORD2) |keyword| {
-                        const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                            &.{0xF5},
-                            keyword,
-                            &.{0xF8},
-                        });
-                        defer allocator.alloc.free(replacement);
-
-                        const oldLine = line;
-                        defer allocator.alloc.free(oldLine);
-
-                        line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
-                        _ = std.mem.replace(u8, oldLine, keyword, replacement, line);
-                    }
-
-                    {
-                        const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                            &.{0xF1},
-                            COMMENT_START,
-                        });
-                        defer allocator.alloc.free(replacement);
-
-                        const oldLine = line;
-                        defer allocator.alloc.free(oldLine);
-
-                        line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, COMMENT_START, replacement));
-                        _ = std.mem.replace(u8, oldLine, COMMENT_START, replacement, line);
-                    }
-
-                    {
-                        const oldLine = line;
-                        defer allocator.alloc.free(oldLine);
-
-                        const count = std.mem.count(u8, line, STRING_START);
-
-                        line = try allocator.alloc.alloc(u8, line.len + count);
-
-                        var idx: usize = 0;
-                        var inString = false;
-
-                        for (oldLine) |ch| {
-                            if (ch == STRING_START[0] and !inString) {
-                                inString = !inString;
-                                line[idx] = '\xf4';
-                                idx = idx + 1;
-                                line[idx] = ch;
-                                idx = idx + 1;
-                                continue;
-                            }
-                            line[idx] = ch;
-                            idx = idx + 1;
-                            if (ch == STRING_START[0] and inString) {
-                                inString = !inString;
-                                line[idx] = '\xf8';
-                                idx = idx + 1;
-                            }
-                        }
-                    }
-                }
-
                 if (nr - 1 < @as(usize, @intFromFloat(self.cursor.y))) {
                     self.cursorIdx += rawLine.len + 1;
                     self.prevIdx += rawLine.len + 1;
@@ -181,6 +184,9 @@ pub const EditorData = struct {
                 }
 
                 if (y > bnds.y - font.size and y < bnds.y + bnds.h) {
+                    const line = try hlLine(rawLine);
+                    defer allocator.alloc.free(line);
+
                     try font.draw(.{
                         .batch = batch,
                         .shader = shader,
