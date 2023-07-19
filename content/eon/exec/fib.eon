@@ -1,32 +1,15 @@
-fn print() {
-    asm "sys 0";
-    asm "push 0";
-    asm "ret";
-}
+#include "/libs/inc/sys.eon"
 
 fn fib(idx) {
-    if (idx < 2) {
-        return idx;
-    }
+    if (idx < 2) return 1;
 
     return fib(idx - 1) + fib(idx - 2);
 }
 
-fn printfib(idx) {
-    var val = fib(idx);
-
-    print(idx);
-    print(": ");
-    print(val);
-    print("\n");
-
-    return 0;
-}
-
 fn main() {
-    for (var i = 0; i < 20; i += 1) {
-        printfib(i);
-    }
+    var i = readInt();
+
+    print(fib(i));
 
     return 0;
 }
