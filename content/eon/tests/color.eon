@@ -1,14 +1,22 @@
 #include "/libs/inc/sys.eon"
 
 fn main() {
-    print("\xf8lol\n");
-    print("\xf9lol\n");
-    print("\xfalol\n");
-    print("\xfblol\n");
-    print("\xfclol\n");
-    print("\xfdlol\n");
-    print("\xfelol\n");
-    print("\xfflol\n");
+    print("\xf0\\xf0\n");
+    print("\xf1\\xf1\n");
+    print("\xf2\\xf2\n");
+    print("\xf3\\xf3\n");
+    print("\xf4\\xf4\n");
+    print("\xf5\\xf5\n");
+    print("\xf6\\xf6\n");
+    print("\xf7\\xf7\n");
+    print("\xf8\\xf8\n");
+    print("\xf9\\xf9\n");
+    print("\xfa\\xfa\n");
+    print("\xfb\\xfb\n");
+    print("\xfc\\xfc\n");
+    print("\xfd\\xfd\n");
+    print("\xfe\\xfe\n");
+    print("\xff\\xff\n");
 
     return 0;
 }
