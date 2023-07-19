@@ -279,7 +279,7 @@ pub const CMDData = struct {
         allocator.alloc.free(self.bt);
 
         // free vm
-        if (self.shell.vm) |*vm| try vm.deinit();
+        try self.shell.deinit();
 
         // free history
         for (self.history.items) |item| {

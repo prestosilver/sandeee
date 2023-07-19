@@ -204,7 +204,8 @@ pub const ExplorerData = struct {
         try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
     }
 
-    pub fn deinit(self: *Self) void {
+    pub fn deinit(self: *Self) !void {
+        try self.shell.deinit();
         allocator.alloc.destroy(self);
     }
 

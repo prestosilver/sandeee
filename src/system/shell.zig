@@ -521,4 +521,12 @@ pub const Shell = struct {
 
         return self.runFile(cmd, params);
     }
+
+    pub fn deinit(self: *Shell) !void {
+        if (self.vm) |*vmInst| {
+            try vmInst.deinit();
+            self.vm = null;
+            vms -= 1;
+        }
+    }
 };
