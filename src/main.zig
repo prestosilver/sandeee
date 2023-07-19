@@ -112,6 +112,9 @@ const full_quad = [_]c.GLfloat{
     1.0,  1.0,  0.0,
 };
 
+// fps tracking
+var lastFrameTime: f64 = 0;
+
 var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
 var currentState: systemEvs.State = .Disks;
 
@@ -244,13 +247,14 @@ pub fn blit() !void {
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
 
     c.glUseProgram(crt_shader.id);
-    crt_shader.setFloat("time", @as(f32, @floatCast(c.glfwGetTime())));
 
     c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
     c.glEnableVertexAttribArray(0);
     c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
 
     c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
+
+    c.glFinish();
 }
 
 pub fn changeState(event: systemEvs.EventStateChange) !void {
@@ -379,6 +383,7 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
     try gfx.resize(event.w, event.h);
 
     c.glfwSetTime(0);
+    lastFrameTime = 0;
 
     // clear the window
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
@@ -766,9 +771,6 @@ pub fn mainErr() anyerror!void {
     windowedState.GSWindowed.deskSize = &gfx.gContext.size;
     bar.settingsManager = &settingManager;
 
-    // update the frame timer
-    var lastFrameTime: f64 = 0;
-
     // setup state machine
     var prev = currentState;
 
@@ -777,6 +779,7 @@ pub fn mainErr() anyerror!void {
     var timer: f64 = 0;
 
     c.glfwSetTime(0);
+    lastFrameTime = 0;
 
     // main loop
     while (gfx.poll(&ctx)) {
