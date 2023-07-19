@@ -32,7 +32,6 @@ fn setSize() {
 
 fn nextWord(buff, idx) {
     // gets the next word in a buffer
-
     var oldidx = dup(idx);
     var copy = dup(buff) + idx;
     var length = 0;
@@ -889,7 +888,6 @@ fn preprocess(name, conts) {
 
     return result;
 }
-
 
 fn main() {
     setupLibLoad();
