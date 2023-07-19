@@ -68,7 +68,7 @@ fn nextWord(buff, idx) {
             idx += 2;
         } else {
             ws = isWhitespace(copy);
-            if (isQuote) { // "
+            if (isQuote) {
                 if (@copy == 34) { // "
                     if (length > 0) {
                         done = 1;
@@ -88,7 +88,7 @@ fn nextWord(buff, idx) {
                done = 1;
             }
 
-            if (isQuote) { // "
+            if (isQuote) {
                 ws = 0;
             }
 
@@ -300,6 +300,12 @@ fn parseFlow(buff, idx, stack, varTable) {
         result &= parseBlock(buff, idx, stack, varTable, 0);
 
         result &= last & "disc 0\njmp for_" & flowidx & "_loop\nfor_" & flowidx & "_end:\n";
+
+        if (stack != 255) {
+            for (0; stack > oldstack; stack = stack - 1) {
+                result &= "disc 0\n";
+            }
+        }
 
         stack = oldstack;
         varTable = tableCopy;
