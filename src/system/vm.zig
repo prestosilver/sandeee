@@ -788,6 +788,8 @@ pub const VM = struct {
 
                             if (path != .string) return error.StringMissing;
 
+                            if (path.string.len == 0) return error.FileMissing;
+
                             if (path.string.*[0] == '/') {
                                 const file = try files.root.getFile(path.string.*);
 
