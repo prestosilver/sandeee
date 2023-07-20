@@ -44,7 +44,7 @@ fn getkey() {
 }
 
 fn update(ax, bx, ballx, bally,
-          vx, vy, pings, dt) {
+          vx, vy, pings, blip, dt) {
     var tvx;
     var tvy;
     var contained;
@@ -63,6 +63,7 @@ fn update(ax, bx, ballx, bally,
         contained = contained && tmp;
 
         if (contained) {
+            _playSound(blip);
             vx = 200 - vx;
             ballx = ballx + tvx;
             vy = bally - ax;
@@ -90,6 +91,7 @@ fn update(ax, bx, ballx, bally,
         contained = contained && tmp;
 
         if (contained) {
+            _playSound(blip);
             vx = 200 - vx;
             vy = bally - bx;
             vy = vy * 2;
@@ -114,6 +116,7 @@ fn update(ax, bx, ballx, bally,
 
         if (bally < tvy) {
             vy = 200 - vy;
+            _playSound(blip);
             bally = bally + tvy;
         } else {
             bally = bally - tvy;
@@ -125,6 +128,7 @@ fn update(ax, bx, ballx, bally,
         if (bally > 290 - tvy) {
             bally = bally - tvy;
             vy = 200 - vy;
+            _playSound(blip);
         } else {
             bally = bally + tvy;
         }
@@ -159,6 +163,7 @@ fn main() {
     loadLib("/libs/window.ell");
     loadLib("/libs/texture.ell");
     loadLib("/libs/string.ell");
+    loadLib("/libs/sound.ell");
 
     var window = _WindowCreate();
     var texture = _TextureCreate();
@@ -171,6 +176,7 @@ fn main() {
     var vx = 0;
     var vy = 200;
     var pings = 1;
+    var blip = readAll("/cont/snds/pong-blip.era");
 
     _SetWindowRule("min", 408, 338);
     _SetWindowRule("max", 408, 338);
@@ -185,7 +191,7 @@ fn main() {
         dt = time() - lastTime;
         lastTime = time();
 
-        update(ax, bx, ballx, bally, vx, vy, pings, dt);
+        update(ax, bx, ballx, bally, vx, vy, pings, blip, dt);
         
         render(window, texture, ax, bx, ballx, bally, vx, vy);
         

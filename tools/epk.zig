@@ -1,7 +1,10 @@
 const std = @import("std");
 const eon = @import("eon.zig");
 const asma = @import("asm.zig");
+const sounds = @import("sound.zig");
 const textures = @import("textures.zig");
+
+var eonLock = std.Thread.Mutex{};
 
 // converts a eep to a epk
 pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
@@ -22,8 +25,45 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
 
         const ext = item[idx - 4 .. idx];
 
+        if (std.mem.eql(u8, ext, ".eon")) {
+            eonLock.lock();
+            defer eonLock.unlock();
+            {
+                const data = try eon.compileEon(item[0..idx], alloc);
+
+                const file = try std.fs.createFileAbsolute("/tmp/eon.asm", .{});
+                defer file.close();
+
+                try file.writeAll(data.items);
+            }
+
+            const data = try asma.compile("/tmp/eon.asm", alloc);
+            defer data.deinit();
+
+            const dataLen: u16 = @intCast(data.items.len);
+
+            try result.append(std.mem.asBytes(&dataLen)[1]);
+            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.appendSlice(data.items);
+
+            continue;
+        }
+
         if (std.mem.eql(u8, ext, ".asm")) {
             const data = try asma.compile(item[0..idx], alloc);
+            defer data.deinit();
+
+            const dataLen: u16 = @intCast(data.items.len);
+
+            try result.append(std.mem.asBytes(&dataLen)[1]);
+            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.appendSlice(data.items);
+
+            continue;
+        }
+
+        if (std.mem.eql(u8, ext, ".wav")) {
+            const data = try sounds.convert(item[0..idx], alloc);
             defer data.deinit();
 
             const dataLen: u16 = @intCast(data.items.len);

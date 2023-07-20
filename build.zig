@@ -13,7 +13,7 @@ const emails = @import("tools/mail.zig");
 
 // debug only
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
-const eonTestsFiles = [_][]const u8{ "input", "color", "bugs", "pong", "paint", "tabletest", "heaptest", "stringtest", "paren" };
+const eonTestsFiles = [_][]const u8{ "input", "color", "bugs", "tabletest", "heaptest", "stringtest", "paren" };
 const eonTestSrcs = [_][]const u8{ "eon", "pix", "fib" };
 
 // demo overrides
@@ -33,9 +33,9 @@ const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
 // the website
 const wwwFiles = [_]WWWStepData{
-    .{ .inputFiles = "content/asm/eon/pong.asm:/exec/pong.eep;content/images/pong.png:/cont/imgs/pong.eia", .outputFile = "www/downloads/games/pong.epk", .converter = epk.convert },
-    .{ .inputFiles = "content/asm/eon/connectris.asm:/exec/connectris.eep;content/images/connectris.png:/cont/imgs/connectris.eia", .outputFile = "www/downloads/games/connectris.epk", .converter = epk.convert },
-    .{ .inputFiles = "content/asm/eon/paint.asm:/exec/paint.eep;content/images/transparent.png:/cont/imgs/transparent.eia", .outputFile = "www/downloads/tools/paint.epk", .converter = epk.convert },
+    .{ .inputFiles = "content/eon/exec/pong.eon:/exec/pong.eep;content/images/pong.png:/cont/imgs/pong.eia;content/audio/pong-blip.wav:/cont/snds/pong-blip.era", .outputFile = "www/downloads/games/pong.epk", .converter = epk.convert },
+    .{ .inputFiles = "content/eon/exec/connectris.eon:/exec/connectris.eep;content/images/connectris.png:/cont/imgs/connectris.eia", .outputFile = "www/downloads/games/connectris.epk", .converter = epk.convert },
+    .{ .inputFiles = "content/eon/exec/paint.eon:/exec/paint.eep;content/images/transparent.png:/cont/imgs/transparent.eia", .outputFile = "www/downloads/tools/paint.epk", .converter = epk.convert },
 };
 
 // www data
