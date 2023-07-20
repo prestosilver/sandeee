@@ -55,6 +55,10 @@ pub fn writeWinNew(_: []const u8, _: ?*vm.VM) !void {
 
 pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
     const result = try allocator.alloc.alloc(u8, 4);
+    @memset(result, 0);
+
+    if (vmInstance == null) return result;
+
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (windowsPtr.*.items, 0..) |_, idx| {
             const item = &windowsPtr.*.items[idx];
@@ -72,7 +76,6 @@ pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
         }
     }
 
-    @memset(result, 0);
     return result;
 }
 
@@ -129,7 +132,9 @@ pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) !void {
 
 pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
-    result[0] = 0;
+    @memset(result, 0);
+
+    if (vmInstance == null) return result;
 
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (windowsPtr.*.items, 0..) |_, idx| {
@@ -154,8 +159,7 @@ pub fn writeWinOpen(_: []const u8, _: ?*vm.VM) !void {
 
 // /fake/win/rules
 
-pub fn readWinRules(vmInstance: ?*vm.VM) ![]const u8 {
-    _ = vmInstance;
+pub fn readWinRules(_: ?*vm.VM) ![]const u8 {
     const result = try allocator.alloc.alloc(u8, 0);
 
     return result;
@@ -221,6 +225,8 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
 // /fake/win/title
 
 pub fn readWinTitle(vmInstance: ?*vm.VM) ![]const u8 {
+    if (vmInstance == null) return try allocator.alloc.dupe(u8, "");
+
     if (vmInstance.?.miscData.get("window")) |aaid| {
         for (windowsPtr.*.items, 0..) |_, idx| {
             const item = &windowsPtr.*.items[idx];

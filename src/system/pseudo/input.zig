@@ -8,7 +8,7 @@ const pwindows = @import("window.zig");
 // /fake/inp/char
 
 pub fn readInputChar(vmInstance: ?*vm.VM) ![]const u8 {
-    if (vmInstance.?.input.items.len != 0) {
+    if (vmInstance != null and vmInstance.?.input.items.len != 0) {
         const result = try allocator.alloc.alloc(u8, 1);
 
         result[0] = vmInstance.?.input.orderedRemove(0);
@@ -29,6 +29,8 @@ pub fn writeInputChar(_: []const u8, _: ?*vm.VM) !void {
 
 pub fn readInputWin(vmInstance: ?*vm.VM) ![]const u8 {
     var result = try allocator.alloc.alloc(u8, 0);
+    if (vmInstance == null) return result;
+
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
             const item = &pwindows.windowsPtr.*.items[idx];
@@ -59,6 +61,8 @@ pub fn writeInputWin(_: []const u8, _: ?*vm.VM) !void {
 pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
     const result = try allocator.alloc.alloc(u8, 5);
     @memset(result, 0);
+
+    if (vmInstance == null) return result;
 
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
