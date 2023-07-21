@@ -161,6 +161,7 @@ pub const Font = struct {
         maxlines: ?usize = null,
         curLine: usize = 0,
         newLines: bool = true,
+        center: bool = false,
     };
 
     pub fn draw(self: *Font, params: drawParams) !void {
@@ -186,9 +187,9 @@ pub const Font = struct {
                 if (pos.x - start.x + size.x > maxSize) {
                     if (pos.x == start.x) {
                         var spaced = word;
-                        while (size.x > maxSize) {
+                        while (size.x >= maxSize) {
                             var split: usize = 0;
-                            while (self.sizeText(.{ .text = spaced[0..split], .scale = params.scale }).x < maxSize) {
+                            while (self.sizeText(.{ .text = spaced[0..split], .scale = params.scale }).x <= maxSize) {
                                 split += 1;
                             }
 
@@ -213,6 +214,14 @@ pub const Font = struct {
 
                             size = self.sizeText(.{ .text = spaced, .scale = params.scale });
                         }
+
+                        const lineSize = self.sizeText(.{ .text = spaced, .scale = params.scale }).x;
+
+                        pos = pos.add(.{
+                            .x = if (params.center) (maxSize - lineSize) / 2 else 0,
+                            .y = 0,
+                        });
+
                         line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
                         try self.draw(.{
                             .batch = params.batch,
@@ -226,12 +235,14 @@ pub const Font = struct {
                             .maxlines = params.maxlines,
                             .curLine = line,
                         });
+
                         continue;
                     } else {
                         pos.y += self.size * params.scale;
                         pos.x = start.x;
                     }
                 }
+
                 line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
                 try self.draw(.{
                     .batch = params.batch,
