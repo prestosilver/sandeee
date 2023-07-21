@@ -71,7 +71,7 @@ pub fn build(b: *std.build.Builder) !void {
         else => if (isDemo) "D000" else "0000",
     };
 
-    Version.build = b.fmt("{s}{X:0>4}", .{ versionSuffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
+    Version.build = b.fmt("{s}-{X:0>4}", .{ versionSuffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
 
     const networkModule = b.createModule(.{
         .source_file = .{ .path = "deps/zig-network/network.zig" },
