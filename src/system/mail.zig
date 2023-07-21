@@ -309,7 +309,7 @@ pub const EmailManager = struct {
         const folder = try files.root.getFolder(path);
         var fileList = std.ArrayList(*const files.File).init(allocator.alloc);
         defer fileList.deinit();
-        try folder.getFiles(&fileList);
+        try folder.getFilesRec(&fileList);
 
         self.boxes = try allocator.alloc.alloc([]u8, fileList.items.len);
 
