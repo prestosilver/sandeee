@@ -225,7 +225,7 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
 // /fake/win/title
 
 pub fn readWinTitle(vmInstance: ?*vm.VM) ![]const u8 {
-    if (vmInstance == null) return try allocator.alloc.dupe(u8, "");
+    if (vmInstance == null) return allocator.alloc.alloc(u8, 0);
 
     if (vmInstance.?.miscData.get("window")) |aaid| {
         for (windowsPtr.*.items, 0..) |_, idx| {

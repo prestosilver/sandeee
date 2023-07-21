@@ -70,7 +70,10 @@ pub const DeskData = struct {
         var position = vecs.newVec2(0, 0);
         var idx: usize = 0;
 
-        for (self.shell.root.subfolders.items) |folder| {
+        const subFolders = try files.home.getFolders();
+        defer allocator.alloc.free(subFolders);
+
+        for (subFolders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
@@ -104,7 +107,10 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        for (self.shell.root.contents.items) |file| {
+        const subFiles = try files.home.getFiles();
+        defer allocator.alloc.free(subFiles);
+
+        for (subFiles) |file| {
             if (!checkIconSkip(file.name)) continue;
 
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
@@ -136,7 +142,10 @@ pub const DeskData = struct {
         var position = vecs.newVec2(0, 0);
         var idx: usize = 0;
 
-        for (files.home.subfolders.items) |folder| {
+        const subFolders = try files.home.getFolders();
+        defer allocator.alloc.free(subFolders);
+
+        for (subFolders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             try addQuad(&result, 1, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
@@ -151,7 +160,10 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        for (files.home.contents.items) |file| {
+        const subFiles = try files.home.getFiles();
+        defer allocator.alloc.free(subFiles);
+
+        for (subFiles) |file| {
             if (!checkIconSkip(file.name)) continue;
 
             try addQuad(&result, 0, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
@@ -195,7 +207,10 @@ pub const DeskData = struct {
 
         var position = vecs.newVec2(0, 0);
 
-        for (files.home.subfolders.items) |folder| {
+        const subFolders = try files.home.getFolders();
+        defer allocator.alloc.free(subFolders);
+
+        for (subFolders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             try addIconText(batch, position, folder.name[0 .. folder.name.len - 1], font_shader, font, textColor);
@@ -203,7 +218,10 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        for (files.home.contents.items) |file| {
+        const subFiles = try files.home.getFiles();
+        defer allocator.alloc.free(subFiles);
+
+        for (subFiles) |file| {
             if (!checkIconSkip(file.name)) continue;
 
             try addIconText(batch, position, file.name, font_shader, font, textColor);

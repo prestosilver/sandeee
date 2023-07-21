@@ -68,6 +68,7 @@ pub const Shell = struct {
         }
     }
 
+    // TODO: getFiles & getFolders
     fn ls(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
             const folder = try self.root.getFolder(param[3..]);

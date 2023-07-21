@@ -117,7 +117,11 @@ pub const WebData = struct {
                     try headers.append("Connection", "Close");
 
                     var req = client.request(.GET, uri, headers, .{}) catch |err| {
-                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                        if (err == error.TemporaryNameServerFailure)
+                            self.conts = try std.fmt.allocPrint(allocator.alloc, "No Internet Connection", .{})
+                        else
+                            self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+
                         return;
                     };
                     defer req.deinit();

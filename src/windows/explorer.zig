@@ -49,10 +49,15 @@ pub const ExplorerData = struct {
     lastAction: ?ExplorerMouseAction = null,
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
-        const result = try allocator.alloc.alloc(ExplorerIcon, self.shell.root.subfolders.items.len + self.shell.root.contents.items.len);
+        const subFolders = try self.shell.root.getFolders();
+        const subFiles = try self.shell.root.getFiles();
+        defer allocator.alloc.free(subFolders);
+        defer allocator.alloc.free(subFiles);
+
+        const result = try allocator.alloc.alloc(ExplorerIcon, subFolders.len + subFiles.len);
         var idx: usize = 0;
 
-        for (self.shell.root.subfolders.items) |folder| {
+        for (subFolders) |folder| {
             result[idx] = ExplorerIcon{
                 .name = folder.name[self.shell.root.name.len .. folder.name.len - 1],
                 .icon = 2,
@@ -60,7 +65,7 @@ pub const ExplorerData = struct {
             idx += 1;
         }
 
-        for (self.shell.root.contents.items) |file| {
+        for (subFiles) |file| {
             result[idx] = ExplorerIcon{
                 .name = file.name[self.shell.root.name.len..],
                 .icon = 1,
@@ -123,6 +128,7 @@ pub const ExplorerData = struct {
                 .pos = vecs.newVec2(bnds.x + x + xo - 5, bnds.y + 64 + y + 6),
                 .color = col.newColor(0, 0, 0, 1),
                 .wrap = 128,
+                .center = true,
             });
 
             try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));

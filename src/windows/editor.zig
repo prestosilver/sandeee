@@ -268,7 +268,7 @@ pub const EditorData = struct {
                     try self.save();
                 }
                 if (self.buffer.items.len != 0) {
-                    if (mousepos.y > 32) {
+                    if (mousepos.y > 40) {
                         self.clickPos = mousepos;
                     }
                 }
