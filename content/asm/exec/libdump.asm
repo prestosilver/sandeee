@@ -12,6 +12,11 @@ readb:
 load_lib_funcs:
     copy 0                      ; libname handle | handle
     call readb                  ; libname handle | libsize
+    push 256
+    mul
+    copy 1                      ; libname handle | libsize handle
+    call readb                  ; libname handle | libsize libsize_big
+    add
     call get_lib_data_handle    ; libname handle | libhandle
     disc 2                      ; handle | libhandle
     copy 1                      ; handle | libhandle handle
