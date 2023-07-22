@@ -1,0 +1,33 @@
+#include "/libs/inc/libload.eon"
+
+fn processArgs() {
+    var file = 1;
+    asm "sys 8";
+
+    if (file == "") {
+        asm "push \"Bad Argument\"";
+        asm "sys 18";
+    }
+
+    return file;
+}
+
+fn main() {
+    // load libs
+    setupLibLoad();
+    loadLib("/libs/asm.ell");
+
+    var outFile = 2;
+    asm "sys 8";
+
+    if (outFile == "") {
+       outFile = "out.eep";
+    }
+
+    // open input
+    var infile = processArgs();
+
+    _asmFile(infile, outFile, 1);
+
+    return 0;
+}
