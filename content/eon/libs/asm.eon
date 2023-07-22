@@ -285,7 +285,7 @@ fn libInit() {
     asm "ret";
 }
 
-fn asmFile(inname, outname) {
+fn asmFile(inname, outname, isLib) {
     var table = _TableCreate(20, 2);
 
     var inhandleb = open(inname);

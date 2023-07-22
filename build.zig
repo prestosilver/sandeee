@@ -21,9 +21,9 @@ const mailDirsDemo = [_][]const u8{"inbox"};
 
 // all builds
 const asmExecFiles = [_][]const u8{ "time", "dump", "echo", "aplay", "libdump" };
-const eonExecFiles = [_][]const u8{ "epkman", "eon", "stat", "player", "asm", "pix" };
+const eonExecFiles = [_][]const u8{ "epkman", "eon", "stat", "player", "asm", "pix", "elib", "alib" };
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
-const eonLibFiles = [_][]const u8{ "ui", "heap", "table", "asm" };
+const eonLibFiles = [_][]const u8{ "ui", "heap", "table", "asm", "eon" };
 const wavSoundFiles = [_][]const u8{ "login", "message" };
 const pngImageFiles = [_][]const u8{ "icons", "ui", "notif", "bar", "email", "iconsBig", "window", "wall", "barlogo", "cursor" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };

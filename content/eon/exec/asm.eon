@@ -27,7 +27,7 @@ fn main() {
     // open input
     var infile = processArgs();
 
-    _asmFile(infile, outFile);
+    _asmFile(infile, outFile, 0);
 
     return 0;
 }
