@@ -184,20 +184,24 @@ pub const Font = struct {
             while (iter.next()) |word| {
                 var size = self.sizeText(.{ .text = word, .scale = params.scale });
 
-                if (pos.x - start.x + size.x > maxSize) {
+                if (pos.x - start.x + size.x >= maxSize) {
                     if (pos.x == start.x) {
                         var spaced = word;
                         while (size.x >= maxSize) {
                             var split: usize = 0;
-                            while (self.sizeText(.{ .text = spaced[0..split], .scale = params.scale }).x <= maxSize) {
+                            while (self.sizeText(.{ .text = spaced[0..split], .scale = params.scale }).x < maxSize) {
                                 split += 1;
                             }
+
+                            const end = if (params.maxlines != null and params.curLine == params.maxlines.? - 1) "\x90" else "";
+                            const text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ spaced[0 .. split - end.len - 1], end });
+                            defer allocator.alloc.free(text);
 
                             line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
                             try self.draw(.{
                                 .batch = params.batch,
                                 .shader = params.shader,
-                                .text = spaced[0 .. split - 1],
+                                .text = text,
                                 .pos = start,
                                 .origin = &pos,
                                 .color = color,
@@ -356,10 +360,10 @@ pub const Font = struct {
                 }
 
                 var size = self.sizeText(.{ .text = word, .scale = params.scale });
-                if (result.x + size.x > maxSize) {
+                if (result.x + size.x >= maxSize) {
                     if (result.x == 0) {
                         var spaced = word;
-                        while (size.x > maxSize) {
+                        while (size.x >= maxSize) {
                             var split: usize = 0;
                             while (self.sizeText(.{
                                 .text = spaced[0..split],

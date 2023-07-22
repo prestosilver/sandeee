@@ -127,8 +127,9 @@ pub const ExplorerData = struct {
                 .text = icon.name,
                 .pos = vecs.newVec2(bnds.x + x + xo - 5, bnds.y + 64 + y + 6),
                 .color = col.newColor(0, 0, 0, 1),
-                .wrap = 128,
+                .wrap = 100,
                 .center = true,
+                .maxlines = 1,
             });
 
             try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
