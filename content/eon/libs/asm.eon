@@ -210,7 +210,8 @@ fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
                     line -= 1;
 
                     if (prev_toc != 0) {
-                        len = _StringLength(conts) - prev_toc + 1;
+                        len = _StringLength(conts) - prev_toc;
+                        len += 1;
                         toc &= @(len / 256);
                         toc &= @len;
                     }
@@ -268,7 +269,8 @@ fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
         }
     }
 
-    len = _StringLength(conts) - prev_toc + 1;
+    len = _StringLength(conts) - prev_toc;
+    len += 1;
     toc &= @(len / 256);
     toc &= @len;
 

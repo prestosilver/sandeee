@@ -123,7 +123,7 @@ pub const VM = struct {
         self.rsp += 1;
     }
 
-    inline fn popStack(self: *VM) VMError!StackEntry {
+    pub inline fn popStack(self: *VM) VMError!StackEntry {
         if (self.rsp == 0) return error.StackUnderflow;
         self.rsp -= 1;
         return self.stack[self.rsp];
@@ -1215,7 +1215,7 @@ pub const VM = struct {
                 try ops.append(VM.Operation{ .code = code, .value = value });
             } else if (kind == 2) {
                 var buffPtr: usize = 0;
-                while (conts[parsePtr + buffPtr] != 0) {
+                while (parsePtr + buffPtr < conts.len and conts[parsePtr + buffPtr] != 0) {
                     buffPtr += 1;
                     if (buffPtr + parsePtr >= conts.len) {
                         ops.deinit();

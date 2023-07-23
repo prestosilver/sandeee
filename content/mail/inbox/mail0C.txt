@@ -2,7 +2,7 @@ id: 12
 deps: 10
 from: ERIC_L@eee.org
 sub: HELLO LIBRARY
-view
+submit: libfn=hello;runs=Hello World!
 
 LETS SEE IF YOU CAN MAKE A SIMPLE LIBRARY.
 YOU CAN COMPILE LIBRARIES WITH THE elib (AND alib) COMMAND

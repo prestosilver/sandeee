@@ -1,10 +1,5 @@
 const std = @import("std");
 
-const lol = error{
-    UnknownOp,
-    UnknownConst,
-};
-
 pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var inreader = try std.fs.cwd().openFile(in, .{});
     defer inreader.close();

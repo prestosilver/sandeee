@@ -877,7 +877,8 @@ fn parseFunction(buff, idx, isLib) {
 }
 
 fn parseFile(buff, idx, isLib) {
-    var code = "call main\nsys 1\n";
+    var code = "";
+    if (isLib == 0) code &= "call main\nsys 1\n";
     var func = "";
     var word = "";
     var done = 0;

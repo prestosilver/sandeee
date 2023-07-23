@@ -218,6 +218,8 @@ const EmailData = struct {
                 var input = std.ArrayList(u8).init(allocator.alloc);
                 defer input.deinit();
 
+                var libfn: ?[]const u8 = null;
+
                 while (iter.next()) |cond| {
                     const idx = std.mem.indexOf(u8, cond, "=") orelse cond.len - 1;
                     const name = cond[0..idx];
@@ -229,7 +231,58 @@ const EmailData = struct {
                     } else if (std.mem.eql(u8, name, "input")) {
                         input.clearAndFree();
                         try input.appendSlice(cond[idx + 1 ..]);
-                    } else if (std.mem.eql(u8, name, "runs")) {
+                    } else if (std.mem.eql(u8, name, "libfn")) {
+                        libfn = cond[idx + 1 ..];
+                    } else if (std.mem.eql(u8, name, "runs")) blk: {
+                        const targetText = cond[idx + 1 ..];
+
+                        if (libfn) |fnname| {
+                            if (!std.mem.startsWith(u8, conts, "elib")) return;
+                            var libIdx: usize = 7;
+                            var startIdx: usize = 256 * @as(usize, @intCast(conts[4])) + @as(usize, @intCast(conts[5]));
+
+                            std.log.info("total: {}", .{conts[6]});
+
+                            for (0..@as(usize, @intCast(conts[6]))) |_| {
+                                const nameLen: usize = @intCast(conts[libIdx]);
+                                libIdx += 1;
+                                std.log.info("found: {s}", .{conts[libIdx .. libIdx + nameLen]});
+                                if (libIdx + nameLen < conts.len and std.mem.eql(u8, fnname, conts[libIdx .. libIdx + nameLen])) {
+                                    const fnsize = @as(usize, @intCast(conts[libIdx + 1 + nameLen])) * 256 + @as(usize, @intCast(conts[libIdx + 2 + nameLen]));
+                                    std.log.info("start: {}, {any}", .{ startIdx, conts[startIdx .. startIdx + fnsize] });
+
+                                    var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
+                                    defer vmInstance.deinit() catch {};
+
+                                    try vmInstance.loadString(conts[startIdx .. startIdx + fnsize]);
+                                    vmInstance.retStack[0] = .{
+                                        .function = null,
+                                        .location = vmInstance.code.?.len + 1,
+                                    };
+                                    vmInstance.retRsp = 1;
+
+                                    vmInstance.runAll() catch {
+                                        good = false;
+                                        break :blk;
+                                    };
+
+                                    const result = try vmInstance.popStack();
+
+                                    good = good and result == .string and std.mem.eql(u8, result.string.*, targetText);
+
+                                    break :blk;
+                                }
+                                libIdx += 1 + nameLen;
+                                startIdx += @as(usize, @intCast(conts[libIdx])) * 256;
+                                libIdx += 1;
+                                startIdx += @intCast(conts[libIdx]);
+                                libIdx += 1;
+                            }
+
+                            good = false;
+                            continue;
+                        }
+
                         if (!std.mem.startsWith(u8, conts, "EEEp")) return;
                         var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
                         defer vmInstance.deinit() catch {};
@@ -240,10 +293,11 @@ const EmailData = struct {
                         try vmInstance.loadString(conts[4..]);
 
                         try vmInstance.runAll();
-                        const targetText = cond[idx + 1 ..];
                         const trimmed = std.mem.trimLeft(u8, vmInstance.out.items, " \n");
 
                         good = good and std.ascii.endsWithIgnoreCase(trimmed, targetText);
+                    } else {
+                        std.log.info("unknown {s}", .{name});
                     }
                 }
 
