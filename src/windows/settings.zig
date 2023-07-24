@@ -65,6 +65,82 @@ const SettingsData = struct {
         key: []const u8,
     };
 
+    const panes = [_][]const Setting{
+        &[_]Setting{
+            Setting{
+                .kind = .String,
+                .setting = "Wallpaper Color",
+                .key = "wallpaper_color",
+            },
+            Setting{
+                .kind = .Dropdown,
+                .kinddata = "Color Tile Center Stretch",
+                .setting = "Wallpaper Mode",
+                .key = "wallpaper_mode",
+            },
+            Setting{
+                .kind = .String,
+                .setting = "Wallpaper Path",
+                .key = "wallpaper_path",
+            },
+            Setting{
+                .kind = .String,
+                .setting = "System font",
+                .key = "system_font",
+            },
+            Setting{
+                .kind = .Dropdown,
+                .kinddata = "No Yes",
+                .setting = "CRT Shader",
+                .key = "crt_shader",
+            },
+        },
+        &[_]Setting{
+            Setting{
+                .kind = .String,
+                .setting = "Sound Volume",
+                .key = "sound_volume",
+            },
+            Setting{
+                .kind = .Dropdown,
+                .kinddata = "No Yes",
+                .setting = "Sound Muted",
+                .key = "sound_muted",
+            },
+        },
+        &[_]Setting{
+            Setting{
+                .kind = .Dropdown,
+                .kinddata = "No Yes",
+                .setting = "Show Hidden Files",
+                .key = "explorer_hidden",
+            },
+            Setting{
+                .kind = .String,
+                .setting = "Web homepage",
+                .key = "web_home",
+            },
+        },
+        &[_]Setting{
+            Setting{
+                .kind = .Dropdown,
+                .kinddata = "No Yes",
+                .setting = "Show Welcome",
+                .key = "show_welcome",
+            },
+            Setting{
+                .kind = .String,
+                .setting = "Startup Script",
+                .key = "startup_file",
+            },
+            Setting{
+                .kind = .String,
+                .setting = "Extr path",
+                .key = "extr_path",
+            },
+        },
+    };
+
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
 
@@ -78,82 +154,9 @@ const SettingsData = struct {
         }
 
         if (self.focusedPane) |focused| {
-            var settings = std.ArrayList(Setting).init(allocator.alloc);
-            defer settings.deinit();
-
-            switch (focused) {
-                0 => {
-                    try settings.appendSlice(&[_]Setting{
-                        Setting{
-                            .kind = .String,
-                            .setting = "Wallpaper Color",
-                            .key = "wallpaper_color",
-                        },
-                        Setting{
-                            .kind = .Dropdown,
-                            .kinddata = "Color Tile Center Stretch",
-                            .setting = "Wallpaper Mode",
-                            .key = "wallpaper_mode",
-                        },
-                        Setting{
-                            .kind = .String,
-                            .setting = "Wallpaper Path",
-                            .key = "wallpaper_path",
-                        },
-                        Setting{
-                            .kind = .Dropdown,
-                            .kinddata = "No Yes",
-                            .setting = "CRT Shader",
-                            .key = "crt_shader",
-                        },
-                    });
-                },
-                1 => {
-                    try settings.appendSlice(&[_]Setting{
-                        Setting{
-                            .kind = .String,
-                            .setting = "Sound Volume",
-                            .key = "sound_volume",
-                        },
-                        Setting{
-                            .kind = .Dropdown,
-                            .kinddata = "No Yes",
-                            .setting = "Sound Muted",
-                            .key = "sound_muted",
-                        },
-                    });
-                },
-                2 => {
-                    try settings.appendSlice(&[_]Setting{
-                        Setting{
-                            .kind = .Dropdown,
-                            .kinddata = "No Yes",
-                            .setting = "Show Hidden Files",
-                            .key = "explorer_hidden",
-                        },
-                    });
-                },
-                3 => {
-                    try settings.appendSlice(&[_]Setting{
-                        Setting{
-                            .kind = .Dropdown,
-                            .kinddata = "No Yes",
-                            .setting = "Show Welcome",
-                            .key = "show_welcome",
-                        },
-                        Setting{
-                            .kind = .String,
-                            .setting = "Startup Script",
-                            .key = "startup_file",
-                        },
-                    });
-                },
-                else => {},
-            }
-
             var pos = vecs.newVec2(0, 0);
 
-            for (settings.items) |item| {
+            for (panes[focused]) |item| {
                 // draw name
                 try font.draw(.{
                     .batch = batch,
