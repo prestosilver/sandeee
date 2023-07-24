@@ -1,0 +1,14 @@
+id: 13
+deps: 12
+from: Spencer_r@eee.org
+sub: Strings are insane
+submit: input=AND;runs=DNA;input=PRS;runs=SRP
+Hello,
+
+Sorry about Eric he can get a bit annoying.
+I'm Spencer but everyone calls me the Spencer the String Stitcher, Stitcher for short.
+I heard your getting into Eon, I recently needed a program that reverses it's input wanna program one for me?
+If I remember right there's a function in sys.eon that will read a single char of input. You can convert an ASCII number to a char string with the @ operator. Just make the program print the reversed string after it reads a new line.
+A new lines char has the value of 10. String concatenation might also be helpful, you can use the & operation for that.
+
+- Sticher
