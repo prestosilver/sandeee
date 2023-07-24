@@ -39,9 +39,20 @@ const EmailData = struct {
     box: usize = 0,
     viewing: ?*mail.EmailManager.Email = null,
     selected: ?*mail.EmailManager.Email = null,
+    offset: *f32 = undefined,
+    rowsize: f32 = 0,
 
     pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
-        _ = props;
+        if (props.scroll == null) {
+            props.scroll = .{
+                .offsetStart = 0,
+            };
+
+            self.offset = &props.scroll.?.value;
+        }
+
+        props.scroll.?.offsetStart = if (self.viewing == null) 0 else 2 * font.size + 6;
+
         self.divy.data.size.y = bnds.h + 4;
 
         try batch.draw(sprite.Sprite, &self.divy, self.shader, vecs.newVec3(bnds.x + 100, bnds.y - 2, 0));
@@ -53,9 +64,9 @@ const EmailData = struct {
         try batch.draw(sprite.Sprite, &self.icon, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
         if (self.viewing == null) {
-            self.dive.data.size.x = bnds.w - 118;
+            self.dive.data.size.x = bnds.w - 106;
 
-            var y: f32 = bnds.y + 2.0;
+            var y: f32 = bnds.y + 2.0 - props.scroll.?.value;
 
             for (emailManager.emails.items) |*email| {
                 if (email.box != self.box) continue;
@@ -71,9 +82,9 @@ const EmailData = struct {
 
                 if (self.selected != null and email == self.selected.?) {
                     self.sel.data.size.x = bnds.w - 106;
-                    self.sel.data.size.y = 22;
+                    self.sel.data.size.y = font.size + 8 - 2;
 
-                    try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 106, y - 2, 0));
+                    try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 106, y - 4, 0));
                 }
 
                 if (email.isComplete) {
@@ -81,7 +92,7 @@ const EmailData = struct {
                         .batch = batch,
                         .shader = font_shader,
                         .text = "\x83",
-                        .pos = vecs.newVec2(bnds.x + 112, y - 4),
+                        .pos = vecs.newVec2(bnds.x + 112, y - 2),
                         .color = col.newColor(0, 1.0, 0, 1.0),
                     });
                 }
@@ -90,14 +101,20 @@ const EmailData = struct {
                     .batch = batch,
                     .shader = font_shader,
                     .text = text,
-                    .pos = vecs.newVec2(bnds.x + 112 + 20, y - 4),
+                    .pos = vecs.newVec2(bnds.x + 112 + 20, y - 2),
                     .color = color,
+                    .wrap = bnds.w - 112 - 20,
+                    .maxlines = 1,
                 });
 
-                try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 112, y + font.size, 0));
+                try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 106, y + font.size, 0));
 
-                y += 24;
+                y += font.size + 8;
             }
+
+            self.rowsize = font.size + 8;
+
+            props.scroll.?.maxy = y - bnds.y - bnds.h + props.scroll.?.value - 6;
         } else {
             self.divx.data.size.x = bnds.w - 100;
             try batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 2 + font.size * 2, 0));
@@ -125,15 +142,26 @@ const EmailData = struct {
                 .pos = vecs.newVec2(bnds.x + 112 + 28, bnds.y + font.size),
             });
 
-            const y = bnds.y + 8 + font.size * 2;
+            const y = bnds.y + 8 + font.size * 2 - props.scroll.?.value;
+
+            const oldScissor = batch.scissor;
+            batch.scissor.?.y = bnds.y + 8 + font.size * 2;
+            batch.scissor.?.h = bnds.h - 8 - font.size * 2;
 
             try font.draw(.{
                 .batch = batch,
                 .shader = font_shader,
                 .text = email.contents,
                 .pos = vecs.newVec2(bnds.x + 112, y),
-                .wrap = bnds.w - 116.0,
+                .wrap = bnds.w - 116.0 - 20,
             });
+
+            batch.scissor = oldScissor;
+
+            props.scroll.?.maxy = font.sizeText(.{
+                .text = email.contents,
+                .wrap = bnds.w - 116.0 - 20,
+            }).y;
         }
 
         self.sel.data.size.x = 100;
@@ -332,7 +360,7 @@ const EmailData = struct {
                 if (contBnds.contains(mousepos)) {
                     if (self.viewing != null) return;
 
-                    var y: i32 = 2;
+                    var y: i32 = 2 - @as(i32, @intFromFloat(self.offset.*));
 
                     for (emailManager.emails.items) |*email| {
                         if (email.box != self.box) continue;
@@ -340,9 +368,9 @@ const EmailData = struct {
                             if (!emailManager.getEmailVisible(email)) continue;
                         }
 
-                        const bnds = rect.newRect(106, @as(f32, @floatFromInt(y)), size.x - 106, 24);
+                        const bnds = rect.newRect(106, @as(f32, @floatFromInt(y)), size.x - 106, self.rowsize);
 
-                        y += 24;
+                        y += @intFromFloat(self.rowsize);
 
                         if (bnds.contains(mousepos)) {
                             if (self.selected != null and email == self.selected.?) {
