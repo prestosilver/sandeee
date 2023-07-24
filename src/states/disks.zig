@@ -30,7 +30,7 @@ pub const GSDisks = struct {
     selectSound: *audio.Sound,
     audioMan: *audio.Audio,
 
-    remaining: f32 = 3,
+    remaining: f32 = 10,
     sel: usize = 0,
     auto: bool = true,
     disks: std.ArrayList([]const u8) = undefined,
@@ -54,7 +54,7 @@ pub const GSDisks = struct {
 
         self.sel = 0;
         self.auto = true;
-        self.remaining = 3;
+        self.remaining = 10;
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
         const dir = try std.fs.cwd().openIterableDir("disks", .{});
