@@ -242,6 +242,22 @@ pub const Font = struct {
 
                         continue;
                     } else {
+                        pos.x -= spaceSize;
+
+                        const end = if (params.maxlines != null and params.curLine == params.maxlines.? - 1) "\x90" else "";
+                        try self.draw(.{
+                            .batch = params.batch,
+                            .shader = params.shader,
+                            .text = end,
+                            .pos = start,
+                            .origin = &pos,
+                            .color = color,
+                            .scale = params.scale,
+                            .wrap = null,
+                            .maxlines = params.maxlines,
+                            .curLine = line,
+                        });
+
                         pos.y += self.size * params.scale;
                         pos.x = start.x;
                     }
