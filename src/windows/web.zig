@@ -535,8 +535,6 @@ pub const WebData = struct {
                     }
                 }
 
-                if (pos.y > bnds.h + bnds.y and !self.add_links) continue;
-
                 const aline = try std.fmt.allocPrint(allocator.alloc, "{s}{s}{s}", .{
                     style.prefix orelse "",
                     line,
@@ -590,7 +588,7 @@ pub const WebData = struct {
                 pos.x = 0;
             }
 
-            props.scroll.?.maxy = pos.y + 64 + font.size + props.scroll.?.value - bnds.h;
+            props.scroll.?.maxy = pos.y + 64 + props.scroll.?.value - bnds.h;
 
             // draw highlight for url
             if (self.highlight_idx != 0 and self.links.items.len >= self.highlight_idx) {
