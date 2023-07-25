@@ -1,18 +1,23 @@
 function getLog() {
-    echo ":center: --- EEE Sees all ---"
-    
+    cat << EOF
+:logo: [@/logo.eia]
+
+-- Changelog --
+
+#Style @/style.eds
+EOF
+
     last=
     
-    for i in $(git log --pretty=format:%H | tac); do
+    for i in $(git log --pretty=format:%H); do
         ver=$(git show $i:VERSION | cut -d+ -f1)
-    
-        if [[ "" != "$ver" ]]; then
-            if [[ "$last" != "$ver" ]]; then
-                echo ""
-                echo "-- "$ver" --"
-                echo ""
-                last=$ver
-            fi
+        [[ "" == "$ver" ]] && ver="Old"
+
+        if [[ "$last" != "$ver" ]]; then
+            echo ""
+            echo "-- "$ver" --"
+            echo ""
+            last=$ver
         fi
     
         line=$(git log -1 --pretty=format:%s "$i")
@@ -28,18 +33,9 @@ function getLog() {
         fi
     done
     
-    echo ""
-    echo "-- "$(cat VERSION | cut -d+ -f1)" --"
-    echo ""
-    
     last=ver
+    echo ":center: --- EEE Sees all ---"
     
-    tac << EOF
-#Style @/style.eds
-    
-:logo: [@/logo.eia]
--- Changelog --
-EOF
 }
 
-getLog 2>/dev/null | tac
+getLog 2>/dev/null
