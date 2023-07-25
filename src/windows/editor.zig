@@ -24,17 +24,45 @@ const STRING_START = "\"";
 pub const EditorData = struct {
     const Self = @This();
 
-    buffer: std.ArrayList(u8),
+    pub const Row = struct {
+        text: []u8,
+        render: ?[]const u8 = null,
+
+        pub fn clearRender(self: *Row) void {
+            if (self.render) |r| {
+                allocator.alloc.free(r);
+                self.render = null;
+            }
+        }
+
+        pub fn getRender(self: *const Row, targIdx: usize) []const u8 {
+            var idx: usize = 0;
+            var aidx: usize = 0;
+            for (self.render.?) |ch| {
+                if (ch < 0xf0) {
+                    if (idx >= targIdx) break;
+                    idx += 1;
+                }
+                aidx += 1;
+            }
+
+            return self.render.?[0..aidx];
+        }
+    };
+
+    buffer: []Row,
     menubar: sp.Sprite,
     numLeft: sp.Sprite,
     numRight: sp.Sprite,
     icons: [2]sp.Sprite,
     shader: *shd.Shader,
 
-    cursor: vecs.Vector2 = .{ .x = 0, .y = 0 },
     clickPos: ?vecs.Vector2 = null,
-    cursorIdx: usize = 0,
-    prevIdx: usize = 0,
+    cursorx: usize = 0,
+    cursory: usize = 0,
+    curosrSize: usize = 0,
+    linex: usize = 0,
+
     modified: bool = false,
     file: ?*files.File = null,
 
@@ -153,80 +181,64 @@ pub const EditorData = struct {
 
         // draw file text
         if (self.file != null) {
-            if (self.clickPos) |clicked| {
-                self.cursor.y = @divFloor(clicked.y - 40 + props.scroll.?.value, font.size);
-                self.cursor.x = @round((clicked.x - 82) / font.sizeText(.{
-                    .text = "A",
-                }).x);
+            if (self.clickPos) |clickPos| {
+                self.cursory = @as(usize, @intFromFloat((clickPos.y + props.scroll.?.value) / font.size));
+                self.cursorx = @as(usize, @intFromFloat(clickPos.x / font.chars[0].ax));
                 self.clickPos = null;
+            }
+
+            if (self.cursory >= self.buffer.len) {
+                self.cursory = self.buffer.len - 1;
+            }
+
+            if (self.cursorx >= self.buffer[self.cursory].text.len) {
+                self.cursorx = self.buffer[self.cursory].text.len;
             }
 
             // draw lines
             var y = bnds.y + 40 - props.scroll.?.value;
-            var nr: usize = 1;
-
-            if (self.cursor.x < 0) self.cursor.x = 0;
-            self.cursorIdx = @as(usize, @intFromFloat(self.cursor.x));
-            self.prevIdx = 0;
 
             props.scroll.?.maxy = -bnds.h + 40;
 
-            var splitIter = std.mem.split(u8, self.buffer.items, "\n");
-
-            while (splitIter.next()) |rawLine| {
-                if (nr - 1 < @as(usize, @intFromFloat(self.cursor.y))) {
-                    self.cursorIdx += rawLine.len + 1;
-                    self.prevIdx += rawLine.len + 1;
+            for (self.buffer, 0..) |*line, lineidx| {
+                if (line.render == null) {
+                    line.render = try hlLine(line.text);
                 }
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = shader,
+                    .text = line.render.?,
+                    .pos = vecs.newVec2(bnds.x + 82, y),
+                    .wrap = bnds.w - 82,
+                    .maxlines = 1,
+                });
 
-                if (nr - 1 == @as(usize, @intFromFloat(self.cursor.y))) {
-                    self.cursor.x = @min(self.cursor.x, @as(f32, @floatFromInt(rawLine.len)));
-                }
+                const linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{lineidx + 1});
+                defer allocator.alloc.free(linenr);
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = shader,
+                    .text = linenr,
+                    .pos = vecs.newVec2(bnds.x + 6, y),
+                });
 
-                if (y > bnds.y - font.size and y < bnds.y + bnds.h) {
-                    const line = try hlLine(rawLine);
-                    defer allocator.alloc.free(line);
-
+                if (self.cursory == lineidx) {
+                    const posx = font.sizeText(.{
+                        .text = line.getRender(self.cursorx),
+                        .cursor = true,
+                    }).x;
                     try font.draw(.{
                         .batch = batch,
                         .shader = shader,
-                        .text = line,
-                        .pos = vecs.newVec2(bnds.x + 82, y),
+                        .text = "|",
+                        .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
                     });
-                    const linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{nr});
-                    defer allocator.alloc.free(linenr);
-                    try font.draw(.{
-                        .batch = batch,
-                        .shader = shader,
-                        .text = linenr,
-                        .pos = vecs.newVec2(bnds.x + 6, y),
-                    });
-
-                    if (nr - 1 == @as(i32, @intFromFloat(self.cursor.y))) {
-                        const posx = font.sizeText(.{
-                            .text = rawLine[0..@as(usize, @intFromFloat(self.cursor.x))],
-                        }).x;
-                        try font.draw(.{
-                            .batch = batch,
-                            .shader = shader,
-                            .text = "|",
-                            .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
-                        });
-                    }
                 }
 
                 y += font.size;
                 props.scroll.?.maxy += font.size;
-
-                nr += 1;
-            }
-
-            if (self.cursor.y > @as(f32, @floatFromInt(nr - 2))) {
-                self.cursor.y = @as(f32, @floatFromInt(nr - 2));
             }
         }
-
-        if (self.cursorIdx > self.buffer.items.len) self.cursorIdx = self.buffer.items.len - 1;
 
         // draw toolbar
         try batch.draw(sp.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
@@ -267,9 +279,12 @@ pub const EditorData = struct {
                 if (saveBnds.contains(mousepos)) {
                     try self.save();
                 }
-                if (self.buffer.items.len != 0) {
-                    if (mousepos.y > 40) {
-                        self.clickPos = mousepos;
+                if (self.buffer.len != 0) {
+                    if (mousepos.y > 40 and mousepos.x > 82) {
+                        self.clickPos = mousepos.sub(.{
+                            .y = 40,
+                            .x = 82,
+                        });
                     }
                 }
             },
@@ -281,10 +296,17 @@ pub const EditorData = struct {
 
     pub fn save(self: *Self) !void {
         if (self.file != null) {
-            allocator.alloc.free(self.file.?.contents);
-            const buff = try allocator.alloc.alloc(u8, self.buffer.items.len);
-            std.mem.copy(u8, buff, self.buffer.items);
-            self.file.?.contents = buff;
+            var buff = std.ArrayList(u8).init(allocator.alloc);
+            defer buff.deinit();
+
+            for (self.buffer) |line| {
+                try buff.appendSlice(line.text);
+                try buff.append('\n');
+            }
+
+            _ = buff.pop();
+
+            try self.file.?.write(try allocator.alloc.dupe(u8, buff.items), null);
             self.modified = false;
         }
     }
@@ -294,8 +316,21 @@ pub const EditorData = struct {
             const self: *Self = @ptrCast(@alignCast(data));
             self.file = target;
 
-            self.buffer.clearAndFree();
-            try self.buffer.appendSlice(try self.file.?.read(null));
+            const fileConts = try self.file.?.read(null);
+            const lines = std.mem.count(u8, fileConts, "\n") + 1;
+
+            self.buffer = try allocator.alloc.realloc(self.buffer, lines);
+
+            var iter = std.mem.split(u8, fileConts, "\n");
+            var idx: usize = 0;
+            while (iter.next()) |line| {
+                self.buffer[idx] = .{
+                    .text = try allocator.alloc.dupe(u8, line),
+                    .render = null,
+                };
+
+                idx += 1;
+            }
         }
     }
 
@@ -303,23 +338,35 @@ pub const EditorData = struct {
 
     pub fn focus(self: *Self) !void {
         if (!self.modified and self.file != null) {
-            self.buffer.clearAndFree();
-            try self.buffer.appendSlice(try self.file.?.read(null));
+            try submit(self.file, self);
 
             return;
         }
     }
 
     pub fn deinit(self: *Self) !void {
-        self.buffer.deinit();
+        for (self.buffer) |*line| {
+            line.clearRender();
+            allocator.alloc.free(line.text);
+        }
+
+        allocator.alloc.free(self.buffer);
         allocator.alloc.destroy(self);
     }
 
     pub fn char(self: *Self, code: u32, _: i32) !void {
         if (code == '\n') return;
 
-        try self.buffer.insert(self.cursorIdx, @as(u8, @intCast(code)));
-        self.cursor.x += 1;
+        const line = &self.buffer[self.cursory];
+
+        line.text = try allocator.alloc.realloc(line.text, line.text.len + 1);
+
+        std.mem.copyBackwards(u8, line.text[self.cursorx + 1 ..], line.text[self.cursorx .. line.text.len - 1]);
+        line.text[self.cursorx] = @intCast(code);
+
+        line.clearRender();
+
+        self.cursorx += 1;
         self.modified = true;
     }
 
@@ -329,53 +376,90 @@ pub const EditorData = struct {
 
         switch (keycode) {
             c.GLFW_KEY_S => {
-                if ((mods & c.GLFW_MOD_CONTROL) != 0) {
+                if (mods == (c.GLFW_MOD_CONTROL)) {
                     try self.save();
 
                     return;
                 }
             },
             c.GLFW_KEY_TAB => {
-                try self.buffer.insertSlice(self.cursorIdx, "  ");
-                self.cursor.x += 2;
-                self.modified = true;
+                try self.char(' ', mods);
+                try self.char(' ', mods);
             },
             c.GLFW_KEY_ENTER => {
-                try self.buffer.insert(self.cursorIdx, '\n');
-                self.cursor.x = 0;
-                self.cursor.y += 1;
+                self.buffer = try allocator.alloc.realloc(self.buffer, self.buffer.len + 1);
+                std.mem.copyBackwards(Row, self.buffer[self.cursory + 1 ..], self.buffer[self.cursory .. self.buffer.len - 1]);
+
+                const line = &self.buffer[self.cursory];
+                self.buffer[self.cursory + 1] = .{
+                    .text = try allocator.alloc.dupe(u8, line.text[self.cursorx..]),
+                };
+
+                line.text = try allocator.alloc.realloc(line.text, self.cursorx);
+
+                line.clearRender();
+
+                self.cursorx = 0;
+                self.cursory += 1;
+
                 self.modified = true;
             },
             c.GLFW_KEY_DELETE => {
-                if (self.cursorIdx < self.buffer.items.len) {
-                    _ = self.buffer.orderedRemove(self.cursorIdx);
+                const line = &self.buffer[self.cursory];
+
+                if (self.cursorx < line.text.len) {
+                    std.mem.copyForwards(u8, line.text[self.cursorx .. line.text.len - 1], line.text[self.cursorx + 1 ..]);
+                    line.text = try allocator.alloc.realloc(line.text, line.text.len - 1);
+
+                    line.clearRender();
+
+                    self.modified = true;
                 }
-                self.modified = true;
             },
             c.GLFW_KEY_BACKSPACE => {
-                if (self.cursorIdx > 0) {
-                    const ch = self.buffer.orderedRemove(self.cursorIdx - 1);
-                    self.cursor.x -= 1;
-                    if (ch == '\n') {
-                        self.cursor.y -= 1;
-                        self.cursor.x = @as(f32, @floatFromInt(self.prevIdx - 1));
-                    }
+                if (self.cursorx > 0) {
+                    const line = &self.buffer[self.cursory];
+
+                    std.mem.copyForwards(u8, line.text[self.cursorx - 1 .. line.text.len - 1], line.text[self.cursorx..]);
+                    line.text = try allocator.alloc.realloc(line.text, line.text.len - 1);
+
+                    line.clearRender();
+
+                    self.modified = true;
+
+                    self.cursorx -= 1;
+                } else if (self.cursory > 0) {
+                    const oldLine = self.buffer[self.cursory - 1].text;
+                    defer allocator.alloc.free(oldLine);
+
+                    self.buffer[self.cursory - 1].text = try std.mem.concat(allocator.alloc, u8, &.{
+                        self.buffer[self.cursory - 1].text,
+                        self.buffer[self.cursory].text,
+                    });
+                    std.mem.copyForwards(Row, self.buffer[self.cursory .. self.buffer.len - 1], self.buffer[self.cursory + 1 ..]);
+
+                    self.buffer[self.cursory - 1].clearRender();
+
+                    self.buffer = try allocator.alloc.realloc(self.buffer, self.buffer.len - 1);
+                    self.cursorx = oldLine.len;
+                    self.cursory -= 1;
                 }
-                self.modified = true;
             },
             c.GLFW_KEY_LEFT => {
-                self.cursor.x -= 1;
-                if (self.cursor.x < 0) self.cursor.x = 0;
+                if (self.cursorx > 0)
+                    self.cursorx -= 1;
             },
             c.GLFW_KEY_RIGHT => {
-                self.cursor.x += 1;
+                if (self.cursorx < self.buffer[self.cursory].text.len)
+                    self.cursorx += 1;
             },
             c.GLFW_KEY_UP => {
-                self.cursor.y -= 1;
-                if (self.cursor.y < 0) self.cursor.y = 0;
+                if (self.cursory > 0)
+                    self.cursory -= 1;
             },
             c.GLFW_KEY_DOWN => {
-                self.cursor.y += 1;
+                if (self.cursory < self.buffer.len - 1)
+                    self.cursory += 1;
             },
             else => {},
         }
@@ -412,7 +496,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
             )),
         },
         .shader = shader,
-        .buffer = std.ArrayList(u8).init(allocator.alloc),
+        .buffer = try allocator.alloc.alloc(EditorData.Row, 0),
     };
 
     return win.WindowContents.init(self, "editor", "\x82\x82\x82DT", col.newColor(1, 1, 1, 1));

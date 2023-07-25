@@ -355,6 +355,7 @@ pub const Font = struct {
         scale: f32 = 1,
         wrap: ?f32 = null,
         turnicate: bool = false,
+        cursor: bool = false,
     };
 
     pub fn sizeText(self: *Font, params: sizeParams) vec.Vector2 {
@@ -375,7 +376,11 @@ pub const Font = struct {
                     return result;
                 }
 
-                var size = self.sizeText(.{ .text = word, .scale = params.scale });
+                var size = self.sizeText(.{
+                    .text = word,
+                    .scale = params.scale,
+                    .cursor = params.cursor,
+                });
                 if (result.x + size.x >= maxSize) {
                     if (result.x == 0) {
                         var spaced = word;
@@ -384,6 +389,7 @@ pub const Font = struct {
                             while (self.sizeText(.{
                                 .text = spaced[0..split],
                                 .scale = params.scale,
+                                .cursor = params.cursor,
                             }).x < maxSize) {
                                 split += 1;
                             }
@@ -396,13 +402,18 @@ pub const Font = struct {
                                 return result;
                             }
 
-                            size = self.sizeText(.{ .text = spaced, .scale = params.scale });
+                            size = self.sizeText(.{
+                                .text = spaced,
+                                .scale = params.scale,
+                                .cursor = params.cursor,
+                            });
                         }
                         result.x += size.x;
                         result.x += spaceSize;
                         continue;
                     } else {
-                        maxx = @max(maxx, result.x);
+                        if (!params.cursor)
+                            maxx = @max(maxx, result.x);
                         result.x = 0;
                         result.y += params.scale * self.size;
                     }
@@ -411,18 +422,20 @@ pub const Font = struct {
                 result.x += spaceSize;
             }
             result.y += self.size * params.scale;
-            result.x = @max(maxx, result.x);
+            if (!params.cursor)
+                result.x = @max(maxx, result.x);
 
             return result;
         }
 
         for (params.text) |ach| {
-            if (ach & 0xF0 == 0xF0) {
+            if (ach >= 0xF0) {
                 continue;
             }
 
             if (ach == '\n') {
-                maxx = @max(result.x, maxx);
+                if (!params.cursor)
+                    maxx = @max(result.x, maxx);
                 result.y += self.size * params.scale;
                 result.x = 0;
                 continue;
@@ -433,7 +446,8 @@ pub const Font = struct {
         }
 
         result.y += self.size * params.scale;
-        result.x = @max(result.x, maxx);
+        if (!params.cursor)
+            result.x = @max(result.x, maxx);
 
         return result;
     }

@@ -34,7 +34,7 @@ pub const Context = struct {
 
 export fn errorCallback(err: c_int, description: [*c]const u8) void {
     std.log.info("Error: {s}, {}\n", .{ description, err });
-    @panic("GLFW Error");
+    //@panic("GLFW Error");
 }
 
 const GfxError = error{

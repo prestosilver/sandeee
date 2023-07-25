@@ -157,11 +157,24 @@ pub const Shell = struct {
             else
                 edself.file = try self.root.getFile(param[5..]);
 
-            edself.buffer.clearAndFree();
             if (edself.file == null) return .{
                 .data = try allocator.alloc.dupe(u8, ""),
             };
-            try edself.buffer.appendSlice(try edself.file.?.read(null));
+            const fileConts = try edself.file.?.read(null);
+            const lines = std.mem.count(u8, fileConts, "\n") + 1;
+
+            edself.buffer = try allocator.alloc.realloc(edself.buffer, lines);
+
+            var iter = std.mem.split(u8, fileConts, "\n");
+            var idx: usize = 0;
+            while (iter.next()) |line| {
+                edself.buffer[idx] = .{
+                    .text = try allocator.alloc.dupe(u8, line),
+                    .render = null,
+                };
+
+                idx += 1;
+            }
         }
 
         try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
