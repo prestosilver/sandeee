@@ -16,8 +16,8 @@ const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 
-const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else " };
-const HL_KEYWORD2 = [_][]const u8{"#include"};
+const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else ", "asm " };
+const HL_KEYWORD2 = [_][]const u8{"#include "};
 const COMMENT_START = "//";
 const STRING_START = "\"";
 
@@ -60,7 +60,8 @@ pub const EditorData = struct {
     clickPos: ?vecs.Vector2 = null,
     cursorx: usize = 0,
     cursory: usize = 0,
-    curosrSize: usize = 0,
+    // TODO: implement
+    curosrLen: usize = 0,
     linex: usize = 0,
 
     modified: bool = false,
@@ -121,6 +122,8 @@ pub const EditorData = struct {
         }
 
         {
+            // TODO: spaces???
+
             const oldLine = line;
             defer allocator.alloc.free(oldLine);
 
