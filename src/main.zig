@@ -14,7 +14,7 @@ const installState = @import("states/installer.zig");
 const recoveryState = @import("states/recovery.zig");
 const logoutState = @import("states/logout.zig");
 
-// utilities
+// utilitieS
 const fm = @import("util/files.zig");
 const font = @import("util/font.zig");
 const audio = @import("util/audio.zig");
@@ -267,6 +267,12 @@ pub fn keyDown(event: inputEvs.EventKeyDown) !void {
         showFps = !showFps;
     }
 
+    if (event.key == c.GLFW_KEY_V and event.mods == (c.GLFW_MOD_CONTROL)) {
+        try events.EventManager.instance.sendEvent(systemEvs.EventPaste{});
+
+        return;
+    }
+
     try gameStates.getPtr(currentState).keypress(event.key, event.mods, true);
 }
 
@@ -296,6 +302,24 @@ pub fn mouseScroll(event: inputEvs.EventMouseScroll) !void {
 
 pub fn notification(_: windowEvs.EventNotification) !void {
     try audioman.playSound(message_snd);
+}
+
+pub fn copy(event: systemEvs.EventCopy) !void {
+    c.glfwSetClipboardString(gfx.gContext.window, event.value.ptr);
+}
+
+pub fn paste(_: systemEvs.EventPaste) !void {
+    const tmp = c.glfwGetClipboardString(gfx.gContext.window);
+    if (tmp == null) return;
+
+    const len = std.mem.len(tmp);
+    const view = try std.unicode.Utf8View.init(tmp[0..len]);
+
+    var iter = view.iterator();
+
+    while (iter.nextCodepoint()) |ch| {
+        try gameStates.getPtr(currentState).keychar(ch, 0);
+    }
 }
 
 pub fn settingSet(event: systemEvs.EventSetSetting) !void {
@@ -751,6 +775,7 @@ pub fn mainErr() anyerror!void {
     try events.EventManager.instance.registerListener(systemEvs.EventStateChange, changeState);
     try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
     try events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
+    try events.EventManager.instance.registerListener(systemEvs.EventPaste, paste);
 
     // setup game states
     gameStates.set(.Disks, states.GameState.init(&gsDisks));
