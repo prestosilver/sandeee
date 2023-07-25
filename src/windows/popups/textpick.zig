@@ -29,11 +29,18 @@ pub const PopupTextPick = struct {
             .text = self.prompt,
         });
 
+        const maxlen: usize = @intFromFloat((bnds.w - 60) / 8);
+
+        const text = if (self.text.len > maxlen)
+            self.text[self.text.len - maxlen ..]
+        else
+            self.text;
+
         try font.draw(.{
             .batch = batch,
             .shader = shader,
             .pos = bnds.location().add(.{ .x = 30, .y = font.size }),
-            .text = self.text,
+            .text = text,
             .wrap = bnds.w - 60,
             .maxlines = 1,
         });
@@ -43,6 +50,7 @@ pub const PopupTextPick = struct {
             .shader = shader,
             .pos = bnds.location().add(.{ .x = 0, .y = font.size * 2 }),
             .text = self.err,
+            .wrap = bnds.w - 60,
             .color = cols.newColor(1, 0, 0, 1),
         });
     }
