@@ -1,8 +1,8 @@
 id: 2
-deps: 9
+deps: 0
 from: joe_m@eee.org
-sub: Program for me NOW!
+sub: Need Help?
 view
-Please program for me, I need more devs.
+By the way if you ever need help, theres documentation for every language in SandEEE on the SandEEE homepage @sandeee.org:/index.edf.
 
 Joe Moe
