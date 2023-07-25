@@ -544,44 +544,46 @@ pub const WebData = struct {
 
                 const size = font.sizeText(.{ .text = aline, .scale = style.scale, .wrap = webWidth });
 
-                switch (style.ali) {
-                    .Left => {
-                        try font.draw(.{
-                            .batch = batch,
-                            .shader = font_shader,
-                            .text = aline,
-                            .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
-                            .color = style.color,
-                            .scale = style.scale,
-                            .wrap = webWidth,
-                        });
-                    },
-                    .Center => {
-                        const x = (webWidth - size.x) / 2;
+                if (pos.y - size.y > 0 and pos.y < bnds.h - 6) {
+                    switch (style.ali) {
+                        .Left => {
+                            try font.draw(.{
+                                .batch = batch,
+                                .shader = font_shader,
+                                .text = aline,
+                                .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
+                                .color = style.color,
+                                .scale = style.scale,
+                                .wrap = webWidth,
+                            });
+                        },
+                        .Center => {
+                            const x = (webWidth - size.x) / 2;
 
-                        try font.draw(.{
-                            .batch = batch,
-                            .shader = font_shader,
-                            .text = aline,
-                            .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
-                            .color = style.color,
-                            .scale = style.scale,
-                            .wrap = webWidth,
-                        });
-                    },
-                    .Right => {
-                        const x = (webWidth - size.x);
+                            try font.draw(.{
+                                .batch = batch,
+                                .shader = font_shader,
+                                .text = aline,
+                                .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
+                                .color = style.color,
+                                .scale = style.scale,
+                                .wrap = webWidth,
+                            });
+                        },
+                        .Right => {
+                            const x = (webWidth - size.x);
 
-                        try font.draw(.{
-                            .batch = batch,
-                            .shader = font_shader,
-                            .text = aline,
-                            .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
-                            .color = style.color,
-                            .scale = style.scale,
-                            .wrap = webWidth,
-                        });
-                    },
+                            try font.draw(.{
+                                .batch = batch,
+                                .shader = font_shader,
+                                .text = aline,
+                                .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
+                                .color = style.color,
+                                .scale = style.scale,
+                                .wrap = webWidth,
+                            });
+                        },
+                    }
                 }
 
                 pos.y += size.y;
