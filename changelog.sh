@@ -6,12 +6,12 @@ function getLog() {
     for i in $(git log --pretty=format:%H | tac); do
         ver=$(git show $i:VERSION | cut -d+ -f1)
     
-        if [[ -x $ver ]]; then
-            if [[ "$last" == "$ver" ]]; then
+        if [[ "" != "$ver" ]]; then
+            if [[ "$last" != "$ver" ]]; then
                 echo ""
                 echo "-- "$ver" --"
                 echo ""
-                last=ver
+                last=$ver
             fi
         fi
     

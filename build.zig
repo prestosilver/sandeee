@@ -16,7 +16,7 @@ const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "array
 const eonTestsFiles = [_][]const u8{ "input", "color", "bugs", "tabletest", "heaptest", "stringtest", "paren" };
 const eonTestSrcs = [_][]const u8{ "eon", "pix", "fib" };
 
-// demo overrides
+// demo overrideS
 const mailDirsDemo = [_][]const u8{"inbox"};
 
 // all builds
@@ -49,8 +49,8 @@ const WWWStepData = struct {
 var Version: std.SemanticVersion = .{
     .major = 0,
     .minor = 3,
-    .patch = 1,
-    .build = "",
+    .patch = 2,
+    .build = null,
 };
 
 pub fn build(b: *std.build.Builder) !void {
@@ -71,7 +71,11 @@ pub fn build(b: *std.build.Builder) !void {
         else => if (isDemo) "D000" else "0000",
     };
 
+    std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{}", .{Version}) catch return) catch return;
+
     Version.build = b.fmt("{s}-{X:0>4}", .{ versionSuffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
+
+    std.fs.cwd().writeFile("IVERSION", std.fmt.allocPrint(b.allocator, "{}", .{Version}) catch return) catch return;
 
     const networkModule = b.createModule(.{
         .source_file = .{ .path = "deps/zig-network/network.zig" },
@@ -84,8 +88,6 @@ pub fn build(b: *std.build.Builder) !void {
     const options = b.addOptions();
 
     var versionText = std.fmt.allocPrint(b.allocator, "Ver. {{}}", .{}) catch return;
-
-    std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{}", .{Version}) catch return) catch return;
 
     options.addOption(std.SemanticVersion, "SandEEEVersion", Version);
     options.addOption([]const u8, "VersionText", versionText);
