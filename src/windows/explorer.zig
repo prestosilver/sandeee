@@ -121,21 +121,23 @@ pub const ExplorerData = struct {
             }).x;
             const xo = (128 - size) / 2;
 
-            try font.draw(.{
-                .batch = batch,
-                .shader = font_shader,
-                .text = icon.name,
-                .pos = vecs.newVec2(bnds.x + x + xo - 5, bnds.y + 64 + y + 6),
-                .color = col.newColor(0, 0, 0, 1),
-                .wrap = 100,
-                .center = true,
-                .maxlines = 1,
-            });
+            if (y + 64 + font.size > 0 and y < bnds.h) {
+                try font.draw(.{
+                    .batch = batch,
+                    .shader = font_shader,
+                    .text = icon.name,
+                    .pos = vecs.newVec2(bnds.x + x + xo - 5, bnds.y + 64 + y + 6),
+                    .color = col.newColor(0, 0, 0, 1),
+                    .wrap = 100,
+                    .center = true,
+                    .maxlines = 1,
+                });
 
-            try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-            if (idx + 1 == self.selected)
-                try batch.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                if (idx + 1 == self.selected)
+                    try batch.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+            }
 
             if (self.lastAction != null) {
                 if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {

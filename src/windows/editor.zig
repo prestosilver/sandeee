@@ -278,6 +278,7 @@ pub const EditorData = struct {
                         },
                     });
                 }
+
                 const saveBnds = rect.newRect(32, 0, 32, 32);
                 if (saveBnds.contains(mousepos)) {
                     try self.save();
