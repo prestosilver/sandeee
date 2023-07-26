@@ -8,6 +8,3 @@ In the assembly language, there is a list of items called a stack, every operati
 Please submit the eep file that when ran prints 'Hello World!'.
 
 Jen Duncan
-
-hint:    push "Hello World!"
-hint:    sys 0
