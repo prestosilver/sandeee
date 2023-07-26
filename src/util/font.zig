@@ -156,6 +156,7 @@ pub const Font = struct {
         text: []const u8,
         origin: ?*vec.Vector2 = null,
         scale: f32 = 1,
+        colorPtr: ?*col.Color = null,
         color: col.Color = col.newColor(0, 0, 0, 1),
         wrap: ?f32 = null,
         maxlines: ?usize = null,
@@ -167,7 +168,9 @@ pub const Font = struct {
     pub fn draw(self: *Font, params: drawParams) !void {
         var pos = if (params.origin) |orig| orig.* else params.pos;
         var srect = rect.newRect(0, 0, 1, 1);
-        var color = params.color;
+        var scolor = params.color;
+        const color = params.colorPtr orelse &scolor;
+
         pos.x = @round(pos.x);
         pos.y = @round(pos.y);
 
@@ -204,7 +207,7 @@ pub const Font = struct {
                                 .text = text,
                                 .pos = start,
                                 .origin = &pos,
-                                .color = color,
+                                .colorPtr = color,
                                 .scale = params.scale,
                                 .wrap = null,
                                 .maxlines = params.maxlines,
@@ -233,7 +236,7 @@ pub const Font = struct {
                             .text = spaced,
                             .pos = start,
                             .origin = &pos,
-                            .color = color,
+                            .colorPtr = color,
                             .scale = params.scale,
                             .wrap = null,
                             .maxlines = params.maxlines,
@@ -251,7 +254,7 @@ pub const Font = struct {
                             .text = end,
                             .pos = start,
                             .origin = &pos,
-                            .color = color,
+                            .colorPtr = color,
                             .scale = params.scale,
                             .wrap = null,
                             .maxlines = params.maxlines,
@@ -270,7 +273,7 @@ pub const Font = struct {
                     .text = word,
                     .pos = start,
                     .origin = &pos,
-                    .color = color,
+                    .colorPtr = color,
                     .scale = params.scale,
                     .wrap = null,
                     .maxlines = params.maxlines,
@@ -307,7 +310,7 @@ pub const Font = struct {
             }
 
             if (ach & 0xF0 == 0xF0) {
-                color = FONT_COLORS[@intCast(ach & 0x0F)];
+                color.* = FONT_COLORS[@intCast(ach & 0x0F)];
                 continue;
             }
 
@@ -322,13 +325,13 @@ pub const Font = struct {
                 srect.w = char.tw;
                 srect.h = char.th;
 
-                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
+                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color.*);
+                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color.*);
+                try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color.*);
 
-                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-                try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
+                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color.*);
+                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color.*);
+                try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color.*);
             }
 
             pos.x += char.ax * params.scale;
