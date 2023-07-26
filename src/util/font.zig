@@ -156,11 +156,9 @@ pub const Font = struct {
         text: []const u8,
         origin: ?*vec.Vector2 = null,
         scale: f32 = 1,
-        colorPtr: ?*col.Color = null,
         color: col.Color = col.newColor(0, 0, 0, 1),
         wrap: ?f32 = null,
         maxlines: ?usize = null,
-        curLine: usize = 0,
         newLines: bool = true,
         center: bool = false,
     };
@@ -168,8 +166,7 @@ pub const Font = struct {
     pub fn draw(self: *Font, params: drawParams) !void {
         var pos = if (params.origin) |orig| orig.* else params.pos;
         var srect = rect.newRect(0, 0, 1, 1);
-        var scolor = params.color;
-        const color = params.colorPtr orelse &scolor;
+        var color = params.color;
 
         pos.x = @round(pos.x);
         pos.y = @round(pos.y);
@@ -178,118 +175,8 @@ pub const Font = struct {
         start.x = @round(start.x);
         start.y = @round(start.y);
 
-        if (params.wrap) |maxSize| {
-            if (maxSize <= 0) return;
-            var iter = std.mem.split(u8, params.text, " ");
-            const spaceSize = self.sizeText(.{ .text = " ", .scale = params.scale }).x;
-            var line: usize = 0;
-
-            while (iter.next()) |word| {
-                var size = self.sizeText(.{ .text = word, .scale = params.scale });
-
-                if (pos.x - start.x + size.x >= maxSize) {
-                    if (pos.x == start.x) {
-                        var spaced = word;
-                        while (size.x >= maxSize) {
-                            var split: usize = 0;
-                            while (self.sizeText(.{ .text = spaced[0..split], .scale = params.scale }).x < maxSize) {
-                                split += 1;
-                            }
-
-                            const end = if (params.maxlines != null and params.curLine == params.maxlines.? - 1) "\x90" else "";
-                            const text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ spaced[0 .. split - end.len - 1], end });
-                            defer allocator.alloc.free(text);
-
-                            line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
-                            try self.draw(.{
-                                .batch = params.batch,
-                                .shader = params.shader,
-                                .text = text,
-                                .pos = start,
-                                .origin = &pos,
-                                .colorPtr = color,
-                                .scale = params.scale,
-                                .wrap = null,
-                                .maxlines = params.maxlines,
-                                .curLine = line,
-                            });
-
-                            pos.y += self.size * params.scale;
-                            pos.x = start.x;
-
-                            spaced = spaced[split - 1 ..];
-
-                            size = self.sizeText(.{ .text = spaced, .scale = params.scale });
-                        }
-
-                        const lineSize = self.sizeText(.{ .text = spaced, .scale = params.scale }).x;
-
-                        pos = pos.add(.{
-                            .x = if (params.center) (maxSize - lineSize) / 2 else 0,
-                            .y = 0,
-                        });
-
-                        line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
-                        try self.draw(.{
-                            .batch = params.batch,
-                            .shader = params.shader,
-                            .text = spaced,
-                            .pos = start,
-                            .origin = &pos,
-                            .colorPtr = color,
-                            .scale = params.scale,
-                            .wrap = null,
-                            .maxlines = params.maxlines,
-                            .curLine = line,
-                        });
-
-                        continue;
-                    } else {
-                        pos.x -= spaceSize;
-
-                        const end = if (params.maxlines != null and params.curLine == params.maxlines.? - 1) "\x90" else "";
-                        try self.draw(.{
-                            .batch = params.batch,
-                            .shader = params.shader,
-                            .text = end,
-                            .pos = start,
-                            .origin = &pos,
-                            .colorPtr = color,
-                            .scale = params.scale,
-                            .wrap = null,
-                            .maxlines = params.maxlines,
-                            .curLine = line,
-                        });
-
-                        pos.y += self.size * params.scale;
-                        pos.x = start.x;
-                    }
-                }
-
-                line = @as(usize, @intFromFloat((pos.y - start.y) / (self.size * params.scale)));
-                try self.draw(.{
-                    .batch = params.batch,
-                    .shader = params.shader,
-                    .text = word,
-                    .pos = start,
-                    .origin = &pos,
-                    .colorPtr = color,
-                    .scale = params.scale,
-                    .wrap = null,
-                    .maxlines = params.maxlines,
-                    .curLine = line,
-                });
-
-                pos.x += spaceSize;
-            }
-
-            return;
-        }
-
-        if (params.maxlines != null and
-            params.curLine >= params.maxlines.?) return;
-
         const startscissor = params.batch.scissor;
+        defer params.batch.scissor = startscissor;
 
         if (params.batch.scissor != null) {
             if (params.wrap != null)
@@ -302,10 +189,23 @@ pub const Font = struct {
 
         var vertarray = try va.VertArray.init();
 
-        for (params.text) |ach| {
+        var curLine: usize = 0;
+        var lastspace: usize = 0;
+        var lastspaceIdx: usize = 0;
+        var lastLineIdx: usize = 0;
+        var idx: usize = 0;
+
+        while (params.text.len > idx) : (idx += 1) {
+            const ach = params.text[idx];
+
             if (ach == '\n' and params.newLines) {
                 pos.y += self.size * params.scale;
                 pos.x = start.x;
+
+                curLine += 1;
+
+                lastLineIdx = idx + 1;
+
                 continue;
             }
 
@@ -318,12 +218,46 @@ pub const Font = struct {
             if (ach != ' ') {
                 const w = char.size.x * params.scale;
                 const h = char.size.y * params.scale;
-                const xpos = pos.x + char.bearing.x * params.scale;
+                var xpos = pos.x + char.bearing.x * params.scale;
                 const ypos = pos.y + char.bearing.y * params.scale;
                 srect.x = char.tx;
                 srect.y = char.ty;
                 srect.w = char.tw;
                 srect.h = char.th;
+
+                if (params.wrap != null and (pos.x + char.ax) - start.x >= params.wrap.?) {
+                    pos.y += self.size * params.scale;
+                    pos.x = start.x;
+
+                    curLine += 1;
+
+                    if (params.maxlines != null and
+                        curLine >= params.maxlines.?)
+                    {
+                        if (params.text[idx - 1] != ' ')
+                            vertarray.setLen(vertarray.items().len - 6);
+                        if (params.text[idx - 2] != ' ')
+                            vertarray.setLen(vertarray.items().len - 6);
+                    } else if (std.mem.containsAtLeast(u8, params.text[lastLineIdx..idx], 1, " ")) {
+                        vertarray.setLen(lastspace);
+                        idx = lastspaceIdx - 1;
+
+                        lastLineIdx = idx + 1;
+                        continue;
+                    }
+
+                    lastLineIdx = idx + 1;
+                }
+
+                if (params.maxlines != null and
+                    curLine >= params.maxlines.?)
+                {
+                    srect.x = self.chars[0x90].tx;
+                    srect.y = self.chars[0x90].ty;
+                    srect.w = self.chars[0x90].tw;
+                    srect.h = self.chars[0x90].th;
+                    xpos -= char.ax * 2;
+                }
 
                 try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color.*);
                 try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color.*);
@@ -332,6 +266,15 @@ pub const Font = struct {
                 try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color.*);
                 try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color.*);
                 try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color.*);
+            } else {
+                lastspace = vertarray.items().len;
+                lastspaceIdx = idx + 1;
+            }
+
+            if (params.maxlines != null and
+                curLine >= params.maxlines.?)
+            {
+                break;
             }
 
             pos.x += char.ax * params.scale;
@@ -349,8 +292,6 @@ pub const Font = struct {
         };
 
         try params.batch.addEntry(&entry);
-
-        params.batch.scissor = startscissor;
     }
 
     pub const sizeParams = struct {
