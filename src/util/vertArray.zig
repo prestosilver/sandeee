@@ -60,6 +60,10 @@ pub const VertArray = struct {
         return va.array.items.len / 6;
     }
 
+    pub inline fn setLen(va: *VertArray, len: usize) void {
+        va.array.shrinkAndFree(len);
+    }
+
     pub inline fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {
         try va.array.append(Vert{
             .x = @round(pos.x),
