@@ -30,6 +30,8 @@ const va = @import("../util/vertArray.zig");
 const telem = @import("../system/telem.zig");
 const c = @import("../c.zig");
 
+pub var vmTime: f64 = 0.5;
+
 pub const GSWindowed = struct {
     const Self = @This();
 
@@ -55,7 +57,7 @@ pub const GSWindowed = struct {
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
     init: bool = false,
-    lastFrameTime: f32 = 1 / 60,
+    lastFrameTime: f32 = 1.0 / 60.0,
 
     desk: desk.Desk,
 
@@ -302,7 +304,7 @@ pub const GSWindowed = struct {
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
 
         // setup vm data for update
-        shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat(self.lastFrameTime * std.time.ns_per_s * 0.5));
+        shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat((self.lastFrameTime) * std.time.ns_per_s * vmTime));
 
         if (self.shell.vm != null) {
             const result = self.shell.updateVM() catch null;
@@ -401,8 +403,6 @@ pub const GSWindowed = struct {
     }
 
     pub fn update(self: *Self, dt: f32) !void {
-        self.lastFrameTime = dt;
-
         for (self.windows.items, 0..) |window, idx| {
             if (window.data.shouldClose) {
                 _ = self.windows.orderedRemove(idx);

@@ -186,12 +186,12 @@ pub fn blit() !void {
     }
 
     if (showFps and biosFace.setup) {
-        const text = try std.fmt.allocPrint(allocator.alloc, "{s}FPS: {}\n{s}VMS: {}\n{s}STA: {}", .{
-            if (finalFps < 58) "\xFA" else "\xF9",
+        const text = try std.fmt.allocPrint(allocator.alloc, "{s}FPS: {}\n{s}VMS: {}\n\xf9VMT: {:.2}\nSTA: {}", .{
+            if (finalFps < 50) "\xFA" else "\xF9",
             finalFps,
             if (shell.vms == 0) "\xF1" else "\xF9",
             shell.vms,
-            "\xF9",
+            windowedState.vmTime,
             @intFromEnum(currentState),
         });
         defer allocator.alloc.free(text);
@@ -825,8 +825,13 @@ pub fn mainErr() anyerror!void {
         }
 
         timer += currentTime - lastFrameTime;
-        if (timer > 1) {
+        if (timer > 0.5) {
             finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / timer));
+            if (shell.vms != 0 and finalFps != 0) {
+                const adj: f64 = std.math.clamp((@as(f64, @floatFromInt(fps)) / timer) / 58.0, 0.9, 1.1);
+                windowedState.vmTime = std.math.clamp(windowedState.vmTime * adj, 0.1, 0.9);
+            }
+
             fps = 0;
             timer = 0;
         }
