@@ -69,7 +69,7 @@ const EmailData = struct {
                     if (!emailManager.getEmailVisible(email)) continue;
                 }
 
-                const text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
+                const text = try std.fmt.allocPrint(allocator.alloc, "{s} - {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
 
                 if (email.isComplete) {
