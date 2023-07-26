@@ -29,17 +29,18 @@ pub const PopupTextPick = struct {
             .text = self.prompt,
         });
 
-        const maxlen: usize = @intFromFloat((bnds.w - 60) / 8);
+        const maxlen: usize = @intFromFloat((bnds.w - 120) / 10);
 
         const text = if (self.text.len > maxlen)
-            self.text[self.text.len - maxlen ..]
+            try std.fmt.allocPrint(allocator.alloc, "\x90{s}", .{self.text[self.text.len - maxlen + 1 ..]})
         else
-            self.text;
+            try allocator.alloc.dupe(u8, self.text);
+        defer allocator.alloc.free(text);
 
         try font.draw(.{
             .batch = batch,
             .shader = shader,
-            .pos = bnds.location().add(.{ .x = 30, .y = font.size }),
+            .pos = bnds.location().add(.{ .x = 30, .y = font.size * 2 }),
             .text = text,
             .wrap = bnds.w - 60,
             .maxlines = 1,
@@ -48,7 +49,7 @@ pub const PopupTextPick = struct {
         try font.draw(.{
             .batch = batch,
             .shader = shader,
-            .pos = bnds.location().add(.{ .x = 0, .y = font.size * 2 }),
+            .pos = bnds.location().add(.{ .x = 0, .y = font.size * 4 }),
             .text = self.err,
             .wrap = bnds.w - 60,
             .color = cols.newColor(1, 0, 0, 1),
