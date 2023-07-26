@@ -127,15 +127,18 @@ pub const WindowContents = struct {
     }
 
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
-        if (self.props.scroll) |*scrollData| {
-            self.scrolling = false;
-            if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scrollData.offsetStart + 14) {
-                const pc = (mousepos.y - 14 - scrollData.offsetStart) / (size.y - 28 - scrollData.offsetStart);
-                scrollData.value = std.math.round(scrollData.maxy * pc);
-                self.scrolling = true;
-                return;
+        if (btn) |_| {
+            if (self.props.scroll) |*scrollData| {
+                self.scrolling = false;
+                if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scrollData.offsetStart + 14) {
+                    const pc = (mousepos.y - 14 - scrollData.offsetStart) / (size.y - 28 - scrollData.offsetStart);
+                    scrollData.value = std.math.round(scrollData.maxy * pc);
+                    self.scrolling = true;
+                    return;
+                }
             }
         }
+
         return self.vtable.click(self.ptr, size, mousepos, btn);
     }
 
