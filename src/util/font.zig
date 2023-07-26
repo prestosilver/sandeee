@@ -184,7 +184,7 @@ pub const Font = struct {
                     @max(@as(f32, 0), @min(params.batch.scissor.?.w, params.pos.x + params.wrap.? - params.batch.scissor.?.x));
             if (params.maxlines != null)
                 params.batch.scissor.?.h =
-                    @max(@as(f32, 0), @min(params.batch.scissor.?.h, params.pos.y + ((@as(f32, @floatFromInt(params.maxlines.?)) - @as(f32, @floatFromInt(params.curLine))) * self.size) - params.batch.scissor.?.y));
+                    @max(@as(f32, 0), @min(params.batch.scissor.?.h, params.pos.y + ((@as(f32, @floatFromInt(params.maxlines.?))) * self.size) - params.batch.scissor.?.y));
         }
 
         var vertarray = try va.VertArray.init();
@@ -210,7 +210,7 @@ pub const Font = struct {
             }
 
             if (ach & 0xF0 == 0xF0) {
-                color.* = FONT_COLORS[@intCast(ach & 0x0F)];
+                color = FONT_COLORS[@intCast(ach & 0x0F)];
                 continue;
             }
 
@@ -259,13 +259,13 @@ pub const Font = struct {
                     xpos -= char.ax * 2;
                 }
 
-                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color.*);
-                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color.*);
-                try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color.*);
+                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
 
-                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color.*);
-                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color.*);
-                try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color.*);
+                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
+                try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
             } else {
                 lastspace = vertarray.items().len;
                 lastspaceIdx = idx + 1;
