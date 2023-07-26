@@ -199,7 +199,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.email.new("email", shader),
+                                .contents = try wins.email.new(shader),
                                 .active = true,
                             });
 

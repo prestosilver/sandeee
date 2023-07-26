@@ -27,9 +27,7 @@ const EmailData = struct {
 
     backbg: sprite.Sprite,
     reply: sprite.Sprite,
-    icon: sprite.Sprite,
     divx: sprite.Sprite,
-    divy: sprite.Sprite,
     dive: sprite.Sprite,
     back: sprite.Sprite,
     sel: sprite.Sprite,
@@ -51,22 +49,16 @@ const EmailData = struct {
             self.offset = &props.scroll.?.value;
         }
 
-        props.scroll.?.offsetStart = if (self.viewing == null) 0 else 2 * font.size + 6;
+        props.scroll.?.offsetStart = if (self.viewing == null) 0 else 38;
 
-        self.divy.data.size.y = bnds.h + 4;
+        self.divx.data.size.y = bnds.h;
 
-        try batch.draw(sprite.Sprite, &self.divy, self.shader, vecs.newVec3(bnds.x + 100, bnds.y - 2, 0));
+        try batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 100, bnds.y, 0));
 
-        self.divx.data.size.x = 104;
-
-        try batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x - 2, bnds.y + 100, 0));
-
-        try batch.draw(sprite.Sprite, &self.icon, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        self.dive.data.size.x = bnds.w - 102;
 
         if (self.viewing == null) {
-            self.dive.data.size.x = bnds.w - 106;
-
-            var y: f32 = bnds.y + 2.0 - props.scroll.?.value;
+            var y: f32 = bnds.y + 4.0 - props.scroll.?.value;
 
             for (emailManager.emails.items) |*email| {
                 if (email.box != self.box) continue;
@@ -80,19 +72,12 @@ const EmailData = struct {
                 const text = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
 
-                if (self.selected != null and email == self.selected.?) {
-                    self.sel.data.size.x = bnds.w - 106;
-                    self.sel.data.size.y = font.size + 8 - 2;
-
-                    try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 106, y - 4, 0));
-                }
-
                 if (email.isComplete) {
                     try font.draw(.{
                         .batch = batch,
                         .shader = font_shader,
                         .text = "\x83",
-                        .pos = vecs.newVec2(bnds.x + 112, y - 2),
+                        .pos = vecs.newVec2(bnds.x + 108, y - 2),
                         .color = col.newColor(0, 1.0, 0, 1.0),
                     });
                 }
@@ -101,13 +86,20 @@ const EmailData = struct {
                     .batch = batch,
                     .shader = font_shader,
                     .text = text,
-                    .pos = vecs.newVec2(bnds.x + 112 + 20, y - 2),
+                    .pos = vecs.newVec2(bnds.x + 108 + 20, y - 2),
                     .color = color,
-                    .wrap = bnds.w - 112 - 20,
+                    .wrap = bnds.w - 108 - 20,
                     .maxlines = 1,
                 });
 
-                try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 106, y + font.size, 0));
+                if (self.selected != null and email == self.selected.?) {
+                    self.sel.data.size.x = bnds.w - 102;
+                    self.sel.data.size.y = font.size + 8 - 2;
+
+                    try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 102, y - 4, 0));
+                }
+
+                try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, y + font.size + 2, 0));
 
                 y += font.size + 8;
             }
@@ -116,11 +108,11 @@ const EmailData = struct {
 
             props.scroll.?.maxy = y - bnds.y - bnds.h + props.scroll.?.value - 6;
         } else {
-            self.divx.data.size.x = bnds.w - 100;
-            try batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 2 + font.size * 2, 0));
-            try batch.draw(sprite.Sprite, &self.backbg, self.shader, vecs.newVec3(bnds.x + 104, bnds.y - 2, 0));
+            self.backbg.data.size.x = bnds.w - 102;
+
+            try batch.draw(sprite.Sprite, &self.backbg, self.shader, vecs.newVec3(bnds.x + 102, bnds.y - 2, 0));
             try batch.draw(sprite.Sprite, &self.reply, self.shader, vecs.newVec3(bnds.x + 104, bnds.y, 0));
-            try batch.draw(sprite.Sprite, &self.back, self.shader, vecs.newVec3(bnds.x + 104, bnds.y + 26, 0));
+            try batch.draw(sprite.Sprite, &self.back, self.shader, vecs.newVec3(bnds.x + 144, bnds.y, 0));
 
             const email = self.viewing.?;
 
@@ -130,7 +122,7 @@ const EmailData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = from,
-                .pos = vecs.newVec2(bnds.x + 112 + 28, bnds.y),
+                .pos = vecs.newVec2(bnds.x + 108, bnds.y + 44),
             });
 
             const text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
@@ -139,20 +131,22 @@ const EmailData = struct {
                 .batch = batch,
                 .shader = font_shader,
                 .text = text,
-                .pos = vecs.newVec2(bnds.x + 112 + 28, bnds.y + font.size),
+                .pos = vecs.newVec2(bnds.x + 108, bnds.y + 44 + font.size),
             });
 
-            const y = bnds.y + 8 + font.size * 2 - props.scroll.?.value;
+            const y = bnds.y + 44 + font.size * 2 - props.scroll.?.value;
+
+            try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, bnds.y + 44 + font.size * 2, 0));
 
             const oldScissor = batch.scissor;
-            batch.scissor.?.y = bnds.y + 8 + font.size * 2;
-            batch.scissor.?.h = bnds.h - 8 - font.size * 2;
+            batch.scissor.?.y = bnds.y + 48 + font.size * 2;
+            batch.scissor.?.h = bnds.h - 48 - font.size * 2;
 
             try font.draw(.{
                 .batch = batch,
                 .shader = font_shader,
                 .text = email.contents,
-                .pos = vecs.newVec2(bnds.x + 112, y),
+                .pos = vecs.newVec2(bnds.x + 108, y + 2),
                 .wrap = bnds.w - 116.0 - 20,
             });
 
@@ -164,13 +158,8 @@ const EmailData = struct {
             }).y;
         }
 
-        self.sel.data.size.x = 100;
-        self.sel.data.size.y = font.size;
-
-        try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + 106 + font.size * @as(f32, @floatFromInt(self.box)), 0));
-
         for (emailManager.boxes, 0..) |box, idx| {
-            const pos = vecs.newVec2(bnds.x + 2, bnds.y + 106 + font.size * @as(f32, @floatFromInt(idx)));
+            const pos = vecs.newVec2(bnds.x + 2, bnds.y + font.size * @as(f32, @floatFromInt(idx)));
 
             if (idx == self.box) {
                 const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], emailManager.getPc(idx) });
@@ -191,6 +180,11 @@ const EmailData = struct {
                 });
             }
         }
+
+        self.sel.data.size.x = 100;
+        self.sel.data.size.y = font.size;
+
+        try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + font.size * @as(f32, @floatFromInt(self.box)), 0));
     }
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
@@ -269,15 +263,11 @@ const EmailData = struct {
                             var libIdx: usize = 7;
                             var startIdx: usize = 256 * @as(usize, @intCast(conts[4])) + @as(usize, @intCast(conts[5]));
 
-                            std.log.info("total: {}", .{conts[6]});
-
                             for (0..@as(usize, @intCast(conts[6]))) |_| {
                                 const nameLen: usize = @intCast(conts[libIdx]);
                                 libIdx += 1;
-                                std.log.info("found: {s}", .{conts[libIdx .. libIdx + nameLen]});
                                 if (libIdx + nameLen < conts.len and std.mem.eql(u8, fnname, conts[libIdx .. libIdx + nameLen])) {
                                     const fnsize = @as(usize, @intCast(conts[libIdx + 1 + nameLen])) * 256 + @as(usize, @intCast(conts[libIdx + 2 + nameLen]));
-                                    std.log.info("start: {}, {any}", .{ startIdx, conts[startIdx .. startIdx + fnsize] });
 
                                     var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
                                     defer vmInstance.deinit() catch {};
@@ -342,21 +332,19 @@ const EmailData = struct {
         switch (btn.?) {
             0 => {
                 if (self.viewing) |_| {
-                    const replyBnds = rect.newRect(106, 0, 26, 26);
-
+                    const replyBnds = rect.newRect(104, 0, 32, 32);
                     if (replyBnds.contains(mousepos)) {
                         try self.submitFile();
                     }
 
-                    const backBnds = rect.newRect(106, 26, 26, 10);
-
+                    const backBnds = rect.newRect(144, 0, 32, 32);
                     if (backBnds.contains(mousepos)) {
                         self.viewing = null;
                         return;
                     }
                 }
 
-                const contBnds = rect.newRect(106, 0, size.x - 106, size.y);
+                const contBnds = rect.newRect(102, 0, size.x - 102, size.y);
                 if (contBnds.contains(mousepos)) {
                     if (self.viewing != null) return;
 
@@ -368,7 +356,7 @@ const EmailData = struct {
                             if (!emailManager.getEmailVisible(email)) continue;
                         }
 
-                        const bnds = rect.newRect(106, @as(f32, @floatFromInt(y)), size.x - 106, self.rowsize);
+                        const bnds = rect.newRect(102, @as(f32, @floatFromInt(y)), size.x - 102, self.rowsize);
 
                         y += @intFromFloat(self.rowsize);
 
@@ -383,9 +371,9 @@ const EmailData = struct {
                         }
                     }
                 } else {
-                    const bnds = rect.newRect(0, 106, 106, size.y - 106);
+                    const bnds = rect.newRect(0, 0, 102, size.y);
                     if (bnds.contains(mousepos)) {
-                        const id = (mousepos.y - 106.0) / 24.0;
+                        const id = (mousepos.y) / 24.0;
 
                         self.box = @as(u8, @intCast(@as(i32, @intFromFloat(id + 0.5))));
 
@@ -413,44 +401,38 @@ const EmailData = struct {
     }
 };
 
-pub fn new(texture: []const u8, shader: *shd.Shader) !win.WindowContents {
+pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(EmailData);
 
     self.* = .{
-        .divy = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(0, 3.0 / 64.0, 3.0 / 32.0, 29.0 / 64.0),
-            vecs.newVec2(6, 100),
+        .divx = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(2, 100),
         )),
-        .divx = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(3.0 / 32.0, 0, 29.0 / 32.0, 3.0 / 64.0),
+        .dive = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(100, 2),
+        )),
+        .sel = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(100, 6),
         )),
-        .dive = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(17.0 / 32.0, 3.0 / 64.0, 15.0 / 32.0, 3.0 / 64.0),
-            vecs.newVec2(100, 6),
+        .reply = sprite.Sprite.new("icons", sprite.SpriteData.new(
+            rect.newRect(1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(32, 32),
         )),
-        .sel = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(17.0 / 32.0, 6.0 / 64.0, 15.0 / 32.0, 3.0 / 64.0),
-            vecs.newVec2(100, 6),
+        .back = sprite.Sprite.new("icons", sprite.SpriteData.new(
+            rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(32, 32),
         )),
-        .icon = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(16.0 / 32.0, 16.0 / 64.0, 16.0 / 32.0, 16.0 / 64.0),
-            vecs.newVec2(100, 100),
-        )),
-        .reply = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(3.0 / 32.0, 35.0 / 64.0, 13.0 / 32.0, 13.0 / 64.0),
-            vecs.newVec2(26, 26),
-        )),
-        .back = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(19.0 / 32.0, 38.0 / 64.0, 13.0 / 32.0, 9.0 / 64.0),
-            vecs.newVec2(26, 18),
-        )),
-        .backbg = sprite.Sprite.new(texture, sprite.SpriteData.new(
-            rect.newRect(3.0 / 32.0, 3.0 / 64.0, 14.0 / 32.0, 13.0 / 64.0),
-            vecs.newVec2(28, 42),
+        .backbg = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
+            vecs.newVec2(28, 40),
         )),
         .shader = shader,
     };
+
+    self.sel.data.color = col.newColorRGBA(255, 0, 0, 255);
 
     return win.WindowContents.init(self, "email", "\x82\x82\x82Mail", col.newColor(1, 1, 1, 1));
 }
