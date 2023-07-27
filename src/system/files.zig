@@ -4,16 +4,20 @@ const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const fake = @import("pseudo/all.zig");
 const vm = @import("vm.zig");
+const config = @import("config.zig");
 
 pub var root: *Folder = undefined;
 pub var home: *Folder = undefined;
 pub var exec: *Folder = undefined;
-
-const EXTR_PATH = "/home/john";
+pub var settingsManager: *config.SettingManager = undefined;
 
 var rootOut: ?[]const u8 = null;
 
 pub const ROOT_NAME = "/";
+
+pub fn getExtrPath() []const u8 {
+    return settingsManager.get("extr_path") orelse "";
+}
 
 pub const File = struct {
     parent: *Folder,
@@ -224,22 +228,6 @@ pub const Folder = struct {
                 try loadDisk(userdisk);
             }
 
-            if (std.fs.openDirAbsolute(EXTR_PATH, .{}) catch null) |extr_dir| {
-                const extr = try allocator.alloc.create(Folder);
-                extr.* = .{
-                    .ext = .{
-                        .dir = extr_dir,
-                    },
-                    .protected = true,
-                    .parent = root,
-                    .name = try allocator.alloc.dupe(u8, "/extr/"),
-                    .contents = std.ArrayList(*File).init(allocator.alloc),
-                    .subfolders = std.ArrayList(*Folder).init(allocator.alloc),
-                };
-
-                try root.subfolders.append(extr);
-            }
-
             root.fixFolders();
 
             if (root.getFolder("/prof") catch null) |folder| {
@@ -251,6 +239,27 @@ pub const Folder = struct {
             } else return error.NoExecFolder;
 
             return;
+        }
+    }
+
+    pub fn setupExtr() !void {
+        const path = getExtrPath();
+        if (!std.fs.path.isAbsolute(path)) return;
+
+        if (std.fs.openDirAbsolute(path, .{}) catch null) |extr_dir| {
+            const extr = try allocator.alloc.create(Folder);
+            extr.* = .{
+                .ext = .{
+                    .dir = extr_dir,
+                },
+                .protected = true,
+                .parent = root,
+                .name = try allocator.alloc.dupe(u8, "/extr/"),
+                .contents = std.ArrayList(*File).init(allocator.alloc),
+                .subfolders = std.ArrayList(*Folder).init(allocator.alloc),
+            };
+
+            try root.subfolders.append(extr);
         }
     }
 

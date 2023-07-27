@@ -32,5 +32,8 @@ pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.Sett
         }
     }
 
+    files.settingsManager = self.out;
+    try files.Folder.setupExtr();
+
     return true;
 }
