@@ -34,6 +34,7 @@ const EmailData = struct {
 
     shader: *shd.Shader,
 
+    scrollTop: bool = false,
     box: usize = 0,
     viewing: ?*mail.EmailManager.Email = null,
     selected: ?*mail.EmailManager.Email = null,
@@ -47,6 +48,11 @@ const EmailData = struct {
             };
 
             self.offset = &props.scroll.?.value;
+        }
+
+        if (self.scrollTop) {
+            props.scroll.?.value = 0;
+            self.scrollTop = false;
         }
 
         props.scroll.?.offsetStart = if (self.viewing == null) 0 else 38;
@@ -365,6 +371,7 @@ const EmailData = struct {
                                 try emailManager.viewEmail(email);
                                 self.selected = null;
                                 self.viewing = email;
+                                self.scrollTop = true;
                             } else {
                                 self.selected = email;
                             }
@@ -378,6 +385,7 @@ const EmailData = struct {
                         self.box = @as(u8, @intCast(@as(i32, @intFromFloat(id + 0.5))));
 
                         self.viewing = null;
+                        self.scrollTop = true;
 
                         if (self.box < 0) {
                             self.box = 0;
