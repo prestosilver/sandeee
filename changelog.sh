@@ -26,7 +26,11 @@ EOF
             ch="|*"
     
             echo $line | grep -q -i "add" && ch="|+"
+            echo $line | grep -q -i "impl" && ch="|+"
+
             echo $line | grep -q -i "rem" && ch="|-"
+            echo $line | grep -q -i "delete" && ch="|-"
+
             echo $line | grep -q -i "fix" && ch="|!"
             echo $line | grep -q -i "update" && ch="|!"
     
