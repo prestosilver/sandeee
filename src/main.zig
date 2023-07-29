@@ -305,7 +305,10 @@ pub fn notification(_: windowEvs.EventNotification) !void {
 }
 
 pub fn copy(event: systemEvs.EventCopy) !void {
-    c.glfwSetClipboardString(gfx.gContext.window, event.value.ptr);
+    const toCopy = try allocator.alloc.dupeZ(u8, event.value);
+    defer allocator.alloc.free(toCopy);
+
+    c.glfwSetClipboardString(gfx.gContext.window, toCopy);
 }
 
 pub fn paste(_: systemEvs.EventPaste) !void {
@@ -776,6 +779,7 @@ pub fn mainErr() anyerror!void {
     try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
     try events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
     try events.EventManager.instance.registerListener(systemEvs.EventPaste, paste);
+    try events.EventManager.instance.registerListener(systemEvs.EventCopy, copy);
 
     // setup game states
     gameStates.set(.Disks, states.GameState.init(&gsDisks));
