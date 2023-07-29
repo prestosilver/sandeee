@@ -86,7 +86,6 @@ pub const ExplorerData = struct {
             if (self.lastAction.?.time <= 0) {
                 self.lastAction = null;
             } else {
-                //FIXME: > 60 fps
                 self.lastAction.?.time -= 5;
             }
         }
