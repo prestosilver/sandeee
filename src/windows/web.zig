@@ -751,6 +751,7 @@ pub const WebData = struct {
 
         // links
         self.links.deinit();
+        self.hist.deinit();
 
         // self
         allocator.alloc.destroy(self);
