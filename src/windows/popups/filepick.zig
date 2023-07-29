@@ -28,11 +28,19 @@ pub const PopupFilePick = struct {
             .text = "Enter the files path:",
         });
 
+        const maxlen: usize = @intFromFloat((bnds.w - 120) / 10);
+
+        const text = if (self.path.len > maxlen)
+            try std.fmt.allocPrint(allocator.alloc, "\x90{s}", .{self.path[self.path.len - maxlen + 1 ..]})
+        else
+            try allocator.alloc.dupe(u8, self.path);
+        defer allocator.alloc.free(text);
+
         try font.draw(.{
             .batch = batch,
             .shader = shader,
-            .pos = bnds.location().add(.{ .x = 30, .y = font.size }),
-            .text = self.path,
+            .pos = bnds.location().add(.{ .x = 30, .y = font.size * 2 }),
+            .text = text,
             .wrap = bnds.w - 60,
             .maxlines = 1,
         });
@@ -40,8 +48,9 @@ pub const PopupFilePick = struct {
         try font.draw(.{
             .batch = batch,
             .shader = shader,
-            .pos = bnds.location().add(.{ .x = 0, .y = font.size * 2 }),
+            .pos = bnds.location().add(.{ .x = 0, .y = font.size * 4 }),
             .text = self.err,
+            .wrap = bnds.w - 60,
             .color = cols.newColor(1, 0, 0, 1),
         });
     }
