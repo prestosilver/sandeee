@@ -4,10 +4,10 @@ const allocator = @import("allocator.zig");
 pub const EventManager = struct {
     pub var instance: EventManager = undefined;
 
-    subs: std.StringHashMap([]align(1) Listener(*void)),
+    subs: std.StringHashMap([]Listener(*void)),
 
     pub fn init() void {
-        var subs = std.StringHashMap([]align(1) Listener(*void)).init(allocator.alloc);
+        var subs = std.StringHashMap([]Listener(*void)).init(allocator.alloc);
 
         instance = EventManager{
             .subs = subs,
@@ -17,7 +17,7 @@ pub const EventManager = struct {
     pub fn deinit() void {
         var iter = instance.subs.iterator();
         while (iter.next()) |item| {
-            allocator.alloc.free(item.value_ptr.*);
+            allocator.alloc.free(@as([]Listener(*void), item.value_ptr.*));
         }
 
         instance.subs.deinit();
@@ -25,12 +25,12 @@ pub const EventManager = struct {
 
     fn Listener(comptime T: type) type {
         return struct {
-            calls: *align(1) const fn (T) anyerror!void,
+            calls: *const fn (T) anyerror!void,
         };
     }
 
     pub fn registerListener(self: *EventManager, comptime T: type, callee: *const fn (T) anyerror!void) !void {
-        const call = @as(*align(1) const fn (*void) anyerror!void, @ptrCast(callee));
+        const call = @as(*const fn (*void) anyerror!void, @ptrCast(callee));
 
         if (self.subs.getPtr(@typeName(T))) |list| {
             for (list.*) |*item| {
@@ -60,7 +60,7 @@ pub const EventManager = struct {
         const name: []const u8 = @typeName(T);
 
         for (self.subs.get(name) orelse return) |sub| {
-            const call = @as(*align(1) const fn (T) anyerror!void, @ptrCast(sub.calls));
+            const call = @as(*const fn (T) anyerror!void, @ptrCast(sub.calls));
             try call(data);
         }
     }
