@@ -14,6 +14,7 @@ const sp = @import("../drawers/sprite2d.zig");
 const c = @import("../c.zig");
 const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
+const systemEvs = @import("../events/system.zig");
 const events = @import("../util/events.zig");
 
 const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else ", "asm " };
@@ -54,14 +55,14 @@ pub const EditorData = struct {
     menubar: sp.Sprite,
     numLeft: sp.Sprite,
     numRight: sp.Sprite,
+    sel: sp.Sprite,
     icons: [2]sp.Sprite,
     shader: *shd.Shader,
 
     clickPos: ?vecs.Vector2 = null,
     cursorx: usize = 0,
     cursory: usize = 0,
-    // TODO: implement
-    curosrLen: usize = 0,
+    cursorLen: i32 = 0,
     linex: usize = 0,
 
     modified: bool = false,
@@ -122,8 +123,6 @@ pub const EditorData = struct {
         }
 
         {
-            // TODO: spaces???
-
             const oldLine = line;
             defer allocator.alloc.free(oldLine);
 
@@ -163,6 +162,10 @@ pub const EditorData = struct {
             };
         }
 
+        const charSize = font.sizeText(.{
+            .text = "A",
+        }).x;
+
         if (self.file) |file| {
             const idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
             const title = try std.fmt.allocPrint(allocator.alloc, "\x82\x82\x82DT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
@@ -181,6 +184,8 @@ pub const EditorData = struct {
 
         // draw number sidebar
         try batch.draw(sp.Sprite, &self.numRight, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
+
+        var selRemaining: usize = @intCast(try std.math.absInt(self.cursorLen));
 
         // draw file text
         if (self.file != null) {
@@ -230,12 +235,45 @@ pub const EditorData = struct {
                         .text = line.getRender(self.cursorx),
                         .cursor = true,
                     }).x;
-                    try font.draw(.{
-                        .batch = batch,
-                        .shader = shader,
-                        .text = "|",
-                        .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
-                    });
+
+                    const width = @min(selRemaining, line.text.len - self.cursorx + 1);
+
+                    self.sel.data.size.x = charSize * @as(f32, @floatFromInt(width));
+                    self.sel.data.size.y = font.size;
+
+                    selRemaining -= width;
+
+                    try batch.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82 + posx, y, 0));
+
+                    if (self.cursorLen >= 0) {
+                        try font.draw(.{
+                            .batch = batch,
+                            .shader = shader,
+                            .text = "|",
+                            .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
+                        });
+                    }
+                } else if (selRemaining > 0 and self.cursory < lineidx) {
+                    const width = @min(selRemaining, line.text.len + 1);
+                    self.sel.data.size.x = charSize * @as(f32, @floatFromInt(width));
+                    self.sel.data.size.y = font.size;
+
+                    selRemaining -= width;
+
+                    try batch.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82, y, 0));
+                    if (self.cursorLen < 0 and selRemaining == 0) {
+                        const posx = font.sizeText(.{
+                            .text = line.getRender(width),
+                            .cursor = true,
+                        }).x;
+
+                        try font.draw(.{
+                            .batch = batch,
+                            .shader = shader,
+                            .text = "|",
+                            .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
+                        });
+                    }
                 }
 
                 y += font.size;
@@ -298,6 +336,34 @@ pub const EditorData = struct {
         return;
     }
 
+    pub fn getSel(self: *Self) ![]const u8 {
+        const absSel: usize = @intCast(try std.math.absInt(self.cursorLen));
+
+        var result = try std.ArrayList(u8).initCapacity(allocator.alloc, absSel);
+        defer result.deinit();
+
+        var idx: usize = 0;
+
+        for (self.buffer[self.cursory..]) |line| {
+            for (line.text) |ch| {
+                if (idx >= self.cursorx and idx < self.cursorx + absSel) {
+                    result.appendAssumeCapacity(ch);
+                }
+
+                idx += 1;
+            }
+
+            if (idx >= self.cursorx and idx < self.cursorx + absSel) {
+                result.appendAssumeCapacity('\n');
+            }
+
+            // new line
+            idx += 1;
+        }
+
+        return try allocator.alloc.dupe(u8, result.items);
+    }
+
     pub fn save(self: *Self) !void {
         if (self.file != null) {
             var buff = std.ArrayList(u8).init(allocator.alloc);
@@ -323,6 +389,7 @@ pub const EditorData = struct {
             const fileConts = try self.file.?.read(null);
             const lines = std.mem.count(u8, fileConts, "\n") + 1;
 
+            self.clearBuffer();
             self.buffer = try allocator.alloc.realloc(self.buffer, lines);
 
             var iter = std.mem.split(u8, fileConts, "\n");
@@ -348,12 +415,18 @@ pub const EditorData = struct {
         }
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn clearBuffer(self: *Self) void {
         for (self.buffer) |*line| {
-            line.clearRender();
+            if (line.render) |render| {
+                allocator.alloc.free(render);
+            }
+
             allocator.alloc.free(line.text);
         }
+    }
 
+    pub fn deinit(self: *Self) !void {
+        self.clearBuffer();
         allocator.alloc.free(self.buffer);
         allocator.alloc.destroy(self);
     }
@@ -378,7 +451,21 @@ pub const EditorData = struct {
         if (self.file == null) return;
         if (!down) return;
 
+        if (mods != c.GLFW_MOD_SHIFT) self.cursorLen = 0;
+
         switch (keycode) {
+            c.GLFW_KEY_C => {
+                if (mods == (c.GLFW_MOD_CONTROL)) {
+                    const sel = try self.getSel();
+                    defer allocator.alloc.free(sel);
+
+                    try events.EventManager.instance.sendEvent(systemEvs.EventCopy{
+                        .value = sel,
+                    });
+
+                    return;
+                }
+            },
             c.GLFW_KEY_S => {
                 if (mods == (c.GLFW_MOD_CONTROL)) {
                     try self.save();
@@ -391,6 +478,7 @@ pub const EditorData = struct {
                 try self.char(' ', mods);
             },
             c.GLFW_KEY_ENTER => {
+                self.clearBuffer();
                 self.buffer = try allocator.alloc.realloc(self.buffer, self.buffer.len + 1);
                 std.mem.copyBackwards(Row, self.buffer[self.cursory + 1 ..], self.buffer[self.cursory .. self.buffer.len - 1]);
 
@@ -450,12 +538,24 @@ pub const EditorData = struct {
                 }
             },
             c.GLFW_KEY_LEFT => {
-                if (self.cursorx > 0)
+                if (self.cursorx > 0) {
                     self.cursorx -= 1;
+
+                    if (mods == c.GLFW_MOD_SHIFT) {
+                        self.cursorLen += 1;
+                    }
+                }
             },
             c.GLFW_KEY_RIGHT => {
-                if (self.cursorx < self.buffer[self.cursory].text.len)
+                if (self.cursorx < self.buffer[self.cursory].text.len) {
                     self.cursorx += 1;
+
+                    if (mods == c.GLFW_MOD_SHIFT) {
+                        self.cursorx -= 1;
+
+                        self.cursorLen -= 1;
+                    }
+                }
             },
             c.GLFW_KEY_UP => {
                 if (self.cursory > 0)
@@ -499,9 +599,15 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
                 vecs.newVec2(32, 32),
             )),
         },
+        .sel = sp.Sprite.new("ui", sp.SpriteData.new(
+            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(100, 6),
+        )),
         .shader = shader,
         .buffer = try allocator.alloc.alloc(EditorData.Row, 0),
     };
+
+    self.sel.data.color = col.newColorRGBA(255, 0, 0, 255);
 
     return win.WindowContents.init(self, "editor", "\x82\x82\x82DT", col.newColor(1, 1, 1, 1));
 }
