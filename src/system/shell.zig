@@ -77,12 +77,18 @@ pub const Shell = struct {
 
             const rootlen = folder.name.len;
 
-            for (folder.subfolders.items) |item| {
+            const subfolders = try folder.getFolders();
+            defer allocator.alloc.free(subfolders);
+
+            for (subfolders) |item| {
                 try resultData.appendSlice(item.name[rootlen..]);
                 try resultData.append(' ');
             }
 
-            for (folder.contents.items) |item| {
+            const contents = try folder.getFiles();
+            defer allocator.alloc.free(contents);
+
+            for (contents) |item| {
                 try resultData.appendSlice(item.name[rootlen..]);
                 try resultData.append(' ');
             }
@@ -91,17 +97,24 @@ pub const Shell = struct {
                 .data = try allocator.alloc.dupe(u8, resultData.items),
             };
         } else {
+            const folder = self.root;
             var resultData = std.ArrayList(u8).init(allocator.alloc);
             defer resultData.deinit();
 
-            const rootlen = self.root.name.len;
+            const rootlen = folder.name.len;
 
-            for (self.root.subfolders.items) |item| {
+            const subfolders = try folder.getFolders();
+            defer allocator.alloc.free(subfolders);
+
+            for (subfolders) |item| {
                 try resultData.appendSlice(item.name[rootlen..]);
                 try resultData.append(' ');
             }
 
-            for (self.root.contents.items) |item| {
+            const contents = try folder.getFiles();
+            defer allocator.alloc.free(contents);
+
+            for (contents) |item| {
                 try resultData.appendSlice(item.name[rootlen..]);
                 try resultData.append(' ');
             }
