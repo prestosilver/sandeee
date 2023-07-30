@@ -14,6 +14,7 @@ const config = @import("../system/config.zig");
 const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
+const files = @import("../system/files.zig");
 const c = @import("../c.zig");
 
 pub var settingManager: *config.SettingManager = undefined;
@@ -56,7 +57,7 @@ const SettingsData = struct {
     };
 
     const Setting = struct {
-        const Kind = enum(u8) { String, Dropdown };
+        const Kind = enum(u8) { String, Dropdown, File, Folder };
 
         kind: Kind,
         kinddata: []const u8 = "",
@@ -79,12 +80,12 @@ const SettingsData = struct {
                 .key = "wallpaper_mode",
             },
             Setting{
-                .kind = .String,
-                .setting = "Wallpaper Path",
+                .kind = .File,
+                .setting = "Wallpaper",
                 .key = "wallpaper_path",
             },
             Setting{
-                .kind = .String,
+                .kind = .File,
                 .setting = "System font",
                 .key = "system_font",
             },
@@ -129,12 +130,12 @@ const SettingsData = struct {
                 .key = "show_welcome",
             },
             Setting{
-                .kind = .String,
+                .kind = .File,
                 .setting = "Startup Script",
                 .key = "startup_file",
             },
             Setting{
-                .kind = .String,
+                .kind = .Folder,
                 .setting = "Extr path",
                 .key = "extr_path",
             },
@@ -169,30 +170,84 @@ const SettingsData = struct {
                     if (rect.newRect(pos.x, pos.y, bnds.w, font.size).contains(action.pos)) {
                         switch (action.kind) {
                             .SingleLeft => {
-                                self.value = settingManager.get(item.key) orelse "";
-                                const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
-                                adds.* = .{
-                                    .prompt = item.setting,
-                                    .text = try allocator.alloc.dupe(u8, self.value),
-                                    .data = self,
-                                    .submit = &submit,
-                                };
+                                switch (item.kind) {
+                                    .String, .Dropdown => {
+                                        self.value = settingManager.get(item.key) orelse "";
+                                        const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+                                        adds.* = .{
+                                            .prompt = item.setting,
+                                            .text = try allocator.alloc.dupe(u8, self.value),
+                                            .data = self,
+                                            .submit = &submit,
+                                        };
 
-                                self.value = item.key;
+                                        self.value = item.key;
 
-                                try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
-                                    .popup = .{
-                                        .texture = "win",
-                                        .data = .{
-                                            .title = "Text Picker",
-                                            .source = rect.newRect(0, 0, 1, 1),
-                                            .size = vecs.newVec2(350, 125),
-                                            .parentPos = undefined,
-                                            .contents = popups.PopupData.PopupContents.init(adds),
-                                        },
+                                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                                            .popup = .{
+                                                .texture = "win",
+                                                .data = .{
+                                                    .title = "Text Picker",
+                                                    .source = rect.newRect(0, 0, 1, 1),
+                                                    .size = vecs.newVec2(350, 125),
+                                                    .parentPos = undefined,
+                                                    .contents = popups.PopupData.PopupContents.init(adds),
+                                                },
+                                            },
+                                        });
+                                        self.lastAction = null;
                                     },
-                                });
-                                self.lastAction = null;
+                                    .File => {
+                                        self.value = settingManager.get(item.key) orelse "";
+                                        const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+                                        adds.* = .{
+                                            .path = try allocator.alloc.dupe(u8, self.value),
+                                            .data = self,
+                                            .submit = &submitFile,
+                                        };
+
+                                        self.value = item.key;
+
+                                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                                            .popup = .{
+                                                .texture = "win",
+                                                .data = .{
+                                                    .title = "Text Picker",
+                                                    .source = rect.newRect(0, 0, 1, 1),
+                                                    .size = vecs.newVec2(350, 125),
+                                                    .parentPos = undefined,
+                                                    .contents = popups.PopupData.PopupContents.init(adds),
+                                                },
+                                            },
+                                        });
+                                        self.lastAction = null;
+                                    },
+                                    .Folder => {
+                                        self.value = settingManager.get(item.key) orelse "";
+                                        const adds = try allocator.alloc.create(popups.all.folderpick.PopupFolderPick);
+                                        adds.* = .{
+                                            .path = try allocator.alloc.dupe(u8, self.value),
+                                            .data = self,
+                                            .submit = &submitFolder,
+                                        };
+
+                                        self.value = item.key;
+
+                                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                                            .popup = .{
+                                                .texture = "win",
+                                                .data = .{
+                                                    .title = "Text Picker",
+                                                    .source = rect.newRect(0, 0, 1, 1),
+                                                    .size = vecs.newVec2(350, 125),
+                                                    .parentPos = undefined,
+                                                    .contents = popups.PopupData.PopupContents.init(adds),
+                                                },
+                                            },
+                                        });
+                                        self.lastAction = null;
+                                    },
+                                }
                             },
                             .DoubleLeft => {},
                         }
@@ -268,6 +323,18 @@ const SettingsData = struct {
     pub fn submit(val: []u8, data: *anyopaque) !void {
         const self: *Self = @ptrCast(@alignCast(data));
         try settingManager.set(self.value, val);
+        try settingManager.save();
+    }
+
+    pub fn submitFile(val: ?*files.File, data: *anyopaque) !void {
+        const self: *Self = @ptrCast(@alignCast(data));
+        try settingManager.set(self.value, val.?.name);
+        try settingManager.save();
+    }
+
+    pub fn submitFolder(val: ?*files.Folder, data: *anyopaque) !void {
+        const self: *Self = @ptrCast(@alignCast(data));
+        try settingManager.set(self.value, val.?.name);
         try settingManager.save();
     }
 
