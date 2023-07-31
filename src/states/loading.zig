@@ -136,9 +136,9 @@ pub const GSLoading = struct {
         wins.settings.settingManager = self.settingManager;
         wins.email.emailManager = self.emailManager;
         wins.email.notif = .{
-            .texture = "email",
+            .texture = "icons",
             .data = .{
-                .source = rect.newRect(0.5, 0.75, 0.5, 0.25),
+                .source = rect.newRect(0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
                 .size = undefined,
             },
         };
