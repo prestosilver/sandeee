@@ -77,11 +77,8 @@ pub const VM = struct {
         var tmpArgs = alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1) catch return error.Memory;
 
         var idx: usize = 0;
-        while (splitIter.next()) |item| {
-            tmpArgs[idx] = alloc.alloc(u8, item.len) catch return error.Memory;
-            @memcpy(tmpArgs[idx], item);
-            idx += 1;
-        }
+        while (splitIter.next()) |item| : (idx += 1)
+            tmpArgs[idx] = alloc.dupe(u8, item) catch return error.Memory;
 
         return VM{
             .stack = undefined,

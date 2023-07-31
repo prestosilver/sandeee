@@ -16,7 +16,7 @@ const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "array
 const eonTestsFiles = [_][]const u8{ "input", "color", "bugs", "tabletest", "heaptest", "stringtest", "paren" };
 const eonTestSrcs = [_][]const u8{ "eon", "pix", "fib" };
 
-// demo overrideS
+// demo overrides
 const mailDirsDemo = [_][]const u8{"inbox"};
 
 // all builds

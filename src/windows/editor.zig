@@ -334,7 +334,8 @@ pub const EditorData = struct {
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
-        self.clickDown = btn != null;
+        self.clickDown = self.clickDown and btn != null;
+
         if (btn == null) return;
 
         switch (btn.?) {
@@ -373,6 +374,7 @@ pub const EditorData = struct {
                             .x = 82,
                         });
                         self.clickDone = self.clickPos;
+                        self.clickDown = true;
                     }
                 }
             },
@@ -435,7 +437,7 @@ pub const EditorData = struct {
             const fileConts = try self.file.?.read(null);
             const lines = std.mem.count(u8, fileConts, "\n") + 1;
 
-            self.clearBuffer();
+            try self.clearBuffer();
             self.buffer = try allocator.alloc.realloc(self.buffer, lines);
 
             var iter = std.mem.split(u8, fileConts, "\n");
@@ -468,7 +470,7 @@ pub const EditorData = struct {
         }
     }
 
-    pub fn clearBuffer(self: *Self) void {
+    pub fn clearBuffer(self: *Self) !void {
         for (self.buffer) |*line| {
             if (line.render) |render| {
                 allocator.alloc.free(render);
@@ -476,10 +478,12 @@ pub const EditorData = struct {
 
             allocator.alloc.free(line.text);
         }
+
+        self.buffer = try allocator.alloc.realloc(self.buffer, 0);
     }
 
     pub fn deinit(self: *Self) !void {
-        self.clearBuffer();
+        try self.clearBuffer();
         allocator.alloc.free(self.buffer);
         allocator.alloc.destroy(self);
     }
@@ -531,7 +535,6 @@ pub const EditorData = struct {
                 try self.char(' ', mods);
             },
             c.GLFW_KEY_ENTER => {
-                self.clearBuffer();
                 self.buffer = try allocator.alloc.realloc(self.buffer, self.buffer.len + 1);
                 std.mem.copyBackwards(Row, self.buffer[self.cursory + 1 ..], self.buffer[self.cursory .. self.buffer.len - 1]);
 
