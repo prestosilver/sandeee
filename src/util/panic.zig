@@ -15,8 +15,6 @@ pub fn log() []const u8 {
         return NO_INFO;
     }
     var it = std.debug.StackIterator.init(null, null);
-    _ = it.next(); // idc abt this & main
-    _ = it.next();
     while (it.next()) |return_address| {
         address = if (return_address == 0) return_address else return_address - 1;
         const module = debug_info.getModuleForAddress(address - 1) catch return result;

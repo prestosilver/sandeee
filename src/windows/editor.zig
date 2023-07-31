@@ -496,7 +496,7 @@ pub const EditorData = struct {
         line.text = try allocator.alloc.realloc(line.text, line.text.len + 1);
 
         std.mem.copyBackwards(u8, line.text[self.cursorx + 1 ..], line.text[self.cursorx .. line.text.len - 1]);
-        line.text[self.cursorx] = @intCast(code);
+        line.text[self.cursorx] = @intCast(@rem(code, 255));
 
         line.clearRender();
 
@@ -589,6 +589,9 @@ pub const EditorData = struct {
                     self.buffer[self.cursory - 1].clearRender();
 
                     self.buffer = try allocator.alloc.realloc(self.buffer, self.buffer.len - 1);
+
+                    self.modified = true;
+
                     self.cursorx = oldLine.len;
                     self.cursory -= 1;
                 }
