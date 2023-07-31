@@ -17,3 +17,4 @@ pub const EventTelemUpdate = struct {};
 
 pub const EventCopy = struct { value: []const u8 };
 pub const EventPaste = struct {};
+pub const EventSys = struct { sysId: u64 };

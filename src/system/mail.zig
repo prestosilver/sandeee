@@ -15,6 +15,7 @@ pub const EmailManager = struct {
             Submit,
             Run,
             Logins,
+            SysCall,
         };
 
         from: []const u8,
@@ -74,6 +75,9 @@ pub const EmailManager = struct {
                     result.conditionData = try allocator.alloc.dupe(u8, line[8..]);
                 } else if (std.mem.startsWith(u8, line, "run: ")) {
                     result.condition = .Run;
+                    result.conditionData = try allocator.alloc.dupe(u8, line[5..]);
+                } else if (std.mem.startsWith(u8, line, "sys: ")) {
+                    result.condition = .SysCall;
                     result.conditionData = try allocator.alloc.dupe(u8, line[5..]);
                 } else if (std.mem.startsWith(u8, line, "logins: ")) {
                     result.condition = .Logins;

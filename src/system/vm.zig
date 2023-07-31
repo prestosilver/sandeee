@@ -480,6 +480,9 @@ pub const VM = struct {
                 defer syslock.unlock();
 
                 if (op.value != null) {
+                    try events.EventManager.instance.sendEvent(systemEvs.EventSys{
+                        .sysId = op.value.?,
+                    });
                     switch (op.value.?) {
                         // print
                         0 => {

@@ -386,6 +386,19 @@ pub fn runCmdEvent(event: systemEvs.EventRunCmd) !void {
     }
 }
 
+pub fn syscall(event: systemEvs.EventSys) !void {
+    for (emailManager.emails.items) |*email| {
+        if (!emailManager.getEmailVisible(email)) continue;
+        if (email.condition != .SysCall) continue;
+
+        const num = std.fmt.parseInt(u64, email.conditionData, 0) catch 0;
+
+        if (num == event.sysId) {
+            try emailManager.setEmailComplete(email);
+        }
+    }
+}
+
 pub fn drawLoading(self: *loadingState.GSLoading) void {
     while (!self.done.load(.SeqCst) and !paniced) {
         {
@@ -780,6 +793,7 @@ pub fn mainErr() anyerror!void {
     try events.EventManager.instance.registerListener(systemEvs.EventRunCmd, runCmdEvent);
     try events.EventManager.instance.registerListener(systemEvs.EventPaste, paste);
     try events.EventManager.instance.registerListener(systemEvs.EventCopy, copy);
+    try events.EventManager.instance.registerListener(systemEvs.EventSys, syscall);
 
     // setup game states
     gameStates.set(.Disks, states.GameState.init(&gsDisks));
