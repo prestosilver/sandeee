@@ -108,7 +108,7 @@ pub const GSDisks = struct {
                     const sel = self.disks.items[self.sel];
 
                     self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
-                    std.mem.copy(u8, self.disk.*.?, sel[2..]);
+                    @memcpy(self.disk.*.?, sel[2..]);
                 }
 
                 if (self.sel == self.disks.items.len - 1) {

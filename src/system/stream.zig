@@ -29,8 +29,8 @@ pub const FileStream = struct {
         result.updated = false;
         result.vmInstance = vmInstance;
 
-        std.mem.copy(u8, result.contents, cont);
-        std.mem.copy(u8, result.path, file.name);
+        @memcpy(result.contents, cont);
+        @memcpy(result.path, file.name);
 
         result.offset = 0;
 
@@ -42,15 +42,12 @@ pub const FileStream = struct {
     }
 
     pub fn Read(self: *FileStream, len: u32) ![]const u8 {
-        var target = @as(usize, @intCast(len));
-        if (target + self.offset > self.contents.len) {
-            target = self.contents.len - self.offset;
-        }
+        const target = @min(self.contents.len - self.offset, len);
 
         const result = try allocator.alloc.alloc(u8, target);
         const input = self.contents[self.offset .. self.offset + target];
 
-        std.mem.copy(u8, result, input);
+        @memcpy(result, input);
 
         self.offset += @as(u32, @intCast(target));
 
@@ -62,7 +59,7 @@ pub const FileStream = struct {
 
         self.contents = try allocator.alloc.realloc(self.contents, targetsize);
 
-        std.mem.copy(u8, self.contents[self.offset .. self.offset + data.len], data);
+        @memcpy(self.contents[self.offset .. self.offset + data.len], data);
 
         self.offset += @as(u32, @intCast(data.len));
         self.updated = true;

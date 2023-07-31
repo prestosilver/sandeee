@@ -79,7 +79,7 @@ pub const VM = struct {
         var idx: usize = 0;
         while (splitIter.next()) |item| {
             tmpArgs[idx] = alloc.alloc(u8, item.len) catch return error.Memory;
-            std.mem.copy(u8, tmpArgs[idx], item);
+            @memcpy(tmpArgs[idx], item);
             idx += 1;
         }
 
@@ -754,7 +754,7 @@ pub const VM = struct {
                             if (start != .value) return error.ValueMissing;
                             if (data != .string) return error.StringMissing;
 
-                            std.mem.copy(u8, self.heap[@as(usize, @intCast(start.value.*))..@as(usize, @intCast(start.value.* + data.string.*.len))], data.string.*);
+                            @memcpy(self.heap[@as(usize, @intCast(start.value.*))..@as(usize, @intCast(start.value.* + data.string.*.len))], data.string.*);
 
                             return;
                         },

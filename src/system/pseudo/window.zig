@@ -68,8 +68,8 @@ pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
                 if (self.idx == aid[0]) {
                     const x = std.mem.asBytes(&@as(u16, @intFromFloat(item.data.pos.w)));
                     const y = std.mem.asBytes(&@as(u16, @intFromFloat(item.data.pos.h)));
-                    std.mem.copy(u8, result[0..2], x);
-                    std.mem.copy(u8, result[2..4], y);
+                    @memcpy(result[0..2], x);
+                    @memcpy(result[2..4], y);
                     return result;
                 }
             }

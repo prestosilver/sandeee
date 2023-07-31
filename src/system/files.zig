@@ -37,7 +37,7 @@ pub const File = struct {
             return self.pseudoWrite.?(contents, vmInstance);
         } else {
             self.contents = try allocator.alloc.realloc(self.contents, contents.len);
-            std.mem.copy(u8, self.contents, contents);
+            @memcpy(self.contents, contents);
         }
     }
 

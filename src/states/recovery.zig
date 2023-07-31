@@ -63,7 +63,7 @@ pub const GSRecovery = struct {
         while (try iter.next()) |item| {
             const entry = try allocator.alloc.alloc(u8, item.name.len);
 
-            std.mem.copy(u8, entry, item.name);
+            @memcpy(entry, item.name);
 
             try self.disks.append(entry);
         }

@@ -101,13 +101,13 @@ pub const CMDData = struct {
             const result = try self.shell.updateVM();
             if (result != null) {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.len);
-                std.mem.copy(u8, self.bt[start..], result.?.data);
+                @memcpy(self.bt[start..], result.?.data);
                 allocator.alloc.free(result.?.data);
                 try self.processBT();
                 idx += 1;
             } else {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.shell.vm.?.out.items.len);
-                std.mem.copy(u8, self.bt[start..], self.shell.vm.?.out.items);
+                @memcpy(self.bt[start..], self.shell.vm.?.out.items);
                 self.shell.vm.?.out.clearAndFree();
                 try self.processBT();
             }
@@ -198,18 +198,18 @@ pub const CMDData = struct {
                 var start = self.bt.len;
 
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + prompt.len);
-                std.mem.copy(u8, self.bt[start .. start + prompt.len], prompt);
+                @memcpy(self.bt[start .. start + prompt.len], prompt);
 
                 const al = self.shell.run(self.inputBuffer[0..self.inputLen]) catch |err| {
                     const msg = @errorName(err);
 
                     start = self.bt.len;
                     self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + 7);
-                    std.mem.copy(u8, self.bt[start..], "Error: ");
+                    @memcpy(self.bt[start..], "Error: ");
 
                     start = self.bt.len;
                     self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + msg.len);
-                    std.mem.copy(u8, self.bt[start..], msg);
+                    @memcpy(self.bt[start..], msg);
 
                     self.inputLen = 0;
                     self.inputIdx = 0;
@@ -229,7 +229,7 @@ pub const CMDData = struct {
                     start = self.bt.len;
 
                     self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + al.data.len);
-                    std.mem.copy(u8, self.bt[start..], al.data);
+                    @memcpy(self.bt[start..], al.data);
                 }
 
                 self.inputLen = 0;

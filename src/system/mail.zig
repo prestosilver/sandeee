@@ -60,11 +60,11 @@ pub const EmailManager = struct {
                     result.box = try std.fmt.parseInt(u8, line[5..], 0);
                 } else if (std.mem.startsWith(u8, line, "from: ")) {
                     const sub = try allocator.alloc.alloc(u8, line.len - 6);
-                    std.mem.copy(u8, sub, line[6..]);
+                    @memcpy(sub, line[6..]);
                     result.from = sub;
                 } else if (std.mem.startsWith(u8, line, "sub: ")) {
                     const sub = try allocator.alloc.alloc(u8, line.len - 5);
-                    std.mem.copy(u8, sub, line[5..]);
+                    @memcpy(sub, line[5..]);
                     result.subject = sub;
                 } else if (std.mem.startsWith(u8, line, "deps: ")) {
                     result.deps = try allocator.alloc.realloc(result.deps, result.deps.len + 1);
@@ -203,13 +203,13 @@ pub const EmailManager = struct {
             const sidx = start.len;
             start = try allocator.alloc.realloc(start, start.len + boxname.len + 1);
             start[sidx] = @as(u8, @intCast(boxname.len));
-            std.mem.copy(u8, start[sidx + 1 ..], boxname);
+            @memcpy(start[sidx + 1 ..], boxname);
         }
 
         const conts = try allocator.alloc.alloc(u8, start.len + 256 * self.boxes.len);
         @memset(conts, 0);
 
-        std.mem.copy(u8, conts[0..start.len], start);
+        @memcpy(conts[0..start.len], start);
 
         for (self.emails.items) |*email| {
             if (email.viewed) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 0;
@@ -266,7 +266,7 @@ pub const EmailManager = struct {
         var result = try allocator.alloc.alloc(u8, 4);
 
         const len = std.mem.toBytes(self.emails.items.len)[0..4];
-        std.mem.copy(u8, result, len);
+        @memcpy(result, len);
         for (self.emails.items) |email| {
             const start = result.len;
 
@@ -301,7 +301,7 @@ pub const EmailManager = struct {
 
             result = try allocator.alloc.realloc(result, start + appends.len);
 
-            std.mem.copy(u8, result[start..], appends);
+            @memcpy(result[start..], appends);
         }
         return result;
     }
