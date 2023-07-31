@@ -287,6 +287,8 @@ pub fn build(b: *std.build.Builder) !void {
         b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
+    } else if (exe.target.os_tag == null or exe.target.os_tag.? == .linux) {
+        b.installFile("INSTALL.md", "bin/INSTALL.md");
     }
 
     const www_step = b.step("www", "Build the website");
