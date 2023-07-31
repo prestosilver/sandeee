@@ -321,7 +321,10 @@ pub fn paste(_: systemEvs.EventPaste) !void {
     var iter = view.iterator();
 
     while (iter.nextCodepoint()) |ch| {
-        try gameStates.getPtr(currentState).keychar(ch, 0);
+        if (ch == '\n') {
+            try gameStates.getPtr(currentState).keypress(c.GLFW_KEY_ENTER, 0, true);
+            try gameStates.getPtr(currentState).keypress(c.GLFW_KEY_ENTER, 0, false);
+        } else try gameStates.getPtr(currentState).keychar(ch, 0);
     }
 }
 
