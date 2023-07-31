@@ -316,11 +316,7 @@ pub fn paste(_: systemEvs.EventPaste) !void {
     if (tmp == null) return;
 
     const len = std.mem.len(tmp);
-    const view = try std.unicode.Utf8View.init(tmp[0..len]);
-
-    var iter = view.iterator();
-
-    while (iter.nextCodepoint()) |ch| {
+    for (tmp[0..len]) |ch| {
         if (ch == '\n') {
             try gameStates.getPtr(currentState).keypress(c.GLFW_KEY_ENTER, 0, true);
             try gameStates.getPtr(currentState).keypress(c.GLFW_KEY_ENTER, 0, false);
