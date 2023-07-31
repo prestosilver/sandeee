@@ -60,6 +60,9 @@ pub const EditorData = struct {
     shader: *shd.Shader,
 
     clickPos: ?vecs.Vector2 = null,
+    clickDone: ?vecs.Vector2 = null,
+    clickDown: bool = false,
+
     cursorx: usize = 0,
     cursory: usize = 0,
     cursorLen: i32 = 0,
@@ -189,10 +192,51 @@ pub const EditorData = struct {
 
         // draw file text
         if (self.file != null) {
-            if (self.clickPos) |clickPos| {
-                self.cursory = @as(usize, @intFromFloat((clickPos.y + props.scroll.?.value) / font.size));
-                self.cursorx = @as(usize, @intFromFloat(clickPos.x / font.chars[0].ax));
-                self.clickPos = null;
+            if (self.clickDone) |clickDone| blk: {
+                defer self.clickDone = null;
+
+                if (clickDone.x > bnds.w) break :blk;
+                if (clickDone.y - props.scroll.?.value > bnds.h) break :blk;
+                if (clickDone.x < 0) break :blk;
+                if (clickDone.y - props.scroll.?.value < 0) break :blk;
+
+                const clickPos = self.clickPos.?;
+
+                const start = if (clickPos.y < clickDone.y - props.scroll.?.value) clickPos else clickDone.sub(.{ .x = 0, .y = props.scroll.?.value });
+                const end = if (clickPos.y < clickDone.y - props.scroll.?.value) clickDone.sub(.{ .x = 0, .y = props.scroll.?.value }) else clickPos;
+
+                self.cursory = @as(usize, @intFromFloat((start.y + props.scroll.?.value) / font.size));
+                self.cursorx = @as(usize, @intFromFloat(start.x / font.chars[0].ax));
+
+                if (self.cursory >= self.buffer.len) {
+                    self.cursory = self.buffer.len - 1;
+                }
+
+                if (self.cursorx >= self.buffer[self.cursory].text.len) {
+                    self.cursorx = self.buffer[self.cursory].text.len;
+                }
+
+                const endy = @min(@as(usize, @intFromFloat((end.y + props.scroll.?.value) / font.size)), self.buffer.len - 1);
+                const endx = @as(usize, @intFromFloat(end.x / font.chars[0].ax));
+
+                self.cursorLen = 0;
+                if (self.cursorx != endx or self.cursory != endy) {
+                    for (self.buffer[self.cursory .. endy + 1], self.cursory..endy + 1) |line, y| {
+                        for (0..line.text.len) |x| {
+                            if (!((y == self.cursory and x < self.cursorx) or
+                                y == endy and x > endx))
+                            {
+                                self.cursorLen += 1;
+                            }
+                        }
+                        if (y > self.cursory and y < endy)
+                            self.cursorLen += 1;
+                    }
+                }
+
+                if (clickPos.y < clickDone.y - props.scroll.?.value) {
+                    self.cursorLen *= -1;
+                }
             }
 
             if (self.cursory >= self.buffer.len) {
@@ -290,6 +334,7 @@ pub const EditorData = struct {
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
+        self.clickDown = btn != null;
         if (btn == null) return;
 
         switch (btn.?) {
@@ -327,6 +372,7 @@ pub const EditorData = struct {
                             .y = 40,
                             .x = 82,
                         });
+                        self.clickDone = self.clickPos;
                     }
                 }
             },
@@ -405,7 +451,14 @@ pub const EditorData = struct {
         }
     }
 
-    pub fn move(_: *Self, _: f32, _: f32) !void {}
+    pub fn move(self: *Self, x: f32, y: f32) !void {
+        if (!self.clickDown) return;
+
+        self.clickDone = .{
+            .x = x - 82,
+            .y = y - 40,
+        };
+    }
 
     pub fn focus(self: *Self) !void {
         if (!self.modified and self.file != null) {
@@ -451,7 +504,7 @@ pub const EditorData = struct {
         if (self.file == null) return;
         if (!down) return;
 
-        if (mods != c.GLFW_MOD_SHIFT) self.cursorLen = 0;
+        //if (mods == 0) self.cursorLen = 0;
 
         switch (keycode) {
             c.GLFW_KEY_C => {
