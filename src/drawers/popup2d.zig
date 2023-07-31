@@ -9,6 +9,8 @@ const shd = @import("../util/shader.zig");
 
 pub const all = @import("../windows/popups/all.zig");
 
+pub var popupShader: *shd.Shader = undefined;
+
 const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;
 

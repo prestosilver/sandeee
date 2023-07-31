@@ -181,6 +181,8 @@ pub const GSWindowed = struct {
     pub fn setup(self: *Self) !void {
         self.init = true;
 
+        popups.popupShader = self.shader;
+
         self.popup = null;
         self.windows = std.ArrayList(win.Window).init(allocator.alloc);
         self.notifs = std.ArrayList(notifications.Notification).init(allocator.alloc);

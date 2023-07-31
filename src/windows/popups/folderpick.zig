@@ -2,6 +2,7 @@ const std = @import("std");
 
 const allocator = @import("../../util/allocator.zig");
 const sb = @import("../../util/spritebatch.zig");
+const spr = @import("../../drawers/sprite2d.zig");
 const shd = @import("../../util/shader.zig");
 const rect = @import("../../math/rects.zig");
 const cols = @import("../../math/colors.zig");
@@ -10,6 +11,7 @@ const vecs = @import("../../math/vecs.zig");
 const fnt = @import("../../util/font.zig");
 const events = @import("../../util/events.zig");
 const windowEvs = @import("../../events/window.zig");
+const popups = @import("../../drawers/popup2d.zig");
 const c = @import("../../c.zig");
 
 pub const PopupFolderPick = struct {
@@ -25,16 +27,35 @@ pub const PopupFolderPick = struct {
             .batch = batch,
             .shader = shader,
             .pos = bnds.location(),
-            .text = "Enter the files path:",
+            .text = "Enter the folders path:",
         });
 
-        const maxlen: usize = @intFromFloat((bnds.w - 120) / 10);
+        const maxlen: usize = @intFromFloat((bnds.w - 60) / 10);
 
         const text = if (self.path.len > maxlen)
             try std.fmt.allocPrint(allocator.alloc, "\x90{s}", .{self.path[self.path.len - maxlen + 1 ..]})
         else
             try allocator.alloc.dupe(u8, self.path);
         defer allocator.alloc.free(text);
+
+        const textbgSprite = spr.Sprite.new("ui", spr.SpriteData.new(
+            rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            .{
+                .x = bnds.w - 60,
+                .y = 32,
+            },
+        ));
+
+        const textfgSprite = spr.Sprite.new("ui", spr.SpriteData.new(
+            rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            .{
+                .x = bnds.w - 64,
+                .y = 28,
+            },
+        ));
+
+        try batch.draw(spr.Sprite, &textbgSprite, popups.popupShader, vecs.newVec3(bnds.x + 28, bnds.y + font.size * 2 - 4, 0));
+        try batch.draw(spr.Sprite, &textfgSprite, popups.popupShader, vecs.newVec3(bnds.x + 30, bnds.y + font.size * 2 - 2, 0));
 
         try font.draw(.{
             .batch = batch,
