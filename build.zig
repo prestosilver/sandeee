@@ -55,7 +55,7 @@ var Version: std.SemanticVersion = .{
 
 pub fn build(b: *std.build.Builder) !void {
     const exe = b.addExecutable(.{
-        .name = "sandeee",
+        .name = "SandEEE",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = b.standardTargetOptions(.{}),
         .optimize = b.standardOptimizeOption(.{}),
@@ -288,7 +288,10 @@ pub fn build(b: *std.build.Builder) !void {
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
     } else if (exe.target.os_tag == null or exe.target.os_tag.? == .linux) {
-        b.installFile("INSTALL.md", "bin/INSTALL.md");
+        _ = b.exec(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
+        b.installFile("runSandEEE", "bin/runSandEEE");
+        b.installFile("/usr/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
+        b.installFile("/usr/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
     }
 
     const www_step = b.step("www", "Build the website");
