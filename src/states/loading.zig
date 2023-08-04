@@ -40,6 +40,7 @@ pub const GSLoading = struct {
 
     const mailpath: []const u8 = "/cont/mail";
     const loginpath: []const u8 = "/cont/snds/login.era";
+    const logoutpath: []const u8 = "/cont/snds/logout.era";
     const messagepath: []const u8 = "/cont/snds/message.era";
     const settingspath: []const u8 = "/conf/system.cfg";
     const fontpath: []const u8 = "system_font";
@@ -49,6 +50,7 @@ pub const GSLoading = struct {
 
     load_progress: f32 = 0,
     login_snd: audio.Sound = undefined,
+    logout_snd: *audio.Sound,
     message_snd: *audio.Sound,
     done: std.atomic.Atomic(bool) = std.atomic.Atomic(bool).init(false),
 
@@ -110,6 +112,7 @@ pub const GSLoading = struct {
 
         // sounds
         try self.loader.enqueue(*const []const u8, *audio.Sound, &loginpath, &self.login_snd, worker.sound.loadSound);
+        try self.loader.enqueue(*const []const u8, *audio.Sound, &logoutpath, self.logout_snd, worker.sound.loadSound);
         try self.loader.enqueue(*const []const u8, *audio.Sound, &messagepath, self.message_snd, worker.sound.loadSound);
 
         // delay

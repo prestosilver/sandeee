@@ -148,8 +148,9 @@ var ctx: gfx.Context = undefined;
 var sb: batch.SpriteBatch = undefined;
 
 // sounds
-var audioman: audio.Audio = undefined;
+var audio_man: audio.Audio = undefined;
 var message_snd: audio.Sound = undefined;
+var logout_snd: audio.Sound = undefined;
 
 // for panic
 var errorMsg: []const u8 = "Error: Unknown error";
@@ -301,7 +302,7 @@ pub fn mouseScroll(event: inputEvs.EventMouseScroll) !void {
 }
 
 pub fn notification(_: windowEvs.EventNotification) !void {
-    try audioman.playSound(message_snd);
+    try audio_man.playSound(message_snd);
 }
 
 pub fn copy(event: systemEvs.EventCopy) !void {
@@ -348,13 +349,13 @@ pub fn settingSet(event: systemEvs.EventSetSetting) !void {
     }
 
     if (std.mem.eql(u8, event.setting, "sound_volume")) {
-        audioman.volume = @as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0;
+        audio_man.volume = @as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0;
 
         return;
     }
 
     if (std.mem.eql(u8, event.setting, "sound_muted")) {
-        audioman.muted = std.ascii.eqlIgnoreCase("yes", event.value);
+        audio_man.muted = std.ascii.eqlIgnoreCase("yes", event.value);
 
         return;
     }
@@ -556,7 +557,7 @@ pub fn mainErr() anyerror!void {
     ctx = try gfx.init("SandEEE");
     gfx.gContext = &ctx;
 
-    audioman = try audio.Audio.init();
+    audio_man = try audio.Audio.init();
 
     // setup fonts deinit
     biosFace.setup = false;
@@ -635,7 +636,7 @@ pub fn mainErr() anyerror!void {
         .disk = &disk,
         .blipSound = &blipSound,
         .selectSound = &selectSound,
-        .audioMan = &audioman,
+        .audioMan = &audio_man,
         .logo_sprite = .{
             .texture = "bios",
             .data = sprite.SpriteData.new(
@@ -649,11 +650,12 @@ pub fn mainErr() anyerror!void {
     var gsLoading = loadingState.GSLoading{
         .sb = &sb,
         .face = &mainFace,
-        .audio_man = &audioman,
+        .audio_man = &audio_man,
         .textureManager = &textureManager,
         .emailManager = &emailManager,
         .ctx = &ctx,
         .loading = drawLoading,
+        .logout_snd = &logout_snd,
         .message_snd = &message_snd,
         .logo_sprite = .{
             .texture = "logo",
@@ -737,7 +739,7 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .face = &biosFace,
         .selectSound = &selectSound,
-        .audioMan = &audioman,
+        .audioMan = &audio_man,
         .load_sprite = .{
             .texture = "load",
             .data = sprite.SpriteData.new(
@@ -753,6 +755,8 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .face = &biosFace,
         .sb = &sb,
+        .logout_sound = &logout_snd,
+        .audio_man = &audio_man,
         .wallpaper = &wallpaper,
         .clearShader = &clear_shader,
     };
@@ -765,7 +769,7 @@ pub fn mainErr() anyerror!void {
         .face = &biosFace,
         .blipSound = &blipSound,
         .selectSound = &selectSound,
-        .audioMan = &audioman,
+        .audioMan = &audio_man,
     };
 
     // done states setup

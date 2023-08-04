@@ -12,6 +12,7 @@ const allocator = @import("../util/allocator.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 const wall = @import("../drawers/wall2d.zig");
+const audio = @import("../util/audio.zig");
 const c = @import("../c.zig");
 
 pub var target: enum { Quit, Bios } = .Quit;
@@ -25,11 +26,15 @@ pub const GSLogout = struct {
     face: *font.Font,
     font_shader: *shd.Shader,
     wallpaper: *wall.Wallpaper,
+    logout_sound: *audio.Sound,
+    audio_man: *audio.Audio,
 
     time: f32 = 0,
 
     pub fn setup(self: *Self) !void {
         try files.write();
+        try self.audio_man.playSound(self.logout_sound.*);
+
         self.time = 3;
     }
 
