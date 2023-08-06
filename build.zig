@@ -113,16 +113,23 @@ pub fn build(b: *std.build.Builder) !void {
     }
 
     // Includes
-    exe.addIncludePath("deps/include");
-    exe.addIncludePath("deps/steam_sdk/public/");
+    exe.addIncludePath(.{ .path = "deps/include" });
+    exe.addIncludePath(.{ .path = "deps/steam_sdk/public/" });
     if (exe.target.os_tag != null and exe.target.os_tag.? == .windows) {
-        exe.addObjectFile("content/app.res.obj");
-        exe.addLibraryPath("deps/lib");
+        exe.addObjectFile(.{ .path = "content/app.res.obj" });
+        exe.addLibraryPath(.{ .path = "deps/lib" });
         exe.subsystem = .Windows;
     }
 
     // Sources
-    exe.addCSourceFile("deps/src/glad.c", &[_][]const u8{"-std=c99"});
+    exe.addCSourceFile(
+        .{
+            .file = .{
+                .path = "deps/src/glad.c",
+            },
+            .flags = &[_][]const u8{"-std=c99"},
+        },
+    );
 
     exe.linkSystemLibrary("glfw3");
     exe.linkSystemLibrary("GL");
