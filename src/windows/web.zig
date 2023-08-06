@@ -16,9 +16,9 @@ const events = @import("../util/events.zig");
 const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const settings = @import("settings.zig");
-const steam = @import("steam");
+const c = @import("../c.zig");
 
-const SCROLL = 30;
+const steam = @import("steam");
 
 var web_idx: u8 = 0;
 
@@ -398,7 +398,7 @@ pub const WebData = struct {
 
             var iter = std.mem.split(u8, cont, "\n");
 
-            var texid: [6]u8 = .{ 'w', 'e', 'b', '_', 0, 0 };
+            var texid = [_]u8{ 'w', 'e', 'b', '_', 0, 0 };
             texid[4] = 0;
             texid[5] = self.web_idx;
 
@@ -682,6 +682,7 @@ pub const WebData = struct {
                 if (self.conts != null and !self.loading) {
                     allocator.alloc.free(self.conts.?);
                     self.conts = null;
+                    self.top = true;
                 }
             }
 
@@ -720,7 +721,25 @@ pub const WebData = struct {
         _ = self;
     }
 
-    pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
+    pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
+        if (!down) return;
+
+        switch (keycode) {
+            c.GLFW_KEY_BACKSPACE => {
+                try self.back(true);
+                return;
+            },
+            c.GLFW_KEY_TAB => {
+                self.highlight_idx += 1;
+                if (self.highlight_idx > self.links.items.len)
+                    self.highlight_idx = 1;
+
+                return;
+            },
+            else => {},
+        }
+    }
+
     pub fn focus(_: *Self) !void {}
 
     pub fn moveResize(self: *Self, _: *rect.Rectangle) !void {
