@@ -104,12 +104,12 @@ const clear_shader_files = [2]shd.ShaderFile{
 };
 
 const full_quad = [_]c.GLfloat{
-    -1.0, -1.0, 0.0,
-    1.0,  -1.0, 0.0,
-    -1.0, 1.0,  0.0,
-    -1.0, 1.0,  0.0,
-    1.0,  -1.0, 0.0,
-    1.0,  1.0,  0.0,
+    -0.5, -0.5, 0.0,
+    0.5,  -0.5, 0.0,
+    -0.5, 0.5,  0.0,
+    -0.5, 0.5,  0.0,
+    0.5,  -0.5, 0.0,
+    0.5,  0.5,  0.0,
 };
 
 // fps tracking
@@ -192,7 +192,7 @@ pub fn blit() !void {
             finalFps,
             if (shell.vms == 0) "\xF1" else "\xF9",
             shell.vms,
-            windowedState.vmTime,
+            @as(u8, @intFromFloat(windowedState.vmTime * 100)),
             @intFromEnum(currentState),
         });
         defer allocator.alloc.free(text);
