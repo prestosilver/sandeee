@@ -722,6 +722,7 @@ pub const WebData = struct {
 
     pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
     pub fn focus(_: *Self) !void {}
+
     pub fn moveResize(self: *Self, _: *rect.Rectangle) !void {
         if (self.loading) return;
 
@@ -729,8 +730,7 @@ pub const WebData = struct {
         self.add_links = true;
     }
 
-    pub fn deinit(self: *Self) void {
-        // FIXME: DONT STOP TIME
+    pub fn deinitThread(self: *Self) void {
         while (self.loading) {}
 
         // styles
@@ -754,6 +754,10 @@ pub const WebData = struct {
 
         // self
         allocator.alloc.destroy(self);
+    }
+
+    pub fn deinit(self: *Self) !void {
+        _ = try std.Thread.spawn(.{}, deinitThread, .{self});
     }
 };
 

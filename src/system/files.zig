@@ -15,7 +15,7 @@ var rootOut: ?[]const u8 = null;
 
 pub const ROOT_NAME = "/";
 
-pub fn getExtrPath() []const u8 {
+pub inline fn getExtrPath() []const u8 {
     return settingsManager.get("extr_path") orelse "";
 }
 
