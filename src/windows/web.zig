@@ -65,7 +65,9 @@ pub const WebData = struct {
     links: std.ArrayList(WebLink),
     hist: std.ArrayList([]const u8),
 
-    top: bool = false,
+    scroll_top: bool = false,
+    scroll_link: bool = false,
+
     highlight_idx: usize = 0,
     loading: bool = false,
     add_imgs: bool = false,
@@ -379,9 +381,15 @@ pub const WebData = struct {
             };
         }
 
-        if (self.top) {
+        if (self.scroll_top) {
             props.scroll.?.value = 0;
-            self.top = false;
+            self.scroll_top = false;
+        }
+
+        if (self.scroll_link) {
+            if (self.highlight_idx != 0)
+                props.scroll.?.value = std.math.clamp(self.links.items[self.highlight_idx - 1].pos.y - (bnds.h / 2), 0, props.scroll.?.maxy);
+            self.scroll_link = false;
         }
 
         if (!self.loading) drawConts: {
@@ -666,36 +674,18 @@ pub const WebData = struct {
             }
             self.links.clearAndFree();
             self.highlight_idx = 0;
-            self.top = true;
+            self.scroll_top = true;
         }
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, btn: ?i32) !void {
-        if (btn == null) return;
-
-        if (pos.y < 40) {
-            if (rect.newRect(0, 0, 38, 40).contains(pos)) {
-                try self.back(false);
-            }
-
-            if (rect.newRect(38, 0, 38, 40).contains(pos)) {
-                if (self.conts != null and !self.loading) {
-                    allocator.alloc.free(self.conts.?);
-                    self.conts = null;
-                    self.top = true;
-                }
-            }
-
-            return;
-        }
+    pub fn followLink(self: *Self) !void {
+        if (self.highlight_idx == 0) return;
 
         var lastHost: []const u8 = "";
         if (self.path.?[0] == '@') {
             if (std.mem.indexOf(u8, self.path.?, ":")) |idx|
                 lastHost = self.path.?[1..idx];
         }
-
-        if (self.highlight_idx == 0) return;
 
         try self.hist.append(self.path.?);
 
@@ -712,7 +702,29 @@ pub const WebData = struct {
             self.conts = null;
         }
         self.highlight_idx = 0;
-        self.top = true;
+        self.scroll_top = true;
+    }
+
+    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, btn: ?i32) !void {
+        if (btn == null) return;
+
+        if (pos.y < 40) {
+            if (rect.newRect(0, 0, 38, 40).contains(pos)) {
+                try self.back(false);
+            }
+
+            if (rect.newRect(38, 0, 38, 40).contains(pos)) {
+                if (self.conts != null and !self.loading) {
+                    allocator.alloc.free(self.conts.?);
+                    self.conts = null;
+                    self.scroll_top = true;
+                }
+            }
+
+            return;
+        } else {
+            try self.followLink();
+        }
     }
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
@@ -721,7 +733,7 @@ pub const WebData = struct {
         _ = self;
     }
 
-    pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
+    pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
         if (!down) return;
 
         switch (keycode) {
@@ -730,11 +742,23 @@ pub const WebData = struct {
                 return;
             },
             c.GLFW_KEY_TAB => {
-                self.highlight_idx += 1;
+                if (mods == c.GLFW_MOD_SHIFT) {
+                    self.highlight_idx -= 1;
+                } else {
+                    self.highlight_idx += 1;
+                }
+
                 if (self.highlight_idx > self.links.items.len)
                     self.highlight_idx = 1;
+                if (self.highlight_idx < 1)
+                    self.highlight_idx = self.links.items.len;
+
+                self.scroll_link = true;
 
                 return;
+            },
+            c.GLFW_KEY_ENTER => {
+                try self.followLink();
             },
             else => {},
         }
