@@ -47,8 +47,6 @@ pub const Texture = struct {
             c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @intFromFloat(self.size.x), @intFromFloat(self.size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, self.buffer.ptr);
             self.oldSize = self.size;
         }
-
-        c.glGenerateMipmap(c.GL_TEXTURE_2D);
     }
 };
 

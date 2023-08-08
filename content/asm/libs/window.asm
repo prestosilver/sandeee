@@ -137,6 +137,19 @@ _GetWindowSize:
     disc 1                      ; file handle
     ret
 
+_SetWindowClear:
+    push "clr"
+    dup 1
+    cat
+    disc 1
+    push "/fake/win/rules"
+    sys 3
+    dup 0
+    dup 2
+    sys 5
+    sys 7
+    ret
+
 _SetWindowSize:
     dup 1
     getb

@@ -13,6 +13,7 @@ const vm = @import("../vm.zig");
 const vecs = @import("../../math/vecs.zig");
 const sb = @import("../../util/spritebatch.zig");
 const windowedState = @import("../../states/windowed.zig");
+const colors = @import("../../math/colors.zig");
 
 pub var wintex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
@@ -173,9 +174,15 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aaid[0]) {
-                    if (std.mem.eql(u8, data[0..3], "min")) {
+                    if (std.mem.eql(u8, data[0..3], "clr")) {
+                        if (data[3..].len < 7 or data[3] != '#') {
+                            return error.InvalidRule;
+                        }
+                        const color = try colors.Color.parseColor(data[3..][1..7].*);
+                        item.data.contents.clearColor = color;
+                    } else if (std.mem.eql(u8, data[0..3], "min")) {
                         if (data[3..].len < 4) {
-                            return;
+                            return error.InvalidRule;
                         }
                         const x = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[3..5]).*));
                         const y = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[5..7]).*));
@@ -183,12 +190,15 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
                         item.data.contents.props.size.min.y = y;
                     } else if (std.mem.eql(u8, data[0..3], "max")) {
                         if (data[3..].len < 4) {
-                            return;
+                            return error.InvalidRule;
                         }
                         const x = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[3..5]).*));
                         const y = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[5..7]).*));
                         item.data.contents.props.size.max = .{ .x = x, .y = y };
+                    } else {
+                        return error.InvalidRule;
                     }
+
                     return;
                 }
             }

@@ -56,6 +56,8 @@ pub fn init(name: [*c]const u8) !Context {
     c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
     c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
     c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
+    std.log.info("{}", .{mode.refreshRate});
+
     c.glfwWindowHint(c.GLFW_REFRESH_RATE, 60);
 
     const win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);

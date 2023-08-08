@@ -17,6 +17,17 @@ pub const Color = struct {
         return result;
     }
 
+    pub fn parseColor(color: [6]u8) !Color {
+        const hex = try std.fmt.parseInt(u24, &color, 16);
+
+        return newColorRGBA(
+            @intCast((hex >> 16) & 255),
+            @intCast((hex >> 8) & 255),
+            @intCast((hex >> 0) & 255),
+            255,
+        );
+    }
+
     pub fn contrast(c: Color) Color {
         const gamma = 2.2;
         const L = 0.2126 * std.math.pow(f32, c.r, gamma) + 0.7152 * std.math.pow(f32, c.g, gamma) + 0.0722 * std.math.pow(f32, c.b, gamma);
