@@ -78,7 +78,7 @@ fn processClick(good) {
     x += xo * 256;
     y += yo * 256;
     
-    if (y > 35) {
+    if (y > 25) {
         good = 1;
 
         if (x > 200) {
@@ -98,6 +98,8 @@ fn confirm(file) {
 
     _SetWindowRule("min", 300, 100);
     _SetWindowRule("max", 300, 100);
+    _SetWindowClear("#c0c0c0");
+
     _SetWindowTitle(window, "EPK Unpack");
     _SetWindowSize(300, 100);
 
