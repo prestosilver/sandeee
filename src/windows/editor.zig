@@ -65,7 +65,7 @@ pub const EditorData = struct {
 
     cursorx: usize = 0,
     cursory: usize = 0,
-    cursorLen: i32 = 0,
+    cursor_len: i32 = 0,
     linex: usize = 0,
 
     modified: bool = false,
@@ -188,8 +188,6 @@ pub const EditorData = struct {
         // draw number sidebar
         try batch.draw(sp.Sprite, &self.numRight, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
 
-        var selRemaining: usize = @intCast(try std.math.absInt(self.cursorLen));
-
         // draw file text
         if (self.file != null) {
             if (self.clickDone) |clickDone| blk: {
@@ -202,8 +200,10 @@ pub const EditorData = struct {
 
                 const clickPos = self.clickPos.?;
 
-                const start = if (clickPos.y < clickDone.y - props.scroll.?.value) clickPos else clickDone.sub(.{ .x = 0, .y = props.scroll.?.value });
-                const end = if (clickPos.y < clickDone.y - props.scroll.?.value) clickDone.sub(.{ .x = 0, .y = props.scroll.?.value }) else clickPos;
+                const doneBig = @round(clickPos.y / font.size) <= @round((clickDone.y - props.scroll.?.value) / font.size);
+
+                const start = if (doneBig) clickPos else clickDone.sub(.{ .x = 0, .y = props.scroll.?.value });
+                const end = if (doneBig) clickDone.sub(.{ .x = 0, .y = props.scroll.?.value }) else clickPos;
 
                 self.cursory = @as(usize, @intFromFloat((start.y + props.scroll.?.value) / font.size));
                 self.cursorx = @as(usize, @intFromFloat(start.x / font.chars[0].ax));
@@ -219,23 +219,23 @@ pub const EditorData = struct {
                 const endy = @min(@as(usize, @intFromFloat((end.y + props.scroll.?.value) / font.size)), self.buffer.len - 1);
                 const endx = @as(usize, @intFromFloat(end.x / font.chars[0].ax));
 
-                self.cursorLen = 0;
+                self.cursor_len = 0;
                 if (self.cursorx != endx or self.cursory != endy) {
                     for (self.buffer[self.cursory .. endy + 1], self.cursory..endy + 1) |line, y| {
                         for (0..line.text.len) |x| {
                             if (!((y == self.cursory and x < self.cursorx) or
                                 y == endy and x > endx))
                             {
-                                self.cursorLen += 1;
+                                self.cursor_len += 1;
                             }
                         }
                         if (y > self.cursory and y < endy)
-                            self.cursorLen += 1;
+                            self.cursor_len += 1;
                     }
                 }
 
-                if (clickPos.y < clickDone.y - props.scroll.?.value) {
-                    self.cursorLen *= -1;
+                if (doneBig) {
+                    self.cursor_len *= -1;
                 }
             }
 
@@ -251,6 +251,8 @@ pub const EditorData = struct {
             var y = bnds.y + 40 - props.scroll.?.value;
 
             props.scroll.?.maxy = -bnds.h + 40;
+
+            var selRemaining: usize = @intCast(try std.math.absInt(self.cursor_len));
 
             for (self.buffer, 0..) |*line, lineidx| {
                 if (line.render == null) {
@@ -289,7 +291,7 @@ pub const EditorData = struct {
 
                     try batch.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82 + posx, y, 0));
 
-                    if (self.cursorLen >= 0) {
+                    if (self.cursor_len >= 0) {
                         try font.draw(.{
                             .batch = batch,
                             .shader = shader,
@@ -305,7 +307,7 @@ pub const EditorData = struct {
                     selRemaining -= width;
 
                     try batch.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82, y, 0));
-                    if (self.cursorLen < 0 and selRemaining == 0) {
+                    if (self.cursor_len < 0 and selRemaining == 0) {
                         const posx = font.sizeText(.{
                             .text = line.getRender(width),
                             .cursor = true,
@@ -385,7 +387,7 @@ pub const EditorData = struct {
     }
 
     pub fn getSel(self: *Self) ![]const u8 {
-        const absSel: usize = @intCast(try std.math.absInt(self.cursorLen));
+        const absSel: usize = @intCast(try std.math.absInt(self.cursor_len));
 
         var result = try std.ArrayList(u8).initCapacity(allocator.alloc, absSel);
         defer result.deinit();
@@ -501,6 +503,7 @@ pub const EditorData = struct {
         line.clearRender();
 
         self.cursorx += 1;
+        self.cursor_len = 0;
         self.modified = true;
     }
 
@@ -508,9 +511,19 @@ pub const EditorData = struct {
         if (self.file == null) return;
         if (!down) return;
 
-        //if (mods == 0) self.cursorLen = 0;
-
         switch (keycode) {
+            c.GLFW_KEY_A => {
+                if (mods == (c.GLFW_MOD_CONTROL)) {
+                    self.cursorx = 0;
+                    self.cursory = 0;
+                    self.cursor_len = 0;
+                    for (self.buffer) |line| {
+                        self.cursor_len -= @intCast(line.text.len + 1);
+                    }
+
+                    return;
+                }
+            },
             c.GLFW_KEY_C => {
                 if (mods == (c.GLFW_MOD_CONTROL)) {
                     const sel = try self.getSel();
@@ -601,7 +614,9 @@ pub const EditorData = struct {
                     self.cursorx -= 1;
 
                     if (mods == c.GLFW_MOD_SHIFT) {
-                        self.cursorLen += 1;
+                        self.cursor_len += 1;
+                    } else {
+                        self.cursor_len = 0;
                     }
                 }
             },
@@ -612,17 +627,21 @@ pub const EditorData = struct {
                     if (mods == c.GLFW_MOD_SHIFT) {
                         self.cursorx -= 1;
 
-                        self.cursorLen -= 1;
+                        self.cursor_len -= 1;
+                    } else {
+                        self.cursor_len = 0;
                     }
                 }
             },
             c.GLFW_KEY_UP => {
                 if (self.cursory > 0)
                     self.cursory -= 1;
+                self.cursor_len = 0;
             },
             c.GLFW_KEY_DOWN => {
                 if (self.cursory < self.buffer.len - 1)
                     self.cursory += 1;
+                self.cursor_len = 0;
             },
             else => {},
         }

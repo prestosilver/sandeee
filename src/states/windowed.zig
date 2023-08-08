@@ -170,7 +170,7 @@ pub const GSWindowed = struct {
             return;
         }
         if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
-            const texture = batch.textureManager.textures.getPtr("wall") orelse return;
+            const texture = batch.textureManager.get("wall") orelse return;
             tex.uploadTextureFile(texture, event.value) catch return;
 
             return;
