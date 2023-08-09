@@ -51,12 +51,12 @@ pub const EditorData = struct {
         }
     };
 
-    buffer: []Row,
+    buffer: ?[]Row = null,
     menubar: sp.Sprite,
     numLeft: sp.Sprite,
     numRight: sp.Sprite,
     sel: sp.Sprite,
-    icons: [2]sp.Sprite,
+    icons: [3]sp.Sprite,
     shader: *shd.Shader,
 
     clickPos: ?vecs.Vector2 = null,
@@ -189,7 +189,7 @@ pub const EditorData = struct {
         try batch.draw(sp.Sprite, &self.numRight, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
 
         // draw file text
-        if (self.file != null) {
+        if (self.buffer) |buffer| {
             if (self.clickDone) |clickDone| blk: {
                 defer self.clickDone = null;
 
@@ -208,20 +208,20 @@ pub const EditorData = struct {
                 self.cursory = @as(usize, @intFromFloat((start.y + props.scroll.?.value) / font.size));
                 self.cursorx = @as(usize, @intFromFloat(start.x / font.chars[0].ax));
 
-                if (self.cursory >= self.buffer.len) {
-                    self.cursory = self.buffer.len - 1;
+                if (self.cursory >= buffer.len) {
+                    self.cursory = buffer.len - 1;
                 }
 
-                if (self.cursorx >= self.buffer[self.cursory].text.len) {
-                    self.cursorx = self.buffer[self.cursory].text.len;
+                if (self.cursorx >= buffer[self.cursory].text.len) {
+                    self.cursorx = buffer[self.cursory].text.len;
                 }
 
-                const endy = @min(@as(usize, @intFromFloat((end.y + props.scroll.?.value) / font.size)), self.buffer.len - 1);
+                const endy = @min(@as(usize, @intFromFloat((end.y + props.scroll.?.value) / font.size)), buffer.len - 1);
                 const endx = @as(usize, @intFromFloat(end.x / font.chars[0].ax));
 
                 self.cursor_len = 0;
                 if (self.cursorx != endx or self.cursory != endy) {
-                    for (self.buffer[self.cursory .. endy + 1], self.cursory..endy + 1) |line, y| {
+                    for (buffer[self.cursory .. endy + 1], self.cursory..endy + 1) |line, y| {
                         for (0..line.text.len) |x| {
                             if (!((y == self.cursory and x < self.cursorx) or
                                 y == endy and x > endx))
@@ -239,12 +239,12 @@ pub const EditorData = struct {
                 }
             }
 
-            if (self.cursory >= self.buffer.len) {
-                self.cursory = self.buffer.len - 1;
+            if (self.cursory >= buffer.len) {
+                self.cursory = buffer.len - 1;
             }
 
-            if (self.cursorx >= self.buffer[self.cursory].text.len) {
-                self.cursorx = self.buffer[self.cursory].text.len;
+            if (self.cursorx >= buffer[self.cursory].text.len) {
+                self.cursorx = buffer[self.cursory].text.len;
             }
 
             // draw lines
@@ -254,7 +254,7 @@ pub const EditorData = struct {
 
             var selRemaining: usize = @intCast(try std.math.absInt(self.cursor_len));
 
-            for (self.buffer, 0..) |*line, lineidx| {
+            for (buffer, 0..) |*line, lineidx| {
                 if (line.render == null) {
                     line.render = try hlLine(line.text);
                 }
@@ -331,8 +331,9 @@ pub const EditorData = struct {
         try batch.draw(sp.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
         // draw toolbar icons
-        try batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
-        try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 4, 0));
+        try batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 4, 0));
+        try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
+        try batch.draw(sp.Sprite, &self.icons[2], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
@@ -342,7 +343,7 @@ pub const EditorData = struct {
 
         switch (btn.?) {
             0 => {
-                const open = rect.newRect(0, 0, 32, 32);
+                const open = rect.newRect(0, 0, 36, 36);
                 if (open.contains(mousepos)) {
                     const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
                     adds.* = .{
@@ -365,11 +366,17 @@ pub const EditorData = struct {
                     });
                 }
 
-                const saveBnds = rect.newRect(32, 0, 32, 32);
+                const saveBnds = rect.newRect(36, 0, 36, 36);
                 if (saveBnds.contains(mousepos)) {
                     try self.save();
                 }
-                if (self.buffer.len != 0) {
+
+                const newBnds = rect.newRect(72, 0, 36, 36);
+                if (newBnds.contains(mousepos)) {
+                    try self.newFile();
+                }
+
+                if (self.buffer != null and self.buffer.?.len != 0) {
                     if (mousepos.y > 40 and mousepos.x > 82) {
                         self.clickPos = mousepos.sub(.{
                             .y = 40,
@@ -394,40 +401,47 @@ pub const EditorData = struct {
 
         var idx: usize = 0;
 
-        for (self.buffer[self.cursory..]) |line| {
-            for (line.text) |ch| {
-                if (idx >= self.cursorx and idx < self.cursorx + absSel) {
-                    result.appendAssumeCapacity(ch);
+        if (self.buffer) |buffer| {
+            for (buffer[self.cursory..]) |line| {
+                for (line.text) |ch| {
+                    if (idx >= self.cursorx and idx < self.cursorx + absSel) {
+                        result.appendAssumeCapacity(ch);
+                    }
+
+                    idx += 1;
                 }
 
+                if (idx >= self.cursorx and idx < self.cursorx + absSel) {
+                    result.appendAssumeCapacity('\n');
+                }
+
+                // new line
                 idx += 1;
             }
-
-            if (idx >= self.cursorx and idx < self.cursorx + absSel) {
-                result.appendAssumeCapacity('\n');
-            }
-
-            // new line
-            idx += 1;
         }
 
         return try allocator.alloc.dupe(u8, result.items);
     }
 
     pub fn save(self: *Self) !void {
-        if (self.file != null) {
-            var buff = std.ArrayList(u8).init(allocator.alloc);
-            defer buff.deinit();
+        if (self.buffer) |buffer| {
+            if (self.file != null) {
+                var buff = std.ArrayList(u8).init(allocator.alloc);
+                defer buff.deinit();
 
-            for (self.buffer) |line| {
-                try buff.appendSlice(line.text);
-                try buff.append('\n');
+                for (buffer) |line| {
+                    try buff.appendSlice(line.text);
+                    try buff.append('\n');
+                }
+
+                _ = buff.pop();
+
+                try self.file.?.write(try allocator.alloc.dupe(u8, buff.items), null);
+                self.modified = false;
+            } else {
+                std.log.info("Save as", .{});
+                //TODO: save as
             }
-
-            _ = buff.pop();
-
-            try self.file.?.write(try allocator.alloc.dupe(u8, buff.items), null);
-            self.modified = false;
         }
     }
 
@@ -440,12 +454,16 @@ pub const EditorData = struct {
             const lines = std.mem.count(u8, fileConts, "\n") + 1;
 
             try self.clearBuffer();
-            self.buffer = try allocator.alloc.realloc(self.buffer, lines);
+            if (self.buffer) |buffer| {
+                self.buffer = try allocator.alloc.realloc(buffer, lines);
+            } else {
+                self.buffer = try allocator.alloc.alloc(Row, lines);
+            }
 
             var iter = std.mem.split(u8, fileConts, "\n");
             var idx: usize = 0;
             while (iter.next()) |line| {
-                self.buffer[idx] = .{
+                self.buffer.?[idx] = .{
                     .text = try allocator.alloc.dupe(u8, line),
                     .render = null,
                 };
@@ -473,43 +491,67 @@ pub const EditorData = struct {
     }
 
     pub fn clearBuffer(self: *Self) !void {
-        for (self.buffer) |*line| {
-            if (line.render) |render| {
-                allocator.alloc.free(render);
+        if (self.buffer) |buffer| {
+            for (buffer) |*line| {
+                if (line.render) |render| {
+                    allocator.alloc.free(render);
+                }
+
+                allocator.alloc.free(line.text);
             }
 
-            allocator.alloc.free(line.text);
-        }
+            allocator.alloc.free(self.buffer.?);
 
-        self.buffer = try allocator.alloc.realloc(self.buffer, 0);
+            self.buffer = null;
+        }
+    }
+
+    pub fn newFile(self: *Self) !void {
+        if (self.modified) return;
+
+        try self.clearBuffer();
+
+        self.buffer = try allocator.alloc.alloc(Row, 1);
+        self.buffer.?[0] = .{
+            .text = try allocator.alloc.alloc(u8, 0),
+        };
     }
 
     pub fn deinit(self: *Self) !void {
         try self.clearBuffer();
-        allocator.alloc.free(self.buffer);
+        if (self.buffer) |buffer|
+            allocator.alloc.free(buffer);
+
         allocator.alloc.destroy(self);
     }
 
     pub fn char(self: *Self, code: u32, _: i32) !void {
         if (code == '\n') return;
 
-        const line = &self.buffer[self.cursory];
+        if (self.buffer) |buffer| {
+            const line = &buffer[self.cursory];
 
-        line.text = try allocator.alloc.realloc(line.text, line.text.len + 1);
+            line.text = try allocator.alloc.realloc(line.text, line.text.len + 1);
 
-        std.mem.copyBackwards(u8, line.text[self.cursorx + 1 ..], line.text[self.cursorx .. line.text.len - 1]);
-        line.text[self.cursorx] = @intCast(@rem(code, 255));
+            std.mem.copyBackwards(u8, line.text[self.cursorx + 1 ..], line.text[self.cursorx .. line.text.len - 1]);
+            line.text[self.cursorx] = @intCast(@rem(code, 255));
 
-        line.clearRender();
+            line.clearRender();
 
-        self.cursorx += 1;
-        self.cursor_len = 0;
-        self.modified = true;
+            self.cursorx += 1;
+            self.cursor_len = 0;
+            self.modified = true;
+        }
     }
 
     pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
-        if (self.file == null) return;
         if (!down) return;
+        if (keycode == c.GLFW_KEY_N and mods == (c.GLFW_MOD_CONTROL)) {
+            try self.newFile();
+            return;
+        }
+
+        if (self.buffer == null) return;
 
         switch (keycode) {
             c.GLFW_KEY_A => {
@@ -517,9 +559,10 @@ pub const EditorData = struct {
                     self.cursorx = 0;
                     self.cursory = 0;
                     self.cursor_len = 0;
-                    for (self.buffer) |line| {
-                        self.cursor_len -= @intCast(line.text.len + 1);
-                    }
+                    if (self.buffer) |buffer|
+                        for (buffer) |line| {
+                            self.cursor_len -= @intCast(line.text.len + 1);
+                        };
 
                     return;
                 }
@@ -548,65 +591,71 @@ pub const EditorData = struct {
                 try self.char(' ', mods);
             },
             c.GLFW_KEY_ENTER => {
-                self.buffer = try allocator.alloc.realloc(self.buffer, self.buffer.len + 1);
-                std.mem.copyBackwards(Row, self.buffer[self.cursory + 1 ..], self.buffer[self.cursory .. self.buffer.len - 1]);
+                if (self.buffer) |buffer| {
+                    self.buffer = try allocator.alloc.realloc(buffer, buffer.len + 1);
+                    std.mem.copyBackwards(Row, self.buffer.?[self.cursory + 1 ..], self.buffer.?[self.cursory .. self.buffer.?.len - 1]);
 
-                const line = &self.buffer[self.cursory];
-                self.buffer[self.cursory + 1] = .{
-                    .text = try allocator.alloc.dupe(u8, line.text[self.cursorx..]),
-                };
+                    const line = &self.buffer.?[self.cursory];
+                    self.buffer.?[self.cursory + 1] = .{
+                        .text = try allocator.alloc.dupe(u8, line.text[self.cursorx..]),
+                    };
 
-                line.text = try allocator.alloc.realloc(line.text, self.cursorx);
-
-                line.clearRender();
-
-                self.cursorx = 0;
-                self.cursory += 1;
-
-                self.modified = true;
-            },
-            c.GLFW_KEY_DELETE => {
-                const line = &self.buffer[self.cursory];
-
-                if (self.cursorx < line.text.len) {
-                    std.mem.copyForwards(u8, line.text[self.cursorx .. line.text.len - 1], line.text[self.cursorx + 1 ..]);
-                    line.text = try allocator.alloc.realloc(line.text, line.text.len - 1);
+                    line.text = try allocator.alloc.realloc(line.text, self.cursorx);
 
                     line.clearRender();
+
+                    self.cursorx = 0;
+                    self.cursory += 1;
 
                     self.modified = true;
                 }
             },
+            c.GLFW_KEY_DELETE => {
+                if (self.buffer) |buffer| {
+                    const line = &buffer[self.cursory];
+
+                    if (self.cursorx < line.text.len) {
+                        std.mem.copyForwards(u8, line.text[self.cursorx .. line.text.len - 1], line.text[self.cursorx + 1 ..]);
+                        line.text = try allocator.alloc.realloc(line.text, line.text.len - 1);
+
+                        line.clearRender();
+
+                        self.modified = true;
+                    }
+                }
+            },
             c.GLFW_KEY_BACKSPACE => {
-                if (self.cursorx > 0) {
-                    const line = &self.buffer[self.cursory];
+                if (self.buffer) |buffer| {
+                    if (self.cursorx > 0) {
+                        const line = &buffer[self.cursory];
 
-                    std.mem.copyForwards(u8, line.text[self.cursorx - 1 .. line.text.len - 1], line.text[self.cursorx..]);
-                    line.text = try allocator.alloc.realloc(line.text, line.text.len - 1);
+                        std.mem.copyForwards(u8, line.text[self.cursorx - 1 .. line.text.len - 1], line.text[self.cursorx..]);
+                        line.text = try allocator.alloc.realloc(line.text, line.text.len - 1);
 
-                    line.clearRender();
+                        line.clearRender();
 
-                    self.modified = true;
+                        self.modified = true;
 
-                    self.cursorx -= 1;
-                } else if (self.cursory > 0) {
-                    const oldLine = self.buffer[self.cursory - 1].text;
-                    defer allocator.alloc.free(oldLine);
+                        self.cursorx -= 1;
+                    } else if (self.cursory > 0) {
+                        const oldLine = buffer[self.cursory - 1].text;
+                        defer allocator.alloc.free(oldLine);
 
-                    self.buffer[self.cursory - 1].text = try std.mem.concat(allocator.alloc, u8, &.{
-                        self.buffer[self.cursory - 1].text,
-                        self.buffer[self.cursory].text,
-                    });
-                    std.mem.copyForwards(Row, self.buffer[self.cursory .. self.buffer.len - 1], self.buffer[self.cursory + 1 ..]);
+                        buffer[self.cursory - 1].text = try std.mem.concat(allocator.alloc, u8, &.{
+                            buffer[self.cursory - 1].text,
+                            buffer[self.cursory].text,
+                        });
+                        std.mem.copyForwards(Row, buffer[self.cursory .. buffer.len - 1], buffer[self.cursory + 1 ..]);
 
-                    self.buffer[self.cursory - 1].clearRender();
+                        buffer[self.cursory - 1].clearRender();
 
-                    self.buffer = try allocator.alloc.realloc(self.buffer, self.buffer.len - 1);
+                        self.buffer = try allocator.alloc.realloc(buffer, buffer.len - 1);
 
-                    self.modified = true;
+                        self.modified = true;
 
-                    self.cursorx = oldLine.len;
-                    self.cursory -= 1;
+                        self.cursorx = oldLine.len;
+                        self.cursory -= 1;
+                    }
                 }
             },
             c.GLFW_KEY_LEFT => {
@@ -621,15 +670,17 @@ pub const EditorData = struct {
                 }
             },
             c.GLFW_KEY_RIGHT => {
-                if (self.cursorx < self.buffer[self.cursory].text.len) {
-                    self.cursorx += 1;
+                if (self.buffer) |buffer| {
+                    if (self.cursorx < buffer[self.cursory].text.len) {
+                        self.cursorx += 1;
 
-                    if (mods == c.GLFW_MOD_SHIFT) {
-                        self.cursorx -= 1;
+                        if (mods == c.GLFW_MOD_SHIFT) {
+                            self.cursorx -= 1;
 
-                        self.cursor_len -= 1;
-                    } else {
-                        self.cursor_len = 0;
+                            self.cursor_len -= 1;
+                        } else {
+                            self.cursor_len = 0;
+                        }
                     }
                 }
             },
@@ -639,9 +690,11 @@ pub const EditorData = struct {
                 self.cursor_len = 0;
             },
             c.GLFW_KEY_DOWN => {
-                if (self.cursory < self.buffer.len - 1)
-                    self.cursory += 1;
-                self.cursor_len = 0;
+                if (self.buffer) |buffer| {
+                    if (self.cursory < buffer.len - 1)
+                        self.cursory += 1;
+                    self.cursor_len = 0;
+                }
             },
             else => {},
         }
@@ -669,11 +722,15 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         )),
         .icons = .{
             sp.Sprite.new("icons", sp.SpriteData.new(
+                rect.newRect(1.0 / 8.0, 0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(32, 32),
+            )),
+            sp.Sprite.new("icons", sp.SpriteData.new(
                 rect.newRect(0, 0, 1.0 / 8.0, 1.0 / 8.0),
                 vecs.newVec2(32, 32),
             )),
             sp.Sprite.new("icons", sp.SpriteData.new(
-                rect.newRect(1.0 / 8.0, 0, 1.0 / 8.0, 1.0 / 8.0),
+                rect.newRect(2.0 / 8.0, 0, 1.0 / 8.0, 1.0 / 8.0),
                 vecs.newVec2(32, 32),
             )),
         },
@@ -682,7 +739,6 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
             vecs.newVec2(100, 6),
         )),
         .shader = shader,
-        .buffer = try allocator.alloc.alloc(EditorData.Row, 0),
     };
 
     self.sel.data.color = col.newColorRGBA(255, 0, 0, 255);
