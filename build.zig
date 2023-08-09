@@ -118,7 +118,10 @@ pub fn build(b: *std.build.Builder) !void {
     if (exe.target.os_tag != null and exe.target.os_tag.? == .windows) {
         exe.addObjectFile(.{ .path = "content/app.res.obj" });
         exe.addLibraryPath(.{ .path = "deps/lib" });
+        exe.addLibraryPath(.{ .path = "deps/steam_sdk/redistributable_bin/win64" });
         exe.subsystem = .Windows;
+    } else {
+        exe.addLibraryPath(.{ .path = "deps/steam_sdk/redistributable_bin/linux64" });
     }
 
     // Sources
@@ -135,6 +138,9 @@ pub fn build(b: *std.build.Builder) !void {
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("OpenAL");
     exe.linkSystemLibrary("c");
+    if (isSteam) {
+        exe.linkSystemLibrary("steam_api");
+    }
     exe.linkLibC();
 
     b.installArtifact(exe);
@@ -294,12 +300,18 @@ pub fn build(b: *std.build.Builder) !void {
         b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
+        if (isSteam)
+            b.installFile("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll", "bin/steam_api64.dll");
     } else if (exe.target.os_tag == null or exe.target.os_tag.? == .linux) {
         _ = b.exec(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
         b.installFile("runSandEEE", "bin/runSandEEE");
         b.installFile("/usr/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
         b.installFile("/usr/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
+        if (isSteam)
+            b.installFile("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
+    if (isSteam and exe.optimize == .Debug)
+        b.installFile("steam_appid.txt", "bin/steam_appid.txt");
 
     const www_step = b.step("www", "Build the website");
 

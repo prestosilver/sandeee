@@ -59,7 +59,7 @@ const shell = @import("system/shell.zig");
 // not-op programming lang
 const c = @import("c.zig");
 
-const useSteam = options.IsSteam;
+pub const useSteam = options.IsSteam;
 
 // embed shaders
 const vertShader = @embedFile("shaders/vert.glsl");
@@ -497,11 +497,12 @@ pub fn mainErr() anyerror!void {
     std.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
 
     if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
+        std.log.info("Restarting for steam", .{});
         return; // steam will relaunch the game from the steam client.
     }
 
     if (steam.init()) {
-        var user = steam.getUser() orelse return error.SteamInit;
+        var user = steam.getUser();
         const steamId = user.getSteamId();
         steamUtils = steam.getSteamUtils();
         steamUserStats = steam.getUserStats();

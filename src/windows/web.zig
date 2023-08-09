@@ -19,6 +19,7 @@ const settings = @import("settings.zig");
 const c = @import("../c.zig");
 
 const steam = @import("steam");
+const options = @import("options");
 
 var web_idx: u8 = 0;
 
@@ -48,6 +49,7 @@ pub const WebData = struct {
             if (self.suffix) |suffix| {
                 allocator.alloc.free(suffix);
             }
+
             if (self.prefix) |prefix| {
                 allocator.alloc.free(prefix);
             }
@@ -75,6 +77,58 @@ pub const WebData = struct {
     web_idx: u8,
 
     styles: std.StringArrayHashMap(Style),
+
+    pub fn steamList(self: *Self, page: u32) !void {
+        const ugc = steam.getSteamUGC();
+        const query = ugc.createQueryRequest(0, 0, 0, steam.STEAM_APP_ID, page);
+        const handle = ugc.sendQueryRequest(query);
+        const steamUtils = steam.getSteamUtils();
+
+        var failed = false;
+        while (!steamUtils.isCallComplete(handle, &failed)) {
+            steam.runCallbacks();
+            std.time.sleep(1.0);
+        }
+
+        if (failed) {
+            self.conts = try std.fmt.allocPrint(allocator.alloc, "{}", .{failed});
+            return;
+        }
+
+        const details: *steam.UGCDetails = try allocator.alloc.create(steam.UGCDetails);
+        defer allocator.alloc.destroy(details);
+
+        var conts = try std.fmt.allocPrint(allocator.alloc, "{}\n> prev: $list:{}\n> next: $list:{}\n", .{ page, page - 1, page + 1 });
+        var idx: u32 = 0;
+
+        while (ugc.getQueryResult(query, idx, details)) : (idx += 1) {
+            const old = conts;
+            defer allocator.alloc.free(old);
+
+            const title: [*:0]u8 = @ptrCast(&details.title);
+
+            const titlePrint = try std.fmt.allocPrint(allocator.alloc, "-- {s} --", .{title[0..std.mem.len(title)]});
+            defer allocator.alloc.free(titlePrint);
+
+            const desc: [*:0]u8 = @ptrCast(&details.desc);
+            const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}", .{desc[0..std.mem.len(desc)]});
+            defer allocator.alloc.free(descPrint);
+
+            conts = try std.mem.concat(allocator.alloc, u8, &.{ old, titlePrint, "\n", descPrint, "\n\n" });
+        }
+
+        {
+            const old = conts;
+            defer allocator.alloc.free(old);
+
+            const footer = try std.fmt.allocPrint(allocator.alloc, "{}\n> prev: $list:{}\n> next: $list:{}", .{ page, page - 1, page + 1 });
+            defer allocator.alloc.free(footer);
+
+            conts = try std.mem.concat(allocator.alloc, u8, &.{ old, footer });
+        }
+
+        self.conts = conts;
+    }
 
     pub fn loadPage(self: *Self) !void {
         if (self.loading) return;
@@ -158,9 +212,25 @@ pub const WebData = struct {
                     self.conts = try allocator.alloc.dupe(u8, try (try files.root.getFile(path)).read(null));
                 },
                 '$' => {
-                    const query = steam.createQueryAllUGCRequest(0, 0, 0, steam.STEAM_APP_ID, 1);
-                    _ = query;
-                    self.conts = try allocator.alloc.dupe(u8, "lolol");
+                    if (options.IsSteam) {
+                        const idx = std.mem.indexOf(u8, path, ":") orelse {
+                            self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
+
+                            return;
+                        };
+
+                        const root = path[1..idx];
+                        const sub = path[idx + 1 ..];
+
+                        if (std.mem.eql(u8, root, "list")) {
+                            const pageIdx = try std.fmt.parseInt(u32, sub, 0);
+                            try self.steamList(pageIdx);
+                        } else {
+                            self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
+                        }
+                    } else {
+                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: Steam is not enabled", .{});
+                    }
                 },
                 else => {
                     self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: Invalid Url protocol", .{});
@@ -513,6 +583,8 @@ pub const WebData = struct {
                     const size = font.sizeText(.{ .text = line, .scale = style.scale });
 
                     if (self.add_links) {
+                        std.log.info("{s}", .{url});
+
                         switch (style.ali) {
                             .Left => {
                                 const link = WebData.WebLink{
@@ -678,6 +750,7 @@ pub const WebData = struct {
         }
     }
 
+    // TODO: test memleak
     pub fn followLink(self: *Self) !void {
         if (self.highlight_idx == 0) return;
 
@@ -689,12 +762,12 @@ pub const WebData = struct {
 
         try self.hist.append(self.path.?);
 
-        self.path = self.links.items[self.highlight_idx - 1].url;
+        const targ = self.links.items[self.highlight_idx - 1].url;
 
-        if (self.path.?[0] == '@') {
-            if (std.mem.indexOf(u8, self.path.?, ":") == null) {
-                self.path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ lastHost, self.path.?[1..] });
-            }
+        if (self.path.?[0] == '@' and std.mem.indexOf(u8, self.path.?, ":") == null) {
+            self.path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ lastHost, targ });
+        } else {
+            self.path = try allocator.alloc.dupe(u8, targ);
         }
 
         if (self.conts != null) {
