@@ -172,6 +172,8 @@ var showFps: bool = false;
 var steamUserStats: *const steam.SteamUserStats = undefined;
 var steamUtils: *const steam.SteamUtils = undefined;
 
+var crt_enable = true;
+
 pub fn blit() !void {
     // actual gl calls start here
     ctx.makeCurrent();
@@ -206,55 +208,96 @@ pub fn blit() !void {
         });
     }
 
-    c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
+    if (false) {
+        c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
-    c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
-    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)));
-    c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
+        c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
+        c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)));
+        c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
 
-    c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+        c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
 
-    c.glDrawBuffers(1, &[_]c.GLenum{c.GL_COLOR_ATTACHMENT0});
+        c.glDrawBuffers(1, &[_]c.GLenum{c.GL_COLOR_ATTACHMENT0});
 
-    if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
-        return error.FramebufferSetupFail;
+        if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
+            return error.FramebufferSetupFail;
 
-    c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
+        c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
-    gfx.clear(&ctx);
+        gfx.clear(&ctx);
 
-    // finish render
-    try sb.render();
+        // finish render
+        try sb.render();
 
-    c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
-    c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
+        c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
+        c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
+        c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
 
-    c.glUseProgram(crt_shader.id);
-    crt_shader.setFloat("time", @as(f32, @floatCast(c.glfwGetTime())));
+        c.glUseProgram(crt_shader.id);
+        crt_shader.setFloat("time", @as(f32, @floatCast(c.glfwGetTime())));
 
-    c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
-    c.glEnableVertexAttribArray(0);
-    c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
+        c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
+        c.glEnableVertexAttribArray(0);
+        c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
 
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
+        c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
 
-    // swap buffer
-    gfx.swap(&ctx);
+        // swap buffer
+        gfx.swap(&ctx);
 
-    // rerender the last frame
-    c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
-    c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
+        // rerender the last frame
+        c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
+        c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
+        c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
 
-    c.glUseProgram(crt_shader.id);
+        c.glUseProgram(crt_shader.id);
 
-    c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
-    c.glEnableVertexAttribArray(0);
-    c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
+        c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
+        c.glEnableVertexAttribArray(0);
+        c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
 
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
+        c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
+    } else {
+        c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
+        c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
+        c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)));
+        c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
+
+        c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+        c.glDrawBuffers(1, &[_]c.GLenum{c.GL_COLOR_ATTACHMENT0});
+
+        if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
+            return error.FramebufferSetupFail;
+
+        c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
+
+        gfx.clear(&ctx);
+
+        // finish render
+        try sb.render();
+
+        c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
+        c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
+        c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
+
+        c.glUseProgram(crt_shader.id);
+        crt_shader.setFloat("time", @as(f32, @floatCast(c.glfwGetTime())));
+
+        c.glDisable(c.GL_BLEND);
+
+        c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
+        c.glEnableVertexAttribArray(0);
+        c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
+
+        c.glEnable(c.GL_BLEND);
+
+        c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
+
+        // swap buffer
+        gfx.swap(&ctx);
+    }
     c.glFinish();
 }
 
@@ -369,6 +412,8 @@ pub fn settingSet(event: systemEvs.EventSetSetting) !void {
 
             crt_shader.setInt("crt_enable", val);
             crt_shader.setInt("dither_enable", val);
+
+            crt_enable = val == 1;
         }
 
         return;

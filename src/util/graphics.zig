@@ -58,13 +58,13 @@ pub fn init(name: [*c]const u8) !Context {
     c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
     std.log.info("{}", .{mode.refreshRate});
 
-    c.glfwWindowHint(c.GLFW_REFRESH_RATE, 60);
+    c.glfwWindowHint(c.GLFW_REFRESH_RATE, mode.refreshRate);
 
     const win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
 
     c.glfwMakeContextCurrent(win);
 
-    c.glfwSwapInterval(1);
+    //c.glfwSwapInterval(1);
 
     if (c.gladLoadGLLoader(@as(c.GLADloadproc, @ptrCast(&c.glfwGetProcAddress))) == 0) {
         return error.GLADInitFailed;
