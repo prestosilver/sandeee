@@ -515,6 +515,8 @@ pub const EditorData = struct {
         self.buffer.?[0] = .{
             .text = try allocator.alloc.alloc(u8, 0),
         };
+
+        self.file = null;
     }
 
     pub fn deinit(self: *Self) !void {
