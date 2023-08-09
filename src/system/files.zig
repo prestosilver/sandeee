@@ -5,6 +5,7 @@ const fm = @import("../util/files.zig");
 const fake = @import("pseudo/all.zig");
 const vm = @import("vm.zig");
 const config = @import("config.zig");
+const telem = @import("telem.zig");
 
 pub var root: *Folder = undefined;
 pub var home: *Folder = undefined;
@@ -185,7 +186,8 @@ pub const Folder = struct {
             if (!overrideSettings) {
                 const settingsFile = try root.getFile("/conf/system.cfg");
 
-                const settings = try settingsFile.read(null);
+                const settings = try allocator.alloc.dupe(u8, try settingsFile.read(null));
+                defer allocator.alloc.free(settings);
 
                 try loadDisk(recovery);
 
@@ -195,6 +197,17 @@ pub const Folder = struct {
                 try loadDisk(recovery);
             }
         }
+
+        // update telem version
+        try telem.Telem.load();
+
+        telem.Telem.instance.version = .{
+            .major = options.SandEEEVersion.major,
+            .minor = options.SandEEEVersion.minor,
+            .patch = options.SandEEEVersion.patch,
+        };
+
+        try telem.Telem.save();
 
         const file = try std.fs.cwd().createFile(out, .{});
         defer file.close();
