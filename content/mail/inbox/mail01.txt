@@ -8,4 +8,5 @@ I heard you don't know how to write ShEEEl programs, so your first challenge is 
 
 To get started open cmd and run "new helloWorld.esh".
 
+Your Follower
 Joe Moe

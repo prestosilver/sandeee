@@ -1,0 +1,11 @@
+id: 16
+deps: 15
+from: Epsilon
+sub: Down with EEE
+sys: 255
+
+You problaby know who EEE is at this point. I wanted to ask if you would like to help me destroy their monopoly.
+Recentally I found a bug in EEEAsm that occours when you run sys 255, can you check that out?
+I want to see if this works on every SandEEE machine.
+
+-- Epsilon Frees All --

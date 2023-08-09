@@ -1,11 +1,11 @@
 id: 15
 deps: 14
-from: Epsilon
-sub: Down with EEE
-sys: 255
+from: Joe_m@eee.org
+view
+sub: Epsilon
+Hello,
+EEE has been getting complaints recently about someone named Epsilon emailing them.
+Please ignore these, the problem is being dealt with.
 
-You problaby know who EEE is at this point. I wanted to ask if you would like to help me destroy their monopoly.
-Recentally I found a bug in EEEAsm that occours when you run sys 255, can you check that out?
-I want to see if this works on every SandEEE machine.
-
--- Epsilon Frees All --
+Your Follower
+Joe Moe

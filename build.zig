@@ -305,8 +305,8 @@ pub fn build(b: *std.build.Builder) !void {
     } else if (exe.target.os_tag == null or exe.target.os_tag.? == .linux) {
         _ = b.exec(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
         b.installFile("runSandEEE", "bin/runSandEEE");
-        b.installFile("/usr/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
-        b.installFile("/usr/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
+        b.installFile("deps/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
+        b.installFile("deps/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
         if (isSteam)
             b.installFile("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
