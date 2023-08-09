@@ -176,12 +176,16 @@ pub const Shell = struct {
             const fileConts = try edself.file.?.read(null);
             const lines = std.mem.count(u8, fileConts, "\n") + 1;
 
-            edself.buffer = try allocator.alloc.realloc(edself.buffer, lines);
+            if (edself.buffer == null) {
+                edself.buffer = try allocator.alloc.alloc(wins.editor.EditorData.Row, lines);
+            } else {
+                edself.buffer = try allocator.alloc.realloc(edself.buffer.?, lines);
+            }
 
             var iter = std.mem.split(u8, fileConts, "\n");
             var idx: usize = 0;
             while (iter.next()) |line| {
-                edself.buffer[idx] = .{
+                edself.buffer.?[idx] = .{
                     .text = try allocator.alloc.dupe(u8, line),
                     .render = null,
                 };
