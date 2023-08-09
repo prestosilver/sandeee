@@ -65,7 +65,7 @@ pub const UGCDetails = extern struct {
     created: u32,
     updated: u32,
     added: u32,
-    visible: bool,
+    visible: u8,
     banned: bool,
     acceptable: bool,
     tagsTurnic: bool,
@@ -80,10 +80,21 @@ pub const UGCDetails = extern struct {
     downVotes: u32,
     score: f32,
     children: u32,
-    filler: [128]u8,
 };
 
 pub const SteamUGC = extern struct {
+    extern fn SteamAPI_ISteamUGC_DownloadItem(ugc: *const SteamUGC, id: u64, hp: bool) bool;
+    pub fn downloadItem(ugc: *const SteamUGC, id: u64, hp: bool) bool {
+        if (enableApi) {
+            return SteamAPI_ISteamUGC_DownloadItem(ugc, id, hp);
+        } else {
+            std.log.debug("Download Item: {}", .{id});
+            return .{
+                .data = 1,
+            };
+        }
+    }
+
     extern fn SteamAPI_ISteamUGC_SendQueryUGCRequest(ugc: *const SteamUGC, handle: UGCQueryHandle) APIHandle;
     pub fn sendQueryRequest(ugc: *const SteamUGC, handle: UGCQueryHandle) APIHandle {
         if (enableApi) {
@@ -124,6 +135,19 @@ pub const SteamUGC = extern struct {
     ) bool {
         if (enableApi) {
             return SteamAPI_ISteamUGC_GetQueryUGCResult(ugc, handle, index, details);
+        } else {
+            std.log.debug("query result", .{});
+            return false;
+        }
+    }
+
+    extern fn SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(ugc: *const SteamUGC, handle: UGCQueryHandle) bool;
+    pub fn releaseQueryResult(
+        ugc: *const SteamUGC,
+        handle: UGCQueryHandle,
+    ) bool {
+        if (enableApi) {
+            return SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(ugc, handle);
         } else {
             std.log.debug("query result", .{});
             return false;

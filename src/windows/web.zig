@@ -102,6 +102,8 @@ pub const WebData = struct {
         var idx: u32 = 0;
 
         while (ugc.getQueryResult(query, idx, details)) : (idx += 1) {
+            if (details.visible != 0) continue;
+
             const old = conts;
             defer allocator.alloc.free(old);
 
@@ -111,11 +113,13 @@ pub const WebData = struct {
             defer allocator.alloc.free(titlePrint);
 
             const desc: [*:0]u8 = @ptrCast(&details.desc);
-            const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}", .{desc[0..std.mem.len(desc)]});
+            const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ desc[0..std.mem.len(desc)], details.fileId });
             defer allocator.alloc.free(descPrint);
 
             conts = try std.mem.concat(allocator.alloc, u8, &.{ old, titlePrint, "\n", descPrint, "\n\n" });
         }
+
+        _ = ugc.releaseQueryResult(query);
 
         {
             const old = conts;
@@ -128,6 +132,14 @@ pub const WebData = struct {
         }
 
         self.conts = conts;
+    }
+
+    pub fn steamItem(self: *Self, id: u64) !void {
+        const ugc = steam.getSteamUGC();
+
+        _ = ugc.downloadItem(id, true);
+
+        self.conts = try std.fmt.allocPrint(allocator.alloc, "Todo: implement steamItem {}", .{id});
     }
 
     pub fn loadPage(self: *Self) !void {
@@ -225,6 +237,9 @@ pub const WebData = struct {
                         if (std.mem.eql(u8, root, "list")) {
                             const pageIdx = try std.fmt.parseInt(u32, sub, 0);
                             try self.steamList(pageIdx);
+                        } else if (std.mem.eql(u8, root, "item")) {
+                            const pageIdx = try std.fmt.parseInt(u64, sub, 0);
+                            try self.steamItem(pageIdx);
                         } else {
                             self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
                         }
@@ -583,8 +598,6 @@ pub const WebData = struct {
                     const size = font.sizeText(.{ .text = line, .scale = style.scale });
 
                     if (self.add_links) {
-                        std.log.info("{s}", .{url});
-
                         switch (style.ali) {
                             .Left => {
                                 const link = WebData.WebLink{
@@ -764,8 +777,8 @@ pub const WebData = struct {
 
         const targ = self.links.items[self.highlight_idx - 1].url;
 
-        if (self.path.?[0] == '@' and std.mem.indexOf(u8, self.path.?, ":") == null) {
-            self.path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ lastHost, targ });
+        if (targ[0] == '@' and std.mem.indexOf(u8, targ, ":") == null) {
+            self.path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ lastHost, targ[1..] });
         } else {
             self.path = try allocator.alloc.dupe(u8, targ);
         }
