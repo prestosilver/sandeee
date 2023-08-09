@@ -21,6 +21,7 @@ pub const VM = struct {
         StringMissing,
         InvalidOp,
         InvalidSys,
+        InvalidPassword,
         NotImplemented,
         UnknownFunction,
     };
@@ -823,6 +824,29 @@ pub const VM = struct {
                         // panic
                         128 => {
                             @panic("VM Crash Called");
+                        },
+                        255 => {
+                            if (self.rsp == 0)
+                                return error.InvalidPassword;
+
+                            const pass = try self.popStack();
+                            defer self.free(&[_]StackEntry{pass});
+
+                            if (pass != .string) return error.StringMissing;
+
+                            if (std.mem.eql(u8, pass.string.*, "Hello")) {
+                                try self.out.appendSlice("Hello World!\n");
+
+                                return;
+                            }
+
+                            if (std.mem.eql(u8, pass.string.*, "jpASaFGOefSNTfObokVhNRsXOOSarlIG")) {
+                                try self.out.appendSlice("Debug Mode Enabled\n");
+
+                                return;
+                            }
+
+                            return error.InvalidPassword;
                         },
                         // misc
                         else => {
