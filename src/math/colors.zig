@@ -6,18 +6,16 @@ pub const Color = struct {
     b: f32,
     a: f32,
 
-    pub fn mix(a: Color, b: Color, pc: f32) Color {
-        var result: Color = undefined;
-
-        result.r = a.r + (b.r - a.r) * pc;
-        result.g = a.g + (b.g - a.g) * pc;
-        result.b = a.b + (b.b - a.b) * pc;
-        result.a = a.a + (b.a - a.a) * pc;
-
-        return result;
+    pub inline fn mix(a: Color, b: Color, pc: f32) Color {
+        return .{
+            .r = a.r + (b.r - a.r) * pc,
+            .g = a.g + (b.g - a.g) * pc,
+            .b = a.b + (b.b - a.b) * pc,
+            .a = a.a + (b.a - a.a) * pc,
+        };
     }
 
-    pub fn parseColor(color: [6]u8) !Color {
+    pub inline fn parseColor(color: [6]u8) !Color {
         const hex = try std.fmt.parseInt(u24, &color, 16);
 
         return newColorRGBA(
@@ -28,7 +26,7 @@ pub const Color = struct {
         );
     }
 
-    pub fn contrast(c: Color) Color {
+    pub inline fn contrast(c: Color) Color {
         const gamma = 2.2;
         const L = 0.2126 * std.math.pow(f32, c.r, gamma) + 0.7152 * std.math.pow(f32, c.g, gamma) + 0.0722 * std.math.pow(f32, c.b, gamma);
 
@@ -40,7 +38,7 @@ pub const Color = struct {
     }
 };
 
-pub fn newColor(r: f32, g: f32, b: f32, a: f32) Color {
+pub inline fn newColor(r: f32, g: f32, b: f32, a: f32) Color {
     return Color{
         .r = r,
         .g = g,
@@ -49,7 +47,7 @@ pub fn newColor(r: f32, g: f32, b: f32, a: f32) Color {
     };
 }
 
-pub fn newColorRGBA(r: u8, g: u8, b: u8, a: u8) Color {
+pub inline fn newColorRGBA(r: u8, g: u8, b: u8, a: u8) Color {
     return Color{
         .r = @as(f32, @floatFromInt(r)) / 255,
         .g = @as(f32, @floatFromInt(g)) / 255,

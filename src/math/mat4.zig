@@ -2,8 +2,6 @@ const std = @import("std");
 
 const vecs = @import("vecs.zig");
 
-extern "c" fn tan(a: f32) f32;
-
 pub const Mat4 = struct {
     data: [16]f32,
 
@@ -23,7 +21,7 @@ pub const Mat4 = struct {
     }
 
     pub fn perspective(fovy: f32, aspect: f32, n: f32, f: f32) !Mat4 {
-        const thFov = tan(fovy / 2);
+        const thFov = @tan(fovy / 2);
 
         return .{
             .data = .{
@@ -46,24 +44,17 @@ pub const Mat4 = struct {
         };
     }
 
-    fn range(len: usize) []const void {
-        return @as([*]void, undefined)[0..len];
-    }
-
     pub fn mul(a: Mat4, b: Mat4) Mat4 {
         var result: Mat4 = undefined;
 
-        for (range(4)) |i| {
-            for (range(4)) |j| {
+        for (0..4) |i| {
+            for (0..4) |j| {
                 result.data[i + j * 4] = 0;
-                for (range(4)) |k| {
+                for (0..4) |k| {
                     result.data[i + j * 4] += a.data[i + k * 4] * b.data[k + j * 4];
                 }
             }
         }
-
-        a.deinit();
-        b.deinit();
 
         return result;
     }

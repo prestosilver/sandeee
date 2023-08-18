@@ -113,7 +113,7 @@ const full_quad = [_]c.GLfloat{
 };
 
 // fps tracking
-var lastFrameTime: f64 = 0;
+var last_frame_time: f64 = 0;
 
 var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
 var currentState: systemEvs.State = .Disks;
@@ -468,7 +468,7 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
     try gfx.resize(event.w, event.h);
 
     c.glfwSetTime(0);
-    lastFrameTime = 0;
+    last_frame_time = 0;
 
     // clear the window
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
@@ -871,7 +871,7 @@ pub fn mainErr() anyerror!void {
     var timer: f64 = 0;
 
     c.glfwSetTime(0);
-    lastFrameTime = 0;
+    last_frame_time = 0;
 
     // main loop
     while (gfx.poll(&ctx)) {
@@ -884,14 +884,21 @@ pub fn mainErr() anyerror!void {
 
         // pause the game on minimize
         if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) == 0) {
+            const cb = struct {
+                fn callback(callbackMsg: steam.CallbackMsg) anyerror!void {
+                    std.log.warn("steam callback {}", .{callbackMsg.callback});
+                }
+            }.callback;
+
             // update the game state
-            try state.update(@max(1 / 60, @as(f32, @floatCast(currentTime - lastFrameTime))));
+            try state.update(@max(1 / 60, @as(f32, @floatCast(currentTime - last_frame_time))));
+            try steam.manualCallback(cb);
 
             // get tris
             try state.draw(gfx.gContext.size);
         }
 
-        timer += currentTime - lastFrameTime;
+        timer += currentTime - last_frame_time;
         if (timer > 1.00) {
             finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / timer));
             if (shell.vms != 0 and finalFps != 0) {
@@ -922,7 +929,7 @@ pub fn mainErr() anyerror!void {
         }
 
         // update the time
-        lastFrameTime = currentTime;
+        last_frame_time = currentTime;
     }
 
     // deinit the current state

@@ -43,7 +43,7 @@ pub const GSDisks = struct {
         return (file.metadata() catch return 0).modified();
     }
 
-    pub fn sortDisksLt(_: u8, a: []const u8, b: []const u8) bool {
+    pub fn sortDisksLt(_: u0, a: []const u8, b: []const u8) bool {
         return getDate(b) < getDate(a);
     }
 
@@ -67,9 +67,9 @@ pub const GSDisks = struct {
             try self.disks.append(entry);
         }
 
-        const und: u8 = undefined;
+        const dat: u0 = 0;
 
-        std.sort.insertion([]const u8, self.disks.items, und, sortDisksLt);
+        std.sort.insertion([]const u8, self.disks.items, dat, sortDisksLt);
 
         for (self.disks.items, 0..) |_, idx| {
             const copy = self.disks.items[idx];

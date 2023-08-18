@@ -1,5 +1,4 @@
 const std = @import("std");
-extern "c" fn atan2(a: f32, b: f32) f32;
 
 pub const Vector2 = struct {
     x: f32,
@@ -41,7 +40,6 @@ pub const Vector2 = struct {
     }
 
     // misc stuff
-
     pub inline fn magSq(a: Vector2) f32 {
         return @fabs((a.x * a.x) + (a.y * a.y));
     }
