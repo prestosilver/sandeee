@@ -1,8 +1,12 @@
 const std = @import("std");
 const options = @import("options");
-
 const files = @import("files.zig");
 const allocator = @import("../util/allocator.zig");
+const win = @import("../drawers/window2d.zig");
+const wins = @import("../windows/all.zig");
+const events = @import("../util/events.zig");
+const windowEvs = @import("../events/window.zig");
+const rect = @import("../math/rects.zig");
 
 pub const Telem = packed struct {
     pub const PATH = "/_priv/telem.bin";
@@ -29,7 +33,26 @@ pub const Telem = packed struct {
         if (instance.version.major != options.SandEEEVersion.major or
             instance.version.minor != options.SandEEEVersion.minor or
             instance.version.patch != options.SandEEEVersion.patch)
-            std.log.info("spawn update", .{});
+        {
+            const update_window = win.Window.new("win", win.WindowData{
+                .source = rect.Rectangle{
+                    .x = 0.0,
+                    .y = 0.0,
+                    .w = 1.0,
+                    .h = 1.0,
+                },
+                .pos = .{
+                    .x = 0,
+                    .y = 0,
+                    .w = 600,
+                    .h = 350,
+                },
+                .contents = wins.update.new() catch return,
+                .active = true,
+            });
+
+            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = update_window, .center = true }) catch return;
+        }
     }
 
     pub fn load() !void {
