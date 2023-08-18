@@ -169,9 +169,11 @@ pub const EditorData = struct {
             .text = "A",
         }).x;
 
-        if (self.file) |file| {
-            const idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
-            const title = try std.fmt.allocPrint(allocator.alloc, "\x82\x82\x82DT-{s}{s}", .{ file.name[idx + 1 ..], if (self.modified) "*" else "" });
+        if (self.buffer) |_| {
+            const file_name = if (self.file) |file| file.name else "[New File]";
+
+            const idx = if (std.mem.lastIndexOf(u8, file_name, "/")) |idx| idx + 1 else 0;
+            const title = try std.fmt.allocPrint(allocator.alloc, "\x82\x82\x82DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
             defer allocator.alloc.free(title);
 
             try props.setTitle(title);
@@ -200,7 +202,10 @@ pub const EditorData = struct {
 
                 const clickPos = self.clickPos.?;
 
-                const doneBig = @round(clickPos.y / font.size) <= @round((clickDone.y - props.scroll.?.value) / font.size);
+                const doneBig = if (std.math.fabs(@round(clickPos.y / font.size) - @round((clickDone.y - props.scroll.?.value) / font.size)) < 1)
+                    @round(clickPos.x / charSize) < @round(clickDone.x / charSize)
+                else
+                    @round(clickPos.y / font.size) < @round((clickDone.y - props.scroll.?.value) / font.size);
 
                 const start = if (doneBig) clickPos else clickDone.sub(.{ .x = 0, .y = props.scroll.?.value });
                 const end = if (doneBig) clickDone.sub(.{ .x = 0, .y = props.scroll.?.value }) else clickPos;
@@ -393,6 +398,54 @@ pub const EditorData = struct {
         return;
     }
 
+    pub fn deleteSel(self: *Self) !void {
+        if (self.cursor_len == 0) return;
+
+        var idx: usize = 0;
+
+        if (self.buffer) |buffer| {
+            var new_buffer = std.ArrayList(Row).init(allocator.alloc);
+            defer new_buffer.deinit();
+
+            const abs_sel: usize = @intCast(try std.math.absInt(self.cursor_len));
+
+            for (buffer[self.cursory..]) |line| {
+                var new_line = Row{
+                    .text = try allocator.alloc.alloc(u8, 0),
+                };
+
+                for (line.text) |ch| {
+                    if (!(idx >= self.cursorx and idx < self.cursorx + abs_sel)) {
+                        new_line.text = try allocator.alloc.realloc(new_line.text, new_line.text.len + 1);
+                        new_line.text[new_line.text.len - 1] = ch;
+                    }
+                    idx += 1;
+                }
+
+                // new line
+                idx += 1;
+
+                if ((!(idx >= self.cursorx and idx < self.cursorx + abs_sel)) or new_line.text.len != 0) {
+                    try new_buffer.append(new_line);
+                } else {
+                    allocator.alloc.free(new_line.text);
+                }
+            }
+
+            try self.clearBuffer();
+
+            if (self.buffer) |_| {
+                self.buffer = try allocator.alloc.realloc(self.buffer.?, new_buffer.items.len);
+            } else {
+                self.buffer = try allocator.alloc.alloc(Row, new_buffer.items.len);
+            }
+
+            @memcpy(self.buffer.?, new_buffer.items);
+        }
+
+        self.cursor_len = 0;
+    }
+
     pub fn getSel(self: *Self) ![]const u8 {
         const absSel: usize = @intCast(try std.math.absInt(self.cursor_len));
 
@@ -530,6 +583,8 @@ pub const EditorData = struct {
     pub fn char(self: *Self, code: u32, _: i32) !void {
         if (code == '\n') return;
 
+        try self.deleteSel();
+
         if (self.buffer) |buffer| {
             const line = &buffer[self.cursory];
 
@@ -614,6 +669,12 @@ pub const EditorData = struct {
             },
             c.GLFW_KEY_DELETE => {
                 if (self.buffer) |buffer| {
+                    if (self.cursor_len != 0) {
+                        try self.deleteSel();
+
+                        return;
+                    }
+
                     const line = &buffer[self.cursory];
 
                     if (self.cursorx < line.text.len) {
@@ -628,6 +689,12 @@ pub const EditorData = struct {
             },
             c.GLFW_KEY_BACKSPACE => {
                 if (self.buffer) |buffer| {
+                    if (self.cursor_len != 0) {
+                        try self.deleteSel();
+
+                        return;
+                    }
+
                     if (self.cursorx > 0) {
                         const line = &buffer[self.cursory];
 
@@ -661,27 +728,49 @@ pub const EditorData = struct {
                 }
             },
             c.GLFW_KEY_LEFT => {
-                if (self.cursorx > 0) {
-                    self.cursorx -= 1;
-
-                    if (mods == c.GLFW_MOD_SHIFT) {
+                if (self.buffer) |_| {
+                    if (mods == c.GLFW_MOD_SHIFT and self.cursor_len < 0) {
                         self.cursor_len += 1;
+                    } else if (mods == c.GLFW_MOD_SHIFT and self.cursor_len > 0) {
+                        if (self.cursorx > 0) {
+                            self.cursorx -= 1;
+                        }
+                        self.cursor_len += 1;
+                    } else if (mods == c.GLFW_MOD_SHIFT) {
+                        if (self.cursorx > 0) {
+                            self.cursorx -= 1;
+                            self.cursor_len += 1;
+                        }
                     } else {
-                        self.cursor_len = 0;
+                        if (self.cursor_len == 0) {
+                            self.cursorx -= 1;
+                        } else {
+                            self.cursor_len = 0;
+                        }
                     }
                 }
             },
             c.GLFW_KEY_RIGHT => {
                 if (self.buffer) |buffer| {
-                    if (self.cursorx < buffer[self.cursory].text.len) {
-                        self.cursorx += 1;
-
-                        if (mods == c.GLFW_MOD_SHIFT) {
-                            self.cursorx -= 1;
-
+                    if (mods == c.GLFW_MOD_SHIFT and self.cursor_len > 0) {
+                        if (self.cursorx < buffer[self.cursory].text.len) {
+                            self.cursorx += 1;
                             self.cursor_len -= 1;
+                        }
+                    } else if (mods == c.GLFW_MOD_SHIFT and self.cursor_len < 0) {
+                        self.cursor_len -= 1;
+                    } else if (mods == c.GLFW_MOD_SHIFT) {
+                        self.cursor_len -= 1;
+                    } else if (self.cursorx < buffer[self.cursory].text.len) {
+                        if (self.cursor_len == 0) {
+                            self.cursorx += 1;
                         } else {
-                            self.cursor_len = 0;
+                            if (self.cursor_len < 0) {
+                                self.cursorx += @intCast(-self.cursor_len);
+                                self.cursor_len = 0;
+                            } else {
+                                self.cursor_len = 0;
+                            }
                         }
                     }
                 }

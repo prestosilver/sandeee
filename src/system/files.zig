@@ -12,7 +12,7 @@ pub var home: *Folder = undefined;
 pub var exec: *Folder = undefined;
 pub var settingsManager: *config.SettingManager = undefined;
 
-var rootOut: ?[]const u8 = null;
+pub var rootOut: ?[]const u8 = null;
 
 pub const ROOT_NAME = "/";
 
@@ -771,9 +771,4 @@ pub fn write() !void {
 
 pub fn deinit() void {
     root.deinit();
-
-    if (rootOut) |toFree| {
-        allocator.alloc.free(toFree);
-    }
-    rootOut = null;
 }

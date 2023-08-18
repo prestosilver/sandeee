@@ -3,7 +3,7 @@ const std = @import("std");
 const root = @import("root");
 const enableApi = @hasDecl(root, "useSteam") and root.useSteam;
 
-pub const STEAM_APP_ID = 480;
+pub const STEAM_APP_ID = 383980;
 
 const TestUser: SteamUser = .{ .data = 1000 };
 const TestUGC: SteamUGC = .{};
@@ -39,7 +39,9 @@ pub const SteamUtils = extern struct {
         }
     }
 };
+
 pub const SteamUserStats = extern struct {};
+pub const SteamPipe = extern struct {};
 
 pub const APIHandle = extern struct {
     data: u64,
@@ -92,6 +94,16 @@ pub const SteamUGC = extern struct {
             return .{
                 .data = 1,
             };
+        }
+    }
+
+    extern fn SteamAPI_ISteamUGC_GetItemInstallInfo(ugc: *const SteamUGC, id: u64, size: *u64, folder: [*c]u8, folderSize: u32, timestamp: *u32) bool;
+    pub fn getItemInstallInfo(ugc: *const SteamUGC, id: u64, size: *u64, folder: []u8, timestamp: *u32) bool {
+        if (enableApi) {
+            return SteamAPI_ISteamUGC_GetItemInstallInfo(ugc, id, size, folder.ptr, @intCast(folder.len), timestamp);
+        } else {
+            std.log.debug("itemInfo: {}", .{id});
+            return false;
         }
     }
 
@@ -226,5 +238,39 @@ pub fn runCallbacks() void {
     } else {
         std.log.debug("Init Steam Utils", .{});
         return &TestStats;
+    }
+}
+
+pub const CALLBACK_COMPLETED = 703;
+
+pub const CallbackMsg = extern struct {
+    user: SteamUser,
+    callback: i32,
+    param: *void,
+    paramSize: i32,
+};
+
+var manualSetup: bool = false;
+
+extern fn SteamAPI_GetHSteamPipe() *const SteamPipe;
+extern fn SteamAPI_ManualDispatch_Init() void;
+extern fn SteamAPI_ManualDispatch_RunFrame(*const SteamPipe) void;
+extern fn SteamAPI_ManualDispatch_GetNextCallback(*const SteamPipe, *CallbackMsg) bool;
+extern fn SteamAPI_ManualDispatch_FreeLastCallback(*const SteamPipe) void;
+pub fn manualCallback(comptime calls: fn (CallbackMsg) anyerror!void) !void {
+    if (enableApi) {
+        if (!manualSetup) {
+            SteamAPI_ManualDispatch_Init();
+        }
+
+        const steamPipe = SteamAPI_GetHSteamPipe();
+        SteamAPI_ManualDispatch_RunFrame(steamPipe);
+        var callback: CallbackMsg = undefined;
+
+        while (SteamAPI_ManualDispatch_GetNextCallback(steamPipe, &callback)) {
+            try calls(callback);
+
+            SteamAPI_ManualDispatch_FreeLastCallback(steamPipe);
+        }
     }
 }

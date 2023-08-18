@@ -15,7 +15,7 @@ const wall = @import("../drawers/wall2d.zig");
 const audio = @import("../util/audio.zig");
 const c = @import("../c.zig");
 
-pub var target: enum { Quit, Bios } = .Quit;
+pub var target: enum { Quit, Bios, Update } = .Quit;
 
 pub const GSLogout = struct {
     const Self = @This();
@@ -32,7 +32,6 @@ pub const GSLogout = struct {
     time: f32 = 0,
 
     pub fn setup(self: *Self) !void {
-        try files.write();
         try self.audio_man.playSound(self.logout_sound.*);
 
         self.time = 3;
@@ -55,8 +54,10 @@ pub const GSLogout = struct {
 
         try self.sb.draw(sp.Sprite, &clearSprite, self.clearShader, vecs.newVec3(0, 0, 0));
 
+        const text = if (target == .Update) "Updating" else "Logging Out";
+
         const logoutSize = self.face.sizeText(.{
-            .text = "Logging Out",
+            .text = text,
         });
 
         const logoutPos = size.sub(logoutSize).div(2);
@@ -64,7 +65,7 @@ pub const GSLogout = struct {
         try self.face.draw(.{
             .batch = self.sb,
             .shader = self.font_shader,
-            .text = "Logging Out",
+            .text = text,
             .pos = logoutPos,
             .color = cols.newColor(1, 1, 1, 1),
         });
@@ -79,6 +80,13 @@ pub const GSLogout = struct {
                     c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
                 },
                 .Bios => {
+                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                        .targetState = .Disks,
+                    });
+                },
+                .Update => {
+                    try files.Folder.recoverDisk(files.rootOut.?, false);
+
                     try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });

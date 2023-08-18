@@ -209,7 +209,7 @@ pub const Font = struct {
                 continue;
             }
 
-            if (ach & 0xF0 == 0xF0) {
+            if (ach >= 0xF0 or ach < 0x20) {
                 color = FONT_COLORS[@intCast(ach & 0x0F)];
                 continue;
             }
@@ -373,7 +373,7 @@ pub const Font = struct {
         }
 
         for (params.text) |ach| {
-            if (ach >= 0xF0) {
+            if (ach >= 0xF0 or ach < 0x20) {
                 continue;
             }
 

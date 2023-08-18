@@ -192,7 +192,7 @@ pub const GSRecovery = struct {
                         },
                         1 => {
                             try files.Folder.recoverDisk(self.disks.items[self.sel][2..], true);
-                            self.status = "Reinstalled";
+                            self.status = "Reinstalled & Reset";
                             try self.audioMan.playSound(self.selectSound.*);
                         },
                         2 => {

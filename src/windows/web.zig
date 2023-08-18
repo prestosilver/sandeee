@@ -84,10 +84,9 @@ pub const WebData = struct {
         const handle = ugc.sendQueryRequest(query);
         const steamUtils = steam.getSteamUtils();
 
-        var failed = false;
+        var failed = true;
         while (!steamUtils.isCallComplete(handle, &failed)) {
-            steam.runCallbacks();
-            std.time.sleep(1.0);
+            std.time.sleep(200_000_000);
         }
 
         if (failed) {
@@ -134,12 +133,40 @@ pub const WebData = struct {
         self.conts = conts;
     }
 
-    pub fn steamItem(self: *Self, id: u64) !void {
+    pub fn steamItem(self: *Self, id: u64, path: []const u8) !void {
         const ugc = steam.getSteamUGC();
+        const BUFFER_SIZE = 256;
 
-        _ = ugc.downloadItem(id, true);
+        var size: u64 = undefined;
+        var folder = [_]u8{0} ** (BUFFER_SIZE + 1);
+        var timestamp: u32 = undefined;
 
-        self.conts = try std.fmt.allocPrint(allocator.alloc, "Todo: implement steamItem {}", .{id});
+        if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
+            if (!ugc.downloadItem(id, true)) {
+                self.conts = try std.fmt.allocPrint(allocator.alloc, "Failed to load page {}.", .{id});
+            }
+
+            while (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
+                std.time.sleep(200_000_000);
+            }
+        }
+
+        const folderPtr = folder[0..std.mem.len(@as([*:0]u8, @ptrCast(&folder)))];
+
+        const walker = try std.fs.openIterableDirAbsolute(folderPtr, .{});
+
+        var iter = walker.iterate();
+
+        var conts = try std.fmt.allocPrint(allocator.alloc, "Contents of {s}/{s}", .{ folderPtr, path });
+
+        while (try iter.next()) |item| {
+            const old = conts;
+            defer allocator.alloc.free(old);
+
+            conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ old, item.name });
+        }
+
+        self.conts = conts;
     }
 
     pub fn loadPage(self: *Self) !void {
@@ -238,8 +265,15 @@ pub const WebData = struct {
                             const pageIdx = try std.fmt.parseInt(u32, sub, 0);
                             try self.steamList(pageIdx);
                         } else if (std.mem.eql(u8, root, "item")) {
-                            const pageIdx = try std.fmt.parseInt(u64, sub, 0);
-                            try self.steamItem(pageIdx);
+                            const slashIdx = std.mem.indexOf(u8, sub, "/");
+
+                            if (slashIdx) |slash| {
+                                const pageIdx = try std.fmt.parseInt(u64, sub[0..slash], 0);
+                                try self.steamItem(pageIdx, sub[slash + 1 ..]);
+                            } else {
+                                const pageIdx = try std.fmt.parseInt(u64, sub, 0);
+                                try self.steamItem(pageIdx, "/");
+                            }
                         } else {
                             self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
                         }

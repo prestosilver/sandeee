@@ -576,9 +576,10 @@ pub const GSWindowed = struct {
 
                     switch (mode) {
                         .Close => {
-                            if (options.IsDemo and std.mem.eql(u8, swap.data.contents.props.info.kind, "Welcome")) {
-                                try self.windows.append(swap);
-                            } else return swap.data.deinit();
+                            if (options.IsDemo and std.mem.eql(u8, swap.data.contents.props.info.kind, "Welcome"))
+                                try self.windows.append(swap)
+                            else
+                                return swap.data.deinit();
                         },
                         .Full => {
                             if (swap.data.full) {
