@@ -29,8 +29,7 @@ const notifications = @import("../drawers/notification2d.zig");
 const va = @import("../util/vertArray.zig");
 const telem = @import("../system/telem.zig");
 const c = @import("../c.zig");
-
-pub var vmTime: f64 = 0.5;
+const vmManager = @import("../system/vmmanager.zig");
 
 pub const GSWindowed = struct {
     const Self = @This();
@@ -57,7 +56,6 @@ pub const GSWindowed = struct {
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
     init: bool = false,
-    lastFrameTime: f32 = 1.0 / 60.0,
 
     desk: desk.Desk,
 
@@ -65,6 +63,7 @@ pub const GSWindowed = struct {
     shell: shell.Shell = undefined,
 
     color: cols.Color = cols.newColor(0, 0, 0, 1),
+    vm_manager: *vmManager.VMManager,
 
     pub var deskSize: *vecs.Vector2 = undefined;
 
@@ -307,10 +306,8 @@ pub const GSWindowed = struct {
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
 
         // setup vm data for update
-        shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat((self.lastFrameTime) * std.time.ns_per_s * vmTime));
-
         if (self.shell.vm != null) {
-            const result = self.shell.updateVM() catch null;
+            const result = self.shell.getVMResult() catch null;
             if (result != null) {
                 allocator.alloc.free(result.?.data);
             }
@@ -398,11 +395,8 @@ pub const GSWindowed = struct {
         // draw cursor
         try self.sb.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
 
-        for (shell.threads.items) |thread| {
-            thread.join();
-        }
-
-        shell.threads.clearAndFree();
+        // vm manager
+        try self.vm_manager.update();
     }
 
     pub fn update(self: *Self, dt: f32) !void {

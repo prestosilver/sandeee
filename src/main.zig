@@ -55,6 +55,7 @@ const files = @import("system/files.zig");
 const headless = @import("system/headless.zig");
 const emails = @import("system/mail.zig");
 const shell = @import("system/shell.zig");
+const vmManager = @import("system/vmmanager.zig");
 
 // not-op programming lang
 const c = @import("c.zig");
@@ -142,6 +143,7 @@ var wallpaper: wall.Wallpaper = undefined;
 var settingManager: conf.SettingManager = undefined;
 var textureManager: texMan.TextureManager = undefined;
 var emailManager: emails.EmailManager = undefined;
+var vm_manager: vmManager.VMManager = undefined;
 
 // gfx stuff
 var ctx: gfx.Context = undefined;
@@ -192,9 +194,9 @@ pub fn blit() !void {
         const text = try std.fmt.allocPrint(allocator.alloc, "{s}FPS: {}\n{s}VMS: {}\n\xf9VMT: {}%\nSTA: {}", .{
             if (finalFps < 50) "\xFA" else "\xF9",
             finalFps,
-            if (shell.vms == 0) "\xF1" else "\xF9",
-            shell.vms,
-            @as(u8, @intFromFloat(windowedState.vmTime * 100)),
+            if (vm_manager.vms.count() == 0) "\xF1" else "\xF9",
+            vm_manager.vms.count(),
+            @as(u8, @intFromFloat(vmManager.VMManager.vm_time * 100)),
             @intFromEnum(currentState),
         });
         defer allocator.alloc.free(text);
@@ -590,6 +592,9 @@ pub fn mainErr() anyerror!void {
     // free the argument iterator
     args.deinit();
 
+    vm_manager = vmManager.VMManager.init();
+    shell.vm_manager = &vm_manager;
+
     // switch to headless main function if nessessary
     if (isHeadless) {
         return headless.headlessMain(headlessCmd, false, null);
@@ -664,9 +669,8 @@ pub fn mainErr() anyerror!void {
     try textureManager.putMem("sad", sadImage);
     try textureManager.putMem("error", errorImage);
 
-    // setup shell threads
-    shell.threads = std.ArrayList(std.Thread).init(allocator.alloc);
-    defer shell.threads.deinit();
+    // setup vm manager
+    vm_manager = vmManager.VMManager.init();
 
     wallpaper = wall.Wallpaper.new("wall", wall.WallData{
         .dims = &gfx.gContext.size,
@@ -732,6 +736,7 @@ pub fn mainErr() anyerror!void {
         .face = &mainFace,
         .settingsManager = &settingManager,
         .emailManager = &emailManager,
+        .vm_manager = &vm_manager,
         .bar_logo_sprite = .{
             .texture = "barlogo",
             .data = sprite.SpriteData.new(
@@ -901,9 +906,9 @@ pub fn mainErr() anyerror!void {
         timer += currentTime - last_frame_time;
         if (timer > 1.00) {
             finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / timer));
-            if (shell.vms != 0 and finalFps != 0) {
+            if (vm_manager.vms.count() != 0 and finalFps != 0) {
                 const adj: f64 = std.math.clamp((@as(f64, @floatFromInt(fps)) / timer) / 58.0, 0.95, 1.05);
-                windowedState.vmTime = std.math.clamp(windowedState.vmTime * adj, 0.1, 0.9);
+                vmManager.VMManager.vm_time = std.math.clamp(vmManager.VMManager.vm_time * adj, 0.1, 0.9);
             }
 
             fps = 0;

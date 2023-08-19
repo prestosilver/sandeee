@@ -3,8 +3,11 @@ const fm = @import("../util/files.zig");
 const files = @import("files.zig");
 const shell = @import("shell.zig");
 const allocator = @import("../util/allocator.zig");
+const vmManager = @import("../system/vmmanager.zig");
 
 const DISK = "headless.eee";
+
+var vm_manager: *vmManager.VMManager = undefined;
 
 pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.File) anyerror!void {
     const diskpath = try fm.getContentPath("disks/headless.eee");
@@ -24,8 +27,6 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
     const stdout = logging orelse std.io.getStdOut();
     var buffer: [512]u8 = undefined;
 
-    shell.threads = std.ArrayList(std.Thread).init(allocator.alloc);
-
     _ = try stdout.write("Welcome To ShEEEl\n");
 
     var toRun = cmd;
@@ -33,21 +34,16 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
     while (true) {
         if (mainShell.vm != null) {
             // setup vm data for update
-            shell.frameEnd = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat(1.0 / 60.0 * std.time.ns_per_s));
-
-            const result = try mainShell.updateVM();
+            const result = try mainShell.getVMResult();
             if (result != null) {
                 _ = try stdout.write(result.?.data);
                 allocator.alloc.free(result.?.data);
             } else {
-                _ = try stdout.write(mainShell.vm.?.out.items);
-                mainShell.vm.?.out.clearAndFree();
+                // TODO: fix
+                _ = try stdout.write("");
             }
 
-            for (shell.threads.items) |thread| {
-                thread.join();
-            }
-            shell.threads.clearAndFree();
+            try vm_manager.update();
 
             if (mainShell.vm == null) {
                 _ = try stdout.write("\n");

@@ -11,6 +11,7 @@ const tex = @import("../util/texture.zig");
 const shd = @import("../util/shader.zig");
 const rect = @import("../math/rects.zig");
 const opener = @import("opener.zig");
+const vmManager = @import("../system/vmmanager.zig");
 
 const Result = struct {
     data: []u8,
@@ -19,13 +20,9 @@ const Result = struct {
 };
 
 pub var shader: *shd.Shader = undefined;
+pub var vm_manager: *vmManager.VMManager = undefined;
 
 pub const ASM_HEADER = "EEEp";
-
-pub var frameEnd: u64 = 0;
-pub var vms: usize = 0;
-
-pub var threads: std.ArrayList(std.Thread) = undefined;
 
 const ShellError = error{
     FileNotFound,
@@ -35,7 +32,7 @@ const ShellError = error{
 
 pub const Shell = struct {
     root: *files.Folder,
-    vm: ?vm.VM = null,
+    vm: ?vmManager.VMManager.VMHandle = null,
 
     pub fn getPrompt(self: *Shell) []const u8 {
         if (self.root.name.len == 0)
@@ -348,6 +345,30 @@ pub const Shell = struct {
         };
     }
 
+    pub fn getVMResult(self: *Shell) !?Result {
+        if (self.vm) |vm_handle| {
+            const data = try vm_manager.getOutput(vm_handle);
+            defer data.deinit();
+
+            if (data.done) {
+                std.log.info("done: {}", .{vm_handle.id});
+                self.vm = null;
+            }
+
+            return .{
+                .data = try allocator.alloc.dupe(u8, data.data),
+            };
+        }
+
+        return null;
+    }
+
+    pub fn appendVMIn(self: *Shell, char: u8) !void {
+        if (self.vm) |vm_handle| {
+            try vm_manager.appendInputSlice(vm_handle, &.{char});
+        }
+    }
+
     pub fn runAsm(self: *Shell, folder: *files.Folder, cmd: []const u8, params: []const u8) !Result {
         for (folder.contents.items, 0..) |_, idx| {
             const rootlen = folder.name.len;
@@ -359,18 +380,9 @@ pub const Shell = struct {
                     return error.BadASMFile;
                 }
 
-                self.vm = try vm.VM.init(allocator.alloc, self.root, params, false);
-                vms += 1;
-
                 const ops = cont[4..];
 
-                self.vm.?.loadString(ops) catch |err| {
-                    try self.vm.?.deinit();
-                    self.vm = null;
-                    vms -= 1;
-
-                    return err;
-                };
+                self.vm = try vm_manager.spawn(self.root, params, ops);
 
                 return .{
                     .data = try allocator.alloc.dupe(u8, ""),
@@ -381,59 +393,9 @@ pub const Shell = struct {
         return error.FileNotFound;
     }
 
-    pub fn updateVM(self: *Shell) !?Result {
-        if (self.vm) |*vmInst| {
-            if (vmInst.stopped) {
-                var result: Result = Result{
-                    .data = try allocator.alloc.dupe(u8, vmInst.out.items),
-                };
-
-                try vmInst.deinit();
-                self.vm = null;
-                vms -= 1;
-
-                return result;
-            }
-
-            var result: Result = Result{
-                .data = try allocator.alloc.dupe(u8, vmInst.out.items),
-            };
-
-            vmInst.out.clearAndFree();
-
-            try threads.append(try std.Thread.spawn(.{}, vmThread, .{self}));
-
-            return result;
-        }
-
-        return null;
-    }
-
-    pub fn vmThread(self: *Shell) !void {
-        const time: u64 = @intCast(std.time.nanoTimestamp());
-
-        if (frameEnd < time) {
-            return;
-        }
-
-        if (self.vm.?.runTime(frameEnd - time, @import("builtin").mode == .Debug) catch |err| {
-            self.vm.?.stopped = true;
-
-            const errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});
-            defer allocator.alloc.free(errString);
-
-            try self.vm.?.out.appendSlice(errString);
-
-            const msgString = try self.vm.?.getOp();
-            defer allocator.alloc.free(msgString);
-
-            try self.vm.?.out.appendSlice(msgString);
-
-            return;
-        }) {
-            return;
-        }
-        return;
+    pub fn runBg(self: *Shell, cmd: []const u8) !void {
+        _ = try self.run(cmd);
+        self.vm = null;
     }
 
     pub fn runLine(self: *Shell, line: []const u8) !Result {
@@ -554,10 +516,9 @@ pub const Shell = struct {
     }
 
     pub fn deinit(self: *Shell) !void {
-        if (self.vm) |*vmInst| {
-            try vmInst.deinit();
+        if (self.vm) |vm_handle| {
+            try vm_manager.destroy(vm_handle);
             self.vm = null;
-            vms -= 1;
         }
     }
 };

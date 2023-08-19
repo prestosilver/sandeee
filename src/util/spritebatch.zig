@@ -143,13 +143,10 @@ pub const SpriteBatch = struct {
 
             cscissor = entry.scissor;
 
-            if (entry.texture.len == 0) continue;
-
-            const targTex = if (!std.mem.eql(u8, entry.texture, "none"))
+            const targTex = if (!std.mem.eql(u8, entry.texture, ""))
                 textureManager.get(entry.texture) orelse
-                    textureManager.get("error") orelse {
-                    @panic("texture not found");
-                }
+                    textureManager.get("error") orelse
+                    return error.TextureMissing
             else
                 &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0), .buffer = undefined };
 
@@ -169,8 +166,8 @@ pub const SpriteBatch = struct {
             }
 
             c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
-            c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @as(*anyopaque, @ptrFromInt(3 * @sizeOf(f32))));
-            c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @as(*anyopaque, @ptrFromInt(5 * @sizeOf(f32))));
+            c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(3 * @sizeOf(f32)));
+            c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(5 * @sizeOf(f32)));
             c.glEnableVertexAttribArray(0);
             c.glEnableVertexAttribArray(1);
             c.glEnableVertexAttribArray(2);

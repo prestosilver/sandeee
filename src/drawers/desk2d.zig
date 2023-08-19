@@ -237,7 +237,7 @@ pub const DeskData = struct {
 
     pub fn updateVm(self: *DeskData) !void {
         if (self.shell.vm != null) {
-            const result = self.shell.updateVM() catch null;
+            const result = self.shell.getVMResult() catch null;
             if (result != null) {
                 allocator.alloc.free(result.?.data);
             }

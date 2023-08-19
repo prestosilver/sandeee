@@ -25,7 +25,7 @@ pub const Shader = struct {
             c.glGetShaderiv(shader, c.GL_COMPILE_STATUS, &success);
 
             if (success == 0) {
-                var infoLog: [512]u8 = std.mem.zeroes([512]u8);
+                var infoLog = [_]u8{0} ** 512;
 
                 c.glGetShaderInfoLog(shader, 512, null, &infoLog);
                 std.log.err("{s}", .{infoLog});
@@ -40,7 +40,7 @@ pub const Shader = struct {
         c.glGetProgramiv(prog, c.GL_LINK_STATUS, &success);
 
         if (success == 0) {
-            var infoLog: [512]u8 = std.mem.zeroes([512]u8);
+            var infoLog = [_]u8{0} ** 512;
 
             c.glGetProgramInfoLog(prog, 512, null, &infoLog);
             std.log.err("{s}", .{infoLog});

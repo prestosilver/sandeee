@@ -15,25 +15,16 @@ pub const Vert = struct {
     b: c.GLfloat,
     a: c.GLfloat,
 
-    pub fn array(v: Vert) [9]f32 {
-        return [9]f32{
-            v.x,
-            v.y,
-            v.z,
-            v.u,
-            v.v,
-            v.r,
-            v.g,
-            v.b,
-            v.a,
-        };
+    pub inline fn array(v: Vert) [9]f32 {
+        return [_]f32{ v.x, v.y, v.z, v.u, v.v, v.r, v.g, v.b, v.a };
     }
 
     pub inline fn getHash(v: Vert) u8 {
         const casted = std.mem.asBytes(&[_]f32{ v.x, v.y, v.u, v.v, v.r, v.g, v.b });
         var hash: u8 = 128;
-        for (casted) |ch|
+        for (casted) |ch| {
             hash = ((hash << 5) +% hash) +% ch;
+        }
 
         return hash;
     }

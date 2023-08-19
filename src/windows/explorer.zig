@@ -95,7 +95,7 @@ pub const ExplorerData = struct {
         try props.setTitle(title);
 
         if (self.shell.vm != null) {
-            const result = self.shell.updateVM() catch null;
+            const result = self.shell.getVMResult() catch null;
             if (result != null) {
                 allocator.alloc.free(result.?.data);
             }
@@ -150,7 +150,7 @@ pub const ExplorerData = struct {
                                 self.shell.root = newPath.?;
                                 self.selected = 0;
                             } else {
-                                _ = self.shell.run(icon.name) catch {
+                                _ = self.shell.runBg(icon.name) catch {
                                     //TODO: popup
                                 };
                             }
@@ -168,25 +168,6 @@ pub const ExplorerData = struct {
         }
 
         props.scroll.?.maxy = y + 64 + font.size + font.size + props.scroll.?.value - bnds.h;
-
-        if (self.shell.vm != null) {
-            self.gray.data.size.x = bnds.w;
-            self.gray.data.size.y = bnds.h;
-
-            try batch.draw(sprite.Sprite, &self.gray, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
-
-            const size = font.sizeText(.{
-                .text = "Running VM",
-            });
-
-            try font.draw(.{
-                .batch = batch,
-                .shader = font_shader,
-                .text = "Running VM",
-                .pos = vecs.newVec2(bnds.x + (bnds.w - size.x) / 2, bnds.y + (bnds.h - size.y) / 2),
-                .color = col.newColor(0, 0, 0, 1),
-            });
-        }
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;

@@ -98,7 +98,7 @@ pub const CMDData = struct {
         } else {
             const start = self.bt.len;
 
-            const result = try self.shell.updateVM();
+            const result = try self.shell.getVMResult();
             if (result != null) {
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.len);
                 @memcpy(self.bt[start..], result.?.data);
@@ -106,9 +106,8 @@ pub const CMDData = struct {
                 try self.processBT();
                 idx += 1;
             } else {
-                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + self.shell.vm.?.out.items.len);
-                @memcpy(self.bt[start..], self.shell.vm.?.out.items);
-                self.shell.vm.?.out.clearAndFree();
+                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len);
+                @memcpy(self.bt[start..], "");
                 try self.processBT();
             }
             self.bot = true;
@@ -146,7 +145,7 @@ pub const CMDData = struct {
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {
         if (self.shell.vm != null) {
-            try self.shell.vm.?.input.append(@as(u8, @intCast(code)));
+            try self.shell.appendVMIn(@as(u8, @intCast(code)));
 
             return;
         }
@@ -167,10 +166,10 @@ pub const CMDData = struct {
         if (self.shell.vm != null) {
             switch (code) {
                 c.GLFW_KEY_ENTER => {
-                    try self.shell.vm.?.input.append('\n');
+                    try self.shell.appendVMIn('\n');
                 },
                 c.GLFW_KEY_BACKSPACE => {
-                    try self.shell.vm.?.input.append('\x08');
+                    try self.shell.appendVMIn('\x08');
                 },
                 else => {},
             }
@@ -183,7 +182,7 @@ pub const CMDData = struct {
         switch (code) {
             c.GLFW_KEY_ENTER => {
                 if (self.shell.vm != null) {
-                    try self.shell.vm.?.input.append('\n');
+                    try self.shell.appendVMIn('\n');
 
                     return;
                 }
