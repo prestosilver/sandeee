@@ -15,7 +15,7 @@ const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
-const settings = @import("settings.zig");
+const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 const texMan = @import("../util/texmanager.zig");
 
@@ -957,7 +957,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
                 vecs.newVec2(32, 32),
             )),
         },
-        .path = settings.settingManager.get("web_home") orelse "@sandeee.org:/index.edf",
+        .path = conf.SettingManager.instance.get("web_home") orelse "@sandeee.org:/index.edf",
         .conts = null,
         .shader = shader,
         .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),

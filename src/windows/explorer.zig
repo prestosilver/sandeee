@@ -13,8 +13,7 @@ const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../util/texture.zig");
 const c = @import("../c.zig");
 const shell = @import("../system/shell.zig");
-const config = @import("../system/config.zig");
-const settings = @import("settings.zig");
+const conf = @import("../system/config.zig");
 
 const SCROLL = 30;
 
@@ -107,7 +106,7 @@ pub const ExplorerData = struct {
         const icons = try self.getIcons();
         defer allocator.alloc.free(icons);
 
-        const hidden = settings.settingManager.getBool("explorer_hidden");
+        const hidden = conf.SettingManager.instance.getBool("explorer_hidden");
 
         for (icons, 0..) |icon, idx| {
             if (icon.name.len == 0) continue;

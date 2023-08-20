@@ -5,10 +5,12 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 
 pub const SettingManager = struct {
+    pub var instance: SettingManager = undefined;
+
     settings: std.StringHashMap([]u8),
 
-    pub fn init(self: *SettingManager) void {
-        self.*.settings = std.StringHashMap([]u8).init(allocator.alloc);
+    pub fn init() void {
+        instance.settings = std.StringHashMap([]u8).init(allocator.alloc);
     }
 
     pub fn set(self: *SettingManager, setting: []const u8, value: []const u8) !void {
@@ -58,16 +60,16 @@ pub const SettingManager = struct {
         try files.root.writeFile("/conf/system.cfg", out.items, null);
     }
 
-    pub fn deinit(self: *SettingManager) !void {
-        try self.save();
+    pub fn deinit() !void {
+        try instance.save();
 
-        var iter = self.settings.iterator();
+        var iter = instance.settings.iterator();
 
         while (iter.next()) |*entry| {
             allocator.alloc.free(entry.value_ptr.*);
             allocator.alloc.free(entry.key_ptr.*);
         }
 
-        self.*.settings.deinit();
+        instance.settings.deinit();
     }
 };

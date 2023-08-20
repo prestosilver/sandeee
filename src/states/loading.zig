@@ -64,7 +64,6 @@ pub const GSLoading = struct {
     logo_sprite: sp.Sprite,
     load_sprite: sp.Sprite,
     shader: *shd.Shader,
-    settingManager: *conf.SettingManager,
     disk: *?[]u8,
     audio_man: *audio.Audio,
 
@@ -83,10 +82,6 @@ pub const GSLoading = struct {
 
         self.load_sprite.data.size.x = 0;
 
-        worker.texture.settingManager = self.settingManager;
-
-        worker.font.settingManager = self.settingManager;
-
         // delay
         try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
 
@@ -95,7 +90,7 @@ pub const GSLoading = struct {
         defer allocator.alloc.free(self.disk.*.?);
 
         // settings
-        try self.loader.enqueue(*const []const u8, *conf.SettingManager, &settingspath, self.settingManager, worker.settings.loadSettings);
+        try self.loader.enqueue(*const []const u8, *const u8, &settingspath, &zero, worker.settings.loadSettings);
 
         // textures
         for (&textureNames) |*textureEntry| {
@@ -134,7 +129,6 @@ pub const GSLoading = struct {
         pseudo.snd.audioPtr = self.audio_man;
         pseudo.win.shader = self.shader;
 
-        wins.settings.settingManager = self.settingManager;
         wins.email.emailManager = self.emailManager;
         wins.email.notif = .{
             .texture = "icons",

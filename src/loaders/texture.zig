@@ -7,10 +7,8 @@ const gfx = @import("../util/graphics.zig");
 const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 
-pub var settingManager: *conf.SettingManager = undefined;
-
 pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []const u8)) !bool {
-    const path = conf.SettingManager.get(settingManager, self.indata.*) orelse
+    const path = conf.SettingManager.instance.get(self.indata.*) orelse
         self.indata.*;
 
     var texture = try tex.newTextureSize(.{ .x = 0, .y = 0 });

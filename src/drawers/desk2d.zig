@@ -12,14 +12,13 @@ const wins = @import("../windows/all.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
 const shell = @import("../system/shell.zig");
-const config = @import("../system/config.zig");
+const conf = @import("../system/config.zig");
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 
 const SPACING = vecs.newVec2(128, 100);
 
 pub var deskSize: *vecs.Vector2 = undefined;
-pub var settingsManager: *config.SettingManager = undefined;
 
 pub const DeskData = struct {
     sel: ?usize = null,
@@ -54,7 +53,7 @@ pub const DeskData = struct {
     }
 
     pub fn checkIconSkip(name: []const u8) bool {
-        if (settingsManager.getBool("explorer_hidden")) return true;
+        if (conf.SettingManager.instance.getBool("explorer_hidden")) return true;
 
         const idx = std.mem.lastIndexOf(u8, name, "/") orelse 0;
 

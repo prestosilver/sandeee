@@ -140,7 +140,6 @@ var disk: ?[]u8 = null;
 var wallpaper: wall.Wallpaper = undefined;
 
 // managers
-var settingManager: conf.SettingManager = undefined;
 var emailManager: emails.EmailManager = undefined;
 var vm_manager: vmManager.VMManager = undefined;
 
@@ -719,7 +718,6 @@ pub fn mainErr() anyerror!void {
             ),
         },
         .shader = &shader,
-        .settingManager = &settingManager,
         .disk = &disk,
         .loader = &loader,
     };
@@ -731,7 +729,6 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .clearShader = &clear_shader,
         .face = &mainFace,
-        .settingsManager = &settingManager,
         .emailManager = &emailManager,
         .vm_manager = &vm_manager,
         .bar_logo_sprite = .{
@@ -863,7 +860,6 @@ pub fn mainErr() anyerror!void {
     win.deskSize = &gfx.gContext.size;
     desk.deskSize = &gfx.gContext.size;
     windowedState.GSWindowed.deskSize = &gfx.gContext.size;
-    bar.settingsManager = &settingManager;
 
     // setup state machine
     var prev = currentState;

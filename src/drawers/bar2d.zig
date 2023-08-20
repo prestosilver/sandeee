@@ -15,15 +15,13 @@ const c = @import("../c.zig");
 const allocator = @import("../util/allocator.zig");
 const popups = @import("popup2d.zig");
 const files = @import("../system/files.zig");
-const settings = @import("../system/config.zig");
+const conf = @import("../system/config.zig");
 
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
 
 const TOTAL_SPRITES: f32 = 13;
 const TEX_SIZE: f32 = 32;
-
-pub var settingsManager: *settings.SettingManager = undefined;
 
 pub const BarData = struct {
     screendims: *vecs.Vector2,
@@ -74,8 +72,8 @@ pub const BarData = struct {
         });
 
         const ts = std.time.timestamp();
-        const hours = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_hour)) - settingsManager.getInt("hours_offset");
-        const mins = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_min)) - settingsManager.getInt("minutes_offset");
+        const hours = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_hour)) - conf.SettingManager.instance.getInt("hours_offset");
+        const mins = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_min)) - conf.SettingManager.instance.getInt("minutes_offset");
         const clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{
             @as(u8, @intCast(@rem(hours, 24))),
             @as(u8, @intCast(@rem(mins, 60))),

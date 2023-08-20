@@ -10,14 +10,13 @@ const telem = @import("telem.zig");
 pub var root: *Folder = undefined;
 pub var home: *Folder = undefined;
 pub var exec: *Folder = undefined;
-pub var settingsManager: *config.SettingManager = undefined;
 
 pub var rootOut: ?[]const u8 = null;
 
 pub const ROOT_NAME = "/";
 
 pub inline fn getExtrPath() []const u8 {
-    return settingsManager.get("extr_path") orelse "";
+    return config.SettingManager.instance.get("extr_path") orelse "";
 }
 
 pub const File = struct {

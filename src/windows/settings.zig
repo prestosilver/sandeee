@@ -10,14 +10,12 @@ const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../util/texture.zig");
-const config = @import("../system/config.zig");
+const conf = @import("../system/config.zig");
 const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const files = @import("../system/files.zig");
 const c = @import("../c.zig");
-
-pub var settingManager: *config.SettingManager = undefined;
 
 const SettingPanel = struct {
     name: []const u8,
@@ -172,7 +170,7 @@ const SettingsData = struct {
                             .SingleLeft => {
                                 switch (item.kind) {
                                     .String, .Dropdown => {
-                                        self.value = settingManager.get(item.key) orelse "";
+                                        self.value = conf.SettingManager.instance.get(item.key) orelse "";
                                         const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
                                         adds.* = .{
                                             .prompt = item.setting,
@@ -198,7 +196,7 @@ const SettingsData = struct {
                                         self.lastAction = null;
                                     },
                                     .File => {
-                                        self.value = settingManager.get(item.key) orelse "";
+                                        self.value = conf.SettingManager.instance.get(item.key) orelse "";
                                         const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
                                         adds.* = .{
                                             .path = try allocator.alloc.dupe(u8, self.value),
@@ -223,7 +221,7 @@ const SettingsData = struct {
                                         self.lastAction = null;
                                     },
                                     .Folder => {
-                                        self.value = settingManager.get(item.key) orelse "";
+                                        self.value = conf.SettingManager.instance.get(item.key) orelse "";
                                         const adds = try allocator.alloc.create(popups.all.folderpick.PopupFolderPick);
                                         adds.* = .{
                                             .path = try allocator.alloc.dupe(u8, self.value),
@@ -255,7 +253,7 @@ const SettingsData = struct {
                 }
 
                 // draw value
-                const value = settingManager.get(item.key);
+                const value = conf.SettingManager.instance.get(item.key);
                 if (value) |val| {
                     try font.draw(.{
                         .batch = batch,
@@ -322,20 +320,20 @@ const SettingsData = struct {
 
     pub fn submit(val: []u8, data: *anyopaque) !void {
         const self: *Self = @ptrCast(@alignCast(data));
-        try settingManager.set(self.value, val);
-        try settingManager.save();
+        try conf.SettingManager.instance.set(self.value, val);
+        try conf.SettingManager.instance.save();
     }
 
     pub fn submitFile(val: ?*files.File, data: *anyopaque) !void {
         const self: *Self = @ptrCast(@alignCast(data));
-        try settingManager.set(self.value, val.?.name);
-        try settingManager.save();
+        try conf.SettingManager.instance.set(self.value, val.?.name);
+        try conf.SettingManager.instance.save();
     }
 
     pub fn submitFolder(val: ?*files.Folder, data: *anyopaque) !void {
         const self: *Self = @ptrCast(@alignCast(data));
-        try settingManager.set(self.value, val.?.name);
-        try settingManager.save();
+        try conf.SettingManager.instance.set(self.value, val.?.name);
+        try conf.SettingManager.instance.save();
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {

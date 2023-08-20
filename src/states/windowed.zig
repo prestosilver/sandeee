@@ -52,7 +52,6 @@ pub const GSWindowed = struct {
     font_shader: *shd.Shader,
     clearShader: *shd.Shader,
     face: *font.Font,
-    settingsManager: *conf.SettingManager,
     emailManager: *emails.EmailManager,
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
@@ -234,7 +233,7 @@ pub const GSWindowed = struct {
         try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
         try events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
 
-        if (self.settingsManager.getBool("show_welcome")) {
+        if (conf.SettingManager.instance.getBool("show_welcome")) {
             const window = win.Window.new("win", win.WindowData{
                 .source = rect.Rectangle{
                     .x = 0.0,
@@ -256,9 +255,8 @@ pub const GSWindowed = struct {
         }
 
         self.desk.data.shell.root = files.home;
-        desk.settingsManager = self.settingsManager;
 
-        if (self.settingsManager.get("wallpaper_color")) |color| {
+        if (conf.SettingManager.instance.get("wallpaper_color")) |color| {
             try settingSet(.{
                 .setting = "wallpaper_color",
                 .value = color,
@@ -270,7 +268,7 @@ pub const GSWindowed = struct {
         telem.Telem.instance.logins += 1;
         try self.emailManager.updateLogins(telem.Telem.instance.logins);
 
-        if (self.settingsManager.get("startup_file")) |startupCmd| {
+        if (conf.SettingManager.instance.get("startup_file")) |startupCmd| {
             self.shell = .{ .root = files.root };
             _ = self.shell.run(startupCmd) catch return;
         }
@@ -294,7 +292,7 @@ pub const GSWindowed = struct {
         try self.face.deinit();
 
         try files.write();
-        try self.settingsManager.deinit();
+        try conf.SettingManager.deinit();
 
         self.windows.deinit();
         self.emailManager.deinit();

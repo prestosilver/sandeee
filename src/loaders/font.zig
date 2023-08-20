@@ -7,10 +7,8 @@ const gfx = @import("../util/graphics.zig");
 const allocator = @import("../util/allocator.zig");
 const conf = @import("../system/config.zig");
 
-pub var settingManager: *conf.SettingManager = undefined;
-
 pub fn loadFontPath(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font)) !bool {
-    const path = conf.SettingManager.get(settingManager, self.indata.*) orelse
+    const path = conf.SettingManager.instance.get(self.indata.*) orelse
         self.indata.*;
 
     std.log.debug("load font: {s}", .{path});

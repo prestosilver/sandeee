@@ -7,10 +7,10 @@ const conf = @import("../system/config.zig");
 const files = @import("../system/files.zig");
 const allocator = @import("../util/allocator.zig");
 
-pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.SettingManager)) !bool {
+pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)) !bool {
     std.log.debug("load settings", .{});
 
-    self.out.init();
+    conf.SettingManager.init();
 
     const file = try files.root.getFile(self.indata.*);
 
@@ -28,11 +28,10 @@ pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *conf.Sett
         const tvalue = std.mem.trim(u8, value, " ");
 
         if (tvalue.len > 1 and tvalue[0] == '"' and tvalue[tvalue.len - 1] == '"') {
-            try self.out.set(tkey, tvalue[1 .. tvalue.len - 1]);
+            try conf.SettingManager.instance.set(tkey, tvalue[1 .. tvalue.len - 1]);
         }
     }
 
-    files.settingsManager = self.out;
     try files.Folder.setupExtr();
 
     return true;
