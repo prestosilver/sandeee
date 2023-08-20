@@ -58,7 +58,6 @@ pub const GSLoading = struct {
 
     loading: *const fn (*Self) void,
 
-    textureManager: *texMan.TextureManager,
     emailManager: *mail.EmailManager,
     face: *font.Font,
 
@@ -85,7 +84,6 @@ pub const GSLoading = struct {
         self.load_sprite.data.size.x = 0;
 
         worker.texture.settingManager = self.settingManager;
-        worker.texture.textureManager = self.textureManager;
 
         worker.font.settingManager = self.settingManager;
 

@@ -11,6 +11,7 @@ const vecs = @import("../../math/vecs.zig");
 const gfx = @import("../../util/graphics.zig");
 const vm = @import("../vm.zig");
 const sb = @import("../../util/spritebatch.zig");
+const texMan = @import("../../util/texmanager.zig");
 const cols = @import("../../math/colors.zig");
 
 pub var texIdx: u8 = 0;
@@ -24,7 +25,7 @@ pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
         gfx.gContext.makeCurrent();
         defer gfx.gContext.makeNotCurrent();
 
-        try sb.textureManager.put(result, try tex.newTextureSize(vecs.newVec2(0, 0)));
+        try texMan.TextureManager.instance.put(result, try tex.newTextureSize(vecs.newVec2(0, 0)));
     }
 
     texIdx = texIdx +% 1;
@@ -44,7 +45,7 @@ pub fn readGfxDestroy(_: ?*vm.VM) ![]const u8 {
 
 pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
     const idx = data[0];
-    const texture = sb.textureManager.get(&.{idx}) orelse return;
+    const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
     {
         gfx.gContext.makeCurrent();
@@ -53,10 +54,10 @@ pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
         texture.deinit();
     }
 
-    const key = sb.textureManager.textures.getKeyPtr(&.{idx}) orelse return;
+    const key = texMan.TextureManager.instance.textures.getKeyPtr(&.{idx}) orelse return;
     allocator.alloc.free(key.*);
 
-    _ = sb.textureManager.textures.removeByPtr(key);
+    _ = texMan.TextureManager.instance.textures.removeByPtr(key);
 }
 
 // /fake/gfx/upload
@@ -69,7 +70,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
     if (data.len == 1) {
         const idx = data[0];
 
-        const texture = sb.textureManager.get(&.{idx}) orelse return;
+        const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
         gfx.gContext.makeCurrent();
         defer gfx.gContext.makeNotCurrent();
@@ -82,7 +83,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
     const idx = data[0];
     const image = data[1..];
 
-    const texture = sb.textureManager.get(&.{idx}) orelse return;
+    const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
     try tex.uploadTextureMem(texture, image);
 }
@@ -97,7 +98,7 @@ pub fn writeGfxSave(data: []const u8, vmInstance: ?*vm.VM) !void {
     const idx = data[0];
     const image = data[1..];
 
-    const texture = sb.textureManager.get(&.{idx}) orelse return;
+    const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
     if (vmInstance) |vmi| {
         try vmi.root.newFile(image);
@@ -124,7 +125,7 @@ pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) !void {
     const idx = data[0];
     var tmp = data[1..];
 
-    const texture = sb.textureManager.get(&.{idx}) orelse return;
+    const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
     while (tmp.len > 7) {
         const x = std.mem.bytesToValue(u16, tmp[0..2]);

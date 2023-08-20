@@ -141,7 +141,6 @@ var wallpaper: wall.Wallpaper = undefined;
 
 // managers
 var settingManager: conf.SettingManager = undefined;
-var textureManager: texMan.TextureManager = undefined;
 var emailManager: emails.EmailManager = undefined;
 var vm_manager: vmManager.VMManager = undefined;
 
@@ -601,8 +600,7 @@ pub fn mainErr() anyerror!void {
     }
 
     // setup the texture manager
-    textureManager = texMan.TextureManager.init();
-    batch.textureManager = &textureManager;
+    texMan.TextureManager.init();
 
     // init graphics
     ctx = try gfx.init("SandEEE");
@@ -663,11 +661,11 @@ pub fn mainErr() anyerror!void {
     sb = try batch.SpriteBatch.init(&gfx.gContext.size);
 
     // load some textures
-    try textureManager.putMem("bios", biosImage);
-    try textureManager.putMem("logo", logoImage);
-    try textureManager.putMem("load", loadImage);
-    try textureManager.putMem("sad", sadImage);
-    try textureManager.putMem("error", errorImage);
+    try texMan.TextureManager.instance.putMem("bios", biosImage);
+    try texMan.TextureManager.instance.putMem("logo", logoImage);
+    try texMan.TextureManager.instance.putMem("load", loadImage);
+    try texMan.TextureManager.instance.putMem("sad", sadImage);
+    try texMan.TextureManager.instance.putMem("error", errorImage);
 
     // setup vm manager
     vm_manager = vmManager.VMManager.init();
@@ -701,7 +699,6 @@ pub fn mainErr() anyerror!void {
         .sb = &sb,
         .face = &mainFace,
         .audio_man = &audio_man,
-        .textureManager = &textureManager,
         .emailManager = &emailManager,
         .ctx = &ctx,
         .loading = drawLoading,
@@ -941,7 +938,7 @@ pub fn mainErr() anyerror!void {
     try gameStates.getPtr(currentState).deinit();
 
     try biosFace.deinit();
-    batch.textureManager.deinit();
+    texMan.TextureManager.deinit();
 
     gfx.close(ctx);
     sb.deinit();

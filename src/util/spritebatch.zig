@@ -10,8 +10,6 @@ const va = @import("../util/vertArray.zig");
 const allocator = @import("allocator.zig");
 const c = @import("../c.zig");
 
-pub var textureManager: *texMan.TextureManager = undefined;
-
 pub fn Drawer(comptime T: type) type {
     return struct {
         const Self = @This();
@@ -144,8 +142,8 @@ pub const SpriteBatch = struct {
             cscissor = entry.scissor;
 
             const targTex = if (!std.mem.eql(u8, entry.texture, ""))
-                textureManager.get(entry.texture) orelse
-                    textureManager.get("error") orelse
+                texMan.TextureManager.instance.get(entry.texture) orelse
+                    texMan.TextureManager.instance.get("error") orelse
                     return error.TextureMissing
             else
                 &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0), .buffer = undefined };

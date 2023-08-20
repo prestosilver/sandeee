@@ -30,6 +30,7 @@ const va = @import("../util/vertArray.zig");
 const telem = @import("../system/telem.zig");
 const c = @import("../c.zig");
 const vmManager = @import("../system/vmmanager.zig");
+const texMan = @import("../util/texmanager.zig");
 
 pub const GSWindowed = struct {
     const Self = @This();
@@ -169,7 +170,7 @@ pub const GSWindowed = struct {
             return;
         }
         if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
-            const texture = batch.textureManager.get("wall") orelse return;
+            const texture = texMan.TextureManager.instance.get("wall") orelse return;
             tex.uploadTextureFile(texture, event.value) catch return;
 
             return;

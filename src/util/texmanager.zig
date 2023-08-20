@@ -3,16 +3,18 @@ const tex = @import("texture.zig");
 const allocator = @import("allocator.zig");
 
 pub const TextureManager = struct {
+    pub var instance: TextureManager = undefined;
+
     textures: std.StringHashMap(*tex.Texture),
 
-    pub fn init() TextureManager {
-        return .{
+    pub fn init() void {
+        instance = .{
             .textures = std.StringHashMap(*tex.Texture).init(allocator.alloc),
         };
     }
 
-    pub fn deinit(self: *TextureManager) void {
-        var iter = self.textures.iterator();
+    pub fn deinit() void {
+        var iter = instance.textures.iterator();
 
         while (iter.next()) |entry| {
             allocator.alloc.free(entry.key_ptr.*);
@@ -22,7 +24,7 @@ pub const TextureManager = struct {
             allocator.alloc.destroy(entry.value_ptr.*);
         }
 
-        self.textures.deinit();
+        instance.textures.deinit();
     }
 
     pub fn put(self: *TextureManager, name: []const u8, texture: tex.Texture) !void {

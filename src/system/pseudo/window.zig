@@ -12,6 +12,7 @@ const shd = @import("../../util/shader.zig");
 const vm = @import("../vm.zig");
 const vecs = @import("../../math/vecs.zig");
 const sb = @import("../../util/spritebatch.zig");
+const texMan = @import("../../util/texmanager.zig");
 const windowedState = @import("../../states/windowed.zig");
 const colors = @import("../../math/colors.zig");
 
@@ -284,7 +285,7 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
         return;
     }
 
-    if (sb.textureManager.get(data[1..2]) == null) {
+    if (texMan.TextureManager.instance.get(data[1..2]) == null) {
         std.log.info("{any}", .{data[1..2]});
         return;
     }

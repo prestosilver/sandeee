@@ -5,6 +5,7 @@ const rect = @import("../math/rects.zig");
 const fnt = @import("../util/font.zig");
 const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
+const texMan = @import("../util/texmanager.zig");
 
 pub const WallData = struct {
     pub const Mode = enum {
@@ -36,7 +37,7 @@ pub const WallData = struct {
         var source = rect.newRect(0, 0, 1, 1);
 
         const par = @fieldParentPtr(sb.Drawer(WallData), "data", self);
-        const size = (sb.textureManager.textures.get(par.texture) orelse return result).size;
+        const size = (texMan.TextureManager.instance.textures.get(par.texture) orelse return result).size;
 
         switch (self.mode) {
             .Color => {

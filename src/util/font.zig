@@ -4,6 +4,7 @@ const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const allocator = @import("allocator.zig");
 const sb = @import("spritebatch.zig");
+const texMan = @import("texmanager.zig");
 const shd = @import("shader.zig");
 const va = @import("vertArray.zig");
 const tex = @import("texture.zig");
@@ -136,7 +137,7 @@ pub const Font = struct {
 
         result.tex = try std.fmt.allocPrint(allocator.alloc, "font{}", .{fontId});
 
-        try sb.textureManager.put(result.tex, .{
+        try texMan.TextureManager.instance.put(result.tex, .{
             .tex = texture,
             .size = atlasSize,
             .buffer = try allocator.alloc.alloc([4]u8, 0),

@@ -17,6 +17,7 @@ const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const settings = @import("settings.zig");
 const c = @import("../c.zig");
+const texMan = @import("../util/texmanager.zig");
 
 const steam = @import("steam");
 const options = @import("options");
@@ -346,7 +347,7 @@ pub const WebData = struct {
         const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
         defer allocator.alloc.free(fconts);
 
-        const texture = sb.textureManager.get(target).?;
+        const texture = texMan.TextureManager.instance.get(target).?;
 
         try tex.uploadTextureMem(texture, fconts);
 
@@ -565,15 +566,15 @@ pub const WebData = struct {
                         gfx.gContext.makeCurrent();
                         defer gfx.gContext.makeNotCurrent();
 
-                        try sb.textureManager.putMem(&texid, @embedFile("../images/error.eia"));
+                        try texMan.TextureManager.instance.putMem(&texid, @embedFile("../images/error.eia"));
 
-                        sb.textureManager.get(&texid).?.size =
-                            sb.textureManager.get(&texid).?.size.div(4);
+                        texMan.TextureManager.instance.get(&texid).?.size =
+                            texMan.TextureManager.instance.get(&texid).?.size.div(4);
 
                         _ = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                     }
 
-                    const size = sb.textureManager.get(&texid).?.size.mul(2 * style.scale);
+                    const size = texMan.TextureManager.instance.get(&texid).?.size.mul(2 * style.scale);
 
                     switch (style.ali) {
                         .Center => {

@@ -8,7 +8,6 @@ const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 
 pub var settingManager: *conf.SettingManager = undefined;
-pub var textureManager: *texMan.TextureManager = undefined;
 
 pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []const u8)) !bool {
     const path = conf.SettingManager.get(settingManager, self.indata.*) orelse
@@ -20,7 +19,7 @@ pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []co
 
     try tex.uploadTextureFile(&texture, path);
 
-    try textureManager.put(self.out.*, texture);
+    try texMan.TextureManager.instance.put(self.out.*, texture);
 
     return true;
 }
