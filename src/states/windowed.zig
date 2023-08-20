@@ -64,8 +64,6 @@ pub const GSWindowed = struct {
     color: cols.Color = cols.newColor(0, 0, 0, 1),
     vm_manager: *vmManager.VMManager,
 
-    pub var deskSize: *vecs.Vector2 = undefined;
-
     var globalSelf: *Self = undefined;
 
     fn createPopup(event: windowEvs.EventCreatePopup) !void {
@@ -120,8 +118,8 @@ pub const GSWindowed = struct {
         try globalSelf.windows.append(event.window);
 
         if (event.center) {
-            target.x = (deskSize.x - event.window.data.pos.w) / 2;
-            target.y = (deskSize.y - event.window.data.pos.h) / 2;
+            target.x = (gfx.Context.instance.size.x - event.window.data.pos.w) / 2;
+            target.y = (gfx.Context.instance.size.y - event.window.data.pos.h) / 2;
         }
 
         globalSelf.windows.items[globalSelf.windows.items.len - 1].data.pos.x = target.x;
@@ -163,7 +161,7 @@ pub const GSWindowed = struct {
                 globalSelf.color.b = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[4..6], 16) catch 0)) / 255;
             }
 
-            gfx.gContext.color = globalSelf.color;
+            gfx.Context.instance.color = globalSelf.color;
 
             return;
         }
@@ -185,7 +183,7 @@ pub const GSWindowed = struct {
         self.windows = std.ArrayList(win.Window).init(allocator.alloc);
         self.notifs = std.ArrayList(notifications.Notification).init(allocator.alloc);
 
-        gfx.gContext.color = self.color;
+        gfx.Context.instance.color = self.color;
 
         pseudo.win.windowsPtr = &self.windows;
 
@@ -365,6 +363,8 @@ pub const GSWindowed = struct {
 
         // draw popup if exists
         if (self.popup) |*popup| {
+            const deskSize = gfx.Context.instance.size;
+
             const clearSprite = sp.Sprite{
                 .texture = "none",
                 .data = .{
@@ -581,7 +581,7 @@ pub const GSWindowed = struct {
                             }
 
                             swap.data.full = !swap.data.full;
-                            try swap.data.contents.moveResize(&swap.data.pos);
+                            try swap.data.contents.moveResize(swap.data.pos);
 
                             try self.windows.append(swap);
                         },

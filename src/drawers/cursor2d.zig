@@ -29,7 +29,7 @@ pub const CursorData = struct {
         var xo: f64 = 0;
         var yo: f64 = 0;
 
-        c.glfwGetCursorPos(gfx.gContext.window, &xo, &yo);
+        c.glfwGetCursorPos(gfx.Context.instance.window, &xo, &yo);
 
         if (self.index != 0) {
             xo -= self.size.x / 2;

@@ -107,8 +107,8 @@ pub fn uploadTextureFile(tex: *Texture, file: []const u8) !void {
 }
 
 pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
-    gfx.gContext.makeCurrent();
-    defer gfx.gContext.makeNotCurrent();
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
 
     const width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
     const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;

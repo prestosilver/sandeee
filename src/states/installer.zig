@@ -50,7 +50,7 @@ pub const GSInstall = struct {
     offset: f32 = 0,
 
     pub fn setup(self: *Self) !void {
-        gfx.gContext.color = cols.newColor(0, 0, 0.3333, 1);
+        gfx.Context.instance.color = cols.newColor(0, 0, 0.3333, 1);
 
         @memset(&self.settingLens, 0);
 
@@ -129,12 +129,12 @@ pub const GSInstall = struct {
                 .shader = self.font_shader,
                 .text = text,
                 .pos = vecs.newVec2(100, y),
-                .wrap = gfx.gContext.size.x - 200,
+                .wrap = gfx.Context.instance.size.x - 200,
                 .color = cols.newColor(1, 1, 1, 1),
             });
             y += self.face.sizeText(.{
                 .text = text,
-                .wrap = gfx.gContext.size.x - 200,
+                .wrap = gfx.Context.instance.size.x - 200,
             }).y;
         }
 

@@ -5,12 +5,12 @@ const gfx = @import("../util/graphics.zig");
 const c = @import("../c.zig");
 
 pub fn loadShader(self: *worker.WorkerQueueEntry(*const [2]shd.ShaderFile, *shd.Shader)) !bool {
-    gfx.gContext.makeCurrent();
-    defer gfx.gContext.makeNotCurrent();
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
 
     std.log.debug("load shader", .{});
     self.out.* = try shd.Shader.new(2, self.indata.*);
-    try gfx.regShader(gfx.gContext, self.out.*);
+    try gfx.Context.regShader(self.out.*);
 
     return true;
 }

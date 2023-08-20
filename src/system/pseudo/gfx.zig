@@ -22,8 +22,8 @@ pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
     result[0] = texIdx;
 
     {
-        gfx.gContext.makeCurrent();
-        defer gfx.gContext.makeNotCurrent();
+        gfx.Context.makeCurrent();
+        defer gfx.Context.makeNotCurrent();
 
         try texMan.TextureManager.instance.put(result, try tex.newTextureSize(vecs.newVec2(0, 0)));
     }
@@ -48,8 +48,8 @@ pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
     const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
     {
-        gfx.gContext.makeCurrent();
-        defer gfx.gContext.makeNotCurrent();
+        gfx.Context.makeCurrent();
+        defer gfx.Context.makeNotCurrent();
 
         texture.deinit();
     }
@@ -72,8 +72,8 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
 
         const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
-        gfx.gContext.makeCurrent();
-        defer gfx.gContext.makeNotCurrent();
+        gfx.Context.makeCurrent();
+        defer gfx.Context.makeNotCurrent();
 
         texture.upload();
 

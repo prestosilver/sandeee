@@ -49,7 +49,7 @@ pub const GSDisks = struct {
     const DISK_LIST = "0123456789ABCDEF";
 
     pub fn setup(self: *Self) !void {
-        gfx.gContext.color = cols.newColor(0, 0, 0, 1);
+        gfx.Context.instance.color = cols.newColor(0, 0, 0, 1);
 
         self.sel = 0;
         self.auto = true;
@@ -111,7 +111,7 @@ pub const GSDisks = struct {
                 }
 
                 if (self.sel == self.disks.items.len - 1) {
-                    c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+                    c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
                 } else if (self.sel == self.disks.items.len - 2) {
                     try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Recovery,
@@ -131,7 +131,7 @@ pub const GSDisks = struct {
                         .targetState = .Installer,
                     });
                 } else {
-                    c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+                    c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
                 }
                 return;
             }
@@ -155,7 +155,7 @@ pub const GSDisks = struct {
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = line,
-            .wrap = gfx.gContext.size.x - 200,
+            .wrap = gfx.Context.instance.size.x - 200,
             .pos = pos,
             .color = TEXT_COLOR,
         });

@@ -47,7 +47,7 @@ pub const GSRecovery = struct {
     }
 
     pub fn setup(self: *Self) !void {
-        gfx.gContext.color = cols.newColor(0, 0, 0.3333, 1);
+        gfx.Context.instance.color = cols.newColor(0, 0, 0.3333, 1);
 
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 

@@ -18,8 +18,6 @@ const allocator = @import("../util/allocator.zig");
 
 const SPACING = vecs.newVec2(128, 100);
 
-pub var deskSize: *vecs.Vector2 = undefined;
-
 pub const DeskData = struct {
     sel: ?usize = null,
     shell: shell.Shell,
@@ -46,7 +44,7 @@ pub const DeskData = struct {
     pub fn updatePos(pos: *vecs.Vector2) void {
         pos.y += 1;
 
-        if (pos.y * SPACING.y > deskSize.y) {
+        if (pos.y * SPACING.y > gfx.Context.instance.size.y) {
             pos.y = 0;
             pos.x += 1;
         }
@@ -206,7 +204,7 @@ pub const DeskData = struct {
     }
 
     pub fn addText(_: *DeskData, font_shader: *shd.Shader, font: *fnt.Font) !void {
-        const textColor = gfx.gContext.color.contrast();
+        const textColor = gfx.Context.instance.color.contrast();
 
         var position = vecs.newVec2(0, 0);
 

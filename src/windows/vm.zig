@@ -174,7 +174,7 @@ pub const VMData = struct {
     }
 
     pub fn scroll(_: *Self, _: f32, _: f32) !void {}
-    pub fn moveResize(_: *Self, _: *rect.Rectangle) !void {}
+    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
 
     pub fn move(self: *Self, x: f32, y: f32) !void {
         const pos = vecs.newVec2(x, y);

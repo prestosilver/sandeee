@@ -75,7 +75,7 @@ pub const GSLogout = struct {
         if (self.time < 0) {
             switch (target) {
                 .Quit => {
-                    c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+                    c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
                 },
                 .Bios => {
                     try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{

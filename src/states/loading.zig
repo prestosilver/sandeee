@@ -65,8 +65,6 @@ pub const GSLoading = struct {
     disk: *?[]u8,
     audio_man: *audio.Audio,
 
-    ctx: *gfx.Context,
-
     loadingThread: std.Thread = undefined,
 
     loader: *worker.WorkerContext,

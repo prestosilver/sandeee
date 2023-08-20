@@ -13,8 +13,8 @@ pub fn loadFontPath(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font
 
     std.log.debug("load font: {s}", .{path});
 
-    gfx.gContext.makeCurrent();
-    defer gfx.gContext.makeNotCurrent();
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
 
     self.out.* = try font.Font.init(path);
 
@@ -24,8 +24,8 @@ pub fn loadFontPath(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font
 pub fn loadFont(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font)) !bool {
     std.log.debug("load font in mem", .{});
 
-    gfx.gContext.makeCurrent();
-    defer gfx.gContext.makeNotCurrent();
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
 
     self.out.* = try font.Font.initMem(self.indata.*);
 

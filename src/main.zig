@@ -143,9 +143,6 @@ var wallpaper: wall.Wallpaper = undefined;
 var emailManager: emails.EmailManager = undefined;
 var vm_manager: vmManager.VMManager = undefined;
 
-// gfx stuff
-var ctx: gfx.Context = undefined;
-
 // sounds
 var audio_man: audio.Audio = undefined;
 var message_snd: audio.Sound = undefined;
@@ -175,14 +172,14 @@ var crt_enable = true;
 
 pub fn blit() !void {
     // actual gl calls start here
-    ctx.makeCurrent();
-    defer ctx.makeNotCurrent();
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
 
-    if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) != 0) {
+    if (c.glfwGetWindowAttrib(gfx.Context.instance.window, c.GLFW_ICONIFIED) != 0) {
         // for when minimized render nothing
-        gfx.clear(&ctx);
+        gfx.Context.clear();
 
-        gfx.swap(&ctx);
+        gfx.Context.swap();
 
         return;
     }
@@ -210,7 +207,7 @@ pub fn blit() !void {
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
         c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
-        c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)));
+        c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)));
         c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
 
         c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
@@ -222,7 +219,7 @@ pub fn blit() !void {
 
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
-        gfx.clear(&ctx);
+        gfx.Context.clear();
 
         // finish render
         try batch.SpriteBatch.instance.render();
@@ -241,7 +238,7 @@ pub fn blit() !void {
         c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
 
         // swap buffer
-        gfx.swap(&ctx);
+        gfx.Context.swap();
 
         // rerender the last frame
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
@@ -259,7 +256,7 @@ pub fn blit() !void {
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
         c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
-        c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)));
+        c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)));
         c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
 
         c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
@@ -271,7 +268,7 @@ pub fn blit() !void {
 
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
-        gfx.clear(&ctx);
+        gfx.Context.clear();
 
         // finish render
         try batch.SpriteBatch.instance.render();
@@ -294,7 +291,7 @@ pub fn blit() !void {
         c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
 
         // swap buffer
-        gfx.swap(&ctx);
+        gfx.Context.swap();
     }
     c.glFinish();
 }
@@ -350,11 +347,11 @@ pub fn copy(event: systemEvs.EventCopy) !void {
     const toCopy = try allocator.alloc.dupeZ(u8, event.value);
     defer allocator.alloc.free(toCopy);
 
-    c.glfwSetClipboardString(gfx.gContext.window, toCopy);
+    c.glfwSetClipboardString(gfx.Context.instance.window, toCopy);
 }
 
 pub fn paste(_: systemEvs.EventPaste) !void {
-    const tmp = c.glfwGetClipboardString(gfx.gContext.window);
+    const tmp = c.glfwGetClipboardString(gfx.Context.instance.window);
     if (tmp == null) return;
 
     const len = std.mem.len(tmp);
@@ -405,8 +402,8 @@ pub fn settingSet(event: systemEvs.EventSetSetting) !void {
         const val: c_int = if (std.ascii.eqlIgnoreCase("yes", event.value)) 1 else 0;
 
         if (isCrt) {
-            gfx.gContext.makeCurrent();
-            defer gfx.gContext.makeNotCurrent();
+            gfx.Context.makeCurrent();
+            defer gfx.Context.makeNotCurrent();
 
             crt_shader.setInt("crt_enable", val);
             crt_shader.setInt("dither_enable", val);
@@ -445,14 +442,15 @@ pub fn syscall(event: systemEvs.EventSys) !void {
 pub fn drawLoading(self: *loadingState.GSLoading) void {
     while (!self.done.load(.SeqCst) and !paniced) {
         {
-            ctx.makeCurrent();
-            defer ctx.makeNotCurrent();
-            if (!gfx.poll(&ctx))
+            gfx.Context.makeCurrent();
+            defer gfx.Context.makeNotCurrent();
+
+            if (!gfx.Context.poll())
                 self.done.storeUnchecked(true);
         }
 
         // render loading screen
-        self.draw(gfx.gContext.size) catch {};
+        self.draw(gfx.Context.instance.size) catch {};
 
         blit() catch {};
         std.Thread.yield() catch {};
@@ -460,17 +458,17 @@ pub fn drawLoading(self: *loadingState.GSLoading) void {
 }
 
 pub fn windowResize(event: inputEvs.EventWindowResize) !void {
-    ctx.makeCurrent();
-    defer ctx.makeNotCurrent();
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
 
-    try gfx.resize(event.w, event.h);
+    try gfx.Context.resize(event.w, event.h);
 
     c.glfwSetTime(0);
     last_frame_time = 0;
 
     // clear the window
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
 
     // Poor filtering. Needed !
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
@@ -502,7 +500,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     }
 
     // disable events on loading screen
-    inputEvs.setup(ctx.window, true);
+    inputEvs.setup(gfx.Context.instance.window, true);
 
     // update game state
     currentState = .Crash;
@@ -513,9 +511,9 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     // get crash state
     const state = gameStates.getPtr(.Crash);
 
-    while (gfx.poll(&ctx)) {
+    while (gfx.Context.poll()) {
         state.update(1.0 / 60.0) catch break;
-        state.draw(gfx.gContext.size) catch break;
+        state.draw(gfx.Context.instance.size) catch break;
         blit() catch break;
     }
 
@@ -600,8 +598,7 @@ pub fn mainErr() anyerror!void {
     texMan.TextureManager.init();
 
     // init graphics
-    ctx = try gfx.init("SandEEE");
-    gfx.gContext = &ctx;
+    try gfx.Context.init("SandEEE");
 
     audio_man = try audio.Audio.init();
 
@@ -630,7 +627,7 @@ pub fn mainErr() anyerror!void {
     try loader.run(&prog);
 
     // start setup states
-    ctx.makeCurrent();
+    gfx.Context.makeCurrent();
 
     // enable crt by default
     crt_shader.setInt("crt_enable", if (isCrt) 1 else 0);
@@ -646,7 +643,7 @@ pub fn mainErr() anyerror!void {
 
     // clear the window
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(ctx.size.x)), @as(i32, @intFromFloat(ctx.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
 
     // Poor filtering. Needed !
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
@@ -655,7 +652,7 @@ pub fn mainErr() anyerror!void {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
 
     // create the sprite batch
-    try batch.SpriteBatch.init(&gfx.gContext.size);
+    try batch.SpriteBatch.init(&gfx.Context.instance.size);
     defer batch.SpriteBatch.deinit();
 
     // load some textures
@@ -669,7 +666,7 @@ pub fn mainErr() anyerror!void {
     vm_manager = vmManager.VMManager.init();
 
     wallpaper = wall.Wallpaper.new("wall", wall.WallData{
-        .dims = &gfx.gContext.size,
+        .dims = &gfx.Context.instance.size,
         .mode = .Center,
     });
 
@@ -696,7 +693,6 @@ pub fn mainErr() anyerror!void {
         .face = &mainFace,
         .audio_man = &audio_man,
         .emailManager = &emailManager,
-        .ctx = &ctx,
         .loading = drawLoading,
         .logout_snd = &logout_snd,
         .message_snd = &message_snd,
@@ -752,7 +748,7 @@ pub fn mainErr() anyerror!void {
         .wallpaper = &wallpaper,
         .bar = bar.Bar.new("bar", bar.BarData{
             .height = 38,
-            .screendims = &gfx.gContext.size,
+            .screendims = &gfx.Context.instance.size,
         }),
     };
 
@@ -810,7 +806,7 @@ pub fn mainErr() anyerror!void {
     };
 
     // done states setup
-    ctx.makeNotCurrent();
+    gfx.Context.makeNotCurrent();
 
     // setup event system
     events.EventManager.init();
@@ -846,12 +842,7 @@ pub fn mainErr() anyerror!void {
 
     // run setup
     try gameStates.getPtr(.Disks).setup();
-    inputEvs.setup(ctx.window, true);
-
-    // set some random vars
-    win.deskSize = &gfx.gContext.size;
-    desk.deskSize = &gfx.gContext.size;
-    windowedState.GSWindowed.deskSize = &gfx.gContext.size;
+    inputEvs.setup(gfx.Context.instance.window, true);
 
     // setup state machine
     var prev = currentState;
@@ -864,7 +855,7 @@ pub fn mainErr() anyerror!void {
     last_frame_time = 0;
 
     // main loop
-    while (gfx.poll(&ctx)) {
+    while (gfx.Context.poll()) {
 
         // get the current state
         const state = gameStates.getPtr(prev);
@@ -873,7 +864,7 @@ pub fn mainErr() anyerror!void {
         const currentTime = c.glfwGetTime();
 
         // pause the game on minimize
-        if (c.glfwGetWindowAttrib(gfx.gContext.window, c.GLFW_ICONIFIED) == 0) {
+        if (c.glfwGetWindowAttrib(gfx.Context.instance.window, c.GLFW_ICONIFIED) == 0) {
             const cb = struct {
                 fn callback(callbackMsg: steam.CallbackMsg) anyerror!void {
                     std.log.warn("steam callback {}", .{callbackMsg.callback});
@@ -885,7 +876,7 @@ pub fn mainErr() anyerror!void {
             try steam.manualCallback(cb);
 
             // get tris
-            try state.draw(gfx.gContext.size);
+            try state.draw(gfx.Context.instance.size);
         }
 
         timer += currentTime - last_frame_time;
@@ -926,7 +917,7 @@ pub fn mainErr() anyerror!void {
     try biosFace.deinit();
     texMan.TextureManager.deinit();
 
-    gfx.close(ctx);
+    gfx.Context.deinit();
 }
 
 test "headless.zig" {

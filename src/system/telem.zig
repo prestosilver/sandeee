@@ -70,10 +70,10 @@ pub const Telem = packed struct {
                 .randomId = rnd.random().int(u64),
             };
 
-            const pass = try getDebugPassword();
-            defer allocator.alloc.free(pass);
+            //const pass = try getDebugPassword();
+            //defer allocator.alloc.free(pass);
 
-            std.log.info("Set telem pass: {s}", .{pass});
+            //std.log.info("Set telem pass: {s}", .{pass});
         }
     }
 

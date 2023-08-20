@@ -7,131 +7,129 @@ const tex = @import("../util/texture.zig");
 const allocator = @import("allocator.zig");
 const c = @import("../c.zig");
 
-pub var palette: tex.Texture = undefined;
-pub var gContext: *Context = undefined;
-
 pub const Context = struct {
+    pub var instance: Context = undefined;
+
     window: ?*c.GLFWwindow,
     color: col.Color,
     shaders: std.ArrayList(shd.Shader),
     lock: std.Thread.Mutex = .{},
     size: vecs.Vector2,
 
-    pub fn makeCurrent(self: *Context) void {
-        self.lock.lock();
-        c.glfwMakeContextCurrent(self.window);
+    pub fn makeCurrent() void {
+        instance.lock.lock();
+        c.glfwMakeContextCurrent(instance.window);
     }
 
-    pub fn makeNotCurrent(self: *Context) void {
+    pub fn makeNotCurrent() void {
         c.glfwMakeContextCurrent(null);
-        self.lock.unlock();
+        instance.lock.unlock();
     }
 
-    pub fn cursorMode(ctx: *Context, val: c_int) void {
-        c.glfwSetInputMode(ctx.window, c.GLFW_CURSOR, val);
-    }
-};
-
-export fn errorCallback(err: c_int, description: [*c]const u8) void {
-    std.log.info("Error: {s}, {}\n", .{ description, err });
-    //@panic("GLFW Error");
-}
-
-const GfxError = error{
-    GLFWInit,
-    GLADInit,
-};
-
-pub fn init(name: [*c]const u8) !Context {
-    _ = c.glfwSetErrorCallback(errorCallback);
-
-    if (c.glfwInit() == 0) {
-        return error.GLFWInitFailed;
+    pub fn cursorMode(val: c_int) void {
+        c.glfwSetInputMode(instance.window, c.GLFW_CURSOR, val);
     }
 
-    const monitor = c.glfwGetPrimaryMonitor();
-
-    const mode = c.glfwGetVideoMode(monitor)[0];
-
-    c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
-    c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
-    c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
-    std.log.info("{}", .{mode.refreshRate});
-
-    c.glfwWindowHint(c.GLFW_REFRESH_RATE, mode.refreshRate);
-
-    const win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
-
-    c.glfwMakeContextCurrent(win);
-
-    //c.glfwSwapInterval(1);
-
-    if (c.gladLoadGLLoader(@as(c.GLADloadproc, @ptrCast(&c.glfwGetProcAddress))) == 0) {
-        return error.GLADInitFailed;
+    export fn errorCallback(err: c_int, description: [*c]const u8) void {
+        std.log.err("{s}, {}\n", .{ description, err });
     }
 
-    const shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
-
-    var w: c_int = 0;
-    var h: c_int = 0;
-
-    c.glfwGetFramebufferSize(win, &w, &h);
-
-    c.glfwSetInputMode(win, c.GLFW_CURSOR, c.GLFW_CURSOR_HIDDEN);
-
-    c.glfwMakeContextCurrent(null);
-
-    return Context{
-        .window = win,
-        .color = col.newColorRGBA(0, 0, 0, 255),
-        .shaders = shaders,
-        .size = vecs.newVec2(@as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h))),
+    const GfxError = error{
+        GLFWInit,
+        GLADInit,
     };
-}
 
-pub fn poll(ctx: *Context) bool {
-    c.glfwPollEvents();
-    return c.glfwWindowShouldClose(ctx.window) == 0;
-}
+    pub fn init(name: [*c]const u8) !void {
+        _ = c.glfwSetErrorCallback(errorCallback);
 
-pub fn clear(ctx: *Context) void {
-    c.glClearColor(ctx.color.r, ctx.color.g, ctx.color.b, ctx.color.a);
-    c.glClear(c.GL_COLOR_BUFFER_BIT);
-}
+        if (c.glfwInit() == 0) {
+            return error.GLFWInitFailed;
+        }
 
-pub fn swap(ctx: *Context) void {
-    c.glFinish();
-    c.glFlush();
+        const monitor = c.glfwGetPrimaryMonitor();
 
-    c.glfwSwapBuffers(ctx.window);
-}
+        const mode = c.glfwGetVideoMode(monitor)[0];
 
-pub fn regShader(ctx: *Context, s: shd.Shader) !void {
-    try ctx.shaders.append(s);
+        c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
+        c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
+        c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
+        std.log.info("{}", .{mode.refreshRate});
 
-    const proj = try mat4.Mat4.ortho(0, ctx.size.x, ctx.size.y, 0, 100, -1);
+        c.glfwWindowHint(c.GLFW_REFRESH_RATE, mode.refreshRate);
 
-    s.setMat4("projection", proj);
-    s.setFloat("screen_width", ctx.size.x);
-    s.setFloat("screen_height", ctx.size.y);
-}
+        const win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
 
-pub fn resize(w: i32, h: i32) !void {
-    gContext.size = vecs.newVec2(@as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)));
+        c.glfwMakeContextCurrent(win);
 
-    c.glViewport(0, 0, w, h);
+        c.glfwSwapInterval(1);
 
-    const proj = try mat4.Mat4.ortho(0, @as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)), 0, 100, -1);
+        if (c.gladLoadGLLoader(@as(c.GLADloadproc, @ptrCast(&c.glfwGetProcAddress))) == 0) {
+            return error.GLADInitFailed;
+        }
 
-    for (gContext.shaders.items) |shader| {
-        shader.setMat4("projection", proj);
-        shader.setFloat("screen_width", @as(f32, @floatFromInt(w)));
-        shader.setFloat("screen_height", @as(f32, @floatFromInt(h)));
+        const shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
+
+        var w: c_int = 0;
+        var h: c_int = 0;
+
+        c.glfwGetFramebufferSize(win, &w, &h);
+
+        c.glfwSetInputMode(win, c.GLFW_CURSOR, c.GLFW_CURSOR_HIDDEN);
+
+        c.glfwMakeContextCurrent(null);
+
+        instance = Context{
+            .window = win,
+            .color = col.newColorRGBA(0, 0, 0, 255),
+            .shaders = shaders,
+            .size = vecs.newVec2(@as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h))),
+        };
     }
-}
 
-pub fn close(ctx: Context) void {
-    ctx.shaders.deinit();
-    c.glfwDestroyWindow(ctx.window);
-    c.glfwTerminate();
-}
+    pub fn poll() bool {
+        c.glfwPollEvents();
+        return c.glfwWindowShouldClose(instance.window) == 0;
+    }
+
+    pub fn clear() void {
+        c.glClearColor(instance.color.r, instance.color.g, instance.color.b, instance.color.a);
+        c.glClear(c.GL_COLOR_BUFFER_BIT);
+    }
+
+    pub fn swap() void {
+        c.glFinish();
+        c.glFlush();
+
+        c.glfwSwapBuffers(instance.window);
+    }
+
+    pub fn regShader(s: shd.Shader) !void {
+        try instance.shaders.append(s);
+
+        const proj = try mat4.Mat4.ortho(0, instance.size.x, instance.size.y, 0, 100, -1);
+
+        s.setMat4("projection", proj);
+        s.setFloat("screen_width", instance.size.x);
+        s.setFloat("screen_height", instance.size.y);
+    }
+
+    pub fn resize(w: i32, h: i32) !void {
+        instance.size = vecs.newVec2(@as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)));
+
+        c.glViewport(0, 0, w, h);
+
+        const proj = try mat4.Mat4.ortho(0, @as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)), 0, 100, -1);
+
+        for (instance.shaders.items) |shader| {
+            shader.setMat4("projection", proj);
+            shader.setFloat("screen_width", @as(f32, @floatFromInt(w)));
+            shader.setFloat("screen_height", @as(f32, @floatFromInt(h)));
+        }
+    }
+
+    pub fn deinit() void {
+        instance.shaders.deinit();
+        c.glfwDestroyWindow(instance.window);
+        c.glfwTerminate();
+    }
+};

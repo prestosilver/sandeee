@@ -24,7 +24,7 @@ pub const GSCrash = struct {
 
     pub fn setup(_: *Self) !void {
         try files.write();
-        gfx.gContext.color = cols.newColor(0.25, 0, 0, 1);
+        gfx.Context.instance.color = cols.newColor(0.25, 0, 0, 1);
     }
 
     pub fn deinit(_: *Self) !void {}
@@ -73,7 +73,7 @@ pub const GSCrash = struct {
 
     pub fn keypress(_: *Self, key: c_int, _: c_int, down: bool) !void {
         if (down and key == c.GLFW_KEY_ESCAPE)
-            c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
+            c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
         return;
     }
 

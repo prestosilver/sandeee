@@ -9,12 +9,11 @@ const va = @import("../util/vertArray.zig");
 const allocator = @import("../util/allocator.zig");
 const spr = @import("sprite2d.zig");
 const popup = @import("popup2d.zig");
+const gfx = @import("../util/graphics.zig");
 
 const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;
 const RESIZE_PAD: f32 = 10;
-
-pub var deskSize: *vecs.Vector2 = undefined;
 
 pub const DragMode = enum {
     None,
@@ -74,7 +73,7 @@ pub const WindowContents = struct {
         scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
         move: *const fn (*anyopaque, f32, f32) anyerror!void,
 
-        moveResize: *const fn (*anyopaque, *rect.Rectangle) anyerror!void,
+        moveResize: *const fn (*anyopaque, rect.Rectangle) anyerror!void,
 
         focus: *const fn (*anyopaque) anyerror!void,
         deinit: *const fn (*anyopaque) anyerror!void,
@@ -170,7 +169,7 @@ pub const WindowContents = struct {
         return self.vtable.focus(self.ptr);
     }
 
-    pub fn moveResize(self: *Self, bnds: *rect.Rectangle) !void {
+    pub fn moveResize(self: *Self, bnds: rect.Rectangle) !void {
         return self.vtable.moveResize(self.ptr, bnds);
     }
 
@@ -235,7 +234,7 @@ pub const WindowContents = struct {
                 return @call(.always_inline, ptr_info.Pointer.child.focus, .{self});
             }
 
-            fn moveResizeImpl(pointer: *anyopaque, bnds: *rect.Rectangle) !void {
+            fn moveResizeImpl(pointer: *anyopaque, bnds: rect.Rectangle) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.always_inline, ptr_info.Pointer.child.moveResize, .{ self, bnds });
@@ -432,6 +431,8 @@ pub const WindowData = struct {
     }
 
     pub fn drawContents(self: *WindowData, shader: *shd.Shader, font: *fnt.Font) !void {
+        const deskSize = gfx.Context.instance.size;
+
         if (self.full) {
             self.pos.w = deskSize.x;
             self.pos.h = deskSize.y - 38;
