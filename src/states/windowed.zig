@@ -42,6 +42,7 @@ pub const GSWindowed = struct {
 
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
     windows: std.ArrayList(win.Window) = undefined,
+
     notifs: std.ArrayList(notifications.Notification) = undefined,
     openWindow: vecs.Vector2 = vecs.newVec2(0, 0),
 
@@ -106,6 +107,13 @@ pub const GSWindowed = struct {
     }
 
     fn createWindow(event: windowEvs.EventCreateWindow) !void {
+        const draggingIdx = if (globalSelf.dragging) |dragging| blk: {
+            for (globalSelf.windows.items, 0..) |*window, idx| {
+                if (window == dragging) break :blk idx;
+            }
+            break :blk null;
+        } else null;
+
         var target = vecs.newVec2(100, 100);
 
         for (globalSelf.windows.items, 0..) |_, idx| {
@@ -128,6 +136,8 @@ pub const GSWindowed = struct {
 
         globalSelf.openWindow.x = target.x + 25;
         globalSelf.openWindow.y = target.y + 25;
+
+        if (draggingIdx) |idx| globalSelf.dragging = &globalSelf.windows.items[idx];
 
         return;
     }
@@ -636,7 +646,7 @@ pub const GSWindowed = struct {
 
     pub fn mouserelease(self: *Self) !void {
         if (self.dragging) |dragging| {
-            try dragging.data.contents.moveResize(&dragging.data.pos);
+            try dragging.data.contents.moveResize(dragging.data.pos);
             self.dragging = null;
         }
 
