@@ -1,5 +1,5 @@
 const std = @import("std");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -67,7 +67,7 @@ pub const WindowContents = struct {
     };
 
     const VTable = struct {
-        draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, *rect.Rectangle, *fnt.Font, *WindowProps) anyerror!void,
+        draw: *const fn (*anyopaque, *shd.Shader, *rect.Rectangle, *fnt.Font, *WindowProps) anyerror!void,
         click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, ?i32) anyerror!void,
         key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
         char: *const fn (*anyopaque, u32, i32) anyerror!void,
@@ -91,7 +91,7 @@ pub const WindowContents = struct {
     ptr: *anyopaque,
     vtable: *const VTable,
 
-    pub fn drawScroll(self: *Self, batch: *sb.SpriteBatch, bnds: *rect.Rectangle) !void {
+    pub fn drawScroll(self: *Self, bnds: *rect.Rectangle) !void {
         if (self.props.scroll) |scrolldat| {
             if (scrolldat.maxy <= 0) return;
 
@@ -99,14 +99,14 @@ pub const WindowContents = struct {
 
             scrollSp[1].data.size.y = bnds.h - scrolldat.offsetStart - (20 * 2 - 2) + 2;
 
-            try batch.draw(spr.Sprite, &scrollSp[0], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scrolldat.offsetStart, 0));
-            try batch.draw(spr.Sprite, &scrollSp[1], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scrolldat.offsetStart + 20, 0));
-            try batch.draw(spr.Sprite, &scrollSp[2], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + bnds.h - 20 + 2, 0));
-            try batch.draw(spr.Sprite, &scrollSp[3], shader, vecs.newVec3(bnds.x + bnds.w - 20, (bnds.h - scrolldat.offsetStart - (20 * 2) - 30 + 4) * scrollPc + bnds.y + scrolldat.offsetStart + 20 - 2, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scrollSp[0], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scrolldat.offsetStart, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scrollSp[1], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scrolldat.offsetStart + 20, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scrollSp[2], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + bnds.h - 20 + 2, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scrollSp[3], shader, vecs.newVec3(bnds.x + bnds.w - 20, (bnds.h - scrolldat.offsetStart - (20 * 2) - 30 + 4) * scrollPc + bnds.y + scrolldat.offsetStart + 20 - 2, 0));
         }
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
         if (self.props.scroll) |*scrollData| {
             if (scrollData.value > scrollData.maxy)
                 scrollData.value = scrollData.maxy;
@@ -114,8 +114,8 @@ pub const WindowContents = struct {
                 scrollData.value = 0;
         }
 
-        try self.vtable.draw(self.ptr, batch, font_shader, bnds, font, &self.props);
-        try self.drawScroll(batch, bnds);
+        try self.vtable.draw(self.ptr, font_shader, bnds, font, &self.props);
+        try self.drawScroll(bnds);
     }
 
     pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
@@ -189,7 +189,6 @@ pub const WindowContents = struct {
         const gen = struct {
             fn drawImpl(
                 pointer: *anyopaque,
-                batch: *sb.SpriteBatch,
                 font_shader: *shd.Shader,
                 bnds: *rect.Rectangle,
                 font: *fnt.Font,
@@ -197,7 +196,7 @@ pub const WindowContents = struct {
             ) anyerror!void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, batch, font_shader, bnds, font, props });
+                return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, font_shader, bnds, font, props });
             }
 
             fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
@@ -414,7 +413,7 @@ pub const WindowData = struct {
         }
     }
 
-    pub fn drawName(self: *WindowData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
+    pub fn drawName(self: *WindowData, shader: *shd.Shader, font: *fnt.Font) !void {
         if (self.min) return;
 
         const color = if (self.active)
@@ -423,7 +422,6 @@ pub const WindowData = struct {
             cols.newColorRGBA(197, 197, 197, 255);
 
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .text = self.contents.props.info.name,
             .pos = vecs.newVec2(self.pos.x + 9, self.pos.y + 8),
@@ -433,7 +431,7 @@ pub const WindowData = struct {
         });
     }
 
-    pub fn drawContents(self: *WindowData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
+    pub fn drawContents(self: *WindowData, shader: *shd.Shader, font: *fnt.Font) !void {
         if (self.full) {
             self.pos.w = deskSize.x;
             self.pos.h = deskSize.y - 38;
@@ -448,14 +446,14 @@ pub const WindowData = struct {
         bnds.w -= 12;
         bnds.h -= 40;
 
-        try batch.addEntry(&.{
+        try batch.SpriteBatch.instance.addEntry(&.{
             .texture = "",
             .verts = try va.VertArray.init(),
             .shader = shader.*,
             .clear = self.contents.clearColor,
         });
 
-        try self.contents.draw(batch, shader, &bnds, font);
+        try self.contents.draw(shader, &bnds, font);
     }
 
     pub fn scissor(self: *const WindowData) rect.Rectangle {
@@ -530,4 +528,4 @@ pub const WindowData = struct {
     }
 };
 
-pub const Window = sb.Drawer(WindowData);
+pub const Window = batch.Drawer(WindowData);

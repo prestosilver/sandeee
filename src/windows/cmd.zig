@@ -5,7 +5,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const shell = @import("../system/shell.zig");
@@ -54,7 +54,7 @@ pub const CMDData = struct {
         self.bt = try allocator.alloc.realloc(self.bt, idx);
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
                 .offsetStart = 0,
@@ -76,14 +76,12 @@ pub const CMDData = struct {
             const prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.inputBuffer[0..self.inputLen] });
             defer allocator.alloc.free(prompt);
             try font.draw(.{
-                .batch = batch,
                 .shader = shader,
                 .text = prompt,
                 .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6 + offset),
                 .color = col.newColor(1, 1, 1, 1),
             });
             try font.draw(.{
-                .batch = batch,
                 .shader = shader,
                 .text = "|",
                 .pos = vecs.newVec2(
@@ -125,7 +123,6 @@ pub const CMDData = struct {
             y -= font.sizeText(.{ .text = line, .wrap = bnds.w - 30 }).y;
 
             try font.draw(.{
-                .batch = batch,
                 .shader = shader,
                 .text = line,
                 .pos = vecs.newVec2(bnds.x + 6, y),

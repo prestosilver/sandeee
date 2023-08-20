@@ -3,7 +3,7 @@ const vec = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const allocator = @import("allocator.zig");
-const sb = @import("spritebatch.zig");
+const batch = @import("spritebatch.zig");
 const texMan = @import("texmanager.zig");
 const shd = @import("shader.zig");
 const va = @import("vertArray.zig");
@@ -151,7 +151,6 @@ pub const Font = struct {
     }
 
     pub const drawParams = struct {
-        batch: *sb.SpriteBatch,
         shader: *shd.Shader,
         pos: vec.Vector2,
         text: []const u8,
@@ -176,16 +175,16 @@ pub const Font = struct {
         start.x = @round(start.x);
         start.y = @round(start.y);
 
-        const startscissor = params.batch.scissor;
-        defer params.batch.scissor = startscissor;
+        const startscissor = batch.SpriteBatch.instance.scissor;
+        defer batch.SpriteBatch.instance.scissor = startscissor;
 
-        if (params.batch.scissor != null) {
+        if (batch.SpriteBatch.instance.scissor != null) {
             if (params.wrap != null)
-                params.batch.scissor.?.w =
-                    @max(@as(f32, 0), @min(params.batch.scissor.?.w, params.pos.x + params.wrap.? - params.batch.scissor.?.x));
+                batch.SpriteBatch.instance.scissor.?.w =
+                    @max(@as(f32, 0), @min(batch.SpriteBatch.instance.scissor.?.w, params.pos.x + params.wrap.? - batch.SpriteBatch.instance.scissor.?.x));
             if (params.maxlines != null)
-                params.batch.scissor.?.h =
-                    @max(@as(f32, 0), @min(params.batch.scissor.?.h, params.pos.y + ((@as(f32, @floatFromInt(params.maxlines.?))) * self.size) - params.batch.scissor.?.y));
+                batch.SpriteBatch.instance.scissor.?.h =
+                    @max(@as(f32, 0), @min(batch.SpriteBatch.instance.scissor.?.h, params.pos.y + ((@as(f32, @floatFromInt(params.maxlines.?))) * self.size) - batch.SpriteBatch.instance.scissor.?.y));
         }
 
         var vertarray = try va.VertArray.init();
@@ -286,13 +285,13 @@ pub const Font = struct {
             params.origin.?.* = pos;
         }
 
-        const entry = sb.QueueEntry{
+        const entry = .{
             .texture = self.tex,
             .verts = vertarray,
             .shader = params.shader.*,
         };
 
-        try params.batch.addEntry(&entry);
+        try batch.SpriteBatch.instance.addEntry(&entry);
     }
 
     pub const sizeParams = struct {

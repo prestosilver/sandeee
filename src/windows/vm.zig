@@ -6,7 +6,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const tex = @import("../util/texture.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const shd = @import("../util/shader.zig");
 const fnt = @import("../util/font.zig");
 const spr = @import("../drawers/sprite2d.zig");
@@ -99,7 +99,7 @@ pub const VMData = struct {
         rects.*.clearAndFree();
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         vm.syslock.lock();
         defer vm.syslock.unlock();
 
@@ -109,12 +109,11 @@ pub const VMData = struct {
         for (rects.items, 0..) |_, idx| {
             switch (rects.items[idx]) {
                 .Rect => {
-                    try batch.draw(spr.Sprite, &rects.items[idx].Rect.s, self.shader, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].Rect.loc));
+                    try batch.SpriteBatch.instance.draw(spr.Sprite, &rects.items[idx].Rect.s, self.shader, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].Rect.loc));
                 },
                 .Text => {
                     try font.draw(
                         .{
-                            .batch = batch,
                             .shader = font_shader,
                             .pos = rects.items[idx].Text.pos.add(bnds.location()),
                             .text = rects.items[idx].Text.text,
@@ -136,7 +135,6 @@ pub const VMData = struct {
             defer allocator.alloc.free(val);
 
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = val,
                 .pos = bnds.location(),

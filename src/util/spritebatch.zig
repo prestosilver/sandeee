@@ -57,9 +57,10 @@ pub const QueueEntry = struct {
 };
 
 pub const SpriteBatch = struct {
+    pub var instance: SpriteBatch = undefined;
+
     prevQueue: []QueueEntry,
     queue: []QueueEntry,
-    queueLock: std.Thread.Mutex = .{},
 
     buffers: []c.GLuint,
     scissor: ?rect.Rectangle = null,
@@ -76,8 +77,6 @@ pub const SpriteBatch = struct {
     }
 
     pub fn addEntry(sb: *SpriteBatch, entry: *const QueueEntry) !void {
-        sb.queueLock.lock();
-        defer sb.queueLock.unlock();
         var newEntry = entry.*;
 
         newEntry.scissor = sb.scissor;
@@ -88,9 +87,6 @@ pub const SpriteBatch = struct {
     }
 
     pub fn render(sb: *SpriteBatch) !void {
-        sb.queueLock.lock();
-        defer sb.queueLock.unlock();
-
         c.glEnable(c.GL_BLEND);
         c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -189,27 +185,27 @@ pub const SpriteBatch = struct {
         sb.queue = try allocator.alloc.alloc(QueueEntry, 0);
     }
 
-    pub fn deinit(sb: SpriteBatch) void {
-        for (sb.prevQueue) |*e| {
+    pub fn deinit() void {
+        for (instance.prevQueue) |*e| {
             e.verts.deinit();
             allocator.alloc.free(e.texture);
         }
-        for (sb.queue) |*e| {
+        for (instance.queue) |*e| {
             e.verts.deinit();
             allocator.alloc.free(e.texture);
         }
 
-        allocator.alloc.free(sb.buffers);
-        allocator.alloc.free(sb.queue);
-        allocator.alloc.free(sb.prevQueue);
+        allocator.alloc.free(instance.buffers);
+        allocator.alloc.free(instance.queue);
+        allocator.alloc.free(instance.prevQueue);
     }
 
-    pub fn init(size: *vecs.Vector2) !SpriteBatch {
+    pub fn init(size: *vecs.Vector2) !void {
         const buffer = try allocator.alloc.alloc(c.GLuint, 0);
         const q = try allocator.alloc.alloc(QueueEntry, 0);
         const pq = try allocator.alloc.alloc(QueueEntry, 0);
 
-        return SpriteBatch{
+        instance = SpriteBatch{
             .prevQueue = pq,
             .queue = q,
             .buffers = buffer,

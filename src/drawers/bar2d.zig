@@ -1,5 +1,5 @@
 const std = @import("std");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -61,11 +61,10 @@ pub const BarData = struct {
         try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE));
     }
 
-    pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, batch: *sb.SpriteBatch, windows: *std.ArrayList(win.Window)) !void {
+    pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, windows: *std.ArrayList(win.Window)) !void {
         var pos = rect.newRect(self.height, self.screendims.y - self.height + 12, self.screendims.x + self.height, self.height);
 
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = "APPS",
             .pos = pos.location(),
@@ -84,7 +83,6 @@ pub const BarData = struct {
         const clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
 
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = clockString,
             .pos = clockPos,
@@ -95,7 +93,6 @@ pub const BarData = struct {
         for (windows.items) |window| {
             pos.x = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = window.data.contents.props.info.name,
                 .pos = pos.location(),
@@ -108,7 +105,7 @@ pub const BarData = struct {
         }
 
         if (self.btnActive) {
-            try batch.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
 
             for (0..10) |i| {
                 const height = font.size * 1;
@@ -125,7 +122,6 @@ pub const BarData = struct {
                 };
                 const textpos = vecs.newVec2(100, y);
                 try font.draw(.{
-                    .batch = batch,
                     .shader = font_shader,
                     .text = text,
                     .pos = textpos,
@@ -379,4 +375,4 @@ pub const BarData = struct {
     }
 };
 
-pub const Bar = sb.Drawer(BarData);
+pub const Bar = batch.Drawer(BarData);

@@ -1,6 +1,6 @@
 const std = @import("std");
 const shd = @import("../util/shader.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
@@ -53,8 +53,6 @@ pub const GSLoading = struct {
     logout_snd: *audio.Sound,
     message_snd: *audio.Sound,
     done: std.atomic.Atomic(bool) = std.atomic.Atomic(bool).init(false),
-
-    sb: *sb.SpriteBatch,
 
     loading: *const fn (*Self) void,
 
@@ -156,11 +154,11 @@ pub const GSLoading = struct {
         const logoOff = size.sub(self.logo_sprite.data.size).div(2);
 
         // draw the logo
-        try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
 
         // progress bar
         self.load_sprite.data.size.x = (self.load_progress * 320 * 0.5 + self.load_sprite.data.size.x * 0.5);
-        try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
 
         if (self.load_sprite.data.size.x > 310)
             self.done.storeUnchecked(true);

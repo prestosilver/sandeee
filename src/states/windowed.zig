@@ -5,10 +5,10 @@ const rect = @import("../math/rects.zig");
 const win = @import("../drawers/window2d.zig");
 const desk = @import("../drawers/desk2d.zig");
 const allocator = @import("../util/allocator.zig");
+const batch = @import("../util/spritebatch.zig");
 const wall = @import("../drawers/wall2d.zig");
 const bar = @import("../drawers/bar2d.zig");
 const sp = @import("../drawers/sprite2d.zig");
-const batch = @import("../util/spritebatch.zig");
 const shd = @import("../util/shader.zig");
 const font = @import("../util/font.zig");
 const tex = @import("../util/texture.zig");
@@ -47,7 +47,6 @@ pub const GSWindowed = struct {
 
     wallpaper: *wall.Wallpaper,
     bar: bar.Bar,
-    sb: *batch.SpriteBatch,
     shader: *shd.Shader,
     font_shader: *shd.Shader,
     clearShader: *shd.Shader,
@@ -313,9 +312,9 @@ pub const GSWindowed = struct {
         }
 
         // draw wallpaper
-        try self.sb.draw(wall.Wallpaper, self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
-        try self.sb.draw(desk.Desk, &self.desk, self.shader, vecs.newVec3(0, 0, 0));
-        try self.desk.data.addText(self.sb, self.font_shader, self.face);
+        try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
+        try batch.SpriteBatch.instance.draw(desk.Desk, &self.desk, self.shader, vecs.newVec3(0, 0, 0));
+        try self.desk.data.addText(self.font_shader, self.face);
         try self.desk.data.updateVm();
 
         for (self.windows.items, 0..) |window, idx| {
@@ -323,45 +322,45 @@ pub const GSWindowed = struct {
             if (idx >= self.windows.items.len) continue;
 
             // draw the window border
-            try self.sb.draw(win.Window, &self.windows.items[idx], self.shader, vecs.newVec3(0, 0, 0));
+            try batch.SpriteBatch.instance.draw(win.Window, &self.windows.items[idx], self.shader, vecs.newVec3(0, 0, 0));
 
             // draw the windows name
-            try self.windows.items[idx].data.drawName(self.font_shader, self.face, self.sb);
+            try self.windows.items[idx].data.drawName(self.font_shader, self.face);
 
             // update scisor region
-            self.sb.scissor = window.data.scissor();
+            batch.SpriteBatch.instance.scissor = window.data.scissor();
 
             // draw the window contents
-            try self.windows.items[idx].data.drawContents(self.font_shader, self.face, self.sb);
+            try self.windows.items[idx].data.drawContents(self.font_shader, self.face);
 
             // reset scisor jic
-            self.sb.scissor = null;
+            batch.SpriteBatch.instance.scissor = null;
 
             if (self.windows.items[idx].data.popup) |*popup| {
                 popup.data.parentPos = window.data.pos;
 
-                try self.sb.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
+                try batch.SpriteBatch.instance.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
 
-                try popup.data.drawName(self.font_shader, self.face, self.sb);
+                try popup.data.drawName(self.font_shader, self.face);
 
                 // update scisor region
-                self.sb.scissor = popup.data.scissor();
+                batch.SpriteBatch.instance.scissor = popup.data.scissor();
 
-                try popup.data.drawContents(self.font_shader, self.face, self.sb);
+                try popup.data.drawContents(self.font_shader, self.face);
 
                 // reset scisor jic
-                self.sb.scissor = null;
+                batch.SpriteBatch.instance.scissor = null;
             }
         }
 
         // draw bar
-        try self.sb.draw(bar.Bar, &self.bar, self.shader, vecs.newVec3(0, 0, 0));
-        try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, self.sb, &self.windows);
+        try batch.SpriteBatch.instance.draw(bar.Bar, &self.bar, self.shader, vecs.newVec3(0, 0, 0));
+        try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, &self.windows);
 
         // draw notifications
         for (self.notifs.items, 0..) |*notif, idx| {
-            try self.sb.draw(notifications.Notification, notif, self.shader, vecs.newVec3(@as(f32, @floatFromInt(idx)), 0, 0));
-            try notif.data.drawContents(self.sb, self.shader, self.face, self.font_shader, idx);
+            try batch.SpriteBatch.instance.draw(notifications.Notification, notif, self.shader, vecs.newVec3(@as(f32, @floatFromInt(idx)), 0, 0));
+            try notif.data.drawContents(self.shader, self.face, self.font_shader, idx);
         }
 
         // draw popup if exists
@@ -374,25 +373,25 @@ pub const GSWindowed = struct {
                 },
             };
 
-            try self.sb.draw(sp.Sprite, &clearSprite, self.clearShader, vecs.newVec3(0, 0, 0));
+            try batch.SpriteBatch.instance.draw(sp.Sprite, &clearSprite, self.clearShader, vecs.newVec3(0, 0, 0));
 
             popup.data.parentPos = rect.newRect(0, 0, deskSize.x, deskSize.y);
 
-            try self.sb.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
+            try batch.SpriteBatch.instance.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
 
-            try popup.data.drawName(self.font_shader, self.face, self.sb);
+            try popup.data.drawName(self.font_shader, self.face);
 
             // update scissor region
-            self.sb.scissor = popup.data.scissor();
+            batch.SpriteBatch.instance.scissor = popup.data.scissor();
 
-            try popup.data.drawContents(self.font_shader, self.face, self.sb);
+            try popup.data.drawContents(self.font_shader, self.face);
 
             // reset scisor jic
-            self.sb.scissor = null;
+            batch.SpriteBatch.instance.scissor = null;
         }
 
         // draw cursor
-        try self.sb.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
+        try batch.SpriteBatch.instance.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
 
         // vm manager
         try self.vm_manager.update();

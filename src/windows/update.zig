@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const options = @import("options");
 
 const win = @import("../drawers/window2d.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const shd = @import("../util/shader.zig");
 const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
@@ -23,10 +23,9 @@ pub const UpdateData = struct {
     focused_link: bool = false,
     link_pos: rect.Rectangle = .{ .x = 0, .y = 0, .w = 1, .h = 1 },
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = "There has been a Sand\x82\x82\x82 Update",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26),
@@ -35,7 +34,6 @@ pub const UpdateData = struct {
         });
 
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = "Please Update your disk to ensure you have all the nessesary files",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + font.size * 5),
@@ -44,7 +42,6 @@ pub const UpdateData = struct {
         });
 
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .color = .{
                 .r = 0,

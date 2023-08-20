@@ -1,4 +1,3 @@
-const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -6,6 +5,7 @@ const va = @import("../util/vertArray.zig");
 const win2d = @import("window2d.zig");
 const fnt = @import("../util/font.zig");
 const shd = @import("../util/shader.zig");
+const batch = @import("../util/spritebatch.zig");
 
 pub const all = @import("../windows/popups/all.zig");
 
@@ -19,7 +19,7 @@ pub const PopupData = struct {
         const Self = @This();
 
         const VTable = struct {
-            draw: *const fn (*anyopaque, *sb.SpriteBatch, *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) anyerror!void,
+            draw: *const fn (*anyopaque, *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) anyerror!void,
             key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
             char: *const fn (*anyopaque, u32, i32) anyerror!void,
             click: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
@@ -29,8 +29,8 @@ pub const PopupData = struct {
         ptr: *anyopaque,
         vtable: *const VTable,
 
-        pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
-            return self.vtable.draw(self.ptr, batch, shader, bnds, font);
+        pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+            return self.vtable.draw(self.ptr, shader, bnds, font);
         }
 
         pub fn char(self: *Self, keycode: u32, mods: i32) !void {
@@ -57,10 +57,10 @@ pub const PopupData = struct {
             if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
 
             const gen = struct {
-                fn drawImpl(pointer: *anyopaque, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+                fn drawImpl(pointer: *anyopaque, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, batch, shader, bnds, font });
+                    return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, shader, bnds, font });
                 }
 
                 fn keyImpl(pointer: *anyopaque, keycode: c_int, mods: c_int, down: bool) !void {
@@ -148,12 +148,11 @@ pub const PopupData = struct {
         };
     }
 
-    pub fn drawName(self: *PopupData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
+    pub fn drawName(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
         const pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
 
         const color = cols.newColorRGBA(255, 255, 255, 255);
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .text = self.title,
             .pos = vecs.newVec2(pos.x + 9, pos.y + 8),
@@ -163,15 +162,15 @@ pub const PopupData = struct {
         });
     }
 
-    pub fn drawContents(self: *PopupData, shader: *shd.Shader, font: *fnt.Font, batch: *sb.SpriteBatch) !void {
-        try batch.addEntry(&.{
+    pub fn drawContents(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
+        try batch.SpriteBatch.instance.addEntry(&.{
             .texture = "",
             .verts = try va.VertArray.init(),
             .shader = shader.*,
             .clear = cols.newColorRGBA(192, 192, 192, 255),
         });
 
-        try self.contents.draw(batch, shader, self.scissor(), font);
+        try self.contents.draw(shader, self.scissor(), font);
     }
 
     pub fn getVerts(self: *const PopupData, _: vecs.Vector3) !va.VertArray {
@@ -220,4 +219,4 @@ pub const PopupData = struct {
     }
 };
 
-pub const Popup = sb.Drawer(PopupData);
+pub const Popup = batch.Drawer(PopupData);

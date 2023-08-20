@@ -5,7 +5,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
@@ -41,7 +41,7 @@ const EmailData = struct {
     offset: *f32 = undefined,
     rowsize: f32 = 0,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
                 .offsetStart = 0,
@@ -59,7 +59,7 @@ const EmailData = struct {
 
         self.divx.data.size.y = bnds.h;
 
-        try batch.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 100, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 100, bnds.y, 0));
 
         self.dive.data.size.x = bnds.w - 102;
 
@@ -80,7 +80,6 @@ const EmailData = struct {
 
                 if (email.isComplete) {
                     try font.draw(.{
-                        .batch = batch,
                         .shader = font_shader,
                         .text = "\x83",
                         .pos = vecs.newVec2(bnds.x + 108, y - 2),
@@ -89,7 +88,6 @@ const EmailData = struct {
                 }
 
                 try font.draw(.{
-                    .batch = batch,
                     .shader = font_shader,
                     .text = text,
                     .pos = vecs.newVec2(bnds.x + 108 + 20, y - 2),
@@ -102,10 +100,10 @@ const EmailData = struct {
                     self.sel.data.size.x = bnds.w - 102;
                     self.sel.data.size.y = font.size + 8 - 2;
 
-                    try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 102, y - 4, 0));
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 102, y - 4, 0));
                 }
 
-                try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, y + font.size + 2, 0));
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, y + font.size + 2, 0));
 
                 y += font.size + 8;
             }
@@ -116,16 +114,15 @@ const EmailData = struct {
         } else {
             self.backbg.data.size.x = bnds.w - 102;
 
-            try batch.draw(sprite.Sprite, &self.backbg, self.shader, vecs.newVec3(bnds.x + 102, bnds.y - 2, 0));
-            try batch.draw(sprite.Sprite, &self.reply, self.shader, vecs.newVec3(bnds.x + 104, bnds.y, 0));
-            try batch.draw(sprite.Sprite, &self.back, self.shader, vecs.newVec3(bnds.x + 144, bnds.y, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.backbg, self.shader, vecs.newVec3(bnds.x + 102, bnds.y - 2, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.reply, self.shader, vecs.newVec3(bnds.x + 104, bnds.y, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back, self.shader, vecs.newVec3(bnds.x + 144, bnds.y, 0));
 
             const email = self.viewing.?;
 
             const from = try std.fmt.allocPrint(allocator.alloc, "from: {s}", .{email.from});
             defer allocator.alloc.free(from);
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = from,
                 .pos = vecs.newVec2(bnds.x + 108, bnds.y + 44),
@@ -134,7 +131,6 @@ const EmailData = struct {
             const text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
             defer allocator.alloc.free(text);
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = text,
                 .pos = vecs.newVec2(bnds.x + 108, bnds.y + 44 + font.size),
@@ -142,21 +138,20 @@ const EmailData = struct {
 
             const y = bnds.y + 44 + font.size * 2 - props.scroll.?.value;
 
-            try batch.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, bnds.y + 44 + font.size * 2, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, bnds.y + 44 + font.size * 2, 0));
 
-            const oldScissor = batch.scissor;
-            batch.scissor.?.y = bnds.y + 48 + font.size * 2;
-            batch.scissor.?.h = bnds.h - 48 - font.size * 2;
+            const oldScissor = batch.SpriteBatch.instance.scissor;
+            batch.SpriteBatch.instance.scissor.?.y = bnds.y + 48 + font.size * 2;
+            batch.SpriteBatch.instance.scissor.?.h = bnds.h - 48 - font.size * 2;
 
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = email.contents,
                 .pos = vecs.newVec2(bnds.x + 108, y + 2),
                 .wrap = bnds.w - 116.0 - 20,
             });
 
-            batch.scissor = oldScissor;
+            batch.SpriteBatch.instance.scissor = oldScissor;
 
             props.scroll.?.maxy = font.sizeText(.{
                 .text = email.contents,
@@ -172,14 +167,12 @@ const EmailData = struct {
                 defer allocator.alloc.free(text);
 
                 try font.draw(.{
-                    .batch = batch,
                     .shader = font_shader,
                     .text = text,
                     .pos = pos,
                 });
             } else {
                 try font.draw(.{
-                    .batch = batch,
                     .shader = font_shader,
                     .text = box,
                     .pos = pos,
@@ -190,7 +183,7 @@ const EmailData = struct {
         self.sel.data.size.x = 100;
         self.sel.data.size.y = font.size;
 
-        try batch.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + font.size * @as(f32, @floatFromInt(self.box)), 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + font.size * @as(f32, @floatFromInt(self.box)), 0));
     }
 
     pub fn char(self: *Self, code: u32, mods: i32) !void {

@@ -15,7 +15,6 @@ pub const GSCrash = struct {
 
     message: *[]const u8,
     shader: *shd.Shader,
-    sb: *batch.SpriteBatch,
     face: *font.Font,
     font_shader: *shd.Shader,
 
@@ -31,19 +30,17 @@ pub const GSCrash = struct {
     pub fn deinit(_: *Self) !void {}
 
     pub fn draw(self: *Self, _: vecs.Vector2) !void {
-        self.sb.scissor = null;
+        batch.SpriteBatch.instance.scissor = null;
 
-        try self.sb.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = "ERROR:",
             .pos = vecs.newVec2(300, 100),
             .color = cols.newColor(1, 1, 1, 1),
         });
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = self.message.*,
             .pos = vecs.newVec2(300, 100 + self.face.size),
@@ -58,7 +55,6 @@ pub const GSCrash = struct {
         defer allocator.alloc.free(stateLine);
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = stateLine,
             .pos = vecs.newVec2(300, 100 + self.face.size * 1 + offset),
@@ -66,7 +62,6 @@ pub const GSCrash = struct {
         });
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = "\nTypically this problem can be solved with recovery.\nIF YOU SEE THIS YOUR FILES WERE SAVED :)",
             .pos = vecs.newVec2(300, 100 + self.face.size * 3 + offset),

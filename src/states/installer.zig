@@ -35,7 +35,6 @@ pub const GSInstall = struct {
     const MAX_VALUE_LEN = 128;
 
     shader: *shd.Shader,
-    sb: *batch.SpriteBatch,
     face: *font.Font,
     font_shader: *shd.Shader,
     load_sprite: sp.Sprite,
@@ -92,7 +91,6 @@ pub const GSInstall = struct {
         const titleLine = try std.fmt.allocPrint(allocator.alloc, "Sand\x82\x82\x82 Installer v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = titleLine,
             .pos = vecs.newVec2(100, y),
@@ -101,7 +99,6 @@ pub const GSInstall = struct {
         y += self.face.size * 2;
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = "Please Enter new disk name:",
             .pos = vecs.newVec2(100, y),
@@ -110,7 +107,6 @@ pub const GSInstall = struct {
         y += self.face.size * 1;
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = self.diskName.items,
             .pos = vecs.newVec2(100, y),
@@ -130,7 +126,6 @@ pub const GSInstall = struct {
             defer allocator.alloc.free(text);
 
             try self.face.draw(.{
-                .batch = self.sb,
                 .shader = self.font_shader,
                 .text = text,
                 .pos = vecs.newVec2(100, y),
@@ -147,7 +142,6 @@ pub const GSInstall = struct {
 
         y += self.face.size * 2;
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = "Installing...",
             .pos = vecs.newVec2(100, y),
@@ -157,13 +151,12 @@ pub const GSInstall = struct {
 
         self.load_sprite.data.size.x = (size.x - 200);
         if (self.status == .Installing) self.load_sprite.data.size.x *= 1 - self.timer;
-        try self.sb.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(100, y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(100, y, 0));
 
         if (@intFromEnum(self.status) < @intFromEnum(Status.Done)) return;
 
         y += self.face.size * 2;
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = "Done!",
             .pos = vecs.newVec2(100, y),
@@ -175,7 +168,6 @@ pub const GSInstall = struct {
         defer allocator.alloc.free(rebootLine);
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = rebootLine,
             .pos = vecs.newVec2(100, y),

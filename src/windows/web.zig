@@ -5,7 +5,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
@@ -494,7 +494,7 @@ pub const WebData = struct {
         allocator.alloc.destroy(conts);
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
                 .offsetStart = 40,
@@ -580,7 +580,7 @@ pub const WebData = struct {
                         .Center => {
                             const x = (webWidth - size.x) / 2;
 
-                            try batch.draw(sprite.Sprite, &.{
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
                                 .texture = &texid,
                                 .data = .{
                                     .source = rect.newRect(0, 0, 1, 1),
@@ -591,7 +591,7 @@ pub const WebData = struct {
                             pos.y += size.y;
                         },
                         .Left => {
-                            try batch.draw(sprite.Sprite, &.{
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
                                 .texture = &texid,
                                 .data = .{
                                     .source = rect.newRect(0, 0, 1, 1),
@@ -604,7 +604,7 @@ pub const WebData = struct {
                         .Right => {
                             const x = webWidth - size.x;
 
-                            try batch.draw(sprite.Sprite, &.{
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
                                 .texture = &texid,
                                 .data = .{
                                     .source = rect.newRect(0, 0, 1, 1),
@@ -676,7 +676,6 @@ pub const WebData = struct {
                     switch (style.ali) {
                         .Left => {
                             try font.draw(.{
-                                .batch = batch,
                                 .shader = font_shader,
                                 .text = aline,
                                 .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
@@ -689,7 +688,6 @@ pub const WebData = struct {
                             const x = (webWidth - size.x) / 2;
 
                             try font.draw(.{
-                                .batch = batch,
                                 .shader = font_shader,
                                 .text = aline,
                                 .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
@@ -702,7 +700,6 @@ pub const WebData = struct {
                             const x = (webWidth - size.x);
 
                             try font.draw(.{
-                                .batch = batch,
                                 .shader = font_shader,
                                 .text = aline,
                                 .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
@@ -729,7 +726,7 @@ pub const WebData = struct {
 
                 self.highlight.data.color = col.newColor(0, 0, 1, 0.75);
 
-                try batch.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - props.scroll.?.value + 4, 0));
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - props.scroll.?.value + 4, 0));
             }
 
             self.add_links = false;
@@ -738,18 +735,17 @@ pub const WebData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
         self.text_box[0].data.size.x = bnds.w - 76;
         self.text_box[1].data.size.x = bnds.w - 80;
-        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 72, bnds.y + 2, 0));
-        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 72, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
 
-        const tmp = batch.scissor;
-        batch.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 34, 28);
+        const tmp = batch.SpriteBatch.instance.scissor;
+        batch.SpriteBatch.instance.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 34, 28);
         if (self.path) |file| {
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = file,
                 .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
@@ -757,18 +753,16 @@ pub const WebData = struct {
             });
         } else {
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = "Error",
                 .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
                 .wrap = bnds.w,
             });
         }
-        batch.scissor = tmp;
+        batch.SpriteBatch.instance.scissor = tmp;
 
-        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
-
-        try batch.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 2, 0));
     }
 
     pub fn scroll(_: *Self, _: f32, _: f32) void {}

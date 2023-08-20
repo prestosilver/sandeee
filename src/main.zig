@@ -145,7 +145,6 @@ var vm_manager: vmManager.VMManager = undefined;
 
 // gfx stuff
 var ctx: gfx.Context = undefined;
-var sb: batch.SpriteBatch = undefined;
 
 // sounds
 var audio_man: audio.Audio = undefined;
@@ -200,7 +199,6 @@ pub fn blit() !void {
         defer allocator.alloc.free(text);
 
         try biosFace.draw(.{
-            .batch = &sb,
             .text = text,
             .shader = &font_shader,
             .pos = vecs.newVec2(0, 0),
@@ -227,7 +225,7 @@ pub fn blit() !void {
         gfx.clear(&ctx);
 
         // finish render
-        try sb.render();
+        try batch.SpriteBatch.instance.render();
 
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
         c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
@@ -276,7 +274,7 @@ pub fn blit() !void {
         gfx.clear(&ctx);
 
         // finish render
-        try sb.render();
+        try batch.SpriteBatch.instance.render();
 
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
         c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
@@ -486,7 +484,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
     panicLock.lock();
 
-    sb.scissor = null;
+    batch.SpriteBatch.instance.scissor = null;
 
     errorState = @intFromEnum(currentState);
     gameStates.getPtr(@as(systemEvs.State, @enumFromInt(errorState))).deinit() catch {};
@@ -657,7 +655,8 @@ pub fn mainErr() anyerror!void {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
 
     // create the sprite batch
-    sb = try batch.SpriteBatch.init(&gfx.gContext.size);
+    try batch.SpriteBatch.init(&gfx.gContext.size);
+    defer batch.SpriteBatch.deinit();
 
     // load some textures
     try texMan.TextureManager.instance.putMem("bios", biosImage);
@@ -676,7 +675,6 @@ pub fn mainErr() anyerror!void {
 
     // disks state
     var gsDisks = diskState.GSDisks{
-        .sb = &sb,
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &biosFace,
@@ -695,7 +693,6 @@ pub fn mainErr() anyerror!void {
 
     // loading state
     var gsLoading = loadingState.GSLoading{
-        .sb = &sb,
         .face = &mainFace,
         .audio_man = &audio_man,
         .emailManager = &emailManager,
@@ -724,7 +721,6 @@ pub fn mainErr() anyerror!void {
 
     // windowed state
     var gsWindowed = windowedState.GSWindowed{
-        .sb = &sb,
         .shader = &shader,
         .font_shader = &font_shader,
         .clearShader = &clear_shader,
@@ -765,7 +761,6 @@ pub fn mainErr() anyerror!void {
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &biosFace,
-        .sb = &sb,
         .message = &errorMsg,
         .prevState = &errorState,
         .sad_sprite = .{
@@ -780,7 +775,6 @@ pub fn mainErr() anyerror!void {
     // install state
     var gsInstall = installState.GSInstall{
         .shader = &shader,
-        .sb = &sb,
         .font_shader = &font_shader,
         .face = &biosFace,
         .selectSound = &selectSound,
@@ -799,7 +793,6 @@ pub fn mainErr() anyerror!void {
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &biosFace,
-        .sb = &sb,
         .logout_sound = &logout_snd,
         .audio_man = &audio_man,
         .wallpaper = &wallpaper,
@@ -809,7 +802,6 @@ pub fn mainErr() anyerror!void {
     // recovery state
     var gsRecovery = recoveryState.GSRecovery{
         .shader = &shader,
-        .sb = &sb,
         .font_shader = &font_shader,
         .face = &biosFace,
         .blipSound = &blipSound,
@@ -917,9 +909,7 @@ pub fn mainErr() anyerror!void {
             // run setup
             try gameStates.getPtr(currentState).setup();
 
-            sb.queueLock.lock();
-            try sb.clear();
-            sb.queueLock.unlock();
+            try batch.SpriteBatch.instance.clear();
         } else {
             // render this is in else to fix single frame bugs
             try blit();
@@ -937,7 +927,6 @@ pub fn mainErr() anyerror!void {
     texMan.TextureManager.deinit();
 
     gfx.close(ctx);
-    sb.deinit();
 }
 
 test "headless.zig" {

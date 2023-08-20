@@ -5,7 +5,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
@@ -140,7 +140,7 @@ const SettingsData = struct {
         },
     };
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
 
         if (self.lastAction != null) {
@@ -157,7 +157,6 @@ const SettingsData = struct {
             for (panes[focused]) |item| {
                 // draw name
                 try font.draw(.{
-                    .batch = batch,
                     .shader = font_shader,
                     .text = item.setting,
                     .pos = vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y),
@@ -256,14 +255,12 @@ const SettingsData = struct {
                 const value = conf.SettingManager.instance.get(item.key);
                 if (value) |val| {
                     try font.draw(.{
-                        .batch = batch,
                         .shader = font_shader,
                         .text = val,
                         .pos = vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y),
                     });
                 } else {
                     try font.draw(.{
-                        .batch = batch,
                         .shader = font_shader,
                         .text = "UNDEFINED",
                         .pos = vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y),
@@ -285,16 +282,15 @@ const SettingsData = struct {
             const xo = (128 - size.x) / 2;
 
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = panel.name,
                 .pos = vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6),
             });
 
-            try batch.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
             if (idx + 1 == self.selection)
-                try batch.draw(sprite.Sprite, &self.icons[4], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[4], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
             if (self.lastAction) |action| {
                 if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(action.pos)) {

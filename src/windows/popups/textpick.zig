@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const allocator = @import("../../util/allocator.zig");
-const sb = @import("../../util/spritebatch.zig");
+const batch = @import("../../util/spritebatch.zig");
 const spr = @import("../../drawers/sprite2d.zig");
 const shd = @import("../../util/shader.zig");
 const rect = @import("../../math/rects.zig");
@@ -23,9 +23,8 @@ pub const PopupTextPick = struct {
     prompt: []const u8,
     data: *anyopaque,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+    pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .pos = bnds.location(),
             .text = self.prompt,
@@ -57,11 +56,10 @@ pub const PopupTextPick = struct {
             },
         ));
 
-        try batch.draw(spr.Sprite, &textbgSprite, popups.popupShader, vecs.newVec3(bnds.x + 28, bnds.y + font.size * 2 - 4, 0));
-        try batch.draw(spr.Sprite, &textfgSprite, popups.popupShader, vecs.newVec3(bnds.x + 30, bnds.y + font.size * 2 - 2, 0));
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &textbgSprite, popups.popupShader, vecs.newVec3(bnds.x + 28, bnds.y + font.size * 2 - 4, 0));
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &textfgSprite, popups.popupShader, vecs.newVec3(bnds.x + 30, bnds.y + font.size * 2 - 2, 0));
 
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .pos = bnds.location().add(.{ .x = 30, .y = font.size * 2 }),
             .text = text,
@@ -70,7 +68,6 @@ pub const PopupTextPick = struct {
         });
 
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .pos = bnds.location().add(.{ .x = 0, .y = font.size * 4 }),
             .text = self.err,

@@ -1,7 +1,7 @@
 const std = @import("std");
 const options = @import("options");
 const shd = @import("../util/shader.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
 const font = @import("../util/font.zig");
@@ -23,7 +23,6 @@ pub const GSDisks = struct {
     face: *font.Font,
     font_shader: *shd.Shader,
     shader: *shd.Shader,
-    sb: *sb.SpriteBatch,
     logo_sprite: sp.Sprite,
     disk: *?[]u8,
     blipSound: *audio.Sound,
@@ -144,7 +143,7 @@ pub const GSDisks = struct {
 
         var line: []u8 = undefined;
 
-        try self.sb.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(pos.x, pos.y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(pos.x, pos.y, 0));
         pos.y += self.logo_sprite.data.size.y;
 
         if (self.auto) {
@@ -154,7 +153,6 @@ pub const GSDisks = struct {
         }
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = line,
             .wrap = gfx.gContext.size.x - 200,
@@ -165,7 +163,6 @@ pub const GSDisks = struct {
         pos.y += self.face.size * 3;
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = "Select a disk",
             .pos = pos,
@@ -183,7 +180,6 @@ pub const GSDisks = struct {
                 }
 
                 try self.face.draw(.{
-                    .batch = self.sb,
                     .shader = self.font_shader,
                     .text = line,
                     .pos = pos,

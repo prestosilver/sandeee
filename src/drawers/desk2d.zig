@@ -1,4 +1,4 @@
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -180,7 +180,7 @@ pub const DeskData = struct {
         return result;
     }
 
-    pub fn addIconText(batch: *sb.SpriteBatch, position: vecs.Vector2, name: []const u8, font_shader: *shd.Shader, font: *fnt.Font, textColor: cols.Color) !void {
+    pub fn addIconText(position: vecs.Vector2, name: []const u8, font_shader: *shd.Shader, font: *fnt.Font, textColor: cols.Color) !void {
         const idx = std.mem.lastIndexOf(u8, name[0..], "/") orelse 0;
 
         const size = font.sizeText(.{
@@ -192,7 +192,6 @@ pub const DeskData = struct {
         const offsetx = (SPACING.x - size.x) / 2;
 
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = name[idx + 1 ..],
             .pos = .{
@@ -206,7 +205,7 @@ pub const DeskData = struct {
         });
     }
 
-    pub fn addText(_: *DeskData, batch: *sb.SpriteBatch, font_shader: *shd.Shader, font: *fnt.Font) !void {
+    pub fn addText(_: *DeskData, font_shader: *shd.Shader, font: *fnt.Font) !void {
         const textColor = gfx.gContext.color.contrast();
 
         var position = vecs.newVec2(0, 0);
@@ -217,7 +216,7 @@ pub const DeskData = struct {
         for (subFolders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
-            try addIconText(batch, position, folder.name[0 .. folder.name.len - 1], font_shader, font, textColor);
+            try addIconText(position, folder.name[0 .. folder.name.len - 1], font_shader, font, textColor);
 
             updatePos(&position);
         }
@@ -228,7 +227,7 @@ pub const DeskData = struct {
         for (subFiles) |file| {
             if (!checkIconSkip(file.name)) continue;
 
-            try addIconText(batch, position, file.name, font_shader, font, textColor);
+            try addIconText(position, file.name, font_shader, font, textColor);
 
             updatePos(&position);
         }
@@ -244,4 +243,4 @@ pub const DeskData = struct {
     }
 };
 
-pub const Desk = sb.Drawer(DeskData);
+pub const Desk = batch.Drawer(DeskData);

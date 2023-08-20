@@ -19,7 +19,6 @@ pub const GSRecovery = struct {
     const Self = @This();
 
     shader: *shd.Shader,
-    sb: *batch.SpriteBatch,
     face: *font.Font,
     font_shader: *shd.Shader,
     blipSound: *audio.Sound,
@@ -103,7 +102,6 @@ pub const GSRecovery = struct {
         const titleLine = try std.fmt.allocPrint(allocator.alloc, "Recover\x82\x82\x82 v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = titleLine,
             .pos = vecs.newVec2(100, y),
@@ -112,7 +110,6 @@ pub const GSRecovery = struct {
         y += self.face.size * 1;
 
         try self.face.draw(.{
-            .batch = self.sb,
             .shader = self.font_shader,
             .text = self.status,
             .pos = vecs.newVec2(100, y),
@@ -130,7 +127,6 @@ pub const GSRecovery = struct {
                 }
 
                 try self.face.draw(.{
-                    .batch = self.sb,
                     .shader = self.font_shader,
                     .text = line,
                     .pos = vecs.newVec2(100, y),
@@ -152,7 +148,6 @@ pub const GSRecovery = struct {
                 }
 
                 try self.face.draw(.{
-                    .batch = self.sb,
                     .shader = self.font_shader,
                     .text = line,
                     .pos = vecs.newVec2(100, y),

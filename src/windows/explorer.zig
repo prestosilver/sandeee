@@ -5,7 +5,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
 const shd = @import("../util/shader.zig");
@@ -75,7 +75,7 @@ pub const ExplorerData = struct {
         return result;
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
                 .offsetStart = 34,
@@ -121,7 +121,6 @@ pub const ExplorerData = struct {
 
             if (y + 64 + font.size > 0 and y < bnds.h) {
                 try font.draw(.{
-                    .batch = batch,
                     .shader = font_shader,
                     .text = icon.name,
                     .pos = vecs.newVec2(bnds.x + x + xo - 5, bnds.y + 64 + y + 6),
@@ -131,10 +130,10 @@ pub const ExplorerData = struct {
                     .maxlines = 1,
                 });
 
-                try batch.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
                 if (idx + 1 == self.selected)
-                    try batch.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
             }
 
             if (self.lastAction != null) {
@@ -170,26 +169,25 @@ pub const ExplorerData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try batch.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
         self.text_box[0].data.size.x = bnds.w - 36;
         self.text_box[1].data.size.x = bnds.w - 40;
-        try batch.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 36, bnds.y + 2, 0));
-        try batch.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 36, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
 
-        const tmp = batch.scissor;
-        batch.scissor = rect.newRect(bnds.x + 42, bnds.y + 4, bnds.w - 4 - 34, 28);
+        const tmp = batch.SpriteBatch.instance.scissor;
+        batch.SpriteBatch.instance.scissor = rect.newRect(bnds.x + 42, bnds.y + 4, bnds.w - 4 - 34, 28);
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = self.shell.root.name,
             .pos = vecs.newVec2(bnds.x + 42, bnds.y + 8),
             .color = col.newColor(0, 0, 0, 1),
         });
 
-        batch.scissor = tmp;
+        batch.SpriteBatch.instance.scissor = tmp;
 
-        try batch.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
     }
 
     pub fn deinit(self: *Self) !void {

@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 const options = @import("options");
 
 const win = @import("../drawers/window2d.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const shd = @import("../util/shader.zig");
 const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
@@ -22,31 +22,27 @@ pub const WelcomeData = struct {
     shell: shell.Shell,
     timer: std.time.Timer,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = "Welcome to Sand\x82\x82\x82",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26),
             .scale = 2,
         });
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = "  \x80 Open \x82\x82\x82Mail to get started",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 3 * font.size),
             .scale = 1,
         });
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = if (options.IsDemo) "  \x80 This demo will not save progress." else "  \x80 You can open Xplore anytime for help",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 5 * font.size),
             .scale = 1,
         });
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = "  \x80 Remember \x82\x82\x82 is monitoring your activity",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 7 * font.size),
@@ -61,7 +57,6 @@ pub const WelcomeData = struct {
             defer allocator.alloc.free(demoText);
 
             try font.draw(.{
-                .batch = batch,
                 .shader = font_shader,
                 .text = demoText,
                 .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 10 * font.size),
@@ -74,7 +69,6 @@ pub const WelcomeData = struct {
         defer allocator.alloc.free(versionText);
 
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = versionText,
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - 1.5 * font.size),

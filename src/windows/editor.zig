@@ -5,7 +5,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const tex = @import("../util/texture.zig");
 const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
@@ -158,7 +158,7 @@ pub const EditorData = struct {
         return line;
     }
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
                 .offsetStart = 40,
@@ -185,10 +185,10 @@ pub const EditorData = struct {
         self.numRight.data.size.y = bnds.h - 40;
 
         // draw number sidebar
-        try batch.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 40, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 40, 0));
 
         // draw number sidebar
-        try batch.draw(sp.Sprite, &self.numRight, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.numRight, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
 
         // draw file text
         if (self.buffer) |buffer| {
@@ -264,7 +264,6 @@ pub const EditorData = struct {
                     line.render = try hlLine(line.text);
                 }
                 try font.draw(.{
-                    .batch = batch,
                     .shader = shader,
                     .text = line.render.?,
                     .pos = vecs.newVec2(bnds.x + 82, y),
@@ -275,7 +274,6 @@ pub const EditorData = struct {
                 const linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{lineidx + 1});
                 defer allocator.alloc.free(linenr);
                 try font.draw(.{
-                    .batch = batch,
                     .shader = shader,
                     .text = linenr,
                     .pos = vecs.newVec2(bnds.x + 6, y),
@@ -294,11 +292,10 @@ pub const EditorData = struct {
 
                     selRemaining -= width;
 
-                    try batch.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82 + posx, y, 0));
+                    try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82 + posx, y, 0));
 
                     if (self.cursor_len >= 0) {
                         try font.draw(.{
-                            .batch = batch,
                             .shader = shader,
                             .text = "|",
                             .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
@@ -311,7 +308,7 @@ pub const EditorData = struct {
 
                     selRemaining -= width;
 
-                    try batch.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82, y, 0));
+                    try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82, y, 0));
                     if (self.cursor_len < 0 and selRemaining == 0) {
                         const posx = font.sizeText(.{
                             .text = line.getRender(width),
@@ -319,7 +316,6 @@ pub const EditorData = struct {
                         }).x;
 
                         try font.draw(.{
-                            .batch = batch,
                             .shader = shader,
                             .text = "|",
                             .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
@@ -333,12 +329,12 @@ pub const EditorData = struct {
         }
 
         // draw toolbar
-        try batch.draw(sp.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
         // draw toolbar icons
-        try batch.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 4, 0));
-        try batch.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
-        try batch.draw(sp.Sprite, &self.icons[2], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[2], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {

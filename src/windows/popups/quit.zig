@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const allocator = @import("../../util/allocator.zig");
-const sb = @import("../../util/spritebatch.zig");
+const batch = @import("../../util/spritebatch.zig");
 const shd = @import("../../util/shader.zig");
 const rect = @import("../../math/rects.zig");
 const cols = @import("../../math/colors.zig");
@@ -23,19 +23,17 @@ pub const PopupQuit = struct {
     icons: [2]spr.Sprite,
     shader: *shd.Shader,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
-        try batch.draw(spr.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 55, bnds.y, 0));
-        try batch.draw(spr.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 231, bnds.y, 0));
+    pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 55, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 231, bnds.y, 0));
 
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .pos = bnds.location().add(vecs.Vector2{ .x = 0, .y = 64 }),
             .text = "Shutdown",
         });
 
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .pos = bnds.location().add(vecs.Vector2{ .x = 175, .y = 64 }),
             .text = "Restart",

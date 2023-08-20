@@ -1,4 +1,4 @@
-const sb = @import("../util/spritebatch.zig");
+const batch = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -68,14 +68,14 @@ pub const NotificationData = struct {
         return result;
     }
 
-    pub fn drawContents(self: *NotificationData, batch: *sb.SpriteBatch, shader: *shd.Shader, font: *fnt.Font, font_shader: *shd.Shader, idx: usize) !void {
+    pub fn drawContents(self: *NotificationData, shader: *shd.Shader, font: *fnt.Font, font_shader: *shd.Shader, idx: usize) !void {
         if (self.icon) |*icon| {
             icon.data.size.x = 60;
             icon.data.size.y = 60;
 
             const pos = wins.deskSize.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
 
-            try batch.draw(
+            try batch.SpriteBatch.instance.draw(
                 spr.Sprite,
                 icon,
                 shader,
@@ -84,7 +84,6 @@ pub const NotificationData = struct {
         }
 
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = self.title,
             .pos = wins.deskSize.sub(.{ .x = 180, .y = 100 + 80 * @as(f32, @floatFromInt(idx)) }),
@@ -94,7 +93,6 @@ pub const NotificationData = struct {
         });
 
         try font.draw(.{
-            .batch = batch,
             .shader = font_shader,
             .text = self.text,
             .pos = wins.deskSize.sub(.{ .x = 180, .y = 100 - font.size + 80 * @as(f32, @floatFromInt(idx)) }),
@@ -105,4 +103,4 @@ pub const NotificationData = struct {
     }
 };
 
-pub const Notification = sb.Drawer(NotificationData);
+pub const Notification = batch.Drawer(NotificationData);

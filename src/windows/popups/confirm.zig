@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const allocator = @import("../../util/allocator.zig");
-const sb = @import("../../util/spritebatch.zig");
+const batch = @import("../../util/spritebatch.zig");
 const shd = @import("../../util/shader.zig");
 const rect = @import("../../math/rects.zig");
 const cols = @import("../../math/colors.zig");
@@ -18,16 +18,14 @@ pub const PopupConfirm = struct {
     message: []const u8,
     buttons: [][]const u8,
 
-    pub fn draw(self: *Self, batch: *sb.SpriteBatch, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+    pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .pos = bnds.location(),
             .text = self.message,
         });
 
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .pos = bnds.location().add(.{ .x = 30, .y = font.size }),
             .text = self.path,
@@ -36,7 +34,6 @@ pub const PopupConfirm = struct {
         });
 
         try font.draw(.{
-            .batch = batch,
             .shader = shader,
             .pos = bnds.location().add(.{ .x = 0, .y = font.size * 2 }),
             .text = self.err,
