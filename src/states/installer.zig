@@ -32,7 +32,7 @@ pub const GSInstall = struct {
         .{ "Do you want to keep the CRT Shader", "crt_shader", "Yes" },
         .{ "Do you like \x82\x82\x82", "evil_value", "Yes" },
     };
-    const MAX_VALUE_LEN = 128;
+    const MAX_VALUE_LEN = 16;
 
     shader: *shd.Shader,
     face: *font.Font,
@@ -118,7 +118,7 @@ pub const GSInstall = struct {
         y += self.face.size * 2;
         for (0..self.settingId + 1) |idx| {
             if (idx > Settings.len) return;
-            const text = try std.fmt.allocPrint(allocator.alloc, "{s}? [{s}] {s}", .{
+            const text = try std.fmt.allocPrint(allocator.alloc, "{s}?\n  [Def: {s}] {s}", .{
                 Settings[idx][0],
                 Settings[idx][2],
                 self.settingValues[idx][0..self.settingLens[idx]],
@@ -202,7 +202,8 @@ pub const GSInstall = struct {
     pub fn appendChar(self: *Self, char: u8) !void {
         switch (self.status) {
             .Naming => {
-                try self.diskName.append(char);
+                if (self.diskName.items.len < MAX_VALUE_LEN)
+                    try self.diskName.append(char);
             },
             .Settings => {
                 if (self.settingLens[self.settingId] < MAX_VALUE_LEN) {
