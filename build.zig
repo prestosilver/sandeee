@@ -87,7 +87,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     const options = b.addOptions();
 
-    var versionText = std.fmt.allocPrint(b.allocator, "Ver. {{}}", .{}) catch return;
+    var versionText = std.fmt.allocPrint(b.allocator, "V_{{}}", .{}) catch return;
 
     options.addOption(std.SemanticVersion, "SandEEEVersion", Version);
     options.addOption([]const u8, "VersionText", versionText);

@@ -17,8 +17,10 @@ const c = @import("../c.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
-    const VERSION = "0.1.0";
+    const VERSION = std.fmt.comptimePrint("Boot\x82\x82\x82 V_0.2.0\nFor Sand\x82\x82\x82 " ++ options.VersionText, .{options.SandEEEVersion});
     const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
+
+    const TOTAL_LINES = 10;
 
     face: *font.Font,
     font_shader: *shd.Shader,
@@ -33,6 +35,7 @@ pub const GSDisks = struct {
     sel: usize = 0,
     auto: bool = true,
     disks: std.ArrayList([]const u8) = undefined,
+    start: usize = 0,
 
     pub fn getDate(name: []const u8) i128 {
         const path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;
@@ -74,10 +77,10 @@ pub const GSDisks = struct {
             const copy = self.disks.items[idx];
             defer allocator.alloc.free(copy);
 
-            self.disks.items[idx] = try std.fmt.allocPrint(allocator.alloc, "{c} {s}", .{ DISK_LIST[idx], copy });
-        }
+            const ch = if (idx < DISK_LIST.len) DISK_LIST[idx] else ' ';
 
-        try self.disks.resize(@min(self.disks.items.len, DISK_LIST.len));
+            self.disks.items[idx] = try std.fmt.allocPrint(allocator.alloc, "{c} {s}", .{ ch, copy });
+        }
 
         try self.disks.append("N New Disk");
         if (self.disks.items.len > 1)
@@ -147,9 +150,9 @@ pub const GSDisks = struct {
         pos.y += self.logo_sprite.data.size.y;
 
         if (self.auto) {
-            line = try std.fmt.allocPrint(allocator.alloc, "Boot\x82\x82\x82 V_{s}\nBooting to default in {}s", .{ VERSION, @as(i32, @intFromFloat(self.remaining + 0.5)) });
+            line = try std.fmt.allocPrint(allocator.alloc, "{s}\nBooting to default in {}s", .{ VERSION, @as(i32, @intFromFloat(self.remaining + 0.5)) });
         } else {
-            line = try std.fmt.allocPrint(allocator.alloc, "Boot\x82\x82\x82 V_{s}\nAutoboot canceled", .{VERSION});
+            line = try std.fmt.allocPrint(allocator.alloc, "{s}\nAutoboot canceled", .{VERSION});
         }
 
         try self.face.draw(.{
@@ -171,7 +174,7 @@ pub const GSDisks = struct {
         pos.y += self.face.size * 1;
 
         if (self.disks.items.len != 0) {
-            for (self.disks.items, 0..) |disk, idx| {
+            for (self.disks.items[self.start..@min(self.start + TOTAL_LINES, self.disks.items.len)], self.start..) |disk, idx| {
                 allocator.alloc.free(line);
 
                 line = try std.fmt.allocPrint(allocator.alloc, "  {s}", .{disk});
@@ -201,12 +204,20 @@ pub const GSDisks = struct {
             },
             c.GLFW_KEY_DOWN => {
                 if (self.sel < self.disks.items.len - 1) {
+                    if (self.sel + 1 == self.start + TOTAL_LINES - 1) {
+                        self.start += 1;
+                    }
                     self.sel += 1;
                     try self.audioMan.playSound(self.blipSound.*);
                 }
             },
             c.GLFW_KEY_UP => {
-                if (self.sel != 0) {
+                if (self.sel > 0) {
+                    if (self.sel - 1 == self.start) {
+                        if (self.start > 0)
+                            self.start -= 1;
+                    }
+
                     self.sel -= 1;
                     try self.audioMan.playSound(self.blipSound.*);
                 }
