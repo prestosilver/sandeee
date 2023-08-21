@@ -115,7 +115,6 @@ pub const ExplorerData = struct {
             const size = font.sizeText(.{
                 .text = icon.name,
                 .wrap = 100,
-                .turnicate = true,
             }).x;
             const xo = (128 - size) / 2;
 
@@ -123,10 +122,9 @@ pub const ExplorerData = struct {
                 try font.draw(.{
                     .shader = font_shader,
                     .text = icon.name,
-                    .pos = vecs.newVec2(bnds.x + x + xo - 5, bnds.y + 64 + y + 6),
+                    .pos = vecs.newVec2(bnds.x + x + xo - 14, bnds.y + 64 + y + 6),
                     .color = col.newColor(0, 0, 0, 1),
                     .wrap = 100,
-                    .center = true,
                     .maxlines = 1,
                 });
 

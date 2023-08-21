@@ -132,6 +132,7 @@ pub const GSInstall = struct {
                 .wrap = gfx.Context.instance.size.x - 200,
                 .color = cols.newColor(1, 1, 1, 1),
             });
+
             y += self.face.sizeText(.{
                 .text = text,
                 .wrap = gfx.Context.instance.size.x - 200,

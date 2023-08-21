@@ -160,7 +160,6 @@ pub const Font = struct {
         wrap: ?f32 = null,
         maxlines: ?usize = null,
         newLines: bool = true,
-        center: bool = false,
     };
 
     pub fn draw(self: *Font, params: drawParams) !void {
@@ -215,50 +214,49 @@ pub const Font = struct {
             }
 
             const char = self.chars[ach];
-            if (ach != ' ') {
-                const w = char.size.x * params.scale;
-                const h = char.size.y * params.scale;
-                var xpos = pos.x + char.bearing.x * params.scale;
-                const ypos = pos.y + char.bearing.y * params.scale;
-                srect.x = char.tx;
-                srect.y = char.ty;
-                srect.w = char.tw;
-                srect.h = char.th;
+            const w = char.size.x * params.scale;
+            const h = char.size.y * params.scale;
+            var xpos = pos.x + char.bearing.x * params.scale;
+            const ypos = pos.y + char.bearing.y * params.scale;
+            srect.x = char.tx;
+            srect.y = char.ty;
+            srect.w = char.tw;
+            srect.h = char.th;
 
-                if (params.wrap != null and (pos.x + char.ax) - start.x >= params.wrap.?) {
-                    pos.y += self.size * params.scale;
-                    pos.x = start.x;
+            if (params.wrap != null and (pos.x + char.ax) - start.x >= params.wrap.?) {
+                pos.y += self.size * params.scale;
+                pos.x = start.x;
 
-                    curLine += 1;
-
-                    if (params.maxlines != null and
-                        curLine >= params.maxlines.?)
-                    {
-                        if (params.text[idx - 1] != ' ')
-                            vertarray.setLen(vertarray.items().len - 6);
-                        if (params.text[idx - 2] != ' ')
-                            vertarray.setLen(vertarray.items().len - 6);
-                    } else if (std.mem.containsAtLeast(u8, params.text[lastLineIdx..idx], 1, " ")) {
-                        vertarray.setLen(lastspace);
-                        idx = lastspaceIdx - 1;
-
-                        lastLineIdx = idx + 1;
-                        continue;
-                    }
-
-                    lastLineIdx = idx + 1;
-                }
+                curLine += 1;
 
                 if (params.maxlines != null and
                     curLine >= params.maxlines.?)
                 {
-                    srect.x = self.chars[0x90].tx;
-                    srect.y = self.chars[0x90].ty;
-                    srect.w = self.chars[0x90].tw;
-                    srect.h = self.chars[0x90].th;
-                    xpos -= char.ax * 2;
+                    vertarray.setLen(vertarray.items().len - 6);
+                    xpos -= char.ax;
+                } else if (std.mem.containsAtLeast(u8, params.text[lastLineIdx..idx], 1, " ")) {
+                    vertarray.setLen(lastspace);
+                    idx = lastspaceIdx - 1;
+
+                    lastLineIdx = idx + 1;
+                    continue;
                 }
 
+                lastLineIdx = idx + 1;
+            }
+
+            if (params.maxlines != null and
+                curLine >= params.maxlines.?)
+            {
+                srect.x = self.chars[0x90].tx;
+                srect.y = self.chars[0x90].ty;
+                srect.w = self.chars[0x90].tw;
+                srect.h = self.chars[0x90].th;
+            }
+
+            if (ach != ' ' or (params.maxlines != null and
+                curLine >= params.maxlines.?))
+            {
                 try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
                 try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
                 try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
@@ -298,101 +296,74 @@ pub const Font = struct {
         text: []const u8,
         scale: f32 = 1,
         wrap: ?f32 = null,
-        turnicate: bool = false,
         cursor: bool = false,
+        newLines: bool = true,
     };
 
     pub fn sizeText(self: *Font, params: sizeParams) vec.Vector2 {
-        var result = vec.newVec2(0, 0);
+        var pos: vec.Vector2 = .{
+            .x = 0,
+            .y = 0,
+        };
+
         var maxx: f32 = 0;
 
-        if (params.wrap) |maxSize| {
-            var iter = std.mem.split(u8, params.text, " ");
-            const spaceSize = self.sizeText(.{
-                .text = " ",
-                .scale = params.scale,
-            }).x;
+        var curLine: usize = 0;
+        var lastspaceIdx: usize = 0;
+        var lastLineIdx: usize = 0;
+        var idx: usize = 0;
 
-            while (iter.next()) |word| {
-                if (result.y != 0 and params.turnicate) {
-                    result.y = params.scale * self.size;
-                    result.x = maxSize;
-                    return result;
-                }
+        while (params.text.len > idx) : (idx += 1) {
+            const ach = params.text[idx];
 
-                var size = self.sizeText(.{
-                    .text = word,
-                    .scale = params.scale,
-                    .cursor = params.cursor,
-                });
-                if (result.x + size.x >= maxSize) {
-                    if (result.x == 0) {
-                        var spaced = word;
-                        while (size.x >= maxSize) {
-                            var split: usize = 0;
-                            while (self.sizeText(.{
-                                .text = spaced[0..split],
-                                .scale = params.scale,
-                                .cursor = params.cursor,
-                            }).x < maxSize) {
-                                split += 1;
-                            }
+            if (ach == '\n' and params.newLines) {
+                maxx = @max(maxx, pos.x);
+                pos.y += self.size * params.scale;
+                pos.x = 0;
 
-                            spaced = spaced[split - 1 ..];
-                            result.y += params.scale * self.size;
-                            if (params.turnicate) {
-                                result.y = params.scale * self.size;
-                                result.x = maxSize;
-                                return result;
-                            }
+                curLine += 1;
 
-                            size = self.sizeText(.{
-                                .text = spaced,
-                                .scale = params.scale,
-                                .cursor = params.cursor,
-                            });
-                        }
-                        result.x += size.x;
-                        result.x += spaceSize;
-                        continue;
-                    } else {
-                        if (!params.cursor)
-                            maxx = @max(maxx, result.x);
-                        result.x = 0;
-                        result.y += params.scale * self.size;
-                    }
-                }
-                result.x += size.x;
-                result.x += spaceSize;
+                lastLineIdx = idx + 1;
+
+                continue;
             }
-            result.y += self.size * params.scale;
-            if (!params.cursor)
-                result.x = @max(maxx, result.x);
 
-            return result;
-        }
-
-        for (params.text) |ach| {
             if (ach >= 0xF0 or ach < 0x20) {
                 continue;
             }
 
-            if (ach == '\n') {
-                if (!params.cursor)
-                    maxx = @max(result.x, maxx);
-                result.y += self.size * params.scale;
-                result.x = 0;
-                continue;
+            const char = self.chars[ach];
+            if (ach != ' ') {
+                if (params.wrap != null and pos.x + char.ax >= params.wrap.?) {
+                    maxx = @max(maxx, pos.x);
+                    pos.y += self.size * params.scale;
+                    pos.x = 0;
+
+                    curLine += 1;
+
+                    if (std.mem.containsAtLeast(u8, params.text[lastLineIdx..idx], 1, " ")) {
+                        idx = lastspaceIdx - 1;
+
+                        lastLineIdx = idx + 1;
+                        continue;
+                    }
+
+                    lastLineIdx = idx + 1;
+                }
+            } else {
+                lastspaceIdx = idx + 1;
             }
 
-            const char = self.chars[ach];
-            result.x += char.ax * params.scale;
+            pos.x += char.ax * params.scale;
+            pos.y += char.ay * params.scale;
         }
 
-        result.y += self.size * params.scale;
-        if (!params.cursor)
-            result.x = @max(result.x, maxx);
+        maxx = @max(maxx, pos.x);
+        pos.y += self.size * params.scale;
 
-        return result;
+        return .{
+            .x = @min(maxx, params.wrap orelse maxx),
+            .y = pos.y,
+        };
     }
 };

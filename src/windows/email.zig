@@ -92,7 +92,7 @@ const EmailData = struct {
                     .text = text,
                     .pos = vecs.newVec2(bnds.x + 108 + 20, y - 2),
                     .color = color,
-                    .wrap = bnds.w - 108 - 20,
+                    .wrap = bnds.w - 108 - 20 - 20,
                     .maxlines = 1,
                 });
 

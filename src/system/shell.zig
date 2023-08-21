@@ -495,6 +495,17 @@ pub const Shell = struct {
         if (std.mem.eql(u8, cmd, "cpy")) return self.cpy(params);
         if (std.mem.eql(u8, cmd, "dcpy")) return self.todo(params);
 
+        if (std.mem.eql(u8, cmd, "bg")) {
+            try self.runBg(params);
+
+            const result: Result = Result{
+                .data = try allocator.alloc.dupe(u8, "Running"),
+                .clear = true,
+            };
+
+            return result;
+        }
+
         if (std.mem.eql(u8, cmd, "cls")) {
             const result: Result = Result{
                 .data = try allocator.alloc.dupe(u8, ""),

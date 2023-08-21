@@ -184,7 +184,6 @@ pub const DeskData = struct {
         const size = font.sizeText(.{
             .text = name[idx + 1 ..],
             .wrap = 100,
-            .turnicate = true,
         });
 
         const offsetx = (SPACING.x - size.x) / 2;
@@ -193,10 +192,9 @@ pub const DeskData = struct {
             .shader = font_shader,
             .text = name[idx + 1 ..],
             .pos = .{
-                .x = position.x * SPACING.x + offsetx + 5,
+                .x = position.x * SPACING.x + offsetx,
                 .y = position.y * SPACING.y + SPACING.y + 5,
             },
-            .center = true,
             .color = textColor,
             .wrap = 100,
             .maxlines = 1,

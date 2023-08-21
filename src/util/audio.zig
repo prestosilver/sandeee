@@ -107,7 +107,6 @@ pub const Audio = struct {
 
         // set bg properties
         c.alSource3i(result.bg, c.AL_AUXILIARY_SEND_FILTER, @intCast(result.slot), 0, c.AL_FILTER_NULL);
-        c.alSource3f(result.bg, c.AL_POSITION, 0, 1.5, 0);
         c.alSourcei(result.bg, c.AL_LOOPING, c.AL_TRUE);
         c.alSourcef(result.bg, c.AL_GAIN, 0.5);
 
@@ -128,8 +127,6 @@ pub const Audio = struct {
             c.alSource3i(self.sources[self.next], c.AL_AUXILIARY_SEND_FILTER, @intCast(self.slot), 0, c.AL_FILTER_NULL);
             c.alSourcei(self.sources[self.next], c.AL_BUFFER, @as(c_int, @intCast(snd.buffer)));
             c.alSourcef(self.sources[self.next], c.AL_GAIN, self.volume);
-
-            c.alSource3f(self.sources[self.next], c.AL_POSITION, 0, 1.5, 0);
 
             c.alSourcePlay(self.sources[self.next]);
         }

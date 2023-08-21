@@ -95,13 +95,13 @@ pub const VMManager = struct {
     }
 
     pub fn getOutput(self: *Self, handle: VMHandle) !VMResult {
-        return if (self.results.fetchRemove(handle.id)) |item|
-            item.value
-        else
-            .{
-                .data = try allocator.alloc.alloc(u8, 0),
-                .done = !self.vms.contains(handle.id),
-            };
+        return if (self.results.fetchRemove(handle.id)) |item| blk: {
+            std.log.info("{s}", .{item.value.data});
+            break :blk item.value;
+        } else .{
+            .data = try allocator.alloc.alloc(u8, 0),
+            .done = !self.vms.contains(handle.id),
+        };
     }
 
     pub fn update(self: *Self) !void {
@@ -121,7 +121,18 @@ pub const VMManager = struct {
                 try self.destroy(.{
                     .id = entry.key_ptr.*,
                 });
-                try self.results.put(entry.key_ptr.*, result);
+
+                if (self.results.getPtr(entry.key_ptr.*)) |oldResult| {
+                    defer result.deinit();
+
+                    const start = oldResult.data.len;
+                    oldResult.data = try allocator.alloc.realloc(oldResult.data, oldResult.data.len + result.data.len);
+                    @memcpy(oldResult.data[start..], result.data);
+
+                    oldResult.done = result.done;
+                } else {
+                    try self.results.put(entry.key_ptr.*, result);
+                }
 
                 continue;
             }
@@ -134,12 +145,15 @@ pub const VMManager = struct {
             vm_instance.out.clearAndFree();
 
             try self.threads.append(try std.Thread.spawn(.{}, updateVmThread, .{ vm_instance, frame_end }));
+
             if (self.results.getPtr(entry.key_ptr.*)) |oldResult| {
                 defer result.deinit();
 
                 const start = oldResult.data.len;
                 oldResult.data = try allocator.alloc.realloc(oldResult.data, oldResult.data.len + result.data.len);
                 @memcpy(oldResult.data[start..], result.data);
+
+                oldResult.done = result.done;
             } else {
                 try self.results.put(entry.key_ptr.*, result);
             }
