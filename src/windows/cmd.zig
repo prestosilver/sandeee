@@ -94,21 +94,20 @@ pub const CMDData = struct {
             });
             idx += 1;
         } else {
-            const start = self.bt.len;
-
             const result = try self.shell.getVMResult();
             if (result != null) {
+                defer result.?.deinit();
+
+                const start = self.bt.len;
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.len);
+
                 @memcpy(self.bt[start..], result.?.data);
-                allocator.alloc.free(result.?.data);
                 try self.processBT();
+
                 idx += 1;
-            } else {
-                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len);
-                @memcpy(self.bt[start..], "");
-                try self.processBT();
+
+                self.bot = true;
             }
-            self.bot = true;
         }
 
         var lines = std.mem.splitBackwards(u8, self.bt, "\n");

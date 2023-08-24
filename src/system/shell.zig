@@ -17,6 +17,10 @@ const Result = struct {
     data: []u8,
     exit: bool = false,
     clear: bool = false,
+
+    pub fn deinit(self: *const Result) void {
+        allocator.alloc.free(self.data);
+    }
 };
 
 pub var shader: *shd.Shader = undefined;
@@ -350,10 +354,7 @@ pub const Shell = struct {
             const data = try vm_manager.getOutput(vm_handle);
             defer data.deinit();
 
-            if (data.done) {
-                std.log.info("done: {}", .{vm_handle.id});
-                self.vm = null;
-            }
+            if (data.done) self.vm = null;
 
             return .{
                 .data = try allocator.alloc.dupe(u8, data.data),
