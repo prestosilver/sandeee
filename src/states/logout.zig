@@ -16,6 +16,7 @@ const audio = @import("../util/audio.zig");
 const c = @import("../c.zig");
 
 pub var target: enum { Quit, Bios, Update } = .Quit;
+pub var targetFile: []const u8 = "";
 
 pub const GSLogout = struct {
     const Self = @This();
@@ -83,11 +84,14 @@ pub const GSLogout = struct {
                     });
                 },
                 .Update => {
-                    try files.Folder.recoverDisk(files.rootOut.?, false);
+                    try files.Folder.recoverDisk(targetFile, false);
 
                     try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                         .targetState = .Disks,
                     });
+
+                    allocator.alloc.free(targetFile);
+                    targetFile = "";
                 },
             }
         }

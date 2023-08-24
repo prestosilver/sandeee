@@ -715,6 +715,8 @@ pub const Folder = struct {
 
         allocator.alloc.free(self.name);
         allocator.alloc.destroy(self);
+
+        rootOut = null;
     }
 
     pub fn toStr(self: *Folder) !std.ArrayList(u8) {
@@ -761,7 +763,6 @@ pub fn write() !void {
 
     if (rootOut) |output| {
         const file = try std.fs.cwd().createFile(output, .{});
-
         defer file.close();
 
         try root.write(file);

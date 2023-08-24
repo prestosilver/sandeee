@@ -77,6 +77,8 @@ pub const UpdateData = struct {
     pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, _: ?i32) !void {
         _ = pos;
         if (self.focused_link) {
+            const idx = std.mem.lastIndexOf(u8, files.rootOut.?, "/") orelse unreachable;
+            logoutState.targetFile = try allocator.alloc.dupe(u8, files.rootOut.?[idx + 1 ..]);
             logoutState.target = .Update;
             try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
                 .targetState = .Logout,
