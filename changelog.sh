@@ -12,29 +12,33 @@ EOF
     
     for i in $(git log --pretty=format:%H); do
         ver=$(git show $i:VERSION | cut -d+ -f1)
-        [[ "" == "$ver" ]] && ver="Old"
-
-        if [[ "$last" != "$ver" ]]; then
-            echo ""
-            echo "-- "$ver" --"
-            echo ""
-            last=$ver
-        fi
+        if [[ "" != "$ver" ]]; then
+            if [[ "$last" != "$ver" ]]; then
+                if [[ "$last" != "" ]]; then
+                    echo ""
+                    echo "-- "$last" --"
+                    echo ""
+                fi
+                last=$ver
+            fi
     
-        line=$(git log -1 --pretty=format:%s "$i")
-        if [[ "" != "$line" ]]; then
-            ch="|*"
+            line=$(git log -1 --pretty=format:%s "$i")
+            if [[ "" != "$line" ]]; then
+                ch="|*"
     
-            echo $line | grep -q -i "add" && ch="|+"
-            echo $line | grep -q -i "impl" && ch="|+"
+                echo $line | grep -q -i "add" && ch="|+"
+                echo $line | grep -q -i "impl" && ch="|+"
 
-            echo $line | grep -q -i "rem" && ch="|-"
-            echo $line | grep -q -i "delete" && ch="|-"
+                echo $line | grep -q -i "rem" && ch="|-"
+                echo $line | grep -q -i "delete" && ch="|-"
 
-            echo $line | grep -q -i "fix" && ch="|!"
-            echo $line | grep -q -i "update" && ch="|!"
+                echo $line | grep -q -i "fix" && ch="|!"
+                echo $line | grep -q -i "update" && ch="|!"
+                
+                echo $line | grep -q -i "bump" && ch=""
     
-            echo "$ch $line"
+                [[ $ch != "" ]] && echo "$ch $line"
+            fi
         fi
     done
     
