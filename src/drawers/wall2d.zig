@@ -32,7 +32,7 @@ pub const WallData = struct {
     }
 
     pub fn getVerts(self: *const WallData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init();
+        var result = try va.VertArray.init(6);
         var pos: rect.Rectangle = undefined;
         var source = rect.newRect(0, 0, 1, 1);
 

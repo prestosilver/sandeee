@@ -24,7 +24,7 @@ pub const CursorData = struct {
     }
 
     pub fn getVerts(self: *const CursorData, pos: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init();
+        var result = try va.VertArray.init(6);
 
         var xo: f64 = 0;
         var yo: f64 = 0;

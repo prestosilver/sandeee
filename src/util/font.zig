@@ -186,7 +186,7 @@ pub const Font = struct {
                     @max(@as(f32, 0), @min(batch.SpriteBatch.instance.scissor.?.h, params.pos.y + ((@as(f32, @floatFromInt(params.maxlines.?))) * self.size) - batch.SpriteBatch.instance.scissor.?.y));
         }
 
-        var vertarray = try va.VertArray.init();
+        var vertarray = try va.VertArray.init(params.text.len * 6);
 
         var curLine: usize = 0;
         var lastspace: usize = 0;

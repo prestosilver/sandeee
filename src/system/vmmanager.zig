@@ -7,6 +7,7 @@ pub const VMManager = struct {
     const Self = @This();
 
     pub var vm_time: f64 = 0.5;
+    pub var instance: Self = undefined;
 
     threads: std.ArrayList(std.Thread),
     vms: std.AutoHashMap(usize, vm.VM),
@@ -27,12 +28,36 @@ pub const VMManager = struct {
         id: usize,
     };
 
-    pub fn init() Self {
-        return .{
+    pub fn init() void {
+        instance = .{
             .vms = std.AutoHashMap(usize, vm.VM).init(allocator.alloc),
             .results = std.AutoHashMap(usize, VMResult).init(allocator.alloc),
             .threads = std.ArrayList(std.Thread).init(allocator.alloc),
         };
+    }
+
+    pub const VMStats = struct {
+        id: usize,
+        name: []const u8,
+        metaUsage: usize,
+    };
+
+    pub fn getStats(self: *Self) ![]VMStats {
+        const results = try allocator.alloc.alloc(VMStats, self.vms.count());
+
+        var iter = self.vms.iterator();
+        var idx: usize = 0;
+
+        while (iter.next()) |entry| : (idx += 1) {
+            const vm_instance = entry.value_ptr;
+            results[idx] = .{
+                .id = entry.key_ptr.*,
+                .name = vm_instance.name,
+                .metaUsage = try vm_instance.getMetaUsage(),
+            };
+        }
+
+        return results;
     }
 
     pub fn spawn(self: *Self, root: *files.Folder, params: []const u8, code: []const u8) !VMHandle {
@@ -81,8 +106,6 @@ pub const VMManager = struct {
             defer allocator.alloc.free(msgString);
 
             try vm_instance.out.appendSlice(msgString);
-
-            return;
         };
     }
 

@@ -165,7 +165,7 @@ pub const PopupData = struct {
     pub fn drawContents(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
         try batch.SpriteBatch.instance.addEntry(&.{
             .texture = "",
-            .verts = try va.VertArray.init(),
+            .verts = try va.VertArray.init(0),
             .shader = shader.*,
             .clear = cols.newColorRGBA(192, 192, 192, 255),
         });
@@ -174,7 +174,7 @@ pub const PopupData = struct {
     }
 
     pub fn getVerts(self: *const PopupData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init();
+        var result = try va.VertArray.init(9 * 6 * 2);
         const sprite: u8 = 1;
 
         const pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();

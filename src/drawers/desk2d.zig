@@ -134,7 +134,7 @@ pub const DeskData = struct {
     }
 
     pub fn getVerts(self: *const DeskData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init();
+        var result = try va.VertArray.init(0);
 
         var position = vecs.newVec2(0, 0);
         var idx: usize = 0;

@@ -60,7 +60,7 @@ pub const NotificationData = struct {
         _ = self;
         const target2d = gfx.Context.instance.size.sub(.{ .x = 260, .y = 100 + 80 * pos.x });
 
-        var result = try va.VertArray.init();
+        var result = try va.VertArray.init(9 * 6);
 
         const targetpos = vecs.newVec3(target2d.x, target2d.y, 0);
 

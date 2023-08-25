@@ -33,9 +33,9 @@ pub const Vert = struct {
 pub const VertArray = struct {
     array: std.ArrayList(Vert),
 
-    pub inline fn init() !VertArray {
+    pub inline fn init(cap: usize) !VertArray {
         return VertArray{
-            .array = std.ArrayList(Vert).init(allocator.alloc),
+            .array = try std.ArrayList(Vert).initCapacity(allocator.alloc, cap),
         };
     }
 
@@ -43,11 +43,11 @@ pub const VertArray = struct {
         va.array.deinit();
     }
 
-    pub inline fn items(va: VertArray) []const Vert {
+    pub inline fn items(va: *const VertArray) []const Vert {
         return va.array.items;
     }
 
-    pub inline fn hashLen(va: VertArray) usize {
+    pub inline fn hashLen(va: *const VertArray) usize {
         return va.array.items.len / 6;
     }
 

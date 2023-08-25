@@ -313,7 +313,7 @@ pub const BarData = struct {
     }
 
     pub fn getVerts(self: *const BarData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init();
+        var result = try va.VertArray.init(9 * 6 * 2);
         const pos = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
 
         try addUiQuad(&result, 0, pos, 2, 3, 3, 3, 3);

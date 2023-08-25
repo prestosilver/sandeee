@@ -449,7 +449,7 @@ pub const WindowData = struct {
 
         try batch.SpriteBatch.instance.addEntry(&.{
             .texture = "",
-            .verts = try va.VertArray.init(),
+            .verts = try va.VertArray.init(0),
             .shader = shader.*,
             .clear = self.contents.clearColor,
         });
@@ -506,7 +506,7 @@ pub const WindowData = struct {
     }
 
     pub fn getVerts(self: *const WindowData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init();
+        var result = try va.VertArray.init(9 * 6 * 4 + 3 * 6);
         var sprite: u8 = 0;
         if (self.min) return result;
 
