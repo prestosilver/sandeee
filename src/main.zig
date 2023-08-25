@@ -141,7 +141,6 @@ var wallpaper: wall.Wallpaper = undefined;
 
 // managers
 var emailManager: emails.EmailManager = undefined;
-var vm_manager: vmManager.VMManager = undefined;
 
 // sounds
 var audio_man: audio.Audio = undefined;
@@ -188,8 +187,8 @@ pub fn blit() !void {
         const text = try std.fmt.allocPrint(allocator.alloc, "{s}FPS: {}\n{s}VMS: {}\n\xf9VMT: {}%\nSTA: {}", .{
             if (finalFps < 50) "\xFA" else "\xF9",
             finalFps,
-            if (vm_manager.vms.count() == 0) "\xF1" else "\xF9",
-            vm_manager.vms.count(),
+            if (vmManager.VMManager.instance.vms.count() == 0) "\xF1" else "\xF9",
+            vmManager.VMManager.instance.vms.count(),
             @as(u8, @intFromFloat(vmManager.VMManager.vm_time * 100)),
             @intFromEnum(currentState),
         });
@@ -480,6 +479,8 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     paniced = true;
 
+    if (paniced) std.os.exit(0);
+
     panicLock.lock();
 
     batch.SpriteBatch.instance.scissor = null;
@@ -586,8 +587,8 @@ pub fn mainErr() anyerror!void {
     // free the argument iterator
     args.deinit();
 
-    vm_manager = vmManager.VMManager.init();
-    shell.vm_manager = &vm_manager;
+    // setup vm manager
+    vmManager.VMManager.init();
 
     // switch to headless main function if nessessary
     if (isHeadless) {
@@ -662,9 +663,6 @@ pub fn mainErr() anyerror!void {
     try texMan.TextureManager.instance.putMem("sad", sadImage);
     try texMan.TextureManager.instance.putMem("error", errorImage);
 
-    // setup vm manager
-    vm_manager = vmManager.VMManager.init();
-
     wallpaper = wall.Wallpaper.new("wall", wall.WallData{
         .dims = &gfx.Context.instance.size,
         .mode = .Center,
@@ -722,7 +720,6 @@ pub fn mainErr() anyerror!void {
         .clearShader = &clear_shader,
         .face = &mainFace,
         .emailManager = &emailManager,
-        .vm_manager = &vm_manager,
         .bar_logo_sprite = .{
             .texture = "barlogo",
             .data = sprite.SpriteData.new(
@@ -882,7 +879,7 @@ pub fn mainErr() anyerror!void {
         timer += currentTime - last_frame_time;
         if (timer > 1.00) {
             finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / timer));
-            if (vm_manager.vms.count() != 0 and finalFps != 0) {
+            if (vmManager.VMManager.instance.vms.count() != 0 and finalFps != 0) {
                 const adj: f64 = std.math.clamp((@as(f64, @floatFromInt(fps)) / timer) / 58.0, 0.95, 1.05);
                 vmManager.VMManager.vm_time = std.math.clamp(vmManager.VMManager.vm_time * adj, 0.1, 0.9);
             }
