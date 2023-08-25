@@ -32,7 +32,7 @@ pub const File = struct {
         return self.contents.len;
     }
 
-    pub fn write(self: *File, contents: []const u8, vmInstance: ?*vm.VM) !void {
+    pub inline fn write(self: *File, contents: []const u8, vmInstance: ?*vm.VM) !void {
         if (self.pseudoWrite != null) {
             return self.pseudoWrite.?(contents, vmInstance);
         } else {
@@ -41,7 +41,7 @@ pub const File = struct {
         }
     }
 
-    pub fn read(self: *const File, vmInstance: ?*vm.VM) ![]const u8 {
+    pub inline fn read(self: *const File, vmInstance: ?*vm.VM) ![]const u8 {
         if (self.pseudoRead != null) {
             return self.pseudoRead.?(vmInstance);
         } else {

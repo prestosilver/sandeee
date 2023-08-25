@@ -63,7 +63,6 @@ pub const GSWindowed = struct {
     shell: shell.Shell = undefined,
 
     color: cols.Color = cols.newColor(0, 0, 0, 1),
-    vm_manager: *vmManager.VMManager,
 
     var globalSelf: *Self = undefined;
 
@@ -404,7 +403,7 @@ pub const GSWindowed = struct {
         try batch.SpriteBatch.instance.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
 
         // vm manager
-        try self.vm_manager.update();
+        try vmManager.VMManager.instance.update();
     }
 
     pub fn update(self: *Self, dt: f32) !void {
@@ -489,6 +488,29 @@ pub const GSWindowed = struct {
     pub fn keypress(self: *Self, key: c_int, mods: c_int, down: bool) !void {
         if (self.bar.data.btnActive and !down) {
             self.bar.data.btnActive = false;
+
+            return;
+        }
+
+        if (key == c.GLFW_KEY_P and mods == (c.GLFW_MOD_CONTROL | c.GLFW_MOD_SHIFT) and down) {
+            const window = win.Window.new("win", win.WindowData{
+                .source = .{
+                    .x = 0.0,
+                    .y = 0.0,
+                    .w = 1.0,
+                    .h = 1.0,
+                },
+                .pos = .{
+                    .x = 0,
+                    .y = 0,
+                    .w = 400,
+                    .h = 500,
+                },
+                .contents = try wins.tasks.new(self.shader),
+                .active = true,
+            });
+
+            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = false });
 
             return;
         }

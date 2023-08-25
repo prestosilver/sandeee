@@ -24,12 +24,11 @@ const Result = struct {
 };
 
 pub var shader: *shd.Shader = undefined;
-pub var vm_manager: *vmManager.VMManager = undefined;
 
 pub const ASM_HEADER = "EEEp";
 
 const ShellError = error{
-    FileNotFound,
+    CommandNotFound,
     MissingParameter,
     BadASMFile,
 };
@@ -69,7 +68,6 @@ pub const Shell = struct {
         }
     }
 
-    // TODO: getFiles & getFolders
     fn ls(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
             const folder = try self.root.getFolder(param[3..]);
@@ -284,7 +282,7 @@ pub const Shell = struct {
 
                 return self.run(params);
             } else {
-                return error.FileNotFound;
+                return error.CommandNotFound;
             }
         };
     }
@@ -351,7 +349,7 @@ pub const Shell = struct {
 
     pub fn getVMResult(self: *Shell) !?Result {
         if (self.vm) |vm_handle| {
-            const data = try vm_manager.getOutput(vm_handle);
+            const data = try vmManager.VMManager.instance.getOutput(vm_handle);
             defer data.deinit();
 
             if (data.done) self.vm = null;
@@ -366,7 +364,7 @@ pub const Shell = struct {
 
     pub fn appendVMIn(self: *Shell, char: u8) !void {
         if (self.vm) |vm_handle| {
-            try vm_manager.appendInputSlice(vm_handle, &.{char});
+            try vmManager.VMManager.instance.appendInputSlice(vm_handle, &.{char});
         }
     }
 
@@ -383,7 +381,7 @@ pub const Shell = struct {
 
                 const ops = cont[4..];
 
-                self.vm = try vm_manager.spawn(self.root, params, ops);
+                self.vm = try vmManager.VMManager.instance.spawn(self.root, params, ops);
 
                 return .{
                     .data = try allocator.alloc.dupe(u8, ""),
@@ -529,7 +527,7 @@ pub const Shell = struct {
 
     pub fn deinit(self: *Shell) !void {
         if (self.vm) |vm_handle| {
-            try vm_manager.destroy(vm_handle);
+            try vmManager.VMManager.instance.destroy(vm_handle);
             self.vm = null;
         }
     }

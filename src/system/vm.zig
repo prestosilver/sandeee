@@ -17,6 +17,7 @@ pub const VM = struct {
         StackOverflow,
         CallStackUnderflow,
         CallStackOverflow,
+        HeapOutOfBounds,
         ValueMissing,
         StringMissing,
         InvalidOp,
@@ -66,9 +67,11 @@ pub const VM = struct {
     streams: std.ArrayList(?*streams.FileStream),
 
     out: std.ArrayList(u8) = undefined,
-    args: [][]u8,
+    args: [][]const u8,
     root: *files.Folder,
-    heap: []u8,
+    heap: []StackEntry,
+
+    name: []const u8,
 
     checker: bool = false,
 
@@ -89,10 +92,11 @@ pub const VM = struct {
             .miscData = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
             .input = std.ArrayList(u8).init(alloc),
-            .heap = alloc.alloc(u8, 0) catch return error.Memory,
+            .heap = alloc.alloc(StackEntry, 0) catch return error.Memory,
             .args = tmpArgs,
             .root = root,
             .checker = checker,
+            .name = args,
         };
     }
 
@@ -213,6 +217,14 @@ pub const VM = struct {
             }
         }
     };
+
+    pub fn getMetaUsage(self: *VM) !usize {
+        var result = self.rsp;
+        result += self.retRsp;
+        result += self.heap.len;
+
+        return result;
+    }
 
     pub fn deinit(self: *VM) !void {
         const oldrsp = self.rsp;
@@ -727,35 +739,35 @@ pub const VM = struct {
 
                             const start = self.heap.len;
                             self.heap = try self.allocator.realloc(self.heap, @as(usize, @intCast(size.value.*)));
+                            const zero = try self.allocator.create(u64);
 
                             if (start < self.heap.len)
-                                @memset(self.heap[start..], 0);
+                                @memset(self.heap[start..], .{ .value = zero });
 
                             return;
                         },
                         // read heap
                         15 => {
-                            const size = try self.popStack();
-                            const start = try self.popStack();
-                            defer self.free(&[_]StackEntry{ start, size });
+                            const item = try self.popStack();
+                            defer self.free(&[_]StackEntry{item});
 
-                            if (start != .value) return error.ValueMissing;
-                            if (size != .value) return error.ValueMissing;
+                            if (item != .value) return error.ValueMissing;
+                            if (item.value.* > self.heap.len) return error.HeapOutOfBounds;
 
-                            try self.pushStackS(self.heap[@as(usize, @intCast(start.value.*))..@as(usize, @intCast(start.value.* + size.value.*))]);
+                            try self.pushStack(self.heap[@as(usize, @intCast(item.value.*))]);
 
                             return;
                         },
                         // write heap
                         16 => {
                             const data = try self.popStack();
-                            const start = try self.popStack();
-                            defer self.free(&[_]StackEntry{ start, data });
+                            const item = try self.popStack();
+                            defer self.free(&[_]StackEntry{ item, data });
 
-                            if (start != .value) return error.ValueMissing;
+                            if (item != .value) return error.ValueMissing;
                             if (data != .string) return error.StringMissing;
 
-                            @memcpy(self.heap[@as(usize, @intCast(start.value.*))..@as(usize, @intCast(start.value.* + data.string.*.len))], data.string.*);
+                            self.heap[@as(usize, @intCast(item.value.*))] = data;
 
                             return;
                         },
