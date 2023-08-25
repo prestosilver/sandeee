@@ -7,3 +7,4 @@ pub const explorer = @import("explorer.zig");
 pub const settings = @import("settings.zig");
 pub const welcome = @import("welcome.zig");
 pub const update = @import("update.zig");
+pub const tasks = @import("tasks.zig");
