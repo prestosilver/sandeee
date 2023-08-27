@@ -16,17 +16,17 @@ pub const Context = struct {
     lock: std.Thread.Mutex = .{},
     size: vecs.Vector2,
 
-    pub fn makeCurrent() void {
+    pub inline fn makeCurrent() void {
         instance.lock.lock();
         c.glfwMakeContextCurrent(instance.window);
     }
 
-    pub fn makeNotCurrent() void {
+    pub inline fn makeNotCurrent() void {
         c.glfwMakeContextCurrent(null);
         instance.lock.unlock();
     }
 
-    pub fn cursorMode(val: c_int) void {
+    pub inline fn cursorMode(val: c_int) void {
         c.glfwSetInputMode(instance.window, c.GLFW_CURSOR, val);
     }
 
@@ -53,9 +53,7 @@ pub const Context = struct {
         c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
         c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
         c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
-        std.log.info("{}", .{mode.refreshRate});
-
-        c.glfwWindowHint(c.GLFW_REFRESH_RATE, mode.refreshRate);
+        c.glfwWindowHint(c.GLFW_REFRESH_RATE, 60);
 
         const win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
 
@@ -86,17 +84,17 @@ pub const Context = struct {
         };
     }
 
-    pub fn poll() bool {
+    pub inline fn poll() bool {
         c.glfwPollEvents();
         return c.glfwWindowShouldClose(instance.window) == 0;
     }
 
-    pub fn clear() void {
+    pub inline fn clear() void {
         c.glClearColor(instance.color.r, instance.color.g, instance.color.b, instance.color.a);
         c.glClear(c.GL_COLOR_BUFFER_BIT);
     }
 
-    pub fn swap() void {
+    pub inline fn swap() void {
         c.glFinish();
         c.glFlush();
 

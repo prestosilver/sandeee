@@ -165,10 +165,9 @@ pub const DeskData = struct {
 
             try addQuad(&result, 0, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
 
-            if (self.sel) |sel| {
+            if (self.sel) |sel|
                 if (idx == sel)
                     try addQuad(&result, 2, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0));
-            }
 
             idx += 1;
 

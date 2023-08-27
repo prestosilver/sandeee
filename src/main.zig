@@ -65,7 +65,7 @@ pub const useSteam = options.IsSteam;
 // embed shaders
 const vertShader = @embedFile("shaders/vert.glsl");
 const fragShader = @embedFile("shaders/frag.glsl");
-const fontVertShader = @embedFile("shaders/fvert.glsl");
+const fontVertShader = @embedFile("shaders/vert.glsl");
 const fontFragShader = @embedFile("shaders/ffrag.glsl");
 
 const crtFragShader = @embedFile("shaders/crtfrag.glsl");
@@ -296,7 +296,6 @@ pub fn blit() !void {
 }
 
 pub fn changeState(event: systemEvs.EventStateChange) !void {
-    std.log.debug("ChangeState: {s}", .{@tagName(event.targetState)});
     currentState = event.targetState;
 }
 
@@ -564,8 +563,6 @@ pub fn mainErr() anyerror!void {
     while (args.next()) |arg| {
         if (std.mem.eql(u8, arg, "--cwd")) {
             const path = args.next().?;
-            std.log.debug("chdir: {s}", .{path});
-
             try std.process.changeCurDir(path);
         } else if (std.mem.eql(u8, arg, "--no-crt")) {
             isCrt = false;
@@ -705,7 +702,7 @@ pub fn mainErr() anyerror!void {
             .texture = "load",
             .data = sprite.SpriteData.new(
                 rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(0, 15),
+                vecs.newVec2(0, 16),
             ),
         },
         .shader = &shader,

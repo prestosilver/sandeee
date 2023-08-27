@@ -96,7 +96,7 @@ pub const VM = struct {
             .args = tmpArgs,
             .root = root,
             .checker = checker,
-            .name = args,
+            .name = alloc.dupe(u8, tmpArgs[0]) catch return error.Memory,
         };
     }
 
@@ -264,6 +264,7 @@ pub const VM = struct {
             self.allocator.free(entry.value_ptr.*);
         }
 
+        self.allocator.free(self.name);
         self.allocator.free(self.args);
         self.allocator.free(self.heap);
         self.functions.deinit();

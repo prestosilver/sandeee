@@ -52,7 +52,7 @@ pub const VMManager = struct {
             const vm_instance = entry.value_ptr;
             results[idx] = .{
                 .id = entry.key_ptr.*,
-                .name = vm_instance.name,
+                .name = try allocator.alloc.dupe(u8, vm_instance.name),
                 .metaUsage = try vm_instance.getMetaUsage(),
             };
         }

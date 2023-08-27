@@ -156,9 +156,10 @@ pub const GSLoading = struct {
 
         // progress bar
         self.load_sprite.data.size.x = (self.load_progress * 320 * 0.5 + self.load_sprite.data.size.x * 0.5);
+        self.load_sprite.data.source.w = self.load_sprite.data.size.x / self.load_sprite.data.size.y;
         try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
 
-        if (self.load_sprite.data.size.x > 310)
+        if (self.load_sprite.data.size.x > 319)
             self.done.storeUnchecked(true);
     }
 

@@ -13,6 +13,7 @@ const vecs = @import("../math/vecs.zig");
 const fnt = @import("../util/font.zig");
 const col = @import("../math/colors.zig");
 const vmManager = @import("../system/vmmanager.zig");
+const graph = @import("../drawers/graph2d.zig");
 
 pub const TasksData = struct {
     const Self = @This();
@@ -21,6 +22,7 @@ pub const TasksData = struct {
     shader: *shd.Shader,
     stats: []vmManager.VMManager.VMStats,
     update_timer: std.time.Timer,
+    graph: graph.Graph,
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
@@ -34,8 +36,17 @@ pub const TasksData = struct {
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, vecs.newVec3(bnds.x + 23, bnds.y + bnds.h - 278 - 27, 0));
 
         if (self.update_timer.read() > 1_000_000_000) {
+            for (self.stats) |stat| {
+                allocator.alloc.free(stat.name);
+            }
+
+            allocator.alloc.free(self.stats);
+
             self.stats = try vmManager.VMManager.instance.getStats();
             self.update_timer.reset();
+
+            std.mem.copyForwards(f32, self.graph.data.data[0 .. self.graph.data.data.len - 1], self.graph.data.data[1..]);
+            self.graph.data.data[self.graph.data.data.len - 1] = @floatCast(vmManager.VMManager.vm_time);
         }
 
         for (self.stats, 0..) |s, idx| {
@@ -58,6 +69,11 @@ pub const TasksData = struct {
 
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, vecs.newVec3(bnds.x + 21, bnds.y + 25, 0));
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
+
+        self.graph.data.size.x = 346;
+        self.graph.data.size.y = 83;
+
+        try batch.SpriteBatch.instance.draw(graph.Graph, &self.graph, self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
     }
 
     pub fn scroll(_: *Self, _: f32, _: f32) void {}
@@ -69,6 +85,12 @@ pub const TasksData = struct {
     pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
 
     pub fn deinit(self: *Self) void {
+        for (self.stats) |stat| {
+            allocator.alloc.free(stat.name);
+        }
+
+        allocator.alloc.free(self.stats);
+
         allocator.alloc.destroy(self);
     }
 };
@@ -89,7 +111,14 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         .shader = shader,
         .stats = try vmManager.VMManager.instance.getStats(),
         .update_timer = try std.time.Timer.start(),
+        .graph = graph.Graph.new(
+            "",
+            try graph.GraphData.new(.{ .x = 100, .y = 100 }),
+        ),
     };
+
+    allocator.alloc.free(self.graph.data.data);
+    self.graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 30));
 
     var result = try win.WindowContents.init(self, "Tasks", "SandEEE Tasks", col.newColorRGBA(192, 192, 192, 255));
     result.props.size.min = vecs.newVec2(400, 500);
