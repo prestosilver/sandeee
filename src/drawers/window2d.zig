@@ -274,7 +274,7 @@ pub const WindowContents = struct {
 };
 
 pub const WindowData = struct {
-    source: rect.Rectangle,
+    source: rect.Rectangle = rect.newRect(0.0, 0.0, 1.0, 1.0),
     pos: rect.Rectangle = rect.newRect(100, 100, 600, 400),
 
     oldpos: rect.Rectangle = rect.newRect(0, 0, 0, 0),
@@ -503,6 +503,16 @@ pub const WindowData = struct {
         bnds.h -= 36;
 
         return self.contents.char(codepoint, mods);
+    }
+
+    pub fn update(self: *WindowData) void {
+        if (self.contents.props.size.max != null and
+            self.contents.props.size.max.?.y == self.contents.props.size.min.y and
+            self.contents.props.size.max.?.x == self.contents.props.size.min.x)
+        {
+            self.pos.w = self.contents.props.size.min.x;
+            self.pos.h = self.contents.props.size.min.y;
+        }
     }
 
     pub fn getVerts(self: *const WindowData, _: vecs.Vector3) !va.VertArray {
