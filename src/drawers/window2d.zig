@@ -10,6 +10,7 @@ const allocator = @import("../util/allocator.zig");
 const spr = @import("sprite2d.zig");
 const popup = @import("popup2d.zig");
 const gfx = @import("../util/graphics.zig");
+const c = @import("../c.zig");
 
 const TOTAL_SPRITES: f32 = 7.0;
 const TEX_SIZE: f32 = 32;
@@ -118,7 +119,15 @@ pub const WindowContents = struct {
     }
 
     pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
-        return self.vtable.key(self.ptr, keycode, mods, down);
+        if (keycode == c.GLFW_KEY_PAGE_UP) {
+            if (self.props.scroll) |*scrollData|
+                scrollData.value -= 1 * SCROLL_MUL;
+        } else if (keycode == c.GLFW_KEY_PAGE_DOWN) {
+            if (self.props.scroll) |*scrollData|
+                scrollData.value += 1 * SCROLL_MUL;
+        } else {
+            return self.vtable.key(self.ptr, keycode, mods, down);
+        }
     }
 
     pub fn char(self: *Self, codepoint: u32, mods: i32) !void {
