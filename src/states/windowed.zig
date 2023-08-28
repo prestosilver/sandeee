@@ -63,8 +63,9 @@ pub const GSWindowed = struct {
     shell: shell.Shell = undefined,
 
     color: cols.Color = cols.newColor(0, 0, 0, 1),
+    debug_enabled: bool = false,
 
-    var globalSelf: *Self = undefined;
+    pub var globalSelf: *Self = undefined;
 
     fn createPopup(event: windowEvs.EventCreatePopup) !void {
         if (event.global) {
@@ -156,6 +157,12 @@ pub const GSWindowed = struct {
         return;
     }
 
+    pub fn debugSet(event: systemEvs.EventDebugSet) !void {
+        if (!globalSelf.init) return;
+
+        globalSelf.debug_enabled = event.enabled;
+    }
+
     pub fn settingSet(event: systemEvs.EventSetSetting) !void {
         if (!globalSelf.init) return;
 
@@ -238,6 +245,7 @@ pub const GSWindowed = struct {
         try events.EventManager.instance.registerListener(windowEvs.EventCreateWindow, createWindow);
         try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
         try events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
+        try events.EventManager.instance.registerListener(systemEvs.EventDebugSet, debugSet);
 
         if (conf.SettingManager.instance.getBool("show_welcome")) {
             const window = win.Window.new("win", win.WindowData{
@@ -324,26 +332,26 @@ pub const GSWindowed = struct {
         try self.desk.data.addText(self.font_shader, self.face);
         try self.desk.data.updateVm();
 
-        for (self.windows.items, 0..) |window, idx| {
-            // continue if window closed on update
-            if (idx >= self.windows.items.len) continue;
+        for (self.windows.items) |*window| {
+            // update the window
+            window.data.update();
 
             // draw the window border
-            try batch.SpriteBatch.instance.draw(win.Window, &self.windows.items[idx], self.shader, vecs.newVec3(0, 0, 0));
+            try batch.SpriteBatch.instance.draw(win.Window, window, self.shader, vecs.newVec3(0, 0, 0));
 
             // draw the windows name
-            try self.windows.items[idx].data.drawName(self.font_shader, self.face);
+            try window.data.drawName(self.font_shader, self.face);
 
             // update scisor region
             batch.SpriteBatch.instance.scissor = window.data.scissor();
 
             // draw the window contents
-            try self.windows.items[idx].data.drawContents(self.font_shader, self.face);
+            try window.data.drawContents(self.font_shader, self.face);
 
             // reset scisor jic
             batch.SpriteBatch.instance.scissor = null;
 
-            if (self.windows.items[idx].data.popup) |*popup| {
+            if (window.data.popup) |*popup| {
                 popup.data.parentPos = window.data.pos;
 
                 try batch.SpriteBatch.instance.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));

@@ -200,6 +200,20 @@ pub const Shell = struct {
         };
     }
 
+    pub fn runTask(self: *Shell, _: []const u8) !Result {
+        _ = self;
+        const window = win.Window.new("win", win.WindowData{
+            .contents = try wins.tasks.new(shader),
+            .active = true,
+        });
+
+        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+
+        return .{
+            .data = try allocator.alloc.dupe(u8, ""),
+        };
+    }
+
     pub fn runWeb(self: *Shell, param: []const u8) !Result {
         _ = self;
         const window = win.Window.new("win", win.WindowData{
@@ -312,6 +326,7 @@ pub const Shell = struct {
                 "cmd  - opens cmd\n" ++
                 "edit - opens the text editor\n" ++
                 "web  - opens the web browser\n" ++
+                "task - opens the task manager\n" ++
                 "\n" ++
                 "You can also run any file in /exec with its name.\n"),
         };
@@ -483,6 +498,7 @@ pub const Shell = struct {
             if (std.mem.eql(u8, cmd, "cmd")) return self.runCmd(params);
             if (std.mem.eql(u8, cmd, "edit")) return self.runEdit(params);
             if (std.mem.eql(u8, cmd, "web")) return self.runWeb(params);
+            if (std.mem.eql(u8, cmd, "task")) return self.runTask(params);
         }
         if (std.mem.eql(u8, cmd, "help")) return self.help(params);
         if (std.mem.eql(u8, cmd, "ls")) return self.ls(params);

@@ -80,6 +80,7 @@ const loadImage = @embedFile("images/load.eia");
 const biosImage = @embedFile("images/bios.eia");
 const sadImage = @embedFile("images/sad.eia");
 const errorImage = @embedFile("images/error.eia");
+const whiteImage = [_]u8{ 'e', 'i', 'm', 'g', 1, 0, 1, 0, 255, 255, 255, 255 };
 
 const blipSoundData = @embedFile("sounds/bios-blip.era");
 const selectSoundData = @embedFile("sounds/bios-select.era");
@@ -148,9 +149,8 @@ var message_snd: audio.Sound = undefined;
 var logout_snd: audio.Sound = undefined;
 
 // for panic
-var errorMsg: []const u8 = "Error: Unknown error";
+var errorMsg: []const u8 = "Error: Unknown Error";
 var errorState: u8 = 0;
-var panicLock = std.Thread.Mutex{};
 var paniced = false;
 
 // for shader rect
@@ -476,23 +476,25 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    while (paniced) {}
+
     paniced = true;
-
-    if (paniced) std.os.exit(0);
-
-    panicLock.lock();
+    defer paniced = false;
 
     batch.SpriteBatch.instance.scissor = null;
 
     errorState = @intFromEnum(currentState);
-    gameStates.getPtr(@as(systemEvs.State, @enumFromInt(errorState))).deinit() catch {};
 
+    // panic log asap
     const st = panicHandler.log();
     errorMsg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ msg, st }) catch {
         std.os.exit(0);
     };
 
     std.fs.cwd().writeFile("CrashLog.txt", errorMsg) catch {};
+
+    // deinit old gamestate for crash
+    gameStates.getPtr(@as(systemEvs.State, @enumFromInt(errorState))).deinit() catch {};
 
     // no display on headless
     if (isHeadless) {
@@ -530,7 +532,7 @@ pub fn main() void {
     };
 
     mainErr() catch |err| {
-        panic(@errorName(err), @errorReturnTrace(), null);
+        @panic(@errorName(err));
     };
 }
 
@@ -659,6 +661,7 @@ pub fn mainErr() anyerror!void {
     try texMan.TextureManager.instance.putMem("load", loadImage);
     try texMan.TextureManager.instance.putMem("sad", sadImage);
     try texMan.TextureManager.instance.putMem("error", errorImage);
+    try texMan.TextureManager.instance.putMem("white", &whiteImage);
 
     wallpaper = wall.Wallpaper.new("wall", wall.WallData{
         .dims = &gfx.Context.instance.size,

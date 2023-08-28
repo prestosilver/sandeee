@@ -112,13 +112,14 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         .stats = try vmManager.VMManager.instance.getStats(),
         .update_timer = try std.time.Timer.start(),
         .graph = graph.Graph.new(
-            "",
+            "white",
             try graph.GraphData.new(.{ .x = 100, .y = 100 }),
         ),
     };
 
     allocator.alloc.free(self.graph.data.data);
     self.graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 30));
+    self.graph.data.color = col.newColorRGBA(255, 128, 128, 255);
 
     var result = try win.WindowContents.init(self, "Tasks", "SandEEE Tasks", col.newColorRGBA(192, 192, 192, 255));
     result.props.size.min = vecs.newVec2(400, 500);
