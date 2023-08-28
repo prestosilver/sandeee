@@ -350,6 +350,8 @@ pub fn build(b: *std.build.Builder) !void {
     };
 
     exe_tests.step.dependOn(&write_step.step);
+    exe_tests.addModule("network", networkModule);
+    exe_tests.addModule("options", options.createModule());
 
     const branch = std.fmt.allocPrint(b.allocator, "prestosilver/sandeee-os:{s}{s}", .{ platform, suffix }) catch "";
 

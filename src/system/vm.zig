@@ -4,6 +4,7 @@ const files = @import("files.zig");
 const telem = @import("telem.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
+const windowedState = @import("../states/windowed.zig");
 
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
@@ -35,6 +36,11 @@ pub const VM = struct {
     pub const StackEntry = union(StackEntryKind) {
         string: *[]u8,
         value: *u64,
+    };
+
+    pub const HeapEntry = union(StackEntryKind) {
+        string: []u8,
+        value: u64,
     };
 
     pub const RetStackEntry = struct {
@@ -69,7 +75,7 @@ pub const VM = struct {
     out: std.ArrayList(u8) = undefined,
     args: [][]const u8,
     root: *files.Folder,
-    heap: []StackEntry,
+    heap: []HeapEntry,
 
     name: []const u8,
 
@@ -92,7 +98,7 @@ pub const VM = struct {
             .miscData = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
             .input = std.ArrayList(u8).init(alloc),
-            .heap = alloc.alloc(StackEntry, 0) catch return error.Memory,
+            .heap = alloc.alloc(HeapEntry, 0) catch return error.Memory,
             .args = tmpArgs,
             .root = root,
             .checker = checker,
@@ -739,11 +745,13 @@ pub const VM = struct {
                             if (size != .value) return error.ValueMissing;
 
                             const start = self.heap.len;
-                            self.heap = try self.allocator.realloc(self.heap, @as(usize, @intCast(size.value.*)));
-                            const zero = try self.allocator.create(u64);
+                            self.heap = try self.allocator.realloc(self.heap, @intCast(size.value.*));
 
-                            if (start < self.heap.len)
-                                @memset(self.heap[start..], .{ .value = zero });
+                            if (start < self.heap.len) {
+                                for (start..self.heap.len) |idx| {
+                                    self.heap[idx] = .{ .value = 0 };
+                                }
+                            }
 
                             return;
                         },
@@ -753,9 +761,18 @@ pub const VM = struct {
                             defer self.free(&[_]StackEntry{item});
 
                             if (item != .value) return error.ValueMissing;
-                            if (item.value.* > self.heap.len) return error.HeapOutOfBounds;
+                            if (item.value.* >= self.heap.len) return error.HeapOutOfBounds;
 
-                            try self.pushStack(self.heap[@as(usize, @intCast(item.value.*))]);
+                            const adds = self.heap[@as(usize, @intCast(item.value.*))];
+
+                            switch (adds) {
+                                .value => {
+                                    try self.pushStackI(adds.value);
+                                },
+                                .string => {
+                                    try self.pushStackS(adds.string);
+                                },
+                            }
 
                             return;
                         },
@@ -763,12 +780,31 @@ pub const VM = struct {
                         16 => {
                             const data = try self.popStack();
                             const item = try self.popStack();
-                            defer self.free(&[_]StackEntry{ item, data });
+                            defer self.free(&[_]StackEntry{ data, item });
 
                             if (item != .value) return error.ValueMissing;
-                            if (data != .string) return error.StringMissing;
 
-                            self.heap[@as(usize, @intCast(item.value.*))] = data;
+                            if (item.value.* >= self.heap.len) return error.HeapOutOfBounds;
+
+                            const idx: usize = @intCast(item.value.*);
+
+                            if (self.heap[idx] == .string)
+                                self.allocator.free(self.heap[idx].string);
+
+                            switch (data) {
+                                .value => {
+                                    self.heap[idx] = .{
+                                        .value = data.value.*,
+                                    };
+                                },
+                                .string => {
+                                    self.heap[idx] = .{
+                                        .string = self.allocator.dupe(u8, data.string.*) catch return error.Memory,
+                                    };
+                                },
+                            }
+
+                            try self.pushStack(data);
 
                             return;
                         },
@@ -836,8 +872,12 @@ pub const VM = struct {
                         },
                         // panic
                         128 => {
+                            if (!windowedState.GSWindowed.globalSelf.debug_enabled)
+                                return error.InvalidSys;
+
                             @panic("VM Crash Called");
                         },
+                        // secret
                         255 => {
                             if (self.rsp == 0)
                                 return error.InvalidPassword;
@@ -847,14 +887,18 @@ pub const VM = struct {
 
                             if (pass != .string) return error.StringMissing;
 
-                            if (std.mem.eql(u8, pass.string.*, "Hello")) {
+                            if (std.mem.eql(u8, pass.string.*, "Hi")) {
                                 try self.out.appendSlice("Hello World!\n");
 
                                 return;
                             }
 
-                            if (std.mem.eql(u8, pass.string.*, "jpASaFGOefSNTfObokVhNRsXOOSarlIG")) {
+                            if (std.mem.eql(u8, pass.string.*, "Poopie")) {
                                 try self.out.appendSlice("Debug Mode Enabled\n");
+
+                                try events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
+                                    .enabled = true,
+                                });
 
                                 return;
                             }

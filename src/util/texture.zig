@@ -82,7 +82,7 @@ pub fn newTextureMem(mem: []const u8) !Texture {
     };
 
     if (mem.len / 4 - 2 != width * height) {
-        std.log.info("expected {} got {}", .{ width * height * 4 + 4, mem.len });
+        std.log.info("new expected {} got {}", .{ width * height * 4 + 4, mem.len });
 
         return error.WrongSize;
     }
@@ -114,7 +114,7 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
     const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
 
     if (mem.len / 4 - 2 != width * height) {
-        std.log.info("expected {} got {}", .{ width * height * 4 + 4, mem.len });
+        std.log.info("up expected {} got {}", .{ width * height * 4 + 4, mem.len });
 
         return error.WrongSize;
     }
