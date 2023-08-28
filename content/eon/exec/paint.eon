@@ -3,6 +3,7 @@
 
 var texture;
 var window;
+var filename;
 
 fn processArgs() {
     var file = getArg(1);
@@ -52,10 +53,6 @@ fn setSquare(x, y, r, color) {
 
     close(file);
     
-    file = open("/fake/gfx/upload");
-    write(file, $texture);
-    close(file);
-
     return 0;
 }
 
@@ -190,11 +187,15 @@ fn drawLine(ax, ay, bx, by, color) {
             drawLineHigh(ax, ay, bx, by, color);
         }
     }
+    
+    var file = open("/fake/gfx/upload");
+    write(file, $texture);
+    close(file);
 
     return 0;
 }
 
-fn processClick(filename, imgx, imgy, imgs, w, h, oldx, oldy) {
+fn processClick(imgx, imgy, imgs, w, h, oldx, oldy) {
     var clickData = getclick();
     var btn = @clickData;
 
@@ -212,7 +213,7 @@ fn processClick(filename, imgx, imgy, imgs, w, h, oldx, oldy) {
             return 0;
         }
         if (x < 84) {
-            save($texture, filename);
+            save($texture, $filename);
 
             return 0;
         }
@@ -291,8 +292,7 @@ fn main() {
     loadLib("/libs/texture.ell");
     loadLib("/libs/ui.ell");
 
-    var file = processArgs();
-
+    filename := processArgs();
     window := _WindowCreate();
     texture := _TextureCreate();
 
@@ -305,18 +305,18 @@ fn main() {
     var cont = "";
     var w = 0;
     var h = 0;
-    if (file != "") {
-        cont = _TextureRead(file);
+    if (($filename) != "") {
+        cont = _TextureRead($filename);
     } else {
-        file = "image.eia";
-        cont = textureNew(100, 100);
+        filename := "image.eia";
+        cont = textureNew(300, 300);
     }
 
     _TextureUpload(cont, $texture);
     w = _TextureWidth(cont);
     h = _TextureHeight(cont);
 
-    _SetWindowTitle($window, "EEE Image Array Editor - " & file);
+    _SetWindowTitle($window, "EEE Image Array Editor - " & $filename);
 
     var x = 0;
     var y = 0;
@@ -326,7 +326,7 @@ fn main() {
     var imgs = 2000;
 
     while (_WindowOpen()) {
-        processClick(file, imgx, imgy, imgs, w, h, x, y);
+        processClick(imgx, imgy, imgs, w, h, x, y);
 
         render(menuTex, iconTex, transTex, imgx, imgy, imgs, w, h);
     }
