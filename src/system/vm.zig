@@ -81,6 +81,8 @@ pub const VM = struct {
 
     checker: bool = false,
 
+    rnd: std.rand.DefaultPrng,
+
     pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8, comptime checker: bool) VMError!VM {
         var splitIter = std.mem.split(u8, args, " ");
 
@@ -103,6 +105,7 @@ pub const VM = struct {
             .root = root,
             .checker = checker,
             .name = alloc.dupe(u8, tmpArgs[0]) catch return error.Memory,
+            .rnd = std.rand.DefaultPrng.init(0),
         };
     }
 
@@ -197,6 +200,8 @@ pub const VM = struct {
 
             Sin,
             Cos,
+            Random,
+            Seed,
 
             Last,
             _,
@@ -1229,7 +1234,7 @@ pub const VM = struct {
                     return;
                 }
             },
-            Operation.Code.Create => {
+            .Create => {
                 const b = try self.popStack();
                 defer self.free(&[_]StackEntry{b});
 
@@ -1242,9 +1247,25 @@ pub const VM = struct {
 
                 return;
             },
-            else => {},
+            .Random => {
+                const val: u64 = self.rnd.random().int(u64);
+
+                try self.pushStackI(val);
+
+                return;
+            },
+            .Seed => {
+                const seed = try self.popStack();
+                defer self.free(&[_]StackEntry{seed});
+
+                if (seed != .value) return error.ValueMissing;
+
+                self.rnd.seed(seed.value.*);
+
+                return;
+            },
+            else => return error.InvalidOp,
         }
-        return error.InvalidOp;
     }
 
     pub fn loadList(self: *VM, ops: []Operation) !void {
@@ -1343,16 +1364,16 @@ pub const VM = struct {
                 oper = func.*.ops[self.pc - 1];
             } else {
                 if (@intFromEnum(oper.code) < @intFromEnum(Operation.Code.Last)) {
-                    return try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper });
+                    return try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\n  Operation: {}", .{ self.inside_fn, self.pc, oper });
                 } else {
-                    return try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\nOperation: ?", .{ self.inside_fn, self.pc });
+                    return try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\n  Operation: ?", .{ self.inside_fn, self.pc });
                 }
             }
         } else {
             oper = self.code.?[self.pc - 1];
         }
 
-        return try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\nOperation: {}", .{ self.inside_fn, self.pc, oper });
+        return try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\n  Operation: {}", .{ self.inside_fn, self.pc, oper });
     }
 
     pub fn getOper(self: *VM) !?Operation {

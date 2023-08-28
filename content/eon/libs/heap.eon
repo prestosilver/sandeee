@@ -1,5 +1,7 @@
 #include "/libs/inc/sys.eon"
 
+// TODO: rewrite
+
 fn libInit() {
     asm "push 1";
     asm "sys 14";

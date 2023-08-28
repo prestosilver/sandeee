@@ -109,6 +109,10 @@ fn getLineEnum(line) {
         return 31;
     } else if (_StringStartsWith(line, "cos")) {
         return 32;
+    } else if (_StringStartsWith(line, "rand")) {
+        return 33;
+    } else if (_StringStartsWith(line, "seed")) {
+        return 34;
     }
 
     return 255;

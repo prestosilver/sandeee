@@ -425,7 +425,7 @@ pub const WindowData = struct {
             .text = self.contents.props.info.name,
             .pos = vecs.newVec2(self.pos.x + 9, self.pos.y + 8),
             .color = color,
-            .wrap = self.pos.w - 50,
+            .wrap = self.pos.w - 100,
             .maxlines = 1,
         });
     }

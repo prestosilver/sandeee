@@ -312,6 +312,7 @@ pub const Shell = struct {
                 "help - prints this\n" ++
                 "ls   - lists the contents of the current folder\n" ++
                 "cd   - changes the current folder\n" ++
+                "bg   - runs a command in the background\n" ++
                 "new  - creates a new file\n" ++
                 "dnew - creates a new folder\n" ++
                 "rem  - removes a file\n" ++
@@ -337,7 +338,7 @@ pub const Shell = struct {
             try self.root.newFile(param[4..]);
 
             return .{
-                .data = try allocator.alloc.dupe(u8, "created"),
+                .data = try allocator.alloc.dupe(u8, "Created"),
             };
         }
 
@@ -349,7 +350,7 @@ pub const Shell = struct {
             try self.root.newFolder(param[5..]);
 
             return .{
-                .data = try allocator.alloc.dupe(u8, "created"),
+                .data = try allocator.alloc.dupe(u8, "Created"),
             };
         }
 
@@ -445,7 +446,7 @@ pub const Shell = struct {
             try file.copyTo(targ);
 
             return .{
-                .data = try allocator.alloc.dupe(u8, "copied"),
+                .data = try allocator.alloc.dupe(u8, "Copied"),
             };
         }
 
@@ -462,7 +463,7 @@ pub const Shell = struct {
             }
 
             return .{
-                .data = try allocator.alloc.dupe(u8, "removed"),
+                .data = try allocator.alloc.dupe(u8, "Removed"),
             };
         }
 
@@ -479,7 +480,7 @@ pub const Shell = struct {
             }
 
             return .{
-                .data = try allocator.alloc.dupe(u8, "removed"),
+                .data = try allocator.alloc.dupe(u8, "Removed"),
             };
         }
 
@@ -511,13 +512,18 @@ pub const Shell = struct {
         if (std.mem.eql(u8, cmd, "dcpy")) return self.todo(params);
 
         if (std.mem.eql(u8, cmd, "bg")) {
-            try self.runBg(params);
+            if (params.len > 3) {
+                try self.runBg(params[3..]);
+
+                const result: Result = Result{
+                    .data = try allocator.alloc.dupe(u8, "Running"),
+                };
+                return result;
+            }
 
             const result: Result = Result{
-                .data = try allocator.alloc.dupe(u8, "Running"),
-                .clear = true,
+                .data = try allocator.alloc.dupe(u8, "No Command Specified"),
             };
-
             return result;
         }
 
