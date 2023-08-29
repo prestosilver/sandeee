@@ -773,9 +773,9 @@ pub fn mainErr() anyerror!void {
         .selectSound = &selectSound,
         .audioMan = &audio_man,
         .load_sprite = .{
-            .texture = "load",
+            .texture = "white",
             .data = sprite.SpriteData.new(
-                rect.newRect(1.0 / 5.0, 1.0 / 5.0, 1.0 / 5.0, 1.0 / 5.0),
+                rect.newRect(0, 0, 1, 1),
                 vecs.newVec2(20, 32),
             ),
         },
