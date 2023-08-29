@@ -10,6 +10,7 @@ const font = @import("tools/fonts.zig");
 const eon = @import("tools/eon.zig");
 const butler = @import("tools/butler.zig");
 const emails = @import("tools/mail.zig");
+const rand = @import("tools/random.zig");
 
 // debug only
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
@@ -65,6 +66,8 @@ pub fn build(b: *std.build.Builder) !void {
 
     var isDemo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
     var isSteam = b.option(bool, "steam", "Makes SandEEE build a steam build") orelse false;
+
+    var randomTests = b.option(bool, "random", "Makes SandEEE write some random files") orelse false;
 
     const versionSuffix = switch (exe.optimize) {
         .Debug => if (isDemo) "D0DE" else "00DE",
@@ -267,6 +270,16 @@ pub fn build(b: *std.build.Builder) !void {
         var step = conv.ConvertStep.create(b, sound.convert, wavf, eraf);
 
         write_step.step.dependOn(&step.step);
+    }
+
+    if (randomTests) {
+        for (0..100) |idx| {
+            const filename = b.fmt("content/disk/prof/tests/rand/{}.eep", .{idx});
+
+            var step = conv.ConvertStep.create(b, rand.create, "", filename);
+
+            write_step.step.dependOn(&step.step);
+        }
     }
 
     var fontStep = conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans.png", "content/disk/cont/fnts/SandEEESans.eff");

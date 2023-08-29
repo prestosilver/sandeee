@@ -3,7 +3,8 @@
 
 var texture;
 var window;
-var filename;
+var file_name;
+var last_button;
 
 fn processArgs() {
     var file = getArg(1);
@@ -213,7 +214,7 @@ fn processClick(imgx, imgy, imgs, w, h, oldx, oldy) {
             return 0;
         }
         if (x < 84) {
-            save($texture, $filename);
+            save($texture, $file_name);
 
             return 0;
         }
@@ -292,7 +293,7 @@ fn main() {
     loadLib("/libs/texture.ell");
     loadLib("/libs/ui.ell");
 
-    filename := processArgs();
+    file_name := processArgs();
     window := _WindowCreate();
     texture := _TextureCreate();
 
@@ -302,21 +303,23 @@ fn main() {
     _TextureUpload(_TextureRead("/cont/imgs/transparent.eia"), transTex);
     _TextureUpload(_TextureRead("/cont/imgs/ui.eia"), menuTex);
     _TextureUpload(_TextureRead("/cont/imgs/icons.eia"), iconTex);
-    var cont = "";
+
     var w = 0;
     var h = 0;
-    if (($filename) != "") {
-        cont = _TextureRead($filename);
+    
+    var cont = "";
+    if (($file_name) != "") {
+        cont = _TextureRead($file_name);
     } else {
-        filename := "image.eia";
-        cont = textureNew(300, 300);
+        file_name := "image.eia";
+        cont = textureNew(150, 150);
     }
 
     _TextureUpload(cont, $texture);
     w = _TextureWidth(cont);
     h = _TextureHeight(cont);
 
-    _SetWindowTitle($window, "EEE Image Array Editor - " & $filename);
+    _SetWindowTitle($window, "EEE Image Array Editor - " & $file_name);
 
     var x = 0;
     var y = 0;
