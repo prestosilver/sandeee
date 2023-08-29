@@ -50,7 +50,7 @@ pub const GSInstall = struct {
     offset: f32 = 0,
 
     pub fn setup(self: *Self) !void {
-        gfx.Context.instance.color = cols.newColor(0, 0, 0.3333, 1);
+        gfx.Context.instance.color = cols.newColor(0, 0, 0.5, 1);
 
         @memset(&self.settingLens, 0);
 
