@@ -32,7 +32,7 @@ pub const GSCrash = struct {
     pub fn draw(self: *Self, _: vecs.Vector2) !void {
         batch.SpriteBatch.instance.scissor = null;
 
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
+        //try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
 
         try self.face.draw(.{
             .shader = self.font_shader,

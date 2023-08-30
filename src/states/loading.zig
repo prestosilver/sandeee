@@ -149,6 +149,10 @@ pub const GSLoading = struct {
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
+        if (self.done.loadUnchecked()) {
+            return;
+        }
+
         const logoOff = size.sub(self.logo_sprite.data.size).div(2);
 
         // draw the logo

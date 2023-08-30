@@ -476,10 +476,7 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
-    while (paniced) {}
-
     paniced = true;
-    defer paniced = false;
 
     batch.SpriteBatch.instance.scissor = null;
 
@@ -492,9 +489,6 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     };
 
     std.fs.cwd().writeFile("CrashLog.txt", errorMsg) catch {};
-
-    // deinit old gamestate for crash
-    gameStates.getPtr(@as(systemEvs.State, @enumFromInt(errorState))).deinit() catch {};
 
     // no display on headless
     if (isHeadless) {
@@ -510,14 +504,30 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     // run setup
     gameStates.getPtr(.Crash).setup() catch {};
 
-    // get crash state
-    const state = gameStates.getPtr(.Crash);
+    batch.SpriteBatch.instance.clear() catch {};
 
     while (gfx.Context.poll()) {
-        state.update(1.0 / 60.0) catch break;
-        state.draw(gfx.Context.instance.size) catch break;
-        blit() catch break;
+        // get crash state
+        const state = gameStates.getPtr(.Crash);
+
+        state.update(1.0 / 60.0) catch |err| {
+            std.log.err("crash draw failed, {!}", .{err});
+
+            break;
+        };
+        state.draw(gfx.Context.instance.size) catch |err| {
+            std.log.err("crash draw failed, {!}", .{err});
+
+            break;
+        };
+        blit() catch |err| {
+            std.log.err("crash blit failed {!}", .{err});
+
+            break;
+        };
     }
+
+    std.log.info("Exiting", .{});
 
     std.os.exit(0);
 }
@@ -653,7 +663,6 @@ pub fn mainErr() anyerror!void {
 
     // create the sprite batch
     try batch.SpriteBatch.init(&gfx.Context.instance.size);
-    defer batch.SpriteBatch.deinit();
 
     // load some textures
     try texMan.TextureManager.instance.putMem("bios", biosImage);
@@ -750,7 +759,8 @@ pub fn mainErr() anyerror!void {
     };
 
     // crashed state
-    var gsCrash = crashState.GSCrash{
+    var gsCrash = try allocator.alloc.create(crashState.GSCrash);
+    gsCrash.* = crashState.GSCrash{
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &biosFace,
@@ -807,7 +817,6 @@ pub fn mainErr() anyerror!void {
 
     // setup event system
     events.EventManager.init();
-    defer events.EventManager.deinit();
 
     // add input management event handlers
     try events.EventManager.instance.registerListener(inputEvs.EventWindowResize, windowResize);
@@ -832,7 +841,7 @@ pub fn mainErr() anyerror!void {
     gameStates.set(.Disks, states.GameState.init(&gsDisks));
     gameStates.set(.Loading, states.GameState.init(&gsLoading));
     gameStates.set(.Windowed, states.GameState.init(&gsWindowed));
-    gameStates.set(.Crash, states.GameState.init(&gsCrash));
+    gameStates.set(.Crash, states.GameState.init(gsCrash));
     gameStates.set(.Logout, states.GameState.init(&gsLogout));
     gameStates.set(.Recovery, states.GameState.init(&gsRecovery));
     gameStates.set(.Installer, states.GameState.init(&gsInstall));
@@ -907,6 +916,14 @@ pub fn mainErr() anyerror!void {
         // update the time
         last_frame_time = currentTime;
     }
+
+    allocator.alloc.destroy(gsCrash);
+
+    // deinit sb
+    batch.SpriteBatch.deinit();
+
+    // deinit events
+    events.EventManager.deinit();
 
     // deinit the current state
     try gameStates.getPtr(currentState).deinit();

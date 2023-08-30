@@ -90,29 +90,28 @@ pub const Folder = struct {
     pub fn loadDisk(file: std.fs.File) !void {
         if (try file.getEndPos() < 4) return error.BadFile;
 
-        const lenbuffer: []u8 = try allocator.alloc.alloc(u8, 4);
-        defer allocator.alloc.free(lenbuffer);
-        _ = try file.read(lenbuffer);
-        const folderCount = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
+        var lenbuffer = [_]u8{0} ** 4;
+        _ = try file.read(&lenbuffer);
+        const folderCount = std.mem.readIntBig(u32, &lenbuffer);
         for (0..folderCount) |_| {
-            _ = try file.read(lenbuffer);
-            const namesize = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
+            _ = try file.read(&lenbuffer);
+            const namesize = std.mem.readIntBig(u32, &lenbuffer);
             const namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
             defer allocator.alloc.free(namebuffer);
             _ = try file.read(namebuffer);
             _ = try root.newFolder(namebuffer);
         }
 
-        _ = try file.read(lenbuffer);
-        const fileCount = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
+        _ = try file.read(&lenbuffer);
+        const fileCount = std.mem.readIntBig(u32, &lenbuffer);
         for (0..fileCount) |_| {
-            _ = try file.read(lenbuffer);
-            const namesize = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
+            _ = try file.read(&lenbuffer);
+            const namesize = std.mem.readIntBig(u32, &lenbuffer);
             const namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
             defer allocator.alloc.free(namebuffer);
             _ = try file.read(namebuffer);
-            _ = try file.read(lenbuffer);
-            const contsize = std.mem.readIntBig(u32, &lenbuffer[0..4].*);
+            _ = try file.read(&lenbuffer);
+            const contsize = std.mem.readIntBig(u32, &lenbuffer);
             const contbuffer: []u8 = try allocator.alloc.alloc(u8, contsize);
             defer allocator.alloc.free(contbuffer);
             _ = try file.read(contbuffer);
@@ -217,6 +216,8 @@ pub const Folder = struct {
     }
 
     pub fn init(aDiskPath: ?[]const u8) !void {
+        rootOut = null;
+
         if (aDiskPath) |diskPath| {
             root = try allocator.alloc.create(Folder);
 
@@ -232,13 +233,11 @@ pub const Folder = struct {
 
             const d = std.fs.cwd();
 
-            rootOut = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskPath});
+            const userdisk = try (try d.openDir("disks", .{})).openFile(diskPath, .{});
+            defer userdisk.close();
+            try loadDisk(userdisk);
 
-            const user = (try d.openDir("disks", .{})).openFile(diskPath, .{}) catch null;
-            if (user) |userdisk| {
-                defer userdisk.close();
-                try loadDisk(userdisk);
-            }
+            rootOut = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskPath});
 
             root.fixFolders();
 
@@ -249,8 +248,6 @@ pub const Folder = struct {
             if (root.getFolder("/exec") catch null) |folder| {
                 exec = folder;
             } else return error.NoExecFolder;
-
-            return;
         }
     }
 
