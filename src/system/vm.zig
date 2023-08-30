@@ -8,6 +8,7 @@ const windowedState = @import("../states/windowed.zig");
 
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
+const MAIN_NAME = "_main";
 
 pub var syslock = std.Thread.Mutex{};
 
@@ -1357,23 +1358,40 @@ pub const VM = struct {
         return self.stopped or (self.pc >= self.code.?.len and self.inside_fn == null);
     }
 
+    pub fn backtrace(self: *VM, i: u8) ![]const u8 {
+        if (i == 0)
+            return try std.fmt.allocPrint(self.allocator, "{}: {s} {}", .{ i, self.inside_fn orelse MAIN_NAME, self.pc });
+
+        const bt = try self.backtrace(i - 1);
+        defer self.allocator.free(bt);
+
+        return try std.fmt.allocPrint(self.allocator, "{}: {s} {}\n{s}", .{ i, self.retStack[i - 1].function orelse MAIN_NAME, self.retStack[i - 1].location, bt });
+    }
+
     pub fn getOp(self: *VM) ![]u8 {
         var oper: Operation = undefined;
+        const bt = try self.backtrace(self.retRsp);
+
+        defer self.allocator.free(bt);
+
         if (self.inside_fn) |inside| {
             if (self.functions.getPtr(inside)) |func| {
                 oper = func.*.ops[self.pc - 1];
             } else {
                 if (@intFromEnum(oper.code) < @intFromEnum(Operation.Code.Last)) {
-                    return try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\n  Operation: {}", .{ self.inside_fn, self.pc, oper });
+                    return try std.fmt.allocPrint(self.allocator, "In function '{s}?' @ {}:\n  Operation: {}\n\n{s}", .{ self.inside_fn orelse MAIN_NAME, self.pc, oper, bt });
                 } else {
-                    return try std.fmt.allocPrint(self.allocator, "In function '{?s}?' @ {}:\n  Operation: ?", .{ self.inside_fn, self.pc });
+                    return try std.fmt.allocPrint(self.allocator, "In function '{s}?' @ {}:\n  Operation: ?\n\n{s}", .{ self.inside_fn orelse MAIN_NAME, self.pc, bt });
                 }
             }
         } else {
-            oper = self.code.?[self.pc - 1];
+            oper = if (self.pc == 0)
+                .{ .code = .Nop }
+            else
+                self.code.?[self.pc - 1];
         }
 
-        return try std.fmt.allocPrint(self.allocator, "In function '{?s}' @ {}:\n  Operation: {}", .{ self.inside_fn, self.pc, oper });
+        return try std.fmt.allocPrint(self.allocator, "In function '{s}' @ {}:\n  Operation: {}\n{s}", .{ self.inside_fn orelse MAIN_NAME, self.pc, oper, bt });
     }
 
     pub fn getOper(self: *VM) !?Operation {

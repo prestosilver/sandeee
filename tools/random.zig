@@ -37,7 +37,7 @@ const INSTRUCTION_TYPES = [_]InstructionData{
     .{ .stack_out = 1, .stack_in = 2, .params = .{ true, false, false } }, // gt
     .{ .stack_out = 1, .stack_in = 2, .params = .{ true, false, false } }, // cat
     .{ .stack_out = 1, .stack_in = 2, .params = .{ true, false, false } }, // mod
-    .{ .stack_out = 1, .stack_in = 0, .params = .{ false, true, false } }, // create
+    .{ .stack_out = 1, .stack_in = 1, .params = .{ false, true, false } }, // create
     .{ .stack_out = 1, .stack_in = 1, .params = .{ true, false, false } }, // size
     .{ .stack_out = 1, .stack_in = 1, .params = .{ true, false, false } }, // len
     .{ .stack_out = 1, .stack_in = 1, .params = .{ true, false, false } }, // sin
