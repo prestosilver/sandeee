@@ -163,7 +163,10 @@ pub const GSDisks = struct {
             .color = TEXT_COLOR,
         });
 
-        pos.y += self.face.size * 3;
+        pos.y += self.face.sizeText(.{
+            .text = line,
+            .wrap = gfx.Context.instance.size.x - 200,
+        }).y;
 
         try self.face.draw(.{
             .shader = self.font_shader,
