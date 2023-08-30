@@ -1,32 +1,37 @@
 #include "/libs/inc/libload.eon"
 #include "/libs/inc/sys.eon"
 
+var scorea;
+var scoreb;
+
 fn render(win, tex, ax, bx,
           ballx, bally, vx, vy) {
     var source = "";
     var dest = "";
 
-    source = _MakeRect(256, 0, 256, 1024);
+    source = _MakeRect(0, 0, 256, 1024);
     dest = _MakeRect(0, 0, 400, 300);
 
     _WindowRender(win, tex, dest, source);
 
-    source = _MakeRect(0, 0, 256, 1024);
+    source = _MakeRect(256, 0, 256, 1024);
     dest = _MakeRect(ballx, bally, 10, 10);
 
     _WindowRender(win, tex, dest, source);
 
-    source = _MakeRect(0, 0, 256, 1024);
+    source = _MakeRect(256, 0, 256, 1024);
     dest = _MakeRect(10, ax, 20, 100);
 
     _WindowRender(win, tex, dest, source);
 
-    source = _MakeRect(0, 0, 256, 1024);
+    source = _MakeRect(256, 0, 256, 1024);
     dest = _MakeRect(370, bx, 20, 100);
 
     _WindowRender(win, tex, dest, source);
 
-    _WindowText(win, 150, 10, "0 - 0");
+    var text = @(48 + $scorea) & " - " & @(48 + $scoreb);
+
+    _WindowText(win, 150, 10, text);
 
     return 0;
 }
@@ -50,11 +55,11 @@ fn update(ax, bx, ballx, bally,
     var contained;
     var tmp;
 
-    var acc = pings / 5 + 1;
+    var acc = pings / 10 + 1;
 
     if (vx < 100) {
         tvx = 100 - vx;
-        tvx = acc * tvx / 12;
+        tvx = acc * tvx / 15;
 
         contained = bally < ax + 100;
         tmp = bally > ax;
@@ -76,13 +81,15 @@ fn update(ax, bx, ballx, bally,
                 ballx = 195;
                 bally = 145;
                 pings = 1;
+                scoreb := $scoreb + 1;
+
                 return 0;
             }
             ballx = ballx - tvx;
         }
     } else {
         tvx = vx - 100;
-        tvx = acc * tvx / 12;
+        tvx = acc * tvx / 15;
 
         contained = bally < bx + 100;
         tmp = bally > bx;
@@ -104,6 +111,8 @@ fn update(ax, bx, ballx, bally,
                 ballx = 195;
                 bally = 145;
                 pings = 1;
+                scorea := $scorea + 1;
+
                 return 0;
             }
             ballx = ballx + tvx;
@@ -112,7 +121,7 @@ fn update(ax, bx, ballx, bally,
 
     if (vy < 100) {
         tvy = 100 - vy;
-        tvy = tvy / 12;
+        tvy = tvy / 15;
 
         if (bally < tvy) {
             vy = 200 - vy;
@@ -123,7 +132,7 @@ fn update(ax, bx, ballx, bally,
         }
     } else {
         tvy = vy - 100;
-        tvy = tvy / 12;
+        tvy = tvy / 15;
         
         if (bally > 290 - tvy) {
             bally = bally - tvy;
