@@ -15,54 +15,55 @@ const c = @import("../../c.zig");
 pub const PopupConfirm = struct {
     const Self = @This();
 
+    pub const ConfirmButton = struct {
+        text: []const u8,
+        calls: *const fn (*anyopaque) anyerror!void,
+    };
+
+    data: *anyopaque,
     message: []const u8,
-    buttons: [][]const u8,
+    buttons: []const ConfirmButton,
+
+    singleWidth: f32 = 1,
 
     pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+        const midy = bnds.y + bnds.h / 2;
+
         try font.draw(.{
             .shader = shader,
             .pos = bnds.location(),
             .text = self.message,
+            .color = cols.newColor(0, 0, 0, 1),
         });
 
-        try font.draw(.{
-            .shader = shader,
-            .pos = bnds.location().add(.{ .x = 30, .y = font.size }),
-            .text = self.path,
-            .wrap = bnds.w - 60,
-            .maxlines = 1,
-        });
+        self.singleWidth = bnds.w / @as(f32, @floatFromInt(self.buttons.len));
 
-        try font.draw(.{
-            .shader = shader,
-            .pos = bnds.location().add(.{ .x = 0, .y = font.size * 2 }),
-            .text = self.err,
-            .color = cols.newColor(1, 0, 0, 1),
-        });
-    }
+        for (self.buttons, 0..) |btn, idx| {
+            const startx = bnds.x + (self.singleWidth) * @as(f32, @floatFromInt(idx));
 
-    pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
-        if (!down) return;
-
-        if (keycode == c.GLFW_KEY_BACKSPACE and self.path.len != 0) {
-            self.path = try allocator.alloc.realloc(self.path, self.path.len - 1);
-            self.err = "";
-        }
-
-        if (keycode == c.GLFW_KEY_ENTER) {
-            if (try files.root.getFolder(self.path)) |folder| {
-                try self.submit(folder, self.data);
-                events.em.sendEvent(windowEvs.EventClosePopup{});
-            }
+            try font.draw(.{
+                .shader = shader,
+                .pos = .{
+                    .x = startx,
+                    .y = midy,
+                },
+                .text = btn.text,
+            });
         }
     }
+
+    pub fn key(_: *Self, _: c_int, _: c_int, _: bool) !void {}
 
     pub fn char(_: *Self, _: u32, _: i32) !void {}
 
-    pub fn click(_: *Self, _: vecs.Vector2) !void {}
+    pub fn click(self: *Self, pos: vecs.Vector2) !void {
+        const idx: usize = @intFromFloat(pos.x / self.singleWidth);
+
+        try self.buttons[idx].calls(self.data);
+        try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
+    }
 
     pub fn deinit(self: *Self) !void {
-        allocator.alloc.free(self.path);
         allocator.alloc.destroy(self);
     }
 };

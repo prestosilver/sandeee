@@ -14,6 +14,10 @@ const tex = @import("../util/texture.zig");
 const c = @import("../c.zig");
 const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
+const popups = @import("../drawers/popup2d.zig");
+const winEvs = @import("../events/window.zig");
+const systemEvs = @import("../events/system.zig");
+const events = @import("../util/events.zig");
 
 const SCROLL = 30;
 
@@ -238,11 +242,60 @@ pub const ExplorerData = struct {
         _ = self;
     }
 
-    pub fn key(self: *Self, keycode: i32, _: i32, down: bool) void {
+    const tmpFuncs = struct {
+        fn yes(data: *align(@alignOf(Self)) anyopaque) anyerror!void {
+            const self = @as(*Self, @ptrCast(data));
+
+            // TODO: confirm
+            const icons = try self.getIcons();
+            defer allocator.alloc.free(icons);
+
+            self.shell.root.removeFile(icons[self.selected - 1].name) catch |err| {
+                switch (err) {
+                    error.FileNotFound => return,
+                    else => return err,
+                }
+            };
+        }
+
+        fn no(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
+    };
+
+    pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (self.shell.vm != null) return;
         if (!down) return;
 
         switch (keycode) {
+            c.GLFW_KEY_DELETE => {
+                const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
+                adds.* = .{
+                    .data = self,
+                    .message = "Are you sure you want to delete this file.",
+                    .buttons = &.{
+                        .{
+                            .text = "Yes",
+                            .calls = @as(*const fn (*anyopaque) anyerror!void, @ptrCast(&tmpFuncs.yes)),
+                        },
+                        .{
+                            .text = "No",
+                            .calls = @as(*const fn (*anyopaque) anyerror!void, @ptrCast(&tmpFuncs.no)),
+                        },
+                    },
+                };
+
+                try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                    .popup = .{
+                        .texture = "win",
+                        .data = .{
+                            .title = "File Picker",
+                            .source = rect.newRect(0, 0, 1, 1),
+                            .size = vecs.newVec2(350, 125),
+                            .parentPos = undefined,
+                            .contents = popups.PopupData.PopupContents.init(adds),
+                        },
+                    },
+                });
+            },
             c.GLFW_KEY_BACKSPACE => {
                 self.shell.root = self.shell.root.parent;
                 self.selected = 0;
