@@ -111,9 +111,9 @@ pub const BarData = struct {
                 const height = font.size * 1;
                 const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i)) + std.math.floor((67 - height) / 2);
                 const text = switch (i) {
-                    0 => "Cmd",
-                    1 => "\x82\x82\x82Mail",
-                    2 => "\x82\x82\x82DT",
+                    0 => "Launc\x82\x82\x82",
+                    1 => "Cmd",
+                    2 => "\x82\x82\x82Mail",
                     3 => "Files",
                     4 => "Xplore",
                     5 => "Settings",
@@ -179,7 +179,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.cmd.new(),
+                                .contents = try wins.apps.new(shader),
                                 .active = true,
                             });
 
@@ -193,7 +193,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.email.new(shader),
+                                .contents = try wins.cmd.new(),
                                 .active = true,
                             });
 
@@ -207,7 +207,7 @@ pub const BarData = struct {
                                     .w = 1.0,
                                     .h = 1.0,
                                 },
-                                .contents = try wins.editor.new(shader),
+                                .contents = try wins.email.new(shader),
                                 .active = true,
                             });
 
@@ -341,13 +341,13 @@ pub const BarData = struct {
 
                 switch (i) {
                     0 => {
-                        try addQuad(&result, 5, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 8, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     1 => {
-                        try addQuad(&result, 7, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 5, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     2 => {
-                        try addQuad(&result, 8, iconpos, rect.newRect(0, 0, 1, 1));
+                        try addQuad(&result, 7, iconpos, rect.newRect(0, 0, 1, 1));
                     },
                     3 => {
                         try addQuad(&result, 6, iconpos, rect.newRect(0, 0, 1, 1));
