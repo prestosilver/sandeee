@@ -435,6 +435,12 @@ fn parseFactor(buff, idx, stack, varTable, isLib) {
             return result;
         }
     }
+    
+    if (word == "$") {
+       result = parseFactor(buff, idx, stack, varTable, isLib);
+
+       return result & "sys 15\n";
+    }
 
     if (word == "@") {
        result = parseFactor(buff, idx, stack, varTable, isLib);
@@ -593,6 +599,11 @@ fn parseExpression(buff, idx, stack, varTable, isLib) {
             term = parseSum(buff, idx, stack, varTable, isLib);
             result &= term;
             result &= "eq\n";
+            if (stack != 255) stack = stack - 1;
+        } else if (word == ":=") {
+            term = parseSum(buff, idx, stack, varTable, isLib);
+            result &= term;
+            result &= "sys 16\n";
             if (stack != 255) stack = stack - 1;
         } else if (word == "<") {
             term = parseSum(buff, idx, stack, varTable, isLib);

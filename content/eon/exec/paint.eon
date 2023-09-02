@@ -24,7 +24,7 @@ fn setPixel(x, y, color) {
 
     var xs = toShort(x);
     var ys = toShort(y);
-    
+
     write(file, ($texture) & xs & ys & color);
 
     close(file);
