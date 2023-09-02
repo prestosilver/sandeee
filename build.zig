@@ -34,9 +34,28 @@ const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
 // the website
 const wwwFiles = [_]WWWStepData{
-    .{ .inputFiles = "content/eon/exec/pong.eon:/exec/pong.eep;content/images/pong.png:/cont/imgs/pong.eia;content/audio/pong-blip.wav:/cont/snds/pong-blip.era", .outputFile = "www/downloads/games/pong.epk", .converter = epk.convert },
-    .{ .inputFiles = "content/eon/exec/connectris.eon:/exec/connectris.eep;content/images/connectris.png:/cont/imgs/connectris.eia", .outputFile = "www/downloads/games/connectris.epk", .converter = epk.convert },
-    .{ .inputFiles = "content/eon/exec/paint.eon:/exec/paint.eep;content/images/transparent.png:/cont/imgs/transparent.eia", .outputFile = "www/downloads/tools/paint.epk", .converter = epk.convert },
+    .{
+        .inputFiles = "content/eon/exec/pong.eon:/exec/pong.eep;" ++
+            "content/images/pong.png:/cont/imgs/pong.eia;" ++
+            "content/audio/pong-blip.wav:/cont/snds/pong-blip.era;" ++
+            "content/elns/Pong.eln:/conf/apps/Pong.eln",
+        .outputFile = "www/downloads/games/pong.epk",
+        .converter = epk.convert,
+    },
+    .{
+        .inputFiles = "content/eon/exec/connectris.eon:/exec/connectris.eep;" ++
+            "content/images/connectris.png:/cont/imgs/connectris.eia;" ++
+            "content/elns/Connectris.eln:/conf/apps/Connectris.eln",
+        .outputFile = "www/downloads/games/connectris.epk",
+        .converter = epk.convert,
+    },
+    .{
+        .inputFiles = "content/eon/exec/paint.eon:/exec/paint.eep;" ++
+            "content/images/transparent.png:/cont/imgs/transparent.eia;" ++
+            "content/elns/Paint.eln:/conf/apps/Paint.eln",
+        .outputFile = "www/downloads/tools/paint.epk",
+        .converter = epk.convert,
+    },
 };
 
 // www data

@@ -88,6 +88,19 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             continue;
         }
 
+        if (std.mem.eql(u8, ext, ".eln")) {
+            const data = try std.fs.cwd().readFileAlloc(alloc, item[0..idx], 100);
+            defer alloc.free(data);
+
+            const dataLen: u16 = @intCast(data.len);
+
+            try result.append(std.mem.asBytes(&dataLen)[1]);
+            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.appendSlice(data);
+
+            continue;
+        }
+
         return error.BadInput;
     }
 
