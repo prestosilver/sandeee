@@ -36,6 +36,12 @@ pub const VMManager = struct {
         };
     }
 
+    pub fn deinit() void {
+        instance.vms.deinit();
+        instance.results.deinit();
+        instance.threads.deinit();
+    }
+
     pub const VMStats = struct {
         id: usize,
         name: []const u8,

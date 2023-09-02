@@ -7,8 +7,6 @@ const vmManager = @import("../system/vmmanager.zig");
 
 const DISK = "headless.eee";
 
-var vm_manager: *vmManager.VMManager = undefined;
-
 pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.File) anyerror!void {
     const diskpath = try fm.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
@@ -43,7 +41,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
                 _ = try stdout.write("");
             }
 
-            try vm_manager.update();
+            try vmManager.VMManager.instance.update();
 
             if (mainShell.vm == null) {
                 _ = try stdout.write("\n");
@@ -104,10 +102,18 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
         }
     }
 
+    if (files.rootOut) |rootOut|
+        allocator.alloc.free(rootOut);
+
     return;
 }
 
 test "Headless scripts" {
+    vmManager.VMManager.init();
+    defer vmManager.VMManager.deinit();
+
+    vmManager.VMManager.vm_time = 1.0;
+
     var logging = try std.fs.cwd().createFile("zig-out/test_output.md", .{});
     defer logging.close();
 

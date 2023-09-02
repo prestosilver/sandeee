@@ -14,7 +14,7 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const c = @import("../c.zig");
 
-const MAX_SIZE = 10000;
+const MAX_SIZE = 100000;
 
 pub const CMDData = struct {
     const Self = @This();

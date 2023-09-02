@@ -266,15 +266,19 @@ pub const VM = struct {
                 try stream.?.Close();
         }
 
-        for (self.args, 0..) |_, idx| {
-            self.allocator.free(self.args[idx]);
-        }
+        for (self.args) |*item|
+            self.allocator.free(item.*);
+
+        for (self.heap) |item|
+            switch (item) {
+                .string => |v| self.allocator.free(v),
+                else => {},
+            };
 
         var miscIter = self.miscData.iterator();
 
-        while (miscIter.next()) |entry| {
+        while (miscIter.next()) |entry|
             self.allocator.free(entry.value_ptr.*);
-        }
 
         self.allocator.free(self.name);
         self.allocator.free(self.args);
@@ -878,6 +882,8 @@ pub const VM = struct {
                         },
                         // panic
                         128 => {
+                            if (@import("builtin").is_test)
+                                return error.InvalidSys;
                             if (!windowedState.GSWindowed.globalSelf.debug_enabled)
                                 return error.InvalidSys;
 
