@@ -183,6 +183,7 @@ pub const VMData = struct {
     }
 
     pub fn focus(_: *Self) !void {}
+    pub fn refresh(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
         self.flip();

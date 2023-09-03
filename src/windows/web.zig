@@ -880,6 +880,7 @@ pub const WebData = struct {
     }
 
     pub fn focus(_: *Self) !void {}
+    pub fn refresh(_: *Self) !void {}
 
     pub fn moveResize(self: *Self, _: rect.Rectangle) !void {
         if (self.loading) return;

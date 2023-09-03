@@ -48,6 +48,8 @@ pub const LauncherData = struct {
     selected: usize = 0,
     lastAction: ?LauncherMouseAction = null,
 
+    icon_data: []const LauncherIcon,
+
     pub fn getIcons(_: *Self) ![]const LauncherIcon {
         const folder = files.root.getFolder("conf/apps") catch
             return &.{};
@@ -86,6 +88,11 @@ pub const LauncherData = struct {
         return result;
     }
 
+    pub fn refresh(self: *Self) !void {
+        allocator.alloc.free(self.icon_data);
+        self.icon_data = try self.getIcons();
+    }
+
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
@@ -110,12 +117,9 @@ pub const LauncherData = struct {
         var x: f32 = 0;
         var y: f32 = -props.scroll.?.value + 0;
 
-        const icons = try self.getIcons();
-        defer allocator.alloc.free(icons);
-
         const hidden = conf.SettingManager.instance.getBool("explorer_hidden");
 
-        for (icons, 0..) |icon, idx| {
+        for (self.icon_data, 0..) |icon, idx| {
             if (icon.name.len == 0) continue;
             if (!hidden and icon.name[0] == '_') continue;
 
@@ -169,6 +173,7 @@ pub const LauncherData = struct {
 
     pub fn deinit(self: *Self) !void {
         try self.shell.deinit();
+        allocator.alloc.free(self.icon_data);
         allocator.alloc.destroy(self);
     }
 
@@ -222,6 +227,8 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(LauncherData);
 
     self.* = .{
+        .icon_data = try allocator.alloc.alloc(LauncherData.LauncherIcon, 0),
+
         .gray = sprite.Sprite.new("ui", sprite.SpriteData.new(
             rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(72.0, 72.0),

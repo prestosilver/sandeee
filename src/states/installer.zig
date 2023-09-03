@@ -290,6 +290,8 @@ pub const GSInstall = struct {
     }
 
     pub fn deinit(_: *Self) !void {}
+
+    pub fn refresh(_: *Self) !void {}
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
     pub fn mousepress(_: *Self, _: c_int) !void {}
     pub fn mouserelease(_: *Self) !void {}

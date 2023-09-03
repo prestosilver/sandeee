@@ -7,6 +7,7 @@ pub const GameState = struct {
     pub const VTable = struct {
         setup: *const fn (*anyopaque) anyerror!void,
         deinit: *const fn (*anyopaque) anyerror!void,
+        refresh: *const fn (*anyopaque) anyerror!void,
         draw: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
         update: *const fn (*anyopaque, f32) anyerror!void,
         keypress: *const fn (*anyopaque, c_int, c_int, bool) anyerror!void,
@@ -31,6 +32,10 @@ pub const GameState = struct {
         if (state.isSetup)
             try state.vtable.deinit(state.ptr);
         state.isSetup = false;
+    }
+
+    pub fn refresh(state: *Self) anyerror!void {
+        return state.vtable.refresh(state.ptr);
     }
 
     pub fn draw(state: *Self, size: vecs.Vector2) anyerror!void {
@@ -85,6 +90,12 @@ pub const GameState = struct {
                 return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});
             }
 
+            fn refreshImpl(pointer: *anyopaque) anyerror!void {
+                const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                return @call(.always_inline, ptr_info.Pointer.child.refresh, .{self});
+            }
+
             fn drawImpl(pointer: *anyopaque, size: vecs.Vector2) anyerror!void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
@@ -136,6 +147,7 @@ pub const GameState = struct {
             const vtable = VTable{
                 .setup = setupImpl,
                 .deinit = deinitImpl,
+                .refresh = refreshImpl,
                 .draw = drawImpl,
                 .update = updateImpl,
                 .keypress = keypressImpl,

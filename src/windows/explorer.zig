@@ -50,6 +50,7 @@ pub const ExplorerData = struct {
     focused: ?u64 = null,
     selected: ?usize = null,
     lastAction: ?ExplorerMouseAction = null,
+    icon_data: []const ExplorerIcon,
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
         const subFolders = try self.shell.root.getFolders();
@@ -107,12 +108,9 @@ pub const ExplorerData = struct {
         var x: f32 = 0;
         var y: f32 = -props.scroll.?.value + 36;
 
-        const icons = try self.getIcons();
-        defer allocator.alloc.free(icons);
-
         const hidden = conf.SettingManager.instance.getBool("explorer_hidden");
 
-        for (icons, 0..) |icon, idx| {
+        for (self.icon_data, 0..) |icon, idx| {
             if (icon.name.len == 0) continue;
             if (!hidden and icon.name[0] == '_') continue;
 
@@ -145,16 +143,20 @@ pub const ExplorerData = struct {
                             self.selected = idx;
                         },
                         .DoubleLeft => {
+                            self.lastAction = null;
+
                             const newPath = self.shell.root.getFolder(icon.name) catch null;
                             if (newPath != null) {
                                 self.shell.root = newPath.?;
+                                try self.refresh();
                                 self.selected = null;
                             } else {
                                 _ = self.shell.runBg(icon.name) catch {
                                     //TODO: popup
                                 };
                             }
-                            self.lastAction = null;
+
+                            return;
                         },
                     }
                 }
@@ -194,6 +196,7 @@ pub const ExplorerData = struct {
 
     pub fn deinit(self: *Self) !void {
         try self.shell.deinit();
+        allocator.alloc.free(self.icon_data);
         allocator.alloc.destroy(self);
     }
 
@@ -206,6 +209,7 @@ pub const ExplorerData = struct {
         if (mousepos.y < 36) {
             if (rect.newRect(0, 0, 28, 28).contains(mousepos)) {
                 self.shell.root = self.shell.root.parent;
+                try self.refresh();
                 self.selected = null;
             }
 
@@ -232,25 +236,21 @@ pub const ExplorerData = struct {
         }
     }
 
+    pub fn char(_: *Self, _: u32, _: i32) !void {}
     pub fn move(_: *Self, _: f32, _: f32) !void {}
     pub fn focus(_: *Self) !void {}
     pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
 
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = mods;
-        _ = code;
-        _ = self;
+    pub fn refresh(self: *Self) !void {
+        allocator.alloc.free(self.icon_data);
+        self.icon_data = try self.getIcons();
     }
 
     const tmpFuncs = struct {
         fn yes(data: *align(@alignOf(Self)) anyopaque) anyerror!void {
             const self = @as(*Self, @ptrCast(data));
 
-            // TODO: confirm
-            const icons = try self.getIcons();
-            defer allocator.alloc.free(icons);
-
-            self.shell.root.removeFile(icons[self.selected.?].name) catch |err| {
+            self.shell.root.removeFile(self.icon_data[self.selected.?].name) catch |err| {
                 switch (err) {
                     error.FileNotFound => return,
                     else => return err,
@@ -267,10 +267,7 @@ pub const ExplorerData = struct {
 
         switch (keycode) {
             c.GLFW_KEY_DELETE => {
-                const icons = try self.getIcons();
-                defer allocator.alloc.free(icons);
-
-                if (self.selected != null and self.shell.root.getFile(icons[self.selected.?].name) catch null != null) {
+                if (self.selected != null and self.shell.root.getFile(self.icon_data[self.selected.?].name) catch null != null) {
                     const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
                     adds.* = .{
                         .data = self,
@@ -303,6 +300,7 @@ pub const ExplorerData = struct {
             },
             c.GLFW_KEY_BACKSPACE => {
                 self.shell.root = self.shell.root.parent;
+                try self.refresh();
                 self.selected = null;
             },
             else => {},
@@ -338,6 +336,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
             .root = files.home,
             .vm = null,
         },
+        .icon_data = try allocator.alloc.alloc(ExplorerData.ExplorerIcon, 0),
     };
 
     for (self.icons, 0..) |_, idx| {
@@ -353,6 +352,8 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         rect.newRect(3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
         vecs.newVec2(32.0, 32.0),
     ));
+
+    try self.refresh();
 
     return win.WindowContents.init(self, "explorer", "Files", col.newColor(1, 1, 1, 1));
 }

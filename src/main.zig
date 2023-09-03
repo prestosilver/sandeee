@@ -888,9 +888,11 @@ pub fn mainErr() anyerror!void {
         // track fps
         timer += currentTime - last_frame_time;
         if (timer > 1.00) {
+            try state.refresh();
+
             finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / timer));
             if (vmManager.VMManager.instance.vms.count() != 0 and finalFps != 0) {
-                if (fps < 55 or fps > 58) {
+                if (fps < 50 or fps > 58) {
                     const adj: f64 = std.math.clamp((@as(f64, @floatFromInt(fps)) / timer) / 58.0, 0.95, 1.05);
                     vmManager.VMManager.vm_time = std.math.clamp(vmManager.VMManager.vm_time * adj, 0.1, 0.9);
                 }

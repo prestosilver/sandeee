@@ -70,6 +70,7 @@ pub const GSCrash = struct {
     }
 
     pub fn update(_: *Self, _: f32) !void {}
+    pub fn refresh(_: *Self) !void {}
 
     pub fn keypress(_: *Self, key: c_int, _: c_int, down: bool) !void {
         if (down and key == c.GLFW_KEY_ESCAPE)

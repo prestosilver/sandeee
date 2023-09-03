@@ -314,6 +314,12 @@ pub const GSWindowed = struct {
         files.deinit();
     }
 
+    pub fn refresh(self: *Self) !void {
+        for (self.windows.items) |*window| {
+            try window.data.refresh();
+        }
+    }
+
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         if (self.openWindow.x > size.x - 500) self.openWindow.x = 100;
         if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;

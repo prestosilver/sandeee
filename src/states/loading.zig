@@ -167,6 +167,7 @@ pub const GSLoading = struct {
             self.done.storeUnchecked(true);
     }
 
+    pub fn refresh(_: *Self) !void {}
     pub fn keypress(_: *Self, _: c_int, _: c_int, _: bool) !void {}
     pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
     pub fn mousepress(_: *Self, _: c_int) !void {}

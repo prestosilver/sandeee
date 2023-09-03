@@ -76,6 +76,7 @@ pub const WindowContents = struct {
 
         moveResize: *const fn (*anyopaque, rect.Rectangle) anyerror!void,
 
+        refresh: *const fn (*anyopaque) anyerror!void,
         focus: *const fn (*anyopaque) anyerror!void,
         deinit: *const fn (*anyopaque) anyerror!void,
     };
@@ -178,6 +179,10 @@ pub const WindowContents = struct {
         return self.vtable.focus(self.ptr);
     }
 
+    pub fn refresh(self: *Self) !void {
+        return self.vtable.refresh(self.ptr);
+    }
+
     pub fn moveResize(self: *Self, bnds: rect.Rectangle) !void {
         return self.vtable.moveResize(self.ptr, bnds);
     }
@@ -255,6 +260,12 @@ pub const WindowContents = struct {
                 return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});
             }
 
+            fn refreshImpl(pointer: *anyopaque) !void {
+                const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                return @call(.always_inline, ptr_info.Pointer.child.refresh, .{self});
+            }
+
             const vtable = VTable{
                 .draw = drawImpl,
                 .key = keyImpl,
@@ -265,6 +276,7 @@ pub const WindowContents = struct {
                 .move = moveImpl,
                 .focus = focusImpl,
                 .deinit = deinitImpl,
+                .refresh = refreshImpl,
             };
         };
 
@@ -512,6 +524,10 @@ pub const WindowData = struct {
         bnds.h -= 36;
 
         return self.contents.char(codepoint, mods);
+    }
+
+    pub fn refresh(self: *WindowData) !void {
+        return self.contents.refresh();
     }
 
     pub fn update(self: *WindowData) void {
