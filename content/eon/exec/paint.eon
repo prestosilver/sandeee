@@ -29,10 +29,6 @@ fn setPixel(x, y, color) {
 
     close(file);
     
-    file = open("/fake/gfx/upload");
-    write(file, $texture);
-    close(file);
-
     return 0;
 }
 
@@ -101,7 +97,7 @@ fn getclick() {
     asm "push \"/fake/inp/mouse\"";
     asm "sys 3";
     asm "copy 0";
-    asm "push 100000";
+    asm "push 100";
     asm "sys 4";
     asm "copy 1";
     asm "sys 7";
@@ -312,7 +308,7 @@ fn main() {
         cont = _TextureRead($file_name);
     } else {
         file_name := "image.eia";
-        cont = textureNew(150, 150);
+        cont = textureNew(300, 300);
     }
 
     _TextureUpload(cont, $texture);
@@ -326,7 +322,7 @@ fn main() {
 
     var imgx = 0;
     var imgy = 0;
-    var imgs = 2000;
+    var imgs = 1500;
 
     while (_WindowOpen()) {
         processClick(imgx, imgy, imgs, w, h, x, y);
