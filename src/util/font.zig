@@ -213,7 +213,7 @@ pub const Font = struct {
                 continue;
             }
 
-            const char = self.chars[ach];
+            const char = &self.chars[ach];
             const w = char.size.x * params.scale;
             const h = char.size.y * params.scale;
             var xpos = pos.x + char.bearing.x * params.scale;
@@ -332,7 +332,7 @@ pub const Font = struct {
                 continue;
             }
 
-            const char = self.chars[ach];
+            const char = &self.chars[ach];
             if (ach != ' ') {
                 if (params.wrap != null and pos.x + char.ax >= params.wrap.?) {
                     maxx = @max(maxx, pos.x);

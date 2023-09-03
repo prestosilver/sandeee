@@ -91,7 +91,10 @@ pub const SpriteBatch = struct {
             newEntry.clear == null and sb.queue[sb.queue.len - 1].clear == null)
         {
             try sb.queue[sb.queue.len - 1].verts.array.appendSlice(newEntry.verts.items());
+
+            allocator.alloc.free(newEntry.texture);
             newEntry.verts.deinit();
+
             return;
         }
 
@@ -147,14 +150,14 @@ pub const SpriteBatch = struct {
                     c.glDisable(c.GL_SCISSOR_TEST);
                 }
 
+                cscissor = entry.scissor;
+
                 if (entry.clear) |clearColor| {
                     c.glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
                     c.glClear(c.GL_COLOR_BUFFER_BIT);
                 }
 
                 if (entry.verts.items().len == 0) continue;
-
-                cscissor = entry.scissor;
 
                 const targTex = if (!std.mem.eql(u8, entry.texture, ""))
                     texMan.TextureManager.instance.get(entry.texture) orelse

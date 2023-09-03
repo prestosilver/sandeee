@@ -52,13 +52,13 @@ pub const VertArray = struct {
     }
 
     pub inline fn setLen(va: *VertArray, len: usize) void {
-        va.array.shrinkAndFree(len);
+        va.array.shrinkRetainingCapacity(len);
     }
 
     pub inline fn append(va: *VertArray, pos: vecs.Vector3, uv: vecs.Vector2, color: cols.Color) !void {
         try va.array.append(Vert{
-            .x = @round(pos.x),
-            .y = @round(pos.y),
+            .x = pos.x,
+            .y = pos.y,
             .z = pos.z,
             .u = uv.x,
             .v = uv.y,

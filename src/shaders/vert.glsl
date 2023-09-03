@@ -11,7 +11,7 @@ out vec4 tintColor;
 
 void main()
 {
-    gl_Position = projection * vec4(aVertex.xyz, 1.0);
+    gl_Position = projection * vec4(round(aVertex.xyz), 1.0);
     texCoords = aTexCoords;
     tintColor = aColor;
 }
