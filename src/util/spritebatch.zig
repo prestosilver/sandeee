@@ -35,7 +35,6 @@ pub const QueueEntry = struct {
     texture: []const u8,
     verts: va.VertArray,
     scissor: ?rect.Rectangle = null,
-    hash: ?u32 = null,
     clear: ?col.Color = null,
 
     pub fn GetHash(entry: *QueueEntry) void {
@@ -85,6 +84,16 @@ pub const SpriteBatch = struct {
 
         sb.queue_lock.lock();
         defer sb.queue_lock.unlock();
+
+        if (sb.queue.len != 0 and std.mem.eql(u8, sb.queue[sb.queue.len - 1].texture, newEntry.texture) and
+            sb.queue[sb.queue.len - 1].shader.id == newEntry.shader.id and
+            newEntry.scissor == null and sb.queue[sb.queue.len - 1].scissor == null and
+            newEntry.clear == null and sb.queue[sb.queue.len - 1].clear == null)
+        {
+            try sb.queue[sb.queue.len - 1].verts.array.appendSlice(newEntry.verts.items());
+            newEntry.verts.deinit();
+            return;
+        }
 
         sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
         sb.queue[sb.queue.len - 1] = newEntry;
@@ -143,6 +152,8 @@ pub const SpriteBatch = struct {
                     c.glClear(c.GL_COLOR_BUFFER_BIT);
                 }
 
+                if (entry.verts.items().len == 0) continue;
+
                 cscissor = entry.scissor;
 
                 const targTex = if (!std.mem.eql(u8, entry.texture, ""))
@@ -163,9 +174,7 @@ pub const SpriteBatch = struct {
                 ctex = targTex.tex;
                 cshader = entry.shader.id;
 
-                if (entry.verts.items().len != 0) {
-                    c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(entry.verts.items().len * @sizeOf(va.Vert))), entry.verts.items().ptr, c.GL_STREAM_DRAW);
-                }
+                c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(entry.verts.items().len * @sizeOf(va.Vert))), entry.verts.items().ptr, c.GL_STREAM_DRAW);
 
                 c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
                 c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(3 * @sizeOf(f32)));

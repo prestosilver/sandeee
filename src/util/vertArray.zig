@@ -39,7 +39,7 @@ pub const VertArray = struct {
         };
     }
 
-    pub inline fn deinit(va: *VertArray) void {
+    pub inline fn deinit(va: *const VertArray) void {
         va.array.deinit();
     }
 
