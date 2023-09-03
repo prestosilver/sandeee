@@ -48,7 +48,7 @@ pub const ExplorerData = struct {
     shell: shell.Shell,
 
     focused: ?u64 = null,
-    selected: usize = 0,
+    selected: ?usize = null,
     lastAction: ?ExplorerMouseAction = null,
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
@@ -134,7 +134,7 @@ pub const ExplorerData = struct {
 
                 try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-                if (idx + 1 == self.selected)
+                if (self.selected != null and idx == self.selected.?)
                     try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
             }
 
@@ -142,13 +142,13 @@ pub const ExplorerData = struct {
                 if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
                     switch (self.lastAction.?.kind) {
                         .SingleLeft => {
-                            self.selected = idx + 1;
+                            self.selected = idx;
                         },
                         .DoubleLeft => {
                             const newPath = self.shell.root.getFolder(icon.name) catch null;
                             if (newPath != null) {
                                 self.shell.root = newPath.?;
-                                self.selected = 0;
+                                self.selected = null;
                             } else {
                                 _ = self.shell.runBg(icon.name) catch {
                                     //TODO: popup
@@ -206,7 +206,7 @@ pub const ExplorerData = struct {
         if (mousepos.y < 36) {
             if (rect.newRect(0, 0, 28, 28).contains(mousepos)) {
                 self.shell.root = self.shell.root.parent;
-                self.selected = 0;
+                self.selected = null;
             }
 
             return;
@@ -250,7 +250,7 @@ pub const ExplorerData = struct {
             const icons = try self.getIcons();
             defer allocator.alloc.free(icons);
 
-            self.shell.root.removeFile(icons[self.selected - 1].name) catch |err| {
+            self.shell.root.removeFile(icons[self.selected.?].name) catch |err| {
                 switch (err) {
                     error.FileNotFound => return,
                     else => return err,
@@ -267,38 +267,43 @@ pub const ExplorerData = struct {
 
         switch (keycode) {
             c.GLFW_KEY_DELETE => {
-                const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
-                adds.* = .{
-                    .data = self,
-                    .message = "Are you sure you want to delete this file.",
-                    .buttons = &.{
-                        .{
-                            .text = "Yes",
-                            .calls = @as(*const fn (*anyopaque) anyerror!void, @ptrCast(&tmpFuncs.yes)),
-                        },
-                        .{
-                            .text = "No",
-                            .calls = @as(*const fn (*anyopaque) anyerror!void, @ptrCast(&tmpFuncs.no)),
-                        },
-                    },
-                };
+                const icons = try self.getIcons();
+                defer allocator.alloc.free(icons);
 
-                try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
-                    .popup = .{
-                        .texture = "win",
-                        .data = .{
-                            .title = "File Picker",
-                            .source = rect.newRect(0, 0, 1, 1),
-                            .size = vecs.newVec2(350, 125),
-                            .parentPos = undefined,
-                            .contents = popups.PopupData.PopupContents.init(adds),
+                if (self.selected != null and self.shell.root.getFile(icons[self.selected.?].name) catch null != null) {
+                    const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
+                    adds.* = .{
+                        .data = self,
+                        .message = "Are you sure you want to delete this file.",
+                        .buttons = &.{
+                            .{
+                                .text = "Yes",
+                                .calls = @as(*const fn (*anyopaque) anyerror!void, @ptrCast(&tmpFuncs.yes)),
+                            },
+                            .{
+                                .text = "No",
+                                .calls = @as(*const fn (*anyopaque) anyerror!void, @ptrCast(&tmpFuncs.no)),
+                            },
                         },
-                    },
-                });
+                    };
+
+                    try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                        .popup = .{
+                            .texture = "win",
+                            .data = .{
+                                .title = "File Picker",
+                                .source = rect.newRect(0, 0, 1, 1),
+                                .size = vecs.newVec2(350, 125),
+                                .parentPos = undefined,
+                                .contents = popups.PopupData.PopupContents.init(adds),
+                            },
+                        },
+                    });
+                }
             },
             c.GLFW_KEY_BACKSPACE => {
                 self.shell.root = self.shell.root.parent;
-                self.selected = 0;
+                self.selected = null;
             },
             else => {},
         }

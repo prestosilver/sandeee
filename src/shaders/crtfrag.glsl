@@ -84,15 +84,15 @@ vec4 get_color_pos(vec2 pos) {
     int index = x + y * 2;
     float limit = 0.0;
 
-    if (x < 8) {
-        if (index == 0) limit = 0.25;
-        if (index == 1) limit = 0.75;
-        if (index == 2) limit = 1.00;
-        if (index == 3) limit = 0.50;
-    }
+    if (index == 0) limit = 0.25;
+    if (index == 1) limit = 0.75;
+    if (index == 2) limit = 1.00;
+    if (index == 3) limit = 0.50;
 
     vec3 act = round(result * COLOR_STEPS) / COLOR_STEPS;
     vec3 other;
+
+    // TODO: branchless
     other.r = act.r < result.r ? act.r + 1.0 / COLOR_STEPS : act.r - 1.0 / COLOR_STEPS;
     other.g = act.g < result.g ? act.g + 1.0 / COLOR_STEPS : act.g - 1.0 / COLOR_STEPS;
     other.b = act.b < result.b ? act.b + 1.0 / COLOR_STEPS : act.b - 1.0 / COLOR_STEPS;
