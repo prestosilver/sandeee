@@ -885,12 +885,15 @@ pub fn mainErr() anyerror!void {
             try state.draw(gfx.Context.instance.size);
         }
 
+        // track fps
         timer += currentTime - last_frame_time;
         if (timer > 1.00) {
             finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / timer));
             if (vmManager.VMManager.instance.vms.count() != 0 and finalFps != 0) {
-                const adj: f64 = std.math.clamp((@as(f64, @floatFromInt(fps)) / timer) / 58.0, 0.95, 1.05);
-                vmManager.VMManager.vm_time = std.math.clamp(vmManager.VMManager.vm_time * adj, 0.1, 0.9);
+                if (fps < 55 or fps > 58) {
+                    const adj: f64 = std.math.clamp((@as(f64, @floatFromInt(fps)) / timer) / 58.0, 0.95, 1.05);
+                    vmManager.VMManager.vm_time = std.math.clamp(vmManager.VMManager.vm_time * adj, 0.1, 0.9);
+                }
             }
 
             fps = 0;

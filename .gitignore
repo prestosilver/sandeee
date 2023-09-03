@@ -20,3 +20,4 @@ arm_pacman*
 plans/plans.plan_*
 deps/steam_sdk
 IVERSION
+neovide*
