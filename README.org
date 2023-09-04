@@ -1,4 +1,4 @@
-#+TITLE: sandEEEos
+#+TITLE: SandEEE OS
 
 * What is sandeee
 Sandeee is a game! :open_mouth:

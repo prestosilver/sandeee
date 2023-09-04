@@ -1,6 +1,8 @@
 #include "/libs/inc/libload.eon"
 #include "/libs/inc/sys.eon"
 
+var tex; 
+
 fn processArgs() {
     var file = getArg(1);
 
@@ -11,7 +13,7 @@ fn processArgs() {
     return file;
 }
 
-fn render(win, tex, w, h) {
+fn render(win, w, h) {
     var source = _MakeRect(0, 0, 1024, 1024);
     var win_w = _WindowWidth(win);
     var win_h = _WindowHeight(win);
@@ -38,7 +40,7 @@ fn render(win, tex, w, h) {
 
     var dest = _MakeRect(target_x / 2, target_y / 2, target_w, target_h);
     
-    _WindowRender(win, tex, dest, source);
+    _WindowRender(win, $tex, dest, source);
     _WindowFlip(win);
 
     return 0;
@@ -51,9 +53,11 @@ fn main() {
 
     var input = processArgs();
     var window = _WindowCreate();
-    var texture = _TextureCreate();
     var content = _TextureRead(input);
-    _TextureUpload(content, texture);
+    
+    tex := _TextureCreate();
+
+    _TextureUpload(content, $tex);
 
     _SetWindowTitle(window, "PixEEE - " & input);
 
@@ -61,10 +65,10 @@ fn main() {
     var h = _TextureHeight(content);
 
     while (_WindowOpen()) {
-        render(window, texture, w * 2, h * 2);
+        render(window, w * 2, h * 2);
     }
 
-    _TextureDestroy(texture);
+    _TextureDestroy($tex);
     _WindowDestroy(window);
 
     return 0;
