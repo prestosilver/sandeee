@@ -139,6 +139,8 @@ pub const GSWindowed = struct {
 
         if (draggingIdx) |idx| globalSelf.dragging = &globalSelf.windows.items[idx];
 
+        try globalSelf.windows.items[globalSelf.windows.items.len - 1].data.refresh();
+
         return;
     }
 
