@@ -246,8 +246,8 @@ pub const ExplorerData = struct {
         self.icon_data = try self.getIcons();
     }
 
-    const tmpFuncs = struct {
-        fn yes(data: *align(@alignOf(Self)) anyopaque) anyerror!void {
+    pub const confirmData = struct {
+        pub fn yes(data: *align(@alignOf(Self)) anyopaque) anyerror!void {
             const self = @as(*Self, @ptrCast(data));
 
             self.shell.root.removeFile(self.icon_data[self.selected.?].name) catch |err| {
@@ -258,7 +258,7 @@ pub const ExplorerData = struct {
             };
         }
 
-        fn no(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
+        pub fn no(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
     };
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
@@ -272,16 +272,7 @@ pub const ExplorerData = struct {
                     adds.* = .{
                         .data = self,
                         .message = "Are you sure you want to delete this file.",
-                        .buttons = &.{
-                            .{
-                                .text = "Yes",
-                                .calls = @as(*const fn (*anyopaque) anyerror!void, @ptrCast(&tmpFuncs.yes)),
-                            },
-                            .{
-                                .text = "No",
-                                .calls = @as(*const fn (*anyopaque) anyerror!void, @ptrCast(&tmpFuncs.no)),
-                            },
-                        },
+                        .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(confirmData),
                     };
 
                     try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{

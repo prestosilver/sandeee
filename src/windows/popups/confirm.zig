@@ -20,6 +20,48 @@ pub const PopupConfirm = struct {
         calls: *const fn (*anyopaque) anyerror!void,
     };
 
+    pub fn createButtonsFromStruct(comptime T: anytype) []const ConfirmButton {
+        const typeInfo = @typeInfo(T);
+        if (typeInfo != .Struct)
+            @compileError("expected struct");
+
+        const len: usize = comptime blk: {
+            var len: usize = 0;
+
+            inline for (typeInfo.Struct.decls) |decl| {
+                const info = @typeInfo(@TypeOf(@field(T, decl.name)));
+                if (info != .Fn) {
+                    continue;
+                }
+
+                len += 1;
+            }
+            break :blk len;
+        };
+
+        const result: [len]ConfirmButton = comptime blk: {
+            var res: [len]ConfirmButton = undefined;
+
+            var idx = 0;
+
+            inline for (typeInfo.Struct.decls) |decl| {
+                const info = @typeInfo(@TypeOf(@field(T, decl.name)));
+                if (info != .Fn)
+                    continue;
+
+                res[idx] = .{
+                    .text = decl.name,
+                    .calls = @ptrCast(&@field(T, decl.name)),
+                };
+
+                idx += 1;
+            }
+            break :blk res;
+        };
+
+        return &result;
+    }
+
     data: *anyopaque,
     message: []const u8,
     buttons: []const ConfirmButton,
