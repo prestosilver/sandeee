@@ -542,7 +542,20 @@ pub fn main() void {
     };
 
     mainErr() catch |err| {
-        @panic(@errorName(err));
+        const name = switch (err) {
+            error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",
+            error.AudioInit => "Your audio hardware might not support SandEEE.",
+            error.WrongSize, error.TextureMissing => "Failed to load an internal texture.",
+            error.LoadError => "Failed to load something.",
+            error.NoProfFolder => "There is no prof folder on your disk.",
+            error.NoExecFolder => "There is no exec folder on your disk.",
+            error.BadFile => "Your disk is problaby corrupt.",
+            else => "PLEASE REPORT THIS ERROR.",
+        };
+
+        const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
+
+        @panic(msg);
     };
 }
 

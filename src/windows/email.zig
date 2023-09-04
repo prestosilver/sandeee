@@ -313,8 +313,6 @@ const EmailData = struct {
                         const trimmed = std.mem.trimLeft(u8, vmInstance.out.items, " \n");
 
                         good = good and std.ascii.endsWithIgnoreCase(trimmed, targetText);
-                    } else {
-                        std.log.info("unknown {s}", .{name});
                     }
                 }
 

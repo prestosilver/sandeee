@@ -45,7 +45,7 @@ pub const GSLoading = struct {
     const settingspath: []const u8 = "/conf/system.cfg";
     const fontpath: []const u8 = "system_font";
     const zero: u8 = 0;
-    const delay: u64 = if (builtin.mode == .Debug) 0 else 90;
+    const delay: u64 = if (builtin.mode == .Debug) 0 else 45;
     const tdelay: u64 = if (builtin.mode == .Debug) 0 else 15;
 
     load_progress: f32 = 0,

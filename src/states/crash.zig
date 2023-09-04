@@ -29,22 +29,24 @@ pub const GSCrash = struct {
 
     pub fn deinit(_: *Self) !void {}
 
-    pub fn draw(self: *Self, _: vecs.Vector2) !void {
+    pub fn draw(self: *Self, size: vecs.Vector2) !void {
         batch.SpriteBatch.instance.scissor = null;
 
-        //try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
 
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = "ERROR:",
             .pos = vecs.newVec2(300, 100),
             .color = cols.newColor(1, 1, 1, 1),
+            .wrap = size.x - 400,
         });
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = self.message.*,
             .pos = vecs.newVec2(300, 100 + self.face.size),
             .color = cols.newColor(1, 1, 1, 1),
+            .wrap = size.x - 400,
         });
 
         const offset = self.face.sizeText(.{
@@ -59,6 +61,7 @@ pub const GSCrash = struct {
             .text = stateLine,
             .pos = vecs.newVec2(300, 100 + self.face.size * 1 + offset),
             .color = cols.newColor(1, 1, 1, 1),
+            .wrap = size.x - 400,
         });
 
         try self.face.draw(.{
@@ -66,6 +69,7 @@ pub const GSCrash = struct {
             .text = "\nTypically this problem can be solved with recovery.\nIF YOU SEE THIS YOUR FILES WERE SAVED :)",
             .pos = vecs.newVec2(300, 100 + self.face.size * 3 + offset),
             .color = cols.newColor(1, 1, 1, 1),
+            .wrap = size.x - 400,
         });
     }
 
