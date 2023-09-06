@@ -798,6 +798,9 @@ pub const GSWindowed = struct {
         }
 
         if (newTop) |top| {
+            if (self.windows.items[top].data.popup) |_|
+                return;
+
             try self.windows.items[top].data.contents.scroll(dir.x, dir.y);
         }
     }

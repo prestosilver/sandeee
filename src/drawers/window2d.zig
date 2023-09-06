@@ -57,6 +57,7 @@ pub const WindowContents = struct {
             .min = vecs.newVec2(400, 300),
             .max = null,
         },
+        close: bool = false,
 
         pub fn setTitle(self: *WindowProps, title: []const u8) !void {
             if (!std.mem.eql(u8, self.info.name, title)) {
