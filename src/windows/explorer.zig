@@ -105,71 +105,73 @@ pub const ExplorerData = struct {
             }
         }
 
-        var x: f32 = 0;
-        var y: f32 = -props.scroll.?.value + 36;
+        draw_conts: {
+            var x: f32 = 0;
+            var y: f32 = -props.scroll.?.value + 36;
 
-        const hidden = conf.SettingManager.instance.getBool("explorer_hidden");
+            const hidden = conf.SettingManager.instance.getBool("explorer_hidden");
 
-        for (self.icon_data, 0..) |icon, idx| {
-            if (icon.name.len == 0) continue;
-            if (!hidden and icon.name[0] == '_') continue;
+            for (self.icon_data, 0..) |icon, idx| {
+                if (icon.name.len == 0) continue;
+                if (!hidden and icon.name[0] == '_') continue;
 
-            const size = font.sizeText(.{
-                .text = icon.name,
-                .wrap = 100,
-            }).x;
-            const xo = (128 - size) / 2;
-
-            if (y + 64 + font.size > 0 and y < bnds.h) {
-                try font.draw(.{
-                    .shader = font_shader,
+                const size = font.sizeText(.{
                     .text = icon.name,
-                    .pos = vecs.newVec2(bnds.x + x + xo - 14, bnds.y + 64 + y + 6),
-                    .color = col.newColor(0, 0, 0, 1),
                     .wrap = 100,
-                    .maxlines = 1,
-                });
+                }).x;
+                const xo = (128 - size) / 2;
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                if (y + 64 + font.size > 0 and y < bnds.h) {
+                    try font.draw(.{
+                        .shader = font_shader,
+                        .text = icon.name,
+                        .pos = vecs.newVec2(bnds.x + x + xo - 14, bnds.y + 64 + y + 6),
+                        .color = col.newColor(0, 0, 0, 1),
+                        .wrap = 100,
+                        .maxlines = 1,
+                    });
 
-                if (self.selected != null and idx == self.selected.?)
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
-            }
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-            if (self.lastAction != null) {
-                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
-                    switch (self.lastAction.?.kind) {
-                        .SingleLeft => {
-                            self.selected = idx;
-                        },
-                        .DoubleLeft => {
-                            self.lastAction = null;
+                    if (self.selected != null and idx == self.selected.?)
+                        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                }
 
-                            const newPath = self.shell.root.getFolder(icon.name) catch null;
-                            if (newPath != null) {
-                                self.shell.root = newPath.?;
-                                try self.refresh();
-                                self.selected = null;
-                            } else {
-                                _ = self.shell.runBg(icon.name) catch {
-                                    //TODO: popup
-                                };
-                            }
+                if (self.lastAction != null) {
+                    if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
+                        switch (self.lastAction.?.kind) {
+                            .SingleLeft => {
+                                self.selected = idx;
+                            },
+                            .DoubleLeft => {
+                                self.lastAction = null;
 
-                            return;
-                        },
+                                const newPath = self.shell.root.getFolder(icon.name) catch null;
+                                if (newPath != null) {
+                                    self.shell.root = newPath.?;
+                                    try self.refresh();
+                                    self.selected = null;
+                                } else {
+                                    _ = self.shell.runBg(icon.name) catch {
+                                        //TODO: popup
+                                    };
+                                }
+
+                                break :draw_conts;
+                            },
+                        }
                     }
+                }
+
+                x += 128;
+                if (x + 128 > bnds.w) {
+                    y += 72 + font.size;
+                    x = 0;
                 }
             }
 
-            x += 128;
-            if (x + 128 > bnds.w) {
-                y += 72 + font.size;
-                x = 0;
-            }
+            props.scroll.?.maxy = y + 64 + font.size + font.size + props.scroll.?.value - bnds.h;
         }
-
-        props.scroll.?.maxy = y + 64 + font.size + font.size + props.scroll.?.value - bnds.h;
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
