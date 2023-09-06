@@ -76,6 +76,12 @@ pub const EditorData = struct {
 
         if (line.len == 0) return line;
 
+        for (line) |*ch| {
+            if (ch.* >= 0xF0) {
+                ch.* = 0x8F;
+            }
+        }
+
         for (HL_KEYWORD1) |keyword| {
             const comment = std.mem.indexOf(u8, line, COMMENT_START) orelse line.len;
 

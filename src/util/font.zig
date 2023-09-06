@@ -208,12 +208,15 @@ pub const Font = struct {
                 continue;
             }
 
-            if (ach >= 0xF0 or ach < 0x20) {
+            if (ach >= 0xF0) {
                 color = FONT_COLORS[@intCast(ach & 0x0F)];
                 continue;
             }
 
-            const char = &self.chars[ach];
+            const char = if (ach >= 0x20)
+                &self.chars[ach]
+            else
+                &self.chars[0x00];
             const w = char.size.x * params.scale;
             const h = char.size.y * params.scale;
             var xpos = pos.x + char.bearing.x * params.scale;
@@ -328,11 +331,14 @@ pub const Font = struct {
                 continue;
             }
 
-            if (ach >= 0xF0 or ach < 0x20) {
+            if (ach >= 0xF0) {
                 continue;
             }
 
-            const char = &self.chars[ach];
+            const char = if (ach >= 0x20)
+                &self.chars[ach]
+            else
+                &self.chars[0x00];
             if (ach != ' ') {
                 if (params.wrap != null and pos.x + char.ax >= params.wrap.?) {
                     maxx = @max(maxx, pos.x);
