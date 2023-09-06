@@ -51,6 +51,7 @@ pub const GSCrash = struct {
 
         const offset = self.face.sizeText(.{
             .text = self.message.*,
+            .wrap = size.x - 400,
         }).y;
 
         const stateLine = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prevState.*});
@@ -66,7 +67,7 @@ pub const GSCrash = struct {
 
         try self.face.draw(.{
             .shader = self.font_shader,
-            .text = "\nTypically this problem can be solved with recovery.\nIF YOU SEE THIS YOUR FILES WERE SAVED :)",
+            .text = "\nIF YOU SEE THIS CRASH YOUR FILES WERE SAVED :)",
             .pos = vecs.newVec2(300, 100 + self.face.size * 3 + offset),
             .color = cols.newColor(1, 1, 1, 1),
             .wrap = size.x - 400,
