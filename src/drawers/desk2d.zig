@@ -15,10 +15,14 @@ const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
+const winEvs = @import("../events/window.zig");
+const popups = @import("popup2d.zig");
 
 const SPACING = vecs.newVec2(128, 100);
 
 pub const DeskData = struct {
+    const Self = @This();
+
     sel: ?usize = null,
     shell: shell.Shell,
 
@@ -116,8 +120,30 @@ pub const DeskData = struct {
 
                     const cmd = file.name[index + 1 ..];
 
-                    _ = self.shell.run(cmd) catch {
-                        //TODO: popup
+                    _ = self.shell.runBg(cmd) catch |err| {
+                        // TODO: fix leak
+                        const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
+
+                        const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
+                        adds.* = .{
+                            .data = self,
+                            .message = message,
+                            .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
+                        };
+
+                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                            .global = true,
+                            .popup = .{
+                                .texture = "win",
+                                .data = .{
+                                    .title = "File Picker",
+                                    .source = rect.newRect(0, 0, 1, 1),
+                                    .size = vecs.newVec2(350, 125),
+                                    .parentPos = undefined,
+                                    .contents = popups.PopupData.PopupContents.init(adds),
+                                },
+                            },
+                        });
                     };
 
                     self.sel = null;
@@ -132,6 +158,10 @@ pub const DeskData = struct {
             updatePos(&position);
         }
     }
+
+    pub const errorData = struct {
+        pub fn ok(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
+    };
 
     pub fn getVerts(self: *const DeskData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(0);
