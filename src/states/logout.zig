@@ -14,6 +14,7 @@ const cols = @import("../math/colors.zig");
 const wall = @import("../drawers/wall2d.zig");
 const audio = @import("../util/audio.zig");
 const c = @import("../c.zig");
+const vmManager = @import("../system/vmmanager.zig");
 
 pub var target: enum { Quit, Bios, Update } = .Quit;
 pub var targetFile: []const u8 = "";
@@ -33,7 +34,7 @@ pub const GSLogout = struct {
 
     pub fn setup(self: *Self) !void {
         try self.audio_man.playSound(self.logout_sound.*);
-
+        try vmManager.VMManager.logout();
         self.time = 3;
     }
 

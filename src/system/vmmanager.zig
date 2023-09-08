@@ -36,6 +36,15 @@ pub const VMManager = struct {
         };
     }
 
+    pub fn logout() !void {
+        var iter = instance.vms.iterator();
+
+        while (iter.next()) |entry| {
+            try entry.value_ptr.*.deinit();
+            _ = instance.vms.remove(entry.key_ptr.*);
+        }
+    }
+
     pub fn deinit() void {
         instance.vms.deinit();
         instance.results.deinit();
