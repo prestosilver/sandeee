@@ -550,7 +550,7 @@ pub fn main() void {
             error.NoProfFolder => "There is no prof folder on your disk.",
             error.NoExecFolder => "There is no exec folder on your disk.",
             error.BadFile => "Your disk is problaby corrupt.",
-            else => "PLEASE REPORT THIS ERROR.",
+            else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
         };
 
         const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";

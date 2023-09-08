@@ -80,6 +80,10 @@ pub const ExplorerData = struct {
         return result;
     }
 
+    pub const errorData = struct {
+        pub fn ok(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
+    };
+
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
@@ -152,8 +156,29 @@ pub const ExplorerData = struct {
                                     try self.refresh();
                                     self.selected = null;
                                 } else {
-                                    _ = self.shell.runBg(icon.name) catch {
-                                        //TODO: popup
+                                    _ = self.shell.runBg(icon.name) catch |err| {
+                                        // TODO: fix leak
+                                        const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
+
+                                        const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
+                                        adds.* = .{
+                                            .data = self,
+                                            .message = message,
+                                            .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
+                                        };
+
+                                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                                            .popup = .{
+                                                .texture = "win",
+                                                .data = .{
+                                                    .title = "File Picker",
+                                                    .source = rect.newRect(0, 0, 1, 1),
+                                                    .size = vecs.newVec2(350, 125),
+                                                    .parentPos = undefined,
+                                                    .contents = popups.PopupData.PopupContents.init(adds),
+                                                },
+                                            },
+                                        });
                                     };
                                 }
 
