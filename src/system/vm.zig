@@ -1432,6 +1432,12 @@ pub const VM = struct {
     }
 
     pub fn runTime(self: *VM, ns: u64, comptime _: bool) !bool {
+        if (self.code == null) return error.InvalidASM;
+        if (self.code.?.len == 0) {
+            self.stopped = true;
+            return true;
+        }
+
         var timer = try std.time.Timer.start();
 
         timer.reset();
