@@ -455,6 +455,11 @@ pub const GSWindowed = struct {
             offset -= 1;
         }
 
+        for (self.windows.items, 0..) |*window, idx| {
+            if (window.data.contents.props.close)
+                _ = self.windows.orderedRemove(idx);
+        }
+
         self.cursor.data.index = 0;
         self.cursor.data.flip = false;
 

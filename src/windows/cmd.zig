@@ -28,6 +28,7 @@ pub const CMDData = struct {
     historyIdx: usize = 0,
     shell: shell.Shell,
     bot: bool = false,
+    close: bool = false,
 
     pub fn processBT(self: *Self) !void {
         const oldbt = self.bt;
@@ -60,6 +61,8 @@ pub const CMDData = struct {
                 .offsetStart = 0,
             };
         }
+
+        props.close = self.close;
 
         if (self.bt.len > MAX_SIZE) {
             const newbt = try allocator.alloc.dupe(u8, self.bt[self.bt.len - MAX_SIZE ..]);
@@ -211,6 +214,9 @@ pub const CMDData = struct {
                     self.historyIdx = self.history.items.len;
                     return;
                 };
+
+                if (al.exit)
+                    self.close = true;
 
                 defer allocator.alloc.free(al.data);
 
