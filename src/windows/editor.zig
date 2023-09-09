@@ -730,14 +730,14 @@ pub const EditorData = struct {
                 }
             },
             c.GLFW_KEY_LEFT => {
-                if (self.buffer) |_| {
+                if (self.buffer) |buffer| {
                     if (mods == c.GLFW_MOD_SHIFT and self.cursor_len < 0) {
                         self.cursor_len += 1;
                     } else if (mods == c.GLFW_MOD_SHIFT and self.cursor_len > 0) {
                         if (self.cursorx > 0) {
                             self.cursorx -= 1;
+                            self.cursor_len += 1;
                         }
-                        self.cursor_len += 1;
                     } else if (mods == c.GLFW_MOD_SHIFT) {
                         if (self.cursorx > 0) {
                             self.cursorx -= 1;
@@ -745,7 +745,14 @@ pub const EditorData = struct {
                         }
                     } else {
                         if (self.cursor_len == 0) {
-                            self.cursorx -= 1;
+                            if (self.cursorx == 0) {
+                                if (self.cursory != 0) {
+                                    self.cursory -= 1;
+                                    self.cursorx = buffer[self.cursory].text.len;
+                                }
+                            } else {
+                                self.cursorx -= 1;
+                            }
                         } else {
                             self.cursor_len = 0;
                         }
@@ -763,9 +770,16 @@ pub const EditorData = struct {
                         self.cursor_len -= 1;
                     } else if (mods == c.GLFW_MOD_SHIFT) {
                         self.cursor_len -= 1;
-                    } else if (self.cursorx < buffer[self.cursory].text.len) {
+                    } else {
                         if (self.cursor_len == 0) {
-                            self.cursorx += 1;
+                            if (self.cursorx >= buffer[self.cursory].text.len) {
+                                if (self.cursory < buffer.len) {
+                                    self.cursory += 1;
+                                    self.cursorx = 0;
+                                }
+                            } else {
+                                self.cursorx += 1;
+                            }
                         } else {
                             if (self.cursor_len < 0) {
                                 self.cursorx += @intCast(-self.cursor_len);
