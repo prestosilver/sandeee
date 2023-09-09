@@ -81,7 +81,11 @@ pub const PopupConfirm = struct {
         self.singleWidth = bnds.w / @as(f32, @floatFromInt(self.buttons.len));
 
         for (self.buttons, 0..) |btn, idx| {
-            const startx = bnds.x + (self.singleWidth) * @as(f32, @floatFromInt(idx));
+            const width = font.sizeText(.{
+                .text = btn.text,
+            }).x;
+
+            const startx = ((self.singleWidth - width) / 2) + bnds.x + (self.singleWidth) * @as(f32, @floatFromInt(idx));
 
             try font.draw(.{
                 .shader = shader,
