@@ -27,15 +27,26 @@ pub const PopupQuit = struct {
         try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 55, bnds.y, 0));
         try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 231, bnds.y, 0));
 
+        const single_width = bnds.w / 2;
+        const sd_width = font.sizeText(.{
+            .text = "Shutdown",
+        }).x;
+        const sd_x = (single_width - sd_width) / 2;
+
+        const rs_width = font.sizeText(.{
+            .text = "Restart",
+        }).x;
+        const rs_x = single_width + (single_width - rs_width) / 2;
+
         try font.draw(.{
             .shader = shader,
-            .pos = bnds.location().add(vecs.Vector2{ .x = 0, .y = 64 }),
+            .pos = bnds.location().add(vecs.Vector2{ .x = sd_x, .y = 64 }),
             .text = "Shutdown",
         });
 
         try font.draw(.{
             .shader = shader,
-            .pos = bnds.location().add(vecs.Vector2{ .x = 175, .y = 64 }),
+            .pos = bnds.location().add(vecs.Vector2{ .x = rs_x, .y = 64 }),
             .text = "Restart",
         });
 
