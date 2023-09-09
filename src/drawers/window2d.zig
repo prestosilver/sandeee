@@ -497,7 +497,7 @@ pub const WindowData = struct {
         bnds.w -= 8;
         bnds.h -= 36;
 
-        if (bnds.contains(mousepos)) {
+        if (bnds.contains(mousepos) or btn == null) {
             return self.contents.click(vecs.newVec2(bnds.w, bnds.h), vecs.newVec2(mousepos.x - bnds.x, mousepos.y - bnds.y), btn);
         }
     }
