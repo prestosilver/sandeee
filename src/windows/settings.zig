@@ -37,7 +37,10 @@ const SettingsData = struct {
     };
 
     shader: *shd.Shader,
+    highlight: sprite.Sprite,
+    menubar: sprite.Sprite,
     icons: [6]sprite.Sprite,
+    text_box: [2]sprite.Sprite,
 
     focused: ?usize = null,
     selection: usize = 0,
@@ -152,7 +155,7 @@ const SettingsData = struct {
         }
 
         if (self.focusedPane) |focused| {
-            var pos = vecs.newVec2(0, 0);
+            var pos = vecs.newVec2(0, 40);
 
             for (panes[focused]) |item| {
                 // draw name
@@ -270,48 +273,63 @@ const SettingsData = struct {
 
                 pos.y += font.size;
             }
+        } else {
+            var x: f32 = 0;
+            var y: f32 = 40;
 
-            return;
-        }
+            for (SettingsData.panels, 0..) |panel, idx| {
+                const size = font.sizeText(.{ .text = panel.name });
+                const xo = (128 - size.x) / 2;
 
-        var x: f32 = 0;
-        var y: f32 = 0;
+                try font.draw(.{
+                    .shader = font_shader,
+                    .text = panel.name,
+                    .pos = vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6),
+                });
 
-        for (SettingsData.panels, 0..) |panel, idx| {
-            const size = font.sizeText(.{ .text = panel.name });
-            const xo = (128 - size.x) / 2;
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-            try font.draw(.{
-                .shader = font_shader,
-                .text = panel.name,
-                .pos = vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6),
-            });
+                if (idx + 1 == self.selection)
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[4], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
-
-            if (idx + 1 == self.selection)
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[4], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
-
-            if (self.lastAction) |action| {
-                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(action.pos)) {
-                    switch (action.kind) {
-                        .SingleLeft => {
-                            self.selection = idx + 1;
-                        },
-                        .DoubleLeft => {
-                            self.selection = 0;
-                            self.focusedPane = idx;
-                        },
+                if (self.lastAction) |action| {
+                    if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(action.pos)) {
+                        switch (action.kind) {
+                            .SingleLeft => {
+                                self.selection = idx + 1;
+                            },
+                            .DoubleLeft => {
+                                self.selection = 0;
+                                self.focusedPane = idx;
+                            },
+                        }
                     }
                 }
-            }
 
-            x += 128;
-            if (x + 128 > bnds.w) {
-                y += 72 + font.size;
-                x = 0;
+                x += 128;
+                if (x + 128 > bnds.w) {
+                    y += 72 + font.size;
+                    x = 0;
+                }
             }
         }
+
+        // draw menubar
+        self.menubar.data.size.x = bnds.w;
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+
+        self.text_box[0].data.size.x = bnds.w - 6;
+        self.text_box[1].data.size.x = bnds.w - 10;
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 4, bnds.y + 4, 0));
+
+        try font.draw(.{
+            .shader = font_shader,
+            .text = "SET/",
+            .pos = vecs.newVec2(bnds.x + 8, bnds.y + 8),
+            .wrap = bnds.w - 16,
+            .maxlines = 1,
+        });
     }
 
     pub fn submit(val: []u8, data: *anyopaque) !void {
@@ -390,6 +408,24 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .shader = shader,
+        .highlight = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(2.0, 28),
+        )),
+        .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
+            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
+            vecs.newVec2(0.0, 40.0),
+        )),
+        .text_box = .{
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(2.0, 32.0),
+            )),
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(2.0, 28),
+            )),
+        },
         .icons = undefined,
         .value = "",
     };

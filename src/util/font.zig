@@ -159,7 +159,7 @@ pub const Font = struct {
         color: col.Color = col.newColor(0, 0, 0, 1),
         wrap: ?f32 = null,
         maxlines: ?usize = null,
-        newLines: bool = true,
+        newlines: bool = true,
     };
 
     pub fn draw(self: *Font, params: drawParams) !void {
@@ -197,7 +197,7 @@ pub const Font = struct {
         while (params.text.len > idx) : (idx += 1) {
             const ach = params.text[idx];
 
-            if (ach == '\n' and params.newLines) {
+            if (ach == '\n' and params.newlines) {
                 pos.y += self.size * params.scale;
                 pos.x = start.x;
 
@@ -300,7 +300,7 @@ pub const Font = struct {
         scale: f32 = 1,
         wrap: ?f32 = null,
         cursor: bool = false,
-        newLines: bool = true,
+        newlines: bool = true,
     };
 
     pub fn sizeText(self: *Font, params: sizeParams) vec.Vector2 {
@@ -319,7 +319,7 @@ pub const Font = struct {
         while (params.text.len > idx) : (idx += 1) {
             const ach = params.text[idx];
 
-            if (ach == '\n' and params.newLines) {
+            if (ach == '\n' and params.newlines) {
                 maxx = @max(maxx, pos.x);
                 pos.y += self.size * params.scale;
                 pos.x = 0;
