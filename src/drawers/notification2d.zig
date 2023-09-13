@@ -20,7 +20,7 @@ pub const NotificationData = struct {
     source: rect.Rectangle = rect.newRect(0, 0, 1, 1),
     color: cols.Color = cols.newColor(1, 1, 1, 1),
 
-    fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
+    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
         var source = src;
 
         source.y /= TOTAL_SPRITES;

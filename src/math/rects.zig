@@ -6,27 +6,36 @@ pub const Rectangle = struct {
     w: f32,
     h: f32,
 
-    pub fn equal(self: Rectangle, other: Rectangle) bool {
+    pub inline fn equal(self: Rectangle, other: Rectangle) bool {
         return self.x == other.x and
             self.y == other.y and
             self.w == other.w and
             self.h == other.h;
     }
 
-    pub fn contains(self: Rectangle, v: vec.Vector2) bool {
+    pub inline fn contains(self: Rectangle, v: vec.Vector2) bool {
         return self.x <= v.x and self.y <= v.y and self.x + self.w > v.x and self.y + self.h > v.y;
     }
 
-    pub fn location(self: Rectangle) vec.Vector2 {
+    pub inline fn location(self: Rectangle) vec.Vector2 {
         return vec.newVec2(self.x, self.y);
     }
 
-    pub fn size(self: Rectangle) vec.Vector2 {
+    pub inline fn size(self: Rectangle) vec.Vector2 {
         return vec.newVec2(self.w, self.h);
+    }
+
+    pub inline fn round(self: Rectangle) Rectangle {
+        return Rectangle{
+            .x = @round(self.x),
+            .y = @round(self.y),
+            .w = @round(self.w),
+            .h = @round(self.h),
+        };
     }
 };
 
-pub fn newRect(x: f32, y: f32, w: f32, h: f32) Rectangle {
+pub inline fn newRect(x: f32, y: f32, w: f32, h: f32) Rectangle {
     return Rectangle{
         .x = x,
         .y = y,
@@ -62,10 +71,10 @@ pub const UIRectangle = struct {
             .UIRect => self.parent.UIRect.toRect(),
         };
 
-        const axmin = parent.x.float32 + (parent.width.float32 * self.anchorXMin);
-        const aymin = parent.y.float32 + (parent.height.float32 * self.anchorYMin);
-        const axmax = parent.x.float32 + (parent.width.float32 * self.anchorXMax);
-        const aymax = parent.y.float32 + (parent.height.float32 * self.anchorYMax);
+        const axmin = parent.x + (parent.width * self.anchorXMin);
+        const aymin = parent.y + (parent.height * self.anchorYMin);
+        const axmax = parent.x + (parent.width * self.anchorXMax);
+        const aymax = parent.y + (parent.height * self.anchorYMax);
 
         return .{
             .x = self.offsetXMin + axmin,

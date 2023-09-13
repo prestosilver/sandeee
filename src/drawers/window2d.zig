@@ -324,7 +324,7 @@ pub const WindowData = struct {
         try self.contents.deinit();
     }
 
-    fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
+    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
         var source = src;
 
         source.y /= TOTAL_SPRITES;
@@ -539,6 +539,8 @@ pub const WindowData = struct {
             self.pos.w = self.contents.props.size.min.x;
             self.pos.h = self.contents.props.size.min.y;
         }
+
+        self.pos = self.pos.round();
     }
 
     pub fn getVerts(self: *const WindowData, _: vecs.Vector3) !va.VertArray {

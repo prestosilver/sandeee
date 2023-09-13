@@ -21,7 +21,7 @@ pub fn Drawer(comptime T: type) type {
             return self.data.getVerts(pos);
         }
 
-        pub fn new(texture: []const u8, self: T) Drawer(T) {
+        pub inline fn new(texture: []const u8, self: T) Drawer(T) {
             return Self{
                 .texture = texture,
                 .data = self,

@@ -29,7 +29,7 @@ pub const BarData = struct {
     btnActive: bool = false,
     btns: i32 = 0,
 
-    fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
+    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
         var source = src;
 
         source.y /= TOTAL_SPRITES;

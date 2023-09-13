@@ -109,7 +109,7 @@ pub const PopupData = struct {
     contents: PopupContents,
     title: []const u8,
 
-    fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
+    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
         var source = src;
 
         source.y /= TOTAL_SPRITES;

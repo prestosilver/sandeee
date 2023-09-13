@@ -26,7 +26,7 @@ pub const DeskData = struct {
     sel: ?usize = null,
     shell: shell.Shell,
 
-    fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
+    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
         var source = src;
 
         source.y /= 8;
