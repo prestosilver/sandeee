@@ -29,6 +29,7 @@ pub const DragMode = enum {
     ResizeRB,
 };
 
+// TODO: un hardcode
 const SCROLL_MUL = 30;
 
 pub const WindowContents = struct {

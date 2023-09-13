@@ -24,6 +24,24 @@ pub const TasksData = struct {
     update_timer: std.time.Timer,
     graph: graph.Graph,
 
+    scroll_value: f32 = 0,
+    scroll_maxy: f32 = 0,
+
+    scroll_sprites: [4]sprite.Sprite,
+
+    pub fn drawScroll(self: *Self, bnds: rect.Rectangle) !void {
+        if (self.scroll_maxy <= 0) return;
+
+        const scrollPc = self.scroll_value / self.scroll_maxy;
+
+        self.scroll_sprites[1].data.size.y = bnds.h - (20 * 2 - 2) + 2;
+
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + 20, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + bnds.h - 20 + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 20, (bnds.h - (20 * 2) - 30 + 4) * scrollPc + bnds.y + 20 - 2, 0));
+    }
+
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
 
@@ -49,20 +67,43 @@ pub const TasksData = struct {
             self.graph.data.data[self.graph.data.data.len - 1] = @floatCast(vmManager.VMManager.vm_time);
         }
 
+        self.scroll_maxy = -278;
+
+        const old_scissor = batch.SpriteBatch.instance.scissor;
+        batch.SpriteBatch.instance.scissor = .{
+            .x = bnds.x + 25,
+            .y = bnds.y + bnds.h - 303,
+            .w = 346,
+            .h = 278,
+        };
+
         for (self.stats, 0..) |s, idx| {
-            const y = bnds.h - 282 - 21 + @as(f32, @floatFromInt(idx)) * font.size;
+            const y = bnds.h - 282 - 21 + @as(f32, @floatFromInt(idx)) * font.size - self.scroll_value;
             const text = try std.fmt.allocPrint(allocator.alloc, "{s}, {}", .{ s.name, s.metaUsage });
             defer allocator.alloc.free(text);
 
             try font.draw(.{
                 .shader = font_shader,
                 .text = text,
+                .wrap = 346,
+                .maxlines = 1,
                 .pos = .{
                     .x = bnds.x + 25,
                     .y = bnds.y + y,
                 },
             });
+
+            self.scroll_maxy += font.size;
         }
+
+        batch.SpriteBatch.instance.scissor = old_scissor;
+
+        try self.drawScroll(.{
+            .x = bnds.x + 25,
+            .y = bnds.y + bnds.h - 305,
+            .w = 344,
+            .h = 276,
+        });
 
         self.panel[0].data.size.y = 87;
         self.panel[1].data.size.y = 83;
@@ -76,7 +117,16 @@ pub const TasksData = struct {
         try batch.SpriteBatch.instance.draw(graph.Graph, &self.graph, self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
     }
 
-    pub fn scroll(_: *Self, _: f32, _: f32) void {}
+    pub fn scroll(self: *Self, _: f32, y: f32) void {
+        // TODO: un hardcode
+        self.scroll_value -= y * 30;
+
+        if (self.scroll_value > self.scroll_maxy)
+            self.scroll_value = self.scroll_maxy;
+        if (self.scroll_value < 0)
+            self.scroll_value = 0;
+    }
+
     pub fn move(_: *Self, _: f32, _: f32) void {}
     pub fn click(_: *Self, _: vecs.Vector2, _: vecs.Vector2, _: ?i32) !void {}
     pub fn char(_: *Self, _: u32, _: i32) !void {}
@@ -108,6 +158,36 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
                 rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
                 vecs.newVec2(2.0, 28),
             )),
+        },
+        .scroll_sprites = .{
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = rect.newRect(0, 0, 2.0 / 8.0, 2.0 / 8.0),
+                    .size = vecs.newVec2(20, 20),
+                },
+            },
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = rect.newRect(0, 2.0 / 8.0, 2.0 / 8.0, 1.0 / 8.0),
+                    .size = vecs.newVec2(20, 64),
+                },
+            },
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = rect.newRect(0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
+                    .size = vecs.newVec2(20, 20),
+                },
+            },
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = rect.newRect(0, 3.0 / 8.0, 2.0 / 8.0, 3.0 / 8.0),
+                    .size = vecs.newVec2(20, 30),
+                },
+            },
         },
         .shader = shader,
         .stats = try vmManager.VMManager.instance.getStats(),
