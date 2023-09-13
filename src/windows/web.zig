@@ -637,12 +637,12 @@ pub const WebData = struct {
                             .Left => {
                                 const link = WebData.WebLink{
                                     .url = url,
-                                    .pos = rect.newRect(6 + pos.x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
+                                    .pos = rect.newRect(pos.x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
                                 };
                                 try self.links.append(link);
                             },
                             .Center => {
-                                const x = (webWidth - size.x) / 2 - 7;
+                                const x = (webWidth - size.x) / 2;
 
                                 const link = WebData.WebLink{
                                     .url = url,
