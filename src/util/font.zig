@@ -274,9 +274,7 @@ pub const Font = struct {
 
             if (params.maxlines != null and
                 curLine >= params.maxlines.?)
-            {
                 break;
-            }
 
             pos.x += char.ax * params.scale;
             pos.y += char.ay * params.scale;

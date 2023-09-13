@@ -318,18 +318,26 @@ const SettingsData = struct {
         self.menubar.data.size.x = bnds.w;
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
 
-        self.text_box[0].data.size.x = bnds.w - 6;
-        self.text_box[1].data.size.x = bnds.w - 10;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 4, bnds.y + 4, 0));
+        self.text_box[0].data.size.x = bnds.w - 46;
+        self.text_box[1].data.size.x = bnds.w - 50;
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 42, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 44, bnds.y + 4, 0));
+
+        const text = try std.mem.concat(allocator.alloc, u8, &.{
+            "!SET:/",
+            if (self.focusedPane) |focused| panels[focused].name else "",
+        });
+        defer allocator.alloc.free(text);
 
         try font.draw(.{
             .shader = font_shader,
-            .text = "SET/",
-            .pos = vecs.newVec2(bnds.x + 8, bnds.y + 8),
-            .wrap = bnds.w - 16,
+            .text = text,
+            .pos = vecs.newVec2(bnds.x + 48, bnds.y + 8),
+            .wrap = bnds.w - 56,
             .maxlines = 1,
         });
+
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back_button, self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
     }
 
     pub fn submit(val: []u8, data: *anyopaque) !void {
