@@ -40,6 +40,7 @@ const SettingsData = struct {
     highlight: sprite.Sprite,
     menubar: sprite.Sprite,
     icons: [6]sprite.Sprite,
+    back_button: sprite.Sprite,
     text_box: [2]sprite.Sprite,
 
     focused: ?usize = null,
@@ -363,6 +364,14 @@ const SettingsData = struct {
 
         switch (btn.?) {
             0 => {
+                if (mousepos.y < 40) {
+                    if (mousepos.x < 40) {
+                        self.focusedPane = null;
+                    }
+
+                    return;
+                }
+
                 if (self.lastAction != null) {
                     self.lastAction = .{
                         .kind = .DoubleLeft,
@@ -435,6 +444,10 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
             )),
         },
         .icons = undefined,
+        .back_button = sprite.Sprite.new("icons", sprite.SpriteData.new(
+            rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(32, 32),
+        )),
         .value = "",
     };
 
