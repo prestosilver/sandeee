@@ -59,6 +59,7 @@ pub const WindowContents = struct {
             .max = null,
         },
         close: bool = false,
+        clearColor: cols.Color,
 
         pub fn setTitle(self: *WindowProps, title: []const u8) !void {
             if (!std.mem.eql(u8, self.info.name, title)) {
@@ -86,7 +87,6 @@ pub const WindowContents = struct {
     pub var scrollSp: [4]spr.Sprite = undefined;
     pub var shader: *shd.Shader = undefined;
 
-    clearColor: cols.Color,
     props: WindowProps,
 
     scrolling: bool = false,
@@ -289,9 +289,9 @@ pub const WindowContents = struct {
                     .kind = kind,
                     .name = try allocator.alloc.dupe(u8, name),
                 },
+                .clearColor = clearColor,
             },
             .vtable = &gen.vtable,
-            .clearColor = clearColor,
         };
     }
 };
@@ -474,7 +474,7 @@ pub const WindowData = struct {
             .texture = "",
             .verts = try va.VertArray.init(0),
             .shader = shader.*,
-            .clear = self.contents.clearColor,
+            .clear = self.contents.props.clearColor,
         });
 
         try self.contents.draw(shader, &bnds, font);

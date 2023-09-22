@@ -180,7 +180,7 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
                             return error.InvalidRule;
                         }
                         const color = try colors.Color.parseColor(data[3..][1..7].*);
-                        item.data.contents.clearColor = color;
+                        item.data.contents.props.clearColor = color;
                     } else if (std.mem.eql(u8, data[0..3], "min")) {
                         if (data[3..].len < 4) {
                             return error.InvalidRule;

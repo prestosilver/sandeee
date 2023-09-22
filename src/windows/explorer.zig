@@ -18,6 +18,8 @@ const popups = @import("../drawers/popup2d.zig");
 const winEvs = @import("../events/window.zig");
 const systemEvs = @import("../events/system.zig");
 const events = @import("../util/events.zig");
+const gfx = @import("../util/graphics.zig");
+const va = @import("../util/vertArray.zig");
 
 const SCROLL = 30;
 
@@ -109,7 +111,10 @@ pub const ExplorerData = struct {
             }
         }
 
-        {
+        var done: bool = false;
+        draw_loop: while (!done) {
+            done = true;
+
             var x: f32 = 0;
             var y: f32 = -props.scroll.?.value + 36;
 
@@ -155,6 +160,18 @@ pub const ExplorerData = struct {
                                     self.shell.root = newPath.?;
                                     try self.refresh();
                                     self.selected = null;
+
+                                    // the active folder changed !!!
+                                    // clear and redraw
+                                    try batch.SpriteBatch.instance.addEntry(&.{
+                                        .texture = "",
+                                        .verts = try va.VertArray.init(0),
+                                        .shader = self.shader.*,
+                                        .clear = props.clearColor,
+                                    });
+
+                                    done = false;
+                                    continue :draw_loop;
                                 } else {
                                     _ = self.shell.runBg(icon.name) catch |err| {
                                         // TODO: fix leak
@@ -181,8 +198,6 @@ pub const ExplorerData = struct {
                                         });
                                     };
                                 }
-
-                                //break :draw_conts;
                             },
                         }
                     }
