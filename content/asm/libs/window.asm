@@ -22,25 +22,25 @@ _WindowDestroy:
 
 _MakeRect: ; x y w h
     push ""                     ; x y w h | res
-    dup 4                       ; x y w h | res x
+    copy 4                       ; x y w h | res x
     cat                         ; x y w h | res
     disc 4                      ; y w h | res
-    dup 3
+    copy 3
     cat
     disc 3
-    dup 2
+    copy 2
     cat
     disc 2
-    dup 1
+    copy 1
     cat
     disc 1
     ret
 
 _WindowRender: ; tex win source dest
-    dup 3
-    dup 3
-    dup 3
-    dup 3
+    copy 3
+    copy 3
+    copy 3
+    copy 3
     cat
     cat
     cat
@@ -105,8 +105,8 @@ _WindowOpen:
 _WindowFlip:
     push "/fake/win/flip"
     sys 3
-    dup 0
-    dup 2
+    copy 0
+    copy 2
     sys 5
     sys 7
     sys 17
