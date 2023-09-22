@@ -72,13 +72,13 @@ pub const TasksData = struct {
         const old_scissor = batch.SpriteBatch.instance.scissor;
         batch.SpriteBatch.instance.scissor = .{
             .x = bnds.x + 25,
-            .y = bnds.y + bnds.h - 303,
+            .y = bnds.y + bnds.h - 305,
             .w = 346,
             .h = 278,
         };
 
         for (self.stats, 0..) |s, idx| {
-            const y = bnds.h - 282 - 21 + @as(f32, @floatFromInt(idx)) * font.size - self.scroll_value;
+            const y = bnds.h - 284 - 21 + @as(f32, @floatFromInt(idx)) * font.size - self.scroll_value;
             const text = try std.fmt.allocPrint(allocator.alloc, "{s}, {}", .{ s.name, s.metaUsage });
             defer allocator.alloc.free(text);
 
