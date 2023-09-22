@@ -15,11 +15,6 @@ fn render(win, tex, vx, vy) {
     var source = "";
     var dest = "";
 
-    source = _MakeRect(0, 0, 256, 1024);
-    dest = _MakeRect(0, 0, 400, 300);
-
-    _WindowRender(win, tex, dest, source);
-
     source = _MakeRect(256, 0, 256, 1024);
     dest = _MakeRect($ballx, $bally, 10, 10);
 
@@ -38,6 +33,8 @@ fn render(win, tex, vx, vy) {
     var text = @(48 + $scoreb) & " - " & @(48 + $scorea);
 
     _WindowText(win, 150, 10, text);
+       
+    _WindowFlip(win);
 
     return 0;
 }
@@ -245,8 +242,6 @@ fn main() {
         update(vx, vy, pings, blip, dt);
         
         render(window, texture, vx, vy);
-        
-        _WindowFlip(window);
     }
 
     _TextureDestroy(texture);
