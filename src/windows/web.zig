@@ -743,20 +743,22 @@ pub const WebData = struct {
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
 
         const tmp = batch.SpriteBatch.instance.scissor;
-        batch.SpriteBatch.instance.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 34, 28);
+        batch.SpriteBatch.instance.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 32, 28);
         if (self.path) |file| {
             try font.draw(.{
                 .shader = font_shader,
                 .text = file,
                 .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
-                .wrap = bnds.w,
+                .wrap = bnds.w - 90,
+                .maxlines = 1,
             });
         } else {
             try font.draw(.{
                 .shader = font_shader,
                 .text = "Error",
                 .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
-                .wrap = bnds.w,
+                .wrap = bnds.w - 90,
+                .maxlines = 1,
             });
         }
         batch.SpriteBatch.instance.scissor = tmp;
