@@ -504,6 +504,20 @@ pub const GSWindowed = struct {
                 }
             }
         }
+
+        const screen_bounds = rect.Rectangle{
+            .x = 0,
+            .y = 0,
+            .w = gfx.Context.instance.size.x,
+            .h = gfx.Context.instance.size.y,
+        };
+
+        for (self.windows.items) |*window| {
+            if (!screen_bounds.contains_some(window.data.pos)) {
+                window.data.pos.x = 100;
+                window.data.pos.y = 100;
+            }
+        }
     }
 
     pub fn keypress(self: *Self, key: c_int, mods: c_int, down: bool) !void {

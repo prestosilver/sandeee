@@ -17,6 +17,14 @@ pub const Rectangle = struct {
         return self.x <= v.x and self.y <= v.y and self.x + self.w > v.x and self.y + self.h > v.y;
     }
 
+    pub inline fn contains_whole(self: Rectangle, v: Rectangle) bool {
+        return self.contains(v.location()) and self.contains(v.location().add(v.size()));
+    }
+
+    pub inline fn contains_some(self: Rectangle, v: Rectangle) bool {
+        return self.contains(v.location()) or self.contains(v.location().add(v.size()));
+    }
+
     pub inline fn location(self: Rectangle) vec.Vector2 {
         return vec.newVec2(self.x, self.y);
     }
