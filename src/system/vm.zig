@@ -6,9 +6,11 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const windowedState = @import("../states/windowed.zig");
 
+// TODO: move stack stuff to settings?
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
 const MAIN_NAME = "_main";
+const EXIT_NAME = "_quit";
 
 pub var syslock = std.Thread.Mutex{};
 
@@ -503,8 +505,8 @@ pub const VM = struct {
                 }
             },
             Operation.Code.Sys => {
-                syslock.lock();
-                defer syslock.unlock();
+                //syslock.lock();
+                //defer syslock.unlock();
 
                 if (op.value != null) {
                     try events.EventManager.instance.sendEvent(systemEvs.EventSys{
@@ -533,9 +535,9 @@ pub const VM = struct {
                         },
                         // quit
                         1 => {
-                            if (self.functions.contains("_quit")) {
+                            if (self.functions.contains(EXIT_NAME)) {
                                 if (self.inside_fn) |func| {
-                                    if (std.mem.eql(u8, func, "_quit")) {
+                                    if (std.mem.eql(u8, func, EXIT_NAME)) {
                                         self.stopped = true;
                                         return;
                                     }
@@ -543,7 +545,7 @@ pub const VM = struct {
                                 self.retStack[self.retRsp].location = self.pc;
                                 self.retStack[self.retRsp].function = self.inside_fn;
                                 self.pc = 0;
-                                self.inside_fn = "_quit";
+                                self.inside_fn = EXIT_NAME;
                                 self.retRsp += 1;
 
                                 return;
