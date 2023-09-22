@@ -69,6 +69,7 @@ pub const TasksData = struct {
 
         self.scroll_maxy = -278;
 
+        // draw active vms
         const old_scissor = batch.SpriteBatch.instance.scissor;
         batch.SpriteBatch.instance.scissor = .{
             .x = bnds.x + 25,
@@ -105,6 +106,7 @@ pub const TasksData = struct {
             .h = 276,
         });
 
+        // draw graph
         self.panel[0].data.size.y = 87;
         self.panel[1].data.size.y = 83;
 
@@ -115,6 +117,29 @@ pub const TasksData = struct {
         self.graph.data.size.y = 83;
 
         try batch.SpriteBatch.instance.draw(graph.Graph, &self.graph, self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
+
+        // draw labels
+        try font.draw(.{
+            .shader = font_shader,
+            .text = "VM Processes",
+            .wrap = 346,
+            .maxlines = 1,
+            .pos = .{
+                .x = bnds.x + 25,
+                .y = bnds.y + bnds.h - 303 - font.size,
+            },
+        });
+
+        try font.draw(.{
+            .shader = font_shader,
+            .text = "VM Speed",
+            .wrap = 346,
+            .maxlines = 1,
+            .pos = .{
+                .x = bnds.x + 25,
+                .y = bnds.y + 25 - font.size,
+            },
+        });
     }
 
     pub fn scroll(self: *Self, _: f32, y: f32) void {

@@ -22,7 +22,7 @@ _WindowDestroy:
 
 _MakeRect: ; x y w h
     push ""                     ; x y w h | res
-    copy 4                       ; x y w h | res x
+    copy 4                      ; x y w h | res x
     cat                         ; x y w h | res
     disc 4                      ; y w h | res
     copy 3
