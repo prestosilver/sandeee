@@ -109,7 +109,7 @@ pub const ExplorerData = struct {
             }
         }
 
-        draw_conts: {
+        {
             var x: f32 = 0;
             var y: f32 = -props.scroll.?.value + 36;
 
@@ -182,7 +182,7 @@ pub const ExplorerData = struct {
                                     };
                                 }
 
-                                break :draw_conts;
+                                //break :draw_conts;
                             },
                         }
                     }

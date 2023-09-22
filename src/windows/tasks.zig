@@ -126,7 +126,7 @@ pub const TasksData = struct {
             .maxlines = 1,
             .pos = .{
                 .x = bnds.x + 25,
-                .y = bnds.y + bnds.h - 303 - font.size,
+                .y = bnds.y + bnds.h - 305 - font.size - 2,
             },
         });
 
@@ -137,7 +137,7 @@ pub const TasksData = struct {
             .maxlines = 1,
             .pos = .{
                 .x = bnds.x + 25,
-                .y = bnds.y + 25 - font.size,
+                .y = bnds.y + 25 - font.size - 2,
             },
         });
     }
