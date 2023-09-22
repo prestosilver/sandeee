@@ -80,24 +80,23 @@ pub const SpriteBatch = struct {
         var newEntry = entry.*;
 
         newEntry.scissor = sb.scissor;
-        newEntry.texture = try allocator.alloc.dupe(u8, entry.texture);
 
         sb.queue_lock.lock();
         defer sb.queue_lock.unlock();
 
-        if (sb.queue.len != 0 and std.mem.eql(u8, sb.queue[sb.queue.len - 1].texture, newEntry.texture) and
+        if (sb.queue.len != 0 and std.mem.eql(u8, sb.queue[sb.queue.len - 1].texture, entry.texture) and
             sb.queue[sb.queue.len - 1].shader.id == newEntry.shader.id and
             newEntry.scissor == null and sb.queue[sb.queue.len - 1].scissor == null and
             newEntry.clear == null and sb.queue[sb.queue.len - 1].clear == null)
         {
             try sb.queue[sb.queue.len - 1].verts.array.appendSlice(newEntry.verts.items());
 
-            allocator.alloc.free(newEntry.texture);
             newEntry.verts.deinit();
 
             return;
         }
 
+        newEntry.texture = try allocator.alloc.dupe(u8, entry.texture);
         sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
         sb.queue[sb.queue.len - 1] = newEntry;
     }
