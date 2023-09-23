@@ -90,6 +90,8 @@ pub const VMManager = struct {
 
         try self.vms.put(id, vm_instance);
 
+        std.log.debug("Spawned vm id: {}", .{id});
+
         return .{
             .id = id,
         };
@@ -99,6 +101,10 @@ pub const VMManager = struct {
         if (self.vms.getPtr(handle.id)) |entry| {
             try entry.deinit();
             _ = self.vms.remove(handle.id);
+
+            std.log.debug("Destroy vm id: {}", .{handle.id});
+        } else {
+            std.log.warn("Failed to destroy empty vm id: {}", .{handle.id});
         }
     }
 

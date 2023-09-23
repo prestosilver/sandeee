@@ -26,6 +26,7 @@ const shd = @import("util/shader.zig");
 const tex = @import("util/texture.zig");
 const texMan = @import("util/texmanager.zig");
 const panicHandler = @import("util/panic.zig");
+const log = @import("util/log.zig");
 
 // events
 const inputEvs = @import("events/input.zig");
@@ -59,6 +60,13 @@ const vmManager = @import("system/vmmanager.zig");
 
 // not-op programming lang
 const c = @import("c.zig");
+
+pub const std_options = struct {
+    // Define logFn to override the std implementation
+    pub const logFn = log.myLogFn;
+
+    pub const log_level = .debug;
+};
 
 pub const useSteam = options.IsSteam;
 
@@ -113,6 +121,9 @@ const full_quad = [_]c.GLfloat{
     0.5,  -0.5, 0.0,
     0.5,  0.5,  0.0,
 };
+
+// TODO: Move to settings
+const state_refresh_rate = 0.5;
 
 // fps tracking
 var last_frame_time: f64 = 0;
@@ -560,8 +571,6 @@ pub fn main() void {
 }
 
 pub fn mainErr() anyerror!void {
-    std.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
-
     if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
         std.log.info("Restarting for steam", .{});
         return; // steam will relaunch the game from the steam client.
@@ -616,6 +625,11 @@ pub fn mainErr() anyerror!void {
     if (isHeadless) {
         return headless.headlessMain(headlessCmd, false, null);
     }
+
+    log.logFile = try std.fs.cwd().createFile("SandEEE.log", .{});
+    defer log.logFile.?.close();
+
+    std.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
 
     // setup the texture manager
     texMan.TextureManager.init();
@@ -868,7 +882,7 @@ pub fn mainErr() anyerror!void {
 
     // fps tracker stats
     var fps: usize = 0;
-    var timer: f64 = 0;
+    var timer: std.time.Timer = try std.time.Timer.start();
 
     c.glfwSetTime(0);
     last_frame_time = 0;
@@ -899,11 +913,12 @@ pub fn mainErr() anyerror!void {
         }
 
         // track fps
-        timer += currentTime - last_frame_time;
-        if (timer > 0.50) {
+        if (timer.read() > std.time.ns_per_s * state_refresh_rate) {
+            const lap = timer.lap();
+
             try state.refresh();
 
-            finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / timer));
+            finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / @as(f64, @floatFromInt(lap)) * @as(f64, @floatFromInt(std.time.ns_per_s))));
             if (vmManager.VMManager.instance.vms.count() != 0 and finalFps != 0) {
                 if (finalFps < 55) {
                     vmManager.VMManager.vm_time -= 0.01;
@@ -917,7 +932,6 @@ pub fn mainErr() anyerror!void {
             }
 
             fps = 0;
-            timer = 0;
         }
 
         // the state changed
