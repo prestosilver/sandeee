@@ -128,6 +128,7 @@ pub const DeskData = struct {
                         adds.* = .{
                             .data = self,
                             .message = message,
+                            .shader = shader,
                             .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
                         };
 

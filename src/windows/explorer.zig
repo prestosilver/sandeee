@@ -182,6 +182,7 @@ pub const ExplorerData = struct {
                                             .data = self,
                                             .message = message,
                                             .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
+                                            .shader = self.shader,
                                         };
 
                                         try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
@@ -315,6 +316,7 @@ pub const ExplorerData = struct {
                         .data = self,
                         .message = "Are you sure you want to delete this file.",
                         .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(confirmData),
+                        .shader = self.shader,
                     };
 
                     try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{

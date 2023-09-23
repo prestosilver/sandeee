@@ -2,6 +2,7 @@ const std = @import("std");
 
 const allocator = @import("../../util/allocator.zig");
 const batch = @import("../../util/spritebatch.zig");
+const spr = @import("../../drawers/sprite2d.zig");
 const shd = @import("../../util/shader.zig");
 const rect = @import("../../math/rects.zig");
 const cols = @import("../../math/colors.zig");
@@ -11,6 +12,33 @@ const fnt = @import("../../util/font.zig");
 const events = @import("../../util/events.zig");
 const windowEvs = @import("../../events/window.zig");
 const c = @import("../../c.zig");
+
+var outlineSprites = [_]spr.Sprite{
+    .{
+        .texture = "ui",
+        .data = spr.SpriteData.new(
+            rect.newRect(
+                2.0 / 8.0,
+                0.0 / 8.0,
+                1.0 / 8.0,
+                1.0 / 8.0,
+            ),
+            vecs.newVec2(32, 32),
+        ),
+    },
+    .{
+        .texture = "ui",
+        .data = spr.SpriteData.new(
+            rect.newRect(
+                3.0 / 8.0,
+                0.0 / 8.0,
+                1.0 / 8.0,
+                1.0 / 8.0,
+            ),
+            vecs.newVec2(32, 32),
+        ),
+    },
+};
 
 pub const PopupConfirm = struct {
     const Self = @This();
@@ -49,8 +77,10 @@ pub const PopupConfirm = struct {
                 if (info != .Fn)
                     continue;
 
+                const text = std.fmt.comptimePrint("{c}{s}", .{ std.ascii.toUpper(decl.name[0]), decl.name[1..] });
+
                 res[idx] = .{
-                    .text = decl.name,
+                    .text = text,
                     .calls = @ptrCast(&@field(T, decl.name)),
                 };
 
@@ -65,6 +95,7 @@ pub const PopupConfirm = struct {
     data: *anyopaque,
     message: []const u8,
     buttons: []const ConfirmButton,
+    shader: *shd.Shader,
 
     singleWidth: f32 = 1,
 
@@ -86,6 +117,18 @@ pub const PopupConfirm = struct {
             }).x;
 
             const startx = ((self.singleWidth - width) / 2) + bnds.x + (self.singleWidth) * @as(f32, @floatFromInt(idx));
+
+            outlineSprites[0].data.size = vecs.Vector2{
+                .x = width + 10,
+                .y = font.size + 8,
+            };
+            outlineSprites[1].data.size = vecs.Vector2{
+                .x = width + 6,
+                .y = font.size + 4,
+            };
+
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &outlineSprites[0], self.shader, vecs.newVec3(startx - 4, midy - 4, 0.0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &outlineSprites[1], self.shader, vecs.newVec3(startx - 2, midy - 2, 0.0));
 
             try font.draw(.{
                 .shader = shader,
