@@ -123,6 +123,18 @@ pub const Shell = struct {
         }
     }
 
+    pub fn stop(_: *Shell, param: []const u8) !Result {
+        const id = try std.fmt.parseInt(u8, param[5..], 16);
+
+        try vmManager.VMManager.instance.destroy(.{
+            .id = id,
+        });
+
+        return .{
+            .data = try allocator.alloc.dupe(u8, "Stopped"),
+        };
+    }
+
     pub fn runCmd(_: *Shell, param: []const u8) !Result {
         const window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
@@ -328,6 +340,7 @@ pub const Shell = struct {
                 "dcpy - copies a folder\n" ++
                 "cls  - clears the terminal\n" ++
                 "exit - closes the terminal\n" ++
+                "stop - closes a process with the given id\n" ++
                 "\n" ++
                 "Applications\n" ++
                 "------------\n" ++
@@ -509,6 +522,7 @@ pub const Shell = struct {
             if (std.mem.eql(u8, cmd, "task")) return self.runTask(params);
         }
         if (std.mem.eql(u8, cmd, "help")) return self.help(params);
+        if (std.mem.eql(u8, cmd, "stop")) return self.stop(params);
         if (std.mem.eql(u8, cmd, "ls")) return self.ls(params);
         if (std.mem.eql(u8, cmd, "cd")) return self.cd(params);
         if (std.mem.eql(u8, cmd, "new")) return self.new(params);
