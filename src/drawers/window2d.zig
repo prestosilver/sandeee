@@ -12,7 +12,7 @@ const popup = @import("popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const c = @import("../c.zig");
 
-const TOTAL_SPRITES: f32 = 7.0;
+const TOTAL_SPRITES: f32 = 9.0;
 const TEX_SIZE: f32 = 32;
 const RESIZE_PAD: f32 = 10;
 
@@ -559,10 +559,11 @@ pub const WindowData = struct {
 
         try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
-        const maxAlpha: f32 = if (self.contents.props.size.max == null) 1.0 else 0.75;
-        try addUiQuad(&result, 4, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-        try addUiQuad(&result, 5, full, 2, 3, 3, 17, 3, cols.newColor(maxAlpha, maxAlpha, maxAlpha, 1));
-        try addUiQuad(&result, 6, min, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        const maxIndex: u8 = if (self.contents.props.size.max == null) 4 else 7;
+
+        try addUiQuad(&result, 3, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, maxIndex, full, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, 5, min, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
         return result;
     }

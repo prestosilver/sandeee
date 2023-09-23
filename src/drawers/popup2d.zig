@@ -11,7 +11,7 @@ pub const all = @import("../windows/popups/all.zig");
 
 pub var popupShader: *shd.Shader = undefined;
 
-const TOTAL_SPRITES: f32 = 7.0;
+const TOTAL_SPRITES: f32 = 9.0;
 const TEX_SIZE: f32 = 32;
 
 pub const PopupData = struct {
@@ -183,7 +183,7 @@ pub const PopupData = struct {
 
         try addUiQuad(&result, sprite, rect.newRect(pos.x, pos.y, self.size.x, self.size.y), 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
-        try addUiQuad(&result, 4, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, 3, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
         return result;
     }
