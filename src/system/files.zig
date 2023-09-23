@@ -427,6 +427,8 @@ pub const Folder = struct {
     }
 
     pub fn newFile(self: *Folder, name: []const u8) !void {
+        if (std.mem.containsAtLeast(u8, name, 1, " ")) return error.BadName;
+
         const last = std.mem.lastIndexOf(u8, name, "/");
 
         const folder = if (last) |li| try self.getFolder(name[0..li]) else self;
@@ -457,6 +459,7 @@ pub const Folder = struct {
     }
 
     pub fn newFolder(self: *Folder, name: []const u8) anyerror!void {
+        if (std.mem.containsAtLeast(u8, name, 1, " ")) return error.BadName;
         if (self.protected) return error.FolderProtected;
         if (name.len == 0) return;
 

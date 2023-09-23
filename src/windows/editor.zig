@@ -356,14 +356,14 @@ pub const EditorData = struct {
                     adds.* = .{
                         .path = try allocator.alloc.dupe(u8, files.home.name),
                         .data = self,
-                        .submit = &submit,
+                        .submit = &submitOpen,
                     };
 
                     try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
                         .popup = .{
                             .texture = "win",
                             .data = .{
-                                .title = "File Picker",
+                                .title = "Open",
                                 .source = rect.newRect(0, 0, 1, 1),
                                 .size = vecs.newVec2(350, 125),
                                 .parentPos = undefined,
@@ -494,13 +494,43 @@ pub const EditorData = struct {
                 try self.file.?.write(try allocator.alloc.dupe(u8, buff.items), null);
                 self.modified = false;
             } else {
-                std.log.info("Save as", .{});
-                //TODO: save as
+                const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+                adds.* = .{
+                    .text = try allocator.alloc.dupe(u8, files.home.name),
+                    .submit = &submitSave,
+                    .prompt = "Enter the file path",
+                    .data = self,
+                };
+
+                try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                    .popup = .{
+                        .texture = "win",
+                        .data = .{
+                            .title = "Save As",
+                            .source = rect.newRect(0, 0, 1, 1),
+                            .size = vecs.newVec2(350, 125),
+                            .parentPos = undefined,
+                            .contents = popups.PopupData.PopupContents.init(adds),
+                        },
+                    },
+                });
             }
         }
     }
 
-    pub fn submit(file: ?*files.File, data: *anyopaque) !void {
+    pub fn submitSave(path: []const u8, data: *anyopaque) !void {
+        try files.root.newFile(path);
+
+        const file = try files.root.getFile(path);
+
+        const self: *Self = @ptrCast(@alignCast(data));
+
+        self.file = file;
+
+        try self.save();
+    }
+
+    pub fn submitOpen(file: ?*files.File, data: *anyopaque) !void {
         if (file) |target| {
             const self: *Self = @ptrCast(@alignCast(data));
             self.file = target;
@@ -539,7 +569,7 @@ pub const EditorData = struct {
 
     pub fn focus(self: *Self) !void {
         if (!self.modified and self.file != null) {
-            try submit(self.file, self);
+            try submitOpen(self.file, self);
 
             return;
         }
