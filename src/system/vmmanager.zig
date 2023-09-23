@@ -54,7 +54,8 @@ pub const VMManager = struct {
     pub const VMStats = struct {
         id: usize,
         name: []const u8,
-        metaUsage: usize,
+        meta_usage: usize,
+        last_exec: usize,
     };
 
     pub fn getStats(self: *Self) ![]VMStats {
@@ -68,7 +69,8 @@ pub const VMManager = struct {
             results[idx] = .{
                 .id = entry.key_ptr.*,
                 .name = try allocator.alloc.dupe(u8, vm_instance.name),
-                .metaUsage = try vm_instance.getMetaUsage(),
+                .meta_usage = try vm_instance.getMetaUsage(),
+                .last_exec = vm_instance.last_exec,
             };
         }
 

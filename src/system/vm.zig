@@ -72,6 +72,7 @@ pub const VM = struct {
     yield: bool = false,
     miscData: std.StringHashMap([]const u8),
     input: std.ArrayList(u8),
+    last_exec: usize = 0,
 
     streams: std.ArrayList(?*streams.FileStream),
 
@@ -1446,13 +1447,18 @@ pub const VM = struct {
 
         timer.reset();
 
+        var exec: usize = 0;
+
         while (timer.read() < ns and !self.done() and !self.yield) {
             if (try self.runStep()) {
                 self.stopped = true;
                 return true;
             }
+
+            exec += 1;
         }
 
+        self.last_exec = exec;
         self.yield = false;
 
         try events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
