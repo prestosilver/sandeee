@@ -93,7 +93,7 @@ pub const GSRecovery = struct {
 
     pub fn update(_: *Self, _: f32) !void {}
 
-    const UPDATE_MODES = [_][*:0]const u8{ "R Reinstall System Files", "R Reinstall System Files and Default Settings", "D Delete disk", "X Back" };
+    const UPDATE_MODES = [_][*:0]const u8{ "R Reinstall System Files", "S Reinstall System Files and Default Settings", "D Delete disk", "X Back" };
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         _ = size;
@@ -285,8 +285,46 @@ pub const GSRecovery = struct {
                     return;
                 }
 
-                if (self.sub_sel != null) {
-                    // TODO: impl
+                if (self.sub_sel) |sub_sel| {
+                    _ = sub_sel;
+                    switch (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0])) {
+                        'R' => {
+                            try files.Folder.recoverDisk(self.disks.items[self.sel][2..], false);
+                            self.status = "Reinstalled";
+                            try self.audioMan.playSound(self.selectSound.*);
+                        },
+                        'S' => {
+                            try files.Folder.recoverDisk(self.disks.items[self.sel][2..], true);
+                            self.status = "Reinstalled & Reset";
+                            try self.audioMan.playSound(self.selectSound.*);
+                        },
+                        'D' => {
+                            const path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
+                            defer allocator.alloc.free(path);
+
+                            self.status = "Deleted";
+
+                            try std.fs.cwd().deleteFile(path);
+
+                            _ = self.disks.orderedRemove(self.sel);
+
+                            self.sub_sel = null;
+                            self.sel = 0;
+
+                            if (self.disks.items.len == 1) {
+                                try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
+                                    .targetState = .Disks,
+                                });
+
+                                try self.audioMan.playSound(self.selectSound.*);
+
+                                return;
+                            }
+
+                            try self.audioMan.playSound(self.selectSound.*);
+                        },
+                        else => {},
+                    }
                 } else {
                     for (self.disks.items, 0..) |disk, idx| {
                         if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
