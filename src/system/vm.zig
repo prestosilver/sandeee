@@ -1426,6 +1426,8 @@ pub const VM = struct {
 
         try self.runOp(oper);
 
+        std.Thread.yield() catch {};
+
         return self.done();
     }
 

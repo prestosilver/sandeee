@@ -466,11 +466,11 @@ pub const EditorData = struct {
                     idx += 1;
                 }
 
+                // new line
                 if (idx >= self.cursorx and idx < self.cursorx + absSel) {
                     result.appendAssumeCapacity('\n');
                 }
 
-                // new line
                 idx += 1;
             }
         }
