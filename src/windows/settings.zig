@@ -54,7 +54,7 @@ const SettingsData = struct {
     const panels = [_]SettingPanel{
         SettingPanel{ .name = "Graphics", .icon = 2 },
         SettingPanel{ .name = "Sounds", .icon = 1 },
-        SettingPanel{ .name = "Explorer", .icon = 3 },
+        SettingPanel{ .name = "Files", .icon = 3 },
         SettingPanel{ .name = "System", .icon = 0 },
     };
 
