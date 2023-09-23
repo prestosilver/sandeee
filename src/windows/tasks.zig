@@ -21,7 +21,6 @@ pub const TasksData = struct {
     panel: [2]sprite.Sprite,
     shader: *shd.Shader,
     stats: []vmManager.VMManager.VMStats,
-    update_timer: std.time.Timer,
     graph: graph.Graph,
 
     scroll_value: f32 = 0,
@@ -53,20 +52,6 @@ pub const TasksData = struct {
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, vecs.newVec3(bnds.x + 21, bnds.y + bnds.h - 282 - 25, 0));
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, vecs.newVec3(bnds.x + 23, bnds.y + bnds.h - 278 - 27, 0));
 
-        if (self.update_timer.read() > 1_000_000_000) {
-            for (self.stats) |stat| {
-                allocator.alloc.free(stat.name);
-            }
-
-            allocator.alloc.free(self.stats);
-
-            self.stats = try vmManager.VMManager.instance.getStats();
-            self.update_timer.reset();
-
-            std.mem.copyForwards(f32, self.graph.data.data[0 .. self.graph.data.data.len - 1], self.graph.data.data[1..]);
-            self.graph.data.data[self.graph.data.data.len - 1] = @floatCast(vmManager.VMManager.vm_time);
-        }
-
         self.scroll_maxy = -278;
 
         // draw active vms
@@ -80,7 +65,7 @@ pub const TasksData = struct {
 
         for (self.stats, 0..) |s, idx| {
             const y = bnds.h - 284 - 21 + @as(f32, @floatFromInt(idx)) * font.size - self.scroll_value;
-            const text = try std.fmt.allocPrint(allocator.alloc, "{s}, {}", .{ s.name, s.metaUsage });
+            const text = try std.fmt.allocPrint(allocator.alloc, "{}: {s} (meta: {}Mb)", .{ s.id, s.name, s.metaUsage });
             defer allocator.alloc.free(text);
 
             try font.draw(.{
@@ -158,7 +143,18 @@ pub const TasksData = struct {
     pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
     pub fn focus(_: *Self) !void {}
     pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
-    pub fn refresh(_: *Self) !void {}
+    pub fn refresh(self: *Self) !void {
+        for (self.stats) |stat| {
+            allocator.alloc.free(stat.name);
+        }
+
+        allocator.alloc.free(self.stats);
+
+        self.stats = try vmManager.VMManager.instance.getStats();
+
+        std.mem.copyForwards(f32, self.graph.data.data[0 .. self.graph.data.data.len - 1], self.graph.data.data[1..]);
+        self.graph.data.data[self.graph.data.data.len - 1] = @floatCast(vmManager.VMManager.vm_time);
+    }
 
     pub fn deinit(self: *Self) void {
         for (self.stats) |stat| {
@@ -216,7 +212,6 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         },
         .shader = shader,
         .stats = try vmManager.VMManager.instance.getStats(),
-        .update_timer = try std.time.Timer.start(),
         .graph = graph.Graph.new(
             "white",
             try graph.GraphData.new(.{ .x = 100, .y = 100 }),
