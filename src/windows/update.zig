@@ -24,7 +24,9 @@ pub const UpdateData = struct {
     link_pos: rect.Rectangle = .{ .x = 0, .y = 0, .w = 1, .h = 1 },
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
-        _ = props;
+        props.no_min = true;
+        props.no_close = true;
+
         try font.draw(.{
             .shader = font_shader,
             .text = "There has been a Sand\x82\x82\x82 Update",

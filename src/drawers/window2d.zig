@@ -556,11 +556,13 @@ pub const WindowData = struct {
 
         try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
-        const maxIndex: u8 = if (self.contents.props.size.max == null) 4 else 7;
+        const close_index: u8 = if (!self.contents.props.no_close) 3 else 6;
+        const max_index: u8 = if (self.contents.props.size.max == null) 4 else 7;
+        const min_index: u8 = if (!self.contents.props.no_min) 5 else 8;
 
-        try addUiQuad(&result, 3, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-        try addUiQuad(&result, maxIndex, full, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-        try addUiQuad(&result, 5, min, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, close_index, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, max_index, full, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, min_index, min, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
         return result;
     }

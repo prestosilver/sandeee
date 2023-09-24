@@ -23,7 +23,8 @@ pub const WelcomeData = struct {
     timer: std.time.Timer,
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
-        _ = props;
+        props.no_min = true;
+
         try font.draw(.{
             .shader = font_shader,
             .text = "Welcome to Sand\x82\x82\x82",
@@ -50,6 +51,7 @@ pub const WelcomeData = struct {
         });
 
         if (options.IsDemo) {
+            props.no_close = true;
             const remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
             if (remaining < 0) @panic("Demo Over");
 
