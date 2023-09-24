@@ -575,10 +575,13 @@ pub const GSWindowed = struct {
 
                 if (newTop) |top| {
                     var swap = self.windows.orderedRemove(@as(usize, @intCast(top)));
-                    swap.data.active = true;
-                    try swap.data.contents.focus();
-                    const mode = swap.data.getDragMode(self.mousepos);
 
+                    if (!swap.data.active) {
+                        swap.data.active = true;
+                        try swap.data.contents.focus();
+                    }
+
+                    const mode = swap.data.getDragMode(self.mousepos);
                     switch (mode) {
                         .Close => {
                             if (swap.data.contents.props.no_close)
