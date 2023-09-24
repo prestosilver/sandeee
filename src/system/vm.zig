@@ -910,7 +910,10 @@ pub const VM = struct {
                                 return;
                             }
 
-                            if (std.mem.eql(u8, pass.string.*, "Poopie")) {
+                            const dbg_pass = try telem.Telem.getDebugPassword();
+                            defer self.allocator.free(dbg_pass);
+
+                            if (std.mem.eql(u8, pass.string.*, dbg_pass)) {
                                 try self.out.appendSlice("Debug Mode Enabled\n");
 
                                 try events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
@@ -919,6 +922,8 @@ pub const VM = struct {
 
                                 return;
                             }
+
+                            log.info("password dosent match {s}", .{dbg_pass});
 
                             return error.InvalidPassword;
                         },

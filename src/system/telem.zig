@@ -72,10 +72,9 @@ pub const Telem = packed struct {
                 .randomId = rnd.random().int(u64),
             };
 
-            //const pass = try getDebugPassword();
-            //defer allocator.alloc.free(pass);
-
-            //log.info("Set telem pass: {s}", .{pass});
+            const pass = try getDebugPassword();
+            defer allocator.alloc.free(pass);
+            log.info("Set telem pass: {s}", .{pass});
         }
     }
 
