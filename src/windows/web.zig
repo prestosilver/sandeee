@@ -136,7 +136,7 @@ pub const WebData = struct {
         self.conts = conts;
     }
 
-    pub fn steamItem(self: *Self, id: u64, path: []const u8) !void {
+    pub fn steamItem(self: *Self, id: u64, parent: []const u8, path: []const u8) !void {
         const ugc = steam.getSteamUGC();
         const BUFFER_SIZE = 256;
 
@@ -156,17 +156,31 @@ pub const WebData = struct {
 
         const folderPtr = folder[0..std.mem.len(@as([*:0]u8, @ptrCast(&folder)))];
 
-        const walker = try std.fs.openIterableDirAbsolute(folderPtr, .{});
+        const file_path = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ folderPtr, path });
+        defer allocator.alloc.free(file_path);
+
+        const walker = std.fs.openIterableDirAbsolute(file_path, .{}) catch {
+            const file = try std.fs.openFileAbsolute(file_path, .{});
+            defer file.close();
+            const conts = try file.reader().readAllAlloc(allocator.alloc, 100_000_000);
+
+            var cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
+            _ = std.mem.replace(u8, conts, "\r", "", cont);
+
+            self.conts = cont;
+
+            return;
+        };
 
         var iter = walker.iterate();
 
-        var conts = try std.fmt.allocPrint(allocator.alloc, "Contents of {s}/{s}", .{ folderPtr, path });
+        var conts = try std.fmt.allocPrint(allocator.alloc, "Contents of {s}", .{path});
 
         while (try iter.next()) |item| {
             const old = conts;
             defer allocator.alloc.free(old);
 
-            conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ old, item.name });
+            conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: {s}/{s}", .{ old, item.name, parent, item.name });
         }
 
         self.conts = conts;
@@ -270,13 +284,19 @@ pub const WebData = struct {
                         } else if (std.mem.eql(u8, root, "item")) {
                             const slashIdx = std.mem.indexOf(u8, sub, "/");
 
+                            var tmp_path: []const u8 = "/";
+                            var page_idx = sub;
+
                             if (slashIdx) |slash| {
-                                const pageIdx = try std.fmt.parseInt(u64, sub[0..slash], 0);
-                                try self.steamItem(pageIdx, sub[slash + 1 ..]);
-                            } else {
-                                const pageIdx = try std.fmt.parseInt(u64, sub, 0);
-                                try self.steamItem(pageIdx, "/");
+                                page_idx = sub[0..slash];
+                                tmp_path = sub[slash + 1 ..];
                             }
+
+                            self.steamItem(try std.fmt.parseInt(u64, page_idx, 10), path, tmp_path) catch |err| {
+                                self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+
+                                return;
+                            };
                         } else {
                             self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
                         }
@@ -458,7 +478,6 @@ pub const WebData = struct {
     }
 
     pub fn saveDialog(self: *Self, outputData: []const u8, name: []const u8) !void {
-        _ = self;
         const output = try allocator.alloc.create([]const u8);
         output.* = outputData;
 
