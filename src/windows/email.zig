@@ -47,9 +47,9 @@ const EmailData = struct {
             props.scroll = .{
                 .offsetStart = 0,
             };
-
-            self.offset = &props.scroll.?.value;
         }
+
+        self.offset = &props.scroll.?.value;
 
         if (self.scrollTop) {
             props.scroll.?.value = 0;
