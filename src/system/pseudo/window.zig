@@ -16,6 +16,8 @@ const texMan = @import("../../util/texmanager.zig");
 const windowedState = @import("../../states/windowed.zig");
 const colors = @import("../../math/colors.zig");
 
+const log = @import("../../util/log.zig").log;
+
 pub var wintex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
 
@@ -281,12 +283,12 @@ pub fn readWinRender(_: ?*vm.VM) ![]const u8 {
 
 pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
     if (data.len < 66) {
-        std.log.info("{}", .{data.len});
+        log.info("{}", .{data.len});
         return;
     }
 
     if (texMan.TextureManager.instance.get(data[1..2]) == null) {
-        std.log.info("{any}", .{data[1..2]});
+        log.info("{any}", .{data[1..2]});
         return;
     }
 

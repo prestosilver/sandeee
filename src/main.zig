@@ -522,23 +522,23 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
         const state = gameStates.getPtr(.Crash);
 
         state.update(1.0 / 60.0) catch |err| {
-            std.log.err("crash draw failed, {!}", .{err});
+            log.log.err("crash draw failed, {!}", .{err});
 
             break;
         };
         state.draw(gfx.Context.instance.size) catch |err| {
-            std.log.err("crash draw failed, {!}", .{err});
+            log.log.err("crash draw failed, {!}", .{err});
 
             break;
         };
         blit() catch |err| {
-            std.log.err("crash blit failed {!}", .{err});
+            log.log.err("crash blit failed {!}", .{err});
 
             break;
         };
     }
 
-    std.log.info("Exiting", .{});
+    log.log.info("Exiting", .{});
 
     std.os.exit(0);
 }
@@ -549,7 +549,7 @@ var isCrt = true;
 pub fn main() void {
     defer if (!builtin.link_libc or !allocator.useclib) {
         if (allocator.gpa.deinit() == .ok)
-            std.log.debug("no leaks! :)", .{});
+            log.log.debug("no leaks! :)", .{});
     };
 
     mainErr() catch |err| {
@@ -572,7 +572,7 @@ pub fn main() void {
 
 pub fn mainErr() anyerror!void {
     if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
-        std.log.info("Restarting for steam", .{});
+        log.log.info("Restarting for steam", .{});
         return; // steam will relaunch the game from the steam client.
     }
 
@@ -629,7 +629,7 @@ pub fn mainErr() anyerror!void {
     log.logFile = try std.fs.cwd().createFile("SandEEE.log", .{});
     defer log.logFile.?.close();
 
-    std.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
+    log.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
 
     // setup the texture manager
     texMan.TextureManager.init();
@@ -900,7 +900,8 @@ pub fn mainErr() anyerror!void {
         if (c.glfwGetWindowAttrib(gfx.Context.instance.window, c.GLFW_ICONIFIED) == 0) {
             const cb = struct {
                 fn callback(callbackMsg: steam.CallbackMsg) anyerror!void {
-                    std.log.warn("steam callback {}", .{callbackMsg.callback});
+                    _ = callbackMsg;
+                    //log.log.warn("steam callback {}", .{callbackMsg.callback});
                 }
             }.callback;
 

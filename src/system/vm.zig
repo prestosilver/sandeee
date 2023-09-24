@@ -6,6 +6,8 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const windowedState = @import("../states/windowed.zig");
 
+const log = @import("../util/log.zig").log;
+
 // TODO: move stack stuff to settings?
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
@@ -356,7 +358,7 @@ pub const VM = struct {
     pub inline fn runOp(self: *VM, op: Operation) !void {
         telem.Telem.instance.instructionCalls += 1;
 
-        //std.log.info("{}", .{op});
+        //log.info("{}", .{op});
 
         self.pc += 1;
 
@@ -1412,7 +1414,7 @@ pub const VM = struct {
 
                 return func.*.ops[self.pc];
             }
-            std.log.err("'{s}', {any}", .{ inside, self.functions.get(inside) });
+            log.err("'{s}', {any}", .{ inside, self.functions.get(inside) });
             return error.UnknownFunction;
         } else {
             if (self.code.?.len <= self.pc) return null;

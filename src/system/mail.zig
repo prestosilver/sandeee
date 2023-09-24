@@ -7,6 +7,8 @@ const windowEvs = @import("../events/window.zig");
 const files = @import("../system/files.zig");
 const emailWin = @import("../windows/email.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub const EmailManager = struct {
     pub const Email = struct {
         const Condition = enum(u8) {
@@ -319,7 +321,7 @@ pub const EmailManager = struct {
         self.boxes = try allocator.alloc.alloc([]u8, fileList.items.len);
 
         for (fileList.items, 0..) |file, boxid| {
-            std.log.debug("load emails: {s}", .{file.name});
+            log.debug("load emails: {s}", .{file.name});
 
             self.boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
 

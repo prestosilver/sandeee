@@ -2,6 +2,8 @@ const std = @import("std");
 
 pub var logFile: ?std.fs.File = null;
 
+pub const log = std.log.scoped(.SandEEE);
+
 pub fn myLogFn(
     comptime level: std.log.Level,
     comptime scope: @TypeOf(.EnumLiteral),
@@ -11,7 +13,7 @@ pub fn myLogFn(
     // Ignore all non-error logging from sources other than
     // .my_project, .nice_library and the default
     const scope_prefix = "(" ++ switch (scope) {
-        .SandEEE, std.log.default_log_scope => @tagName(scope),
+        .SandEEE, .Steam, std.log.default_log_scope => @tagName(scope),
         else => if (@intFromEnum(level) <= @intFromEnum(std.log.Level.err))
             @tagName(scope)
         else

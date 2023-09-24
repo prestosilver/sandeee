@@ -4,8 +4,10 @@ const font = @import("../util/font.zig");
 const mail = @import("../system/mail.zig");
 const c = @import("../c.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub fn loadMail(self: *worker.WorkerQueueEntry(*const []const u8, *mail.EmailManager)) !bool {
-    std.log.debug("load mail", .{});
+    log.debug("load mail", .{});
 
     self.out.* = try mail.EmailManager.init();
 

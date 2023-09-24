@@ -7,8 +7,10 @@ const conf = @import("../system/config.zig");
 const files = @import("../system/files.zig");
 const allocator = @import("../util/allocator.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)) !bool {
-    std.log.debug("load settings", .{});
+    log.debug("load settings", .{});
 
     conf.SettingManager.init();
 

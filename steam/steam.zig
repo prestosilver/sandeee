@@ -10,6 +10,8 @@ const TestUGC: SteamUGC = .{};
 const TestUtils: SteamUtils = .{};
 const TestStats: SteamUserStats = .{};
 
+const log = std.log.scoped(.Steam);
+
 pub const SteamUser = extern struct {
     data: i32,
 
@@ -18,7 +20,7 @@ pub const SteamUser = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUser_GetSteamID(self);
         } else {
-            std.log.debug("Get Steam Id From User", .{});
+            log.debug("Get Steam Id From User", .{});
             return .{
                 .id = 1000,
             };
@@ -32,7 +34,7 @@ pub const SteamUtils = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUtils_IsAPICallCompleted(self, handle, failed);
         } else {
-            std.log.debug("Check complete", .{});
+            log.debug("Check complete", .{});
             return .{
                 .id = 1000,
             };
@@ -90,7 +92,7 @@ pub const SteamUGC = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUGC_DownloadItem(ugc, id, hp);
         } else {
-            std.log.debug("Download Item: {}", .{id});
+            log.debug("Download Item: {}", .{id});
             return .{
                 .data = 1,
             };
@@ -102,7 +104,7 @@ pub const SteamUGC = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUGC_GetItemInstallInfo(ugc, id, size, folder.ptr, @intCast(folder.len), timestamp);
         } else {
-            std.log.debug("itemInfo: {}", .{id});
+            log.debug("itemInfo: {}", .{id});
             return false;
         }
     }
@@ -112,7 +114,7 @@ pub const SteamUGC = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUGC_SendQueryUGCRequest(ugc, handle);
         } else {
-            std.log.debug("SendQuery: handle: {}", .{handle});
+            log.debug("SendQuery: handle: {}", .{handle});
             return .{
                 .data = 1,
             };
@@ -131,7 +133,7 @@ pub const SteamUGC = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc, queryKind, kind, creatorId, consumerId, page);
         } else {
-            std.log.debug("Query: querykind: {}, kind: {}, creator: {}, consumer: {}, page: {}", .{ queryKind, kind, creatorId, consumerId, page });
+            log.debug("Query: querykind: {}, kind: {}, creator: {}, consumer: {}, page: {}", .{ queryKind, kind, creatorId, consumerId, page });
             return .{
                 .data = 10,
             };
@@ -148,7 +150,7 @@ pub const SteamUGC = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUGC_GetQueryUGCResult(ugc, handle, index, details);
         } else {
-            std.log.debug("query result", .{});
+            log.debug("query result", .{});
             return false;
         }
     }
@@ -161,7 +163,7 @@ pub const SteamUGC = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(ugc, handle);
         } else {
-            std.log.debug("query result", .{});
+            log.debug("query result", .{});
             return false;
         }
     }
@@ -176,7 +178,7 @@ pub fn init() bool {
     if (enableApi) {
         return SteamAPI_Init();
     } else {
-        std.log.debug("Init Steam", .{});
+        log.debug("Init Steam", .{});
         return true;
     }
 }
@@ -186,7 +188,7 @@ pub fn restartIfNeeded(app_id: u32) bool {
     if (enableApi) {
         return SteamAPI_RestartAppIfNecessary(app_id);
     } else {
-        std.log.debug("Restart If Needed: {}", .{app_id});
+        log.debug("Restart If Needed: {}", .{app_id});
         return false;
     }
 }
@@ -196,7 +198,7 @@ pub fn getSteamUGC() *const SteamUGC {
     if (enableApi) {
         return SteamAPI_SteamUGC_v017();
     } else {
-        std.log.debug("Get UGC", .{});
+        log.debug("Get UGC", .{});
         return &TestUGC;
     }
 }
@@ -206,7 +208,7 @@ pub fn getUser() SteamUser {
     if (enableApi) {
         return SteamAPI_SteamUser_v023();
     } else {
-        std.log.debug("Get User", .{});
+        log.debug("Get User", .{});
         return TestUser;
     }
 }
@@ -216,7 +218,7 @@ pub fn getSteamUtils() *const SteamUtils {
     if (enableApi) {
         return SteamAPI_SteamUtils_v010();
     } else {
-        std.log.debug("Init Steam Utils", .{});
+        log.debug("Init Steam Utils", .{});
         return &TestUtils;
     }
 }
@@ -226,7 +228,7 @@ pub fn getUserStats() *const SteamUserStats {
     if (enableApi) {
         return SteamAPI_SteamUserStats_v012();
     } else {
-        std.log.debug("Init Steam Utils", .{});
+        log.debug("Init Steam Utils", .{});
         return &TestStats;
     }
 }
@@ -236,7 +238,7 @@ pub fn runCallbacks() void {
     if (enableApi) {
         return SteamAPI_RunCallbacks();
     } else {
-        std.log.debug("Init Steam Utils", .{});
+        log.debug("Init Steam Utils", .{});
         return &TestStats;
     }
 }

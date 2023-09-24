@@ -2,6 +2,8 @@ const std = @import("std");
 const mat4 = @import("../math/mat4.zig");
 const c = @import("../c.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub const ShaderFile = struct {
     contents: [*c]const u8,
     kind: c.GLuint,
@@ -28,7 +30,7 @@ pub const Shader = struct {
                 var infoLog = [_]u8{0} ** 512;
 
                 c.glGetShaderInfoLog(shader, 512, null, &infoLog);
-                std.log.err("{s}", .{infoLog});
+                log.err("{s}", .{infoLog});
                 return error.CompileError;
             }
 
@@ -43,7 +45,7 @@ pub const Shader = struct {
             var infoLog = [_]u8{0} ** 512;
 
             c.glGetProgramInfoLog(prog, 512, null, &infoLog);
-            std.log.err("{s}", .{infoLog});
+            log.err("{s}", .{infoLog});
             return error.CompileError;
         }
 

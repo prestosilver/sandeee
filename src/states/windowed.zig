@@ -32,12 +32,15 @@ const c = @import("../c.zig");
 const vmManager = @import("../system/vmmanager.zig");
 const texMan = @import("../util/texmanager.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub const GSWindowed = struct {
     const Self = @This();
 
     dragmode: win.DragMode = .None,
     draggingStart: vecs.Vector2 = vecs.newVec2(0, 0),
-    dragging: ?*win.Window = null,
+    dragging_window: ?*win.Window = null,
+    dragging_popup: ?*popups.Popup = null,
     down: bool = false,
 
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),

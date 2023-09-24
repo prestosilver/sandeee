@@ -6,6 +6,8 @@ const gfx = @import("graphics.zig");
 const cols = @import("../math/colors.zig");
 const allocator = @import("allocator.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub const Texture = struct {
     tex: c.GLuint = 0,
     size: vecs.Vector2,
@@ -82,7 +84,7 @@ pub fn newTextureMem(mem: []const u8) !Texture {
     };
 
     if (mem.len / 4 - 2 != width * height) {
-        std.log.info("new expected {} got {}", .{ width * height * 4 + 4, mem.len });
+        log.err("new expected {} got {}", .{ width * height * 4 + 4, mem.len });
 
         return error.WrongSize;
     }
@@ -114,7 +116,7 @@ pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
     const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
 
     if (mem.len / 4 - 2 != width * height) {
-        std.log.info("up expected {} got {}", .{ width * height * 4 + 4, mem.len });
+        log.err("up expected {} got {}", .{ width * height * 4 + 4, mem.len });
 
         return error.WrongSize;
     }

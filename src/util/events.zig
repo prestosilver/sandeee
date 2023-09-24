@@ -1,6 +1,8 @@
 const std = @import("std");
 const allocator = @import("allocator.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub const EventManager = struct {
     pub var instance: EventManager = undefined;
 
@@ -58,7 +60,7 @@ pub const EventManager = struct {
     pub inline fn sendEvent(self: *EventManager, data: anytype) !void {
         const T = @TypeOf(data);
         const name: []const u8 = @typeName(T);
-        //std.log.debug("{s}: {}", .{ name, data });
+        //log.debug("{s}: {}", .{ name, data });
 
         for (self.subs.get(name) orelse return) |sub| {
             const call = @as(*const fn (T) anyerror!void, @ptrCast(sub.calls));

@@ -8,6 +8,8 @@ const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
 const rect = @import("../math/rects.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub const Telem = packed struct {
     pub const PATH = "/_priv/telem.bin";
 
@@ -73,7 +75,7 @@ pub const Telem = packed struct {
             //const pass = try getDebugPassword();
             //defer allocator.alloc.free(pass);
 
-            //std.log.info("Set telem pass: {s}", .{pass});
+            //log.info("Set telem pass: {s}", .{pass});
         }
     }
 

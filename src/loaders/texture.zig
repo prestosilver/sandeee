@@ -7,13 +7,15 @@ const gfx = @import("../util/graphics.zig");
 const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []const u8)) !bool {
     const path = conf.SettingManager.instance.get(self.indata.*) orelse
         self.indata.*;
 
     var texture = try tex.newTextureSize(.{ .x = 0, .y = 0 });
 
-    std.log.debug("load tex: {s}", .{path});
+    log.debug("load tex: {s}", .{path});
 
     try tex.uploadTextureFile(&texture, path);
 

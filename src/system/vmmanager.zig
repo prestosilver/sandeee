@@ -3,6 +3,8 @@ const vm = @import("vm.zig");
 const files = @import("files.zig");
 const allocator = @import("../util/allocator.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub const VMManager = struct {
     const Self = @This();
 
@@ -92,7 +94,7 @@ pub const VMManager = struct {
 
         try self.vms.put(id, vm_instance);
 
-        std.log.debug("Spawned vm id: {}", .{id});
+        log.debug("Spawned vm id: {}", .{id});
 
         return .{
             .id = id,
@@ -104,9 +106,9 @@ pub const VMManager = struct {
             try entry.deinit();
             _ = self.vms.remove(handle.id);
 
-            std.log.debug("Destroy vm id: {}", .{handle.id});
+            log.debug("Destroy vm id: {}", .{handle.id});
         } else {
-            std.log.warn("Failed to destroy empty vm id: {}", .{handle.id});
+            log.warn("Failed to destroy empty vm id: {}", .{handle.id});
         }
     }
 

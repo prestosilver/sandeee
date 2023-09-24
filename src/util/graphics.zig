@@ -7,6 +7,8 @@ const tex = @import("../util/texture.zig");
 const allocator = @import("allocator.zig");
 const c = @import("../c.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub const Context = struct {
     pub var instance: Context = undefined;
 
@@ -31,7 +33,7 @@ pub const Context = struct {
     }
 
     export fn errorCallback(err: c_int, description: [*c]const u8) void {
-        std.log.err("{s}, {}\n", .{ description, err });
+        log.err("{s}, {}\n", .{ description, err });
     }
 
     const GfxError = error{

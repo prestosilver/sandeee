@@ -7,11 +7,13 @@ const gfx = @import("../util/graphics.zig");
 const allocator = @import("../util/allocator.zig");
 const conf = @import("../system/config.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub fn loadFontPath(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font)) !bool {
     const path = conf.SettingManager.instance.get(self.indata.*) orelse
         self.indata.*;
 
-    std.log.debug("load font: {s}", .{path});
+    log.debug("load font: {s}", .{path});
 
     gfx.Context.makeCurrent();
     defer gfx.Context.makeNotCurrent();
@@ -22,7 +24,7 @@ pub fn loadFontPath(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font
 }
 
 pub fn loadFont(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font)) !bool {
-    std.log.debug("load font in mem", .{});
+    log.debug("load font in mem", .{});
 
     gfx.Context.makeCurrent();
     defer gfx.Context.makeNotCurrent();
