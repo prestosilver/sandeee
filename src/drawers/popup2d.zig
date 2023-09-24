@@ -154,7 +154,7 @@ pub const PopupData = struct {
             .text = self.title,
             .pos = vecs.newVec2(self.pos.x + 9, self.pos.y + 8),
             .color = color,
-            .wrap = self.pos.w,
+            .wrap = self.pos.w - 64,
             .maxlines = 1,
         });
     }
