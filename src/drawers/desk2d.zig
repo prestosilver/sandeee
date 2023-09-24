@@ -139,8 +139,12 @@ pub const DeskData = struct {
                                 .data = .{
                                     .title = "File Picker",
                                     .source = rect.newRect(0, 0, 1, 1),
-                                    .size = vecs.newVec2(350, 125),
-                                    .parentPos = undefined,
+                                    .pos = rect.newRectCentered(.{
+                                        .x = 0,
+                                        .y = 0,
+                                        .w = gfx.Context.instance.size.x,
+                                        .h = gfx.Context.instance.size.y,
+                                    }, 350, 125),
                                     .contents = popups.PopupData.PopupContents.init(adds),
                                 },
                             },

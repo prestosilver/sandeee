@@ -53,6 +53,7 @@ pub const ExplorerData = struct {
     selected: ?usize = null,
     lastAction: ?ExplorerMouseAction = null,
     icon_data: []const ExplorerIcon,
+    bnds: rect.Rectangle = undefined,
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
         const subFolders = try self.shell.root.getFolders();
@@ -99,6 +100,8 @@ pub const ExplorerData = struct {
                 self.lastAction.?.time -= 5;
             }
         }
+
+        self.bnds = bnds.*;
 
         const title = try std.fmt.allocPrint(allocator.alloc, "{s}", .{self.shell.root.name});
         defer allocator.alloc.free(title);
@@ -191,8 +194,7 @@ pub const ExplorerData = struct {
                                                 .data = .{
                                                     .title = "File Picker",
                                                     .source = rect.newRect(0, 0, 1, 1),
-                                                    .size = vecs.newVec2(350, 125),
-                                                    .parentPos = undefined,
+                                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
                                                 },
                                             },
@@ -325,8 +327,7 @@ pub const ExplorerData = struct {
                             .data = .{
                                 .title = "File Picker",
                                 .source = rect.newRect(0, 0, 1, 1),
-                                .size = vecs.newVec2(350, 125),
-                                .parentPos = undefined,
+                                .pos = rect.newRectCentered(self.bnds, 350, 125),
                                 .contents = popups.PopupData.PopupContents.init(adds),
                             },
                         },

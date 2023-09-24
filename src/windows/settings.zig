@@ -48,6 +48,7 @@ const SettingsData = struct {
     lastAction: ?SettingsMouseAction = null,
     focusedPane: ?usize = null,
     editing: ?usize = null,
+    bnds: rect.Rectangle = undefined,
 
     value: []const u8,
 
@@ -155,6 +156,8 @@ const SettingsData = struct {
             }
         }
 
+        self.bnds = bnds.*;
+
         if (self.focusedPane) |focused| {
             var pos = vecs.newVec2(0, 40);
 
@@ -190,8 +193,7 @@ const SettingsData = struct {
                                                 .data = .{
                                                     .title = "Text Picker",
                                                     .source = rect.newRect(0, 0, 1, 1),
-                                                    .size = vecs.newVec2(350, 125),
-                                                    .parentPos = undefined,
+                                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
                                                 },
                                             },
@@ -215,8 +217,7 @@ const SettingsData = struct {
                                                 .data = .{
                                                     .title = "Text Picker",
                                                     .source = rect.newRect(0, 0, 1, 1),
-                                                    .size = vecs.newVec2(350, 125),
-                                                    .parentPos = undefined,
+                                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
                                                 },
                                             },
@@ -240,8 +241,7 @@ const SettingsData = struct {
                                                 .data = .{
                                                     .title = "Text Picker",
                                                     .source = rect.newRect(0, 0, 1, 1),
-                                                    .size = vecs.newVec2(350, 125),
-                                                    .parentPos = undefined,
+                                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
                                                 },
                                             },

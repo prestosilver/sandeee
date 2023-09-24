@@ -8,7 +8,6 @@ const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
 const allocator = @import("../util/allocator.zig");
 const spr = @import("sprite2d.zig");
-const popup = @import("popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const c = @import("../c.zig");
 
@@ -60,6 +59,9 @@ pub const WindowContents = struct {
         },
         close: bool = false,
         clearColor: cols.Color,
+
+        no_min: bool = false,
+        no_close: bool = false,
 
         pub fn setTitle(self: *WindowProps, title: []const u8) !void {
             if (!std.mem.eql(u8, self.info.name, title)) {
@@ -305,7 +307,6 @@ pub const WindowData = struct {
     full: bool = false,
     min: bool = false,
     idx: usize = 0,
-    popup: ?popup.Popup = null,
     shouldClose: bool = false,
 
     contents: WindowContents,
@@ -318,10 +319,6 @@ pub const WindowData = struct {
     }
 
     pub fn deinit(self: *WindowData) !void {
-        if (self.popup) |*popupData| {
-            try popupData.data.contents.deinit();
-        }
-
         try self.contents.deinit();
     }
 

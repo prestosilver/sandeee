@@ -77,6 +77,8 @@ pub const WebData = struct {
     add_links: bool = false,
     web_idx: u8,
 
+    bnds: rect.Rectangle = undefined,
+
     styles: std.StringArrayHashMap(Style),
 
     pub fn steamList(self: *Self, page: u32) !void {
@@ -474,8 +476,7 @@ pub const WebData = struct {
                 .data = .{
                     .title = "Save As",
                     .source = rect.newRect(0, 0, 1, 1),
-                    .size = vecs.newVec2(350, 125),
-                    .parentPos = undefined,
+                    .pos = rect.newRectCentered(self.bnds, 350, 125),
                     .contents = popups.PopupData.PopupContents.init(adds),
                 },
             },
@@ -495,6 +496,8 @@ pub const WebData = struct {
     }
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        self.bnds = bnds.*;
+
         if (props.scroll == null) {
             props.scroll = .{
                 .offsetStart = 40,

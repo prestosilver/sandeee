@@ -84,7 +84,9 @@ pub const PopupFolderPick = struct {
         if (keycode == c.GLFW_KEY_ENTER) {
             if (files.root.getFolder(self.path) catch null) |folder| {
                 try self.submit(folder, self.data);
-                try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
+                try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{
+                    .popup_conts = self,
+                });
             } else {
                 self.err = "Folder Not Found";
             }

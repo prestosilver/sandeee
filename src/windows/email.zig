@@ -40,6 +40,7 @@ const EmailData = struct {
     selected: ?*mail.EmailManager.Email = null,
     offset: *f32 = undefined,
     rowsize: f32 = 0,
+    bnds: rect.Rectangle = undefined,
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
@@ -54,6 +55,8 @@ const EmailData = struct {
             props.scroll.?.value = 0;
             self.scrollTop = false;
         }
+
+        self.bnds = bnds.*;
 
         props.scroll.?.offsetStart = if (self.viewing == null) 0 else 38;
 
@@ -206,8 +209,7 @@ const EmailData = struct {
                 .data = .{
                     .title = "Send Attachment",
                     .source = rect.newRect(0, 0, 1, 1),
-                    .size = vecs.newVec2(350, 125),
-                    .parentPos = undefined,
+                    .pos = rect.newRectCentered(self.bnds, 350, 125),
                     .contents = popups.PopupData.PopupContents.init(adds),
                 },
             },

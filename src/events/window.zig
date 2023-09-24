@@ -7,5 +7,5 @@ const spr = @import("../drawers/sprite2d.zig");
 
 pub const EventCreateWindow = struct { window: win.Window, center: bool = false };
 pub const EventCreatePopup = struct { popup: popups.Popup, global: bool = false };
-pub const EventClosePopup = struct {};
+pub const EventClosePopup = struct { popup_conts: *const anyopaque };
 pub const EventNotification = struct { title: []const u8, text: []const u8 = "", icon: ?spr.Sprite = null };

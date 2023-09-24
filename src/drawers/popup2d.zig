@@ -104,8 +104,7 @@ pub const PopupData = struct {
     };
 
     source: rect.Rectangle,
-    size: vecs.Vector2,
-    parentPos: rect.Rectangle,
+    pos: rect.Rectangle,
     contents: PopupContents,
     title: []const u8,
 
@@ -149,15 +148,13 @@ pub const PopupData = struct {
     }
 
     pub fn drawName(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
-        const pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
-
         const color = cols.newColorRGBA(255, 255, 255, 255);
         try font.draw(.{
             .shader = shader,
             .text = self.title,
-            .pos = vecs.newVec2(pos.x + 9, pos.y + 8),
+            .pos = vecs.newVec2(self.pos.x + 9, self.pos.y + 8),
             .color = color,
-            .wrap = self.size.x,
+            .wrap = self.pos.w,
             .maxlines = 1,
         });
     }
@@ -175,46 +172,50 @@ pub const PopupData = struct {
 
     pub fn getVerts(self: *const PopupData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(9 * 6 * 2);
-        const sprite: u8 = 1;
+        const sprite: u8 = 2;
 
-        const pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
+        const close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);
 
-        const close = rect.newRect(pos.x + self.size.x - 64, pos.y, 64, 64);
-
-        try addUiQuad(&result, sprite, rect.newRect(pos.x, pos.y, self.size.x, self.size.y), 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
         try addUiQuad(&result, 3, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
 
         return result;
     }
 
-    pub fn click(self: *PopupData, mousepos: vecs.Vector2) !bool {
-        const pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
-        var close = rect.newRect(pos.x + self.size.x - 64, pos.y, 64, 64);
+    pub const ClickKind = enum {
+        Close,
+        Move,
+        None,
+    };
+
+    pub fn click(self: *PopupData, mousepos: vecs.Vector2) !ClickKind {
+        var close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);
         close.h = 26;
         close.x += close.w - 26;
         close.w = 26;
         if (close.contains(mousepos)) {
-            return true;
+            return .Close;
         }
 
-        const clickPos = mousepos.sub(pos);
+        const clickPos = mousepos.sub(self.pos.location());
 
-        if (clickPos.x < 0 or clickPos.y < 34) return false;
-        if (clickPos.x > self.size.x or clickPos.y > self.size.y) return false;
+        if (clickPos.x < 0) return .None;
+        if (clickPos.x > self.pos.w or clickPos.y > self.pos.h) return .None;
+
+        if (clickPos.y < 34 and clickPos.y > 0) return .Move;
 
         try self.contents.click(clickPos);
 
-        return false;
+        return .None;
     }
 
-    pub fn scissor(self: *const PopupData) rect.Rectangle {
-        const pos = self.parentPos.location().add(self.parentPos.size().sub(self.size).div(2)).round();
+    pub inline fn scissor(self: *const PopupData) rect.Rectangle {
         return .{
-            .x = pos.x + 6,
-            .y = pos.y + 34,
-            .w = self.size.x - 12,
-            .h = self.size.y - 40,
+            .x = self.pos.x + 6,
+            .y = self.pos.y + 34,
+            .w = self.pos.w - 12,
+            .h = self.pos.h - 40,
         };
     }
 };

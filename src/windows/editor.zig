@@ -70,6 +70,7 @@ pub const EditorData = struct {
 
     modified: bool = false,
     file: ?*files.File = null,
+    bnds: rect.Rectangle = undefined,
 
     pub fn hlLine(rawLine: []const u8) ![]const u8 {
         var line = try allocator.alloc.dupe(u8, rawLine);
@@ -170,6 +171,8 @@ pub const EditorData = struct {
                 .offsetStart = 40,
             };
         }
+
+        self.bnds = bnds.*;
 
         const charSize = font.sizeText(.{
             .text = "A",
@@ -365,8 +368,7 @@ pub const EditorData = struct {
                             .data = .{
                                 .title = "Open",
                                 .source = rect.newRect(0, 0, 1, 1),
-                                .size = vecs.newVec2(350, 125),
-                                .parentPos = undefined,
+                                .pos = rect.newRectCentered(self.bnds, 350, 125),
                                 .contents = popups.PopupData.PopupContents.init(adds),
                             },
                         },
@@ -508,8 +510,7 @@ pub const EditorData = struct {
                         .data = .{
                             .title = "Save As",
                             .source = rect.newRect(0, 0, 1, 1),
-                            .size = vecs.newVec2(350, 125),
-                            .parentPos = undefined,
+                            .pos = rect.newRectCentered(self.bnds, 350, 125),
                             .contents = popups.PopupData.PopupContents.init(adds),
                         },
                     },

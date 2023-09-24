@@ -43,6 +43,15 @@ pub const Rectangle = struct {
     }
 };
 
+pub inline fn newRectCentered(parent: Rectangle, w: f32, h: f32) Rectangle {
+    return Rectangle{
+        .x = parent.x + (parent.w - w) / 2,
+        .y = parent.y + (parent.h - h) / 2,
+        .w = w,
+        .h = h,
+    };
+}
+
 pub inline fn newRect(x: f32, y: f32, w: f32, h: f32) Rectangle {
     return Rectangle{
         .x = x,

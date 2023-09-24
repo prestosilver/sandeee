@@ -90,7 +90,9 @@ pub const PopupTextPick = struct {
                 return;
             };
 
-            try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
+            try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{
+                .popup_conts = self,
+            });
         }
     }
 

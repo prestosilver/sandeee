@@ -11,6 +11,7 @@ const vecs = @import("../../math/vecs.zig");
 const fnt = @import("../../util/font.zig");
 const events = @import("../../util/events.zig");
 const windowEvs = @import("../../events/window.zig");
+const popups = @import("../../drawers/popup2d.zig");
 const c = @import("../../c.zig");
 
 var outlineSprites = [_]spr.Sprite{
@@ -148,8 +149,12 @@ pub const PopupConfirm = struct {
     pub fn click(self: *Self, pos: vecs.Vector2) !void {
         const idx: usize = @intFromFloat(pos.x / self.singleWidth);
 
+        if (idx > self.buttons.len) return;
+
         try self.buttons[idx].calls(self.data);
-        try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
+        try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{
+            .popup_conts = self,
+        });
     }
 
     pub fn deinit(self: *Self) !void {

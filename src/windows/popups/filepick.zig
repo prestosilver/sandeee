@@ -90,7 +90,9 @@ pub const PopupFilePick = struct {
             };
 
             try self.submit(file, self.data);
-            try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{});
+            try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{
+                .popup_conts = self,
+            });
         }
     }
 
