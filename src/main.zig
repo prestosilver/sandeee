@@ -936,7 +936,7 @@ pub fn mainErr() anyerror!void {
                     vmManager.VMManager.vm_time += 0.01;
                 }
 
-                vmManager.VMManager.vm_time = std.math.clamp(vmManager.VMManager.vm_time, 0.1, 0.9);
+                vmManager.VMManager.vm_time = std.math.clamp(vmManager.VMManager.vm_time, 0.25, 0.9);
             }
 
             fps = 0;

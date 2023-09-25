@@ -161,7 +161,6 @@ pub fn build(b: *std.build.Builder) !void {
     exe.linkSystemLibrary("glfw3");
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("OpenAL");
-    exe.linkSystemLibrary("c");
     if (isSteam) {
         exe.linkSystemLibrary("steam_api");
     }
