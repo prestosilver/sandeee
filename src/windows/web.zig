@@ -694,7 +694,7 @@ pub const WebData = struct {
 
                 const size = font.sizeText(.{ .text = aline, .scale = style.scale, .wrap = webWidth });
 
-                if (pos.y > 0 and pos.y + size.y * style.scale < bnds.h) {
+                if (pos.y > 0 and pos.y + size.y - 20 < bnds.h) {
                     switch (style.ali) {
                         .Left => {
                             try font.draw(.{

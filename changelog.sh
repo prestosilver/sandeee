@@ -37,6 +37,7 @@ EOF
 
                 echo $line | grep -q -i "fix" && ch="|!"
                 echo $line | grep -q -i "update" && ch="|!"
+                echo $line | grep -q -i "reimpl" && ch="|!"
                 
                 echo $line | grep -q -i "bump" && ch=""
     
