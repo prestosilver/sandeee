@@ -13,6 +13,8 @@ const allocator = @import("../util/allocator.zig");
 const tex = @import("../util/texture.zig");
 const col = @import("../math/colors.zig");
 const files = @import("../system/files.zig");
+const sprite = @import("../drawers/sprite2d.zig");
+const conf = @import("../system/config.zig");
 
 const DEMO_TIME = 6e+11;
 
@@ -21,6 +23,9 @@ pub const WelcomeData = struct {
 
     shell: shell.Shell,
     timer: std.time.Timer,
+    check_box: [2]sprite.Sprite,
+    cb_pos: rect.Rectangle = undefined,
+    shader: *shd.Shader,
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         props.no_min = true;
@@ -65,6 +70,24 @@ pub const WelcomeData = struct {
                 .scale = 2,
                 .color = col.newColor(1, 0, 0, 1),
             });
+        } else {
+            // draw checkbox
+            const cb: usize = if (conf.SettingManager.instance.getBool("show_welcome")) 0 else 1;
+
+            self.cb_pos = rect.Rectangle{
+                .x = 6,
+                .y = 80 + 10 * font.size,
+                .w = 20,
+                .h = 20,
+            };
+
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.check_box[cb], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 80 + 10 * font.size, 0));
+
+            try font.draw(.{
+                .shader = font_shader,
+                .text = "Never show again.",
+                .pos = vecs.newVec2(bnds.x + 20 + 6, bnds.y + 80 + 10 * font.size),
+            });
         }
 
         const versionText = try std.fmt.allocPrint(allocator.alloc, "(" ++ options.VersionText ++ ")", .{options.SandEEEVersion});
@@ -77,25 +100,18 @@ pub const WelcomeData = struct {
         });
     }
 
+    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, btn: ?i32) !void {
+        if (btn) |_| {
+            if (self.cb_pos.contains(pos)) {
+                const new_value: bool = !conf.SettingManager.instance.getBool("show_welcome");
+                try conf.SettingManager.instance.setBool("show_welcome", new_value);
+            }
+        }
+    }
+
+    pub fn char(_: *Self, _: u32, _: i32) !void {}
     pub fn scroll(_: *Self, _: f32, _: f32) void {}
-
-    pub fn move(self: *Self, x: f32, y: f32) void {
-        _ = y;
-        _ = x;
-        _ = self;
-    }
-
-    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, _: ?i32) !void {
-        _ = pos;
-        _ = self;
-    }
-
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = mods;
-        _ = code;
-        _ = self;
-    }
-
+    pub fn move(_: *Self, _: f32, _: f32) void {}
     pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
     pub fn focus(_: *Self) !void {}
     pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
@@ -106,16 +122,25 @@ pub const WelcomeData = struct {
     }
 };
 
-pub fn new() !win.WindowContents {
+pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(WelcomeData);
-
-    // TODO: disable button
 
     self.* = WelcomeData{
         .shell = .{
             .root = files.home,
             .vm = null,
         },
+        .check_box = .{
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(4.0 / 8.0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
+                vecs.newVec2(20.0, 20.0),
+            )),
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(6.0 / 8.0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
+                vecs.newVec2(20, 20),
+            )),
+        },
+        .shader = shader,
         .timer = try std.time.Timer.start(),
     };
 

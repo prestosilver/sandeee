@@ -38,6 +38,10 @@ pub const SettingManager = struct {
             return false;
     }
 
+    pub inline fn setBool(self: *SettingManager, setting: []const u8, value: bool) !void {
+        return self.set(setting, if (value) "yes" else "no");
+    }
+
     pub inline fn getInt(self: *SettingManager, setting: []const u8) i64 {
         if (self.get(setting)) |val|
             return std.fmt.parseInt(i64, val, 0) catch 0

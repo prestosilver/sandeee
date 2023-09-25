@@ -170,6 +170,7 @@ pub const WindowContents = struct {
         if (self.props.scroll != null) {
             self.props.scroll.?.value -= y * SCROLL_MUL;
         }
+
         return self.vtable.scroll(self.ptr, x, y);
     }
 

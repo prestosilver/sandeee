@@ -236,7 +236,7 @@ pub const GSWindowed = struct {
                     .w = 600,
                     .h = 350,
                 },
-                .contents = try wins.welcome.new(),
+                .contents = try wins.welcome.new(self.shader),
                 .active = true,
             });
 
