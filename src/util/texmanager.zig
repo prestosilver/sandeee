@@ -2,6 +2,8 @@ const std = @import("std");
 const tex = @import("texture.zig");
 const allocator = @import("allocator.zig");
 
+const log = @import("log.zig").log;
+
 pub const TextureManager = struct {
     pub var instance: TextureManager = undefined;
 
@@ -33,6 +35,8 @@ pub const TextureManager = struct {
         adds.* = texture;
 
         try self.textures.put(new, adds);
+
+        log.debug("New texture: '{s}'", .{std.fmt.fmtSliceEscapeUpper(name)});
     }
 
     pub fn putMem(self: *TextureManager, name: []const u8, texture: []const u8) !void {

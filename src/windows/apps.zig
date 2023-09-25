@@ -14,8 +14,12 @@ const tex = @import("../util/texture.zig");
 const c = @import("../c.zig");
 const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
+const texMan = @import("../util/texmanager.zig");
+
+const log = @import("../util/log.zig").log;
 
 const SCROLL = 30;
+var g_idx: u8 = 0;
 
 pub const LauncherData = struct {
     const LauncherIcon = struct {
@@ -38,9 +42,9 @@ pub const LauncherData = struct {
     };
 
     shader: *shd.Shader,
-    icons: [4]sprite.Sprite,
     text_box: [2]sprite.Sprite,
     menubar: sprite.Sprite,
+    sel: sprite.Sprite,
     gray: sprite.Sprite,
     shell: shell.Shell,
 
@@ -49,8 +53,13 @@ pub const LauncherData = struct {
     lastAction: ?LauncherMouseAction = null,
 
     icon_data: []const LauncherIcon,
+    idx: u8,
 
-    pub fn getIcons(_: *Self) ![]const LauncherIcon {
+    max_sprites: u8 = 0,
+
+    pub fn getIcons(self: *Self) ![]const LauncherIcon {
+        var textures = [_]u8{ 'l', 'a', 'u', self.idx, 0 };
+
         const folder = files.root.getFolder("conf/apps") catch
             return &.{};
 
@@ -61,10 +70,9 @@ pub const LauncherData = struct {
 
         for (subFiles, 0..) |file, idx| {
             const extIdx = std.mem.lastIndexOf(u8, file.name, ".") orelse file.name.len;
-
             result[idx] = LauncherIcon{
                 .name = file.name[folder.name.len..],
-                .icon = 1,
+                .icon = textures[4],
                 .launches = file.name[folder.name.len..extIdx],
             };
 
@@ -78,12 +86,24 @@ pub const LauncherData = struct {
                 if (std.mem.eql(u8, prop, "name")) {
                     result[idx].name = value;
                 } else if (std.mem.eql(u8, prop, "icon")) {
-                    result[idx].icon = std.fmt.parseInt(u8, value, 0) catch 0;
+                    if (texMan.TextureManager.instance.get(&textures)) |old_tex| {
+                        tex.uploadTextureFile(old_tex, value) catch {};
+                    } else {
+                        if (tex.newTextureFile(value) catch null) |tmp_tex| {
+                            try texMan.TextureManager.instance.put(&textures, tmp_tex);
+                        } else {
+                            log.err("Failed to load image {s}", .{value});
+                        }
+                    }
                 } else if (std.mem.eql(u8, prop, "runs")) {
                     result[idx].launches = value;
                 }
             }
+
+            textures[4] += 1;
         }
+
+        self.max_sprites = @max(self.max_sprites, @as(u8, @intCast(subFiles.len)));
 
         return result;
     }
@@ -139,10 +159,15 @@ pub const LauncherData = struct {
                     .maxlines = 1,
                 });
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                const icon_spr = sprite.Sprite.new(&.{ 'l', 'a', 'u', self.idx, @as(u8, @intCast(idx)) }, sprite.SpriteData.new(
+                    rect.newRect(0, 0, 1, 1),
+                    vecs.newVec2(64, 64),
+                ));
+
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon_spr, self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
                 if (idx + 1 == self.selected)
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
             }
 
             if (self.lastAction != null) {
@@ -172,6 +197,9 @@ pub const LauncherData = struct {
     }
 
     pub fn deinit(self: *Self) !void {
+        // TODO: deinit textures
+
+        // deinit rest
         try self.shell.deinit();
         allocator.alloc.free(self.icon_data);
         allocator.alloc.destroy(self);
@@ -228,6 +256,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .icon_data = try allocator.alloc.alloc(LauncherData.LauncherIcon, 0),
+        .idx = g_idx,
 
         .gray = sprite.Sprite.new("ui", sprite.SpriteData.new(
             rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
@@ -247,7 +276,10 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
                 vecs.newVec2(2.0, 28.0),
             )),
         },
-        .icons = undefined,
+        .sel = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
+            rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            vecs.newVec2(64.0, 64.0),
+        )),
         .shader = shader,
         .shell = .{
             .root = files.home,
@@ -255,14 +287,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         },
     };
 
-    for (self.icons, 0..) |_, idx| {
-        const i = @as(f32, @floatFromInt(idx)) - 1;
-
-        self.icons[idx] = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
-            rect.newRect(i / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(64, 64),
-        ));
-    }
+    g_idx += 1;
 
     return win.WindowContents.init(self, "launcher", "Launcher", col.newColor(1, 1, 1, 1));
 }

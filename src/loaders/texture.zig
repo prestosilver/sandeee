@@ -13,13 +13,13 @@ pub fn loadTexture(self: *worker.WorkerQueueEntry(*const []const u8, *const []co
     const path = conf.SettingManager.instance.get(self.indata.*) orelse
         self.indata.*;
 
-    var texture = try tex.newTextureSize(.{ .x = 0, .y = 0 });
-
     log.debug("load tex: {s}", .{path});
 
-    try tex.uploadTextureFile(&texture, path);
-
-    try texMan.TextureManager.instance.put(self.out.*, texture);
+    if (tex.newTextureFile(path)) |texture| {
+        try texMan.TextureManager.instance.put(self.out.*, texture);
+    } else |err| {
+        log.err("Could not load image {s}, {s}", .{ path, @errorName(err) });
+    }
 
     return true;
 }

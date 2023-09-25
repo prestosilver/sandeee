@@ -10,8 +10,6 @@ pub fn myLogFn(
     comptime format: []const u8,
     args: anytype,
 ) void {
-    // Ignore all non-error logging from sources other than
-    // .my_project, .nice_library and the default
     const scope_prefix = "(" ++ switch (scope) {
         .SandEEE, .Steam, std.log.default_log_scope => @tagName(scope),
         else => if (@intFromEnum(level) <= @intFromEnum(std.log.Level.err))

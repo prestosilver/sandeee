@@ -32,6 +32,8 @@ const internalSoundFiles = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
 
+const iconImageFiles = [_][]const u8{ "eeedt", "tasks" };
+
 // the website
 const wwwFiles = [_]WWWStepData{
     .{
@@ -260,6 +262,15 @@ pub fn build(b: *std.build.Builder) !void {
         var eraf = std.fmt.allocPrint(b.allocator, "content/disk/cont/snds/{s}.era", .{file}) catch "";
 
         var step = conv.ConvertStep.create(b, sound.convert, wavf, eraf);
+
+        write_step.step.dependOn(&step.step);
+    }
+
+    for (iconImageFiles) |file| {
+        var pngf = std.fmt.allocPrint(b.allocator, "content/images/icons/{s}.png", .{file}) catch "";
+        var eraf = std.fmt.allocPrint(b.allocator, "content/disk/cont/icns/{s}.eia", .{file}) catch "";
+
+        var step = conv.ConvertStep.create(b, image.convert, pngf, eraf);
 
         write_step.step.dependOn(&step.step);
     }

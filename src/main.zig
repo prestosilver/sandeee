@@ -571,18 +571,20 @@ pub fn main() void {
 }
 
 pub fn mainErr() anyerror!void {
-    if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
-        log.log.info("Restarting for steam", .{});
-        return; // steam will relaunch the game from the steam client.
-    }
+    if (options.IsSteam) {
+        if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
+            log.log.info("Restarting for steam", .{});
+            return; // steam will relaunch the game from the steam client.
+        }
 
-    if (steam.init()) {
-        var user = steam.getUser();
-        const steamId = user.getSteamId();
-        steamUtils = steam.getSteamUtils();
-        steamUserStats = steam.getUserStats();
-        _ = steamId;
-        _ = steamUtils;
+        if (steam.init()) {
+            var user = steam.getUser();
+            const steamId = user.getSteamId();
+            steamUtils = steam.getSteamUtils();
+            steamUserStats = steam.getUserStats();
+            _ = steamId;
+            _ = steamUtils;
+        }
     }
 
     // setup the headless command
@@ -898,16 +900,21 @@ pub fn mainErr() anyerror!void {
 
         // pause the game on minimize
         if (c.glfwGetWindowAttrib(gfx.Context.instance.window, c.GLFW_ICONIFIED) == 0) {
-            const cb = struct {
-                fn callback(callbackMsg: steam.CallbackMsg) anyerror!void {
-                    _ = callbackMsg;
-                    //log.log.warn("steam callback {}", .{callbackMsg.callback});
-                }
-            }.callback;
+
+            // steam callbacks
+            if (options.IsSteam) {
+                const cb = struct {
+                    fn callback(callbackMsg: steam.CallbackMsg) anyerror!void {
+                        _ = callbackMsg;
+                        //log.log.warn("steam callback {}", .{callbackMsg.callback});
+                    }
+                }.callback;
+
+                try steam.manualCallback(cb);
+            }
 
             // update the game state
             try state.update(@max(1 / 60, @as(f32, @floatCast(currentTime - last_frame_time))));
-            try steam.manualCallback(cb);
 
             // get tris
             try state.draw(gfx.Context.instance.size);
@@ -966,9 +973,13 @@ pub fn mainErr() anyerror!void {
     // deinit the current state
     try gameStates.getPtr(currentState).deinit();
 
+    // deinit fonts
     try biosFace.deinit();
+
+    // deinit textures
     texMan.TextureManager.deinit();
 
+    // close window
     gfx.Context.deinit();
 }
 

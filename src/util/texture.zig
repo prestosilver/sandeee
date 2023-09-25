@@ -65,8 +65,11 @@ pub fn newTextureSize(size: vecs.Vector2) !Texture {
 }
 
 pub fn newTextureFile(file: []const u8) !Texture {
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
+
     const image = try files.root.getFile(file);
-    const cont = try image.?.read(null);
+    const cont = try image.read(null);
 
     return newTextureMem(cont);
 }
@@ -99,9 +102,7 @@ pub fn newTextureMem(mem: []const u8) !Texture {
 const errorImage = @embedFile("../images/error.eia");
 
 pub fn uploadTextureFile(tex: *Texture, file: []const u8) !void {
-    const image = files.root.getFile(file) catch {
-        return uploadTextureMem(tex, errorImage);
-    };
+    const image = try files.root.getFile(file);
 
     const cont = try image.read(null);
 
