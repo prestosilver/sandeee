@@ -23,14 +23,11 @@ pub const FileStream = struct {
 
         const result = try allocator.alloc.create(FileStream);
 
-        result.path = try allocator.alloc.alloc(u8, file.name.len);
+        result.path = try allocator.alloc.dupe(u8, file.name);
         const cont = try file.read(vmInstance);
-        result.contents = try allocator.alloc.alloc(u8, cont.len);
+        result.contents = try allocator.alloc.dupe(u8, cont);
         result.updated = false;
         result.vmInstance = vmInstance;
-
-        @memcpy(result.contents, cont);
-        @memcpy(result.path, file.name);
 
         result.offset = 0;
 
@@ -44,10 +41,9 @@ pub const FileStream = struct {
     pub fn Read(self: *FileStream, len: u32) ![]const u8 {
         const target = @min(self.contents.len - self.offset, len);
 
-        const result = try allocator.alloc.alloc(u8, target);
         const input = self.contents[self.offset .. self.offset + target];
 
-        @memcpy(result, input);
+        const result = try allocator.alloc.dupe(u8, input);
 
         self.offset += @as(u32, @intCast(target));
 
