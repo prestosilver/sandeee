@@ -6,6 +6,8 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const windowedState = @import("../states/windowed.zig");
 
+const vmManager = @import("vmmanager.zig");
+
 const log = @import("../util/log.zig").log;
 
 // TODO: move stack stuff to settings?
@@ -31,6 +33,7 @@ pub const VM = struct {
         InvalidPassword,
         NotImplemented,
         UnknownFunction,
+        Todo,
     };
 
     const StackEntryKind = enum {
@@ -884,6 +887,31 @@ pub const VM = struct {
                             self.free(self.stack[self.rsp..oldRsp]);
 
                             return;
+                        },
+                        // spawn vm
+                        21 => {
+                            const exec = try self.popStack();
+                            defer self.free(&[_]StackEntry{exec});
+
+                            if (exec != .string) return error.StirngMissing;
+
+                            const file = try self.root.getFile(exec.string.*);
+                            const conts = try file.read(null);
+
+                            const handle = try vmManager.VMManager.instance.spawn(self.root, exec.string.*, conts[4..]);
+
+                            try self.pushStackI(handle.id);
+
+                            return;
+                        },
+                        // vm status
+                        22 => {
+                            const handle = try self.popStack();
+                            defer self.free(&[_]StackEntry{handle});
+
+                            if (handle != .value) return error.ValueMissing;
+
+                            return error.Todo;
                         },
                         // panic
                         128 => {

@@ -46,6 +46,12 @@ fn write() {
     asm "ret";
 }
 
+fn spawn() {
+    asm "sys 21";
+    asm "ret";
+
+}
+
 fn read() {
     asm "sys 4";
     asm "ret";
