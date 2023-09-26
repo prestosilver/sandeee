@@ -29,7 +29,6 @@ pub const GSLoading = struct {
         .{ "window_frame_path", "win" },
         .{ "wallpaper_path", "wall" },
         .{ "bar_texture_path", "bar" },
-        .{ "notif_texture_path", "notif" },
         .{ "ui_texture_path", "ui" },
         .{ "icons_texture_path", "icons" },
         .{ "bigicons_texture_path", "big_icons" },

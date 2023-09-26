@@ -126,7 +126,7 @@ pub const GSWindowed = struct {
     pub fn notification(event: windowEvs.EventNotification) !void {
         try globalSelf.notifs.append(
             .{
-                .texture = "notif",
+                .texture = "ui",
                 .data = .{
                     .title = event.title,
                     .text = event.text,
