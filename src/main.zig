@@ -123,7 +123,7 @@ const full_quad = [_]c.GLfloat{
 };
 
 // TODO: Move to settings
-const state_refresh_rate = 0.5;
+const state_refresh_rate = 1.0;
 
 // fps tracking
 var last_frame_time: f64 = 0;
@@ -216,19 +216,6 @@ pub fn blit() !void {
     if (false) {
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
-        c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
-        c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)));
-        c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
-
-        c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
-
-        c.glDrawBuffers(1, &[_]c.GLenum{c.GL_COLOR_ATTACHMENT0});
-
-        if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
-            return error.FramebufferSetupFail;
-
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
-
         gfx.Context.clear();
 
         // finish render
@@ -263,19 +250,6 @@ pub fn blit() !void {
 
         c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
     } else {
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
-
-        c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
-        c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)));
-        c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
-
-        c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
-
-        c.glDrawBuffers(1, &[_]c.GLenum{c.GL_COLOR_ATTACHMENT0});
-
-        if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
-            return error.FramebufferSetupFail;
-
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
 
         gfx.Context.clear();
@@ -415,7 +389,7 @@ pub fn settingSet(event: systemEvs.EventSetSetting) !void {
             defer gfx.Context.makeNotCurrent();
 
             crt_shader.setInt("crt_enable", val);
-            crt_shader.setInt("dither_enable", val);
+            crt_shader.setInt("dither_enable", 0);
 
             crt_enable = val == 1;
         }
@@ -484,6 +458,9 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR);
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
+
+    c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
+    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)));
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
@@ -674,13 +651,16 @@ pub fn mainErr() anyerror!void {
 
     // setup render texture for shaders
     c.glGenFramebuffers(1, &framebufferName);
+    c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
+
     c.glGenBuffers(1, &quad_VertexArrayID);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
     c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(full_quad.len * @sizeOf(f32))), &full_quad, c.GL_DYNAMIC_DRAW);
-    c.glGenTextures(1, &renderedTexture);
-    c.glGenRenderbuffers(1, &depthrenderbuffer);
 
-    // clear the window
+    // create color texture
+    c.glGenTextures(1, &renderedTexture);
+
+    // clear the windo
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
     c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
 
@@ -689,6 +669,20 @@ pub fn mainErr() anyerror!void {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR);
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
+
+    // create depth texture
+    c.glGenRenderbuffers(1, &depthrenderbuffer);
+
+    c.glBindRenderbuffer(c.GL_RENDERBUFFER, depthrenderbuffer);
+    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)));
+    c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depthrenderbuffer);
+
+    c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+    c.glDrawBuffers(1, &[_]c.GLenum{c.GL_COLOR_ATTACHMENT0});
+
+    if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
+        return error.FramebufferSetupFail;
 
     // create the sprite batch
     try batch.SpriteBatch.init(&gfx.Context.instance.size);
@@ -922,6 +916,8 @@ pub fn mainErr() anyerror!void {
 
         // track fps
         if (timer.read() > std.time.ns_per_s * state_refresh_rate) {
+            try events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
+
             const lap = timer.lap();
 
             try state.refresh();
