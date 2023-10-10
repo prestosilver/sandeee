@@ -37,14 +37,18 @@ const iconImageFiles = [_][]const u8{ "eeedt", "tasks" };
 // the website
 const wwwFiles = [_]WWWStepData{
     .{
+        // pong
         .inputFiles = "content/eon/exec/pong.eon:/exec/pong.eep;" ++
             "content/images/pong.png:/cont/imgs/pong.eia;" ++
+            "content/images/icons/pong.png:/cont/icns/pong.eia;" ++
             "content/audio/pong-blip.wav:/cont/snds/pong-blip.era;" ++
             "content/elns/Pong.eln:/conf/apps/Pong.eln",
         .outputFile = "www/downloads/games/pong.epk",
         .converter = epk.convert,
     },
     .{
+        // connectris
+        // TODO: icon
         .inputFiles = "content/eon/exec/connectris.eon:/exec/connectris.eep;" ++
             "content/images/connectris.png:/cont/imgs/connectris.eia;" ++
             "content/elns/Connectris.eln:/conf/apps/Connectris.eln",
@@ -52,6 +56,8 @@ const wwwFiles = [_]WWWStepData{
         .converter = epk.convert,
     },
     .{
+        // paint
+        // TODO: icon
         .inputFiles = "content/eon/exec/paint.eon:/exec/paint.eep;" ++
             "content/images/transparent.png:/cont/imgs/transparent.eia;" ++
             "content/elns/Paint.eln:/conf/apps/Paint.eln",
