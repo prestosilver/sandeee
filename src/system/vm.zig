@@ -515,9 +515,6 @@ pub const VM = struct {
                 //defer syslock.unlock();
 
                 if (op.value != null) {
-                    try events.EventManager.instance.sendEvent(systemEvs.EventSys{
-                        .sysId = op.value.?,
-                    });
                     switch (op.value.?) {
                         // print
                         0 => {
@@ -924,6 +921,10 @@ pub const VM = struct {
                         },
                         // secret
                         255 => {
+                            try events.EventManager.instance.sendEvent(systemEvs.EventSys{
+                                .sysId = op.value.?,
+                            });
+
                             if (self.rsp == 0)
                                 return error.InvalidPassword;
 
@@ -1495,8 +1496,6 @@ pub const VM = struct {
 
         self.last_exec = exec;
         self.yield = false;
-
-        try events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
 
         return self.done();
     }
