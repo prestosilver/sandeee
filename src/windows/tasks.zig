@@ -35,10 +35,10 @@ pub const TasksData = struct {
 
         self.scroll_sprites[1].data.size.y = bnds.h - (20 * 2 - 2) + 2;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + 20, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + bnds.h - 20 + 2, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 20, (bnds.h - (20 * 2) - 30 + 4) * scrollPc + bnds.y + 20 - 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y + 20, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y + bnds.h - 20 + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, (bnds.h - (20 * 2) - 30 + 4) * scrollPc + bnds.y + 20 - 2, 0));
     }
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
@@ -172,7 +172,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
     self.* = .{
         .panel = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
                 vecs.newVec2(2.0, 32.0),
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
