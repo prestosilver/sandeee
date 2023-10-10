@@ -76,6 +76,8 @@ pub const Context = struct {
 
         c.glfwSetInputMode(win, c.GLFW_CURSOR, c.GLFW_CURSOR_HIDDEN);
 
+        c.glDepthFunc(c.GL_ALWAYS);
+
         c.glfwMakeContextCurrent(null);
 
         instance = Context{
