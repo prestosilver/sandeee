@@ -1,22 +1,6 @@
 const std = @import("std");
 const zigimg = @import("deps/zigimg/zigimg.zig");
 
-const lol = error{};
-
-fn range(len: usize) []const void {
-    return @as([*]void, undefined)[0..len];
-}
-
-pub fn read_next(stream: anytype, size: u8, first: u8) u32 {
-    var total: u32 = first;
-
-    for (range(size)) |_| {
-        total = @as(u32, @intCast(total << 8)) + @as(u32, @intCast(stream.readInt(u8, std.builtin.Endian.Little) catch 0));
-    }
-
-    return total;
-}
-
 // converts a png to a ebi
 pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var result = std.ArrayList(u8).init(alloc);
