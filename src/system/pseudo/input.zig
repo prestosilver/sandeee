@@ -76,10 +76,10 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
                         result[0] = @as(u8, @intCast(self.mousebtn.?));
                     }
                     if (self.mousepos.y > 0 and self.mousepos.y < 20000)
-                        std.mem.writeIntBig(u16, result[3..5], @as(u16, @intFromFloat(self.mousepos.y)));
+                        std.mem.writeInt(u16, result[3..5], @as(u16, @intFromFloat(self.mousepos.y)), .big);
 
                     if (self.mousepos.x > 0 and self.mousepos.x < 20000)
-                        std.mem.writeIntBig(u16, result[1..3], @as(u16, @intFromFloat(self.mousepos.x)));
+                        std.mem.writeInt(u16, result[1..3], @as(u16, @intFromFloat(self.mousepos.x)), .big);
 
                     return result;
                 }

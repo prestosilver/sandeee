@@ -59,7 +59,9 @@ pub const GSDisks = struct {
         self.remaining = 10;
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
-        const dir = try std.fs.cwd().openIterableDir("disks", .{});
+        const dir = try std.fs.cwd().openDir("disks", .{
+            .iterate = true,
+        });
 
         var iter = dir.iterate();
 

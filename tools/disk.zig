@@ -2,17 +2,17 @@ const std = @import("std");
 const files = @import("../src/system/files.zig");
 
 pub const DiskStep = struct {
-    step: std.build.Step,
+    step: std.Build.Step,
     output: []const u8,
     input: []const u8,
     alloc: std.mem.Allocator,
 
-    pub fn create(b: *std.Build, input: []const u8, output: []const u8) *DiskStep {
-        const self = b.allocator.create(DiskStep) catch unreachable;
+    pub fn create(b: *std.Build, input: []const u8, output: []const u8) !*DiskStep {
+        const self = try b.allocator.create(DiskStep);
         self.* = .{
-            .step = std.build.Step.init(.{
+            .step = std.Build.Step.init(.{
                 .id = .run,
-                .name = std.fmt.allocPrint(b.allocator, "BuildDisk {s} -> {s}", .{ input, output }) catch "BuildDisk",
+                .name = try std.fmt.allocPrint(b.allocator, "BuildDisk {s} -> {s}", .{ input, output }),
                 .makeFn = DiskStep.doStep,
                 .owner = b,
             }),
@@ -23,17 +23,13 @@ pub const DiskStep = struct {
         return self;
     }
 
-    fn doStep(step: *std.build.Step, _: *std.Progress.Node) !void {
+    fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
         const self = @fieldParentPtr(DiskStep, "step", step);
 
-        var root = std.fs.cwd().openDir(self.input, .{ .access_sub_paths = true }) catch null;
+        var root = try std.fs.cwd().openDir(self.input, .{ .access_sub_paths = true, .iterate = true });
+        var walker = try root.walk(self.alloc);
 
-        var dir = std.fs.cwd().openIterableDir(self.input, .{ .access_sub_paths = true }) catch null;
-
-        var walker = dir.?.walk(self.alloc) catch null;
-
-        var entry = walker.?.next() catch null;
-        files.root = self.alloc.create(files.Folder) catch undefined;
+        files.root = try self.alloc.create(files.Folder);
 
         files.root.* = .{
             .parent = undefined,
@@ -44,7 +40,7 @@ pub const DiskStep = struct {
 
         var count: usize = 0;
 
-        while (entry) |file| : (entry = walker.?.next() catch null) {
+        while (try walker.next()) |file| {
             switch (file.kind) {
                 .directory => {
                     try files.root.newFolder(file.path);
@@ -53,19 +49,15 @@ pub const DiskStep = struct {
             }
         }
 
-        walker = dir.?.walk(self.alloc) catch null;
+        walker = try root.walk(self.alloc);
 
-        entry = walker.?.next() catch null;
-        while (entry) |file| : (entry = walker.?.next() catch null) {
+        while (try walker.next()) |file| {
             switch (file.kind) {
                 .file => {
                     try files.root.newFile(file.path);
-                    var contents = root.?.readFileAlloc(self.alloc, file.path, 100000000) catch null;
-                    if (contents == null) {
-                        continue;
-                    }
+                    const contents = try root.readFileAlloc(self.alloc, file.path, 100000000);
 
-                    try files.root.writeFile(file.path, contents.?, null);
+                    try files.root.writeFile(file.path, contents, null);
                     count += 1;
                 },
                 else => {},

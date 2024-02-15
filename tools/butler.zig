@@ -1,16 +1,16 @@
 const std = @import("std");
 
 pub const ButlerStep = struct {
-    step: std.build.Step,
+    step: std.Build.Step,
     branch: []const u8,
     directory: []const u8,
 
-    pub fn create(b: *std.Build, directory: []const u8, branch: []const u8) *ButlerStep {
-        const self = b.allocator.create(ButlerStep) catch unreachable;
+    pub fn create(b: *std.Build, directory: []const u8, branch: []const u8) !*ButlerStep {
+        const self = try b.allocator.create(ButlerStep);
         self.* = .{
-            .step = std.build.Step.init(.{
+            .step = std.Build.Step.init(.{
                 .id = .run,
-                .name = std.fmt.allocPrint(b.allocator, "UploadButler {s} -> {s}", .{ directory, branch }) catch "UploadButler",
+                .name = try std.fmt.allocPrint(b.allocator, "UploadButler {s} -> {s}", .{ directory, branch }),
                 .makeFn = ButlerStep.doStep,
                 .owner = b,
             }),
@@ -20,9 +20,9 @@ pub const ButlerStep = struct {
         return self;
     }
 
-    fn doStep(step: *std.build.Step, _: *std.Progress.Node) !void {
+    fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
         const self = @fieldParentPtr(ButlerStep, "step", step);
 
-        _ = step.owner.exec(&[_][]const u8{ "butler", "push", "--userversion-file=IVERSION", self.directory, self.branch });
+        _ = step.owner.run(&[_][]const u8{ "butler", "push", "--userversion-file=IVERSION", self.directory, self.branch });
     }
 };

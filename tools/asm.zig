@@ -1,6 +1,9 @@
 const std = @import("std");
 
-pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    if (paths.len != 1) return error.BadPaths;
+    const in = paths[0];
+
     var inreader = try std.fs.cwd().openFile(in, .{});
     defer inreader.close();
     var result = std.ArrayList(u8).init(alloc);
@@ -23,11 +26,9 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             continue;
         }
         if (l[l.len - 1] == ':') {
-            var key = std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]}) catch "";
+            const key = try std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]});
 
-            consts.put(key, idx) catch {
-                std.log.info("err add", .{});
-            };
+            try consts.put(key, idx);
         } else {
             idx += 1;
         }
@@ -101,7 +102,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (std.mem.eql(u8, op, l)) {
             try result.appendSlice("\x00");
         } else {
-            var int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
+            const int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
                 var target = l[op.len + 1 ..];
                 while (target[0] == ' ') target = target[1..];
                 while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
@@ -110,7 +111,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                         try result.appendSlice("\x02");
                         try result.appendSlice("\x00");
                     } else {
-                        var target_tmp = try std.zig.string_literal.parseAlloc(alloc, target);
+                        const target_tmp = try std.zig.string_literal.parseAlloc(alloc, target);
 
                         try result.appendSlice("\x02");
                         try result.appendSlice(target_tmp);
@@ -121,7 +122,7 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                         std.log.info("{s}", .{target});
                         return error.UnknownConst;
                     } else {
-                        var value = consts.get(target).?;
+                        const value = consts.get(target).?;
                         if (value > 255) {
                             try result.appendSlice("\x01");
                             try result.appendSlice(&std.mem.toBytes(value));
@@ -147,7 +148,10 @@ pub fn compile(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     return result;
 }
 
-pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    if (paths.len != 1) return error.BadPaths;
+    const in = paths[0];
+
     var inreader = try std.fs.cwd().openFile(in, .{});
     defer inreader.close();
     var result = std.ArrayList(u8).init(alloc);
@@ -177,15 +181,13 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             if (l[0] == '_') {
                 idx = 0;
                 toc_count += 1;
-                var key = std.fmt.allocPrint(alloc, "{s}", .{l[1 .. l.len - 1]}) catch "";
+                const key = try std.fmt.allocPrint(alloc, "{s}", .{l[1 .. l.len - 1]});
                 try funcs.append(key);
             }
 
-            var key = std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]}) catch "";
+            const key = try std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]});
 
-            consts.put(key, idx) catch {
-                std.log.info("err add", .{});
-            };
+            try consts.put(key, idx);
         } else {
             idx += 1;
         }
@@ -211,7 +213,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             if (l.len != 0) {
                 if (l[0] == '_') {
                     if (prev_toc != 0) {
-                        var len = data.items.len - prev_toc + 1;
+                        const len = data.items.len - prev_toc + 1;
                         try toc.append(@as(u8, @intCast(len / 256)));
                         try toc.append(@as(u8, @intCast(len % 256)));
                     }
@@ -275,12 +277,12 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         if (std.mem.eql(u8, op, l)) {
             try data.appendSlice("\x00");
         } else {
-            var int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
+            const int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
                 var target = l[op.len + 1 ..];
                 while (target[0] == ' ') target = target[1..];
                 while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
                 if (target[0] == '"' and target[target.len - 1] == '"') {
-                    var target_tmp = try std.zig.string_literal.parseAlloc(alloc, target);
+                    const target_tmp = try std.zig.string_literal.parseAlloc(alloc, target);
 
                     try data.appendSlice("\x02");
                     try data.appendSlice(target_tmp);
@@ -302,7 +304,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                             return error.UnknownConst;
                         }
                     } else {
-                        var value = consts.get(target).?;
+                        const value = consts.get(target).?;
                         if (value > 255) {
                             try data.appendSlice("\x01");
                             try data.appendSlice(&std.mem.toBytes(value));
@@ -324,7 +326,7 @@ pub fn compileLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             }
         }
     }
-    var len = data.items.len - prev_toc + 1;
+    const len = data.items.len - prev_toc + 1;
     try toc.append(@as(u8, @intCast(len / 256)));
     try toc.append(@as(u8, @intCast(len % 256)));
 

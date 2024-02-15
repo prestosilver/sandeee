@@ -164,7 +164,7 @@ pub const WebData = struct {
             defer file.close();
             const conts = try file.reader().readAllAlloc(allocator.alloc, 100_000_000);
 
-            var cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
+            const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
             _ = std.mem.replace(u8, conts, "\r", "", cont);
 
             self.conts = cont;
@@ -228,7 +228,7 @@ pub const WebData = struct {
                     try headers.append("User-Agent", "SandEEE/0.0");
                     try headers.append("Connection", "Close");
 
-                    var req = client.request(.GET, uri, headers, .{}) catch |err| {
+                    var req = client.open(.GET, uri, headers, .{}) catch |err| {
                         if (err == error.TemporaryNameServerFailure)
                             self.conts = try std.fmt.allocPrint(allocator.alloc, "No Internet Connection", .{})
                         else
@@ -238,7 +238,7 @@ pub const WebData = struct {
                     };
                     defer req.deinit();
 
-                    req.start() catch |err| {
+                    req.send(.{}) catch |err| {
                         self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                         return;
                     };
@@ -355,10 +355,10 @@ pub const WebData = struct {
         try headers.append("User-Agent", "SandEEE/0.0");
         try headers.append("Connection", "Close");
 
-        var req = try client.request(.GET, uri, headers, .{});
+        var req = try client.open(.GET, uri, headers, .{});
         defer req.deinit();
 
-        req.start() catch return;
+        req.send(.{}) catch return;
         req.wait() catch return;
 
         if (req.response.status != .ok) {
@@ -410,10 +410,10 @@ pub const WebData = struct {
         try headers.append("User-Agent", "SandEEE/0.0");
         try headers.append("Connection", "Close");
 
-        var req = try client.request(.GET, uri, headers, .{});
+        var req = try client.open(.GET, uri, headers, .{});
         defer req.deinit();
 
-        req.start() catch return;
+        req.send(.{}) catch return;
         req.wait() catch return;
 
         const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);

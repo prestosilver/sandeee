@@ -59,7 +59,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
         var data: []const u8 = undefined;
 
         if (toRun != null) {
-            var idx = std.mem.indexOf(u8, toRun.?, "\n");
+            const idx = std.mem.indexOf(u8, toRun.?, "\n");
             if (idx) |index| {
                 data = toRun.?[0..index];
                 toRun = toRun.?[index + 1 ..];
@@ -73,9 +73,9 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
             data = try stdin.readUntilDelimiter(&buffer, '\n');
         }
 
-        var command = std.mem.trim(u8, data, "\r\n ");
+        const command = std.mem.trim(u8, data, "\r\n ");
 
-        var result = mainShell.run(command) catch |err| {
+        const result = mainShell.run(command) catch |err| {
             const msg = @errorName(err);
 
             _ = try stdout.write("Error: ");
@@ -136,7 +136,7 @@ test "Headless scripts" {
 
         var file = try start_cwd.openFile(entry.path, .{});
 
-        var conts = try file.readToEndAlloc(std.testing.allocator, 10000);
+        const conts = try file.readToEndAlloc(std.testing.allocator, 10000);
         defer std.testing.allocator.free(conts);
 
         var success = true;

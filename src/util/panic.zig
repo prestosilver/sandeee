@@ -26,9 +26,9 @@ pub fn log() []const u8 {
         // Good backtrace, print with the source location of the log
         const adds = std.fmt.allocPrint(allocator.alloc, "{s}:{d}\n", .{ li.file_name[index..], li.line }) catch return result;
         defer allocator.alloc.free(adds);
-        var start = result.len;
+        const start = result.len;
         result = allocator.alloc.realloc(result, result.len + adds.len) catch return result;
-        std.mem.copy(u8, result[start..], adds);
+        @memcpy(result[start..], adds);
     }
 
     return result;

@@ -9,7 +9,7 @@ pub const EventManager = struct {
     subs: std.StringHashMap([]Listener(*void)),
 
     pub fn init() void {
-        var subs = std.StringHashMap([]Listener(*void)).init(allocator.alloc);
+        const subs = std.StringHashMap([]Listener(*void)).init(allocator.alloc);
 
         instance = EventManager{
             .subs = subs,

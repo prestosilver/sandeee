@@ -46,7 +46,7 @@ const INSTRUCTION_TYPES = [_]InstructionData{
     .{ .stack_out = 0, .stack_in = 0, .params = .{ false, true, false } }, // seed
 };
 
-pub fn create(_: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn create(_: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var result = try std.ArrayList(u8).initCapacity(alloc, 1024);
 
     try result.appendSlice("EEEp");

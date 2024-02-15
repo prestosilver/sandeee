@@ -1,17 +1,17 @@
 const std = @import("std");
 const mail = @import("../src/system/mail.zig");
 
-pub fn emails(path: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn emails(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    if (paths.len != 1) return error.BadPaths;
+
     var manager = try mail.EmailManager.init();
 
-    var root = try std.fs.cwd().openDir(path, .{ .access_sub_paths = true });
-    var dir = try std.fs.cwd().openIterableDir(path, .{ .access_sub_paths = true });
-    var walker = try dir.walk(alloc);
-    var entry = try walker.next();
+    var root = try std.fs.cwd().openDir(paths[0], .{ .access_sub_paths = true, .iterate = true });
+    var walker = try root.walk(alloc);
 
     var count: usize = 0;
 
-    while (entry) |file| : (entry = walker.next() catch null) {
+    while (try walker.next()) |file| {
         switch (file.kind) {
             .file => {
                 var f = try root.openFile(file.path, .{});

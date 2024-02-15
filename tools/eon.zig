@@ -93,12 +93,12 @@ const Expression = struct {
     fn toAsm(self: *Expression, map: *VarMap, heap: *const std.ArrayList([]const u8), idx: *usize) ![]const u8 {
         var result: []u8 = try allocator.alloc(u8, 0);
         if (self.op != null and self.op.?.kind == .TOKEN_OPEN_PAREN) {
-            var start = idx.*;
+            const start = idx.*;
             for (self.a) |*item| {
-                var adds = try item.toAsm(map, heap, idx);
-                var start_res = result.len;
+                const adds = try item.toAsm(map, heap, idx);
+                const start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
             }
 
             idx.* = start + 1;
@@ -114,243 +114,243 @@ const Expression = struct {
                 }
             }
             defer allocator.free(adds);
-            var start_res = result.len;
+            const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
-            std.mem.copy(u8, result[start_res..], adds);
+            @memcpy(result[start_res..], adds);
             return result;
         }
 
         for (self.a, 0..) |_, index| {
-            var adds = try self.a[index].toAsm(map, heap, idx);
+            const adds = try self.a[index].toAsm(map, heap, idx);
             defer allocator.free(adds);
-            var start_res = result.len;
+            const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
-            std.mem.copy(u8, result[start_res..], adds);
+            @memcpy(result[start_res..], adds);
         }
         for (self.b, 0..) |_, index| {
-            var adds = try self.b[index].toAsm(map, heap, idx);
+            const adds = try self.b[index].toAsm(map, heap, idx);
             defer allocator.free(adds);
-            var start_res = result.len;
+            const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
-            std.mem.copy(u8, result[start_res..], adds);
+            @memcpy(result[start_res..], adds);
         }
         if (self.op != null) {
             switch (self.op.?.kind) {
                 .TOKEN_INT_LIT => {
                     idx.* += 1;
-                    var adds = try std.fmt.allocPrint(allocator, "    push {s}\n", .{self.op.?.value});
+                    const adds = try std.fmt.allocPrint(allocator, "    push {s}\n", .{self.op.?.value});
                     defer allocator.free(adds);
-                    var start_res = result.len;
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_STRING_LIT => {
                     idx.* += 1;
-                    var adds = try std.fmt.allocPrint(allocator, "    push {s}\n", .{self.op.?.value});
+                    const adds = try std.fmt.allocPrint(allocator, "    push {s}\n", .{self.op.?.value});
                     defer allocator.free(adds);
-                    var start_res = result.len;
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_SUBREL => {
                     idx.* -= 1;
-                    var adds = "    copy 1\n" ++
+                    const adds = "    copy 1\n" ++
                         "    copy 1\n" ++
                         "    sub\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                    var start_res = result.len;
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_NEG => {
                     if (self.a.len != 0) {
                         idx.* -= 1;
-                        var adds = "    sub\n";
-                        var start_res = result.len;
+                        const adds = "    sub\n";
+                        const start_res = result.len;
                         result = try allocator.realloc(result, result.len + adds.len);
-                        std.mem.copy(u8, result[start_res..], adds);
+                        @memcpy(result[start_res..], adds);
                         return result;
                     }
-                    var adds = "    neg\n";
-                    var start_res = result.len;
+                    const adds = "    neg\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_BIT_NOT => {
-                    var adds = "    not\n";
-                    var start_res = result.len;
+                    const adds = "    not\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_NOT => {
-                    var adds = "    push 1\n    xor\n";
-                    var start_res = result.len;
+                    const adds = "    push 1\n    xor\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_AT => {
-                    var adds = "    getb\n";
-                    var start_res = result.len;
+                    const adds = "    getb\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_HEAP_READ => {
-                    var adds = "    sys 15\n";
-                    var start_res = result.len;
+                    const adds = "    sys 15\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_ADDREL => {
                     idx.* -= 1;
-                    var adds = "    copy 1\n" ++
+                    const adds = "    copy 1\n" ++
                         "    copy 1\n" ++
                         "    add\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                    var start_res = result.len;
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_ADD => {
                     idx.* -= 1;
-                    var adds = "    add\n";
-                    var start_res = result.len;
+                    const adds = "    add\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_MUL => {
                     idx.* -= 1;
-                    var adds = "    mul\n";
-                    var start_res = result.len;
+                    const adds = "    mul\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_DIV => {
                     idx.* -= 1;
-                    var adds = "    div\n";
-                    var start_res = result.len;
+                    const adds = "    div\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_MOD => {
                     idx.* -= 1;
-                    var adds = "    mod\n";
-                    var start_res = result.len;
+                    const adds = "    mod\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_AND => {
                     idx.* -= 1;
-                    var adds = "    and\n";
-                    var start_res = result.len;
+                    const adds = "    and\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_OR => {
                     idx.* -= 1;
-                    var adds = "    or\n";
-                    var start_res = result.len;
+                    const adds = "    or\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_CATREL => {
                     idx.* -= 1;
-                    var adds = "    copy 1\n" ++
+                    const adds = "    copy 1\n" ++
                         "    copy 1\n" ++
                         "    cat\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                    var start_res = result.len;
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_CAT => {
                     idx.* -= 1;
-                    var adds = "    cat\n";
-                    var start_res = result.len;
+                    const adds = "    cat\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_HEAP_ASSIGN => {
                     idx.* -= 1;
-                    var adds = "    sys 16\n";
-                    var start_res = result.len;
+                    const adds = "    sys 16\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_ASSIGN => {
                     idx.* -= 1;
-                    var adds = "    set\n";
-                    var start_res = result.len;
+                    const adds = "    set\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_GT => {
                     idx.* -= 1;
-                    var adds = "    gt\n";
-                    var start_res = result.len;
+                    const adds = "    gt\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_LT => {
                     idx.* -= 1;
-                    var adds = "    lt\n";
-                    var start_res = result.len;
+                    const adds = "    lt\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_NEQ => {
                     idx.* -= 1;
-                    var adds = "    eq\n    not\n";
-                    var start_res = result.len;
+                    const adds = "    eq\n    not\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_EQ => {
                     idx.* -= 1;
-                    var adds = "    eq\n";
-                    var start_res = result.len;
+                    const adds = "    eq\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_KEYWORD_NEW => {
-                    var adds = "    create\n";
-                    var start_res = result.len;
+                    const adds = "    create\n";
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     return result;
                 },
                 .TOKEN_IDENT => {
                     for (map.vars) |mapvar| {
                         if (std.mem.eql(u8, mapvar.name, self.op.?.value)) {
-                            var adds = try std.fmt.allocPrint(allocator, "    copy {}\n", .{idx.* - 1 - mapvar.idx});
-                            var start_res = result.len;
+                            const adds = try std.fmt.allocPrint(allocator, "    copy {}\n", .{idx.* - 1 - mapvar.idx});
+                            const start_res = result.len;
                             result = try allocator.realloc(result, result.len + adds.len);
-                            std.mem.copy(u8, result[start_res..], adds);
+                            @memcpy(result[start_res..], adds);
                             idx.* += 1;
 
                             return result;
@@ -358,10 +358,10 @@ const Expression = struct {
                     }
                     for (heap.items, 0..) |entry, i| {
                         if (std.mem.eql(u8, entry, self.op.?.value)) {
-                            var adds = try std.fmt.allocPrint(allocator, "    push {}\n", .{i});
-                            var start_res = result.len;
+                            const adds = try std.fmt.allocPrint(allocator, "    push {}\n", .{i});
+                            const start_res = result.len;
                             result = try allocator.realloc(result, result.len + adds.len);
-                            std.mem.copy(u8, result[start_res..], adds);
+                            @memcpy(result[start_res..], adds);
                             idx.* += 1;
 
                             return result;
@@ -402,11 +402,11 @@ const Statement = struct {
                 var result = try allocator.alloc(u8, 0);
 
                 if (self.exprs != null) {
-                    var adds = try self.exprs.?[0].toAsm(map, heap, idx);
+                    const adds = try self.exprs.?[0].toAsm(map, heap, idx);
                     defer allocator.free(adds);
-                    var start_res = result.len;
+                    const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                 } else {
                     result = try std.fmt.allocPrint(allocator, "    push 0\n", .{});
                     idx.* += 1;
@@ -419,9 +419,9 @@ const Statement = struct {
                 return result;
             },
             .STMT_COND => {
-                var start = idx.*;
-                var block = block_id;
-                var map_start = try allocator.dupe(Var, map.vars);
+                const start = idx.*;
+                const block = block_id;
+                const map_start = try allocator.dupe(Var, map.vars);
                 block_id += 1;
 
                 var result = try allocator.alloc(u8, 0);
@@ -430,13 +430,13 @@ const Statement = struct {
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jz block_{}_alt\n", .{block});
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
                 idx.* -= 1;
 
                 for (self.blks.?[0]) |*stmt| {
@@ -444,7 +444,7 @@ const Statement = struct {
                     adds = try stmt.toAsm(map, heap, idx);
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                 }
 
                 while (start != idx.*) {
@@ -452,7 +452,7 @@ const Statement = struct {
                     adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     idx.* -= 1;
                 }
 
@@ -460,7 +460,7 @@ const Statement = struct {
                 adds = try std.fmt.allocPrint(allocator, "    jmp block_{}_end\nblock_{}_alt:\n", .{ block, block });
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 if (self.blks.?.len > 1) {
                     for (self.blks.?[1]) |*stmt| {
@@ -468,7 +468,7 @@ const Statement = struct {
                         adds = try stmt.toAsm(map, heap, idx);
                         start_res = result.len;
                         result = try allocator.realloc(result, result.len + adds.len);
-                        std.mem.copy(u8, result[start_res..], adds);
+                        @memcpy(result[start_res..], adds);
                     }
 
                     for (start..idx.*) |_| {
@@ -476,7 +476,7 @@ const Statement = struct {
                         adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                         start_res = result.len;
                         result = try allocator.realloc(result, result.len + adds.len);
-                        std.mem.copy(u8, result[start_res..], adds);
+                        @memcpy(result[start_res..], adds);
                         idx.* -= 1;
                     }
                 }
@@ -485,7 +485,7 @@ const Statement = struct {
                 adds = try std.fmt.allocPrint(allocator, "block_{}_end:\n", .{block});
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 map.vars = map_start;
 
@@ -498,7 +498,7 @@ const Statement = struct {
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 idx.* -= 1;
 
@@ -507,20 +507,20 @@ const Statement = struct {
                     adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                 }
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    ret\n", .{});
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
                 return result;
             },
             .STMT_WHILE => {
-                var start = idx.*;
-                var block = block_id;
-                var map_start = try allocator.dupe(Var, map.vars);
+                const start = idx.*;
+                const block = block_id;
+                const map_start = try allocator.dupe(Var, map.vars);
                 block_id += 1;
 
                 var result = try allocator.alloc(u8, 0);
@@ -529,19 +529,19 @@ const Statement = struct {
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
                 adds = try self.exprs.?[0].toAsm(map, heap, idx);
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jz block_{}_end\n", .{block});
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
                 idx.* -= 1;
 
                 for (self.blks.?[0]) |*stmt| {
@@ -549,21 +549,21 @@ const Statement = struct {
                     adds = try stmt.toAsm(map, heap, idx);
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                 }
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 while (start != idx.*) {
                     allocator.free(adds);
                     adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     idx.* -= 1;
                 }
 
@@ -572,9 +572,9 @@ const Statement = struct {
                 return result;
             },
             .STMT_FOR => {
-                var start = idx.*;
-                var map_start = try allocator.dupe(Var, map.vars);
-                var block = block_id;
+                const start = idx.*;
+                const map_start = try allocator.dupe(Var, map.vars);
+                const block = block_id;
                 block_id += 1;
 
                 var result = try allocator.alloc(u8, 0);
@@ -583,25 +583,25 @@ const Statement = struct {
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "block_{}_loop:\n", .{block});
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
                 adds = try self.exprs.?[0].toAsm(map, heap, idx);
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jz block_{}_end\n", .{block});
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
                 idx.* -= 1;
 
                 for (self.blks.?[1]) |*stmt| {
@@ -609,20 +609,20 @@ const Statement = struct {
                     adds = try stmt.toAsm(map, heap, idx);
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                 }
 
                 allocator.free(adds);
                 adds = try self.exprs.?[1].toAsm(map, heap, idx);
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    disc 0\n    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
                 idx.* -= 1;
 
                 while (start != idx.*) {
@@ -630,7 +630,7 @@ const Statement = struct {
                     adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     idx.* -= 1;
                 }
 
@@ -639,25 +639,25 @@ const Statement = struct {
                 return result;
             },
             .STMT_ASM => {
-                var result = std.fmt.allocPrint(allocator, "    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
+                const result = std.fmt.allocPrint(allocator, "    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
                 return result;
             },
             .STMT_EXP => {
                 var result = try allocator.alloc(u8, 0);
-                var start = idx.*;
+                const start = idx.*;
 
                 var adds = try self.exprs.?[0].toAsm(map, heap, idx);
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
-                std.mem.copy(u8, result[start_res..], adds);
+                @memcpy(result[start_res..], adds);
 
                 for (start..idx.*) |_| {
                     allocator.free(adds);
                     adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
-                    std.mem.copy(u8, result[start_res..], adds);
+                    @memcpy(result[start_res..], adds);
                     idx.* -= 1;
                 }
 
@@ -682,7 +682,7 @@ const FunctionDecl = struct {
     stmts: []Statement,
 
     fn toAsm(self: *FunctionDecl, heap: *const std.ArrayList([]const u8), lib: bool) ![]const u8 {
-        var prefix = if (lib) "_" else "";
+        const prefix = if (lib) "_" else "";
         var result = try std.fmt.allocPrint(allocator, "{s}{s}:\n", .{ prefix, self.ident });
         var map = VarMap{ .vars = try allocator.alloc(Var, self.params.len) };
         for (self.params, 0..) |param, idx| {
@@ -695,11 +695,11 @@ const FunctionDecl = struct {
         var idx = self.params.len;
 
         for (self.stmts) |*stmt| {
-            var adds = try stmt.toAsm(&map, heap, &idx);
+            const adds = try stmt.toAsm(&map, heap, &idx);
             defer allocator.free(adds);
-            var start_res = result.len;
+            const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
-            std.mem.copy(u8, result[start_res..], adds);
+            @memcpy(result[start_res..], adds);
         }
 
         return result;
@@ -715,11 +715,11 @@ const Program = struct {
             if (!lib) try std.fmt.allocPrint(allocator, "    push {}\n    sys 14\n    call main\n    sys 1\n", .{self.heap.items.len}) else try std.fmt.allocPrint(allocator, "", .{});
 
         for (self.funcs) |*func| {
-            var adds = try func.toAsm(&self.heap, lib);
+            const adds = try func.toAsm(&self.heap, lib);
             defer allocator.free(adds);
-            var start_res = result.len;
+            const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
-            std.mem.copy(u8, result[start_res..], adds);
+            @memcpy(result[start_res..], adds);
         }
         return result;
     }
@@ -744,11 +744,11 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
     var prev: u8 = '\n';
     var code = try allocator.alloc(u8, 0);
     while (true) {
-        var size = try reader.read(&buff);
+        const size = try reader.read(&buff);
         if (size == 0) break;
 
-        var char = buff[0];
-        var charStr: []const u8 = &buff;
+        const char = buff[0];
+        const charStr: []const u8 = &buff;
 
         if (prev == '\\') {
             if (char == '"') {
@@ -768,7 +768,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             var stmt = (try reader.readUntilDelimiterOrEof(&stmt_buff, '\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
-                var target = try std.mem.concat(allocator, u8, &.{ "content/disk", stmt[9 .. stmt.len - 1] });
+                const target = try std.mem.concat(allocator, u8, &.{ "content/disk", stmt[9 .. stmt.len - 1] });
 
                 var toks = try lex_file(target);
                 defer toks.deinit();
@@ -1117,7 +1117,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
             tokens[idx.* + 1].kind == .TOKEN_DIV or
             tokens[idx.* + 1].kind == .TOKEN_MOD)
         {
-            var op = &tokens[idx.* + 1];
+            const op = &tokens[idx.* + 1];
             var a = try allocator.alloc(Expression, 1);
             a[0] = .{
                 .a = &emptyExpr,
@@ -1166,7 +1166,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
             return result;
         }
     } else if (tokens[idx.*].kind == .TOKEN_NEG) {
-        var ident = &tokens[idx.*];
+        const ident = &tokens[idx.*];
         idx.* += 1;
         var b = try allocator.alloc(Expression, 1);
         b[0] = try parseFactor(tokens, heap, idx);
@@ -1181,7 +1181,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
         tokens[idx.*].kind == .TOKEN_HEAP_READ or
         tokens[idx.*].kind == .TOKEN_KEYWORD_NEW)
     {
-        var ident = &tokens[idx.*];
+        const ident = &tokens[idx.*];
         idx.* += 1;
         var b = try allocator.alloc(Expression, 1);
         b[0] = try parseFactor(tokens, heap, idx);
@@ -1210,7 +1210,7 @@ pub fn parseSum(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) 
         tokens[idx.*].kind == .TOKEN_CAT or
         tokens[idx.*].kind == .TOKEN_NEG)
     {
-        var op = &tokens[idx.*];
+        const op = &tokens[idx.*];
         idx.* += 1;
 
         var b = try allocator.alloc(Expression, 1);
@@ -1252,7 +1252,7 @@ pub fn parseExpression(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *
         tokens[idx.*].kind == .TOKEN_CATREL or
         tokens[idx.*].kind == .TOKEN_SUBREL)
     {
-        var op = &tokens[idx.*];
+        const op = &tokens[idx.*];
         idx.* += 1;
 
         var b = try allocator.alloc(Expression, 1);
@@ -1335,9 +1335,6 @@ pub fn parseStatement(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *u
 
         return result;
     } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_FOR) {
-        var isvar = false;
-        _ = isvar;
-
         idx.* += 1;
         if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
         idx.* += 1;
@@ -1545,7 +1542,10 @@ pub fn parseProgram(fnPrefix: *[]const u8, tokens: []Token) !Program {
     return result;
 }
 
-pub fn compileEon(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn compileEon(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    if (paths.len != 1) return error.BadPaths;
+    const in = paths[0];
+
     var fnPrefix: []const u8 = "";
 
     allocator = alloc;
@@ -1557,13 +1557,16 @@ pub fn compileEon(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
 
     var result = std.ArrayList(u8).init(alloc);
 
-    var adds = try prog.toAsm(false);
+    const adds = try prog.toAsm(false);
     try result.appendSlice(adds);
 
     return result;
 }
 
-pub fn compileEonLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn compileEonLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    if (paths.len != 1) return error.BadPaths;
+    const in = paths[0];
+
     var fnPrefix: []const u8 = "";
 
     allocator = alloc;
@@ -1571,14 +1574,11 @@ pub fn compileEonLib(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
     var tokens = try lex_file(in);
     defer tokens.deinit();
 
-    // for (tokens.items) |tok|
-    //     std.log.info("toks: {} '{s}'", .{ @enumToInt(tok.kind), tok.value });
-
     var prog = try parseProgram(&fnPrefix, tokens.items);
 
     var result = std.ArrayList(u8).init(alloc);
 
-    var adds = try prog.toAsm(true);
+    const adds = try prog.toAsm(true);
     try result.appendSlice(adds);
 
     return result;

@@ -211,7 +211,7 @@ pub const EditorData = struct {
 
                 const clickPos = self.clickPos.?;
 
-                const doneBig = if (std.math.fabs(@round(clickPos.y / font.size) - @round((clickDone.y - props.scroll.?.value) / font.size)) < 1)
+                const doneBig = if (@abs(@round(clickPos.y / font.size) - @round((clickDone.y - props.scroll.?.value) / font.size)) < 1)
                     @round(clickPos.x / charSize) < @round(clickDone.x / charSize)
                 else
                     @round(clickPos.y / font.size) < @round((clickDone.y - props.scroll.?.value) / font.size);
@@ -266,7 +266,7 @@ pub const EditorData = struct {
 
             props.scroll.?.maxy = -bnds.h + 40;
 
-            var selRemaining: usize = @intCast(try std.math.absInt(self.cursor_len));
+            var selRemaining: usize = @intCast(@abs(self.cursor_len));
 
             for (buffer, 0..) |*line, lineidx| {
                 if (line.render == null) {
@@ -411,7 +411,7 @@ pub const EditorData = struct {
             var new_buffer = std.ArrayList(Row).init(allocator.alloc);
             defer new_buffer.deinit();
 
-            const abs_sel: usize = @intCast(try std.math.absInt(self.cursor_len));
+            const abs_sel: usize = @intCast(@abs(self.cursor_len));
 
             for (buffer[self.cursory..]) |line| {
                 var new_line = Row{
@@ -451,7 +451,7 @@ pub const EditorData = struct {
     }
 
     pub fn getSel(self: *Self) ![]const u8 {
-        const absSel: usize = @intCast(try std.math.absInt(self.cursor_len));
+        const absSel: usize = @intCast(@abs(self.cursor_len));
 
         var result = try std.ArrayList(u8).initCapacity(allocator.alloc, absSel);
         defer result.deinit();

@@ -61,11 +61,10 @@ const vmManager = @import("system/vmmanager.zig");
 // not-op programming lang
 const c = @import("c.zig");
 
-pub const std_options = struct {
+pub const std_options = std.Options{
     // Define logFn to override the std implementation
-    pub const logFn = log.myLogFn;
-
-    pub const log_level = .debug;
+    .logFn = log.myLogFn,
+    .log_level = .debug,
 };
 
 pub const useSteam = options.IsSteam;
@@ -132,7 +131,7 @@ var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
 var currentState: systemEvs.State = .Disks;
 
 // create loader
-var loader_queue: std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)) = undefined;
+var loader_queue: std.DoublyLinkedList(worker.WorkerQueueEntry(*void, *void)) = undefined;
 var loader = worker.WorkerContext{ .queue = &loader_queue };
 
 // create some fonts
@@ -429,7 +428,7 @@ pub fn drawLoading(self: *loadingState.GSLoading) void {
             defer gfx.Context.makeNotCurrent();
 
             if (!gfx.Context.poll())
-                self.done.storeUnchecked(true);
+                self.done.store(true, .Unordered);
         }
 
         // render loading screen
@@ -626,7 +625,7 @@ pub fn mainErr() anyerror!void {
     var selectSound: audio.Sound = audio.Sound.init(selectSoundData);
 
     // create the loaders queue
-    loader_queue = std.atomic.Queue(worker.WorkerQueueEntry(*void, *void)).init();
+    loader_queue = .{};
 
     // shaders
     try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &shader_files, &shader, worker.shader.loadShader);
@@ -782,7 +781,7 @@ pub fn mainErr() anyerror!void {
     };
 
     // crashed state
-    var gsCrash = try allocator.alloc.create(crashState.GSCrash);
+    const gsCrash = try allocator.alloc.create(crashState.GSCrash);
     gsCrash.* = crashState.GSCrash{
         .shader = &shader,
         .font_shader = &font_shader,

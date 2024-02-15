@@ -50,7 +50,7 @@ pub const GSLoading = struct {
     login_snd: audio.Sound = undefined,
     logout_snd: *audio.Sound,
     message_snd: *audio.Sound,
-    done: std.atomic.Atomic(bool) = std.atomic.Atomic(bool).init(false),
+    done: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
 
     loading: *const fn (*Self) void,
 
@@ -72,7 +72,7 @@ pub const GSLoading = struct {
     }
 
     pub fn setup(self: *Self) !void {
-        self.done.storeUnchecked(false);
+        self.done.store(false, .Unordered);
 
         self.load_sprite.data.size.x = 0;
 
@@ -147,9 +147,8 @@ pub const GSLoading = struct {
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        if (self.done.loadUnchecked()) {
+        if (self.done.load(.Unordered))
             return;
-        }
 
         const logoOff = size.sub(self.logo_sprite.data.size).div(2);
 
@@ -162,7 +161,7 @@ pub const GSLoading = struct {
         try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
 
         if (self.load_sprite.data.size.x > 319)
-            self.done.storeUnchecked(true);
+            self.done.store(true, .Unordered);
     }
 
     pub fn refresh(_: *Self) !void {}

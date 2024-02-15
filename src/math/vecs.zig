@@ -41,7 +41,7 @@ pub const Vector2 = struct {
 
     // misc stuff
     pub inline fn magSq(a: Vector2) f32 {
-        return @fabs((a.x * a.x) + (a.y * a.y));
+        return @abs((a.x * a.x) + (a.y * a.y));
     }
 
     pub inline fn mag(a: Vector2) f32 {

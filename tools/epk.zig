@@ -7,14 +7,12 @@ const textures = @import("textures.zig");
 var eonLock = std.Thread.Mutex{};
 
 // converts a eep to a epk
-pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn convert(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     var result = std.ArrayList(u8).init(alloc);
 
     try result.appendSlice("epak");
 
-    var split = std.mem.split(u8, in, ";");
-
-    while (split.next()) |item| {
+    for (in) |item| {
         const idx = std.mem.indexOf(u8, item, ":") orelse return error.BadInput;
         const name = item[idx + 1 ..];
         const nameLen: u16 = @intCast(name.len);
@@ -29,7 +27,7 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
             eonLock.lock();
             defer eonLock.unlock();
             {
-                const data = try eon.compileEon(item[0..idx], alloc);
+                const data = try eon.compileEon(&.{item[0..idx]}, alloc);
 
                 const file = try std.fs.createFileAbsolute("/tmp/eon.asm", .{});
                 defer file.close();
@@ -37,7 +35,7 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
                 try file.writeAll(data.items);
             }
 
-            const data = try asma.compile("/tmp/eon.asm", alloc);
+            const data = try asma.compile(&.{"/tmp/eon.asm"}, alloc);
             defer data.deinit();
 
             const dataLen: u16 = @intCast(data.items.len);
@@ -50,7 +48,7 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         }
 
         if (std.mem.eql(u8, ext, ".asm")) {
-            const data = try asma.compile(item[0..idx], alloc);
+            const data = try asma.compile(&.{item[0..idx]}, alloc);
             defer data.deinit();
 
             const dataLen: u16 = @intCast(data.items.len);
@@ -63,7 +61,7 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         }
 
         if (std.mem.eql(u8, ext, ".wav")) {
-            const data = try sounds.convert(item[0..idx], alloc);
+            const data = try sounds.convert(&.{item[0..idx]}, alloc);
             defer data.deinit();
 
             const dataLen: u16 = @intCast(data.items.len);
@@ -76,7 +74,7 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
         }
 
         if (std.mem.eql(u8, ext, ".png")) {
-            const data = try textures.convert(item[0..idx], alloc);
+            const data = try textures.convert(&.{item[0..idx]}, alloc);
             defer data.deinit();
 
             const dataLen: u16 = @intCast(data.items.len);

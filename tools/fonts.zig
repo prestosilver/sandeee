@@ -16,7 +16,10 @@ const lol = error{};
 
 const SPACING = 1;
 
-pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn convert(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    if (paths.len != 1) return error.BadPaths;
+    const in = paths[0];
+
     var result = std.ArrayList(u8).init(alloc);
 
     var image = try zigimg.Image.fromFilePath(alloc, in);
@@ -24,8 +27,8 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
 
     try result.appendSlice("efnt");
 
-    var chw = image.width / 16;
-    var chh = image.height / 16 + SPACING;
+    const chw = image.width / 16;
+    const chh = image.height / 16 + SPACING;
 
     try result.append(@intCast(chw));
     try result.append(@intCast(chh));
@@ -39,10 +42,10 @@ pub fn convert(in: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
 
             for (0..chw) |chx| {
                 for (0..chh - SPACING) |chy| {
-                    var pixelx = x * chw + chx;
-                    var pixely = y * (chh - SPACING) + chy;
+                    const pixelx = x * chw + chx;
+                    const pixely = y * (chh - SPACING) + chy;
 
-                    var pixel = image.pixels.rgba32[pixely + pixelx * image.height];
+                    const pixel = image.pixels.rgba32[pixely + pixelx * image.height];
 
                     ch[chy + chx * (chh - SPACING)] = pixel.r * @divTrunc(pixel.a, 255);
                 }

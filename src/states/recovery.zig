@@ -55,7 +55,9 @@ pub const GSRecovery = struct {
         self.sub_sel = null;
         self.status = "";
 
-        const dir = try std.fs.cwd().openIterableDir("disks", .{});
+        const dir = try std.fs.cwd().openDir("disks", .{
+            .iterate = true,
+        });
 
         var iter = dir.iterate();
 

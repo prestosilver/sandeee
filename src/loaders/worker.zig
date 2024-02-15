@@ -24,18 +24,18 @@ pub fn WorkerQueueEntry(comptime T: type, comptime U: type) type {
 }
 
 pub const WorkerContext = struct {
-    queue: *std.atomic.Queue(WorkerQueueEntry(*void, *void)),
+    queue: *std.DoublyLinkedList(WorkerQueueEntry(*void, *void)),
     total: usize = 0,
 
     pub fn WorkerQueueNode(comptime T: type, comptime U: type) type {
-        return std.atomic.Queue(WorkerQueueEntry(T, U)).Node;
+        return std.DoublyLinkedList(WorkerQueueEntry(T, U)).Node;
     }
 
     pub fn run(ctx: *WorkerContext, progress: *f32) anyerror!void {
         var prog: usize = 0;
 
         // run all the loader funcs
-        while (ctx.queue.get()) |work_node| {
+        while (ctx.queue.popFirst()) |work_node| {
             if (!try work_node.data.loader(&work_node.data)) {
                 return error.LoadError;
             }
@@ -70,7 +70,7 @@ pub const WorkerContext = struct {
             },
         };
 
-        self.queue.put(@as(*WorkerQueueNode(*void, *void), @ptrCast(node)));
+        self.queue.append(@as(*WorkerQueueNode(*void, *void), @ptrCast(node)));
         self.total += 1;
     }
 };

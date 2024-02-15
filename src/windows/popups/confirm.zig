@@ -57,7 +57,7 @@ pub const PopupConfirm = struct {
         const len: usize = comptime blk: {
             var len: usize = 0;
 
-            inline for (typeInfo.Struct.decls) |decl| {
+            for (typeInfo.Struct.decls) |decl| {
                 const info = @typeInfo(@TypeOf(@field(T, decl.name)));
                 if (info != .Fn) {
                     continue;
@@ -73,7 +73,7 @@ pub const PopupConfirm = struct {
 
             var idx = 0;
 
-            inline for (typeInfo.Struct.decls) |decl| {
+            for (typeInfo.Struct.decls) |decl| {
                 const info = @typeInfo(@TypeOf(@field(T, decl.name)));
                 if (info != .Fn)
                     continue;
