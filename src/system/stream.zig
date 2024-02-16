@@ -4,9 +4,10 @@ const files = @import("files.zig");
 const vm = @import("vm.zig");
 
 pub const StreamError = error{
+    OutOfMemory,
     FileMissing,
     UnknownError,
-};
+} || files.FileError;
 
 pub const FileStream = struct {
     path: []u8,
@@ -15,7 +16,7 @@ pub const FileStream = struct {
     updated: bool,
     vmInstance: ?*vm.VM,
 
-    pub fn Open(root: *files.Folder, path: []const u8, vmInstance: ?*vm.VM) !*FileStream {
+    pub fn Open(root: *files.Folder, path: []const u8, vmInstance: ?*vm.VM) StreamError!*FileStream {
         if (path.len == 0) return error.FileMissing;
 
         const folder = if (path[0] == '/') files.root else root;
@@ -38,7 +39,7 @@ pub const FileStream = struct {
         return result;
     }
 
-    pub fn Read(self: *FileStream, len: u32) ![]const u8 {
+    pub fn Read(self: *FileStream, len: u32) StreamError![]const u8 {
         const target = @min(self.contents.len - self.offset, len);
 
         const input = self.contents[self.offset .. self.offset + target];
@@ -50,7 +51,7 @@ pub const FileStream = struct {
         return result;
     }
 
-    pub fn Write(self: *FileStream, data: []const u8) !void {
+    pub fn Write(self: *FileStream, data: []const u8) StreamError!void {
         const targetsize = self.offset + data.len;
 
         self.contents = try allocator.alloc.realloc(self.contents, targetsize);
@@ -61,13 +62,13 @@ pub const FileStream = struct {
         self.updated = true;
     }
 
-    pub fn Flush(self: *FileStream) !void {
+    pub fn Flush(self: *FileStream) StreamError!void {
         if (self.updated)
             try files.root.writeFile(self.path, self.contents, self.vmInstance);
         self.updated = false;
     }
 
-    pub fn Close(self: *FileStream) !void {
+    pub fn Close(self: *FileStream) StreamError!void {
         try self.Flush();
         allocator.alloc.free(self.contents);
         allocator.alloc.free(self.path);

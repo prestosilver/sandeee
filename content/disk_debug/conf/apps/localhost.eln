@@ -1,0 +1,3 @@
+name: 127.0.0.1
+icon: /cont/icns/debug.eia
+runs: web @127.0.0.1:/index.edf

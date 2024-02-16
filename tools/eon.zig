@@ -338,7 +338,7 @@ const Expression = struct {
                     return result;
                 },
                 .TOKEN_KEYWORD_NEW => {
-                    const adds = "    create\n";
+                    const adds = "    create\n    zero\n";
                     const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     @memcpy(result[start_res..], adds);

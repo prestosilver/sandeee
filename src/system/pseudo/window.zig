@@ -25,7 +25,7 @@ pub var vmIdx: u8 = 0;
 pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
 
 // /fake/win/new
-pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
+pub fn readWinNew(vmInstance: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
     const winDat = try vmwin.new(vmIdx, shader);
 
@@ -40,7 +40,9 @@ pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
         .active = true,
     });
 
-    try events.EventManager.instance.sendEvent(winev.EventCreateWindow{ .window = window });
+    events.EventManager.instance.sendEvent(winev.EventCreateWindow{ .window = window }) catch {
+        return error.InvalidPsuedoData;
+    };
 
     result[0] = vmIdx;
     vmIdx = vmIdx +% 1;
@@ -51,13 +53,13 @@ pub fn readWinNew(vmInstance: ?*vm.VM) ![]const u8 {
     return result;
 }
 
-pub fn writeWinNew(_: []const u8, _: ?*vm.VM) !void {
+pub fn writeWinNew(_: []const u8, _: ?*vm.VM) files.FileError!void {
     return;
 }
 
 // /fake/win/size
 
-pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
+pub fn readWinSize(vmInstance: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 4);
     @memset(result, 0);
 
@@ -83,7 +85,7 @@ pub fn readWinSize(vmInstance: ?*vm.VM) ![]const u8 {
     return result;
 }
 
-pub fn writeWinSize(data: []const u8, vmInstance: ?*vm.VM) !void {
+pub fn writeWinSize(data: []const u8, vmInstance: ?*vm.VM) files.FileError!void {
     if (vmInstance.?.miscData.get("window")) |aid| {
         for (windowsPtr.*.items, 0..) |_, idx| {
             const item = &windowsPtr.*.items[idx];
@@ -107,11 +109,11 @@ pub fn writeWinSize(data: []const u8, vmInstance: ?*vm.VM) !void {
 
 // /fake/win/destroy
 
-pub fn readWinDestroy(_: ?*vm.VM) ![]const u8 {
+pub fn readWinDestroy(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) !void {
+pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) files.FileError!void {
     if (id.len != 1) return;
     const aid = id[0];
 
@@ -134,7 +136,7 @@ pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) !void {
 
 // /fake/win/open
 
-pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
+pub fn readWinOpen(vmInstance: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
     @memset(result, 0);
 
@@ -157,19 +159,19 @@ pub fn readWinOpen(vmInstance: ?*vm.VM) ![]const u8 {
     return result;
 }
 
-pub fn writeWinOpen(_: []const u8, _: ?*vm.VM) !void {
+pub fn writeWinOpen(_: []const u8, _: ?*vm.VM) files.FileError!void {
     return;
 }
 
 // /fake/win/rules
 
-pub fn readWinRules(_: ?*vm.VM) ![]const u8 {
+pub fn readWinRules(_: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 0);
 
     return result;
 }
 
-pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
+pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) files.FileError!void {
     if (vmInstance.?.miscData.get("window")) |aaid| {
         for (windowsPtr.*.items, 0..) |_, idx| {
             const item = &windowsPtr.*.items[idx];
@@ -179,13 +181,15 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
                 if (self.idx == aaid[0]) {
                     if (std.mem.eql(u8, data[0..3], "clr")) {
                         if (data[3..].len < 7 or data[3] != '#') {
-                            return error.InvalidRule;
+                            return error.InvalidPsuedoData;
                         }
-                        const color = try colors.Color.parseColor(data[3..][1..7].*);
+                        const color = colors.Color.parseColor(data[3..][1..7].*) catch {
+                            return error.InvalidPsuedoData;
+                        };
                         item.data.contents.props.clearColor = color;
                     } else if (std.mem.eql(u8, data[0..3], "min")) {
                         if (data[3..].len < 4) {
-                            return error.InvalidRule;
+                            return error.InvalidPsuedoData;
                         }
                         const x = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[3..5]).*));
                         const y = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[5..7]).*));
@@ -193,13 +197,13 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
                         item.data.contents.props.size.min.y = y;
                     } else if (std.mem.eql(u8, data[0..3], "max")) {
                         if (data[3..].len < 4) {
-                            return error.InvalidRule;
+                            return error.InvalidPsuedoData;
                         }
                         const x = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[3..5]).*));
                         const y = @as(f32, @floatFromInt(std.mem.bytesAsValue(u16, data[5..7]).*));
                         item.data.contents.props.size.max = .{ .x = x, .y = y };
                     } else {
-                        return error.InvalidRule;
+                        return error.InvalidPsuedoData;
                     }
 
                     return;
@@ -212,11 +216,11 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) !void {
 
 // /fake/win/flip
 
-pub fn readWinFlip(_: ?*vm.VM) ![]const u8 {
+pub fn readWinFlip(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
+pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) files.FileError!void {
     if (id.len != 1) return;
     const aid = id[0];
 
@@ -237,7 +241,7 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) !void {
 
 // /fake/win/title
 
-pub fn readWinTitle(vmInstance: ?*vm.VM) ![]const u8 {
+pub fn readWinTitle(vmInstance: ?*vm.VM) files.FileError![]const u8 {
     if (vmInstance == null) return allocator.alloc.alloc(u8, 0);
 
     if (vmInstance.?.miscData.get("window")) |aaid| {
@@ -256,7 +260,7 @@ pub fn readWinTitle(vmInstance: ?*vm.VM) ![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinTitle(id: []const u8, _: ?*vm.VM) !void {
+pub fn writeWinTitle(id: []const u8, _: ?*vm.VM) files.FileError!void {
     if (id.len < 2) return;
     const aid = id[0];
 
@@ -277,11 +281,11 @@ pub fn writeWinTitle(id: []const u8, _: ?*vm.VM) !void {
 
 // /fake/win/render
 
-pub fn readWinRender(_: ?*vm.VM) ![]const u8 {
+pub fn readWinRender(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
+pub fn writeWinRender(data: []const u8, _: ?*vm.VM) files.FileError!void {
     if (data.len < 66) {
         log.info("{}", .{data.len});
         return;
@@ -324,11 +328,11 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) !void {
 
 // /fake/win/text
 
-pub fn readWinText(_: ?*vm.VM) ![]const u8 {
+pub fn readWinText(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinText(data: []const u8, _: ?*vm.VM) !void {
+pub fn writeWinText(data: []const u8, _: ?*vm.VM) files.FileError!void {
     if (data.len < 6) return;
 
     const aid = data[0];

@@ -18,6 +18,7 @@ const files = @import("../system/files.zig");
 const conf = @import("../system/config.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
+const shell = @import("../system/shell.zig");
 const eln = @import("../util/eln.zig");
 
 const TOTAL_SPRITES: f32 = 13;
@@ -28,6 +29,8 @@ pub const BarData = struct {
     height: f32,
     btnActive: bool = false,
     btns: i32 = 0,
+    shell: shell.Shell,
+    shader: *shd.Shader,
 
     inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
         var source = src;
@@ -111,10 +114,24 @@ pub const BarData = struct {
             try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
 
             for (apps, 0..) |app, i| {
+                const icon_spr = if (app.icon) |icn|
+                    spr.Sprite.new(&.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) }, spr.SpriteData.new(
+                        rect.newRect(0, 0, 1, 1),
+                        vecs.newVec2(64, 64),
+                    ))
+                else
+                    spr.Sprite.new("error", spr.SpriteData.new(
+                        rect.newRect(0, 0, 1, 1),
+                        vecs.newVec2(64, 64),
+                    ));
                 const height = font.size * 1;
-                const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i)) + std.math.floor((67 - height) / 2);
+                const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 const text = app.name;
-                const textpos = vecs.newVec2(100, y);
+                const textpos = vecs.newVec2(100, y + std.math.floor((67 - height) / 2));
+                const iconpos = rect.newRect(36, y + 2, 64, 64);
+
+                try batch.SpriteBatch.instance.draw(spr.Sprite, &icon_spr, self.shader, vecs.newVec3(iconpos.x, iconpos.y, 0));
+
                 try font.draw(.{
                     .shader = font_shader,
                     .text = text,
@@ -148,6 +165,7 @@ pub const BarData = struct {
     }
 
     pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), shader: *shd.Shader, pos: vecs.Vector2) !bool {
+        _ = shader;
         const btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
 
         var added = false;
@@ -181,139 +199,19 @@ pub const BarData = struct {
             }
         }
 
+        const apps = try getApps();
+        defer allocator.alloc.free(apps);
+
         if (self.btnActive) {
-            for (0..10) |i| {
+            for (apps, 0..) |app, i| {
                 const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 const item = rect.newRect(36, y, 160, 67);
                 if (item.contains(pos)) {
                     added = true;
-                    switch (i) {
-                        0 => {
-                            const window = win.Window.new("win", win.WindowData{
-                                .source = rect.Rectangle{
-                                    .x = 0.0,
-                                    .y = 0.0,
-                                    .w = 1.0,
-                                    .h = 1.0,
-                                },
-                                .contents = try wins.apps.new(shader),
-                                .active = true,
-                            });
-
-                            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
-                        },
-                        1 => {
-                            const window = win.Window.new("win", win.WindowData{
-                                .source = rect.Rectangle{
-                                    .x = 0.0,
-                                    .y = 0.0,
-                                    .w = 1.0,
-                                    .h = 1.0,
-                                },
-                                .contents = try wins.cmd.new(),
-                                .active = true,
-                            });
-
-                            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
-                        },
-                        2 => {
-                            const window = win.Window.new("win", win.WindowData{
-                                .source = rect.Rectangle{
-                                    .x = 0.0,
-                                    .y = 0.0,
-                                    .w = 1.0,
-                                    .h = 1.0,
-                                },
-                                .contents = try wins.email.new(shader),
-                                .active = true,
-                            });
-
-                            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
-                        },
-                        3 => {
-                            const window = win.Window.new("win", win.WindowData{
-                                .source = rect.Rectangle{
-                                    .x = 0.0,
-                                    .y = 0.0,
-                                    .w = 1.0,
-                                    .h = 1.0,
-                                },
-                                .contents = try wins.explorer.new(shader),
-                                .active = true,
-                            });
-
-                            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
-                        },
-                        4 => {
-                            const window = win.Window.new("win", win.WindowData{
-                                .source = rect.Rectangle{
-                                    .x = 0.0,
-                                    .y = 0.0,
-                                    .w = 1.0,
-                                    .h = 1.0,
-                                },
-                                .contents = try wins.web.new(shader),
-                                .active = true,
-                            });
-
-                            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
-                        },
-                        5 => {
-                            const window = win.Window.new("win", win.WindowData{
-                                .source = rect.Rectangle{
-                                    .x = 0.0,
-                                    .y = 0.0,
-                                    .w = 1.0,
-                                    .h = 1.0,
-                                },
-                                .contents = try wins.settings.new(shader),
-                                .active = true,
-                            });
-
-                            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
-                        },
-                        6 => {
-                            const adds = try allocator.alloc.create(popups.all.quit.PopupQuit);
-                            adds.* = .{
-                                .shader = shader,
-                                .icons = .{
-                                    .{
-                                        .texture = "bar",
-                                        .data = .{
-                                            .source = rect.newRect(0, 11.0 / TOTAL_SPRITES, 1.0, 1.0 / TOTAL_SPRITES),
-                                            .size = vecs.newVec2(64, 64),
-                                        },
-                                    },
-                                    .{
-                                        .texture = "bar",
-                                        .data = .{
-                                            .source = rect.newRect(0, 12.0 / TOTAL_SPRITES, 1.0, 1.0 / TOTAL_SPRITES),
-                                            .size = vecs.newVec2(64, 64),
-                                        },
-                                    },
-                                },
-                            };
-
-                            try events.EventManager.instance.sendEvent(windowEvs.EventCreatePopup{
-                                .global = true,
-                                .popup = .{
-                                    .texture = "win",
-                                    .data = .{
-                                        .title = "Quit SandEEE",
-                                        .source = rect.newRect(0, 0, 1, 1),
-                                        .pos = rect.newRectCentered(.{
-                                            .x = 0,
-                                            .y = 0,
-                                            .w = gfx.Context.instance.size.x,
-                                            .h = gfx.Context.instance.size.y,
-                                        }, 350, 125),
-                                        .contents = popups.PopupData.PopupContents.init(adds),
-                                    },
-                                },
-                            });
-                        },
-                        else => {},
-                    }
+                    self.shell.root = files.root;
+                    _ = self.shell.runBg(app.launches) catch {
+                        //TODO: popup
+                    };
                 }
             }
         }
@@ -355,36 +253,6 @@ pub const BarData = struct {
             const menu = rect.newRect(0, self.screendims.y - 466 - self.height, 300, 466);
 
             try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
-
-            //for (0..10) |i| {
-            //    const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
-            //    const iconpos = rect.newRect(36, y + 2, 64, 64);
-
-            //    switch (i) {
-            //        0 => {
-            //            try addQuad(&result, 8, iconpos, rect.newRect(0, 0, 1, 1));
-            //        },
-            //        1 => {
-            //            try addQuad(&result, 5, iconpos, rect.newRect(0, 0, 1, 1));
-            //        },
-            //        2 => {
-            //            try addQuad(&result, 7, iconpos, rect.newRect(0, 0, 1, 1));
-            //        },
-            //        3 => {
-            //            try addQuad(&result, 6, iconpos, rect.newRect(0, 0, 1, 1));
-            //        },
-            //        4 => {
-            //            try addQuad(&result, 9, iconpos, rect.newRect(0, 0, 1, 1));
-            //        },
-            //        5 => {
-            //            try addQuad(&result, 10, iconpos, rect.newRect(0, 0, 1, 1));
-            //        },
-            //        6 => {
-            //            try addQuad(&result, 11, iconpos, rect.newRect(0, 0, 1, 1));
-            //        },
-            //        else => {},
-            //    }
-            //}
         }
 
         for (0..@as(usize, @intCast(self.btns))) |i| {

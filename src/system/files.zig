@@ -19,20 +19,45 @@ pub inline fn getExtrPath() []const u8 {
     return config.SettingManager.instance.get("extr_path") orelse "";
 }
 
+pub const FileError = error{
+    InvalidPsuedoData,
+
+    InvalidFileName,
+    InvalidFolderName,
+
+    FolderProtected,
+
+    FolderNotFound,
+    FileNotFound,
+
+    OutOfMemory,
+} || std.fs.File.ReadError || error{StreamTooLong};
+
+pub const DiskError = error{
+    BadDiskSize,
+
+    OutOfMemory,
+
+    AccessDenied,
+    SystemResources,
+    Unexpected,
+    Unseekable,
+} || FileError || std.fs.File.ReadError;
+
 pub const File = struct {
     parent: *Folder,
     name: []const u8,
     contents: []u8,
 
-    pseudoWrite: ?*const fn ([]const u8, ?*vm.VM) anyerror!void = null,
-    pseudoRead: ?*const fn (?*vm.VM) anyerror![]const u8 = null,
+    pseudoWrite: ?*const fn ([]const u8, ?*vm.VM) FileError!void = null,
+    pseudoRead: ?*const fn (?*vm.VM) FileError![]const u8 = null,
 
     pub fn size(self: *const File) usize {
         if (self.pseudoRead != null) return 0;
         return self.contents.len;
     }
 
-    pub inline fn write(self: *File, contents: []const u8, vmInstance: ?*vm.VM) !void {
+    pub inline fn write(self: *File, contents: []const u8, vmInstance: ?*vm.VM) FileError!void {
         if (self.pseudoWrite != null) {
             return self.pseudoWrite.?(contents, vmInstance);
         } else {
@@ -55,11 +80,11 @@ pub const File = struct {
         allocator.alloc.destroy(self);
     }
 
-    pub fn copyTo(self: *File, target: *Folder) !void {
+    pub fn copyTo(self: *File, target: *Folder) FileError!void {
         if (self.parent.protected) return error.FolderProtected;
         if (target.protected) return error.FolderProtected;
 
-        const lastIdx = std.mem.lastIndexOf(u8, self.name, "/") orelse return error.UnknownError;
+        const lastIdx = std.mem.lastIndexOf(u8, self.name, "/") orelse return error.InvalidFileName;
         const name = self.name[lastIdx + 1 ..];
 
         const clone = try allocator.alloc.create(File);
@@ -87,8 +112,8 @@ pub const Folder = struct {
         foldersVisited: bool = false,
     } = null,
 
-    pub fn loadDisk(file: std.fs.File) !void {
-        if (try file.getEndPos() < 4) return error.BadFile;
+    pub fn loadDisk(file: std.fs.File) DiskError!void {
+        if (try file.getEndPos() < 4) return error.BadDiskSize;
 
         var lenbuffer = [_]u8{0} ** 4;
         _ = try file.read(&lenbuffer);
@@ -428,8 +453,8 @@ pub const Folder = struct {
         }
     }
 
-    pub fn newFile(self: *Folder, name: []const u8) !void {
-        if (std.mem.containsAtLeast(u8, name, 1, " ")) return error.BadName;
+    pub fn newFile(self: *Folder, name: []const u8) FileError!void {
+        if (std.mem.containsAtLeast(u8, name, 1, " ")) return error.InvalidFileName;
 
         const last = std.mem.lastIndexOf(u8, name, "/");
 
@@ -460,8 +485,8 @@ pub const Folder = struct {
         folder.fixFolders();
     }
 
-    pub fn newFolder(self: *Folder, name: []const u8) anyerror!void {
-        if (std.mem.containsAtLeast(u8, name, 1, " ")) return error.BadName;
+    pub fn newFolder(self: *Folder, name: []const u8) FileError!void {
+        if (std.mem.containsAtLeast(u8, name, 1, " ")) return error.InvalidFolderName;
         if (self.protected) return error.FolderProtected;
         if (name.len == 0) return;
 
@@ -566,8 +591,8 @@ pub const Folder = struct {
         return error.FolderNotFound;
     }
 
-    pub fn getFile(self: *Folder, name: []const u8) !*File {
-        if (name.len == 0) return error.InvalidName;
+    pub fn getFile(self: *Folder, name: []const u8) FileError!*File {
+        if (name.len == 0) return error.InvalidFileName;
 
         const first = std.mem.indexOf(u8, name, "/");
         if (first) |index| {

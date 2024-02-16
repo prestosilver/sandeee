@@ -777,6 +777,10 @@ pub fn mainErr() anyerror!void {
         .bar = bar.Bar.new("bar", bar.BarData{
             .height = 38,
             .screendims = &gfx.Context.instance.size,
+            .shell = .{
+                .root = undefined,
+            },
+            .shader = &shader,
         }),
     };
 

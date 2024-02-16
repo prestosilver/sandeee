@@ -19,8 +19,13 @@ const EXIT_NAME = "_quit";
 pub var syslock = std.Thread.Mutex{};
 
 pub const VM = struct {
+    const VMString = std.ArrayList(u8);
+
     const VMError = error{
-        Memory,
+        BadFileName,
+        FolderNotFound,
+
+        OutOfMemory,
         StackUnderflow,
         StackOverflow,
         CallStackUnderflow,
@@ -28,13 +33,20 @@ pub const VM = struct {
         HeapOutOfBounds,
         ValueMissing,
         StringMissing,
+        FunctionMissing,
+
+        DivZero,
+
         InvalidOp,
         InvalidSys,
         InvalidPassword,
+        InvalidStream,
+        InvalidAsm,
+
         NotImplemented,
         UnknownFunction,
         Todo,
-    };
+    } || streams.StreamError;
 
     const StackEntryKind = enum {
         string,
@@ -42,12 +54,12 @@ pub const VM = struct {
     };
 
     pub const StackEntry = union(StackEntryKind) {
-        string: *[]u8,
+        string: *VMString,
         value: *u64,
     };
 
     pub const HeapEntry = union(StackEntryKind) {
-        string: []u8,
+        string: []const u8,
         value: u64,
     };
 
@@ -95,11 +107,11 @@ pub const VM = struct {
     pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8, comptime checker: bool) VMError!VM {
         var splitIter = std.mem.split(u8, args, " ");
 
-        var tmpArgs = alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1) catch return error.Memory;
+        var tmpArgs = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
 
         var idx: usize = 0;
         while (splitIter.next()) |item| : (idx += 1)
-            tmpArgs[idx] = alloc.dupe(u8, item) catch return error.Memory;
+            tmpArgs[idx] = alloc.dupe(u8, item) catch return error.OutOfMemory;
 
         return VM{
             .stack = undefined,
@@ -109,11 +121,11 @@ pub const VM = struct {
             .miscData = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
             .input = std.ArrayList(u8).init(alloc),
-            .heap = alloc.alloc(HeapEntry, 0) catch return error.Memory,
+            .heap = alloc.alloc(HeapEntry, 0) catch return error.OutOfMemory,
             .args = tmpArgs,
             .root = root,
             .checker = checker,
-            .name = alloc.dupe(u8, tmpArgs[0]) catch return error.Memory,
+            .name = alloc.dupe(u8, tmpArgs[0]) catch return error.OutOfMemory,
             .rnd = std.rand.DefaultPrng.init(0),
         };
     }
@@ -126,7 +138,7 @@ pub const VM = struct {
 
     inline fn pushStackI(self: *VM, value: u64) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        const val = self.allocator.create(u64) catch return error.Memory;
+        const val = self.allocator.create(u64) catch return error.OutOfMemory;
         val.* = value;
 
         self.stack[self.rsp] = StackEntry{ .value = val };
@@ -135,9 +147,9 @@ pub const VM = struct {
 
     inline fn pushStackS(self: *VM, string: []const u8) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        const appendString = self.allocator.create([]u8) catch return error.Memory;
-
-        appendString.* = self.allocator.dupe(u8, string) catch return error.Memory;
+        const appendString = self.allocator.create(VMString) catch return error.OutOfMemory;
+        appendString.* = VMString.initCapacity(self.allocator, string.len) catch return error.OutOfMemory;
+        appendString.appendSliceAssumeCapacity(string);
 
         self.stack[self.rsp] = StackEntry{ .string = appendString };
         self.rsp += 1;
@@ -211,6 +223,7 @@ pub const VM = struct {
             Cos,
             Random,
             Seed,
+            Zero,
 
             Last,
             _,
@@ -308,7 +321,7 @@ pub const VM = struct {
         self.allocator.destroy(val);
     }
 
-    pub inline fn freeString(self: *VM, val: *[]const u8) void {
+    pub inline fn freeString(self: *VM, val: *VMString) void {
         if (self.rsp != 0) {
             for (self.stack[0..self.rsp]) |entry| {
                 if (entry == .string and entry.string == val) {
@@ -316,7 +329,7 @@ pub const VM = struct {
                 }
             }
         }
-        self.allocator.free(val.*);
+        val.deinit();
         self.allocator.destroy(val);
     }
 
@@ -358,7 +371,7 @@ pub const VM = struct {
         }
     }
 
-    pub inline fn runOp(self: *VM, op: Operation) !void {
+    pub inline fn runOp(self: *VM, op: Operation) VMError!void {
         telem.Telem.instance.instructionCalls += 1;
 
         //log.info("{}", .{op});
@@ -388,10 +401,10 @@ pub const VM = struct {
                 if (a != .value) return error.ValueMissing;
 
                 if (b == .string) {
-                    if (b.string.len < a.value.*) {
+                    if (b.string.items.len < a.value.*) {
                         try self.pushStackS("");
                     } else {
-                        try self.pushStackS(b.string.*[@as(usize, @intCast(a.value.*))..]);
+                        try self.pushStackS(b.string.items[@as(usize, @intCast(a.value.*))..]);
                     }
                     return;
                 }
@@ -409,10 +422,10 @@ pub const VM = struct {
                 if (a != .value) return error.ValueMissing;
 
                 if (b == .string) {
-                    if (b.string.len < a.value.*) {
+                    if (b.string.items.len < a.value.*) {
                         try self.pushStackS("");
                     } else {
-                        try self.pushStackS(b.string.*[0..@as(usize, @intCast(b.string.*.len - a.value.*))]);
+                        try b.string.resize(@intCast(b.string.items.len - a.value.*));
                     }
                     return;
                 }
@@ -430,11 +443,8 @@ pub const VM = struct {
                 if (a != .value) return error.ValueMissing;
                 if (b != .string) return error.StringMissing;
 
-                if (b.string.len < a.value.*) {
-                    try self.pushStackS(b.string.*);
-                } else {
-                    try self.pushStackS(b.string.*[0..@as(usize, @intCast(a.value.*))]);
-                }
+                try b.string.resize(a.value.*);
+
                 return;
             },
             Operation.Code.Len => {
@@ -443,7 +453,7 @@ pub const VM = struct {
 
                 if (a != .string) return error.StringMissing;
 
-                try self.pushStackI(a.string.len);
+                try self.pushStackI(a.string.items.len);
 
                 return;
             },
@@ -459,7 +469,7 @@ pub const VM = struct {
 
                 const a = try self.findStack(op.value.?);
                 if (a == .string) {
-                    try self.pushStackS(a.string.*);
+                    try self.pushStackS(a.string.items);
                     return;
                 }
 
@@ -479,7 +489,7 @@ pub const VM = struct {
                 defer self.free(&[_]StackEntry{a});
 
                 if (a == .string) {
-                    if (a.string.len == 0) {
+                    if (a.string.items.len == 0) {
                         self.pc = @as(usize, @intCast(op.value.?));
                     }
                     return;
@@ -497,7 +507,7 @@ pub const VM = struct {
                 defer self.free(&[_]StackEntry{a});
 
                 if (a == .string) {
-                    if (a.string.len != 0) {
+                    if (a.string.items.len != 0) {
                         self.pc = @as(usize, @intCast(op.value.?));
                     }
                     return;
@@ -522,7 +532,7 @@ pub const VM = struct {
                             defer self.free(&[_]StackEntry{a});
 
                             if (a == .string) {
-                                try self.out.appendSlice(a.string.*);
+                                try self.out.appendSlice(a.string.items);
 
                                 return;
                             }
@@ -564,10 +574,10 @@ pub const VM = struct {
 
                             if (path != .string) return error.StringMissing;
 
-                            if (path.string.len > 0 and path.string.*[0] == '/') {
-                                _ = try files.root.newFile(path.string.*);
+                            if (path.string.items.len > 0 and path.string.items[0] == '/') {
+                                _ = try files.root.newFile(path.string.items);
                             } else {
-                                _ = try self.root.newFile(path.string.*);
+                                _ = try self.root.newFile(path.string.items);
                             }
 
                             return;
@@ -579,7 +589,9 @@ pub const VM = struct {
 
                             if (path != .string) return error.StringMissing;
 
-                            try self.streams.append(try streams.FileStream.Open(self.root, path.string.*, self));
+                            const stream = try streams.FileStream.Open(self.root, path.string.items, self);
+
+                            try self.streams.append(stream);
                             try self.pushStackI(self.streams.items.len - 1);
 
                             return;
@@ -620,7 +632,7 @@ pub const VM = struct {
                             const fs = self.streams.items[@as(usize, @intCast(idx.value.*))];
                             if (fs == null) return error.InvalidStream;
 
-                            try fs.?.Write(str.string.*);
+                            try fs.?.Write(str.string.items);
 
                             return;
                         },
@@ -685,7 +697,7 @@ pub const VM = struct {
 
                             if (name != .string) return error.StringMissing;
 
-                            const val: u64 = if (self.functions.contains(name.string.*)) 1 else 0;
+                            const val: u64 = if (self.functions.contains(name.string.items)) 1 else 0;
 
                             try self.pushStackI(val);
 
@@ -700,7 +712,7 @@ pub const VM = struct {
 
                             var val: []const u8 = "";
 
-                            if (self.functions.get(name.string.*)) |newVal| val = newVal.string;
+                            if (self.functions.get(name.string.items)) |newVal| val = newVal.string;
 
                             try self.pushStackS(val);
 
@@ -715,13 +727,13 @@ pub const VM = struct {
                             if (func != .string) return error.StringMissing;
                             if (name != .string) return error.StringMissing;
 
-                            const dup = try self.allocator.dupe(u8, func.string.*);
+                            const dup = try self.allocator.dupe(u8, func.string.items);
 
                             const ops = try self.stringToOps(dup);
                             defer ops.deinit();
 
                             const finalOps = try self.allocator.dupe(Operation, ops.items);
-                            const finalName = try self.allocator.dupe(u8, name.string.*);
+                            const finalName = try self.allocator.dupe(u8, name.string.items);
 
                             if (self.functions.fetchRemove(finalName)) |entry| {
                                 self.allocator.free(entry.key);
@@ -743,7 +755,7 @@ pub const VM = struct {
 
                             if (name != .string) return error.StringMissing;
 
-                            if (self.functions.fetchRemove(name.string.*)) |entry| {
+                            if (self.functions.fetchRemove(name.string.items)) |entry| {
                                 self.allocator.free(entry.key);
                                 self.allocator.free(entry.value.ops);
                                 self.allocator.free(entry.value.string);
@@ -814,7 +826,7 @@ pub const VM = struct {
                                 },
                                 .string => {
                                     self.heap[idx] = .{
-                                        .string = self.allocator.dupe(u8, data.string.*) catch return error.Memory,
+                                        .string = try self.allocator.dupe(u8, data.string.items),
                                     };
                                 },
                             }
@@ -839,7 +851,7 @@ pub const VM = struct {
                             defer self.allocator.free(msgString);
 
                             try self.out.appendSlice("Error: ");
-                            try self.out.appendSlice(msg.string.*);
+                            try self.out.appendSlice(msg.string.items);
                             try self.out.appendSlice("\n");
                             try self.out.appendSlice(msgString);
 
@@ -853,17 +865,17 @@ pub const VM = struct {
 
                             if (path != .string) return error.StringMissing;
 
-                            if (path.string.len == 0) return error.FileMissing;
+                            if (path.string.items.len == 0) return error.FileMissing;
 
-                            if (path.string.*[0] == '/') {
-                                const file = try files.root.getFile(path.string.*);
+                            if (path.string.items[0] == '/') {
+                                const file = try files.root.getFile(path.string.items);
 
                                 try self.pushStackI(file.size());
 
                                 return;
                             }
 
-                            const file = try self.root.getFile(path.string.*);
+                            const file = try self.root.getFile(path.string.items);
 
                             try self.pushStackI(file.size());
 
@@ -875,7 +887,7 @@ pub const VM = struct {
                             defer self.free(&[_]StackEntry{num});
 
                             if (num != .value) return error.ValueMissing;
-                            if (self.rsp < num.value.*) return error.InvalidValue;
+                            if (self.rsp < num.value.*) return error.InvalidSys;
 
                             const oldRsp = self.rsp;
 
@@ -890,12 +902,12 @@ pub const VM = struct {
                             const exec = try self.popStack();
                             defer self.free(&[_]StackEntry{exec});
 
-                            if (exec != .string) return error.StirngMissing;
+                            if (exec != .string) return error.StringMissing;
 
-                            const file = try self.root.getFile(exec.string.*);
+                            const file = try self.root.getFile(exec.string.items);
                             const conts = try file.read(null);
 
-                            const handle = try vmManager.VMManager.instance.spawn(self.root, exec.string.*, conts[4..]);
+                            const handle = try vmManager.VMManager.instance.spawn(self.root, exec.string.items, conts[4..]);
 
                             try self.pushStackI(handle.id);
 
@@ -921,9 +933,9 @@ pub const VM = struct {
                         },
                         // secret
                         255 => {
-                            try events.EventManager.instance.sendEvent(systemEvs.EventSys{
+                            events.EventManager.instance.sendEvent(systemEvs.EventSys{
                                 .sysId = op.value.?,
-                            });
+                            }) catch return error.InvalidSys;
 
                             if (self.rsp == 0)
                                 return error.InvalidPassword;
@@ -933,7 +945,7 @@ pub const VM = struct {
 
                             if (pass != .string) return error.StringMissing;
 
-                            if (std.mem.eql(u8, pass.string.*, "Hi")) {
+                            if (std.mem.eql(u8, pass.string.items, "Hi")) {
                                 try self.out.appendSlice("Hello World!\n");
 
                                 return;
@@ -942,12 +954,14 @@ pub const VM = struct {
                             const dbg_pass = try telem.Telem.getDebugPassword();
                             defer self.allocator.free(dbg_pass);
 
-                            if (std.mem.eql(u8, pass.string.*, dbg_pass)) {
+                            if (std.mem.eql(u8, pass.string.items, dbg_pass)) {
                                 try self.out.appendSlice("Debug Mode Enabled\n");
 
-                                try events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
+                                events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
                                     .enabled = true,
-                                });
+                                }) catch {
+                                    return error.InvalidSys;
+                                };
 
                                 return;
                             }
@@ -964,7 +978,7 @@ pub const VM = struct {
                 } else return error.ValueMissing;
             },
             Operation.Code.Jmpf => {
-                if (op.value == null) return error.dValueMissing;
+                if (op.value == null) return error.ValueMissing;
                 self.pc += @as(usize, @intCast(op.value.?));
                 return;
             },
@@ -1132,15 +1146,15 @@ pub const VM = struct {
 
                 if (a == .string) {
                     if (b == .string) {
-                        const val: u64 = if (std.mem.eql(u8, a.string.*, b.string.*)) 1 else 0;
+                        const val: u64 = if (std.mem.eql(u8, a.string.items, b.string.items)) 1 else 0;
                         try self.pushStackI(val);
                         return;
                     }
 
                     if (b == .value) {
                         var val: u64 = 0;
-                        if (a.string.*.len != 0 and a.string.*[0] == @as(u8, @intCast(b.value.*))) val = 1;
-                        if (a.string.*.len == 0 and 0 == b.value.*) val = 1;
+                        if (a.string.items.len != 0 and a.string.items[0] == @as(u8, @intCast(b.value.*))) val = 1;
+                        if (a.string.items.len == 0 and 0 == b.value.*) val = 1;
                         try self.pushStackI(val);
                         return;
                     }
@@ -1149,8 +1163,8 @@ pub const VM = struct {
                 if (a == .value) {
                     if (b == .string) {
                         var val: u64 = 0;
-                        if (b.string.*.len != 0 and b.string.*[0] == @as(u8, @intCast(a.value.*))) val = 1;
-                        if (b.string.*.len == 0 and 0 == a.value.*) val = 1;
+                        if (b.string.items.len != 0 and b.string.items[0] == @as(u8, @intCast(a.value.*))) val = 1;
+                        if (b.string.items.len == 0 and 0 == a.value.*) val = 1;
                         try self.pushStackI(val);
                         return;
                     }
@@ -1191,10 +1205,10 @@ pub const VM = struct {
                 defer self.free(&[_]StackEntry{a});
 
                 if (a == .string) {
-                    if (a.string.len == 0) {
+                    if (a.string.items.len == 0) {
                         try self.pushStackI(0);
                     } else {
-                        const val = @as(u64, @intCast(a.string.*[0]));
+                        const val = @as(u64, @intCast(a.string.items[0]));
                         try self.pushStackI(val);
                     }
                     return;
@@ -1244,7 +1258,7 @@ pub const VM = struct {
                 self.retStack[self.retRsp].location = self.pc;
                 self.retStack[self.retRsp].function = self.inside_fn;
                 self.pc = 0;
-                if (self.functions.getEntry(name.string.*)) |entry| {
+                if (self.functions.getEntry(name.string.items)) |entry| {
                     self.inside_fn = entry.key_ptr.*;
                 } else {
                     return error.FunctionMissing;
@@ -1254,7 +1268,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Cat => {
+            .Cat => {
                 const b = try self.popStack();
                 const a = try self.popStack();
 
@@ -1263,19 +1277,23 @@ pub const VM = struct {
                 if (a != .string) return error.StringMissing;
 
                 if (b == .string) {
-                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, b.string.* });
+                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.string.items, b.string.items });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
+                    //try a.string.appendSlice(b.string.items);
+                    //try self.pushStack(a);
 
                     return;
                 }
 
                 if (b == .value) {
-                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.string.*, std.mem.asBytes(b.value) });
+                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.string.items, std.mem.asBytes(b.value) });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
+                    //try a.string.appendSlice(std.mem.asBytes(b.value));
+                    //try self.pushStack(a);
 
                     return;
                 }
@@ -1286,10 +1304,13 @@ pub const VM = struct {
 
                 if (b != .value) return error.ValueMissing;
 
-                const adds = try self.allocator.alloc(u8, @as(usize, @intCast(b.value.*)));
-                defer self.allocator.free(adds);
-                @memset(adds, 0);
-                try self.pushStackS(adds);
+                const adds = try self.allocator.create(VMString);
+                adds.* = try VMString.initCapacity(self.allocator, b.value.*);
+                try adds.resize(b.value.*);
+
+                try self.pushStack(.{
+                    .string = adds,
+                });
 
                 return;
             },
@@ -1307,6 +1328,15 @@ pub const VM = struct {
                 if (seed != .value) return error.ValueMissing;
 
                 self.rnd.seed(seed.value.*);
+
+                return;
+            },
+            .Zero => {
+                const b = try self.findStack(0);
+
+                if (b != .string) return error.ValueMissing;
+
+                @memset(b.string.items, 0);
 
                 return;
             },
@@ -1333,19 +1363,20 @@ pub const VM = struct {
         self.code = list;
     }
 
-    pub fn stringToOps(self: *VM, conts: []const u8) !std.ArrayList(Operation) {
+    pub fn stringToOps(self: *VM, conts: []const u8) VMError!std.ArrayList(Operation) {
         var ops = std.ArrayList(Operation).init(self.allocator);
+        errdefer ops.deinit();
 
         var parsePtr: usize = 0;
         while (parsePtr < conts.len) {
             if (parsePtr >= conts.len) {
-                ops.deinit();
                 return error.InvalidAsm;
             }
-            const code: Operation.Code = try std.meta.intToEnum(Operation.Code, conts[parsePtr]);
+            const code: Operation.Code = std.meta.intToEnum(Operation.Code, conts[parsePtr]) catch {
+                return error.InvalidAsm;
+            };
             parsePtr += 1;
             if (parsePtr >= conts.len) {
-                ops.deinit();
                 return error.InvalidAsm;
             }
             const kind = conts[parsePtr];
@@ -1353,7 +1384,6 @@ pub const VM = struct {
 
             if (kind == 1) {
                 if (parsePtr + 7 >= conts.len) {
-                    ops.deinit();
                     return error.InvalidAsm;
                 }
                 const value = @as(u64, @bitCast(conts[parsePtr..][0..8].*));
@@ -1366,7 +1396,6 @@ pub const VM = struct {
                 while (parsePtr + buffPtr < conts.len and conts[parsePtr + buffPtr] != 0) {
                     buffPtr += 1;
                     if (buffPtr + parsePtr >= conts.len) {
-                        ops.deinit();
                         return error.InvalidAsm;
                     }
                 }
@@ -1374,7 +1403,6 @@ pub const VM = struct {
                 parsePtr += buffPtr + 1;
             } else if (kind == 3) {
                 if (parsePtr >= conts.len) {
-                    ops.deinit();
                     return error.InvalidAsm;
                 }
                 const value = conts[parsePtr];
@@ -1384,7 +1412,6 @@ pub const VM = struct {
             } else if (kind == 0) {
                 try ops.append(VM.Operation{ .code = code });
             } else {
-                ops.deinit();
                 return error.InvalidAsm;
             }
         }

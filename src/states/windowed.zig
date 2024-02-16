@@ -374,8 +374,12 @@ pub const GSWindowed = struct {
     }
 
     pub fn update(self: *Self, dt: f32) !void {
-        for (self.windows.items, 0..) |window, idx| {
+        for (self.windows.items, 0..) |*window, idx| {
             if (window.data.shouldClose) {
+                if (self.dragging_window) |drag|
+                    if (window == drag) {
+                        self.dragging_window = null;
+                    };
                 _ = self.windows.orderedRemove(idx);
                 break;
             }

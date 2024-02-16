@@ -92,6 +92,7 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
         if (std.mem.eql(u8, op, "cos")) code = 32;
         if (std.mem.eql(u8, op, "rand")) code = 33;
         if (std.mem.eql(u8, op, "seed")) code = 34;
+        if (std.mem.eql(u8, op, "zero")) code = 35;
 
         if (code == 255) {
             std.log.info("{s}", .{op});
@@ -267,6 +268,7 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
         if (std.mem.eql(u8, op, "cos")) code = 32;
         if (std.mem.eql(u8, op, "rand")) code = 33;
         if (std.mem.eql(u8, op, "seed")) code = 34;
+        if (std.mem.eql(u8, op, "zero")) code = 35;
 
         if (code == 255) {
             std.log.info("{s}", .{op});

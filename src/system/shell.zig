@@ -124,6 +124,11 @@ pub const Shell = struct {
     }
 
     pub fn stop(_: *Shell, param: []const u8) !Result {
+        if (param.len < 5)
+            return .{
+                .data = try allocator.alloc.dupe(u8, "stop requires an id"),
+            };
+
         const id = try std.fmt.parseInt(u8, param[5..], 16);
 
         try vmManager.VMManager.instance.destroy(.{
@@ -203,6 +208,34 @@ pub const Shell = struct {
                 idx += 1;
             }
         }
+
+        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+
+        return .{
+            .data = try allocator.alloc.dupe(u8, ""),
+        };
+    }
+
+    pub fn runLaunch(self: *Shell, _: []const u8) !Result {
+        _ = self;
+        const window = win.Window.new("win", win.WindowData{
+            .contents = try wins.apps.new(shader),
+            .active = true,
+        });
+
+        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+
+        return .{
+            .data = try allocator.alloc.dupe(u8, ""),
+        };
+    }
+
+    pub fn runSettings(self: *Shell, _: []const u8) !Result {
+        _ = self;
+        const window = win.Window.new("win", win.WindowData{
+            .contents = try wins.settings.new(shader),
+            .active = true,
+        });
 
         try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
 
@@ -344,10 +377,13 @@ pub const Shell = struct {
                 "\n" ++
                 "Applications\n" ++
                 "------------\n" ++
-                "cmd  - opens cmd\n" ++
-                "edit - opens the text editor\n" ++
-                "web  - opens the web browser\n" ++
-                "task - opens the task manager\n" ++
+                "files  - opens the file manager\n" ++
+                "cmd    - opens cmd\n" ++
+                "edit   - opens the text editor\n" ++
+                "launch - opens launchEEE\n" ++
+                "web    - opens the web browser\n" ++
+                "task   - opens the task manager\n" ++
+                "set    - opens the settings\n" ++
                 "\n" ++
                 "You can also run any file in /exec with its name.\n"),
         };
@@ -520,6 +556,8 @@ pub const Shell = struct {
             if (std.mem.eql(u8, cmd, "edit")) return self.runEdit(params);
             if (std.mem.eql(u8, cmd, "web")) return self.runWeb(params);
             if (std.mem.eql(u8, cmd, "task")) return self.runTask(params);
+            if (std.mem.eql(u8, cmd, "set")) return self.runSettings(params);
+            if (std.mem.eql(u8, cmd, "launch")) return self.runLaunch(params);
         }
         if (std.mem.eql(u8, cmd, "help")) return self.help(params);
         if (std.mem.eql(u8, cmd, "stop")) return self.stop(params);

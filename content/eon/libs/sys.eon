@@ -81,6 +81,13 @@ fn fileSize() {
     asm "ret";
 }
 
+fn prealloc() {
+    asm "create";
+    asm "push 0";
+    asm "size";
+    asm "ret";
+}
+
 fn readStr(prompt) {
     var file = 0;
     var done = 0;

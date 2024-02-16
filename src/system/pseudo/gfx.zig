@@ -16,7 +16,7 @@ const cols = @import("../../math/colors.zig");
 
 pub var texIdx: u8 = 0;
 
-pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
+pub fn readGfxNew(_: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
 
     result[0] = texIdx;
@@ -33,17 +33,17 @@ pub fn readGfxNew(_: ?*vm.VM) ![]const u8 {
     return result;
 }
 
-pub fn writeGfxNew(_: []const u8, _: ?*vm.VM) !void {
+pub fn writeGfxNew(_: []const u8, _: ?*vm.VM) files.FileError!void {
     return;
 }
 
 // /fake/gfx/destroy
 
-pub fn readGfxDestroy(_: ?*vm.VM) ![]const u8 {
+pub fn readGfxDestroy(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
+pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) files.FileError!void {
     const idx = data[0];
     const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
@@ -62,11 +62,11 @@ pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) !void {
 
 // /fake/gfx/upload
 
-pub fn readGfxUpload(_: ?*vm.VM) ![]const u8 {
+pub fn readGfxUpload(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
+pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) files.FileError!void {
     if (data.len == 1) {
         const idx = data[0];
 
@@ -85,16 +85,18 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) !void {
 
     const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
 
-    try tex.uploadTextureMem(texture, image);
+    tex.uploadTextureMem(texture, image) catch {
+        return error.InvalidPsuedoData;
+    };
 }
 
 // /fake/gfx/save
 
-pub fn readGfxSave(_: ?*vm.VM) ![]const u8 {
+pub fn readGfxSave(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxSave(data: []const u8, vmInstance: ?*vm.VM) !void {
+pub fn writeGfxSave(data: []const u8, vmInstance: ?*vm.VM) files.FileError!void {
     const idx = data[0];
     const image = data[1..];
 
@@ -117,11 +119,11 @@ pub fn writeGfxSave(data: []const u8, vmInstance: ?*vm.VM) !void {
 
 // /fake/gfx/pixel
 
-pub fn readGfxPixel(_: ?*vm.VM) ![]const u8 {
+pub fn readGfxPixel(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) !void {
+pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) files.FileError!void {
     const idx = data[0];
     var tmp = data[1..];
 

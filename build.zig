@@ -31,7 +31,7 @@ const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error"
 const internalSoundFiles = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
-const iconImageFiles = [_][]const u8{ "eeedt", "tasks", "cmd" };
+const iconImageFiles = [_][]const u8{ "eeedt", "tasks", "cmd", "settings", "launch", "debug" };
 
 // the website
 const wwwFiles = [_]WWWStepData{
@@ -60,11 +60,11 @@ const wwwFiles = [_]WWWStepData{
     },
     .{
         // paint
-        // TODO: icon
         .inputFiles = &.{
             "content/eon/exec/paint.eon:/exec/paint.eep",
             "content/images/transparent.png:/cont/imgs/transparent.eia",
             "content/elns/Paint.eln:/conf/apps/Paint.eln",
+            "content/images/icons/paint.png:/cont/icns/paint.eia",
         },
         .outputFile = "www/downloads/tools/paint.epk",
         .converter = epk.convert,
@@ -139,6 +139,7 @@ pub fn build(b: *std.Build) !void {
     _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/disks" });
     if (optimize == .Debug) {
         _ = b.run(&[_][]const u8{ "cp", "-r", "content/disk_debug/prof", "content/disk" });
+        _ = b.run(&[_][]const u8{ "cp", "-r", "content/disk_debug/conf", "content/disk" });
     }
 
     for (incLibsFiles) |file| {
