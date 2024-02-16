@@ -310,6 +310,12 @@ pub fn build(b: *std.Build) !void {
 
     if (randomTests != 0) {
         _ = b.run(&[_][]const u8{ "mkdir", "-p", "content/disk/prof/tests/rand" });
+        const filename = b.fmt("content/disk/prof/tests/rand/all.esh", .{});
+        const count = b.fmt("{}", .{randomTests});
+
+        var step = try conv.ConvertStep.create(b, rand.createScript, count, filename);
+
+        write_step.step.dependOn(&step.step);
     }
 
     for (0..@intCast(randomTests)) |idx| {
