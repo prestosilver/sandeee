@@ -15,6 +15,7 @@ const c = @import("../c.zig");
 const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
 const texMan = @import("../util/texmanager.zig");
+const eln = @import("../util/eln.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -22,12 +23,6 @@ const SCROLL = 30;
 var g_idx: u8 = 0;
 
 pub const LauncherData = struct {
-    const LauncherIcon = struct {
-        name: []const u8,
-        icon: u8,
-        launches: []const u8,
-    };
-
     const Self = @This();
 
     const LauncherMouseActionType = enum {
@@ -52,55 +47,22 @@ pub const LauncherData = struct {
     selected: usize = 0,
     lastAction: ?LauncherMouseAction = null,
 
-    icon_data: []const LauncherIcon,
+    icon_data: []const eln.ElnData,
     idx: u8,
 
     max_sprites: u8 = 0,
 
-    pub fn getIcons(self: *Self) ![]const LauncherIcon {
-        var textures = [_]u8{ 'l', 'a', 'u', self.idx, 0 };
-
+    pub fn getIcons(self: *Self) ![]const eln.ElnData {
         const folder = files.root.getFolder("conf/apps") catch
             return &.{};
 
         const subFiles = try folder.getFiles();
         defer allocator.alloc.free(subFiles);
 
-        const result = try allocator.alloc.alloc(LauncherIcon, subFiles.len);
+        const result = try allocator.alloc.alloc(eln.ElnData, subFiles.len);
 
         for (subFiles, 0..) |file, idx| {
-            const extIdx = std.mem.lastIndexOf(u8, file.name, ".") orelse file.name.len;
-            result[idx] = LauncherIcon{
-                .name = file.name[folder.name.len..],
-                .icon = textures[4],
-                .launches = file.name[folder.name.len..extIdx],
-            };
-
-            const conts = try file.read(null);
-            var split = std.mem.split(u8, conts, "\n");
-
-            while (split.next()) |entry| {
-                const colon_idx = std.mem.indexOf(u8, entry, ":") orelse continue;
-                const prop = std.mem.trim(u8, entry[0..colon_idx], " ");
-                const value = std.mem.trim(u8, entry[colon_idx + 1 ..], " ");
-                if (std.mem.eql(u8, prop, "name")) {
-                    result[idx].name = value;
-                } else if (std.mem.eql(u8, prop, "icon")) {
-                    if (texMan.TextureManager.instance.get(&textures)) |old_tex| {
-                        tex.uploadTextureFile(old_tex, value) catch {};
-                    } else {
-                        if (tex.newTextureFile(value) catch null) |tmp_tex| {
-                            try texMan.TextureManager.instance.put(&textures, tmp_tex);
-                        } else {
-                            log.err("Failed to load image {s}", .{value});
-                        }
-                    }
-                } else if (std.mem.eql(u8, prop, "runs")) {
-                    result[idx].launches = value;
-                }
-            }
-
-            textures[4] += 1;
+            result[idx] = try eln.ElnData.parse(file);
         }
 
         self.max_sprites = @max(self.max_sprites, @as(u8, @intCast(subFiles.len)));
@@ -159,10 +121,17 @@ pub const LauncherData = struct {
                     .maxlines = 1,
                 });
 
-                const icon_spr = sprite.Sprite.new(&.{ 'l', 'a', 'u', self.idx, @as(u8, @intCast(idx)) }, sprite.SpriteData.new(
-                    rect.newRect(0, 0, 1, 1),
-                    vecs.newVec2(64, 64),
-                ));
+                const icon_spr =
+                    if (icon.icon) |icn|
+                    sprite.Sprite.new(&.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) }, sprite.SpriteData.new(
+                        rect.newRect(0, 0, 1, 1),
+                        vecs.newVec2(64, 64),
+                    ))
+                else
+                    sprite.Sprite.new("error", sprite.SpriteData.new(
+                        rect.newRect(0, 0, 1, 1),
+                        vecs.newVec2(64, 64),
+                    ));
 
                 try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon_spr, self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
@@ -255,7 +224,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(LauncherData);
 
     self.* = .{
-        .icon_data = try allocator.alloc.alloc(LauncherData.LauncherIcon, 0),
+        .icon_data = try allocator.alloc.alloc(eln.ElnData, 0),
         .idx = g_idx,
 
         .gray = sprite.Sprite.new("ui", sprite.SpriteData.new(

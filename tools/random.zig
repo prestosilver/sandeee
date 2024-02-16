@@ -10,7 +10,7 @@ const InstructionData = struct {
 const INSTRUCTION_TYPES = [_]InstructionData{
     // none, int, string
     .{ .stack_out = 0, .stack_in = 0, .params = .{ true, false, false } }, // nop
-    .{ .stack_out = 0, .stack_in = 3, .params = .{ false, true, false } }, // sys
+    .{ .stack_out = 1, .stack_in = 3, .params = .{ false, true, false } }, // sys
     .{ .stack_out = 1, .stack_in = 0, .params = .{ false, true, true } }, // push
     .{ .stack_out = 1, .stack_in = 2, .params = .{ true, false, false } }, // add
     .{ .stack_out = 1, .stack_in = 2, .params = .{ true, false, false } }, // sub
@@ -108,6 +108,19 @@ pub fn create(_: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
     }
 
     try result.appendSlice(buffer[0..idx]);
+
+    return result;
+}
+
+pub fn createScript(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+    var result = try std.ArrayList(u8).initCapacity(alloc, 1024);
+
+    for (0..try std.fmt.parseInt(usize, in[0], 10)) |idx| {
+        const text = try std.fmt.allocPrint(alloc, "{}.eep\n", .{idx});
+        defer alloc.free(text);
+
+        try result.appendSlice(text);
+    }
 
     return result;
 }

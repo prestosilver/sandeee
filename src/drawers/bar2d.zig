@@ -18,6 +18,7 @@ const files = @import("../system/files.zig");
 const conf = @import("../system/config.zig");
 const events = @import("../util/events.zig");
 const windowEvs = @import("../events/window.zig");
+const eln = @import("../util/eln.zig");
 
 const TOTAL_SPRITES: f32 = 13;
 const TEX_SIZE: f32 = 32;
@@ -103,22 +104,16 @@ pub const BarData = struct {
             self.btns += 1;
         }
 
+        const apps = try getApps();
+        defer allocator.alloc.free(apps);
+
         if (self.btnActive) {
             try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
 
-            for (0..10) |i| {
+            for (apps, 0..) |app, i| {
                 const height = font.size * 1;
                 const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i)) + std.math.floor((67 - height) / 2);
-                const text = switch (i) {
-                    0 => "Launc\x82\x82\x82",
-                    1 => "Cmd",
-                    2 => "\x82\x82\x82Mail",
-                    3 => "Files",
-                    4 => "Xplore",
-                    5 => "Settings",
-                    6 => "Log out",
-                    else => "",
-                };
+                const text = app.name;
                 const textpos = vecs.newVec2(100, y);
                 try font.draw(.{
                     .shader = font_shader,
@@ -127,6 +122,29 @@ pub const BarData = struct {
                 });
             }
         }
+    }
+
+    pub fn getApps() ![]const eln.ElnData {
+        const file = files.root.getFile("conf/bar.cfg") catch return &.{};
+        const apps = try files.root.getFolder("conf/apps");
+        const list = try file.read(null);
+
+        var iter = std.mem.split(u8, list, "\n");
+
+        var result = try allocator.alloc.alloc(eln.ElnData, 0);
+        errdefer allocator.alloc.free(result);
+
+        while (iter.next()) |eln_name| {
+            const file_name = try std.fmt.allocPrint(allocator.alloc, "{s}.eln", .{eln_name});
+            defer allocator.alloc.free(file_name);
+
+            const eln_file = apps.getFile(file_name) catch continue;
+            const eln_data = eln.ElnData.parse(eln_file) catch continue;
+            result = try allocator.alloc.realloc(result, result.len + 1);
+            result[result.len - 1] = eln_data;
+        }
+
+        return result;
     }
 
     pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), shader: *shd.Shader, pos: vecs.Vector2) !bool {
@@ -338,35 +356,35 @@ pub const BarData = struct {
 
             try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
 
-            for (0..10) |i| {
-                const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
-                const iconpos = rect.newRect(36, y + 2, 64, 64);
+            //for (0..10) |i| {
+            //    const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
+            //    const iconpos = rect.newRect(36, y + 2, 64, 64);
 
-                switch (i) {
-                    0 => {
-                        try addQuad(&result, 8, iconpos, rect.newRect(0, 0, 1, 1));
-                    },
-                    1 => {
-                        try addQuad(&result, 5, iconpos, rect.newRect(0, 0, 1, 1));
-                    },
-                    2 => {
-                        try addQuad(&result, 7, iconpos, rect.newRect(0, 0, 1, 1));
-                    },
-                    3 => {
-                        try addQuad(&result, 6, iconpos, rect.newRect(0, 0, 1, 1));
-                    },
-                    4 => {
-                        try addQuad(&result, 9, iconpos, rect.newRect(0, 0, 1, 1));
-                    },
-                    5 => {
-                        try addQuad(&result, 10, iconpos, rect.newRect(0, 0, 1, 1));
-                    },
-                    6 => {
-                        try addQuad(&result, 11, iconpos, rect.newRect(0, 0, 1, 1));
-                    },
-                    else => {},
-                }
-            }
+            //    switch (i) {
+            //        0 => {
+            //            try addQuad(&result, 8, iconpos, rect.newRect(0, 0, 1, 1));
+            //        },
+            //        1 => {
+            //            try addQuad(&result, 5, iconpos, rect.newRect(0, 0, 1, 1));
+            //        },
+            //        2 => {
+            //            try addQuad(&result, 7, iconpos, rect.newRect(0, 0, 1, 1));
+            //        },
+            //        3 => {
+            //            try addQuad(&result, 6, iconpos, rect.newRect(0, 0, 1, 1));
+            //        },
+            //        4 => {
+            //            try addQuad(&result, 9, iconpos, rect.newRect(0, 0, 1, 1));
+            //        },
+            //        5 => {
+            //            try addQuad(&result, 10, iconpos, rect.newRect(0, 0, 1, 1));
+            //        },
+            //        6 => {
+            //            try addQuad(&result, 11, iconpos, rect.newRect(0, 0, 1, 1));
+            //        },
+            //        else => {},
+            //    }
+            //}
         }
 
         for (0..@as(usize, @intCast(self.btns))) |i| {
