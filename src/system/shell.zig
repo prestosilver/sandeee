@@ -9,9 +9,12 @@ const wins = @import("../windows/all.zig");
 const win = @import("../drawers/window2d.zig");
 const tex = @import("../util/texture.zig");
 const shd = @import("../util/shader.zig");
+const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const opener = @import("opener.zig");
 const vmManager = @import("../system/vmmanager.zig");
+const popups = @import("../drawers/popup2d.zig");
+const gfx = @import("../util/graphics.zig");
 
 const Result = struct {
     data: []u8,
@@ -31,6 +34,8 @@ const ShellError = error{
     MissingParameter,
     BadASMFile,
 };
+
+const TOTAL_BAR_SPRITES: f32 = 13;
 
 pub const Shell = struct {
     root: *files.Folder,
@@ -216,8 +221,7 @@ pub const Shell = struct {
         };
     }
 
-    pub fn runLaunch(self: *Shell, _: []const u8) !Result {
-        _ = self;
+    pub fn runLaunch(_: *Shell, _: []const u8) !Result {
         const window = win.Window.new("win", win.WindowData{
             .contents = try wins.apps.new(shader),
             .active = true,
@@ -230,10 +234,83 @@ pub const Shell = struct {
         };
     }
 
+    pub fn runLogout(_: *Shell, _: []const u8) !Result {
+        const adds = try allocator.alloc.create(popups.all.quit.PopupQuit);
+        adds.* = .{
+            .shader = shader,
+            .icons = .{
+                .{
+                    .texture = "bar",
+                    .data = .{
+                        .source = rect.newRect(0, 11.0 / TOTAL_BAR_SPRITES, 1.0, 1.0 / TOTAL_BAR_SPRITES),
+                        .size = vecs.newVec2(64, 64),
+                    },
+                },
+                .{
+                    .texture = "bar",
+                    .data = .{
+                        .source = rect.newRect(0, 12.0 / TOTAL_BAR_SPRITES, 1.0, 1.0 / TOTAL_BAR_SPRITES),
+                        .size = vecs.newVec2(64, 64),
+                    },
+                },
+            },
+        };
+
+        try events.EventManager.instance.sendEvent(windowEvs.EventCreatePopup{
+            .global = true,
+            .popup = .{
+                .texture = "win",
+                .data = .{
+                    .title = "Quit SandEEE",
+                    .source = rect.newRect(0, 0, 1, 1),
+                    .pos = rect.newRectCentered(.{
+                        .x = 0,
+                        .y = 0,
+                        .w = gfx.Context.instance.size.x,
+                        .h = gfx.Context.instance.size.y,
+                    }, 350, 125),
+                    .contents = popups.PopupData.PopupContents.init(adds),
+                },
+            },
+        });
+
+        return .{
+            .data = try allocator.alloc.dupe(u8, "Launched"),
+        };
+    }
+
     pub fn runSettings(self: *Shell, _: []const u8) !Result {
         _ = self;
         const window = win.Window.new("win", win.WindowData{
             .contents = try wins.settings.new(shader),
+            .active = true,
+        });
+
+        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+
+        return .{
+            .data = try allocator.alloc.dupe(u8, ""),
+        };
+    }
+
+    pub fn runMail(self: *Shell, _: []const u8) !Result {
+        _ = self;
+        const window = win.Window.new("win", win.WindowData{
+            .contents = try wins.email.new(shader),
+            .active = true,
+        });
+
+        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+
+        return .{
+            .data = try allocator.alloc.dupe(u8, ""),
+        };
+    }
+
+    pub fn runFiles(self: *Shell, _: []const u8) !Result {
+        _ = self;
+        const window = win.Window.new("win", win.WindowData{
+            .contents = try wins.explorer.new(shader),
             .active = true,
         });
 
@@ -377,9 +454,11 @@ pub const Shell = struct {
                 "\n" ++
                 "Applications\n" ++
                 "------------\n" ++
+                "logout - opens the log out menu\n" ++
                 "files  - opens the file manager\n" ++
                 "cmd    - opens cmd\n" ++
                 "edit   - opens the text editor\n" ++
+                "mail   - opens email app\n" ++
                 "launch - opens launchEEE\n" ++
                 "web    - opens the web browser\n" ++
                 "task   - opens the task manager\n" ++
@@ -555,9 +634,12 @@ pub const Shell = struct {
             if (std.mem.eql(u8, cmd, "cmd")) return self.runCmd(params);
             if (std.mem.eql(u8, cmd, "edit")) return self.runEdit(params);
             if (std.mem.eql(u8, cmd, "web")) return self.runWeb(params);
+            if (std.mem.eql(u8, cmd, "mail")) return self.runMail(params);
             if (std.mem.eql(u8, cmd, "task")) return self.runTask(params);
             if (std.mem.eql(u8, cmd, "set")) return self.runSettings(params);
             if (std.mem.eql(u8, cmd, "launch")) return self.runLaunch(params);
+            if (std.mem.eql(u8, cmd, "logout")) return self.runLogout(params);
+            if (std.mem.eql(u8, cmd, "files")) return self.runFiles(params);
         }
         if (std.mem.eql(u8, cmd, "help")) return self.help(params);
         if (std.mem.eql(u8, cmd, "stop")) return self.stop(params);

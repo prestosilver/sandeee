@@ -287,7 +287,7 @@ const EmailData = struct {
 
                                     const result = try vmInstance.popStack();
 
-                                    good = good and result == .string and std.mem.eql(u8, result.string.*, targetText);
+                                    good = good and result == .string and std.mem.eql(u8, result.string.items, targetText);
 
                                     break :blk;
                                 }

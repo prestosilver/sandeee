@@ -21,7 +21,8 @@ pub const TasksData = struct {
     panel: [2]sprite.Sprite,
     shader: *shd.Shader,
     stats: []vmManager.VMManager.VMStats,
-    graph: graph.Graph,
+    render_graph: graph.Graph,
+    vm_graph: graph.Graph,
 
     scroll_value: f32 = 0,
     scroll_maxy: f32 = 0,
@@ -98,10 +99,15 @@ pub const TasksData = struct {
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, vecs.newVec3(bnds.x + 21, bnds.y + 25, 0));
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
 
-        self.graph.data.size.x = 346;
-        self.graph.data.size.y = 83;
+        self.render_graph.data.size.x = 346;
+        self.render_graph.data.size.y = 83;
 
-        try batch.SpriteBatch.instance.draw(graph.Graph, &self.graph, self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
+        try batch.SpriteBatch.instance.draw(graph.Graph, &self.render_graph, self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
+
+        self.vm_graph.data.size.x = 346;
+        self.vm_graph.data.size.y = 83;
+
+        try batch.SpriteBatch.instance.draw(graph.Graph, &self.vm_graph, self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
 
         // draw labels
         try font.draw(.{
@@ -152,8 +158,13 @@ pub const TasksData = struct {
 
         self.stats = try vmManager.VMManager.instance.getStats();
 
-        std.mem.copyForwards(f32, self.graph.data.data[0 .. self.graph.data.data.len - 1], self.graph.data.data[1..]);
-        self.graph.data.data[self.graph.data.data.len - 1] = @floatCast(vmManager.VMManager.vm_time);
+        std.mem.copyForwards(f32, self.vm_graph.data.data[0 .. self.vm_graph.data.data.len - 1], self.vm_graph.data.data[1..]);
+        std.mem.copyForwards(f32, self.render_graph.data.data[0 .. self.render_graph.data.data.len - 1], self.render_graph.data.data[1..]);
+
+        var acc: f32 = @floatCast(vmManager.VMManager.last_vm_time / vmManager.VMManager.last_frame_time);
+        self.vm_graph.data.data[self.vm_graph.data.data.len - 1] = acc;
+        acc += @floatCast(vmManager.VMManager.last_render_time / vmManager.VMManager.last_frame_time);
+        self.render_graph.data.data[self.render_graph.data.data.len - 1] = acc;
     }
 
     pub fn deinit(self: *Self) void {
@@ -212,15 +223,23 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         },
         .shader = shader,
         .stats = try vmManager.VMManager.instance.getStats(),
-        .graph = graph.Graph.new(
+        .render_graph = graph.Graph.new(
+            "white",
+            try graph.GraphData.new(.{ .x = 100, .y = 100 }),
+        ),
+        .vm_graph = graph.Graph.new(
             "white",
             try graph.GraphData.new(.{ .x = 100, .y = 100 }),
         ),
     };
 
-    allocator.alloc.free(self.graph.data.data);
-    self.graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 20));
-    self.graph.data.color = col.newColorRGBA(255, 128, 128, 255);
+    allocator.alloc.free(self.render_graph.data.data);
+    self.render_graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 20));
+    self.render_graph.data.color = col.newColorRGBA(128, 0, 0, 255);
+
+    allocator.alloc.free(self.vm_graph.data.data);
+    self.vm_graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 20));
+    self.vm_graph.data.color = col.newColorRGBA(255, 128, 128, 255);
 
     var result = try win.WindowContents.init(self, "Tasks", "SandEEE Tasks", col.newColorRGBA(192, 192, 192, 255));
     result.props.size.min = vecs.newVec2(400, 500);

@@ -122,10 +122,7 @@ const full_quad = [_]c.GLfloat{
 };
 
 // TODO: Move to settings
-const state_refresh_rate = 1.0;
-
-// fps tracking
-var last_frame_time: f64 = 0;
+const state_refresh_rate = 0.5;
 
 var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
 var currentState: systemEvs.State = .Disks;
@@ -180,6 +177,8 @@ var steamUtils: *const steam.SteamUtils = undefined;
 var crt_enable = true;
 
 pub fn blit() !void {
+    const start_time = c.glfwGetTime();
+
     // actual gl calls start here
     gfx.Context.makeCurrent();
     defer gfx.Context.makeNotCurrent();
@@ -212,50 +211,16 @@ pub fn blit() !void {
         });
     }
 
-    if (false) {
+    if (crt_enable) {
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
+    }
 
-        gfx.Context.clear();
+    gfx.Context.clear();
 
-        // finish render
-        try batch.SpriteBatch.instance.render();
+    // finish render
+    try batch.SpriteBatch.instance.render();
 
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
-        c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
-        c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
-
-        c.glUseProgram(crt_shader.id);
-        crt_shader.setFloat("time", @as(f32, @floatCast(c.glfwGetTime())));
-
-        c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
-        c.glEnableVertexAttribArray(0);
-        c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
-
-        c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
-
-        // swap buffer
-        gfx.Context.swap();
-
-        // rerender the last frame
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
-        c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
-        c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
-
-        c.glUseProgram(crt_shader.id);
-
-        c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
-        c.glEnableVertexAttribArray(0);
-        c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
-
-        c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
-    } else {
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebufferName);
-
-        gfx.Context.clear();
-
-        // finish render
-        try batch.SpriteBatch.instance.render();
-
+    if (crt_enable) {
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
         c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_VertexArrayID);
         c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
@@ -272,11 +237,12 @@ pub fn blit() !void {
         c.glEnable(c.GL_BLEND);
 
         c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
-
-        // swap buffer
-        gfx.Context.swap();
     }
-    c.glFinish();
+
+    vmManager.VMManager.last_render_time = c.glfwGetTime() - start_time;
+
+    // swap buffer
+    gfx.Context.swap();
 }
 
 pub fn changeState(event: systemEvs.EventStateChange) !void {
@@ -444,9 +410,6 @@ pub fn windowResize(event: inputEvs.EventWindowResize) !void {
     defer gfx.Context.makeNotCurrent();
 
     try gfx.Context.resize(event.w, event.h);
-
-    c.glfwSetTime(0);
-    last_frame_time = 0;
 
     // clear the window
     c.glBindTexture(c.GL_TEXTURE_2D, renderedTexture);
@@ -882,18 +845,17 @@ pub fn mainErr() anyerror!void {
     // fps tracker stats
     var fps: usize = 0;
     var timer: std.time.Timer = try std.time.Timer.start();
+    var last_frame_end: f64 = 0;
 
     c.glfwSetTime(0);
-    last_frame_time = 0;
 
     // main loop
     while (gfx.Context.poll()) {
+        // get the time & update
+        const start_time = c.glfwGetTime();
 
         // get the current state
         const state = gameStates.getPtr(prev);
-
-        // get the time & update
-        const currentTime = c.glfwGetTime();
 
         // pause the game on minimize
         if (c.glfwGetWindowAttrib(gfx.Context.instance.window, c.GLFW_ICONIFIED) == 0) {
@@ -911,7 +873,7 @@ pub fn mainErr() anyerror!void {
             }
 
             // update the game state
-            try state.update(@max(1 / 60, @as(f32, @floatCast(currentTime - last_frame_time))));
+            try state.update(@max(1 / 60, @as(f32, @floatCast(vmManager.VMManager.last_frame_time))));
 
             // get tris
             try state.draw(gfx.Context.instance.size);
@@ -952,13 +914,20 @@ pub fn mainErr() anyerror!void {
 
             try batch.SpriteBatch.instance.clear();
         } else {
+            // track update time
+            vmManager.VMManager.last_update_time = c.glfwGetTime() - start_time;
+
             // render this is in else to fix single frame bugs
             try blit();
             fps += 1;
-        }
 
-        // update the time
-        last_frame_time = currentTime;
+            // update the time
+            const frame_time = c.glfwGetTime() - last_frame_end;
+            if (frame_time != 0) {
+                vmManager.VMManager.last_frame_time = frame_time;
+                last_frame_end = c.glfwGetTime();
+            }
+        }
     }
 
     allocator.alloc.destroy(gsCrash);

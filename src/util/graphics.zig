@@ -55,7 +55,7 @@ pub const Context = struct {
         c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
         c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
         c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
-        c.glfwWindowHint(c.GLFW_REFRESH_RATE, 60);
+        c.glfwWindowHint(c.GLFW_REFRESH_RATE, mode.refreshRate);
 
         const win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
 

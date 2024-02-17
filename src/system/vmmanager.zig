@@ -2,6 +2,7 @@ const std = @import("std");
 const vm = @import("vm.zig");
 const files = @import("files.zig");
 const allocator = @import("../util/allocator.zig");
+const c = @import("../c.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -11,11 +12,16 @@ pub const VMManager = struct {
     pub var vm_time: f64 = 0.5;
     pub var instance: Self = undefined;
 
+    // fps tracking
+    pub var last_frame_time: f64 = 0;
+    pub var last_vm_time: f64 = 0;
+    pub var last_update_time: f64 = 0;
+    pub var last_render_time: f64 = 0;
+
     threads: std.ArrayList(std.Thread),
     vms: std.AutoHashMap(usize, vm.VM),
     results: std.AutoHashMap(usize, VMResult),
     vm_index: usize = 0,
-    last_frame_time: f64 = 1.0 / 60.0,
 
     pub const VMResult = struct {
         data: []u8,
@@ -148,7 +154,8 @@ pub const VMManager = struct {
     }
 
     pub fn update(self: *Self) !void {
-        const frame_end = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat((self.last_frame_time) * std.time.ns_per_s * vm_time));
+        const frame_start = c.glfwGetTime();
+        const frame_end = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat((last_frame_time) * std.time.ns_per_s * vm_time));
 
         var iter = self.vms.iterator();
 
@@ -208,5 +215,7 @@ pub const VMManager = struct {
         }
 
         self.threads.clearAndFree();
+
+        last_vm_time = c.glfwGetTime() - frame_start;
     }
 };
