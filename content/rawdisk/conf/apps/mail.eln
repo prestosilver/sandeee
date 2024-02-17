@@ -1,0 +1,3 @@
+name: EEEMail
+icon: /cont/icns/email.eia
+runs: mail

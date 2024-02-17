@@ -31,7 +31,7 @@ const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error"
 const internalSoundFiles = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
 const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
-const iconImageFiles = [_][]const u8{ "eeedt", "tasks", "cmd", "settings", "launch", "debug" };
+const iconImageFiles = [_][]const u8{ "eeedt", "tasks", "cmd", "settings", "launch", "debug", "logout", "folder", "email", "web" };
 
 // the website
 const wwwFiles = [_]WWWStepData{
@@ -133,19 +133,35 @@ pub fn build(b: *std.Build) !void {
     exe.root_module.addImport("steam", steamModule);
     exe.root_module.addImport("network", networkModule);
 
-    _ = b.run(&[_][]const u8{ "rm", "-rf", "content/disk" });
-    _ = b.run(&[_][]const u8{ "cp", "-r", "content/rawdisk", "content/disk" });
-    _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/content" });
-    _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/disks" });
+    // cleanup
+    // _ = b.run(&.{ "rm", "-rf", "content/disk" });
+
+    var disk_step = try diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
+    const copy_disk = b.addSystemCommand(&.{ "cp", "-r", "content/rawdisk", "content/disk" });
+    const setup_out = b.addSystemCommand(&.{ "mkdir", "-p", "zig-out/bin/content", "zig-out/bin/disks" });
+
+    disk_step.step.dependOn(&copy_disk.step);
+    disk_step.step.dependOn(&setup_out.step);
+
     if (optimize == .Debug) {
-        _ = b.run(&[_][]const u8{ "cp", "-r", "content/disk_debug/prof", "content/disk" });
-        _ = b.run(&[_][]const u8{ "cp", "-r", "content/disk_debug/conf", "content/disk" });
+        const debug_prof = b.addSystemCommand(&.{ "cp", "-r", "content/disk_debug/prof", "content/disk" });
+        const debug_conf = b.addSystemCommand(&.{ "cp", "-r", "content/disk_debug/conf", "content/disk" });
+
+        debug_prof.step.dependOn(&copy_disk.step);
+        debug_conf.step.dependOn(&copy_disk.step);
+
+        disk_step.step.dependOn(&debug_prof.step);
+        disk_step.step.dependOn(&debug_conf.step);
     }
 
     for (incLibsFiles) |file| {
         const eonf = std.fmt.allocPrint(b.allocator, "content/eon/libs/{s}.eon", .{file}) catch "";
         const libf = std.fmt.allocPrint(b.allocator, "content/disk/libs/inc/{s}.eon", .{file}) catch "";
-        _ = b.run(&.{ "cp", eonf, libf });
+
+        const copy_step = b.addSystemCommand(&.{ "cp", eonf, libf });
+
+        copy_step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&copy_step.step);
     }
 
     // Includes
@@ -180,14 +196,14 @@ pub fn build(b: *std.Build) !void {
 
     b.installArtifact(exe);
 
-    var write_step = try diskStep.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
-
     for (if (isDemo) &mailDirsDemo else &mailDirs) |folder| {
         const input = std.fmt.allocPrint(b.allocator, "content/mail/{s}/", .{folder}) catch "";
         const output = std.fmt.allocPrint(b.allocator, "content/disk/cont/mail/{s}.eme", .{folder}) catch "";
 
         var step = try conv.ConvertStep.create(b, emails.emails, input, output);
-        write_step.step.dependOn(&step.step);
+
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     if (optimize == .Debug) {
@@ -196,7 +212,8 @@ pub fn build(b: *std.Build) !void {
             const eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/asm/{s}.eep", .{file}) catch "";
 
             var step = try conv.ConvertStep.create(b, comp.compile, asmf, eepf);
-            write_step.step.dependOn(&step.step);
+            step.step.dependOn(&copy_disk.step);
+            disk_step.step.dependOn(&step.step);
         }
 
         for (eonTestsFiles) |file| {
@@ -209,13 +226,18 @@ pub fn build(b: *std.Build) !void {
 
             step.step.dependOn(&compStep.step);
 
-            write_step.step.dependOn(&step.step);
+            step.step.dependOn(&copy_disk.step);
+            disk_step.step.dependOn(&step.step);
         }
 
         for (eonTestSrcs) |file| {
             const eonf = std.fmt.allocPrint(b.allocator, "content/eon/exec/{s}.eon", .{file}) catch "";
             const libf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/src/eon/{s}.eon", .{file}) catch "";
-            _ = b.run(&.{ "cp", eonf, libf });
+
+            const step = b.addSystemCommand(&.{ "cp", eonf, libf });
+
+            step.step.dependOn(&copy_disk.step);
+            disk_step.step.dependOn(&step.step);
         }
     }
 
@@ -225,7 +247,8 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, comp.compile, asmf, eepf);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     for (eonExecFiles) |file| {
@@ -237,11 +260,12 @@ pub fn build(b: *std.Build) !void {
         var compStep = try conv.ConvertStep.create(b, eon.compileEon, eonf, asmf);
 
         adds.step.dependOn(&compStep.step);
-        write_step.step.dependOn(&adds.step);
+        adds.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&adds.step);
     }
 
     var libLoadStep = try conv.ConvertStep.create(b, comp.compile, "content/asm/libs/libload.asm", "content/disk/libs/libload.eep");
-    write_step.step.dependOn(&libLoadStep.step);
+    disk_step.step.dependOn(&libLoadStep.step);
 
     for (asmLibFiles) |file| {
         const asmf = std.fmt.allocPrint(b.allocator, "content/asm/libs/{s}.asm", .{file}) catch "";
@@ -249,7 +273,8 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, comp.compileLib, asmf, ellf);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     for (eonLibFiles) |file| {
@@ -261,7 +286,8 @@ pub fn build(b: *std.Build) !void {
         var compStep = try conv.ConvertStep.create(b, eon.compileEonLib, eonf, asmf);
 
         adds.step.dependOn(&compStep.step);
-        write_step.step.dependOn(&adds.step);
+        adds.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&adds.step);
     }
 
     for (wavSoundFiles) |file| {
@@ -270,7 +296,8 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, sound.convert, wavf, eraf);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     for (iconImageFiles) |file| {
@@ -279,7 +306,8 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, image.convert, pngf, eraf);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     for (pngImageFiles) |file| {
@@ -288,7 +316,8 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, image.convert, pngf, eraf);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     for (internalImageFiles) |file| {
@@ -297,7 +326,8 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, image.convert, pngf, eraf);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     for (internalSoundFiles) |file| {
@@ -306,7 +336,8 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, sound.convert, wavf, eraf);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     if (randomTests != 0) {
@@ -316,7 +347,8 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, rand.createScript, count, filename);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
     for (0..@intCast(randomTests)) |idx| {
@@ -324,18 +356,21 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, rand.create, "", filename);
 
-        write_step.step.dependOn(&step.step);
+        step.step.dependOn(&copy_disk.step);
+        disk_step.step.dependOn(&step.step);
     }
 
+    var fontJokeStep = try conv.ConvertStep.create(b, font.convert, "content/images/SandEEEJoke.png", "content/disk/cont/fnts/SandEEEJoke.eff");
     var fontStep = try conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans.png", "content/disk/cont/fnts/SandEEESans.eff");
     var font2xStep = try conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans2x.png", "content/disk/cont/fnts/SandEEESans2x.eff");
     var biosFontStep = try conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans2x.png", "src/images/main.eff");
 
-    write_step.step.dependOn(&fontStep.step);
-    write_step.step.dependOn(&font2xStep.step);
-    write_step.step.dependOn(&biosFontStep.step);
+    disk_step.step.dependOn(&fontStep.step);
+    disk_step.step.dependOn(&fontJokeStep.step);
+    disk_step.step.dependOn(&font2xStep.step);
+    disk_step.step.dependOn(&biosFontStep.step);
 
-    exe.step.dependOn(&write_step.step);
+    exe.step.dependOn(&disk_step.step);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
@@ -375,7 +410,7 @@ pub fn build(b: *std.Build) !void {
 
     for (wwwFiles) |file| {
         const step = try conv.ConvertStep.createMulti(b, file.converter, file.inputFiles, file.outputFile);
-        step.step.dependOn(&write_step.step);
+        step.step.dependOn(&disk_step.step);
 
         www_step.dependOn(&step.step);
     }
@@ -404,7 +439,7 @@ pub fn build(b: *std.Build) !void {
         else => if (isDemo) "-new-demo" else "",
     };
 
-    exe_tests.step.dependOn(&write_step.step);
+    exe_tests.step.dependOn(&disk_step.step);
     exe_tests.root_module.addImport("network", networkModule);
     exe_tests.root_module.addImport("steam", steamModule);
 
