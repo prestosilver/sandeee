@@ -1,7 +1,6 @@
 id: 0
 from: eee@eee.org
 sub: EEE sees all
-view
 Hello,
 I see you.
 

@@ -235,7 +235,7 @@ const EmailData = struct {
 
             if (self.viewing) |selected| {
                 if (selected.condition != .Submit) return;
-                var iter = std.mem.split(u8, selected.conditionData, ";");
+                var iter = std.mem.split(u8, selected.condition.Submit.req, ";");
 
                 var good = true;
                 var input = std.ArrayList(u8).init(allocator.alloc);

@@ -140,6 +140,7 @@ pub const GSWindowed = struct {
         if (!globalSelf.init) return;
 
         globalSelf.debug_enabled = event.enabled;
+        try globalSelf.emailManager.updateDebug();
     }
 
     pub fn settingSet(event: systemEvs.EventSetSetting) !void {

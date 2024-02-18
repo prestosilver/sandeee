@@ -368,7 +368,7 @@ pub fn runCmdEvent(event: systemEvs.EventRunCmd) !void {
         if (!emailManager.getEmailVisible(email)) continue;
         if (email.condition != .Run) continue;
 
-        if (std.ascii.eqlIgnoreCase(email.conditionData, event.cmd)) {
+        if (std.ascii.eqlIgnoreCase(email.condition.Run.req, event.cmd)) {
             try emailManager.setEmailComplete(email);
         }
     }
@@ -379,7 +379,7 @@ pub fn syscall(event: systemEvs.EventSys) !void {
         if (!emailManager.getEmailVisible(email)) continue;
         if (email.condition != .SysCall) continue;
 
-        const num = std.fmt.parseInt(u64, email.conditionData, 0) catch 0;
+        const num = email.condition.SysCall.id;
 
         if (num == event.sysId) {
             try emailManager.setEmailComplete(email);

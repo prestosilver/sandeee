@@ -11,19 +11,57 @@ const log = @import("../util/log.zig").log;
 
 pub const EmailManager = struct {
     pub const Email = struct {
-        const Condition = enum(u8) {
+        const ConditionKind = enum(u8) {
             None,
             View,
             Submit,
             Run,
             Logins,
             SysCall,
+            Debug,
+        };
+
+        const Condition = union(ConditionKind) {
+            const Self = @This();
+
+            None: struct {},
+            View: struct {},
+            Submit: struct {
+                req: []const u8,
+            },
+            Run: struct {
+                req: []const u8,
+            },
+            Logins: struct {
+                count: u64,
+            },
+            SysCall: struct {
+                id: u8,
+            },
+            Debug: struct {},
+
+            pub fn toString(self: *const Self) ![]const u8 {
+                return switch (self.*) {
+                    .None, .View, .Debug => try allocator.alloc.dupe(u8, ""),
+                    .Submit => |r| try std.fmt.allocPrint(allocator.alloc, "{s}", .{r.req}),
+                    .Run => |r| try std.fmt.allocPrint(allocator.alloc, "{s}", .{r.req}),
+                    .Logins => |r| try std.fmt.allocPrint(allocator.alloc, "{}", .{r.count}),
+                    .SysCall => |r| try std.fmt.allocPrint(allocator.alloc, "{}", .{r.id}),
+                };
+            }
+
+            pub fn free(self: *const Self) void {
+                switch (self.*) {
+                    .Submit => |r| allocator.alloc.free(r.req),
+                    .Run => |r| allocator.alloc.free(r.req),
+                    else => {},
+                }
+            }
         };
 
         from: []const u8,
         subject: []const u8,
         contents: []const u8,
-        conditionData: []const u8,
         deps: []u8,
 
         viewed: bool = false,
@@ -42,9 +80,10 @@ pub const EmailManager = struct {
                 .from = "",
                 .subject = "",
                 .contents = "",
-                .conditionData = "",
                 .deps = try allocator.alloc.alloc(u8, 0),
-                .condition = .None,
+                .condition = .{
+                    .None = .{},
+                },
             };
 
             var buf_reader = std.io.bufferedReader(file.reader());
@@ -73,22 +112,37 @@ pub const EmailManager = struct {
                     result.deps = try allocator.alloc.realloc(result.deps, result.deps.len + 1);
                     result.deps[result.deps.len - 1] = try std.fmt.parseInt(u8, line[6..], 0);
                 } else if (std.mem.startsWith(u8, line, "submit: ")) {
-                    result.condition = .Submit;
-                    result.conditionData = try allocator.alloc.dupe(u8, line[8..]);
+                    result.condition = .{
+                        .Submit = .{
+                            .req = try allocator.alloc.dupe(u8, line[8..]),
+                        },
+                    };
                 } else if (std.mem.startsWith(u8, line, "run: ")) {
-                    result.condition = .Run;
-                    result.conditionData = try allocator.alloc.dupe(u8, line[5..]);
+                    result.condition = .{
+                        .Run = .{
+                            .req = try allocator.alloc.dupe(u8, line[5..]),
+                        },
+                    };
                 } else if (std.mem.startsWith(u8, line, "sys: ")) {
-                    result.condition = .SysCall;
-                    result.conditionData = try allocator.alloc.dupe(u8, line[5..]);
+                    result.condition = .{
+                        .SysCall = .{
+                            .id = try std.fmt.parseInt(u8, line[5..], 10),
+                        },
+                    };
                 } else if (std.mem.startsWith(u8, line, "logins: ")) {
-                    result.condition = .Logins;
-                    result.conditionData = try allocator.alloc.dupe(u8, line[8..]);
+                    result.condition = .{
+                        .Logins = .{
+                            .count = try std.fmt.parseInt(u64, line[8..], 10),
+                        },
+                    };
                 } else if (std.mem.eql(u8, line, "view")) {
-                    result.condition = .View;
-                    result.conditionData = try allocator.alloc.dupe(u8, "");
+                    result.condition = .{
+                        .View = .{},
+                    };
                 } else if (std.mem.eql(u8, line, "hide")) {
                     result.show = false;
+                } else if (std.mem.eql(u8, line, "debug")) {
+                    result.condition = .Debug;
                 } else {
                     try contents.appendSlice(line);
                     try contents.appendSlice("\n");
@@ -119,7 +173,7 @@ pub const EmailManager = struct {
             allocator.alloc.free(email.from);
             allocator.alloc.free(email.subject);
             allocator.alloc.free(email.contents);
-            allocator.alloc.free(email.conditionData);
+            email.condition.free();
         }
 
         allocator.alloc.free(self.boxes);
@@ -191,9 +245,17 @@ pub const EmailManager = struct {
         }
     }
 
+    pub fn updateDebug(self: *EmailManager) !void {
+        for (self.emails.items) |*email| {
+            if (email.condition == .Debug) {
+                try self.setEmailComplete(email);
+            }
+        }
+    }
+
     pub fn updateLogins(self: *EmailManager, logins: u64) !void {
         for (self.emails.items) |*email| {
-            if (email.condition == .Logins and logins >= try std.fmt.parseInt(u64, email.conditionData, 0)) {
+            if (email.condition == .Logins and logins >= email.condition.Logins.count) {
                 try self.setEmailComplete(email);
             }
         }
@@ -276,11 +338,13 @@ pub const EmailManager = struct {
         for (self.emails.items) |email| {
             const start = result.len;
 
+            const cond = try email.condition.toString();
+
             const idStr = std.mem.toBytes(email.id);
             const show = std.mem.toBytes(email.show);
             const fromLen = std.mem.toBytes(email.from.len)[0..4];
             const depsLen = std.mem.toBytes(email.deps.len)[0..4];
-            const condsLen = std.mem.toBytes(email.conditionData.len)[0..4];
+            const condsLen = std.mem.toBytes(cond.len)[0..4];
             const subjectLen = std.mem.toBytes(email.subject.len)[0..4];
             const contentLen = std.mem.toBytes(email.contents.len)[0..4];
 
@@ -292,7 +356,7 @@ pub const EmailManager = struct {
                     &show,
                     &.{@intFromEnum(email.condition)},
                     condsLen,
-                    email.conditionData,
+                    cond,
                     depsLen,
                     email.deps,
                     fromLen,
@@ -348,18 +412,64 @@ pub const EmailManager = struct {
 
                 self.emails.items[idx].box = @as(u8, @intCast(boxid));
 
-                self.emails.items[idx].condition = @as(Email.Condition, @enumFromInt(conts[fidx]));
+                const condKind = @as(Email.ConditionKind, @enumFromInt(conts[fidx]));
+
                 fidx += 1;
 
                 const kind = *align(1) const u32;
 
+                switch (condKind) {
+                    .None => {
+                        self.emails.items[idx].condition = .{ .None = .{} };
+                        fidx += 4;
+                    },
+                    .View => {
+                        self.emails.items[idx].condition = .{ .View = .{} };
+                        fidx += 4;
+                    },
+                    .Debug => {
+                        self.emails.items[idx].condition = .{ .Debug = .{} };
+                        fidx += 4;
+                    },
+                    .Submit => {
+                        const len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                        fidx += 4;
+                        const data = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                        self.emails.items[idx].condition = .{ .Submit = .{
+                            .req = data,
+                        } };
+                        fidx += len;
+                    },
+                    .Run => {
+                        const len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                        fidx += 4;
+                        const data = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                        self.emails.items[idx].condition = .{ .Run = .{
+                            .req = data,
+                        } };
+                        fidx += len;
+                    },
+                    .Logins => {
+                        const len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                        fidx += 4;
+                        const data = try std.fmt.parseInt(u64, conts[fidx .. fidx + len], 10);
+                        self.emails.items[idx].condition = .{ .Logins = .{
+                            .count = data,
+                        } };
+                        fidx += len;
+                    },
+                    .SysCall => {
+                        const len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                        fidx += 4;
+                        const data = try std.fmt.parseInt(u8, conts[fidx .. fidx + len], 10);
+                        self.emails.items[idx].condition = .{ .SysCall = .{
+                            .id = data,
+                        } };
+                        fidx += len;
+                    },
+                }
+
                 var len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                fidx += 4;
-
-                self.emails.items[idx].conditionData = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
-                fidx += len;
-
-                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                 fidx += 4;
 
                 self.emails.items[idx].deps = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
