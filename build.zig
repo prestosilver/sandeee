@@ -11,6 +11,7 @@ const eon = @import("tools/eon.zig");
 const butler = @import("tools/butler.zig");
 const emails = @import("tools/mail.zig");
 const rand = @import("tools/random.zig");
+const dwns = @import("tools/downloadpage.zig");
 
 // debug only
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
@@ -68,6 +69,30 @@ const wwwFiles = [_]WWWStepData{
         },
         .outputFile = "www/downloads/tools/paint.epk",
         .converter = epk.convert,
+    },
+    .{
+        // wallpaper wood
+        .inputFiles = &.{"content/images/wood.png"},
+        .outputFile = "www/downloads/wallpapers/wood.eia",
+        .converter = image.convert,
+    },
+    .{
+        // wallpaper wood
+        .inputFiles = &.{"content/images/capy.png"},
+        .outputFile = "www/downloads/wallpapers/capy.eia",
+        .converter = image.convert,
+    },
+    .{
+        // wallpaper wood
+        .inputFiles = &.{
+            "Tools:/downloads/tools/paint.epk",
+            "Games:/downloads/games/pong.epk",
+            "Wallpapers:/downloads/wallpapers/wood.eia",
+            "Wallpapers:/downloads/wallpapers/capy.eia",
+            "Games:/downloads/games/connectris.epk",
+        },
+        .outputFile = "www/downloads.edf",
+        .converter = dwns.create,
     },
 };
 
