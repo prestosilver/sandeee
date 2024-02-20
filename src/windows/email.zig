@@ -273,7 +273,9 @@ const EmailData = struct {
                                     var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
                                     defer vmInstance.deinit() catch {};
 
-                                    try vmInstance.loadString(conts[startIdx .. startIdx + fnsize]);
+                                    vmInstance.loadString(conts[startIdx .. startIdx + fnsize]) catch {
+                                        return;
+                                    };
                                     vmInstance.retStack[0] = .{
                                         .function = null,
                                         .location = vmInstance.code.?.len + 1,
