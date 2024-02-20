@@ -14,15 +14,25 @@ function getLog() {
 EOF
 
     last=
-    
+    current=$(cat VERSION)
+
+    echo "" > lol.txt
+
     for i in $(git log --pretty=format:%H); do
         ver=$(git show $i:VERSION | cut -d+ -f1)
+        echo "$i:$ver" >> lol.txt
         if [[ "" != "$ver" ]]; then
             if [[ "$last" != "$ver" ]]; then
-                if [[ "$last" != "" ]]; then
-                    echo ""
-                    echo "-- "$last" --"
-                    echo ""
+                if [[ "$current" != "$ver" ]]; then
+                    if [[ "$last" != "" ]]; then
+                        echo ""
+                        echo "-- $last --"
+                        echo ""
+                    else
+                        echo ""
+                        echo "-- $current --"
+                        echo ""
+                    fi
                 fi
                 last=$ver
             fi

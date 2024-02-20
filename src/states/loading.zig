@@ -37,9 +37,9 @@ pub const GSLoading = struct {
     };
 
     const mailpath: []const u8 = "/cont/mail";
-    const loginpath: []const u8 = "/cont/snds/login.era";
-    const logoutpath: []const u8 = "/cont/snds/logout.era";
-    const messagepath: []const u8 = "/cont/snds/message.era";
+    const loginpath: []const u8 = "login_sound_path";
+    const logoutpath: []const u8 = "logout_sound_path";
+    const messagepath: []const u8 = "message_sound_path";
     const settingspath: []const u8 = "/conf/system.cfg";
     const fontpath: []const u8 = "system_font";
     const zero: u8 = 0;

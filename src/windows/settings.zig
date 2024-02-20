@@ -111,6 +111,21 @@ const SettingsData = struct {
                 .setting = "Sound Muted",
                 .key = "sound_muted",
             },
+            Setting{
+                .kind = .File,
+                .setting = "Login Sound",
+                .key = "login_sound_path",
+            },
+            Setting{
+                .kind = .File,
+                .setting = "Message Sound",
+                .key = "message_sound_path",
+            },
+            Setting{
+                .kind = .File,
+                .setting = "Logout Sound",
+                .key = "logout_sound_path",
+            },
         },
         &[_]Setting{
             Setting{
