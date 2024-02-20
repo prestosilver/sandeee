@@ -38,7 +38,7 @@ pub fn create(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLis
         try result.appendSlice("\n");
     }
 
-    try result.appendSlice(":center: -- EEE Sees all --");
+    try result.appendSlice(":center: --- EEE Sees all ---");
 
     return result;
 }

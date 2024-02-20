@@ -48,8 +48,22 @@ pub const ConvertStep = struct {
 
     fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
         const self = @fieldParentPtr(ConvertStep, "step", step);
-        const cont = try self.func(self.input, self.alloc);
+        if (std.fs.path.dirname(self.output)) |dir|
+            std.fs.cwd().makeDir(dir) catch |err| {
+                if (err != error.PathAlreadyExists) return err;
+            };
 
-        try std.fs.cwd().writeFile(self.output, cont.items);
+        _ = try std.ChildProcess.run(.{
+            .allocator = step.owner.allocator,
+            .argv = &.{"sync"},
+        });
+
+        const file = try std.fs.cwd().createFile(self.output, .{});
+        defer file.close();
+
+        const cont = try self.func(self.input, self.alloc);
+        _ = try file.writeAll(cont.items);
+
+        try file.sync();
     }
 };

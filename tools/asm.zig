@@ -6,6 +6,8 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
 
     var inreader = try std.fs.cwd().openFile(in, .{});
     defer inreader.close();
+    try inreader.sync();
+
     var result = std.ArrayList(u8).init(alloc);
 
     var buf_reader = std.io.bufferedReader(inreader.reader());
@@ -36,6 +38,8 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
 
     inreader.close();
     inreader = try std.fs.cwd().openFile(in, .{});
+    try inreader.sync();
+
     buf_reader = std.io.bufferedReader(inreader.reader());
     reader_stream = buf_reader.reader();
 
@@ -155,6 +159,8 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
 
     var inreader = try std.fs.cwd().openFile(in, .{});
     defer inreader.close();
+    try inreader.sync();
+
     var result = std.ArrayList(u8).init(alloc);
     var toc = std.ArrayList(u8).init(alloc);
     var data = std.ArrayList(u8).init(alloc);
@@ -198,6 +204,8 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
 
     inreader.close();
     inreader = try std.fs.cwd().openFile(in, .{});
+    try inreader.sync();
+
     buf_reader = std.io.bufferedReader(inreader.reader());
     reader_stream = buf_reader.reader();
     var prev_toc: usize = 0;
