@@ -113,14 +113,16 @@ test "Headless scripts" {
     defer vmManager.VMManager.deinit();
 
     vmManager.VMManager.vm_time = 1.0;
+    vmManager.VMManager.last_frame_time = 10.0;
 
     var logging = try std.fs.cwd().createFile("zig-out/test_output.md", .{});
     defer logging.close();
 
-    var dir = try std.fs.cwd().openIterableDir("tests", .{});
-    var start_cwd = try std.fs.cwd().openDir("tests", .{});
+    var start_cwd = try std.fs.cwd().openDir("tests", .{
+        .iterate = true,
+    });
 
-    var iter = try dir.walk(std.testing.allocator);
+    var iter = try start_cwd.walk(std.testing.allocator);
     defer iter.deinit();
 
     try std.process.changeCurDir("zig-out/bin/");

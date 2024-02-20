@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function getLog() {
     cat << EOF
 #Style @/style.eds
@@ -49,7 +51,8 @@ EOF
     last=ver
     echo ""
     echo ":center: --- EEE Sees all ---"
-    
 }
 
-getLog 2>/dev/null
+echo "write $PWD"
+
+getLog 2>/dev/null 1> ./www/changelog.edf

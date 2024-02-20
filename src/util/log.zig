@@ -10,6 +10,10 @@ pub fn myLogFn(
     comptime format: []const u8,
     args: anytype,
 ) void {
+    if (@import("builtin").is_test) {
+        return;
+    }
+
     const scope_prefix = "(" ++ switch (scope) {
         .SandEEE, .Steam, std.log.default_log_scope => @tagName(scope),
         else => if (@intFromEnum(level) <= @intFromEnum(std.log.Level.err))

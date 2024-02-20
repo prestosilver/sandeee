@@ -7,11 +7,7 @@ fn createMap() {
     var x;
     var y;
 
-    for (x = 1; x < 9; x = x + 1) {
-        result = result & @x;
-    }
-
-    var size = 1 * 8 * 23;
+    var size = 1 * 8 * 24;
     result = result & new size;
 
     return result;
@@ -41,8 +37,10 @@ fn renderMap(map, win, tex) {
             pos = y * 8;
             pos += x;
             id = map + pos;
+            id = @id;
+            id = id % 16;
 
-            if (@id) {
+            if (id) {
                 source = getTile(map, pos);
                 dest = _MakeRect(x * 16, y * 16, 16, 16);
 
@@ -55,6 +53,14 @@ fn renderMap(map, win, tex) {
     _WindowText(win, 140, 30, "000000");
 
     return 0;
+}
+
+fn spawnTiles(map) {
+   var i = rand(4);
+
+   var result = map;
+
+   return result;
 }
 
 fn updateMap(map) {
@@ -75,6 +81,8 @@ fn updateMap(map) {
         result = result & @0;
     }
 
+    var control = 0;
+
     for (y = 0; y < 23; y = y + 1) {
         for (x = 0; x < 8; x = x + 1) {
             posup = y * 8;
@@ -85,12 +93,20 @@ fn updateMap(map) {
 
             tilev = map + pos;
             tile = @tilev;
+            if (tile > 15) {
+               control = 1;
+            }
 
             tileupv = map + posup;
             tileup = @tileupv;
+            if (tileup > 15) {
+               control = 1;
+            }
 
             tiledownv = map + posdown;
             tiledown = @tiledownv;
+            tiledown = tiledown % 16;
+
             if (y == 22) {
                 tiledown = 15;
             }
@@ -105,10 +121,15 @@ fn updateMap(map) {
                 if (tiledown == 0) {
                     result = result & @0;
                 } else {
+                    tile = tile % 16;
                     result = result & @tile;
                 }
             }
         }
+    }
+
+    if (control == 0) {
+       return spawnTiles(result);
     }
 
     return result;

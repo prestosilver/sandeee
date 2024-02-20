@@ -88,6 +88,13 @@ fn prealloc() {
     asm "ret";
 }
 
+fn rand(max) {
+    var i = 0;
+    asm "disc 0";
+    asm "rand";
+    return i % max;
+}
+
 fn readStr(prompt) {
     var file = 0;
     var done = 0;

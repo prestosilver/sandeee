@@ -154,7 +154,11 @@ pub const VMManager = struct {
     }
 
     pub fn update(self: *Self) !void {
-        const frame_start = c.glfwGetTime();
+        const frame_start: f64 = if (@import("builtin").is_test)
+            0.0
+        else
+            c.glfwGetTime();
+
         const frame_end = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat((last_frame_time) * std.time.ns_per_s * vm_time));
 
         var iter = self.vms.iterator();
@@ -216,6 +220,9 @@ pub const VMManager = struct {
 
         self.threads.clearAndFree();
 
-        last_vm_time = c.glfwGetTime() - frame_start;
+        last_vm_time = if (@import("builtin").is_test)
+            0.0
+        else
+            c.glfwGetTime() - frame_start;
     }
 };

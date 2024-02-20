@@ -47,17 +47,19 @@ const wwwFiles = [_]WWWStepData{
         },
         .outputFile = "www/downloads/games/pong.epk",
         .converter = epk.convert,
+        .downloadLabel = "Games",
     },
     .{
         // connectris
-        // TODO: icon
         .inputFiles = &.{
             "content/eon/exec/connectris.eon:/exec/connectris.eep",
             "content/images/connectris.png:/cont/imgs/connectris.eia",
+            "content/images/icons/connectris.png:/cont/icns/connectris.eia",
             "content/elns/Connectris.eln:/conf/apps/Connectris.eln",
         },
         .outputFile = "www/downloads/games/connectris.epk",
         .converter = epk.convert,
+        .downloadLabel = "Games",
     },
     .{
         // paint
@@ -69,30 +71,21 @@ const wwwFiles = [_]WWWStepData{
         },
         .outputFile = "www/downloads/tools/paint.epk",
         .converter = epk.convert,
+        .downloadLabel = "Tools",
     },
     .{
         // wallpaper wood
         .inputFiles = &.{"content/images/wood.png"},
         .outputFile = "www/downloads/wallpapers/wood.eia",
         .converter = image.convert,
+        .downloadLabel = "Wallpapers",
     },
     .{
         // wallpaper wood
         .inputFiles = &.{"content/images/capy.png"},
         .outputFile = "www/downloads/wallpapers/capy.eia",
         .converter = image.convert,
-    },
-    .{
-        // wallpaper wood
-        .inputFiles = &.{
-            "Tools:/downloads/tools/paint.epk",
-            "Games:/downloads/games/pong.epk",
-            "Wallpapers:/downloads/wallpapers/wood.eia",
-            "Wallpapers:/downloads/wallpapers/capy.eia",
-            "Games:/downloads/games/connectris.epk",
-        },
-        .outputFile = "www/downloads.edf",
-        .converter = dwns.create,
+        .downloadLabel = "Wallpapers",
     },
 };
 
@@ -100,6 +93,8 @@ const wwwFiles = [_]WWWStepData{
 const WWWStepData = struct {
     inputFiles: []const []const u8,
     outputFile: []const u8,
+
+    downloadLabel: ?[]const u8,
 
     converter: *const fn ([]const []const u8, std.mem.Allocator) anyerror!std.ArrayList(u8),
 };
@@ -459,7 +454,45 @@ pub fn build(b: *std.Build) !void {
 
     const www_step = b.step("www", "Build the website");
 
+    {
+        const changelog_step = b.addSystemCommand(&.{ "bash", "./changelog.sh" });
+
+        www_step.dependOn(&changelog_step.step);
+    }
+
+    var count: usize = 0;
+
     for (wwwFiles) |file| {
+        if (file.downloadLabel) |_|
+            count += 1;
+    }
+
+    var inputFiles = try b.allocator.alloc([]const u8, count);
+    const downloadStep: WWWStepData = .{
+        .inputFiles = inputFiles,
+
+        .outputFile = "www/downloads.edf",
+        .converter = dwns.create,
+
+        .downloadLabel = null,
+    };
+
+    var idx: usize = 0;
+    for (wwwFiles) |file| {
+        const step = try conv.ConvertStep.createMulti(b, file.converter, file.inputFiles, file.outputFile);
+        step.step.dependOn(&disk_step.step);
+
+        www_step.dependOn(&step.step);
+
+        if (file.downloadLabel) |label| {
+            inputFiles[idx] = try std.fmt.allocPrint(b.allocator, "{s}:{s}", .{ label, file.outputFile[4..] });
+            idx += 1;
+        }
+    }
+
+    {
+        const file = downloadStep;
+
         const step = try conv.ConvertStep.createMulti(b, file.converter, file.inputFiles, file.outputFile);
         step.step.dependOn(&disk_step.step);
 
@@ -491,6 +524,7 @@ pub fn build(b: *std.Build) !void {
     };
 
     exe_tests.step.dependOn(&disk_step.step);
+    exe_tests.root_module.addImport("options", options.createModule());
     exe_tests.root_module.addImport("network", networkModule);
     exe_tests.root_module.addImport("steam", steamModule);
 

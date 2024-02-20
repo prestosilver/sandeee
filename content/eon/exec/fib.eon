@@ -7,9 +7,17 @@ fn fib(idx) {
 }
 
 fn main() {
-    var i = readInt();
+    var i = 10;
 
     print(fib(i));
 
     return 0;
 }
+
+//fn main() {
+//    var i = readInt();
+//
+//    print(fib(i));
+//
+//    return 0;
+//}
