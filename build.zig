@@ -102,7 +102,7 @@ const WWWStepData = struct {
 var Version: std.SemanticVersion = .{
     .major = 0,
     .minor = 4,
-    .patch = 2,
+    .patch = 3,
     .build = null,
 };
 

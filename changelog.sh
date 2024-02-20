@@ -14,7 +14,7 @@ function getLog() {
 EOF
 
     last=
-    current=$(cat VERSION)
+    current=$(cat ./VERSION)
 
     echo "" > lol.txt
 
@@ -27,10 +27,6 @@ EOF
                     if [[ "$last" != "" ]]; then
                         echo ""
                         echo "-- $last --"
-                        echo ""
-                    else
-                        echo ""
-                        echo "-- $current --"
                         echo ""
                     fi
                 fi
