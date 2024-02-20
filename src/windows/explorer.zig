@@ -301,6 +301,8 @@ pub const ExplorerData = struct {
                     else => return err,
                 }
             };
+
+            self.selected = null;
         }
 
         pub fn no(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
@@ -312,7 +314,7 @@ pub const ExplorerData = struct {
 
         switch (keycode) {
             c.GLFW_KEY_DELETE => {
-                if (self.selected != null and self.shell.root.getFile(self.icon_data[self.selected.?].name) catch null != null) {
+                if (self.selected != null and (self.shell.root.getFile(self.icon_data[self.selected.?].name) catch null) != null) {
                     const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
                     adds.* = .{
                         .data = self,
