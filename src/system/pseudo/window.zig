@@ -373,7 +373,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     var file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/new", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinNew,
         .pseudoWrite = writeWinNew,
         .parent = undefined,
@@ -384,7 +383,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/open", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinOpen,
         .pseudoWrite = writeWinOpen,
         .parent = undefined,
@@ -395,7 +393,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/destroy", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinDestroy,
         .pseudoWrite = writeWinDestroy,
         .parent = undefined,
@@ -406,7 +403,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/render", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinRender,
         .pseudoWrite = writeWinRender,
         .parent = undefined,
@@ -417,7 +413,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/flip", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinFlip,
         .pseudoWrite = writeWinFlip,
         .parent = undefined,
@@ -428,7 +423,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/title", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinTitle,
         .pseudoWrite = writeWinTitle,
         .parent = undefined,
@@ -439,7 +433,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/size", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinSize,
         .pseudoWrite = writeWinSize,
         .parent = undefined,
@@ -450,7 +443,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/rules", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinRules,
         .pseudoWrite = writeWinRules,
         .parent = undefined,
@@ -461,7 +453,6 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/text", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readWinText,
         .pseudoWrite = writeWinText,
         .parent = undefined,

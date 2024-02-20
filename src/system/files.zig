@@ -47,22 +47,22 @@ pub const DiskError = error{
 pub const File = struct {
     parent: *Folder,
     name: []const u8,
-    contents: []u8,
+    contents: ?[]u8 = null,
 
     pseudoWrite: ?*const fn ([]const u8, ?*vm.VM) FileError!void = null,
     pseudoRead: ?*const fn (?*vm.VM) FileError![]const u8 = null,
 
     pub fn size(self: *const File) usize {
         if (self.pseudoRead != null) return 0;
-        return self.contents.len;
+        return self.contents.?.len;
     }
 
     pub inline fn write(self: *File, contents: []const u8, vmInstance: ?*vm.VM) FileError!void {
         if (self.pseudoWrite != null) {
             return self.pseudoWrite.?(contents, vmInstance);
         } else {
-            self.contents = try allocator.alloc.realloc(self.contents, contents.len);
-            @memcpy(self.contents, contents);
+            self.contents.? = try allocator.alloc.realloc(self.contents.?, contents.len);
+            @memcpy(self.contents.?, contents);
         }
     }
 
@@ -70,13 +70,14 @@ pub const File = struct {
         if (self.pseudoRead != null) {
             return self.pseudoRead.?(vmInstance);
         } else {
-            return self.contents;
+            return self.contents.?;
         }
     }
 
     pub fn deinit(self: *File) void {
         allocator.alloc.free(self.name);
-        allocator.alloc.free(self.contents);
+        if (self.contents) |cont|
+            allocator.alloc.free(cont);
         allocator.alloc.destroy(self);
     }
 
@@ -91,7 +92,7 @@ pub const File = struct {
         clone.* = .{
             .parent = target,
             .name = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ target.name, name }),
-            .contents = try allocator.alloc.dupe(u8, self.contents),
+            .contents = try allocator.alloc.dupe(u8, self.contents.?),
         };
 
         try target.contents.append(clone);
@@ -322,9 +323,9 @@ pub const Folder = struct {
             std.mem.writeInt(u32, &len, @as(u32, @intCast(file.name.len)), .big);
             _ = try writer.write(&len);
             _ = try writer.write(file.name);
-            std.mem.writeInt(u32, &len, @as(u32, @intCast(file.contents.len)), .big);
+            std.mem.writeInt(u32, &len, @as(u32, @intCast(file.contents.?.len)), .big);
             _ = try writer.write(&len);
-            _ = try writer.write(file.contents);
+            _ = try writer.write(file.contents.?);
         }
     }
 
@@ -773,9 +774,9 @@ pub const Folder = struct {
             std.mem.writeInt(u32, &len, @as(u32, @intCast(file.name.len)), .big);
             try result.appendSlice(&len);
             try result.appendSlice(file.name);
-            std.mem.writeInt(u32, &len, @as(u32, @intCast(file.contents.len)), .big);
+            std.mem.writeInt(u32, &len, @as(u32, @intCast(file.contents.?.len)), .big);
             try result.appendSlice(&len);
-            try result.appendSlice(file.contents);
+            try result.appendSlice(file.contents.?);
         }
         return result;
     }

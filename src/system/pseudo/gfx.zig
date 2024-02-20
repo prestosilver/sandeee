@@ -157,7 +157,6 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     var file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/new", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxNew,
         .pseudoWrite = writeGfxNew,
         .parent = undefined,
@@ -168,7 +167,6 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/pixel", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxPixel,
         .pseudoWrite = writeGfxPixel,
         .parent = undefined,
@@ -179,7 +177,6 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/destroy", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxDestroy,
         .pseudoWrite = writeGfxDestroy,
         .parent = undefined,
@@ -190,7 +187,6 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/upload", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxUpload,
         .pseudoWrite = writeGfxUpload,
         .parent = undefined,
@@ -201,7 +197,6 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/save", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readGfxSave,
         .pseudoWrite = writeGfxSave,
         .parent = undefined,

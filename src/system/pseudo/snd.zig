@@ -44,7 +44,6 @@ pub fn setupFakeSnd(parent: *files.Folder) !*files.Folder {
     const file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/snd/play", .{}),
-        .contents = try std.fmt.allocPrint(allocator.alloc, "HOW DID YOU SEE THIS", .{}),
         .pseudoRead = readSndPlay,
         .pseudoWrite = writeSndPlay,
         .parent = undefined,
