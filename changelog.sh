@@ -18,7 +18,7 @@ EOF
 
     echo "" > lol.txt
 
-    for i in $(git log --pretty=format:%H); do
+    for i in $(git log master --pretty=format:%H); do
         ver=$(git show $i:VERSION | cut -d+ -f1)
         echo "$i:$ver" >> lol.txt
         if [[ "" != "$ver" ]]; then
