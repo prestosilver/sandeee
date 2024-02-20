@@ -166,7 +166,9 @@ pub fn build(b: *std.Build) !void {
     const copy_disk = &b.addSystemCommand(&.{"sync"}).step;
 
     const setup_out = b.addSystemCommand(&.{ "mkdir", "-p", "zig-out/bin/content", "zig-out/bin/disks" });
-    const setup_eon = b.addSystemCommand(&.{ "mkdir", "-p", "content/asm/eon" });
+    const setup_eon = b.addSystemCommand(&.{ "mkdir", "-p", "content/asm/eon/exec", "content/asm/eon/libs" });
+
+    setup_eon.step.dependOn(clean_step);
 
     disk_step.step.dependOn(content_step);
 
@@ -178,7 +180,7 @@ pub fn build(b: *std.Build) !void {
     copy_disk.dependOn(&setup_eon.step);
     copy_disk.dependOn(&skel.step);
 
-    const copy_libs = b.step("copy_libs", "");
+    const copy_libs = &b.addSystemCommand(&.{"sync"}).step;
     copy_libs.dependOn(&setup_eon.step);
     copy_libs.dependOn(&skel.step);
 
@@ -257,7 +259,7 @@ pub fn build(b: *std.Build) !void {
 
         for (eonTestsFiles) |file| {
             const eonf = std.fmt.allocPrint(b.allocator, "content/eon/tests/{s}.eon", .{file}) catch "";
-            const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
+            const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/exec/{s}.asm", .{file}) catch "";
             const eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/eon/{s}.eep", .{file}) catch "";
 
             var compStep = try conv.ConvertStep.create(b, eon.compileEon, eonf, asmf);
@@ -292,7 +294,7 @@ pub fn build(b: *std.Build) !void {
 
     for (eonExecFiles) |file| {
         const eonf = std.fmt.allocPrint(b.allocator, "content/eon/exec/{s}.eon", .{file}) catch "";
-        const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
+        const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/exec/{s}.asm", .{file}) catch "";
         const eepf = std.fmt.allocPrint(b.allocator, "content/disk/exec/{s}.eep", .{file}) catch "";
 
         var adds = try conv.ConvertStep.create(b, comp.compile, asmf, eepf);
@@ -320,7 +322,7 @@ pub fn build(b: *std.Build) !void {
 
     for (eonLibFiles) |file| {
         const eonf = std.fmt.allocPrint(b.allocator, "content/eon/libs/{s}.eon", .{file}) catch "";
-        const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/{s}.asm", .{file}) catch "";
+        const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/libs/{s}.asm", .{file}) catch "";
         const ellf = std.fmt.allocPrint(b.allocator, "content/disk/libs/{s}.ell", .{file}) catch "";
 
         var compStep = try conv.ConvertStep.create(b, eon.compileEonLib, eonf, asmf);
