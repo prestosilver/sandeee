@@ -425,7 +425,7 @@ pub const VM = struct {
                     if (b.string.items.len < a.value.*) {
                         try self.pushStackS("");
                     } else {
-                        try b.string.resize(@intCast(b.string.items.len - a.value.*));
+                        try self.pushStackS(b.string.items[0 .. b.string.items.len - a.value.*]);
                     }
                     return;
                 }
@@ -437,8 +437,8 @@ pub const VM = struct {
             },
             Operation.Code.Size => {
                 const a = try self.popStack();
-                const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ b, a });
+                const b = try self.findStack(0);
+                defer self.free(&[_]StackEntry{a});
 
                 if (a != .value) return error.ValueMissing;
                 if (b != .string) return error.StringMissing;
@@ -1153,7 +1153,7 @@ pub const VM = struct {
 
                     if (b == .value) {
                         var val: u64 = 0;
-                        if (a.string.items.len != 0 and a.string.items[0] == @as(u8, @intCast(b.value.*))) val = 1;
+                        if (a.string.items.len != 0 and a.string.items[0] == @as(u8, @intCast(@mod(b.value.*, 256)))) val = 1;
                         if (a.string.items.len == 0 and 0 == b.value.*) val = 1;
                         try self.pushStackI(val);
                         return;
@@ -1163,7 +1163,7 @@ pub const VM = struct {
                 if (a == .value) {
                     if (b == .string) {
                         var val: u64 = 0;
-                        if (b.string.items.len != 0 and b.string.items[0] == @as(u8, @intCast(a.value.*))) val = 1;
+                        if (b.string.items.len != 0 and b.string.items[0] == @as(u8, @intCast(@mod(a.value.*, 256)))) val = 1;
                         if (b.string.items.len == 0 and 0 == a.value.*) val = 1;
                         try self.pushStackI(val);
                         return;
