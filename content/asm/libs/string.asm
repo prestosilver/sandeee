@@ -39,7 +39,7 @@ _StringStartsWith:              ; str start
     dup 1                       ; str start str
     copy 1                      ; str start str start
     call "StringLength"         ; str start str startlen
-    size                        ; str start strstart 
+    size                        ; str start strstart
     eq                          ; str same
     disc 1                      ; same
     ret

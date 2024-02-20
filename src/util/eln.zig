@@ -14,6 +14,13 @@ pub const ElnData = struct {
     var texture: u8 = 0;
     var textures: std.StringHashMap(u8) = std.StringHashMap(u8).init(allocator.alloc);
 
+    pub fn reset() !void {
+        textures.deinit();
+
+        textures = std.StringHashMap(u8).init(allocator.alloc);
+        texture = 0;
+    }
+
     pub fn parse(file: *files.File) !ElnData {
         const ext_idx = std.mem.lastIndexOf(u8, file.name, ".") orelse file.name.len;
         const folder_idx = std.mem.lastIndexOf(u8, file.name, "/") orelse file.name.len;

@@ -31,6 +31,7 @@ const telem = @import("../system/telem.zig");
 const c = @import("../c.zig");
 const vmManager = @import("../system/vmmanager.zig");
 const texMan = @import("../util/texmanager.zig");
+const eln = @import("../util/eln.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -286,6 +287,9 @@ pub const GSWindowed = struct {
 
         // deinit the font face
         try self.face.deinit();
+
+        // deinit the eln loader
+        try eln.ElnData.reset();
 
         // save the disk and settings
         try conf.SettingManager.deinit();
