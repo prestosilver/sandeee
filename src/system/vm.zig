@@ -5,23 +5,23 @@ const telem = @import("telem.zig");
 const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const windowedState = @import("../states/windowed.zig");
+const syscalls = @import("syscalls.zig");
 
 const vmManager = @import("vmmanager.zig");
 
 const log = @import("../util/log.zig").log;
 
+pub const MAIN_NAME = "_main";
+pub const EXIT_NAME = "_quit";
+
 // TODO: move stack stuff to settings?
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
-const MAIN_NAME = "_main";
-const EXIT_NAME = "_quit";
 
 pub var syslock = std.Thread.Mutex{};
 
 pub const VM = struct {
-    const VMString = std.ArrayList(u8);
-
-    const VMError = error{
+    pub const VMError = error{
         BadFileName,
         FolderNotFound,
 
@@ -47,6 +47,8 @@ pub const VM = struct {
         UnknownFunction,
         Todo,
     } || streams.StreamError;
+
+    const VMString = std.ArrayList(u8);
 
     const StackEntryKind = enum {
         string,
@@ -130,13 +132,13 @@ pub const VM = struct {
         };
     }
 
-    inline fn pushStack(self: *VM, entry: StackEntry) VMError!void {
+    pub inline fn pushStack(self: *VM, entry: StackEntry) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         self.stack[self.rsp] = entry;
         self.rsp += 1;
     }
 
-    inline fn pushStackI(self: *VM, value: u64) VMError!void {
+    pub inline fn pushStackI(self: *VM, value: u64) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         const val = self.allocator.create(u64) catch return error.OutOfMemory;
         val.* = value;
@@ -145,7 +147,7 @@ pub const VM = struct {
         self.rsp += 1;
     }
 
-    inline fn pushStackS(self: *VM, string: []const u8) VMError!void {
+    pub inline fn pushStackS(self: *VM, string: []const u8) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         const appendString = self.allocator.create(VMString) catch return error.OutOfMemory;
         appendString.* = VMString.initCapacity(self.allocator, string.len) catch return error.OutOfMemory;
@@ -161,12 +163,12 @@ pub const VM = struct {
         return self.stack[self.rsp];
     }
 
-    inline fn findStack(self: *VM, idx: u64) VMError!StackEntry {
+    pub inline fn findStack(self: *VM, idx: u64) VMError!StackEntry {
         if (self.rsp <= idx) return error.StackUnderflow;
         return self.stack[self.rsp - 1 - @as(usize, @intCast(idx))];
     }
 
-    inline fn replaceStack(self: *VM, a: StackEntry, b: StackEntry) VMError!void {
+    pub inline fn replaceStack(self: *VM, a: StackEntry, b: StackEntry) VMError!void {
         for (self.stack[0..self.rsp]) |*entry| {
             if ((a == .string and entry.* == .string and entry.string == a.string) or
                 (a == .value and entry.* == .value and entry.value == a.value))
@@ -524,457 +526,64 @@ pub const VM = struct {
                 //syslock.lock();
                 //defer syslock.unlock();
 
-                if (op.value != null) {
-                    switch (op.value.?) {
-                        // print
-                        0 => {
-                            const a = try self.popStack();
-                            defer self.free(&[_]StackEntry{a});
-
-                            if (a == .string) {
-                                try self.out.appendSlice(a.string.items);
-
-                                return;
-                            }
-
-                            if (a == .value) {
-                                const str = try std.fmt.allocPrint(self.allocator, "{}", .{a.value.*});
-                                defer self.allocator.free(str);
-
-                                try self.out.appendSlice(str);
-
-                                return;
-                            }
-                        },
-                        // quit
-                        1 => {
-                            if (self.functions.contains(EXIT_NAME)) {
-                                if (self.inside_fn) |func| {
-                                    if (std.mem.eql(u8, func, EXIT_NAME)) {
-                                        self.stopped = true;
-                                        return;
-                                    }
-                                }
-                                self.retStack[self.retRsp].location = self.pc;
-                                self.retStack[self.retRsp].function = self.inside_fn;
-                                self.pc = 0;
-                                self.inside_fn = EXIT_NAME;
-                                self.retRsp += 1;
-
-                                return;
-                            }
-
-                            self.stopped = true;
-                            return;
-                        },
-                        // create file
-                        2 => {
-                            const path = try self.popStack();
-                            defer self.free(&[_]StackEntry{path});
-
-                            if (path != .string) return error.StringMissing;
-
-                            if (path.string.items.len > 0 and path.string.items[0] == '/') {
-                                _ = try files.root.newFile(path.string.items);
-                            } else {
-                                _ = try self.root.newFile(path.string.items);
-                            }
-
-                            return;
-                        },
-                        // open file
-                        3 => {
-                            const path = try self.popStack();
-                            defer self.free(&[_]StackEntry{path});
-
-                            if (path != .string) return error.StringMissing;
-
-                            const stream = try streams.FileStream.Open(self.root, path.string.items, self);
-
-                            try self.streams.append(stream);
-                            try self.pushStackI(self.streams.items.len - 1);
-
-                            return;
-                        },
-                        // read
-                        4 => {
-                            const len = try self.popStack();
-                            const idx = try self.popStack();
-                            defer self.free(&[_]StackEntry{ len, idx });
-
-                            if (len != .value) return error.ValueMissing;
-                            if (idx != .value) return error.ValueMissing;
-
-                            if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
-
-                            const fs = self.streams.items[@as(usize, @intCast(idx.value.*))];
-                            if (fs == null) return error.InvalidStream;
-
-                            const cont = try fs.?.Read(@as(u32, @intCast(len.value.*)));
-                            defer self.allocator.free(cont);
-
-                            try self.pushStackS(cont);
-
-                            return;
-                        },
-                        // write file
-                        5 => {
-                            if (self.checker) return;
-                            const str = try self.popStack();
-                            const idx = try self.popStack();
-                            defer self.free(&[_]StackEntry{ str, idx });
-
-                            if (str != .string) return error.StringMissing;
-                            if (idx != .value) return error.ValueMissing;
-
-                            if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
-
-                            const fs = self.streams.items[@as(usize, @intCast(idx.value.*))];
-                            if (fs == null) return error.InvalidStream;
-
-                            try fs.?.Write(str.string.items);
-
-                            return;
-                        },
-                        // flush file
-                        6 => {
-                            if (self.checker) return;
-                            const idx = try self.popStack();
-                            defer self.free(&[_]StackEntry{idx});
-
-                            if (idx != .value) return error.ValueMissing;
-
-                            if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
-                            const fs = self.streams.items[@as(usize, @intCast(idx.value.*))];
-                            if (fs == null) return error.InvalidStream;
-
-                            try fs.?.Flush();
-
-                            return;
-                        },
-                        // close file
-                        7 => {
-                            const idx = try self.popStack();
-                            defer self.free(&[_]StackEntry{idx});
-
-                            if (idx != .value) return error.ValueMissing;
-
-                            if (idx.value.* >= self.streams.items.len) return error.InvalidStream;
-                            const fs = self.streams.items[@as(usize, @intCast(idx.value.*))];
-                            if (fs == null) return error.InvalidStream;
-
-                            try fs.?.Close();
-                            self.streams.items[@as(usize, @intCast(idx.value.*))] = null;
-
-                            return;
-                        },
-                        // arg
-                        8 => {
-                            const idx = try self.popStack();
-                            defer self.free(&[_]StackEntry{idx});
-
-                            if (idx != .value) return error.ValueMissing;
-
-                            if (idx.value.* >= self.args.len) {
-                                try self.pushStackS("");
-                                return;
-                            }
-
-                            try self.pushStackS(self.args[@as(usize, @intCast(idx.value.*))]);
-
-                            return;
-                        },
-                        // time
-                        9 => {
-                            try self.pushStackI(@as(u64, @intCast(std.time.milliTimestamp())));
-
-                            return;
-                        },
-                        // checkfn
-                        10 => {
-                            const name = try self.popStack();
-                            defer self.free(&[_]StackEntry{name});
-
-                            if (name != .string) return error.StringMissing;
-
-                            const val: u64 = if (self.functions.contains(name.string.items)) 1 else 0;
-
-                            try self.pushStackI(val);
-
-                            return;
-                        },
-                        // getfn
-                        11 => {
-                            const name = try self.popStack();
-                            defer self.free(&[_]StackEntry{name});
-
-                            if (name != .string) return error.StringMissing;
-
-                            var val: []const u8 = "";
-
-                            if (self.functions.get(name.string.items)) |newVal| val = newVal.string;
-
-                            try self.pushStackS(val);
-
-                            return;
-                        },
-                        // regfn
-                        12 => {
-                            const name = try self.popStack();
-                            const func = try self.popStack();
-                            defer self.free(&[_]StackEntry{ name, func });
-
-                            if (func != .string) return error.StringMissing;
-                            if (name != .string) return error.StringMissing;
-
-                            const dup = try self.allocator.dupe(u8, func.string.items);
-
-                            const ops = try self.stringToOps(dup);
-                            defer ops.deinit();
-
-                            const finalOps = try self.allocator.dupe(Operation, ops.items);
-                            const finalName = try self.allocator.dupe(u8, name.string.items);
-
-                            if (self.functions.fetchRemove(finalName)) |entry| {
-                                self.allocator.free(entry.key);
-                                self.allocator.free(entry.value.ops);
-                                self.allocator.free(entry.value.string);
-                            }
-
-                            try self.functions.put(finalName, .{
-                                .string = dup,
-                                .ops = finalOps,
-                            });
-
-                            return;
-                        },
-                        // clear function
-                        13 => {
-                            const name = try self.popStack();
-                            defer self.free(&[_]StackEntry{name});
-
-                            if (name != .string) return error.StringMissing;
-
-                            if (self.functions.fetchRemove(name.string.items)) |entry| {
-                                self.allocator.free(entry.key);
-                                self.allocator.free(entry.value.ops);
-                                self.allocator.free(entry.value.string);
-                                return;
-                            }
-
-                            return error.FunctionMissing;
-                        },
-                        // resize heap
-                        14 => {
-                            const size = try self.popStack();
-                            defer self.free(&[_]StackEntry{size});
-
-                            if (size != .value) return error.ValueMissing;
-
-                            const start = self.heap.len;
-                            self.heap = try self.allocator.realloc(self.heap, @intCast(size.value.*));
-
-                            if (start < self.heap.len) {
-                                for (start..self.heap.len) |idx| {
-                                    self.heap[idx] = .{ .value = 0 };
-                                }
-                            }
-
-                            return;
-                        },
-                        // read heap
-                        15 => {
-                            const item = try self.popStack();
-                            defer self.free(&[_]StackEntry{item});
-
-                            if (item != .value) return error.ValueMissing;
-                            if (item.value.* >= self.heap.len) return error.HeapOutOfBounds;
-
-                            const adds = self.heap[@as(usize, @intCast(item.value.*))];
-
-                            switch (adds) {
-                                .value => {
-                                    try self.pushStackI(adds.value);
-                                },
-                                .string => {
-                                    try self.pushStackS(adds.string);
-                                },
-                            }
-
-                            return;
-                        },
-                        // write heap
-                        16 => {
-                            const data = try self.popStack();
-                            const item = try self.popStack();
-                            defer self.free(&[_]StackEntry{ data, item });
-
-                            if (item != .value) return error.ValueMissing;
-
-                            if (item.value.* >= self.heap.len) return error.HeapOutOfBounds;
-
-                            const idx: usize = @intCast(item.value.*);
-
-                            if (self.heap[idx] == .string)
-                                self.allocator.free(self.heap[idx].string);
-
-                            switch (data) {
-                                .value => {
-                                    self.heap[idx] = .{
-                                        .value = data.value.*,
-                                    };
-                                },
-                                .string => {
-                                    self.heap[idx] = .{
-                                        .string = try self.allocator.dupe(u8, data.string.items),
-                                    };
-                                },
-                            }
-
-                            try self.pushStack(data);
-
-                            return;
-                        },
-                        // yield
-                        17 => {
-                            self.yield = true;
-                            return;
-                        },
-                        // error
-                        18 => {
-                            const msg = try self.popStack();
-                            defer self.free(&[_]StackEntry{msg});
-
-                            if (msg != .string) return error.StringMissing;
-
-                            const msgString = try self.getOp();
-                            defer self.allocator.free(msgString);
-
-                            try self.out.appendSlice("Error: ");
-                            try self.out.appendSlice(msg.string.items);
-                            try self.out.appendSlice("\n");
-                            try self.out.appendSlice(msgString);
-
-                            self.stopped = true;
-                            return;
-                        },
-                        // file size
-                        19 => {
-                            const path = try self.popStack();
-                            defer self.free(&[_]StackEntry{path});
-
-                            if (path != .string) return error.StringMissing;
-
-                            if (path.string.items.len == 0) return error.FileMissing;
-
-                            if (path.string.items[0] == '/') {
-                                const file = try files.root.getFile(path.string.items);
-
-                                try self.pushStackI(file.size());
-
-                                return;
-                            }
-
-                            const file = try self.root.getFile(path.string.items);
-
-                            try self.pushStackI(file.size());
-
-                            return;
-                        },
-                        // setrsp
-                        20 => {
-                            const num = try self.popStack();
-                            defer self.free(&[_]StackEntry{num});
-
-                            if (num != .value) return error.ValueMissing;
-                            if (self.rsp < num.value.*) return error.InvalidSys;
-
-                            const oldRsp = self.rsp;
-
-                            self.rsp = num.value.*;
-
-                            self.free(self.stack[self.rsp..oldRsp]);
-
-                            return;
-                        },
-                        // spawn vm
-                        21 => {
-                            const exec = try self.popStack();
-                            defer self.free(&[_]StackEntry{exec});
-
-                            if (exec != .string) return error.StringMissing;
-
-                            const file = try self.root.getFile(exec.string.items);
-                            const conts = try file.read(null);
-
-                            const handle = try vmManager.VMManager.instance.spawn(self.root, exec.string.items, conts[4..]);
-
-                            try self.pushStackI(handle.id);
-
-                            return;
-                        },
-                        // vm status
-                        22 => {
-                            const handle = try self.popStack();
-                            defer self.free(&[_]StackEntry{handle});
-
-                            if (handle != .value) return error.ValueMissing;
-
-                            return error.Todo;
-                        },
-                        // panic
-                        128 => {
-                            if (@import("builtin").is_test)
-                                return error.InvalidSys;
-                            if (!windowedState.GSWindowed.globalSelf.debug_enabled)
-                                return error.InvalidSys;
-
-                            @panic("VM Crash Called");
-                        },
-                        // secret
-                        255 => {
-                            events.EventManager.instance.sendEvent(systemEvs.EventSys{
-                                .sysId = op.value.?,
-                            }) catch return error.InvalidSys;
-
-                            if (self.rsp == 0)
-                                return error.InvalidPassword;
-
-                            const pass = try self.popStack();
-                            defer self.free(&[_]StackEntry{pass});
-
-                            if (pass != .string) return error.StringMissing;
-
-                            if (std.mem.eql(u8, pass.string.items, "Hi")) {
-                                try self.out.appendSlice("Hello World!\n");
-
-                                return;
-                            }
-
-                            const dbg_pass = try telem.Telem.getDebugPassword();
-                            defer self.allocator.free(dbg_pass);
-
-                            if (std.mem.eql(u8, pass.string.items, dbg_pass)) {
-                                try self.out.appendSlice("Debug Mode Enabled\n");
-
-                                events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
-                                    .enabled = true,
-                                }) catch {
+                if (op.value) |index| {
+                    syscalls.SysCall.run(self, index) catch {
+                        switch (op.value.?) {
+                            // panic
+                            128 => {
+                                if (@import("builtin").is_test)
                                     return error.InvalidSys;
-                                };
+                                if (!windowedState.GSWindowed.globalSelf.debug_enabled)
+                                    return error.InvalidSys;
 
-                                return;
-                            }
+                                @panic("VM Crash Called");
+                            },
+                            // secret
+                            255 => {
+                                events.EventManager.instance.sendEvent(systemEvs.EventSys{
+                                    .sysId = op.value.?,
+                                }) catch return error.InvalidSys;
 
-                            log.info("password dosent match {s}", .{dbg_pass});
+                                if (self.rsp == 0)
+                                    return error.InvalidPassword;
 
-                            return error.InvalidPassword;
-                        },
-                        // misc
-                        else => {
-                            return error.InvalidSys;
-                        },
-                    }
+                                const pass = try self.popStack();
+                                defer self.free(&[_]StackEntry{pass});
+
+                                if (pass != .string) return error.StringMissing;
+
+                                if (std.mem.eql(u8, pass.string.items, "Hi")) {
+                                    try self.out.appendSlice("Hello World!\n");
+
+                                    return;
+                                }
+
+                                const dbg_pass = try telem.Telem.getDebugPassword();
+                                defer self.allocator.free(dbg_pass);
+
+                                if (std.mem.eql(u8, pass.string.items, dbg_pass)) {
+                                    try self.out.appendSlice("Debug Mode Enabled\n");
+
+                                    events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
+                                        .enabled = true,
+                                    }) catch {
+                                        return error.InvalidSys;
+                                    };
+
+                                    return;
+                                }
+
+                                log.info("password dosent match {s}", .{dbg_pass});
+
+                                return error.InvalidPassword;
+                            },
+                            // misc
+                            else => {
+                                return error.InvalidSys;
+                            },
+                        }
+                    };
+                    return;
                 } else return error.ValueMissing;
             },
             Operation.Code.Jmpf => {
