@@ -1,6 +1,7 @@
 id: 13
 deps: 12
-from: Spencer_r@eee.org
+from: spencer_r@eee.org
+to: rob_r@eee.org
 sub: Strings are insane
 submit: input=AND;runs=DNA;input=PRS;runs=SRP
 Hello,

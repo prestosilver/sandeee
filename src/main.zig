@@ -365,7 +365,7 @@ pub fn settingSet(event: systemEvs.EventSetSetting) !void {
 
 pub fn runCmdEvent(event: systemEvs.EventRunCmd) !void {
     for (emailManager.emails.items) |*email| {
-        if (!emailManager.getEmailVisible(email)) continue;
+        if (!emailManager.getEmailVisible(email, "admin@eee.org")) continue;
         if (email.condition != .Run) continue;
 
         if (std.ascii.eqlIgnoreCase(email.condition.Run.req, event.cmd)) {
@@ -376,7 +376,7 @@ pub fn runCmdEvent(event: systemEvs.EventRunCmd) !void {
 
 pub fn syscall(event: systemEvs.EventSys) !void {
     for (emailManager.emails.items) |*email| {
-        if (!emailManager.getEmailVisible(email)) continue;
+        if (!emailManager.getEmailVisible(email, "admin@eee.org")) continue;
         if (email.condition != .SysCall) continue;
 
         const num = email.condition.SysCall.id;

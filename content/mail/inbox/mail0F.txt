@@ -1,6 +1,7 @@
 id: 15
 deps: 14
-from: Joe_m@eee.org
+from: joe_m@eee.org
+to: rob_r@eee.org
 view
 sub: Epsilon
 Hello,

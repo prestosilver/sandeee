@@ -34,6 +34,7 @@ pub const GSLoading = struct {
         .{ "bigicons_texture_path", "big_icons" },
         .{ "cursor_texture_path", "cursor" },
         .{ "bar_logo_path", "barlogo" },
+        .{ "email_logo_path", "email-logo" },
     };
 
     const mailpath: []const u8 = "/cont/mail";

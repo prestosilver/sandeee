@@ -1,134 +1,102 @@
 {
   "wires": [
     {
-      "start": "64551c756cf83c911b16ac77",
-      "end": "64551c5d6cf83c911b16ac76"
+      "start": "65da09e49ee2d38cb6546992",
+      "end": "65da09e19ee2d38cb6546991"
     },
     {
-      "start": "64551c946cf83c911b16ac79",
-      "end": "64551c5d6cf83c911b16ac76"
+      "start": "65da09f49ee2d38cb6546993",
+      "end": "65da09e19ee2d38cb6546991"
     },
     {
-      "start": "64551cdc6cf83c911b16ac7d",
-      "end": "64551c5d6cf83c911b16ac76"
+      "start": "65da09fa9ee2d38cb6546994",
+      "end": "65da09e19ee2d38cb6546991"
     },
     {
-      "start": "64551e23236a9eb0af35a215",
-      "end": "64551c5d6cf83c911b16ac76"
+      "start": "65da0a4f9ee2d38cb654699d",
+      "end": "65da09e49ee2d38cb6546992"
     },
     {
-      "start": "64551c7d6cf83c911b16ac78",
-      "end": "64551c756cf83c911b16ac77"
+      "start": "65da0ce6599087309c6f1294",
+      "end": "65da09f49ee2d38cb6546993"
     },
     {
-      "start": "64551cb96cf83c911b16ac7a",
-      "end": "64551c7d6cf83c911b16ac78"
+      "start": "65da0a049ee2d38cb6546995",
+      "end": "65da09fa9ee2d38cb6546994"
     },
     {
-      "start": "64551cca6cf83c911b16ac7b",
-      "end": "64551c7d6cf83c911b16ac78"
+      "start": "65da0a0d9ee2d38cb6546996",
+      "end": "65da09fa9ee2d38cb6546994"
     },
     {
-      "start": "64551cea6cf83c911b16ac7e",
-      "end": "64551cdc6cf83c911b16ac7d"
+      "start": "65da0a779ee2d38cb654699f",
+      "end": "65da0a049ee2d38cb6546995"
     },
     {
-      "start": "6457f7e8ee7412fcbc6f835b",
-      "end": "64551cdc6cf83c911b16ac7d"
+      "start": "65da0a969ee2d38cb65469a1",
+      "end": "65da0a049ee2d38cb6546995"
     },
     {
-      "start": "64551d176cf83c911b16ac7f",
-      "end": "64551cea6cf83c911b16ac7e"
+      "start": "65da0a179ee2d38cb6546997",
+      "end": "65da0a0d9ee2d38cb6546996"
     },
     {
-      "start": "64551d1f6cf83c911b16ac80",
-      "end": "64551cea6cf83c911b16ac7e"
+      "start": "65da0a209ee2d38cb6546998",
+      "end": "65da0a0d9ee2d38cb6546996"
     },
     {
-      "start": "64551f4f236a9eb0af35a223",
-      "end": "64551cea6cf83c911b16ac7e"
+      "start": "65da0a7d9ee2d38cb65469a0",
+      "end": "65da0a779ee2d38cb654699f"
     },
     {
-      "start": "64551d41236a9eb0af35a206",
-      "end": "64551d176cf83c911b16ac7f"
+      "start": "65da0b39599087309c6f128b",
+      "end": "65da0a7d9ee2d38cb65469a0"
     },
     {
-      "start": "64551db1236a9eb0af35a20f",
-      "end": "64551d176cf83c911b16ac7f"
+      "start": "65da0b5c599087309c6f128d",
+      "end": "65da0a7d9ee2d38cb65469a0"
     },
     {
-      "start": "64551ddc236a9eb0af35a211",
-      "end": "64551d176cf83c911b16ac7f"
+      "start": "65da0aa29ee2d38cb65469a2",
+      "end": "65da0b39599087309c6f128b"
     },
     {
-      "start": "64551ee1236a9eb0af35a21e",
-      "end": "64551d176cf83c911b16ac7f"
+      "start": "65da0ac19ee2d38cb65469a3",
+      "end": "65da0b39599087309c6f128b"
     },
     {
-      "start": "64551ed9236a9eb0af35a21c",
-      "end": "64551d176cf83c911b16ac7f"
+      "start": "65da0b049ee2d38cb65469a7",
+      "end": "65da0b39599087309c6f128b"
     },
     {
-      "start": "64551edc236a9eb0af35a21d",
-      "end": "64551d176cf83c911b16ac7f"
+      "start": "65da0bac599087309c6f128f",
+      "end": "65da0b39599087309c6f128b"
     },
     {
-      "start": "64551da6236a9eb0af35a20e",
-      "end": "64551d41236a9eb0af35a206"
+      "start": "65da0b6e599087309c6f128e",
+      "end": "65da0b39599087309c6f128b"
     },
     {
-      "start": "64551dcf236a9eb0af35a210",
-      "end": "64551d41236a9eb0af35a206"
+      "start": "65da0bf3599087309c6f1291",
+      "end": "65da0b39599087309c6f128b"
     },
     {
-      "start": "64551df1236a9eb0af35a214",
-      "end": "64551ddc236a9eb0af35a211"
+      "start": "65da0adc9ee2d38cb65469a4",
+      "end": "65da0b5c599087309c6f128d"
     },
     {
-      "start": "64551dec236a9eb0af35a213",
-      "end": "64551ddc236a9eb0af35a211"
-    },
-    {
-      "start": "64551de3236a9eb0af35a212",
-      "end": "64551ddc236a9eb0af35a211"
-    },
-    {
-      "start": "64551ee6236a9eb0af35a21f",
-      "end": "64551ee1236a9eb0af35a21e"
-    },
-    {
-      "start": "64551f38236a9eb0af35a222",
-      "end": "64551ee1236a9eb0af35a21e"
-    },
-    {
-      "start": "6457f801ee7412fcbc6f835c",
-      "end": "6457f7e8ee7412fcbc6f835b"
+      "start": "65da0c3b599087309c6f1292",
+      "end": "65da0b5c599087309c6f128d"
     }
   ],
   "cards": [
     {
-      "id": "64551c5d6cf83c911b16ac76",
+      "id": "65da09e19ee2d38cb6546991",
       "kind": "Todo",
-      "text": "SandEEE\n",
+      "text": "SandEEE",
       "done": false,
       "location": {
-        "x": 3.0,
-        "y": -9.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551c756cf83c911b16ac77",
-      "kind": "Todo",
-      "text": "Incubator demo",
-      "done": false,
-      "location": {
-        "x": 4.0,
+        "x": -15.0,
         "y": -8.0,
         "w": 10.0,
         "h": 1.0
@@ -139,172 +107,12 @@
       }
     },
     {
-      "id": "64551c7d6cf83c911b16ac78",
+      "id": "65da09e49ee2d38cb6546992",
       "kind": "Todo",
-      "text": "Incubator demo\n",
+      "text": "Bugs",
       "done": false,
       "location": {
-        "x": 20.0,
-        "y": -9.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551c946cf83c911b16ac79",
-      "kind": "Todo",
-      "text": "Open Alpha",
-      "done": true,
-      "location": {
-        "x": 4.0,
-        "y": -7.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551cb96cf83c911b16ac7a",
-      "kind": "Todo",
-      "text": "Welcome Screen\n",
-      "done": true,
-      "location": {
-        "x": 21.0,
-        "y": -8.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551cca6cf83c911b16ac7b",
-      "kind": "Todo",
-      "text": "Email Intro",
-      "done": true,
-      "location": {
-        "x": 21.0,
-        "y": -7.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551cdc6cf83c911b16ac7d",
-      "kind": "Todo",
-      "text": "Beta",
-      "done": false,
-      "location": {
-        "x": 4.0,
-        "y": -6.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551cea6cf83c911b16ac7e",
-      "kind": "Todo",
-      "text": "SandEEE Beta",
-      "done": false,
-      "location": {
-        "x": 20.0,
-        "y": -6.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551d176cf83c911b16ac7f",
-      "kind": "Todo",
-      "text": "UI Rewrite",
-      "done": false,
-      "location": {
-        "x": 21.0,
-        "y": -4.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551d1f6cf83c911b16ac80",
-      "kind": "Todo",
-      "text": "Texture manager",
-      "done": true,
-      "location": {
-        "x": 21.0,
-        "y": -5.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551d41236a9eb0af35a206",
-      "kind": "Todo",
-      "text": "Button2d",
-      "done": false,
-      "location": {
-        "x": 22.0,
-        "y": -2.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551da6236a9eb0af35a20e",
-      "kind": "Todo",
-      "text": "Render",
-      "done": false,
-      "location": {
-        "x": 23.0,
-        "y": -1.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551db1236a9eb0af35a20f",
-      "kind": "Todo",
-      "text": "UI Rect class\n",
-      "done": true,
-      "location": {
-        "x": 22.0,
+        "x": -30.0,
         "y": -3.0,
         "w": 10.0,
         "h": 1.0
@@ -315,13 +123,13 @@
       }
     },
     {
-      "id": "64551dcf236a9eb0af35a210",
+      "id": "65da09f49ee2d38cb6546993",
       "kind": "Todo",
-      "text": "Action",
+      "text": "Misc Todo",
       "done": false,
       "location": {
-        "x": 23.0,
-        "y": 0.0,
+        "x": 26.0,
+        "y": -3.0,
         "w": 10.0,
         "h": 1.0
       },
@@ -331,12 +139,28 @@
       }
     },
     {
-      "id": "64551ddc236a9eb0af35a211",
+      "id": "65da09fa9ee2d38cb6546994",
       "kind": "Todo",
-      "text": "TextField\n",
+      "text": "Emails",
       "done": false,
       "location": {
-        "x": 22.0,
+        "x": -15.0,
+        "y": -3.0,
+        "w": 10.0,
+        "h": 1.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0a049ee2d38cb6546995",
+      "kind": "Todo",
+      "text": "Redo story",
+      "done": false,
+      "location": {
+        "x": -14.0,
         "y": 1.0,
         "w": 10.0,
         "h": 1.0
@@ -347,12 +171,92 @@
       }
     },
     {
-      "id": "64551de3236a9eb0af35a212",
+      "id": "65da0a0d9ee2d38cb6546996",
       "kind": "Todo",
-      "text": "Focus",
+      "text": "Rework",
       "done": false,
       "location": {
-        "x": 23.0,
+        "x": -14.0,
+        "y": -2.0,
+        "w": 10.0,
+        "h": 1.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0a179ee2d38cb6546997",
+      "kind": "Todo",
+      "text": "Add to field",
+      "done": true,
+      "location": {
+        "x": -13.0,
+        "y": -1.0,
+        "w": 10.0,
+        "h": 1.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0a209ee2d38cb6546998",
+      "kind": "Todo",
+      "text": "Change max to 65535\n",
+      "done": false,
+      "location": {
+        "x": -13.0,
+        "y": 0.0,
+        "w": 10.0,
+        "h": 1.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0a4f9ee2d38cb654699d",
+      "kind": "Todo",
+      "text": "Editor selection weird",
+      "done": false,
+      "location": {
+        "x": -29.0,
+        "y": -2.0,
+        "w": 10.0,
+        "h": 1.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0a5f9ee2d38cb654699e",
+      "kind": "Image",
+      "text": "",
+      "file": "../content/images/bios.png",
+      "location": {
+        "x": -15.0,
+        "y": -14.0,
+        "w": 10.0,
+        "h": 6.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 6.0
+      }
+    },
+    {
+      "id": "65da0a779ee2d38cb654699f",
+      "kind": "Todo",
+      "text": "Plan",
+      "done": false,
+      "location": {
+        "x": -13.0,
         "y": 2.0,
         "w": 10.0,
         "h": 1.0
@@ -363,13 +267,13 @@
       }
     },
     {
-      "id": "64551dec236a9eb0af35a213",
+      "id": "65da0a7d9ee2d38cb65469a0",
       "kind": "Todo",
-      "text": "Action",
+      "text": "Story plans",
       "done": false,
       "location": {
-        "x": 23.0,
-        "y": 4.0,
+        "x": 6.0,
+        "y": -3.0,
         "w": 10.0,
         "h": 1.0
       },
@@ -379,12 +283,12 @@
       }
     },
     {
-      "id": "64551df1236a9eb0af35a214",
+      "id": "65da0a969ee2d38cb65469a1",
       "kind": "Todo",
-      "text": "Var",
+      "text": "Make into emails",
       "done": false,
       "location": {
-        "x": 23.0,
+        "x": -13.0,
         "y": 3.0,
         "w": 10.0,
         "h": 1.0
@@ -395,12 +299,13 @@
       }
     },
     {
-      "id": "64551e23236a9eb0af35a215",
-      "kind": "Note",
-      "text": "Characters",
+      "id": "65da0aa29ee2d38cb65469a2",
+      "kind": "Todo",
+      "text": "2000 - EEE discovers metawire",
+      "done": false,
       "location": {
-        "x": -31.0,
-        "y": -9.0,
+        "x": 8.0,
+        "y": -1.0,
         "w": 10.0,
         "h": 1.0
       },
@@ -410,60 +315,15 @@
       }
     },
     {
-      "id": "64551e3f236a9eb0af35a218",
-      "kind": "Note",
-      "text": "Joe Moe\nAnnoyed bc generic name\nfirst person you talk to\n",
-      "location": {
-        "x": -31.0,
-        "y": -8.0,
-        "w": 10.0,
-        "h": 3.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551e73236a9eb0af35a219",
-      "kind": "Note",
-      "text": "Julien Web\nWeb Dev guy\nLIKES EDF A TON",
-      "location": {
-        "x": -31.0,
-        "y": -5.0,
-        "w": 10.0,
-        "h": 3.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551ea1236a9eb0af35a21a",
-      "kind": "Note",
-      "text": "Jennifer Duncan\nObsessed with assembly\nLiterally obsessed",
-      "location": {
-        "x": -31.0,
-        "y": -2.0,
-        "w": 10.0,
-        "h": 3.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551ed9236a9eb0af35a21c",
+      "id": "65da0ac19ee2d38cb65469a3",
       "kind": "Todo",
-      "text": "Scroll Bar",
+      "text": "2010 - EEE becomes world\nleader",
       "done": false,
       "location": {
-        "x": 22.0,
-        "y": 5.0,
+        "x": 8.0,
+        "y": 1.0,
         "w": 10.0,
-        "h": 1.0
+        "h": 2.0
       },
       "min": {
         "x": 5.0,
@@ -471,76 +331,12 @@
       }
     },
     {
-      "id": "64551edc236a9eb0af35a21d",
+      "id": "65da0adc9ee2d38cb65469a4",
       "kind": "Todo",
-      "text": "Var",
+      "text": "Now - Game starts",
       "done": false,
       "location": {
-        "x": 23.0,
-        "y": 6.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551ee1236a9eb0af35a21e",
-      "kind": "Todo",
-      "text": "Panel\n",
-      "done": false,
-      "location": {
-        "x": 22.0,
-        "y": 7.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551ee6236a9eb0af35a21f",
-      "kind": "Todo",
-      "text": "Offset",
-      "done": false,
-      "location": {
-        "x": 23.0,
-        "y": 8.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551f38236a9eb0af35a222",
-      "kind": "Todo",
-      "text": "Crop",
-      "done": false,
-      "location": {
-        "x": 23.0,
-        "y": 9.0,
-        "w": 10.0,
-        "h": 1.0
-      },
-      "min": {
-        "x": 5.0,
-        "y": 1.0
-      }
-    },
-    {
-      "id": "64551f4f236a9eb0af35a223",
-      "kind": "Todo",
-      "text": "Story",
-      "done": false,
-      "location": {
-        "x": 21.0,
+        "x": 8.0,
         "y": 10.0,
         "w": 10.0,
         "h": 1.0
@@ -551,13 +347,29 @@
       }
     },
     {
-      "id": "6457f7e8ee7412fcbc6f835b",
+      "id": "65da0b049ee2d38cb65469a7",
       "kind": "Todo",
-      "text": "Bugs",
+      "text": "Some time - Epsilon leaks\nInternal SandEEE build",
       "done": false,
       "location": {
-        "x": -11.0,
-        "y": -6.0,
+        "x": 8.0,
+        "y": 7.0,
+        "w": 10.0,
+        "h": 2.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0b39599087309c6f128b",
+      "kind": "Todo",
+      "text": "Metaverse (Tentative Name)",
+      "done": false,
+      "location": {
+        "x": 7.0,
+        "y": -2.0,
         "w": 10.0,
         "h": 1.0
       },
@@ -567,13 +379,93 @@
       }
     },
     {
-      "id": "6457f801ee7412fcbc6f835c",
+      "id": "65da0b5c599087309c6f128d",
       "kind": "Todo",
-      "text": "Editor transparency???",
-      "done": true,
+      "text": "Earth\n",
+      "done": false,
       "location": {
-        "x": -10.0,
-        "y": -5.0,
+        "x": 7.0,
+        "y": 9.0,
+        "w": 10.0,
+        "h": 1.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0b6e599087309c6f128e",
+      "kind": "Todo",
+      "text": "2020 - EEE discovers alternate\nUniverses",
+      "done": false,
+      "location": {
+        "x": 8.0,
+        "y": 3.0,
+        "w": 10.0,
+        "h": 2.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0bac599087309c6f128f",
+      "kind": "Todo",
+      "text": "2021 - EEE manages to \nrecieve data from earth",
+      "done": false,
+      "location": {
+        "x": 8.0,
+        "y": 5.0,
+        "w": 10.0,
+        "h": 2.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0bf3599087309c6f1291",
+      "kind": "Todo",
+      "text": "2005 - EEE creates a meta pc",
+      "done": false,
+      "location": {
+        "x": 8.0,
+        "y": 0.0,
+        "w": 10.0,
+        "h": 1.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0c3b599087309c6f1292",
+      "kind": "Todo",
+      "text": "Player destroys / helps EEE",
+      "done": false,
+      "location": {
+        "x": 8.0,
+        "y": 21.0,
+        "w": 10.0,
+        "h": 1.0
+      },
+      "min": {
+        "x": 5.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "65da0ce6599087309c6f1294",
+      "kind": "Todo",
+      "text": "Video format",
+      "done": false,
+      "location": {
+        "x": 27.0,
+        "y": -2.0,
         "w": 10.0,
         "h": 1.0
       },
@@ -584,10 +476,10 @@
     }
   ],
   "camera": {
-    "zoom": 1.578125,
+    "zoom": 1.421875,
     "position": {
-      "x": 20.09356498718262,
-      "y": 1.881987929344177
+      "x": 13.17231845855713,
+      "y": 0.5973696112632751
     }
   }
 }

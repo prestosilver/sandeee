@@ -1,6 +1,7 @@
 id: 17
 deps: 16
-from: Joe_m@eee.org
+from: joe_m@eee.org
+to: rob_r@eee.org
 view
 sub: Epsilon
 I SAID TO IGNORE IT.

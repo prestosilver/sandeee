@@ -60,6 +60,7 @@ pub const EmailManager = struct {
         };
 
         from: []const u8,
+        to: []const u8,
         subject: []const u8,
         contents: []const u8,
         deps: []u8,
@@ -77,6 +78,7 @@ pub const EmailManager = struct {
 
         pub fn parseTxt(file: std.fs.File) !Email {
             var result = Email{
+                .to = "",
                 .from = "",
                 .subject = "",
                 .contents = "",
@@ -100,14 +102,12 @@ pub const EmailManager = struct {
                     result.id = try std.fmt.parseInt(u8, line[4..], 0);
                 } else if (std.mem.startsWith(u8, line, "box: ")) {
                     result.box = try std.fmt.parseInt(u8, line[5..], 0);
+                } else if (std.mem.startsWith(u8, line, "to: ")) {
+                    result.to = try allocator.alloc.dupe(u8, line[4..]);
                 } else if (std.mem.startsWith(u8, line, "from: ")) {
-                    const sub = try allocator.alloc.alloc(u8, line.len - 6);
-                    @memcpy(sub, line[6..]);
-                    result.from = sub;
+                    result.from = try allocator.alloc.dupe(u8, line[6..]);
                 } else if (std.mem.startsWith(u8, line, "sub: ")) {
-                    const sub = try allocator.alloc.alloc(u8, line.len - 5);
-                    @memcpy(sub, line[5..]);
-                    result.subject = sub;
+                    result.subject = try allocator.alloc.dupe(u8, line[5..]);
                 } else if (std.mem.startsWith(u8, line, "deps: ")) {
                     result.deps = try allocator.alloc.realloc(result.deps, result.deps.len + 1);
                     result.deps[result.deps.len - 1] = try std.fmt.parseInt(u8, line[6..], 0);
@@ -163,7 +163,7 @@ pub const EmailManager = struct {
     pub fn init() !EmailManager {
         return EmailManager{
             .emails = std.ArrayList(Email).init(allocator.alloc),
-            .boxes = try allocator.alloc.alloc([]const u8, 0),
+            .boxes = try allocator.alloc.dupe([]const u8, &.{}),
         };
     }
 
@@ -190,6 +190,8 @@ pub const EmailManager = struct {
             if (email.isComplete) comp += 1;
         }
 
+        if (total == 0) return 100;
+
         return @as(u8, @intFromFloat(comp / total * 100));
     }
 
@@ -197,15 +199,16 @@ pub const EmailManager = struct {
         for (self.emails.items) |dep| {
             if (dep.box != email.box) continue;
             if (std.mem.indexOf(u8, dep.deps, &.{email.id})) |_| {
-                if (self.getEmailVisible(email)) return true;
+                if (self.getEmailVisible(email, "admin@eee.org")) return true;
             }
         }
 
         return false;
     }
 
-    pub fn getEmailVisible(self: *EmailManager, email: *Email) bool {
+    pub fn getEmailVisible(self: *EmailManager, email: *Email, user: []const u8) bool {
         if (!email.show) return false;
+        if (!(std.mem.eql(u8, user, email.from) or std.mem.eql(u8, user, "admin@eee.org") or std.mem.eql(u8, user, email.to))) return false;
 
         for (self.emails.items) |dep| {
             if (dep.box != email.box) continue;
@@ -223,7 +226,7 @@ pub const EmailManager = struct {
             for (self.emails.items) |*dep| {
                 if (dep.box != email.box) continue;
                 if (std.mem.indexOf(u8, dep.deps, &.{email.id})) |_| {
-                    if (self.getEmailVisible(dep))
+                    if (self.getEmailVisible(dep, "admin@eee.org"))
                         try events.EventManager.instance.sendEvent(windowEvs.EventNotification{
                             .title = "You got mail",
                             .text = dep.subject,
@@ -342,6 +345,7 @@ pub const EmailManager = struct {
 
             const idStr = std.mem.toBytes(email.id);
             const show = std.mem.toBytes(email.show);
+            const toLen = std.mem.toBytes(email.to.len)[0..4];
             const fromLen = std.mem.toBytes(email.from.len)[0..4];
             const depsLen = std.mem.toBytes(email.deps.len)[0..4];
             const condsLen = std.mem.toBytes(cond.len)[0..4];
@@ -359,6 +363,8 @@ pub const EmailManager = struct {
                     cond,
                     depsLen,
                     email.deps,
+                    toLen,
+                    email.to,
                     fromLen,
                     email.from,
                     subjectLen,
@@ -382,7 +388,9 @@ pub const EmailManager = struct {
         defer fileList.deinit();
         try folder.getFilesRec(&fileList);
 
-        self.boxes = try allocator.alloc.alloc([]u8, fileList.items.len);
+        self.boxes = try allocator.alloc.alloc([]u8, fileList.items.len + 1);
+
+        self.boxes[self.boxes.len - 1] = "outbox";
 
         for (fileList.items, 0..) |file, boxid| {
             log.debug("load emails: {s}", .{file.name});
@@ -473,6 +481,12 @@ pub const EmailManager = struct {
                 fidx += 4;
 
                 self.emails.items[idx].deps = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
+                fidx += len;
+
+                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                fidx += 4;
+
+                self.emails.items[idx].to = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
                 len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;

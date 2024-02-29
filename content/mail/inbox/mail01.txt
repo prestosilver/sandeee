@@ -1,6 +1,7 @@
 id: 1
 deps: 0
 from: joe_m@eee.org
+to: rob_r@eee.org
 sub: Your first shell script.
 run: new helloWorld.esh
 Hello,

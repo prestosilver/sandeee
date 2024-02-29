@@ -152,7 +152,7 @@ pub const SpriteBatch = struct {
                 cscissor = entry.scissor;
 
                 if (entry.clear) |clearColor| {
-                    c.glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+                    c.glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0);
                     c.glClear(c.GL_COLOR_BUFFER_BIT);
                 }
 

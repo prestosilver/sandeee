@@ -1,0 +1,8 @@
+id: 0
+from: joe_m@eee.org
+to: ERIC_L@eee.org
+sub: Newbie
+view
+
+Heyo, the new guy is pretty good at programming. You should make him try Eon.
+His email is rob_r@eee.org

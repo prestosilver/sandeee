@@ -16,6 +16,9 @@ const files = @import("../system/files.zig");
 const winEvs = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const vm = @import("../system/vm.zig");
+const log = @import("../util/log.zig").log;
+
+const e_data = @import("../data/email.zig");
 
 const c = @import("../c.zig");
 
@@ -25,12 +28,17 @@ pub var emailManager: *mail.EmailManager = undefined;
 const EmailData = struct {
     const Self = @This();
 
+    const LoginInput = enum { Username, Password };
+
     backbg: sprite.Sprite,
     reply: sprite.Sprite,
     divx: sprite.Sprite,
     dive: sprite.Sprite,
     back: sprite.Sprite,
+    logo: sprite.Sprite,
     sel: sprite.Sprite,
+    text_box: [2]sprite.Sprite,
+    button: [2]sprite.Sprite,
 
     shader: *shd.Shader,
 
@@ -42,7 +50,108 @@ const EmailData = struct {
     rowsize: f32 = 0,
     bnds: rect.Rectangle = undefined,
 
+    login: ?[]const u8 = null,
+    login_error: ?[]const u8 = null,
+    login_input: ?LoginInput = null,
+    login_text: [2][]u8,
+
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+        self.bnds = bnds.*;
+
+        if (self.login == null) {
+            props.clearColor = col.newColorRGBA(192, 192, 192, 255);
+            if (self.login_error) |err| {
+                try font.draw(.{
+                    .shader = font_shader,
+                    .text = err,
+                    .pos = .{
+                        .x = bnds.x,
+                        .y = bnds.y,
+                    },
+                });
+            }
+
+            const center = bnds.x + @floor(bnds.w * 0.5 - 50.0);
+
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.logo, self.shader, vecs.newVec3(center - 26 - 50, bnds.y + bnds.h - 250, 0));
+
+            self.text_box[0].data.size.x = 200;
+            self.text_box[1].data.size.x = 196;
+            self.button[0].data.size.x = 100;
+            self.button[1].data.size.x = 96;
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(center, bnds.y + bnds.h - 102, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(center + 2, bnds.y + bnds.h - 100, 0));
+
+            try font.draw(.{
+                .shader = font_shader,
+                .text = "Password:",
+                .pos = .{
+                    .x = center - 100,
+                    .y = bnds.y + bnds.h - 100,
+                },
+            });
+
+            {
+                const text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.login_text[1], if (self.login_input != null and self.login_input.? == .Password) "|" else "" });
+                defer allocator.alloc.free(text);
+
+                try font.draw(.{
+                    .shader = font_shader,
+                    .text = text,
+                    .pos = .{
+                        .x = center + 5,
+                        .y = bnds.y + bnds.h - 100,
+                    },
+                });
+            }
+
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(center, bnds.y + bnds.h - 152, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(center + 2, bnds.y + bnds.h - 150, 0));
+
+            try font.draw(.{
+                .shader = font_shader,
+                .text = "Username:",
+                .pos = .{
+                    .x = center - 100,
+                    .y = bnds.y + bnds.h - 150,
+                },
+            });
+
+            {
+                const text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.login_text[0], if (self.login_input != null and self.login_input.? == .Username) "|" else "" });
+                defer allocator.alloc.free(text);
+
+                try font.draw(.{
+                    .shader = font_shader,
+                    .text = text,
+                    .pos = .{
+                        .x = center + 5,
+                        .y = bnds.y + bnds.h - 150,
+                    },
+                });
+            }
+
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[0], self.shader, vecs.newVec3(center, bnds.y + bnds.h - 52, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[1], self.shader, vecs.newVec3(center + 2, bnds.y + bnds.h - 50, 0));
+
+            const size = font.sizeText(.{
+                .text = "Login",
+            });
+            const pos = .{
+                .x = self.bnds.x + @floor((self.bnds.w - size.x) * 0.5),
+                .y = self.bnds.y + self.bnds.h - 50,
+            };
+            try font.draw(.{
+                .shader = font_shader,
+                .text = "Login",
+                .pos = pos,
+            });
+
+            return;
+        }
+
+        props.clearColor = col.newColorRGBA(255, 255, 255, 255);
+
         if (props.scroll == null) {
             props.scroll = .{
                 .offsetStart = 0,
@@ -56,8 +165,6 @@ const EmailData = struct {
             self.scrollTop = false;
         }
 
-        self.bnds = bnds.*;
-
         props.scroll.?.offsetStart = if (self.viewing == null) 0 else 38;
 
         self.divx.data.size.y = bnds.h;
@@ -70,18 +177,24 @@ const EmailData = struct {
             var y: f32 = bnds.y + 4.0 - props.scroll.?.value;
 
             for (emailManager.emails.items) |*email| {
-                if (email.box != self.box) continue;
+                var inbox = false;
+
+                if (std.mem.eql(u8, email.from, self.login.?)) {
+                    inbox = true;
+
+                    if (self.box != emailManager.boxes.len - 1) continue;
+                } else if (email.box != self.box) continue;
                 var color = col.newColor(0, 0, 0, 1);
                 if (@import("builtin").mode == .Debug) {
-                    if (!emailManager.getEmailVisible(email)) color.a = 0.5;
+                    if (!emailManager.getEmailVisible(email, self.login.?)) color.a = 0.5;
                 } else {
-                    if (!emailManager.getEmailVisible(email)) continue;
+                    if (!emailManager.getEmailVisible(email, self.login.?)) continue;
                 }
 
                 const text = try std.fmt.allocPrint(allocator.alloc, "{s} - {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
 
-                if (email.isComplete) {
+                if (email.isComplete or inbox) {
                     try font.draw(.{
                         .shader = font_shader,
                         .text = "\x83",
@@ -189,12 +302,6 @@ const EmailData = struct {
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + font.size * @as(f32, @floatFromInt(self.box)), 0));
     }
 
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = mods;
-        _ = code;
-        _ = self;
-    }
-
     pub fn submitFile(self: *Self) !void {
         const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
         adds.* = .{
@@ -218,6 +325,46 @@ const EmailData = struct {
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (!down) return;
+
+        if (self.login == null) {
+            if (keycode == c.GLFW_KEY_TAB) {
+                self.login_input = if (self.login_input) |li|
+                    switch (li) {
+                        .Username => .Password,
+                        .Password => .Username,
+                    }
+                else
+                    .Username;
+            }
+
+            if (keycode == c.GLFW_KEY_ENTER) {
+                self.onLogin();
+            }
+
+            if (keycode == c.GLFW_KEY_BACKSPACE) {
+                if (self.login_input) |input|
+                    switch (input) {
+                        .Username => {
+                            if (self.login_text[0].len == 0) return;
+
+                            self.login_text[0] = try allocator.alloc.realloc(
+                                self.login_text[0],
+                                self.login_text[0].len - 1,
+                            );
+                        },
+                        .Password => {
+                            if (self.login_text[1].len == 0) return;
+
+                            self.login_text[1] = try allocator.alloc.realloc(
+                                self.login_text[1],
+                                self.login_text[1].len - 1,
+                            );
+                        },
+                    };
+            }
+
+            return;
+        }
 
         if (keycode == c.GLFW_KEY_R and self.viewing != null) {
             if (self.viewing.?.condition != .Submit) return;
@@ -327,8 +474,72 @@ const EmailData = struct {
         }
     }
 
+    pub fn onLogin(self: *Self) void {
+        for (e_data.EMAIL_LOGINS) |login| {
+            if (std.mem.eql(u8, self.login_text[0], login.user)) {
+                if (std.mem.eql(u8, self.login_text[1], login.password)) {
+                    self.login = login.user;
+                    self.login_error = "";
+                    log.info("Logged into email `{s}`", .{login.user});
+                } else {
+                    self.login_error = "Invalid Password";
+                }
+
+                break;
+            }
+        } else {
+            self.login_error = "Account dosent exist";
+        }
+    }
+
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (btn == null) return;
+
+        if (self.login == null) {
+            {
+                const box_bounds = rect.Rectangle{
+                    .x = @floor((self.bnds.w - 100) * 0.5),
+                    .y = self.bnds.h - 100,
+                    .w = 200,
+                    .h = 32,
+                };
+
+                if (box_bounds.contains(mousepos)) {
+                    self.login_input = .Password;
+                    return;
+                }
+            }
+
+            {
+                const box_bounds = rect.Rectangle{
+                    .x = @floor((self.bnds.w - 100) * 0.5),
+                    .y = self.bnds.h - 150,
+                    .w = 200,
+                    .h = 32,
+                };
+
+                if (box_bounds.contains(mousepos)) {
+                    self.login_input = .Username;
+                    return;
+                }
+            }
+
+            {
+                const btn_bounds = rect.Rectangle{
+                    .x = @floor((self.bnds.w - 100) * 0.5),
+                    .y = self.bnds.h - 50,
+                    .w = 100,
+                    .h = 32,
+                };
+
+                if (btn_bounds.contains(mousepos)) {
+                    self.onLogin();
+                    return;
+                }
+            }
+
+            return;
+        }
 
         switch (btn.?) {
             0 => {
@@ -352,9 +563,12 @@ const EmailData = struct {
                     var y: i32 = 2 - @as(i32, @intFromFloat(self.offset.*));
 
                     for (emailManager.emails.items) |*email| {
-                        if (email.box != self.box) continue;
+                        if (std.mem.eql(u8, email.from, self.login.?)) {
+                            if (self.box != emailManager.boxes.len - 1) continue;
+                        } else if (email.box != self.box) continue;
+
                         if (@import("builtin").mode != .Debug) {
-                            if (!emailManager.getEmailVisible(email)) continue;
+                            if (!emailManager.getEmailVisible(email, self.login.?)) continue;
                         }
 
                         const bnds = rect.newRect(102, @as(f32, @floatFromInt(y)), size.x - 102, self.rowsize);
@@ -394,6 +608,32 @@ const EmailData = struct {
         }
     }
 
+    pub fn char(self: *Self, codepoint: u32, _: i32) !void {
+        if (codepoint > 128) return;
+
+        if (self.login == null) {
+            if (self.login_input) |input|
+                switch (input) {
+                    .Username => {
+                        const old = self.login_text[0];
+                        defer allocator.alloc.free(old);
+                        self.login_text[0] = try std.mem.concat(allocator.alloc, u8, &.{
+                            self.login_text[0],
+                            &.{@as(u8, @intCast(codepoint))},
+                        });
+                    },
+                    .Password => {
+                        const old = self.login_text[1];
+                        defer allocator.alloc.free(old);
+                        self.login_text[1] = try std.mem.concat(allocator.alloc, u8, &.{
+                            self.login_text[1],
+                            &.{@as(u8, @intCast(codepoint))},
+                        });
+                    },
+                };
+        }
+    }
+
     pub fn scroll(_: *Self, _: f32, _: f32) !void {}
     pub fn move(_: *Self, _: f32, _: f32) !void {}
     pub fn focus(_: *Self) !void {}
@@ -401,6 +641,9 @@ const EmailData = struct {
     pub fn refresh(_: *Self) !void {}
 
     pub fn deinit(self: *Self) !void {
+        for (self.login_text) |i|
+            allocator.alloc.free(i);
+
         allocator.alloc.destroy(self);
     }
 };
@@ -416,6 +659,10 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         .dive = sprite.Sprite.new("ui", sprite.SpriteData.new(
             rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(100, 2),
+        )),
+        .logo = sprite.Sprite.new("email-logo", sprite.SpriteData.new(
+            rect.newRect(0, 0, 1, 1),
+            vecs.newVec2(256, 72),
         )),
         .sel = sprite.Sprite.new("ui", sprite.SpriteData.new(
             rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
@@ -433,10 +680,32 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
             rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
             vecs.newVec2(28, 40),
         )),
+        .text_box = .{
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(2.0, 32.0),
+            )),
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(2.0, 28),
+            )),
+        },
+        .button = .{
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(2.0, 32.0),
+            )),
+            sprite.Sprite.new("ui", sprite.SpriteData.new(
+                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                vecs.newVec2(2.0, 28),
+            )),
+        },
         .shader = shader,
+        .login_text = [2][]u8{ try allocator.alloc.alloc(u8, 0), try allocator.alloc.alloc(u8, 0) },
     };
 
+    self.button[1].data.color = col.newColorRGBA(192, 192, 192, 255);
     self.sel.data.color = col.newColorRGBA(255, 0, 0, 255);
 
-    return win.WindowContents.init(self, "email", "\x82\x82\x82Mail", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "email", "\x82\x82\x82Mail", col.newColorRGBA(192, 192, 192, 255));
 }

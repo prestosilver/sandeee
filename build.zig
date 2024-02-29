@@ -27,11 +27,11 @@ const eonExecFiles = [_][]const u8{ "epkman", "eon", "stat", "player", "asm", "p
 const asmLibFiles = [_][]const u8{ "string", "window", "texture", "sound", "array" };
 const eonLibFiles = [_][]const u8{ "ui", "heap", "table", "asm", "eon" };
 const wavSoundFiles = [_][]const u8{ "login", "logout", "message" };
-const pngImageFiles = [_][]const u8{ "icons", "ui", "bar", "iconsBig", "window", "wall1", "wall2", "wall3", "barlogo", "cursor" };
+const pngImageFiles = [_][]const u8{ "email-logo", "icons", "ui", "bar", "iconsBig", "window", "wall1", "wall2", "wall3", "barlogo", "cursor" };
 const internalImageFiles = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const internalSoundFiles = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 const incLibsFiles = [_][]const u8{ "libload", "sys" };
-const mailDirs = [_][]const u8{ "inbox", "spam", "private" };
+const mailDirs = [_][]const u8{ "inbox", "spam", "private", "work" };
 const iconImageFiles = [_][]const u8{ "eeedt", "tasks", "cmd", "settings", "launch", "debug", "logout", "folder", "email", "web" };
 
 // the website

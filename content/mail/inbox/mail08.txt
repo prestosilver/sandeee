@@ -1,6 +1,7 @@
 id: 8
 deps: 7
 from: julien_w@eee.org
+to: rob_r@eee.org
 sub: The internet :O
 run: new index.edf
 The internet is a powerful tool for getting your point across. If you ever want anyone to listen to you, make a website. EDF files are used to store a website. Ill explain how to make a simple page if you create a file named index.edf.
