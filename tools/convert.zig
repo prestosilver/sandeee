@@ -47,7 +47,7 @@ pub const ConvertStep = struct {
     }
 
     fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
-        const self = @fieldParentPtr(ConvertStep, "step", step);
+        const self: *ConvertStep = @fieldParentPtr("step", step);
         if (std.fs.path.dirname(self.output)) |dir|
             std.fs.cwd().makeDir(dir) catch |err| {
                 if (err != error.PathAlreadyExists) return err;

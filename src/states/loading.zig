@@ -73,7 +73,7 @@ pub const GSLoading = struct {
     }
 
     pub fn setup(self: *Self) !void {
-        self.done.store(false, .Unordered);
+        self.done.store(false, .monotonic);
 
         self.load_sprite.data.size.x = 0;
 
@@ -148,7 +148,7 @@ pub const GSLoading = struct {
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        if (self.done.load(.Unordered))
+        if (self.done.load(.monotonic))
             return;
 
         const logoOff = size.sub(self.logo_sprite.data.size).div(2);
@@ -162,7 +162,7 @@ pub const GSLoading = struct {
         try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
 
         if (self.load_sprite.data.size.x > 319)
-            self.done.store(true, .Unordered);
+            self.done.store(true, .monotonic);
     }
 
     pub fn refresh(_: *Self) !void {}

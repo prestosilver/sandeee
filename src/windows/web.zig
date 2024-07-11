@@ -22,6 +22,8 @@ const texMan = @import("../util/texmanager.zig");
 const steam = @import("steam");
 const options = @import("options");
 
+const HEADER_SIZE = 1024;
+
 var web_idx: u8 = 0;
 
 pub const WebData = struct {
@@ -159,7 +161,9 @@ pub const WebData = struct {
         const file_path = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ folderPtr, path });
         defer allocator.alloc.free(file_path);
 
-        const walker = std.fs.openIterableDirAbsolute(file_path, .{}) catch {
+        std.log.info("file_path: {s}", .{file_path});
+
+        const walker = std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch {
             const file = try std.fs.openFileAbsolute(file_path, .{});
             defer file.close();
             const conts = try file.reader().readAllAlloc(allocator.alloc, 100_000_000);
@@ -212,23 +216,26 @@ pub const WebData = struct {
                     defer client.deinit();
 
                     const uri = std.Uri{
-                        .scheme = "http",
+                        .scheme = "https",
                         .user = null,
                         .password = null,
-                        .host = path[1..idx],
-                        .port = 80,
-                        .path = path[idx + 1 ..],
+                        .host = .{ .raw = path[1..idx] },
+                        .port = 443,
+                        .path = .{ .raw = path[idx + 1 ..] },
                         .query = null,
                         .fragment = null,
                     };
 
-                    var headers = std.http.Headers{ .allocator = allocator.alloc };
-                    defer headers.deinit();
+                    const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
+                    defer allocator.alloc.free(header_buffer);
 
-                    try headers.append("User-Agent", "SandEEE/0.0");
-                    try headers.append("Connection", "Close");
-
-                    var req = client.open(.GET, uri, headers, .{}) catch |err| {
+                    var req = client.open(.GET, uri, .{
+                        .server_header_buffer = header_buffer,
+                        .headers = .{
+                            .user_agent = .{ .override = "SandEEE/0.0" },
+                            .connection = .{ .override = "Close" },
+                        },
+                    }) catch |err| {
                         if (err == error.TemporaryNameServerFailure)
                             self.conts = try std.fmt.allocPrint(allocator.alloc, "No Internet Connection", .{})
                         else
@@ -236,9 +243,10 @@ pub const WebData = struct {
 
                         return;
                     };
+
                     defer req.deinit();
 
-                    req.send(.{}) catch |err| {
+                    req.send() catch |err| {
                         self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                         return;
                     };
@@ -339,26 +347,30 @@ pub const WebData = struct {
         defer client.deinit();
 
         const uri = std.Uri{
-            .scheme = "http",
+            .scheme = "https",
             .user = null,
             .password = null,
-            .host = target_path[1..idx],
-            .port = 80,
-            .path = target_path[idx + 1 ..],
+            .host = .{ .raw = target_path[1..idx] },
+            .port = 443,
+            .path = .{ .raw = target_path[idx + 1 ..] },
             .query = null,
             .fragment = null,
         };
 
-        var headers = std.http.Headers{ .allocator = allocator.alloc };
-        defer headers.deinit();
+        const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
+        defer allocator.alloc.free(header_buffer);
 
-        try headers.append("User-Agent", "SandEEE/0.0");
-        try headers.append("Connection", "Close");
+        var req = try client.open(.GET, uri, .{
+            .server_header_buffer = header_buffer,
+            .headers = .{
+                .user_agent = .{ .override = "SandEEE/0.0" },
+                .connection = .{ .override = "Close" },
+            },
+        });
 
-        var req = try client.open(.GET, uri, headers, .{});
         defer req.deinit();
 
-        req.send(.{}) catch return;
+        req.send() catch return;
         req.wait() catch return;
 
         if (req.response.status != .ok) {
@@ -394,27 +406,37 @@ pub const WebData = struct {
         defer client.deinit();
 
         const uri = std.Uri{
-            .scheme = "http",
+            .scheme = "https",
             .user = null,
             .password = null,
-            .host = target_path[1..idx],
-            .port = 80,
-            .path = target_path[idx + 1 ..],
+            .host = .{ .raw = target_path[1..idx] },
+            .port = 443,
+            .path = .{ .raw = target_path[idx + 1 ..] },
             .query = null,
             .fragment = null,
         };
 
-        var headers = std.http.Headers{ .allocator = allocator.alloc };
-        defer headers.deinit();
+        const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
+        defer allocator.alloc.free(header_buffer);
 
-        try headers.append("User-Agent", "SandEEE/0.0");
-        try headers.append("Connection", "Close");
-
-        var req = try client.open(.GET, uri, headers, .{});
+        var req = try client.open(.GET, uri, .{
+            .server_header_buffer = header_buffer,
+            .headers = .{
+                .user_agent = .{ .override = "SandEEE/0.0" },
+                .connection = .{ .override = "Close" },
+            },
+        });
         defer req.deinit();
 
-        req.send(.{}) catch return;
+        req.send() catch return;
         req.wait() catch return;
+
+        std.log.info("{?}", .{req.response.content_length});
+
+        if (req.response.status != .ok) {
+            std.log.info("{}", .{req.response});
+            return;
+        }
 
         const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
         defer allocator.alloc.free(fconts);
@@ -976,7 +998,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
                 vecs.newVec2(32, 32),
             )),
         },
-        .path = conf.SettingManager.instance.get("web_home") orelse "@sandeee.org:/index.edf",
+        .path = conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf",
         .conts = null,
         .shader = shader,
         .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),

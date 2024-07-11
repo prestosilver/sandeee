@@ -36,7 +36,7 @@ pub const WallData = struct {
         var pos: rect.Rectangle = undefined;
         var source = rect.newRect(0, 0, 1, 1);
 
-        const par = @fieldParentPtr(sb.Drawer(WallData), "data", self);
+        const par: *const sb.Drawer(WallData) = @fieldParentPtr("data", self);
         const size = (texMan.TextureManager.instance.textures.get(par.texture) orelse return result).size;
 
         switch (self.mode) {

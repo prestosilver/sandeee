@@ -72,6 +72,7 @@ pub const useSteam = options.IsSteam;
 // embed shaders
 const vertShader = @embedFile("shaders/vert.glsl");
 const fragShader = @embedFile("shaders/frag.glsl");
+
 const fontVertShader = @embedFile("shaders/vert.glsl");
 const fontFragShader = @embedFile("shaders/ffrag.glsl");
 
@@ -388,13 +389,13 @@ pub fn syscall(event: systemEvs.EventSys) !void {
 }
 
 pub fn drawLoading(self: *loadingState.GSLoading) void {
-    while (!self.done.load(.SeqCst) and !paniced) {
+    while (!self.done.load(.monotonic) and !paniced) {
         {
             gfx.Context.makeCurrent();
             defer gfx.Context.makeNotCurrent();
 
             if (!gfx.Context.poll())
-                self.done.store(true, .Unordered);
+                self.done.store(true, .monotonic);
         }
 
         // render loading screen
@@ -435,14 +436,14 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     // panic log asap
     const st = panicHandler.log();
     errorMsg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ msg, st }) catch {
-        std.os.exit(0);
+        std.process.exit(0);
     };
 
     std.fs.cwd().writeFile("CrashLog.txt", errorMsg) catch {};
 
     // no display on headless
     if (isHeadless) {
-        std.os.exit(0);
+        std.process.exit(0);
     }
 
     // disable events on loading screen
@@ -479,7 +480,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
     log.log.info("Exiting", .{});
 
-    std.os.exit(0);
+    std.process.exit(0);
 }
 
 var isHeadless = false;

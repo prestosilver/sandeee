@@ -24,7 +24,7 @@ pub const DiskStep = struct {
     }
 
     fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
-        const self = @fieldParentPtr(DiskStep, "step", step);
+        const self: *DiskStep = @fieldParentPtr("step", step);
 
         var root = try std.fs.cwd().openDir(self.input, .{ .access_sub_paths = true, .iterate = true });
         var walker = try root.walk(self.alloc);
