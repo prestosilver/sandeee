@@ -970,7 +970,10 @@ pub const WebData = struct {
         }
 
         // links
-        self.links.deinit();
+        if (!self.add_links) {
+            self.links.deinit();
+        }
+
         self.hist.deinit();
 
         // self
