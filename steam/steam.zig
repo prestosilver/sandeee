@@ -1,9 +1,11 @@
 const std = @import("std");
 
 const root = @import("root");
-const enableApi = @hasDecl(root, "useSteam") and root.useSteam;
+pub const fakeApi = @hasDecl(root, "fakeSteam") and root.fakeSteam;
 
-pub const STEAM_APP_ID = 383980;
+const enableApi = !fakeApi and (@hasDecl(root, "useSteam") and root.useSteam);
+
+pub const STEAM_APP_ID = 480;
 
 const TestUser: SteamUser = .{ .data = 1000 };
 const TestUGC: SteamUGC = .{};
@@ -11,6 +13,25 @@ const TestUtils: SteamUtils = .{};
 const TestStats: SteamUserStats = .{};
 
 const log = std.log.scoped(.Steam);
+
+pub const UGCQueryKind = enum(i32) {
+    RankedByVote = 0,
+    RankedByPublicationDate = 1,
+    AcceptedForGameRankedByAcceptanceDate = 2,
+    RankedByTrend = 3,
+};
+
+pub const WorkshopFileType = enum(u32) {
+    Community = 0,
+    Microtransaction = 1,
+    Collection = 2,
+    Art = 3,
+    Video = 4,
+    Screenshot = 5,
+    Game = 6,
+};
+
+pub const steamAlloc = std.heap.c_allocator;
 
 pub const SteamUser = extern struct {
     data: i32,
@@ -34,10 +55,14 @@ pub const SteamUtils = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUtils_IsAPICallCompleted(self, handle, failed);
         } else {
-            log.debug("Check complete", .{});
-            return .{
-                .id = 1000,
-            };
+            log.debug("Check complete {}", .{handle});
+            switch (handle) {
+                .Query => {
+                    failed.* = false;
+
+                    return true;
+                },
+            }
         }
     }
 };
@@ -45,11 +70,22 @@ pub const SteamUtils = extern struct {
 pub const SteamUserStats = extern struct {};
 pub const SteamPipe = extern struct {};
 
-pub const APIHandle = extern struct {
+const APIHandleKind = enum {
+    Query,
+};
+
+pub const APIHandle = if (fakeApi) union(APIHandleKind) {
+    Query: struct {
+        handle: UGCQueryHandle,
+    },
+} else extern struct {
     data: u64,
 };
 
-pub const UGCQueryHandle = extern struct {
+pub const UGCQueryHandle = if (fakeApi) struct {
+    kind: UGCQueryKind,
+    page: u32,
+} else extern struct {
     data: u64,
 };
 
@@ -57,10 +93,37 @@ pub const PublishedFileId = extern struct {
     id: u64,
 };
 
-pub const UGCDetails = extern struct {
+pub const UGCDetails = if (fakeApi) struct {
     fileId: u64,
     result: u32,
-    fileType: u32,
+    fileType: WorkshopFileType,
+    creator: u32,
+    consumer: u32,
+    title: []const u8,
+    desc: []const u8,
+    owner: u64,
+    created: u32,
+    updated: u32,
+    added: u32,
+    visible: u8,
+    banned: bool,
+    acceptable: bool,
+    tagsTurnic: bool,
+    tags: []const u8,
+    file: UGCQueryHandle,
+    previewFile: UGCQueryHandle,
+    fileName: []const u8,
+    fileSize: i32,
+    previewFileSize: i32,
+    rgchURL: []const u8,
+    upVotes: u32,
+    downVotes: u32,
+    score: f32,
+    children: u32,
+} else extern struct {
+    fileId: u64,
+    result: u32,
+    fileType: WorkshopFileType,
     creator: u32,
     consumer: u32,
     title: [129]u8,
@@ -93,9 +156,7 @@ pub const SteamUGC = extern struct {
             return SteamAPI_ISteamUGC_DownloadItem(ugc, id, hp);
         } else {
             log.debug("Download Item: {}", .{id});
-            return .{
-                .data = 1,
-            };
+            return true;
         }
     }
 
@@ -105,6 +166,15 @@ pub const SteamUGC = extern struct {
             return SteamAPI_ISteamUGC_GetItemInstallInfo(ugc, id, size, folder.ptr, @intCast(folder.len), timestamp);
         } else {
             log.debug("itemInfo: {}", .{id});
+
+            if (id == 0) {
+                size.* = 0;
+                const path = "/home/john/doc/rep/github.com/sandeee/fake_steam/0";
+                @memcpy(folder[0..path.len], path);
+                timestamp.* = 0;
+
+                return true;
+            }
             return false;
         }
     }
@@ -116,7 +186,9 @@ pub const SteamUGC = extern struct {
         } else {
             log.debug("SendQuery: handle: {}", .{handle});
             return .{
-                .data = 1,
+                .Query = .{
+                    .handle = handle,
+                },
             };
         }
     }
@@ -124,7 +196,7 @@ pub const SteamUGC = extern struct {
     extern fn SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc: *const SteamUGC, queryKind: u32, kind: u32, creatorId: u32, consumerId: u32, page: u32) UGCQueryHandle;
     pub fn createQueryRequest(
         ugc: *const SteamUGC,
-        queryKind: u32,
+        queryKind: UGCQueryKind,
         kind: u32,
         creatorId: u32,
         consumerId: u32,
@@ -135,7 +207,8 @@ pub const SteamUGC = extern struct {
         } else {
             log.debug("Query: querykind: {}, kind: {}, creator: {}, consumer: {}, page: {}", .{ queryKind, kind, creatorId, consumerId, page });
             return .{
-                .data = 10,
+                .kind = queryKind,
+                .page = page,
             };
         }
     }
@@ -151,7 +224,38 @@ pub const SteamUGC = extern struct {
             return SteamAPI_ISteamUGC_GetQueryUGCResult(ugc, handle, index, details);
         } else {
             log.debug("query result", .{});
-            return false;
+            if (handle.page != 1) return false;
+            if (index != 0) return false;
+
+            details.* = .{
+                .fileId = 0,
+                .result = 0,
+                .fileType = .Community,
+                .creator = 0,
+                .consumer = 0,
+                .title = "Test",
+                .desc = "This is a test fake api thing",
+                .owner = 0,
+                .created = 0,
+                .updated = 0,
+                .added = 0,
+                .visible = 0,
+                .banned = false,
+                .acceptable = true,
+                .tagsTurnic = false,
+                .tags = "test,steam",
+                .file = handle,
+                .previewFile = undefined,
+                .fileName = "test",
+                .fileSize = 0,
+                .previewFileSize = 0,
+                .rgchURL = "",
+                .upVotes = 0,
+                .downVotes = 0,
+                .score = 0,
+                .children = 0,
+            };
+            return true;
         }
     }
 
@@ -163,7 +267,7 @@ pub const SteamUGC = extern struct {
         if (enableApi) {
             return SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(ugc, handle);
         } else {
-            log.debug("query result", .{});
+            log.debug("query free", .{});
             return false;
         }
     }

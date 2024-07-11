@@ -23,6 +23,9 @@ struct {
         conts_len: u16;
         conts: u8[conts_len];
         
+        deps: u8;
+        deps: u16[deps_len];
+        
         box: u8;
         
         cond_id: u8;

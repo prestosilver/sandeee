@@ -85,7 +85,7 @@ pub const WebData = struct {
 
     pub fn steamList(self: *Self, page: u32) !void {
         const ugc = steam.getSteamUGC();
-        const query = ugc.createQueryRequest(0, 0, 0, steam.STEAM_APP_ID, page);
+        const query = ugc.createQueryRequest(.RankedByVote, 0, 0, steam.STEAM_APP_ID, page);
         const handle = ugc.sendQueryRequest(query);
         const steamUtils = steam.getSteamUtils();
 
@@ -108,19 +108,35 @@ pub const WebData = struct {
         while (ugc.getQueryResult(query, idx, details)) : (idx += 1) {
             if (details.visible != 0) continue;
 
-            const old = conts;
-            defer allocator.alloc.free(old);
+            if (steam.fakeApi) {
+                const old = conts;
+                defer allocator.alloc.free(old);
 
-            const title: [*:0]u8 = @ptrCast(&details.title);
+                const title: [*:0]const u8 = @ptrCast(details.title);
 
-            const titlePrint = try std.fmt.allocPrint(allocator.alloc, "-- {s} --", .{title[0..std.mem.len(title)]});
-            defer allocator.alloc.free(titlePrint);
+                const titlePrint = try std.fmt.allocPrint(allocator.alloc, "-- {s} --", .{title[0..std.mem.len(title)]});
+                defer allocator.alloc.free(titlePrint);
 
-            const desc: [*:0]u8 = @ptrCast(&details.desc);
-            const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ desc[0..std.mem.len(desc)], details.fileId });
-            defer allocator.alloc.free(descPrint);
+                const desc: [*:0]const u8 = @ptrCast(details.desc);
+                const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ desc[0..std.mem.len(desc)], details.fileId });
+                defer allocator.alloc.free(descPrint);
 
-            conts = try std.mem.concat(allocator.alloc, u8, &.{ old, titlePrint, "\n", descPrint, "\n\n" });
+                conts = try std.mem.concat(allocator.alloc, u8, &.{ old, titlePrint, "\n", descPrint, "\n\n" });
+            } else {
+                const old = conts;
+                defer allocator.alloc.free(old);
+
+                const title: [*:0]u8 = @ptrCast(&details.title);
+
+                const titlePrint = try std.fmt.allocPrint(allocator.alloc, "-- {s} --", .{title[0..std.mem.len(title)]});
+                defer allocator.alloc.free(titlePrint);
+
+                const desc: [*:0]u8 = @ptrCast(&details.desc);
+                const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ desc[0..std.mem.len(desc)], details.fileId });
+                defer allocator.alloc.free(descPrint);
+
+                conts = try std.mem.concat(allocator.alloc, u8, &.{ old, titlePrint, "\n", descPrint, "\n\n" });
+            }
         }
 
         _ = ugc.releaseQueryResult(query);

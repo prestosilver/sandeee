@@ -119,7 +119,7 @@ pub fn build(b: *std.Build) !void {
     var commit = b.run(&.{ "git", "rev-list", "HEAD", "--count" });
 
     const isDemo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
-    const isSteam = b.option(bool, "steam", "Makes SandEEE build a steam build") orelse false;
+    const steamMode = b.option(enum { Off, On, Fake }, "steam", "Makes SandEEE build a steam build") orelse .Off;
     const randomTests = b.option(i32, "random", "Makes SandEEE write some random files") orelse 0;
     const versionSuffix = switch (optimize) {
         .Debug => if (isDemo) "D0DE" else "00DE",
@@ -147,7 +147,8 @@ pub fn build(b: *std.Build) !void {
     options.addOption(std.SemanticVersion, "SandEEEVersion", Version);
     options.addOption([]const u8, "VersionText", versionText);
     options.addOption(bool, "IsDemo", isDemo);
-    options.addOption(bool, "IsSteam", isSteam);
+    options.addOption(bool, "IsSteam", steamMode != .Off);
+    options.addOption(bool, "fakeSteam", steamMode == .Fake);
 
     exe.root_module.addImport("options", options.createModule());
     exe.root_module.addImport("steam", steamModule);
@@ -230,7 +231,7 @@ pub fn build(b: *std.Build) !void {
     exe.linkSystemLibrary("glfw3");
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("OpenAL");
-    if (isSteam) {
+    if (steamMode == .On) {
         exe.linkSystemLibrary("steam_api");
     }
     exe.linkLibC();
@@ -441,17 +442,17 @@ pub fn build(b: *std.Build) !void {
         b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
-        if (isSteam)
+        if (steamMode == .On)
             b.installFile("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll", "bin/steam_api64.dll");
     } else if (target.result.os.tag == .linux) {
         _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
         b.installFile("runSandEEE", "bin/runSandEEE");
         b.installFile("deps/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
         b.installFile("deps/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
-        if (isSteam)
+        if (steamMode == .On)
             b.installFile("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
-    if (isSteam and optimize == .Debug)
+    if (steamMode == .On and optimize == .Debug)
         b.installFile("steam_appid.txt", "bin/steam_appid.txt");
 
     const www_step = b.step("www", "Build the website");

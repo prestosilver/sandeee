@@ -67,6 +67,7 @@ pub const std_options = std.Options{
     .log_level = .debug,
 };
 
+pub const fakeSteam = options.fakeSteam;
 pub const useSteam = options.IsSteam;
 
 // embed shaders
