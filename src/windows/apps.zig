@@ -174,8 +174,6 @@ pub const LauncherData = struct {
         allocator.alloc.destroy(self);
     }
 
-    pub fn scroll(_: *Self, _: f32, _: f32) void {}
-
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (self.shell.vm != null) return;
         if (btn == null) return;
@@ -198,16 +196,6 @@ pub const LauncherData = struct {
             },
             else => {},
         }
-    }
-
-    pub fn move(_: *Self, _: f32, _: f32) !void {}
-    pub fn focus(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
-
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = mods;
-        _ = code;
-        _ = self;
     }
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) void {

@@ -287,13 +287,6 @@ pub const CMDData = struct {
         }
     }
 
-    pub fn click(_: *Self, _: vecs.Vector2, _: vecs.Vector2, _: ?i32) !void {}
-    pub fn scroll(_: *Self, _: f32, _: f32) !void {}
-    pub fn move(_: *Self, _: f32, _: f32) !void {}
-    pub fn focus(_: *Self) !void {}
-    pub fn refresh(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
-
     pub fn deinit(self: *Self) !void {
         // free backtrace
         allocator.alloc.free(self.bt);

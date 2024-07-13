@@ -405,12 +405,6 @@ const SettingsData = struct {
         }
     }
 
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = mods;
-        _ = code;
-        _ = self;
-    }
-
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) void {
         if (!down) return;
         switch (keycode) {
@@ -420,12 +414,6 @@ const SettingsData = struct {
             else => {},
         }
     }
-
-    pub fn scroll(_: *Self, _: f32, _: f32) !void {}
-    pub fn move(_: *Self, _: f32, _: f32) !void {}
-    pub fn focus(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
-    pub fn refresh(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
         allocator.alloc.destroy(self);

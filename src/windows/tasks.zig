@@ -143,12 +143,6 @@ pub const TasksData = struct {
             self.scroll_value = 0;
     }
 
-    pub fn move(_: *Self, _: f32, _: f32) void {}
-    pub fn click(_: *Self, _: vecs.Vector2, _: vecs.Vector2, _: ?i32) !void {}
-    pub fn char(_: *Self, _: u32, _: i32) !void {}
-    pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
-    pub fn focus(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
     pub fn refresh(self: *Self) !void {
         for (self.stats) |stat| {
             allocator.alloc.free(stat.name);

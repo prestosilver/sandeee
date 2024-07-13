@@ -245,8 +245,6 @@ pub const ExplorerData = struct {
         allocator.alloc.destroy(self);
     }
 
-    pub fn scroll(_: *Self, _: f32, _: f32) void {}
-
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (self.shell.vm != null) return;
         if (btn == null) return;
@@ -280,11 +278,6 @@ pub const ExplorerData = struct {
             else => {},
         }
     }
-
-    pub fn char(_: *Self, _: u32, _: i32) !void {}
-    pub fn move(_: *Self, _: f32, _: f32) !void {}
-    pub fn focus(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
 
     pub fn refresh(self: *Self) !void {
         allocator.alloc.free(self.icon_data);

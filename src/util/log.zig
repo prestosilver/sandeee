@@ -4,7 +4,7 @@ pub var logFile: ?std.fs.File = null;
 
 pub const log = std.log.scoped(.SandEEE);
 
-pub fn myLogFn(
+pub fn sandEEELogFn(
     comptime level: std.log.Level,
     comptime scope: @TypeOf(.EnumLiteral),
     comptime format: []const u8,

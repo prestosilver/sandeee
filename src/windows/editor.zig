@@ -837,10 +837,6 @@ pub const EditorData = struct {
             else => {},
         }
     }
-
-    pub fn scroll(_: *Self, _: f32, _: f32) void {}
-    pub fn refresh(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
 };
 
 pub fn new(shader: *shd.Shader) !win.WindowContents {

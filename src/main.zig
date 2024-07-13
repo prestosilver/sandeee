@@ -14,7 +14,7 @@ const installState = @import("states/installer.zig");
 const recoveryState = @import("states/recovery.zig");
 const logoutState = @import("states/logout.zig");
 
-// utilitieS
+// utilities
 const fm = @import("util/files.zig");
 const font = @import("util/font.zig");
 const audio = @import("util/audio.zig");
@@ -63,7 +63,7 @@ const c = @import("c.zig");
 
 pub const std_options = std.Options{
     // Define logFn to override the std implementation
-    .logFn = log.myLogFn,
+    .logFn = log.sandEEELogFn,
     .log_level = .debug,
 };
 

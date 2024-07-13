@@ -67,8 +67,6 @@ pub const UpdateData = struct {
         };
     }
 
-    pub fn scroll(_: *Self, _: f32, _: f32) void {}
-
     pub fn move(self: *Self, x: f32, y: f32) void {
         self.focused_link = self.link_pos.contains(.{
             .x = x,
@@ -87,17 +85,6 @@ pub const UpdateData = struct {
             });
         }
     }
-
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = mods;
-        _ = code;
-        _ = self;
-    }
-
-    pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
-    pub fn focus(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
-    pub fn refresh(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
         allocator.alloc.destroy(self);

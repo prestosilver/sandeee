@@ -142,13 +142,6 @@ pub const VMData = struct {
         }
     }
 
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = code;
-        _ = self;
-        _ = mods;
-        // self.input = code;
-    }
-
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (!down) {
             const oldInput = self.input;
@@ -173,17 +166,11 @@ pub const VMData = struct {
         self.mousepos = pos;
     }
 
-    pub fn scroll(_: *Self, _: f32, _: f32) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
-
     pub fn move(self: *Self, x: f32, y: f32) !void {
         const pos = vecs.newVec2(x, y);
 
         self.mousepos = pos;
     }
-
-    pub fn focus(_: *Self) !void {}
-    pub fn refresh(_: *Self) !void {}
 
     pub fn deinit(self: *Self) void {
         self.flip();

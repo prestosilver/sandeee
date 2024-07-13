@@ -72,22 +72,23 @@ const EmailData = struct {
             }
 
             const center = bnds.x + @floor(bnds.w * 0.5 - 50.0);
+            const center_y = bnds.y + (bnds.h * 0.5) + 150;
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.logo, self.shader, vecs.newVec3(center - 26 - 50, bnds.y + bnds.h - 250, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.logo, self.shader, vecs.newVec3(center - 26 - 50, center_y - 250, 0));
 
             self.text_box[0].data.size.x = 200;
             self.text_box[1].data.size.x = 196;
             self.button[0].data.size.x = 100;
             self.button[1].data.size.x = 96;
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(center, bnds.y + bnds.h - 102, 0));
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(center + 2, bnds.y + bnds.h - 100, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(center, center_y - 102, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(center + 2, center_y - 100, 0));
 
             try font.draw(.{
                 .shader = font_shader,
                 .text = "Password:",
                 .pos = .{
                     .x = center - 100,
-                    .y = bnds.y + bnds.h - 100,
+                    .y = center_y - 100,
                 },
             });
 
@@ -100,20 +101,20 @@ const EmailData = struct {
                     .text = text,
                     .pos = .{
                         .x = center + 5,
-                        .y = bnds.y + bnds.h - 100,
+                        .y = center_y - 100,
                     },
                 });
             }
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(center, bnds.y + bnds.h - 152, 0));
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(center + 2, bnds.y + bnds.h - 150, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(center, center_y - 152, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(center + 2, center_y - 150, 0));
 
             try font.draw(.{
                 .shader = font_shader,
                 .text = "Username:",
                 .pos = .{
                     .x = center - 100,
-                    .y = bnds.y + bnds.h - 150,
+                    .y = center_y - 150,
                 },
             });
 
@@ -126,20 +127,20 @@ const EmailData = struct {
                     .text = text,
                     .pos = .{
                         .x = center + 5,
-                        .y = bnds.y + bnds.h - 150,
+                        .y = center_y - 150,
                     },
                 });
             }
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[0], self.shader, vecs.newVec3(center, bnds.y + bnds.h - 52, 0));
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[1], self.shader, vecs.newVec3(center + 2, bnds.y + bnds.h - 50, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[0], self.shader, vecs.newVec3(center, center_y - 52, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[1], self.shader, vecs.newVec3(center + 2, center_y - 50, 0));
 
             const size = font.sizeText(.{
                 .text = "Login",
             });
             const pos = .{
                 .x = self.bnds.x + @floor((self.bnds.w - size.x) * 0.5),
-                .y = self.bnds.y + self.bnds.h - 50,
+                .y = center_y - 50,
             };
             try font.draw(.{
                 .shader = font_shader,
@@ -495,6 +496,8 @@ const EmailData = struct {
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (btn == null) return;
 
+        // TODO: fix for centered content
+
         if (self.login == null) {
             {
                 const box_bounds = rect.Rectangle{
@@ -633,12 +636,6 @@ const EmailData = struct {
                 };
         }
     }
-
-    pub fn scroll(_: *Self, _: f32, _: f32) !void {}
-    pub fn move(_: *Self, _: f32, _: f32) !void {}
-    pub fn focus(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
-    pub fn refresh(_: *Self) !void {}
 
     pub fn deinit(self: *Self) !void {
         for (self.login_text) |i|

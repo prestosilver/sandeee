@@ -204,6 +204,8 @@ pub const WindowContents = struct {
         if (ptr_info != .Pointer) @compileError("ptr must be a pointer");
         if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
 
+        const child_t = ptr_info.Pointer.child;
+
         const gen = struct {
             fn drawImpl(
                 pointer: *anyopaque,
@@ -217,58 +219,74 @@ pub const WindowContents = struct {
                 return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, font_shader, bnds, font, props });
             }
 
-            fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
-            }
-
-            fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.Pointer.child.char, .{ self, codepoint, mods });
-            }
-
-            fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: ?c_int) !void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.Pointer.child.click, .{ self, size, pos, btn });
-            }
-
-            fn scrollImpl(pointer: *anyopaque, x: f32, y: f32) !void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.Pointer.child.scroll, .{ self, x, y });
-            }
-
-            fn moveImpl(pointer: *anyopaque, x: f32, y: f32) !void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.Pointer.child.move, .{ self, x, y });
-            }
-
-            fn focusImpl(pointer: *anyopaque) !void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.Pointer.child.focus, .{self});
-            }
-
-            fn moveResizeImpl(pointer: *anyopaque, bnds: rect.Rectangle) !void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.Pointer.child.moveResize, .{ self, bnds });
-            }
-
             fn deinitImpl(pointer: *anyopaque) !void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});
             }
 
-            fn refreshImpl(pointer: *anyopaque) !void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+            fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
+                if (std.meta.hasMethod(child_t, "key")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.refresh, .{self});
+                    return @call(.always_inline, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
+                }
+            }
+
+            fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
+                if (std.meta.hasMethod(child_t, "char")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                    return @call(.always_inline, ptr_info.Pointer.child.char, .{ self, codepoint, mods });
+                }
+            }
+
+            fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: ?c_int) !void {
+                if (std.meta.hasMethod(child_t, "click")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                    return @call(.always_inline, ptr_info.Pointer.child.click, .{ self, size, pos, btn });
+                }
+            }
+
+            fn scrollImpl(pointer: *anyopaque, x: f32, y: f32) !void {
+                if (std.meta.hasMethod(child_t, "scroll")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                    return @call(.always_inline, ptr_info.Pointer.child.scroll, .{ self, x, y });
+                }
+            }
+
+            fn moveImpl(pointer: *anyopaque, x: f32, y: f32) !void {
+                if (std.meta.hasMethod(child_t, "move")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                    return @call(.always_inline, ptr_info.Pointer.child.move, .{ self, x, y });
+                }
+            }
+
+            fn focusImpl(pointer: *anyopaque) !void {
+                if (std.meta.hasMethod(child_t, "focus")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                    return @call(.always_inline, ptr_info.Pointer.child.focus, .{self});
+                }
+            }
+
+            fn moveResizeImpl(pointer: *anyopaque, bnds: rect.Rectangle) !void {
+                if (std.meta.hasMethod(child_t, "moveResize")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                    return @call(.always_inline, ptr_info.Pointer.child.moveResize, .{ self, bnds });
+                }
+            }
+
+            fn refreshImpl(pointer: *anyopaque) !void {
+                if (std.meta.hasMethod(child_t, "refresh")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                    return @call(.always_inline, ptr_info.Pointer.child.refresh, .{self});
+                }
             }
 
             const vtable = VTable{

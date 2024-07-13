@@ -109,14 +109,6 @@ pub const WelcomeData = struct {
         }
     }
 
-    pub fn char(_: *Self, _: u32, _: i32) !void {}
-    pub fn scroll(_: *Self, _: f32, _: f32) void {}
-    pub fn move(_: *Self, _: f32, _: f32) void {}
-    pub fn key(_: *Self, _: i32, _: i32, _: bool) !void {}
-    pub fn focus(_: *Self) !void {}
-    pub fn moveResize(_: *Self, _: rect.Rectangle) !void {}
-    pub fn refresh(_: *Self) !void {}
-
     pub fn deinit(self: *Self) void {
         allocator.alloc.destroy(self);
     }

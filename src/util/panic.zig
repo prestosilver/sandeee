@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const allocator = @import("allocator.zig");
 
-const NO_INFO: []const u8 = "Stacktrace unavailable\n";
+const NO_INFO: []const u8 = "Stacktrace Unavailable\n";
 
 pub fn log() []const u8 {
     // Try to run a backtrace to get where the log message originated from

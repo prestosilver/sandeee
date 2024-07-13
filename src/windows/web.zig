@@ -827,8 +827,6 @@ pub const WebData = struct {
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 2, 0));
     }
 
-    pub fn scroll(_: *Self, _: f32, _: f32) void {}
-
     pub fn move(self: *Self, x: f32, y: f32) void {
         for (self.links.items, 0..) |link, idx| {
             if (link.pos.contains(vecs.newVec2(x, y))) {
@@ -904,12 +902,6 @@ pub const WebData = struct {
         }
     }
 
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
-        _ = mods;
-        _ = code;
-        _ = self;
-    }
-
     pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
         if (!down) return;
 
@@ -940,9 +932,6 @@ pub const WebData = struct {
             else => {},
         }
     }
-
-    pub fn focus(_: *Self) !void {}
-    pub fn refresh(_: *Self) !void {}
 
     pub fn moveResize(self: *Self, _: rect.Rectangle) !void {
         if (self.loading) return;
