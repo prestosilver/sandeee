@@ -94,6 +94,8 @@ pub const BarData = struct {
         self.btns = 0;
 
         for (windows.items) |window| {
+            const color = if (window.data.min) cols.newColor(0.5, 0.5, 0.5, 1.0) else cols.newColor(0, 0, 0, 1);
+
             pos.x = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
             try font.draw(.{
                 .shader = font_shader,
@@ -101,6 +103,7 @@ pub const BarData = struct {
                 .pos = pos.location(),
                 .wrap = 4 * self.height - 16,
                 .maxlines = 1,
+                .color = color,
             });
 
             pos.x += 4 * self.height;
@@ -192,6 +195,7 @@ pub const BarData = struct {
                     window.data.active = false;
                 }
             }
+
             if (newTop) |top| {
                 var swap = windows.orderedRemove(@as(usize, @intCast(top)));
                 try swap.data.contents.focus();
