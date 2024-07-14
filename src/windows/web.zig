@@ -18,6 +18,7 @@ const gfx = @import("../util/graphics.zig");
 const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 const texMan = @import("../util/texmanager.zig");
+const log = @import("../util/log.zig").log;
 
 const steam = @import("steam");
 const options = @import("options");
@@ -28,6 +29,123 @@ var web_idx: u8 = 0;
 
 pub const WebData = struct {
     const Self = @This();
+
+    const UrlKind = enum(u8) {
+        Steam = '$',
+        Web = '@',
+        Local = '/',
+        _,
+    };
+
+    pub fn getConts(self: *Self, in_path: []const u8) ![]const u8 {
+        var path = try allocator.alloc.dupe(u8, in_path);
+        defer allocator.alloc.free(path);
+
+        if (std.mem.indexOf(u8, in_path, ":") == null) {
+            allocator.alloc.free(path);
+            const idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
+
+            path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ self.path.?[0..idx], in_path[1..] });
+        }
+
+        log.info("load: {s}", .{path});
+
+        switch (@as(UrlKind, @enumFromInt(path[0]))) {
+            .Steam => {
+                if (options.IsSteam) {
+                    const idx = std.mem.indexOf(u8, path, ":") orelse {
+                        return try allocator.alloc.dupe(u8, "Bad Remote");
+                    };
+
+                    const root = path[1..idx];
+                    const sub = path[idx + 1 ..];
+                    if (std.mem.eql(u8, root, "list")) {
+                        const pageIdx = try std.fmt.parseInt(u32, sub, 0);
+                        return try steamList(pageIdx);
+                    } else if (std.mem.eql(u8, root, "item")) {
+                        const slashIdx = std.mem.indexOf(u8, sub, "/");
+
+                        var tmp_path: []const u8 = "/";
+                        var page_idx = sub;
+
+                        if (slashIdx) |slash| {
+                            page_idx = sub[0..slash];
+                            tmp_path = sub[slash + 1 ..];
+                        }
+
+                        return steamItem(try std.fmt.parseInt(u64, page_idx, 10), path, tmp_path) catch |err| {
+                            return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                        };
+                    } else {
+                        return try allocator.alloc.dupe(u8, "Error: Bad Remote");
+                    }
+                } else {
+                    return try allocator.alloc.dupe(u8, "Error: Steam is not enabled");
+                }
+            },
+            .Local => {
+                return try allocator.alloc.dupe(u8, try (try files.root.getFile(path)).read(null));
+            },
+            .Web => {
+                const idx = std.mem.indexOf(u8, path, ":") orelse {
+                    return try allocator.alloc.dupe(u8, "Bad Remote");
+                };
+
+                var client = std.http.Client{ .allocator = allocator.alloc };
+                defer client.deinit();
+
+                const uri = std.Uri{
+                    .scheme = "https",
+                    .user = null,
+                    .password = null,
+                    .host = .{ .raw = path[1..idx] },
+                    .port = 443,
+                    .path = .{ .raw = path[idx + 1 ..] },
+                    .query = null,
+                    .fragment = null,
+                };
+
+                const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
+                defer allocator.alloc.free(header_buffer);
+
+                var req = client.open(.GET, uri, .{
+                    .server_header_buffer = header_buffer,
+                    .headers = .{
+                        .user_agent = .{ .override = "SandEEE/0.0" },
+                        .connection = .{ .override = "Close" },
+                    },
+                }) catch |err| {
+                    return if (err == error.TemporaryNameServerFailure)
+                        try std.fmt.allocPrint(allocator.alloc, "No Internet Connection", .{})
+                    else
+                        try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                };
+
+                defer req.deinit();
+
+                req.send() catch |err| {
+                    return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                };
+                req.wait() catch |err| {
+                    return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                };
+
+                if (req.response.status != .ok) {
+                    return try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @intFromEnum(req.response.status), @tagName(req.response.status) });
+                }
+
+                const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse {
+                    return try std.fmt.allocPrint(allocator.alloc, "Error: cant read from stream", .{});
+                });
+                defer allocator.alloc.free(fconts);
+
+                return try allocator.alloc.dupe(u8, fconts);
+            },
+            _ => {
+                return try allocator.alloc.dupe(u8, "Error: Invalid Url protocol");
+            },
+        }
+    }
 
     pub const WebLink = struct {
         url: []const u8,
@@ -83,7 +201,7 @@ pub const WebData = struct {
 
     styles: std.StringArrayHashMap(Style),
 
-    pub fn steamList(self: *Self, page: u32) !void {
+    pub fn steamList(page: u32) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const query = ugc.createQueryRequest(.RankedByVote, 0, 0, steam.STEAM_APP_ID, page);
         const handle = ugc.sendQueryRequest(query);
@@ -95,8 +213,7 @@ pub const WebData = struct {
         }
 
         if (failed) {
-            self.conts = try std.fmt.allocPrint(allocator.alloc, "{}", .{failed});
-            return;
+            return try std.fmt.allocPrint(allocator.alloc, "{}", .{failed});
         }
 
         const details: *steam.UGCDetails = try allocator.alloc.create(steam.UGCDetails);
@@ -151,10 +268,10 @@ pub const WebData = struct {
             conts = try std.mem.concat(allocator.alloc, u8, &.{ old, footer });
         }
 
-        self.conts = conts;
+        return conts;
     }
 
-    pub fn steamItem(self: *Self, id: u64, parent: []const u8, path: []const u8) !void {
+    pub fn steamItem(id: u64, parent: []const u8, path: []const u8) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const BUFFER_SIZE = 256;
 
@@ -164,7 +281,7 @@ pub const WebData = struct {
 
         if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
             if (!ugc.downloadItem(id, true)) {
-                self.conts = try std.fmt.allocPrint(allocator.alloc, "Failed to load page {}.", .{id});
+                return try std.fmt.allocPrint(allocator.alloc, "Failed to load page {}.", .{id});
             }
 
             while (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
@@ -177,7 +294,7 @@ pub const WebData = struct {
         const file_path = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ folderPtr, path });
         defer allocator.alloc.free(file_path);
 
-        std.log.info("file_path: {s}", .{file_path});
+        log.info("file_path: {s}", .{file_path});
 
         const walker = std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch {
             const file = try std.fs.openFileAbsolute(file_path, .{});
@@ -187,9 +304,7 @@ pub const WebData = struct {
             const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
             _ = std.mem.replace(u8, conts, "\r", "", cont);
 
-            self.conts = cont;
-
-            return;
+            return cont;
         };
 
         var iter = walker.iterate();
@@ -203,7 +318,7 @@ pub const WebData = struct {
             conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: {s}/{s}", .{ old, item.name, parent, item.name });
         }
 
-        self.conts = conts;
+        return conts;
     }
 
     pub fn loadPage(self: *Self) !void {
@@ -220,118 +335,7 @@ pub const WebData = struct {
         try self.resetStyles();
 
         if (self.path) |path| {
-            switch (path[0]) {
-                '@' => {
-                    const idx = std.mem.indexOf(u8, path, ":") orelse {
-                        self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
-
-                        return;
-                    };
-
-                    var client = std.http.Client{ .allocator = allocator.alloc };
-                    defer client.deinit();
-
-                    const uri = std.Uri{
-                        .scheme = "https",
-                        .user = null,
-                        .password = null,
-                        .host = .{ .raw = path[1..idx] },
-                        .port = 443,
-                        .path = .{ .raw = path[idx + 1 ..] },
-                        .query = null,
-                        .fragment = null,
-                    };
-
-                    const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
-                    defer allocator.alloc.free(header_buffer);
-
-                    var req = client.open(.GET, uri, .{
-                        .server_header_buffer = header_buffer,
-                        .headers = .{
-                            .user_agent = .{ .override = "SandEEE/0.0" },
-                            .connection = .{ .override = "Close" },
-                        },
-                    }) catch |err| {
-                        if (err == error.TemporaryNameServerFailure)
-                            self.conts = try std.fmt.allocPrint(allocator.alloc, "No Internet Connection", .{})
-                        else
-                            self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
-
-                        return;
-                    };
-
-                    defer req.deinit();
-
-                    req.send() catch |err| {
-                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
-                        return;
-                    };
-                    req.wait() catch |err| {
-                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
-                        return;
-                    };
-
-                    if (req.response.status != .ok) {
-                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @intFromEnum(req.response.status), @tagName(req.response.status) });
-                        return;
-                    }
-
-                    const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
-                    defer allocator.alloc.free(fconts);
-
-                    if (!std.mem.endsWith(u8, self.path.?, "edf")) {
-                        try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[(std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0) + 1 ..]);
-
-                        try self.back(true);
-                        return;
-                    }
-
-                    self.conts = try allocator.alloc.dupe(u8, fconts);
-                },
-                '/' => {
-                    self.conts = try allocator.alloc.dupe(u8, try (try files.root.getFile(path)).read(null));
-                },
-                '$' => {
-                    if (options.IsSteam) {
-                        const idx = std.mem.indexOf(u8, path, ":") orelse {
-                            self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
-
-                            return;
-                        };
-
-                        const root = path[1..idx];
-                        const sub = path[idx + 1 ..];
-
-                        if (std.mem.eql(u8, root, "list")) {
-                            const pageIdx = try std.fmt.parseInt(u32, sub, 0);
-                            try self.steamList(pageIdx);
-                        } else if (std.mem.eql(u8, root, "item")) {
-                            const slashIdx = std.mem.indexOf(u8, sub, "/");
-
-                            var tmp_path: []const u8 = "/";
-                            var page_idx = sub;
-
-                            if (slashIdx) |slash| {
-                                page_idx = sub[0..slash];
-                                tmp_path = sub[slash + 1 ..];
-                            }
-
-                            self.steamItem(try std.fmt.parseInt(u64, page_idx, 10), path, tmp_path) catch |err| {
-                                self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
-
-                                return;
-                            };
-                        } else {
-                            self.conts = try allocator.alloc.dupe(u8, "Bad Remote");
-                        }
-                    } else {
-                        self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: Steam is not enabled", .{});
-                    }
-                },
-                else => {
-                    self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: Invalid Url protocol", .{});
-                },
-            }
+            self.conts = try self.getConts(path);
         }
 
         var iter = std.mem.split(u8, self.conts orelse return, "\n");
@@ -346,55 +350,7 @@ pub const WebData = struct {
     pub fn loadimage(self: *Self, path: []const u8, target: []const u8) !void {
         defer allocator.alloc.free(target);
         defer allocator.alloc.free(path);
-
-        var target_path = try allocator.alloc.dupe(u8, path);
-        defer allocator.alloc.free(target_path);
-
-        if (std.mem.indexOf(u8, path, ":") == null) {
-            allocator.alloc.free(target_path);
-            const idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
-
-            target_path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ self.path.?[1..idx], path[1..] });
-        }
-
-        const idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
-
-        var client = std.http.Client{ .allocator = allocator.alloc };
-        defer client.deinit();
-
-        const uri = std.Uri{
-            .scheme = "https",
-            .user = null,
-            .password = null,
-            .host = .{ .raw = target_path[1..idx] },
-            .port = 443,
-            .path = .{ .raw = target_path[idx + 1 ..] },
-            .query = null,
-            .fragment = null,
-        };
-
-        const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
-        defer allocator.alloc.free(header_buffer);
-
-        var req = try client.open(.GET, uri, .{
-            .server_header_buffer = header_buffer,
-            .headers = .{
-                .user_agent = .{ .override = "SandEEE/0.0" },
-                .connection = .{ .override = "Close" },
-            },
-        });
-
-        defer req.deinit();
-
-        req.send() catch return;
-        req.wait() catch return;
-
-        if (req.response.status != .ok) {
-            self.conts = try std.fmt.allocPrint(allocator.alloc, "Error: {}", .{req.response.status});
-            return;
-        }
-
-        const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
+        const fconts = try self.getConts(path);
         defer allocator.alloc.free(fconts);
 
         const texture = texMan.TextureManager.instance.get(target).?;
@@ -405,56 +361,7 @@ pub const WebData = struct {
         self.links.clearAndFree();
     }
 
-    pub fn loadStyle(self: *Self, url: []const u8) !void {
-        var target_path = try allocator.alloc.dupe(u8, url);
-        defer allocator.alloc.free(target_path);
-
-        if (std.mem.indexOf(u8, url, ":") == null) {
-            allocator.alloc.free(target_path);
-            const idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
-
-            target_path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ self.path.?[1..idx], url[1..] });
-        }
-
-        const idx = std.mem.indexOf(u8, target_path, ":") orelse 0;
-
-        var client = std.http.Client{ .allocator = allocator.alloc };
-        defer client.deinit();
-
-        const uri = std.Uri{
-            .scheme = "https",
-            .user = null,
-            .password = null,
-            .host = .{ .raw = target_path[1..idx] },
-            .port = 443,
-            .path = .{ .raw = target_path[idx + 1 ..] },
-            .query = null,
-            .fragment = null,
-        };
-
-        const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
-        defer allocator.alloc.free(header_buffer);
-
-        var req = try client.open(.GET, uri, .{
-            .server_header_buffer = header_buffer,
-            .headers = .{
-                .user_agent = .{ .override = "SandEEE/0.0" },
-                .connection = .{ .override = "Close" },
-            },
-        });
-        defer req.deinit();
-
-        req.send() catch return;
-        req.wait() catch return;
-
-        std.log.info("{?}", .{req.response.content_length});
-
-        if (req.response.status != .ok) {
-            std.log.info("{}", .{req.response});
-            return;
-        }
-
-        const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse return);
+        const fconts = try self.getConts(url);
         defer allocator.alloc.free(fconts);
 
         var iter = std.mem.split(u8, fconts, "\n");
@@ -857,17 +764,15 @@ pub const WebData = struct {
         if (self.highlight_idx == 0) return;
 
         var lastHost: []const u8 = "";
-        if (self.path.?[0] == '@') {
-            if (std.mem.indexOf(u8, self.path.?, ":")) |idx|
-                lastHost = self.path.?[1..idx];
-        }
+        if (std.mem.indexOf(u8, self.path.?, ":")) |idx|
+            lastHost = self.path.?[0..idx];
 
         try self.hist.append(self.path.?);
 
         const targ = self.links.items[self.highlight_idx - 1].url;
 
-        if (targ[0] == '@' and std.mem.indexOf(u8, targ, ":") == null) {
-            self.path = try std.fmt.allocPrint(allocator.alloc, "@{s}:{s}", .{ lastHost, targ[1..] });
+        if (std.mem.indexOf(u8, targ, ":") == null) {
+            self.path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ lastHost, targ[1..] });
         } else {
             self.path = try allocator.alloc.dupe(u8, targ);
         }
