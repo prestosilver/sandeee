@@ -77,6 +77,8 @@ pub const GameState = struct {
         if (ptr_info != .Pointer) @compileError("ptr must be a pointer");
         if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
 
+        const child_t = ptr_info.Pointer.child;
+
         const gen = struct {
             fn setupImpl(pointer: *anyopaque) anyerror!void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
@@ -91,57 +93,75 @@ pub const GameState = struct {
             }
 
             fn refreshImpl(pointer: *anyopaque) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "refresh")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.refresh, .{self});
+                    return @call(.always_inline, ptr_info.Pointer.child.refresh, .{self});
+                }
             }
 
             fn drawImpl(pointer: *anyopaque, size: vecs.Vector2) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "draw")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, size });
+                    return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, size });
+                }
             }
 
             fn updateImpl(pointer: *anyopaque, dt: f32) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "update")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.update, .{ self, dt });
+                    return @call(.always_inline, ptr_info.Pointer.child.update, .{ self, dt });
+                }
             }
 
             fn keypressImpl(pointer: *anyopaque, key: c_int, mods: c_int, down: bool) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "keypress")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.keypress, .{ self, key, mods, down });
+                    return @call(.always_inline, ptr_info.Pointer.child.keypress, .{ self, key, mods, down });
+                }
             }
 
             fn keycharImpl(pointer: *anyopaque, codepoint: u32, mods: c_int) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "keychar")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.keychar, .{ self, codepoint, mods });
+                    return @call(.always_inline, ptr_info.Pointer.child.keychar, .{ self, codepoint, mods });
+                }
             }
 
             fn mousepressImpl(pointer: *anyopaque, btn: c_int) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "mousepress")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.mousepress, .{ self, btn });
+                    return @call(.always_inline, ptr_info.Pointer.child.mousepress, .{ self, btn });
+                }
             }
 
             fn mousereleaseImpl(pointer: *anyopaque) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "mouserelease")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.mouserelease, .{self});
+                    return @call(.always_inline, ptr_info.Pointer.child.mouserelease, .{self});
+                }
             }
 
             fn mousemoveImpl(pointer: *anyopaque, size: vecs.Vector2) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "mousemove")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.mousemove, .{ self, size });
+                    return @call(.always_inline, ptr_info.Pointer.child.mousemove, .{ self, size });
+                }
             }
 
             fn mousescrollImpl(pointer: *anyopaque, dir: vecs.Vector2) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
+                if (std.meta.hasMethod(child_t, "mousescroll")) {
+                    const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.mousescroll, .{ self, dir });
+                    return @call(.always_inline, ptr_info.Pointer.child.mousescroll, .{ self, dir });
+                }
             }
 
             const vtable = VTable{

@@ -164,12 +164,4 @@ pub const GSLoading = struct {
         if (self.load_sprite.data.size.x > 319)
             self.done.store(true, .monotonic);
     }
-
-    pub fn refresh(_: *Self) !void {}
-    pub fn keypress(_: *Self, _: c_int, _: c_int, _: bool) !void {}
-    pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
-    pub fn mousepress(_: *Self, _: c_int) !void {}
-    pub fn mouserelease(_: *Self) !void {}
-    pub fn mousemove(_: *Self, _: vecs.Vector2) !void {}
-    pub fn mousescroll(_: *Self, _: vecs.Vector2) !void {}
 };

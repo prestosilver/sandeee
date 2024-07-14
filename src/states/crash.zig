@@ -74,18 +74,9 @@ pub const GSCrash = struct {
         });
     }
 
-    pub fn update(_: *Self, _: f32) !void {}
-    pub fn refresh(_: *Self) !void {}
-
     pub fn keypress(_: *Self, key: c_int, _: c_int, down: bool) !void {
         if (down and key == c.GLFW_KEY_ESCAPE)
             c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
         return;
     }
-
-    pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
-    pub fn mousepress(_: *Self, _: c_int) !void {}
-    pub fn mouserelease(_: *Self) !void {}
-    pub fn mousemove(_: *Self, _: vecs.Vector2) !void {}
-    pub fn mousescroll(_: *Self, _: vecs.Vector2) !void {}
 };

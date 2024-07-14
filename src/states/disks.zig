@@ -240,11 +240,4 @@ pub const GSDisks = struct {
 
         return;
     }
-
-    pub fn refresh(_: *Self) !void {}
-    pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
-    pub fn mousepress(_: *Self, _: c_int) !void {}
-    pub fn mouserelease(_: *Self) !void {}
-    pub fn mousemove(_: *Self, _: vecs.Vector2) !void {}
-    pub fn mousescroll(_: *Self, _: vecs.Vector2) !void {}
 };

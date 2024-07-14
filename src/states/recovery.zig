@@ -93,8 +93,6 @@ pub const GSRecovery = struct {
         self.disks.deinit();
     }
 
-    pub fn update(_: *Self, _: f32) !void {}
-
     const UPDATE_MODES = [_][*:0]const u8{ "R Reinstall System Files", "S Reinstall System Files and Default Settings", "D Delete disk", "X Back" };
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
@@ -340,11 +338,4 @@ pub const GSRecovery = struct {
             },
         }
     }
-
-    pub fn refresh(_: *Self) !void {}
-    pub fn keychar(_: *Self, _: u32, _: c_int) !void {}
-    pub fn mousepress(_: *Self, _: c_int) !void {}
-    pub fn mouserelease(_: *Self) !void {}
-    pub fn mousemove(_: *Self, _: vecs.Vector2) !void {}
-    pub fn mousescroll(_: *Self, _: vecs.Vector2) !void {}
 };
