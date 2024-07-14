@@ -1,9 +1,12 @@
-#Style @/style.eds
+#Style $0/style.eds
 
-:logo: [@/logo.eia]
+:logo: [$0/logo.eia]
 
-:center: -- About --
+:center: -- Home --
 
-:red: TODO
+:biglink: > Changelog: $0/changelog.edf
+:biglink: > Downloads: $0/downloads.edf
+:biglink: > Docs: $0/docs/start.edf
+:biglink: > About: $0/about.edf
 
 :center: --- EEE Sees all ---

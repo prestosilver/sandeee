@@ -361,6 +361,7 @@ pub const WebData = struct {
         self.links.clearAndFree();
     }
 
+    pub fn loadStyle(self: *Self, url: []const u8) !void {
         const fconts = try self.getConts(url);
         defer allocator.alloc.free(fconts);
 
