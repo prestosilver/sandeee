@@ -7,6 +7,8 @@ const fnt = @import("../util/font.zig");
 const shd = @import("../util/shader.zig");
 const batch = @import("../util/spritebatch.zig");
 
+const std = @import("std");
+
 pub const all = @import("../windows/popups/all.zig");
 
 pub var popupShader: *shd.Shader = undefined;
@@ -56,6 +58,8 @@ pub const PopupData = struct {
             if (ptr_info != .Pointer) @compileError("ptr must be a pointer");
             if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
 
+            const child_t = ptr_info.Pointer.child;
+
             const gen = struct {
                 fn drawImpl(pointer: *anyopaque, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
@@ -64,15 +68,19 @@ pub const PopupData = struct {
                 }
 
                 fn keyImpl(pointer: *anyopaque, keycode: c_int, mods: c_int, down: bool) !void {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                    if (std.meta.hasMethod(child_t, "key")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
+                        return @call(.always_inline, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
+                    }
                 }
 
                 fn charImpl(pointer: *anyopaque, keycode: u32, mods: i32) !void {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                    if (std.meta.hasMethod(child_t, "char")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.char, .{ self, keycode, mods });
+                        return @call(.always_inline, ptr_info.Pointer.child.char, .{ self, keycode, mods });
+                    }
                 }
 
                 fn deinitImpl(pointer: *anyopaque) !void {
@@ -82,9 +90,11 @@ pub const PopupData = struct {
                 }
 
                 fn clickImpl(pointer: *anyopaque, mousepos: vecs.Vector2) !void {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                    if (std.meta.hasMethod(child_t, "click")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.click, .{ self, mousepos });
+                        return @call(.always_inline, ptr_info.Pointer.child.click, .{ self, mousepos });
+                    }
                 }
 
                 const vtable = VTable{

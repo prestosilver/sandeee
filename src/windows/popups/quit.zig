@@ -69,15 +69,6 @@ pub const PopupQuit = struct {
         }
     }
 
-    pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
-        if (!down) return;
-
-        _ = self;
-        _ = keycode;
-    }
-
-    pub fn char(_: *Self, _: u32, _: i32) !void {}
-
     pub fn click(self: *Self, mousepos: vecs.Vector2) !void {
         if (mousepos.x < 175) {
             self.done = 1;

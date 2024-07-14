@@ -102,8 +102,6 @@ pub const PopupFolderPick = struct {
         }
     }
 
-    pub fn click(_: *Self, _: vecs.Vector2) !void {}
-
     pub fn deinit(self: *Self) !void {
         allocator.alloc.free(self.path);
         allocator.alloc.destroy(self);

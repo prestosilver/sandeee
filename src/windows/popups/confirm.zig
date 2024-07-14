@@ -142,10 +142,6 @@ pub const PopupConfirm = struct {
         }
     }
 
-    pub fn key(_: *Self, _: c_int, _: c_int, _: bool) !void {}
-
-    pub fn char(_: *Self, _: u32, _: i32) !void {}
-
     pub fn click(self: *Self, pos: vecs.Vector2) !void {
         const idx: usize = @intFromFloat(pos.x / self.singleWidth);
 

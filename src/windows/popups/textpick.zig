@@ -105,8 +105,6 @@ pub const PopupTextPick = struct {
         }
     }
 
-    pub fn click(_: *Self, _: vecs.Vector2) !void {}
-
     pub fn deinit(self: *Self) !void {
         allocator.alloc.free(self.text);
         allocator.alloc.destroy(self);
