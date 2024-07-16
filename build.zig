@@ -187,14 +187,35 @@ pub fn build(b: *std.Build) !void {
     copy_libs.dependOn(&skel.step);
 
     if (optimize == .Debug) {
-        const debug_prof = b.addSystemCommand(&.{ "cp", "-r", "content/disk_debug/prof", "content/disk" });
-        const debug_conf = b.addSystemCommand(&.{ "cp", "-r", "content/disk_debug/conf", "content/disk" });
+        var dir = try std.fs.cwd().openDir("content/overlays/debug/", .{ .iterate = true });
+        var iter = dir.iterate();
 
-        debug_prof.step.dependOn(&skel.step);
-        debug_conf.step.dependOn(&skel.step);
+        while (try iter.next()) |path| {
+            const p = try std.mem.concat(b.allocator, u8, &.{ "content/overlays/debug/", path.name });
+            defer b.allocator.free(p);
 
-        copy_disk.dependOn(&debug_prof.step);
-        copy_disk.dependOn(&debug_conf.step);
+            const debug_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/disk" });
+
+            debug_overlay.step.dependOn(&skel.step);
+
+            copy_disk.dependOn(&debug_overlay.step);
+        }
+    }
+
+    if (steamMode != .Off) {
+        var dir = try std.fs.cwd().openDir("content/overlays/steam/", .{ .iterate = true });
+        var iter = dir.iterate();
+
+        while (try iter.next()) |path| {
+            const p = try std.mem.concat(b.allocator, u8, &.{ "content/overlays/steam/", path.name });
+            defer b.allocator.free(p);
+
+            const steam_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/disk" });
+
+            steam_overlay.step.dependOn(&skel.step);
+
+            copy_disk.dependOn(&steam_overlay.step);
+        }
     }
 
     for (incLibsFiles) |file| {

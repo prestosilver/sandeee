@@ -203,7 +203,7 @@ pub const WebData = struct {
 
     pub fn steamList(page: u32) ![]const u8 {
         const ugc = steam.getSteamUGC();
-        const query = ugc.createQueryRequest(.RankedByVote, 0, 0, steam.STEAM_APP_ID, page);
+        const query = ugc.createQueryRequest(.RankedByVote, 0, 0, steam.STEAM_APP_ID, page + 1);
         const handle = ugc.sendQueryRequest(query);
         const steamUtils = steam.getSteamUtils();
 
@@ -219,23 +219,36 @@ pub const WebData = struct {
         const details: *steam.UGCDetails = try allocator.alloc.create(steam.UGCDetails);
         defer allocator.alloc.destroy(details);
 
-        var conts = try std.fmt.allocPrint(allocator.alloc, "{}\n> prev: $list:{}\n> next: $list:{}\n", .{ page, page - 1, page + 1 });
+        const prev = try std.fmt.allocPrint(allocator.alloc, "> prev: $list:{}\n", .{if (page == 0) 0 else page - 1});
+        const next = try std.fmt.allocPrint(allocator.alloc, "> next: $list:{}\n", .{page + 1});
+        defer allocator.alloc.free(prev);
+        defer allocator.alloc.free(next);
+
+        const nav = try std.mem.concat(allocator.alloc, u8, &.{
+            if (page != 0) prev else "prev\n",
+            next,
+        });
+        defer allocator.alloc.free(nav);
+
+        // var conts = try std.fmt.allocPrint(allocator.alloc, "- {} -\n{s}", .{ page, nav });
+        var conts = try std.fmt.allocPrint(allocator.alloc, "- Steam List -\n-- Page {} --\n", .{page + 1});
         var idx: u32 = 0;
+
+        var added = false;
 
         while (ugc.getQueryResult(query, idx, details)) : (idx += 1) {
             if (details.visible != 0) continue;
+
+            added = true;
 
             if (steam.fakeApi) {
                 const old = conts;
                 defer allocator.alloc.free(old);
 
-                const title: [*:0]const u8 = @ptrCast(details.title);
-
-                const titlePrint = try std.fmt.allocPrint(allocator.alloc, "-- {s} --", .{title[0..std.mem.len(title)]});
+                const titlePrint = try std.fmt.allocPrint(allocator.alloc, "--- {s} ---", .{details.title});
                 defer allocator.alloc.free(titlePrint);
 
-                const desc: [*:0]const u8 = @ptrCast(details.desc);
-                const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ desc[0..std.mem.len(desc)], details.fileId });
+                const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ details.desc, details.fileId });
                 defer allocator.alloc.free(descPrint);
 
                 conts = try std.mem.concat(allocator.alloc, u8, &.{ old, titlePrint, "\n", descPrint, "\n\n" });
@@ -245,7 +258,7 @@ pub const WebData = struct {
 
                 const title: [*:0]u8 = @ptrCast(&details.title);
 
-                const titlePrint = try std.fmt.allocPrint(allocator.alloc, "-- {s} --", .{title[0..std.mem.len(title)]});
+                const titlePrint = try std.fmt.allocPrint(allocator.alloc, "--- {s} ---", .{title[0..std.mem.len(title)]});
                 defer allocator.alloc.free(titlePrint);
 
                 const desc: [*:0]u8 = @ptrCast(&details.desc);
@@ -258,14 +271,18 @@ pub const WebData = struct {
 
         _ = ugc.releaseQueryResult(query);
 
+        if (!added) {
+            const old = conts;
+            defer allocator.alloc.free(old);
+
+            conts = try std.mem.concat(allocator.alloc, u8, &.{ old, "\n-- No Results --\n> Page 1: $list:0\n\n" });
+        }
+
         {
             const old = conts;
             defer allocator.alloc.free(old);
 
-            const footer = try std.fmt.allocPrint(allocator.alloc, "{}\n> prev: $list:{}\n> next: $list:{}", .{ page, page - 1, page + 1 });
-            defer allocator.alloc.free(footer);
-
-            conts = try std.mem.concat(allocator.alloc, u8, &.{ old, footer });
+            conts = try std.mem.concat(allocator.alloc, u8, &.{ old, nav });
         }
 
         return conts;
@@ -307,18 +324,29 @@ pub const WebData = struct {
             return cont;
         };
 
-        var iter = walker.iterate();
+        if (walker.access("index.edf", .{})) {
+            const file = try walker.openFile("index.edf", .{});
+            defer file.close();
+            const conts = try file.reader().readAllAlloc(allocator.alloc, 100_000_000);
 
-        var conts = try std.fmt.allocPrint(allocator.alloc, "Contents of {s}", .{path});
+            const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
+            _ = std.mem.replace(u8, conts, "\r", "", cont);
 
-        while (try iter.next()) |item| {
-            const old = conts;
-            defer allocator.alloc.free(old);
+            return cont;
+        } else |_| {
+            var iter = walker.iterate();
 
-            conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: {s}/{s}", .{ old, item.name, parent, item.name });
+            var conts = try std.fmt.allocPrint(allocator.alloc, "Contents of {s}", .{path});
+
+            while (try iter.next()) |item| {
+                const old = conts;
+                defer allocator.alloc.free(old);
+
+                conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: {s}/{s}", .{ old, item.name, parent, item.name });
+            }
+
+            return conts;
         }
-
-        return conts;
     }
 
     pub fn loadPage(self: *Self) !void {

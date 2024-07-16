@@ -1,0 +1,4 @@
+#Style $0/style.eds
+:logo-left: [$0/logo.eia]
+
+:center: --- EEE Sees all ---

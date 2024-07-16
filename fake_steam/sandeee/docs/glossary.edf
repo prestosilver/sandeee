@@ -1,0 +1,29 @@
+- Glossary -
+-- CFG --
+Config File
+-- EDF --
+EEE Document File
+-- EEDT --
+EEE Development Tools
+-- EEE --
+EEE sees all, EEE knows all, EEE controls all.
+-- EEP --
+EEE Program
+-- EET --
+EEE Text
+-- EIA --
+EEE Image Array
+-- Email --
+A communication protocol for relaying text information.
+-- EME --
+EEE Email Entrys
+-- ESH --
+EEE Shell Script
+-- Program Counter --
+Stores the index of the current instruction.
+-- Stack --
+A list of strings and numbers the vm uses for temporary storage.
+-- SYSCALL --
+An assembly function that has full IO access.
+-- VM --
+The code the system uses to run eep files.

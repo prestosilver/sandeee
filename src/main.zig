@@ -518,14 +518,14 @@ pub fn mainErr() anyerror!void {
             return; // steam will relaunch the game from the steam client.
         }
 
-        if (steam.init()) {
-            var user = steam.getUser();
-            const steamId = user.getSteamId();
-            steamUtils = steam.getSteamUtils();
-            steamUserStats = steam.getUserStats();
-            _ = steamId;
-            _ = steamUtils;
-        }
+        try steam.init();
+
+        var user = steam.getUser();
+        const steamId = user.getSteamId();
+        steamUtils = steam.getSteamUtils();
+        steamUserStats = steam.getUserStats();
+        _ = steamId;
+        _ = steamUtils;
     }
 
     // setup the headless command

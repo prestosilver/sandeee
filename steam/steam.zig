@@ -167,14 +167,15 @@ pub const SteamUGC = extern struct {
         } else {
             log.debug("itemInfo: {}", .{id});
 
-            if (id == 0) {
+            if (id < steamItems.items.len) {
                 size.* = 0;
-                const path = "/home/john/doc/rep/github.com/sandeee/fake_steam/0";
+                const path = steamItems.items[id].folder;
                 @memcpy(folder[0..path.len], path);
                 timestamp.* = 0;
 
                 return true;
             }
+
             return false;
         }
     }
@@ -193,7 +194,7 @@ pub const SteamUGC = extern struct {
         }
     }
 
-    extern fn SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc: *const SteamUGC, queryKind: u32, kind: u32, creatorId: u32, consumerId: u32, page: u32) UGCQueryHandle;
+    extern fn SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc: *const SteamUGC, queryKind: UGCQueryKind, kind: u32, creatorId: u32, consumerId: u32, page: u32) UGCQueryHandle;
     pub fn createQueryRequest(
         ugc: *const SteamUGC,
         queryKind: UGCQueryKind,
@@ -225,16 +226,16 @@ pub const SteamUGC = extern struct {
         } else {
             log.debug("query result", .{});
             if (handle.page != 1) return false;
-            if (index != 0) return false;
+            if (index >= steamItems.items.len) return false;
 
             details.* = .{
-                .fileId = 0,
+                .fileId = index,
                 .result = 0,
                 .fileType = .Community,
                 .creator = 0,
                 .consumer = 0,
-                .title = "Test",
-                .desc = "This is a test fake api thing",
+                .title = steamItems.items[index].title,
+                .desc = steamItems.items[index].desc,
                 .owner = 0,
                 .created = 0,
                 .updated = 0,
@@ -277,13 +278,47 @@ pub const SteamId = extern struct {
     id: u64,
 };
 
+pub const FakeUGCEntry = struct {
+    title: []const u8,
+    desc: []const u8,
+    folder: []const u8,
+};
+
+pub var steamItems = std.ArrayList(FakeUGCEntry).init(steamAlloc);
+
 extern fn SteamAPI_Init() bool;
-pub fn init() bool {
+pub fn init() !void {
     if (enableApi) {
-        return SteamAPI_Init();
+        if (!SteamAPI_Init()) {
+            return error.SteamInitFail;
+        }
+        return;
     } else {
+        const file = try std.fs.cwd().openFile("fake_steam/ugc.csv", .{});
+        const reader = file.reader();
+
+        while (reader.readUntilDelimiterOrEofAlloc(steamAlloc, '\n', 1000) catch null) |buffer| {
+            defer steamAlloc.free(buffer);
+
+            var iter = std.mem.split(u8, buffer, ",");
+            const title = iter.next() orelse return error.SteamParse;
+            const desc = iter.next() orelse return error.SteamParse;
+            const folder = iter.next() orelse return error.SteamParse;
+
+            try steamItems.append(.{
+                .title = try steamAlloc.dupe(u8, title),
+                .desc = try steamAlloc.dupe(u8, desc),
+                .folder = try std.mem.concat(steamAlloc, u8, &.{
+                    "/home/john/doc/rep/github.com/sandeee/fake_steam/",
+                    folder,
+                }),
+            });
+        }
+
+        log.info("{any}", .{steamItems.items});
+
         log.debug("Init Steam", .{});
-        return true;
+        return;
     }
 }
 
