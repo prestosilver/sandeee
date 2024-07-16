@@ -12,6 +12,7 @@ const butler = @import("tools/butler.zig");
 const emails = @import("tools/mail.zig");
 const rand = @import("tools/random.zig");
 const dwns = @import("tools/downloadpage.zig");
+const changelog = @import("tools/changelog.zig");
 
 // debug only
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
@@ -452,6 +453,7 @@ pub fn build(b: *std.Build) !void {
         if (steamMode == .On)
             b.installFile("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
+
     if (steamMode == .On and optimize == .Debug)
         b.installFile("steam_appid.txt", "bin/steam_appid.txt");
 
@@ -499,6 +501,11 @@ pub fn build(b: *std.Build) !void {
         const step = try conv.ConvertStep.createMulti(b, file.converter, file.inputFiles, file.outputFile);
         step.step.dependOn(&disk_step.step);
 
+        www_step.dependOn(&step.step);
+    }
+
+    {
+        const step = try changelog.ChangelogStep.create(b, "www/changelog.edf");
         www_step.dependOn(&step.step);
     }
 
