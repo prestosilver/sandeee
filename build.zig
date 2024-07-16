@@ -479,13 +479,6 @@ pub fn build(b: *std.Build) !void {
         b.installFile("steam_appid.txt", "bin/steam_appid.txt");
 
     const www_step = b.step("www", "Build the website");
-
-    {
-        const changelog_step = b.addSystemCommand(&.{ "bash", "./changelog.sh" });
-
-        www_step.dependOn(&changelog_step.step);
-    }
-
     var count: usize = 0;
 
     for (wwwFiles) |file| {
