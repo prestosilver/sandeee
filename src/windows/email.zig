@@ -50,6 +50,8 @@ const EmailData = struct {
     rowsize: f32 = 0,
     bnds: rect.Rectangle = undefined,
 
+    login_pos: vecs.Vector2 = .{ .x = 0, .y = 0 },
+
     login: ?[]const u8 = null,
     login_error: ?[]const u8 = null,
     login_input: ?LoginInput = null,
@@ -73,6 +75,8 @@ const EmailData = struct {
 
             const center = bnds.x + @floor(bnds.w * 0.5 - 50.0);
             const center_y = bnds.y + (bnds.h * 0.5) + 150;
+
+            self.login_pos = .{ .x = center - bnds.x, .y = center_y - bnds.y };
 
             try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.logo, self.shader, vecs.newVec3(center - 26 - 50, center_y - 250, 0));
 
@@ -496,13 +500,11 @@ const EmailData = struct {
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (btn == null) return;
 
-        // TODO: fix for centered content
-
         if (self.login == null) {
             {
                 const box_bounds = rect.Rectangle{
-                    .x = @floor((self.bnds.w - 100) * 0.5),
-                    .y = self.bnds.h - 100,
+                    .x = self.login_pos.x,
+                    .y = self.login_pos.y - 102,
                     .w = 200,
                     .h = 32,
                 };
@@ -515,8 +517,8 @@ const EmailData = struct {
 
             {
                 const box_bounds = rect.Rectangle{
-                    .x = @floor((self.bnds.w - 100) * 0.5),
-                    .y = self.bnds.h - 150,
+                    .x = self.login_pos.x,
+                    .y = self.login_pos.y - 150,
                     .w = 200,
                     .h = 32,
                 };
@@ -530,7 +532,7 @@ const EmailData = struct {
             {
                 const btn_bounds = rect.Rectangle{
                     .x = @floor((self.bnds.w - 100) * 0.5),
-                    .y = self.bnds.h - 50,
+                    .y = self.login_pos.y - 50,
                     .w = 100,
                     .h = 32,
                 };
