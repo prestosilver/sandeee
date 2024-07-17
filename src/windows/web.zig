@@ -41,20 +41,20 @@ pub const WebData = struct {
         var path = try allocator.alloc.dupe(u8, in_path);
         defer allocator.alloc.free(path);
 
-        if (std.mem.indexOf(u8, in_path, ":") == null) {
+        if (@as(UrlKind, @enumFromInt(in_path[0])) != .Local and std.mem.indexOf(u8, in_path, ":") == null) {
             allocator.alloc.free(path);
             const idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
 
             path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ self.path.?[0..idx], in_path[1..] });
         }
 
-        log.info("load: {s}", .{path});
+        log.debug("web load: {s}", .{path});
 
         switch (@as(UrlKind, @enumFromInt(path[0]))) {
             .Steam => {
                 if (options.IsSteam) {
                     const idx = std.mem.indexOf(u8, path, ":") orelse {
-                        return try allocator.alloc.dupe(u8, "Bad Remote");
+                        return try allocator.alloc.dupe(u8, "Error: Bad Remote");
                     };
 
                     const root = path[1..idx];
@@ -88,7 +88,7 @@ pub const WebData = struct {
             },
             .Web => {
                 const idx = std.mem.indexOf(u8, path, ":") orelse {
-                    return try allocator.alloc.dupe(u8, "Bad Remote");
+                    return try allocator.alloc.dupe(u8, "Error: Bad Remote");
                 };
 
                 var client = std.http.Client{ .allocator = allocator.alloc };
@@ -116,7 +116,7 @@ pub const WebData = struct {
                     },
                 }) catch |err| {
                     return if (err == error.TemporaryNameServerFailure)
-                        try std.fmt.allocPrint(allocator.alloc, "No Internet Connection", .{})
+                        try std.fmt.allocPrint(allocator.alloc, "Error: No Internet Connection", .{})
                     else
                         try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                 };
@@ -298,7 +298,7 @@ pub const WebData = struct {
 
         if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
             if (!ugc.downloadItem(id, true)) {
-                return try std.fmt.allocPrint(allocator.alloc, "Failed to load page {}.", .{id});
+                return try std.fmt.allocPrint(allocator.alloc, "Error: Failed to load page {}.", .{id});
             }
 
             while (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
@@ -311,7 +311,7 @@ pub const WebData = struct {
         const file_path = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ folderPtr, path });
         defer allocator.alloc.free(file_path);
 
-        log.info("file_path: {s}", .{file_path});
+        log.debug("file_path: {s}", .{file_path});
 
         const walker = std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch {
             const file = try std.fs.openFileAbsolute(file_path, .{});
@@ -363,6 +363,15 @@ pub const WebData = struct {
         try self.resetStyles();
 
         if (self.path) |path| {
+            if (!std.mem.endsWith(u8, path, "edf")) {
+                const fconts = try self.getConts(path);
+
+                try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[(std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0) + 1 ..]);
+
+                try self.back(true);
+                return;
+            }
+
             self.conts = try self.getConts(path);
         }
 
@@ -785,6 +794,8 @@ pub const WebData = struct {
             self.links.clearAndFree();
             self.highlight_idx = 0;
             self.scroll_top = true;
+        } else {
+            self.conts = try allocator.alloc.dupe(u8, "Error: No more history");
         }
     }
 
