@@ -315,7 +315,7 @@ pub fn init() !void {
             });
         }
 
-        log.info("{any}", .{steamItems.items});
+        log.debug("UGC Count {}", .{steamItems.items.len});
 
         log.debug("Init Steam", .{});
         return;

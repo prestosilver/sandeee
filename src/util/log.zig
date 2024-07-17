@@ -28,7 +28,7 @@ pub fn sandEEELogFn(
         .err => "\x1b[31m",
         .warn => "\x1b[93m",
         .info => "\x1b[90m",
-        .debug => "\x1b[37m",
+        .debug => "\x1b[30m",
     };
 
     std.debug.getStderrMutex().lock();

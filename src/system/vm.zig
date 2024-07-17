@@ -376,7 +376,7 @@ pub const VM = struct {
     pub inline fn runOp(self: *VM, op: Operation) VMError!void {
         telem.Telem.instance.instructionCalls += 1;
 
-        //log.info("{}", .{op});
+        //log.debug("{}", .{op});
 
         self.pc += 1;
 
@@ -573,7 +573,7 @@ pub const VM = struct {
                                     return;
                                 }
 
-                                log.info("password dosent match {s}", .{dbg_pass});
+                                log.debug("password dosent match {s}", .{dbg_pass});
 
                                 return error.InvalidPassword;
                             },

@@ -74,7 +74,7 @@ pub const Telem = packed struct {
 
             const pass = try getDebugPassword();
             defer allocator.alloc.free(pass);
-            log.info("Set telem pass: {s}", .{pass});
+            log.debug("Set telem pass: {s}", .{pass});
         }
     }
 

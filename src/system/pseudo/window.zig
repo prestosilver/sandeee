@@ -287,12 +287,12 @@ pub fn readWinRender(_: ?*vm.VM) files.FileError![]const u8 {
 
 pub fn writeWinRender(data: []const u8, _: ?*vm.VM) files.FileError!void {
     if (data.len < 66) {
-        log.info("{}", .{data.len});
+        log.debug("{}", .{data.len});
         return;
     }
 
     if (texMan.TextureManager.instance.get(data[1..2]) == null) {
-        log.info("{any}", .{data[1..2]});
+        log.debug("{any}", .{data[1..2]});
         return;
     }
 

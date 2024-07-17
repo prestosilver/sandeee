@@ -514,7 +514,7 @@ pub fn main() void {
 pub fn mainErr() anyerror!void {
     if (options.IsSteam) {
         if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
-            log.log.info("Restarting for steam", .{});
+            log.log.err("Restarting for steam", .{});
             return; // steam will relaunch the game from the steam client.
         }
 
