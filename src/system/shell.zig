@@ -15,6 +15,7 @@ const opener = @import("opener.zig");
 const vmManager = @import("../system/vmmanager.zig");
 const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
+const font = @import("../util/font.zig");
 
 const Result = struct {
     data: []u8,
@@ -433,7 +434,7 @@ pub const Shell = struct {
     pub fn help(_: *Shell, _: []const u8) !Result {
         return .{
             .data = try allocator.alloc.dupe(u8, "" ++
-                "Sh\x82\x82\x82ll Help:\n" ++
+                "Sh" ++ font.EEE ++ "ll Help:\n" ++
                 "=============\n" ++
                 "\n" ++
                 "Commands\n" ++

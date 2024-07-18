@@ -34,7 +34,7 @@ pub const PopupFilePick = struct {
         }).x);
 
         const text = if (self.path.len > maxlen)
-            try std.fmt.allocPrint(allocator.alloc, "\x90{s}", .{self.path[self.path.len - maxlen + 1 ..]})
+            try std.fmt.allocPrint(allocator.alloc, fnt.DOTS ++ "{s}", .{self.path[self.path.len - maxlen + 1 ..]})
         else
             try allocator.alloc.dupe(u8, self.path);
         defer allocator.alloc.free(text);

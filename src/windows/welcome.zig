@@ -32,7 +32,7 @@ pub const WelcomeData = struct {
 
         try font.draw(.{
             .shader = font_shader,
-            .text = "Welcome to Sand\x82\x82\x82",
+            .text = "Welcome to Sand" ++ fnt.EEE,
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26),
             .scale = 2,
         });

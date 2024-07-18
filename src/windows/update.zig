@@ -29,7 +29,7 @@ pub const UpdateData = struct {
 
         try font.draw(.{
             .shader = font_shader,
-            .text = "There has been a Sand\x82\x82\x82 Update",
+            .text = "There has been a Sand" ++ fnt.EEE ++ " Update",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26),
             .wrap = bnds.w - 12,
             .scale = 2,

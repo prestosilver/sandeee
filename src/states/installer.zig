@@ -30,7 +30,7 @@ pub const GSInstall = struct {
         .{ "What is the current Hour", "", "00" },
         .{ "What is the current Minute", "", "00" },
         .{ "Do you want to keep the CRT Shader", "crt_shader", "Yes" },
-        .{ "Do you like \x82\x82\x82", "evil_value", "Yes" },
+        .{ "Do you like " ++ font.EEE, "evil_value", "Yes" },
     };
     const MAX_VALUE_LEN = 16;
 
@@ -88,7 +88,7 @@ pub const GSInstall = struct {
         var y: f32 = 100 - self.offset;
         defer self.offset = @max(@as(f32, 0), (y + self.offset) - (size.y - 100));
 
-        const titleLine = try std.fmt.allocPrint(allocator.alloc, "Sand\x82\x82\x82 Installer v_{s}", .{VERSION});
+        const titleLine = try std.fmt.allocPrint(allocator.alloc, "Sand" ++ font.EEE ++ " Installer v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
             .shader = self.font_shader,

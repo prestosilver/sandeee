@@ -196,9 +196,15 @@ pub fn blit() !void {
 
     if (showFps and biosFace.setup) {
         const text = try std.fmt.allocPrint(allocator.alloc, "{s}FPS: {}\n{s}VMS: {}\n\xf9VMT: {}%\nSTA: {}", .{
-            if (finalFps < 50) "\xFA" else "\xF9",
+            if (finalFps < 50)
+                font.COLOR_RED
+            else
+                font.COLOR_WHITE,
             finalFps,
-            if (vmManager.VMManager.instance.vms.count() == 0) "\xF1" else "\xF9",
+            if (vmManager.VMManager.instance.vms.count() == 0)
+                font.COLOR_GRAY
+            else
+                font.COLOR_WHITE,
             vmManager.VMManager.instance.vms.count(),
             @as(u8, @intFromFloat(vmManager.VMManager.vm_time * 100)),
             @intFromEnum(currentState),

@@ -202,7 +202,7 @@ const EmailData = struct {
                 if (email.isComplete or inbox) {
                     try font.draw(.{
                         .shader = font_shader,
-                        .text = "\x83",
+                        .text = fnt.CHECK,
                         .pos = vecs.newVec2(bnds.x + 108, y - 2),
                         .color = col.newColor(0, 1.0, 0, 1.0),
                     });
@@ -706,5 +706,5 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
     self.button[1].data.color = col.newColorRGBA(192, 192, 192, 255);
     self.sel.data.color = col.newColorRGBA(255, 0, 0, 255);
 
-    return win.WindowContents.init(self, "email", "\x82\x82\x82Mail", col.newColorRGBA(192, 192, 192, 255));
+    return win.WindowContents.init(self, "email", fnt.EEE ++ "Mail", col.newColorRGBA(192, 192, 192, 255));
 }

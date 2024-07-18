@@ -20,7 +20,9 @@ const events = @import("../util/events.zig");
 const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else ", "asm " };
 const HL_KEYWORD2 = [_][]const u8{"#include "};
 const COMMENT_START = "//";
-const STRING_START = "\"";
+const STRING_START = '\"';
+const ESCAPE_CHAR = '\\';
+const STRING_ERROR = fnt.COLOR_BLACK ++ fnt.LEFT;
 
 pub const EditorData = struct {
     const Self = @This();
@@ -87,9 +89,9 @@ pub const EditorData = struct {
             const comment = std.mem.indexOf(u8, line, COMMENT_START) orelse line.len;
 
             const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                &.{0xFE},
+                fnt.COLOR_BLUE,
                 keyword,
-                &.{0xF8},
+                fnt.COLOR_BLACK,
             });
             defer allocator.alloc.free(replacement);
 
@@ -105,9 +107,9 @@ pub const EditorData = struct {
 
         for (HL_KEYWORD2) |keyword| {
             const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                &.{0xF5},
+                fnt.COLOR_DARK_CYAN,
                 keyword,
-                &.{0xF8},
+                fnt.COLOR_BLACK,
             });
             defer allocator.alloc.free(replacement);
 
@@ -120,7 +122,7 @@ pub const EditorData = struct {
 
         {
             const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                &.{0xF1},
+                fnt.COLOR_WHITE,
                 COMMENT_START,
             });
             defer allocator.alloc.free(replacement);
@@ -136,17 +138,44 @@ pub const EditorData = struct {
             const oldLine = line;
             defer allocator.alloc.free(oldLine);
 
-            const count = std.mem.count(u8, line, STRING_START);
+            var count: usize = 0;
 
-            line = try allocator.alloc.alloc(u8, line.len + count);
+            {
+                var inString = false;
+
+                for (oldLine, 0..) |ch, idx| {
+                    if (ch == STRING_START) {
+                        if (inString) {
+                            if (oldLine[idx - 1] == ESCAPE_CHAR)
+                                continue;
+
+                            inString = !inString;
+                            count += 1;
+                        }
+                    }
+                }
+
+                if (inString) {
+                    count += STRING_ERROR.len;
+                }
+
+                line = try allocator.alloc.alloc(u8, line.len + count);
+
+                if (inString) {
+                    @memcpy(
+                        line[line.len - STRING_ERROR.len .. line.len],
+                        STRING_ERROR,
+                    );
+                }
+            }
 
             var idx: usize = 0;
             var inString = false;
 
             for (oldLine) |ch| {
-                if (ch == STRING_START[0] and !inString) {
+                if (ch == STRING_START and !inString) {
                     inString = !inString;
-                    line[idx] = '\xf4';
+                    line[idx] = fnt.COLOR_DARK_GREEN[0];
                     idx = idx + 1;
                     line[idx] = ch;
                     idx = idx + 1;
@@ -154,9 +183,9 @@ pub const EditorData = struct {
                 }
                 line[idx] = ch;
                 idx = idx + 1;
-                if (ch == STRING_START[0] and inString) {
+                if (ch == STRING_START and inString) {
                     inString = !inString;
-                    line[idx] = '\xf8';
+                    line[idx] = fnt.COLOR_BLACK[0];
                     idx = idx + 1;
                 }
             }
@@ -182,7 +211,7 @@ pub const EditorData = struct {
             const file_name = if (self.file) |file| file.name else "[New File]";
 
             const idx = if (std.mem.lastIndexOf(u8, file_name, "/")) |idx| idx + 1 else 0;
-            const title = try std.fmt.allocPrint(allocator.alloc, "\x82\x82\x82DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
+            const title = try std.fmt.allocPrint(allocator.alloc, fnt.EEE ++ "DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
             defer allocator.alloc.free(title);
 
             try props.setTitle(title);
@@ -878,5 +907,5 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     self.sel.data.color = col.newColorRGBA(255, 0, 0, 255);
 
-    return win.WindowContents.init(self, "editor", "\x82\x82\x82DT", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "editor", fnt.EEE ++ "DT", col.newColor(1, 1, 1, 1));
 }

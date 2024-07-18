@@ -66,7 +66,7 @@ pub const TasksData = struct {
 
         for (self.stats, 0..) |s, idx| {
             const y = bnds.h - 284 - 21 + @as(f32, @floatFromInt(idx)) * font.size - self.scroll_value;
-            const text = try std.fmt.allocPrint(allocator.alloc, "{X:2}|{s:<9}|\x85 {:<4} |\x86 {:<4}", .{ s.id, s.name, s.meta_usage, s.last_exec });
+            const text = try std.fmt.allocPrint(allocator.alloc, "{X:2}|{s:<9}|" ++ fnt.META ++ " {:<4} |" ++ fnt.FRAME ++ " {:<4}", .{ s.id, s.name, s.meta_usage, s.last_exec });
             defer allocator.alloc.free(text);
 
             try font.draw(.{

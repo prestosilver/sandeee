@@ -17,7 +17,7 @@ const c = @import("../c.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
-    const VERSION = std.fmt.comptimePrint("Boot\x82\x82\x82 V_0.2.0\nFor Sand\x82\x82\x82 " ++ options.VersionText, .{options.SandEEEVersion});
+    const VERSION = std.fmt.comptimePrint("Boot" ++ font.EEE ++ " V_0.2.0\nFor Sand" ++ font.EEE ++ " " ++ options.VersionText, .{options.SandEEEVersion});
     const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
 
     const TOTAL_LINES = 10;

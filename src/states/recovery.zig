@@ -116,7 +116,7 @@ pub const GSRecovery = struct {
         _ = size;
         var y: f32 = 100;
 
-        const titleLine = try std.fmt.allocPrint(allocator.alloc, "Recover\x82\x82\x82 v_{s}", .{VERSION});
+        const titleLine = try std.fmt.allocPrint(allocator.alloc, "Recover" ++ font.EEE ++ " v_{s}", .{VERSION});
         defer allocator.alloc.free(titleLine);
         try self.face.draw(.{
             .shader = self.font_shader,
