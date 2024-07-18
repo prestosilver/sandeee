@@ -77,7 +77,7 @@ pub const WebData = struct {
                             return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                         };
                     } else {
-                        return try allocator.alloc.dupe(u8, "Error: Bad Remote");
+                        return try allocator.alloc.dupe(u8, "Error: Bad Steam Link");
                     }
                 } else {
                     return try allocator.alloc.dupe(u8, "Error: Steam is not enabled");
@@ -363,7 +363,7 @@ pub const WebData = struct {
         try self.resetStyles();
 
         if (self.path) |path| {
-            if (!std.mem.endsWith(u8, path, "edf")) {
+            if (std.mem.containsAtLeast(u8, path, 1, ".") and !std.mem.endsWith(u8, path, ".edf")) {
                 const fconts = try self.getConts(path);
 
                 try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[(std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0) + 1 ..]);
