@@ -73,11 +73,13 @@ pub const WebData = struct {
                             tmp_path = sub[slash + 1 ..];
                         }
 
-                        return steamItem(try std.fmt.parseInt(u64, page_idx, 10), path, tmp_path) catch |err| {
+                        return steamItem(std.fmt.parseInt(u64, page_idx, 10) catch {
+                            return try allocator.alloc.dupe(u8, "Error: Invalid list page");
+                        }, path, tmp_path) catch |err| {
                             return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                         };
                     } else {
-                        return try allocator.alloc.dupe(u8, "Error: Bad Steam Link");
+                        return try allocator.alloc.dupe(u8, "Error: Bad steam link");
                     }
                 } else {
                     return try allocator.alloc.dupe(u8, "Error: Steam is not enabled");

@@ -32,6 +32,7 @@ pub const GSInstall = struct {
         .{ "Do you want to keep the CRT Shader", "crt_shader", "Yes" },
         .{ "Do you like " ++ font.EEE, "evil_value", "Yes" },
     };
+
     const MAX_VALUE_LEN = 16;
 
     shader: *shd.Shader,
