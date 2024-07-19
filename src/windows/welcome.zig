@@ -38,19 +38,22 @@ pub const WelcomeData = struct {
         });
         try font.draw(.{
             .shader = font_shader,
-            .text = "  \x80 Open \x82\x82\x82Mail to get started",
+            .text = "  " ++ fnt.BULLET ++ " Open " ++ fnt.EEE ++ "Mail to get started",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 3 * font.size),
             .scale = 1,
         });
         try font.draw(.{
             .shader = font_shader,
-            .text = if (options.IsDemo) "  \x80 This demo will not save progress." else "  \x80 You can open Xplore anytime for help",
+            .text = if (options.IsDemo)
+                "  " ++ fnt.BULLET ++ " This demo will not save progress."
+            else
+                "  " ++ fnt.BULLET ++ " You can open Xplore anytime for help",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 5 * font.size),
             .scale = 1,
         });
         try font.draw(.{
             .shader = font_shader,
-            .text = "  \x80 Remember \x82\x82\x82 is monitoring your activity",
+            .text = "  " ++ fnt.BULLET ++ " Remember " ++ fnt.EEE ++ " is monitoring your activity",
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 7 * font.size),
             .scale = 1,
         });
@@ -136,7 +139,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         .timer = try std.time.Timer.start(),
     };
 
-    var result = try win.WindowContents.init(self, "Welcome", "Welcome To Sand\x82\x82\x82", col.newColorRGBA(192, 192, 192, 255));
+    var result = try win.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ fnt.EEE, col.newColorRGBA(192, 192, 192, 255));
     result.props.size.min = vecs.newVec2(600, 350);
     result.props.size.max = vecs.newVec2(600, 350);
 
