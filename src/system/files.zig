@@ -242,7 +242,10 @@ pub const Folder = struct {
     }
 
     pub fn init(aDiskPath: ?[]const u8) !void {
-        rootOut = null;
+        if (rootOut) |out| {
+            allocator.alloc.free(out);
+            rootOut = null;
+        }
 
         if (aDiskPath) |diskPath| {
             root = try allocator.alloc.create(Folder);
@@ -744,7 +747,10 @@ pub const Folder = struct {
         allocator.alloc.free(self.name);
         allocator.alloc.destroy(self);
 
-        rootOut = null;
+        if (rootOut) |out| {
+            allocator.alloc.free(out);
+            rootOut = null;
+        }
     }
 
     pub fn toStr(self: *Folder) !std.ArrayList(u8) {

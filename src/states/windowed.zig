@@ -297,6 +297,7 @@ pub const GSWindowed = struct {
 
         // deinit lists
         self.windows.deinit();
+        self.popups.deinit();
         self.emailManager.deinit();
         self.notifs.deinit();
         files.deinit();

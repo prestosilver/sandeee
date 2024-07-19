@@ -352,7 +352,10 @@ pub const Shell = struct {
         if (param.len > 4) {
             const webself: *wins.web.WebData = @ptrCast(@alignCast(window.data.contents.ptr));
 
-            webself.path = try allocator.alloc.dupe(u8, param[4..]);
+            const new_path = param[4..];
+            webself.path = try allocator.alloc.realloc(webself.path, new_path.len);
+
+            @memcpy(webself.path, new_path);
         }
 
         try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
@@ -545,7 +548,9 @@ pub const Shell = struct {
     }
 
     pub fn runBg(self: *Shell, cmd: []const u8) !void {
-        _ = try self.run(cmd);
+        const result = try self.run(cmd);
+        result.deinit();
+
         self.vm = null;
     }
 

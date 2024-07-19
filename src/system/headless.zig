@@ -102,9 +102,6 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
         }
     }
 
-    if (files.rootOut) |rootOut|
-        allocator.alloc.free(rootOut);
-
     return;
 }
 

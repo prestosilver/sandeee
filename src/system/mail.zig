@@ -170,6 +170,7 @@ pub const EmailManager = struct {
 
     pub fn deinit(self: *EmailManager) void {
         for (self.emails.items) |email| {
+            allocator.alloc.free(email.to);
             allocator.alloc.free(email.deps);
             allocator.alloc.free(email.from);
             allocator.alloc.free(email.subject);

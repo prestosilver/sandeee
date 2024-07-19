@@ -43,9 +43,9 @@ pub const WebData = struct {
 
         if (@as(UrlKind, @enumFromInt(in_path[0])) != .Local and std.mem.indexOf(u8, in_path, ":") == null) {
             allocator.alloc.free(path);
-            const idx = std.mem.indexOf(u8, self.path.?, ":") orelse 0;
+            const idx = std.mem.indexOf(u8, self.path, ":") orelse 0;
 
-            path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ self.path.?[0..idx], in_path[1..] });
+            path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ self.path[0..idx], in_path[1..] });
         }
 
         log.debug("web load: {s}", .{path});
@@ -183,12 +183,12 @@ pub const WebData = struct {
     menubar: sprite.Sprite,
     text_box: [2]sprite.Sprite,
     icons: [2]sprite.Sprite,
-    path: ?[]const u8,
+    path: []u8,
 
     shader: *shd.Shader,
     conts: ?[]const u8,
     links: std.ArrayList(WebLink),
-    hist: std.ArrayList([]const u8),
+    hist: std.ArrayList([]u8),
 
     scroll_top: bool = false,
     scroll_link: bool = false,
@@ -364,18 +364,16 @@ pub const WebData = struct {
 
         try self.resetStyles();
 
-        if (self.path) |path| {
-            if (std.mem.containsAtLeast(u8, path, 1, ".") and !std.mem.endsWith(u8, path, ".edf")) {
-                const fconts = try self.getConts(path);
+        if (std.mem.containsAtLeast(u8, self.path, 1, ".") and !std.mem.endsWith(u8, self.path, ".edf")) {
+            const fconts = try self.getConts(self.path);
 
-                try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.?[(std.mem.lastIndexOf(u8, self.path.?, "/") orelse 0) + 1 ..]);
+            try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path[(std.mem.lastIndexOf(u8, self.path, "/") orelse 0) + 1 ..]);
 
-                try self.back(true);
-                return;
-            }
-
-            self.conts = try self.getConts(path);
+            try self.back(true);
+            return;
         }
+
+        self.conts = try self.getConts(self.path);
 
         var iter = std.mem.split(u8, self.conts orelse return, "\n");
 
@@ -751,23 +749,13 @@ pub const WebData = struct {
 
         const tmp = batch.SpriteBatch.instance.scissor;
         batch.SpriteBatch.instance.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 32, 28);
-        if (self.path) |file| {
-            try font.draw(.{
-                .shader = font_shader,
-                .text = file,
-                .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
-                .wrap = bnds.w - 90,
-                .maxlines = 1,
-            });
-        } else {
-            try font.draw(.{
-                .shader = font_shader,
-                .text = "Error",
-                .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
-                .wrap = bnds.w - 90,
-                .maxlines = 1,
-            });
-        }
+        try font.draw(.{
+            .shader = font_shader,
+            .text = self.path,
+            .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
+            .wrap = bnds.w - 90,
+            .maxlines = 1,
+        });
         batch.SpriteBatch.instance.scissor = tmp;
 
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
@@ -801,15 +789,14 @@ pub const WebData = struct {
         }
     }
 
-    // TODO: test memleak
     pub fn followLink(self: *Self) !void {
         if (self.highlight_idx == 0) return;
 
         var lastHost: []const u8 = "";
-        if (std.mem.indexOf(u8, self.path.?, ":")) |idx|
-            lastHost = self.path.?[0..idx];
+        if (std.mem.indexOf(u8, self.path, ":")) |idx|
+            lastHost = self.path[0..idx];
 
-        try self.hist.append(self.path.?);
+        try self.hist.append(self.path);
 
         const targ = self.links.items[self.highlight_idx - 1].url;
 
@@ -823,6 +810,7 @@ pub const WebData = struct {
             allocator.alloc.free(self.conts.?);
             self.conts = null;
         }
+
         self.highlight_idx = 0;
         self.scroll_top = true;
     }
@@ -899,6 +887,8 @@ pub const WebData = struct {
             }
         }
 
+        allocator.alloc.free(self.path);
+
         self.styles.deinit();
 
         if (self.conts) |conts| {
@@ -923,6 +913,8 @@ pub const WebData = struct {
 
 pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(WebData);
+
+    log.info("{s}", .{conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
 
     self.* = .{
         .highlight = sprite.Sprite.new("ui", sprite.SpriteData.new(
@@ -953,11 +945,11 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
                 vecs.newVec2(32, 32),
             )),
         },
-        .path = conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf",
+        .path = try allocator.alloc.dupe(u8, conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"),
         .conts = null,
         .shader = shader,
         .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),
-        .hist = std.ArrayList([]const u8).init(allocator.alloc),
+        .hist = std.ArrayList([]u8).init(allocator.alloc),
         .web_idx = web_idx,
         .styles = std.StringArrayHashMap(WebData.Style).init(allocator.alloc),
     };

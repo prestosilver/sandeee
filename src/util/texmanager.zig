@@ -30,7 +30,13 @@ pub const TextureManager = struct {
     }
 
     pub fn put(self: *TextureManager, name: []const u8, texture: tex.Texture) !void {
-        const new = self.textures.getKey(name) orelse try allocator.alloc.dupe(u8, name);
+        if (self.textures.fetchRemove(name)) |val| {
+            allocator.alloc.free(val.key);
+            val.value.deinit();
+            allocator.alloc.destroy(val.value);
+        }
+
+        const new = try allocator.alloc.dupe(u8, name);
         const adds = try allocator.alloc.create(tex.Texture);
         adds.* = texture;
 
@@ -40,7 +46,13 @@ pub const TextureManager = struct {
     }
 
     pub fn putMem(self: *TextureManager, name: []const u8, texture: []const u8) !void {
-        const new = self.textures.getKey(name) orelse try allocator.alloc.dupe(u8, name);
+        if (self.textures.fetchRemove(name)) |val| {
+            allocator.alloc.free(val.key);
+            val.value.deinit();
+            allocator.alloc.destroy(val.value);
+        }
+
+        const new = try allocator.alloc.dupe(u8, name);
         const adds = try allocator.alloc.create(tex.Texture);
         adds.* = try tex.newTextureMem(texture);
 
