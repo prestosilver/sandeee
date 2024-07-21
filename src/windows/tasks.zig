@@ -162,6 +162,9 @@ pub const TasksData = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        allocator.alloc.free(self.render_graph.data.data);
+        allocator.alloc.free(self.vm_graph.data.data);
+
         for (self.stats) |stat| {
             allocator.alloc.free(stat.name);
         }

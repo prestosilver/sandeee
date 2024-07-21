@@ -179,6 +179,8 @@ pub const VMData = struct {
         self.rects[0].deinit();
         self.rects[1].deinit();
 
+        allocator.alloc.free(self.input);
+
         allocator.alloc.destroy(self);
     }
 };

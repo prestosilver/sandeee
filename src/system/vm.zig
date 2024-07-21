@@ -6,6 +6,7 @@ const events = @import("../util/events.zig");
 const systemEvs = @import("../events/system.zig");
 const windowedState = @import("../states/windowed.zig");
 const syscalls = @import("syscalls.zig");
+const vmAlloc = @import("vmalloc.zig");
 
 const vmManager = @import("vmmanager.zig");
 
@@ -48,16 +49,9 @@ pub const VM = struct {
         Todo,
     } || streams.StreamError;
 
-    const VMString = std.ArrayList(u8);
-
     const StackEntryKind = enum {
         string,
         value,
-    };
-
-    pub const StackEntry = union(StackEntryKind) {
-        string: *VMString,
-        value: *u64,
     };
 
     pub const HeapEntry = union(StackEntryKind) {
@@ -76,7 +70,7 @@ pub const VM = struct {
     };
 
     allocator: std.mem.Allocator,
-    stack: [STACK_MAX]StackEntry,
+    stack: [STACK_MAX]vmAlloc.ObjectRef = undefined,
     rsp: usize = 0,
 
     functions: std.StringHashMap(VMFunc),
@@ -116,7 +110,6 @@ pub const VM = struct {
             tmpArgs[idx] = alloc.dupe(u8, item) catch return error.OutOfMemory;
 
         return VM{
-            .stack = undefined,
             .allocator = alloc,
             .streams = std.ArrayList(?*streams.FileStream).init(alloc),
             .functions = std.StringHashMap(VMFunc).init(alloc),
@@ -132,7 +125,7 @@ pub const VM = struct {
         };
     }
 
-    pub inline fn pushStack(self: *VM, entry: StackEntry) VMError!void {
+    pub inline fn pushStack(self: *VM, entry: vmAlloc.ObjectRef) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         self.stack[self.rsp] = entry;
         self.rsp += 1;
@@ -140,39 +133,32 @@ pub const VM = struct {
 
     pub inline fn pushStackI(self: *VM, value: u64) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        const val = self.allocator.create(u64) catch return error.OutOfMemory;
-        val.* = value;
 
-        self.stack[self.rsp] = StackEntry{ .value = val };
+        self.stack[self.rsp] = try vmAlloc.new(.{ .value = value });
         self.rsp += 1;
     }
 
     pub inline fn pushStackS(self: *VM, string: []const u8) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
-        const appendString = self.allocator.create(VMString) catch return error.OutOfMemory;
-        appendString.* = VMString.initCapacity(self.allocator, string.len) catch return error.OutOfMemory;
-        appendString.appendSliceAssumeCapacity(string);
 
-        self.stack[self.rsp] = StackEntry{ .string = appendString };
+        self.stack[self.rsp] = try vmAlloc.new(.{ .string = try self.allocator.dupe(u8, string) });
         self.rsp += 1;
     }
 
-    pub inline fn popStack(self: *VM) VMError!StackEntry {
+    pub inline fn popStack(self: *VM) VMError!vmAlloc.ObjectRef {
         if (self.rsp == 0) return error.StackUnderflow;
         self.rsp -= 1;
         return self.stack[self.rsp];
     }
 
-    pub inline fn findStack(self: *VM, idx: u64) VMError!StackEntry {
+    pub inline fn findStack(self: *VM, idx: u64) VMError!vmAlloc.ObjectRef {
         if (self.rsp <= idx) return error.StackUnderflow;
         return self.stack[self.rsp - 1 - @as(usize, @intCast(idx))];
     }
 
-    pub inline fn replaceStack(self: *VM, a: StackEntry, b: StackEntry) VMError!void {
+    pub inline fn replaceStack(self: *VM, a: vmAlloc.ObjectRef, b: vmAlloc.ObjectRef) VMError!void {
         for (self.stack[0..self.rsp]) |*entry| {
-            if ((a == .string and entry.* == .string and entry.string == a.string) or
-                (a == .value and entry.* == .value and entry.value == a.value))
-            {
+            if (entry.*.id == a.id) {
                 entry.* = b;
             }
         }
@@ -262,11 +248,6 @@ pub const VM = struct {
     }
 
     pub fn deinit(self: *VM) !void {
-        const oldrsp = self.rsp;
-        self.rsp = 0;
-
-        self.free(self.stack[0..oldrsp]);
-
         if (self.code) |code| {
             for (code) |entry| {
                 if (entry.string) |str| {
@@ -312,67 +293,6 @@ pub const VM = struct {
         self.out.deinit();
     }
 
-    pub inline fn freeValue(self: *VM, val: *u64) void {
-        if (self.rsp != 0) {
-            for (self.stack[0..self.rsp]) |entry| {
-                if (entry == .value and entry.value == val) {
-                    return;
-                }
-            }
-        }
-        self.allocator.destroy(val);
-    }
-
-    pub inline fn freeString(self: *VM, val: *VMString) void {
-        if (self.rsp != 0) {
-            for (self.stack[0..self.rsp]) |entry| {
-                if (entry == .string and entry.string == val) {
-                    return;
-                }
-            }
-        }
-        val.deinit();
-        self.allocator.destroy(val);
-    }
-
-    pub fn free(self: *VM, vals: []const StackEntry) void {
-        switch (vals.len) {
-            0 => return,
-            1 => {
-                switch (vals[0]) {
-                    .value => self.freeValue(vals[0].value),
-                    .string => self.freeString(vals[0].string),
-                }
-            },
-            else => {
-                const toFree = self.allocator.alloc(StackEntry, vals.len) catch return;
-                defer self.allocator.free(toFree);
-
-                var idx: usize = 0;
-
-                for (vals) |val| {
-                    for (0..idx) |index| {
-                        if ((val == .string and toFree[index] == .string and toFree[index].string == val.string) or
-                            (val == .value and toFree[index] == .value and toFree[index].value == val.value))
-                        {
-                            break;
-                        }
-                    } else {
-                        toFree[idx] = val;
-                        idx += 1;
-                    }
-                }
-
-                for (toFree[0..idx]) |val| {
-                    switch (val) {
-                        .value => self.freeValue(val.value),
-                        .string => self.freeString(val.string),
-                    }
-                }
-            },
-        }
-    }
-
     pub inline fn runOp(self: *VM, op: Operation) VMError!void {
         telem.Telem.instance.instructionCalls += 1;
 
@@ -398,64 +318,62 @@ pub const VM = struct {
             Operation.Code.Add => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ b, a });
 
-                if (a != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
 
-                if (b == .string) {
-                    if (b.string.items.len < a.value.*) {
+                if (b.data().* == .string) {
+                    if (b.data().string.len < a.data().value) {
                         try self.pushStackS("");
                     } else {
-                        try self.pushStackS(b.string.items[@as(usize, @intCast(a.value.*))..]);
+                        try self.pushStackS(b.data().string[@as(usize, @intCast(a.data().value))..]);
                     }
+
                     return;
                 }
 
-                if (b == .value) {
-                    try self.pushStackI(a.value.* +% b.value.*);
+                if (b.data().* == .value) {
+                    try self.pushStackI(a.data().value +% b.data().value);
+
                     return;
                 }
             },
             Operation.Code.Sub => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ b, a });
 
-                if (a != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
 
-                if (b == .string) {
-                    if (b.string.items.len < a.value.*) {
+                if (b.data().* == .string) {
+                    if (b.data().string.len < a.data().value) {
                         try self.pushStackS("");
                     } else {
-                        try self.pushStackS(b.string.items[0 .. b.string.items.len - a.value.*]);
+                        try self.pushStackS(b.data().string[0 .. b.data().string.len - a.data().value]);
                     }
                     return;
                 }
 
-                if (b == .value) {
-                    try self.pushStackI(b.value.* -% a.value.*);
+                if (b.data().* == .value) {
+                    try self.pushStackI(b.data().value -% a.data().value);
                     return;
                 }
             },
             Operation.Code.Size => {
                 const a = try self.popStack();
                 const b = try self.findStack(0);
-                defer self.free(&[_]StackEntry{a});
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .string) return error.StringMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .string) return error.StringMissing;
 
-                try b.string.resize(a.value.*);
+                b.data().string = try self.allocator.realloc(b.data().string, a.data().value);
 
                 return;
             },
             Operation.Code.Len => {
                 const a = try self.popStack();
-                defer self.free(&[_]StackEntry{a});
 
-                if (a != .string) return error.StringMissing;
+                if (a.data().* != .string) return error.StringMissing;
 
-                try self.pushStackI(a.string.items.len);
+                try self.pushStackI(a.data().string.len);
 
                 return;
             },
@@ -470,13 +388,14 @@ pub const VM = struct {
                 if (op.value == null) return error.ValueMissing;
 
                 const a = try self.findStack(op.value.?);
-                if (a == .string) {
-                    try self.pushStackS(a.string.items);
+
+                if (a.data().* == .string) {
+                    try self.pushStackS(a.data().string);
                     return;
                 }
 
-                if (a == .value) {
-                    try self.pushStackI(a.value.*);
+                if (a.data().* == .value) {
+                    try self.pushStackI(a.data().value);
                     return;
                 }
             },
@@ -488,17 +407,16 @@ pub const VM = struct {
             },
             Operation.Code.Jz => {
                 const a = try self.popStack();
-                defer self.free(&[_]StackEntry{a});
 
-                if (a == .string) {
-                    if (a.string.items.len == 0) {
+                if (a.data().* == .string) {
+                    if (a.data().string.len == 0) {
                         self.pc = @as(usize, @intCast(op.value.?));
                     }
                     return;
                 }
 
-                if (a == .value) {
-                    if (a.value.* == 0) {
+                if (a.data().* == .value) {
+                    if (a.data().value == 0) {
                         self.pc = @as(usize, @intCast(op.value.?));
                     }
                     return;
@@ -506,17 +424,16 @@ pub const VM = struct {
             },
             Operation.Code.Jnz => {
                 const a = try self.popStack();
-                defer self.free(&[_]StackEntry{a});
 
-                if (a == .string) {
-                    if (a.string.items.len != 0) {
+                if (a.data().* == .string) {
+                    if (a.data().string.len != 0) {
                         self.pc = @as(usize, @intCast(op.value.?));
                     }
                     return;
                 }
 
-                if (a == .value) {
-                    if (a.value.* != 0) {
+                if (a.data().* == .value) {
+                    if (a.data().value != 0) {
                         self.pc = @as(usize, @intCast(op.value.?));
                     }
                     return;
@@ -527,59 +444,67 @@ pub const VM = struct {
                 //defer syslock.unlock();
 
                 if (op.value) |index| {
-                    syscalls.SysCall.run(self, index) catch {
-                        switch (op.value.?) {
-                            // panic
-                            128 => {
-                                if (@import("builtin").is_test)
-                                    return error.InvalidSys;
-                                if (!windowedState.GSWindowed.globalSelf.debug_enabled)
-                                    return error.InvalidSys;
+                    // log.debug("syscall {}", .{op});
 
-                                @panic("VM Crash Called");
-                            },
-                            // secret
-                            255 => {
-                                events.EventManager.instance.sendEvent(systemEvs.EventSys{
-                                    .sysId = op.value.?,
-                                }) catch return error.InvalidSys;
+                    syscalls.SysCall.run(self, index) catch |err| {
+                        switch (err) {
+                            error.InvalidSys => {
+                                switch (op.value.?) {
+                                    // panic
+                                    128 => {
+                                        if (@import("builtin").is_test)
+                                            return error.InvalidSys;
+                                        if (!windowedState.GSWindowed.globalSelf.debug_enabled)
+                                            return error.InvalidSys;
 
-                                if (self.rsp == 0)
-                                    return error.InvalidPassword;
+                                        @panic("VM Crash Called");
+                                    },
+                                    // secret
+                                    255 => {
+                                        events.EventManager.instance.sendEvent(systemEvs.EventSys{
+                                            .sysId = op.value.?,
+                                        }) catch return error.InvalidSys;
 
-                                const pass = try self.popStack();
-                                defer self.free(&[_]StackEntry{pass});
+                                        if (self.rsp == 0)
+                                            return error.InvalidPassword;
 
-                                if (pass != .string) return error.StringMissing;
+                                        const pass = try self.popStack();
 
-                                if (std.mem.eql(u8, pass.string.items, "Hi")) {
-                                    try self.out.appendSlice("Hello World!\n");
+                                        if (pass.data().* != .string) return error.StringMissing;
 
-                                    return;
-                                }
+                                        if (std.mem.eql(u8, pass.data().string, "Hi")) {
+                                            try self.out.appendSlice("Hello World!\n");
 
-                                const dbg_pass = try telem.Telem.getDebugPassword();
-                                defer self.allocator.free(dbg_pass);
+                                            return;
+                                        }
 
-                                if (std.mem.eql(u8, pass.string.items, dbg_pass)) {
-                                    try self.out.appendSlice("Debug Mode Enabled\n");
+                                        const dbg_pass = try telem.Telem.getDebugPassword();
+                                        defer self.allocator.free(dbg_pass);
 
-                                    events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
-                                        .enabled = true,
-                                    }) catch {
+                                        if (std.mem.eql(u8, pass.data().string, dbg_pass)) {
+                                            try self.out.appendSlice("Debug Mode Enabled\n");
+
+                                            events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
+                                                .enabled = true,
+                                            }) catch {
+                                                return error.InvalidSys;
+                                            };
+
+                                            return;
+                                        }
+
+                                        log.debug("password dosent match {s}", .{dbg_pass});
+
+                                        return error.InvalidPassword;
+                                    },
+                                    // misc
+                                    else => {
                                         return error.InvalidSys;
-                                    };
-
-                                    return;
+                                    },
                                 }
-
-                                log.debug("password dosent match {s}", .{dbg_pass});
-
-                                return error.InvalidPassword;
                             },
-                            // misc
                             else => {
-                                return error.InvalidSys;
+                                return err;
                             },
                         }
                     };
@@ -594,96 +519,88 @@ pub const VM = struct {
             Operation.Code.Mul => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                try self.pushStackI(a.value.* *% b.value.*);
+                try self.pushStackI(a.data().value *% b.data().value);
 
                 return;
             },
             Operation.Code.Div => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                if (a.value.* == 0) return error.DivZero;
+                if (a.data().value == 0) return error.DivZero;
 
-                try self.pushStackI(b.value.* / a.value.*);
+                try self.pushStackI(b.data().value / a.data().value);
 
                 return;
             },
             Operation.Code.Mod => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                if (a.value.* == 0) return error.DivZero;
+                if (a.data().value == 0) return error.DivZero;
 
-                try self.pushStackI(b.value.* % a.value.*);
+                try self.pushStackI(b.data().value % a.data().value);
 
                 return;
             },
             Operation.Code.And => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                try self.pushStackI(a.value.* & b.value.*);
+                try self.pushStackI(a.data().value & b.data().value);
 
                 return;
             },
             Operation.Code.Or => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                try self.pushStackI(a.value.* | b.value.*);
+                try self.pushStackI(a.data().value | b.data().value);
 
                 return;
             },
             Operation.Code.Neg => {
                 const a = try self.popStack();
-                defer self.free(&[_]StackEntry{a});
 
-                if (a != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
 
-                try self.pushStackI(0 -% a.value.*);
+                try self.pushStackI(0 -% a.data().value);
 
                 return;
             },
             Operation.Code.Xor => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                try self.pushStackI(a.value.* ^ b.value.*);
+                try self.pushStackI(a.data().value ^ b.data().value);
 
                 return;
             },
             Operation.Code.Not => {
                 const a = try self.popStack();
-                defer self.free(&[_]StackEntry{a});
 
-                if (a != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
 
-                const val: u64 = if (a.value.* == 0) 1 else 0;
+                const val: u64 = if (a.data().value == 0) 1 else 0;
 
                 try self.pushStackI(val);
 
@@ -691,11 +608,10 @@ pub const VM = struct {
             },
             Operation.Code.Sin => {
                 const a = try self.popStack();
-                defer self.free(&[_]StackEntry{a});
 
-                if (a != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
 
-                const val: u64 = @as(u64, @intFromFloat((std.math.sin(@as(f32, @floatFromInt(a.value.*)) * (std.math.pi * 2) / 255) + 1.0) * 127.0));
+                const val: u64 = @as(u64, @intFromFloat((std.math.sin(@as(f32, @floatFromInt(a.data().value)) * (std.math.pi * 2) / 255) + 1.0) * 127.0));
 
                 try self.pushStackI(val);
 
@@ -703,11 +619,10 @@ pub const VM = struct {
             },
             Operation.Code.Cos => {
                 const a = try self.popStack();
-                defer self.free(&[_]StackEntry{a});
 
-                if (a != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
 
-                const val: u64 = @as(u64, @intFromFloat((std.math.cos(@as(f32, @floatFromInt(a.value.*)) * (std.math.pi * 2) / 255) + 1.0) * 127.0));
+                const val: u64 = @as(u64, @intFromFloat((std.math.cos(@as(f32, @floatFromInt(a.data().value)) * (std.math.pi * 2) / 255) + 1.0) * 127.0));
 
                 try self.pushStackI(val);
 
@@ -717,8 +632,6 @@ pub const VM = struct {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
-                defer self.free(&[_]StackEntry{ b, a });
-
                 try self.pushStack(a);
 
                 try self.replaceStack(b, a);
@@ -727,21 +640,17 @@ pub const VM = struct {
             },
             Operation.Code.Disc => {
                 if (op.value == null) return error.ValueMissing;
-
                 if (op.value.? > self.rsp) return error.StackUnderflow;
 
                 switch (op.value.?) {
                     0 => {
-                        const disc = try self.popStack();
-                        defer self.free(&[_]StackEntry{disc});
+                        _ = try self.popStack();
                     },
                     else => {
                         const items = self.stack[self.rsp - @as(usize, @intCast(op.value.?)) .. self.rsp];
                         self.rsp -= @as(u8, @intCast(op.value.?));
-                        const disc = try self.popStack();
-                        defer self.free(&[_]StackEntry{disc});
-
-                        std.mem.copyForwards(StackEntry, self.stack[self.rsp .. self.rsp + items.len], items);
+                        _ = try self.popStack();
+                        std.mem.copyForwards(vmAlloc.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
                         self.rsp += items.len;
                     },
                 }
@@ -751,35 +660,34 @@ pub const VM = struct {
             Operation.Code.Eq => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a == .string) {
-                    if (b == .string) {
-                        const val: u64 = if (std.mem.eql(u8, a.string.items, b.string.items)) 1 else 0;
+                if (a.data().* == .string) {
+                    if (b.data().* == .string) {
+                        const val: u64 = if (std.mem.eql(u8, a.data().string, b.data().string)) 1 else 0;
                         try self.pushStackI(val);
                         return;
                     }
 
-                    if (b == .value) {
+                    if (b.data().* == .value) {
                         var val: u64 = 0;
-                        if (a.string.items.len != 0 and a.string.items[0] == @as(u8, @intCast(@mod(b.value.*, 256)))) val = 1;
-                        if (a.string.items.len == 0 and 0 == b.value.*) val = 1;
+                        if (a.data().string.len != 0 and a.data().string[0] == @as(u8, @intCast(@mod(b.data().value, 256)))) val = 1;
+                        if (a.data().string.len == 0 and b.data().value == 0) val = 1;
                         try self.pushStackI(val);
                         return;
                     }
                 }
 
-                if (a == .value) {
-                    if (b == .string) {
+                if (a.data().* == .value) {
+                    if (b.data().* == .string) {
                         var val: u64 = 0;
-                        if (b.string.items.len != 0 and b.string.items[0] == @as(u8, @intCast(@mod(a.value.*, 256)))) val = 1;
-                        if (b.string.items.len == 0 and 0 == a.value.*) val = 1;
+                        if (b.data().string.len != 0 and b.data().string[0] == @as(u8, @intCast(@mod(a.data().value, 256)))) val = 1;
+                        if (b.data().string.len == 0 and a.data().value == 0) val = 1;
                         try self.pushStackI(val);
                         return;
                     }
 
-                    if (b == .value) {
-                        const val: u64 = if (a.value.* == b.value.*) 1 else 0;
+                    if (b.data().* == .value) {
+                        const val: u64 = if (a.data().value == b.data().value) 1 else 0;
                         try self.pushStackI(val);
                         return;
                     }
@@ -788,43 +696,40 @@ pub const VM = struct {
             Operation.Code.Less => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                const val: u64 = if (a.value.* > b.value.*) 1 else 0;
+                const val: u64 = if (a.data().value > b.data().value) 1 else 0;
                 try self.pushStackI(val);
                 return;
             },
             Operation.Code.Greater => {
                 const a = try self.popStack();
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{ a, b });
 
-                if (a != .value) return error.ValueMissing;
-                if (b != .value) return error.ValueMissing;
+                if (a.data().* != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                const val: u64 = if (a.value.* < b.value.*) 1 else 0;
+                const val: u64 = if (a.data().value < b.data().value) 1 else 0;
                 try self.pushStackI(val);
                 return;
             },
             Operation.Code.Getb => {
                 const a = try self.popStack();
-                defer self.free(&[_]StackEntry{a});
 
-                if (a == .string) {
-                    if (a.string.items.len == 0) {
+                if (a.data().* == .string) {
+                    if (a.data().string.len == 0) {
                         try self.pushStackI(0);
                     } else {
-                        const val = @as(u64, @intCast(a.string.items[0]));
+                        const val = @as(u64, @intCast(a.data().string[0]));
                         try self.pushStackI(val);
                     }
                     return;
                 }
 
-                if (a == .value) {
-                    try self.pushStackS(std.mem.asBytes(a.value)[0..1]);
+                if (a.data().* == .value) {
+                    try self.pushStackS(std.mem.asBytes(&a.data().value)[0..1]);
 
                     return;
                 }
@@ -860,14 +765,13 @@ pub const VM = struct {
                 }
 
                 const name = try self.popStack();
-                defer self.free(&[_]StackEntry{name});
 
-                if (name != .string) return error.StringMissing;
+                if (name.data().* != .string) return error.StringMissing;
 
                 self.retStack[self.retRsp].location = self.pc;
                 self.retStack[self.retRsp].function = self.inside_fn;
                 self.pc = 0;
-                if (self.functions.getEntry(name.string.items)) |entry| {
+                if (self.functions.getEntry(name.data().string)) |entry| {
                     self.inside_fn = entry.key_ptr.*;
                 } else {
                     return error.FunctionMissing;
@@ -881,45 +785,35 @@ pub const VM = struct {
                 const b = try self.popStack();
                 const a = try self.popStack();
 
-                defer self.free(&[_]StackEntry{ b, a });
+                if (a.data().* != .string) return error.StringMissing;
 
-                if (a != .string) return error.StringMissing;
-
-                if (b == .string) {
-                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.string.items, b.string.items });
+                if (b.data().* == .string) {
+                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.data().string, b.data().string });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
-                    //try a.string.appendSlice(b.string.items);
-                    //try self.pushStack(a);
 
                     return;
                 }
 
-                if (b == .value) {
-                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.string.items, std.mem.asBytes(b.value) });
+                if (b.data().* == .value) {
+                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.data().string, std.mem.asBytes(&b.data().value) });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
-                    //try a.string.appendSlice(std.mem.asBytes(b.value));
-                    //try self.pushStack(a);
 
                     return;
                 }
             },
             .Create => {
                 const b = try self.popStack();
-                defer self.free(&[_]StackEntry{b});
 
-                if (b != .value) return error.ValueMissing;
+                if (b.data().* != .value) return error.ValueMissing;
 
-                const adds = try self.allocator.create(VMString);
-                adds.* = try VMString.initCapacity(self.allocator, b.value.*);
-                try adds.resize(b.value.*);
+                const adds = try self.allocator.alloc(u8, b.data().value);
+                defer self.allocator.free(adds);
 
-                try self.pushStack(.{
-                    .string = adds,
-                });
+                try self.pushStackS(adds);
 
                 return;
             },
@@ -932,20 +826,19 @@ pub const VM = struct {
             },
             .Seed => {
                 const seed = try self.popStack();
-                defer self.free(&[_]StackEntry{seed});
 
-                if (seed != .value) return error.ValueMissing;
+                if (seed.data().* != .value) return error.ValueMissing;
 
-                self.rnd.seed(seed.value.*);
+                self.rnd.seed(seed.data().value);
 
                 return;
             },
             .Zero => {
                 const b = try self.findStack(0);
 
-                if (b != .string) return error.ValueMissing;
+                if (b.data().* != .string) return error.ValueMissing;
 
-                @memset(b.string.items, 0);
+                @memset(b.data().string, 0);
 
                 return;
             },
@@ -1146,6 +1039,12 @@ pub const VM = struct {
         }
 
         return self.done();
+    }
+
+    pub fn markData(self: *VM) !void {
+        for (self.stack[0..self.rsp]) |entry| {
+            try entry.mark();
+        }
     }
 };
 

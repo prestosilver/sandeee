@@ -3,6 +3,7 @@ const vm = @import("vm.zig");
 const files = @import("files.zig");
 const allocator = @import("../util/allocator.zig");
 const c = @import("../c.zig");
+const vmAlloc = @import("vmalloc.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -53,10 +54,23 @@ pub const VMManager = struct {
         }
     }
 
-    pub fn deinit() void {
-        instance.vms.deinit();
-        instance.results.deinit();
-        instance.threads.deinit();
+    pub fn deinit(self: *Self) !void {
+        var iter = instance.vms.iterator();
+
+        while (iter.next()) |entry| {
+            try entry.value_ptr.*.deinit();
+            _ = instance.vms.remove(entry.key_ptr.*);
+        }
+
+        self.vms.deinit();
+
+        // TODO: free items
+        self.results.deinit();
+
+        // TODO: free items
+        self.threads.deinit();
+
+        vmAlloc.deinit();
     }
 
     pub const VMStats = struct {
@@ -151,6 +165,16 @@ pub const VMManager = struct {
             .data = try allocator.alloc.alloc(u8, 0),
             .done = !self.vms.contains(handle.id),
         };
+    }
+
+    pub fn runGc(self: *Self) !void {
+        var iter = self.vms.iterator();
+
+        while (iter.next()) |entry| {
+            try entry.value_ptr.markData();
+        }
+
+        try vmAlloc.collect();
     }
 
     pub fn update(self: *Self) !void {

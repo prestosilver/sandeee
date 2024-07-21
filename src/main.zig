@@ -896,6 +896,8 @@ pub fn mainErr() anyerror!void {
 
             try state.refresh();
 
+            try vmManager.VMManager.instance.runGc();
+
             finalFps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / @as(f64, @floatFromInt(lap)) * @as(f64, @floatFromInt(std.time.ns_per_s))));
             if (vmManager.VMManager.instance.vms.count() != 0 and finalFps != 0) {
                 if (finalFps < 55) {
@@ -949,6 +951,8 @@ pub fn mainErr() anyerror!void {
 
     // deinit the current state
     try gameStates.getPtr(currentState).deinit();
+
+    try vmManager.VMManager.instance.deinit();
 
     // deinit fonts
     try biosFace.deinit();
