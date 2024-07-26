@@ -13,6 +13,7 @@ const emails = @import("tools/mail.zig");
 const rand = @import("tools/random.zig");
 const dwns = @import("tools/downloadpage.zig");
 const changelog = @import("tools/changelog.zig");
+const docs = @import("tools/docs.zig");
 
 // debug only
 const asmTestsFiles = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
@@ -521,6 +522,11 @@ pub fn build(b: *std.Build) !void {
     {
         const step = try changelog.ChangelogStep.create(b, "www/changelog.edf");
         www_step.dependOn(&step.step);
+    }
+
+    {
+        const docs_step = try docs.DocStep.create(b, "docs", "www/docs", "@/docs/");
+        www_step.dependOn(&docs_step.step);
     }
 
     const run_step = b.step("run", "Run the app");

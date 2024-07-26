@@ -1,0 +1,165 @@
+:center: -- EON --
+
+-- 1 Function Structure --
+
+An EON function should always return a value.
+
+:code-edge:
+:code:    | fn invalidFunction() {
+:code:    |     doImportantStuff();
+:bad-code:| }
+:code-edge:
+
+You can give a function parameters by putting names in a comma separated list inside the functions parenthesis.
+
+:code-edge:
+:code:    | fn paramters(a, b, c) {
+:code:    |     return a + b * c;
+:code:    | }
+:code-edge:
+
+-- 2 Variables --
+
+In EON variables can be created with the var keyword. Variables can be initialized with an = sign.
+Variables are automatically destroyed when a function ends.
+
+:code-edge:
+:code:    | fn main() {
+:code:    |     var testa;
+:code:    |     var testb = 10;
+:code:    |
+:code:    |     testa = testb * 2;
+:code:    |
+:code:    |     return 0;
+:code:    | }
+:code-edge:
+
+If you feed a variable into a function and assign to it in the function it will override the value outside.
+
+:code-edge:
+:code:    | fn setValue(val) {
+:code:    |     val = 100;
+:code:    |
+:code:    |     return 0;
+:code:    | }
+:code:    |
+:code:    | fn main() {
+:code:    |     var test = 10;
+:code:    |
+:code:    |     // this will set test to 100
+:code:    |     setValue(test);
+:code:    |
+:code:    |     return 0;
+:code:    | }
+:code-edge:
+
+You can avoid this behaviour with the dup function.
+
+:code-edge:
+:code:    | fn setValue(val) {
+:code:    |     val = 100;
+:code:    |
+:code:    |     return 0;
+:code:    | }
+:code:    |
+:code:    | fn main() {
+:code:    |     var test = 10;
+:code:    |
+:code:    |     // this will not set test to 100
+:code:    |     setValue(dup(test));
+:code:    |
+:code:    |     return 0;
+:code:    | }
+:code-edge:
+
+-- 3 Code Blocks --
+
+:h3: 3.1 Basic Code Blocks
+
+Code can be blocked into a single statement by wrapping it in {}.
+Variables in a code block are destroyed after its execution.
+
+:code-edge:
+:code:    | #include "/libs/inc/sys.eon"
+:code:    |
+:code:    | fn main() {
+:code:    |     {
+:code:    |         var tmp = 10;
+:code:    |
+:code:    |         print(tmp);
+:code:    |     }
+:code:    |
+:bad-code:|     print(tmp);
+:code:    |     return 0;
+:code:    | }
+:code-edge:
+
+:h3: 3.2 If statements
+
+An if statement has the following syntax.
+
+:code-edge:
+:code:    | fn main() {
+:code:    |     if (0 == 0) print("0 is 0\n");
+:code:    |
+:code:    |     // You can also use a basic block
+:code:    |     // in an if to add more statements.
+:code:    |     if (0 == 0 && 0 != 1) {
+:code:    |         print("0 is 0\n");
+:code:    |         print("0 is also not 1\n");
+:code:    |     }
+:code:    |
+:code:    |     return 0;
+:code:    | }
+:code-edge:
+
+-- 4 Libraries --
+
+:h3: 4.1 Header Libraries
+
+Header Libraries can be included through the #include keyword. Header libraries are found in /libs/inc. Including a header library adds its contents directly into the current file.
+
+:code-edge:
+:code:    | #include "/libs/inc/sys.eon"
+:code:    |
+:code:    | fn main() {
+:code:    |     print("test\n");
+:code:    |     return 0;
+:code:    | }
+:code-edge:
+
+:h3: 4.2 ELL Libraries
+
+ELL Libraries can be loaded through the libload.eon header library.
+
+:code-edge:
+:code:    | #include "/libs/inc/libload.eon"
+:code:    |
+:code:    | fn main() {
+:code:    |     setupLibLoad();
+:code:    |     loadLib("/libs/texture.ell");
+:code:    |     loadLib("/libs/window.ell");
+:code:    |
+:code:    |     return 0;
+:code:    | }
+:code-edge:
+
+-- 5 Advanced Features --
+
+EON functions can be called with too many parameters. These paramterers will be ignored by the function, this will result in an error unless you use the arguments with asm.
+
+Say you have the function:
+
+:code-edge:
+:code:    | fn close() {
+:code:    |     // closes a file
+:code:    |     asm "sys 7";
+:code:    |     asm "push 0";
+:code:    |     asm "ret";
+:code:    | }
+:code:    |
+:code:    | fn main() {
+:code:    |     close(fileHandle);
+:bad-code:|     close();
+:code:    | }
+:code-edge:
