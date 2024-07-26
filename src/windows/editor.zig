@@ -184,6 +184,9 @@ pub const EditorData = struct {
                 line[idx] = ch;
                 idx = idx + 1;
                 if (ch == STRING_START and inString) {
+                    if (idx > 0 and oldLine[idx - 1] == ESCAPE_CHAR)
+                        continue;
+
                     inString = !inString;
                     line[idx] = fnt.COLOR_BLACK[0];
                     idx = idx + 1;
