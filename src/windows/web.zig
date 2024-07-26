@@ -23,7 +23,7 @@ const log = @import("../util/log.zig").log;
 const steam = @import("steam");
 const options = @import("options");
 
-const HEADER_SIZE = 1024;
+const HEADER_SIZE = 256;
 
 var web_idx: u8 = 0;
 
@@ -97,11 +97,11 @@ pub const WebData = struct {
                 defer client.deinit();
 
                 const uri = std.Uri{
-                    .scheme = "https",
+                    .scheme = "http",
                     .user = null,
                     .password = null,
                     .host = .{ .raw = path[1..idx] },
-                    .port = 443,
+                    .port = 80,
                     .path = .{ .raw = path[idx + 1 ..] },
                     .query = null,
                     .fragment = null,
@@ -149,6 +149,12 @@ pub const WebData = struct {
         }
     }
 
+    // pub const LoadState = enum {
+    //     Fetch,
+    //     Images,
+    //     Links,
+    // };
+
     pub const WebLink = struct {
         url: []const u8,
         pos: rect.Rectangle,
@@ -179,6 +185,8 @@ pub const WebData = struct {
         }
     };
 
+    load_thread: ?std.Thread = null,
+
     highlight: sprite.Sprite,
     menubar: sprite.Sprite,
     text_box: [2]sprite.Sprite,
@@ -202,6 +210,20 @@ pub const WebData = struct {
     bnds: rect.Rectangle = undefined,
 
     styles: std.StringArrayHashMap(Style),
+
+    link_lock: std.Thread.Mutex = .{},
+
+    pub fn resetLinks(self: *Self) void {
+        self.link_lock.lock();
+        defer self.link_lock.unlock();
+
+        for (self.links.items) |link| {
+            allocator.alloc.free(link.url);
+        }
+
+        self.links.clearAndFree();
+        self.add_links = true;
+    }
 
     pub fn steamList(page: u32) ![]const u8 {
         const ugc = steam.getSteamUGC();
@@ -356,16 +378,17 @@ pub const WebData = struct {
 
         self.loading = true;
         defer {
-            self.loading = false;
+            self.resetLinks();
+
             self.add_imgs = true;
-            self.add_links = true;
-            self.links.clearAndFree();
+            self.loading = false;
         }
 
         try self.resetStyles();
 
         if (std.mem.containsAtLeast(u8, self.path, 1, ".") and !std.mem.endsWith(u8, self.path, ".edf")) {
             const fconts = try self.getConts(self.path);
+            defer allocator.alloc.free(fconts);
 
             try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path[(std.mem.lastIndexOf(u8, self.path, "/") orelse 0) + 1 ..]);
 
@@ -375,7 +398,7 @@ pub const WebData = struct {
 
         self.conts = try self.getConts(self.path);
 
-        var iter = std.mem.split(u8, self.conts orelse return, "\n");
+        var iter = std.mem.split(u8, self.conts.?, "\n");
 
         while (iter.next()) |fullLine| {
             if (std.mem.startsWith(u8, fullLine, "#Style ")) {
@@ -394,8 +417,7 @@ pub const WebData = struct {
 
         try tex.uploadTextureMem(texture, fconts);
 
-        self.add_links = true;
-        self.links.clearAndFree();
+        self.resetLinks();
     }
 
     pub fn loadStyle(self: *Self, url: []const u8) !void {
@@ -466,7 +488,7 @@ pub const WebData = struct {
 
         const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
         adds.* = .{
-            .text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ files.home.name, name }),
+            .text = try std.mem.concat(allocator.alloc, u8, &.{ files.home.name, name }),
             .data = @as(*anyopaque, @ptrCast(output)),
             .submit = &submit,
             .prompt = "Pick a path to save the file",
@@ -512,18 +534,26 @@ pub const WebData = struct {
         }
 
         if (self.scroll_link) {
+            self.link_lock.lock();
+            defer self.link_lock.unlock();
             if (self.highlight_idx != 0)
                 props.scroll.?.value = std.math.clamp(self.links.items[self.highlight_idx - 1].pos.y - (bnds.h / 2), 0, props.scroll.?.maxy);
             self.scroll_link = false;
         }
 
         if (!self.loading) drawConts: {
+            if (self.load_thread) |load_thread| {
+                load_thread.join();
+                self.load_thread = null;
+            }
+
             const webWidth = bnds.w - 14;
 
             var pos = vecs.newVec2(0, -props.scroll.?.value + 50);
 
             if (self.conts == null) {
-                _ = try std.Thread.spawn(.{}, loadPage, .{self});
+                self.load_thread = try std.Thread.spawn(.{}, loadPage, .{self});
+
                 break :drawConts;
             }
 
@@ -544,14 +574,13 @@ pub const WebData = struct {
                 var line = fullLine;
                 var style: Style = self.styles.get("") orelse .{};
 
-                var styleIter = self.styles.iterator();
+                if (line.len > 1 and line[0] == ':' and std.mem.containsAtLeast(u8, line, 2, ":")) {
+                    const end_idx = (std.mem.indexOf(u8, line[1..], ":") orelse unreachable) + 1;
+                    const style_name = line[1..end_idx];
 
-                while (styleIter.next()) |styleData| {
-                    const name = try std.fmt.allocPrint(allocator.alloc, ":{s}:", .{styleData.key_ptr.*});
-                    defer allocator.alloc.free(name);
-                    if (std.mem.startsWith(u8, fullLine, name)) {
-                        style = styleData.value_ptr.*;
-                        line = fullLine[name.len..];
+                    if (self.styles.get(style_name)) |style_data| {
+                        style = style_data;
+                        line = line[end_idx + 1 ..];
                         line = std.mem.trim(u8, line, &std.ascii.whitespace);
                     }
                 }
@@ -576,7 +605,8 @@ pub const WebData = struct {
                         texMan.TextureManager.instance.get(&texid).?.size =
                             texMan.TextureManager.instance.get(&texid).?.size.div(4);
 
-                        _ = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
+                        const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
+                        img_thread.detach();
                     }
 
                     const size = texMan.TextureManager.instance.get(&texid).?.size.mul(2 * style.scale);
@@ -631,13 +661,17 @@ pub const WebData = struct {
                     style.color = col.newColor(0, 0, 1, 1);
                     const linkcont = line[2..];
                     const linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
+
                     line = linkcont[0..linkidx];
                     line = std.mem.trim(u8, line, &std.ascii.whitespace);
-                    var url = linkcont[linkidx + 1 ..];
-                    url = std.mem.trim(u8, url, &std.ascii.whitespace);
-                    const size = font.sizeText(.{ .text = line, .scale = style.scale });
 
                     if (self.add_links) {
+                        const url = try allocator.alloc.dupe(u8, std.mem.trim(u8, linkcont[linkidx + 1 ..], &std.ascii.whitespace));
+                        const size = font.sizeText(.{ .text = line, .scale = style.scale });
+
+                        self.link_lock.lock();
+                        defer self.link_lock.unlock();
+
                         switch (style.ali) {
                             .Left => {
                                 const link = WebData.WebLink{
@@ -668,7 +702,7 @@ pub const WebData = struct {
                     }
                 }
 
-                const aline = try std.fmt.allocPrint(allocator.alloc, "{s}{s}{s}", .{
+                const aline = try std.mem.concat(allocator.alloc, u8, &.{
                     style.prefix orelse "",
                     line,
                     style.suffix orelse "",
@@ -781,7 +815,9 @@ pub const WebData = struct {
                 allocator.alloc.free(self.conts.?);
                 self.conts = null;
             }
-            self.links.clearAndFree();
+
+            self.resetLinks();
+
             self.highlight_idx = 0;
             self.scroll_top = true;
         } else {
@@ -871,12 +907,13 @@ pub const WebData = struct {
     pub fn moveResize(self: *Self, _: rect.Rectangle) !void {
         if (self.loading) return;
 
-        self.links.clearAndFree();
-        self.add_links = true;
+        self.resetLinks();
     }
 
-    pub fn deinitThread(self: *Self) void {
-        while (self.loading) {}
+    pub fn deinit(self: *Self) !void {
+        if (self.load_thread) |load_thread| {
+            std.Thread.join(load_thread);
+        }
 
         // styles
         var styleIter = self.styles.iterator();
@@ -897,17 +934,21 @@ pub const WebData = struct {
 
         // links
         if (!self.add_links) {
+            for (self.links.items) |link| {
+                allocator.alloc.free(link.url);
+            }
+
             self.links.deinit();
+        }
+
+        for (self.hist.items) |h| {
+            allocator.alloc.free(h);
         }
 
         self.hist.deinit();
 
         // self
         allocator.alloc.destroy(self);
-    }
-
-    pub fn deinit(self: *Self) !void {
-        _ = try std.Thread.spawn(.{}, deinitThread, .{self});
     }
 };
 
