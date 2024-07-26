@@ -81,18 +81,19 @@ pub const LauncherData = struct {
                 .offsetStart = 0,
             };
         }
-        if (self.lastAction != null) {
-            if (self.lastAction.?.time <= 0) {
+
+        if (self.lastAction) |*last_action| {
+            if (last_action.time <= 0) {
                 self.lastAction = null;
             } else {
-                self.lastAction.?.time -= 5;
+                last_action.time -= 5;
             }
         }
 
-        if (self.shell.vm != null) {
+        if (self.shell.vm) |_| {
             const result = self.shell.getVMResult() catch null;
-            if (result != null) {
-                allocator.alloc.free(result.?.data);
+            if (result) |result_data| {
+                allocator.alloc.free(result_data.data);
             }
         }
 
@@ -139,9 +140,9 @@ pub const LauncherData = struct {
                     try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
             }
 
-            if (self.lastAction != null) {
-                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
-                    switch (self.lastAction.?.kind) {
+            if (self.lastAction) |last_action| {
+                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(last_action.pos)) {
+                    switch (last_action.kind) {
                         .SingleLeft => {
                             self.selected = idx + 1;
                         },
@@ -180,19 +181,25 @@ pub const LauncherData = struct {
 
         switch (btn.?) {
             0 => {
-                if (self.lastAction != null and mousepos.distSq(self.lastAction.?.pos) < 100) {
-                    self.lastAction = .{
-                        .kind = .DoubleLeft,
-                        .pos = mousepos,
-                        .time = 10,
-                    };
-                } else {
-                    self.lastAction = .{
+                self.lastAction = if (self.lastAction) |last_action|
+                    if (mousepos.distSq(last_action.pos) < 100)
+                        .{
+                            .kind = .DoubleLeft,
+                            .pos = mousepos,
+                            .time = 10,
+                        }
+                    else
+                        .{
+                            .kind = .SingleLeft,
+                            .pos = mousepos,
+                            .time = 100,
+                        }
+                else
+                    .{
                         .kind = .SingleLeft,
                         .pos = mousepos,
                         .time = 100,
                     };
-                }
             },
             else => {},
         }

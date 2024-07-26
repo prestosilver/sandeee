@@ -111,8 +111,7 @@ pub const GSDisks = struct {
                 if (self.sel < self.disks.items.len - 2) {
                     const sel = self.disks.items[self.sel];
 
-                    self.disk.* = try allocator.alloc.alloc(u8, sel.len - 2);
-                    @memcpy(self.disk.*.?, sel[2..]);
+                    self.disk.* = try allocator.alloc.dupe(u8, sel[2..]);
                 }
 
                 if (self.sel == self.disks.items.len - 1) {

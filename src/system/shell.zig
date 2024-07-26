@@ -191,27 +191,27 @@ pub const Shell = struct {
             else
                 edself.file = try self.root.getFile(param[5..]);
 
-            if (edself.file == null) return .{
-                .data = try allocator.alloc.dupe(u8, ""),
-            };
-            const fileConts = try edself.file.?.read(null);
-            const lines = std.mem.count(u8, fileConts, "\n") + 1;
+            if (edself.file) |file| {
+                const fileConts = try file.read(null);
+                const lines = std.mem.count(u8, fileConts, "\n") + 1;
 
-            if (edself.buffer == null) {
-                edself.buffer = try allocator.alloc.alloc(wins.editor.EditorData.Row, lines);
+                edself.buffer = if (edself.buffer) |buffer|
+                    try allocator.alloc.realloc(buffer, lines)
+                else
+                    try allocator.alloc.alloc(wins.editor.EditorData.Row, lines);
+
+                var iter = std.mem.split(u8, fileConts, "\n");
+                var idx: usize = 0;
+                while (iter.next()) |line| : (idx += 1) {
+                    edself.buffer.?[idx] = .{
+                        .text = try allocator.alloc.dupe(u8, line),
+                        .render = null,
+                    };
+                }
             } else {
-                edself.buffer = try allocator.alloc.realloc(edself.buffer.?, lines);
-            }
-
-            var iter = std.mem.split(u8, fileConts, "\n");
-            var idx: usize = 0;
-            while (iter.next()) |line| {
-                edself.buffer.?[idx] = .{
-                    .text = try allocator.alloc.dupe(u8, line),
-                    .render = null,
+                return .{
+                    .data = try allocator.alloc.dupe(u8, ""),
                 };
-
-                idx += 1;
             }
         }
 

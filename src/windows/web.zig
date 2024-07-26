@@ -811,8 +811,8 @@ pub const WebData = struct {
 
         if (self.hist.popOrNull()) |last| {
             self.path = last;
-            if (self.conts != null) {
-                allocator.alloc.free(self.conts.?);
+            if (self.conts) |conts| {
+                allocator.alloc.free(conts);
                 self.conts = null;
             }
 
@@ -842,8 +842,8 @@ pub const WebData = struct {
             self.path = try allocator.alloc.dupe(u8, targ);
         }
 
-        if (self.conts != null) {
-            allocator.alloc.free(self.conts.?);
+        if (self.conts) |conts| {
+            allocator.alloc.free(conts);
             self.conts = null;
         }
 
@@ -860,10 +860,12 @@ pub const WebData = struct {
             }
 
             if (rect.newRect(38, 0, 38, 40).contains(pos)) {
-                if (self.conts != null and !self.loading) {
-                    allocator.alloc.free(self.conts.?);
-                    self.conts = null;
-                    self.scroll_top = true;
+                if (self.conts) |conts| {
+                    if (!self.loading) {
+                        allocator.alloc.free(conts);
+                        self.conts = null;
+                        self.scroll_top = true;
+                    }
                 }
             }
 

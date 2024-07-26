@@ -219,13 +219,14 @@ pub const Font = struct {
         const startscissor = batch.SpriteBatch.instance.scissor;
         defer batch.SpriteBatch.instance.scissor = startscissor;
 
-        if (batch.SpriteBatch.instance.scissor != null) {
-            if (params.wrap != null)
-                batch.SpriteBatch.instance.scissor.?.w =
-                    @max(@as(f32, 0), @min(batch.SpriteBatch.instance.scissor.?.w, params.pos.x + params.wrap.? - batch.SpriteBatch.instance.scissor.?.x));
-            if (params.maxlines != null)
-                batch.SpriteBatch.instance.scissor.?.h =
-                    @max(@as(f32, 0), @min(batch.SpriteBatch.instance.scissor.?.h, params.pos.y + ((@as(f32, @floatFromInt(params.maxlines.?))) * self.size) - batch.SpriteBatch.instance.scissor.?.y));
+        if (batch.SpriteBatch.instance.scissor) |*scissor| {
+            if (params.wrap) |wrap|
+                scissor.w =
+                    @max(@as(f32, 0), @min(scissor.w, params.pos.x + wrap - scissor.x));
+
+            if (params.maxlines) |max_lines|
+                scissor.h =
+                    @max(@as(f32, 0), @min(scissor.h, params.pos.y + ((@as(f32, @floatFromInt(max_lines))) * self.size) - scissor.y));
         }
 
         var vertarray = try va.VertArray.init(params.text.len * 6);
@@ -322,8 +323,8 @@ pub const Font = struct {
             pos.y += char.ay * params.scale;
         }
 
-        if (params.origin != null) {
-            params.origin.?.* = pos;
+        if (params.origin) |*origin| {
+            origin.*.* = pos;
         }
 
         const entry = .{

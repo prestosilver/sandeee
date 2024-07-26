@@ -72,8 +72,8 @@ pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
 
                 if (self.idx == aid[0]) {
                     result[0] = 255;
-                    if (self.mousebtn != null) {
-                        result[0] = @as(u8, @intCast(self.mousebtn.?));
+                    if (self.mousebtn) |mousebtn| {
+                        result[0] = @as(u8, @intCast(mousebtn));
                     }
                     if (self.mousepos.y > 0 and self.mousepos.y < 20000)
                         std.mem.writeInt(u16, result[3..5], @as(u16, @intFromFloat(self.mousepos.y)), .big);

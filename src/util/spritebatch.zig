@@ -137,16 +137,18 @@ pub const SpriteBatch = struct {
                     uscissor = !rect.Rectangle.equal(cscissor.?, entry.scissor.?);
                 }
 
-                if (uscissor and entry.scissor != null) {
-                    c.glEnable(c.GL_SCISSOR_TEST);
-                    c.glScissor(
-                        @as(c_int, @intFromFloat(@round(entry.scissor.?.x))),
-                        @as(c_int, @intFromFloat(@round(sb.size.y - entry.scissor.?.y - entry.scissor.?.h))),
-                        @as(c_int, @intFromFloat(@round(entry.scissor.?.w))),
-                        @as(c_int, @intFromFloat(@round(entry.scissor.?.h))),
-                    );
-                } else if (uscissor) {
-                    c.glDisable(c.GL_SCISSOR_TEST);
+                if (uscissor) {
+                    if (entry.scissor) |scissor| {
+                        c.glEnable(c.GL_SCISSOR_TEST);
+                        c.glScissor(
+                            @as(c_int, @intFromFloat(@round(scissor.x))),
+                            @as(c_int, @intFromFloat(@round(sb.size.y - scissor.y - scissor.h))),
+                            @as(c_int, @intFromFloat(@round(scissor.w))),
+                            @as(c_int, @intFromFloat(@round(scissor.h))),
+                        );
+                    } else {
+                        c.glDisable(c.GL_SCISSOR_TEST);
+                    }
                 }
 
                 cscissor = entry.scissor;
@@ -187,6 +189,7 @@ pub const SpriteBatch = struct {
 
                 c.glDrawArrays(c.GL_TRIANGLES, 0, @as(c.GLsizei, @intCast(entry.verts.items().len)));
             }
+
             if (cscissor != null)
                 c.glDisable(c.GL_SCISSOR_TEST);
         }

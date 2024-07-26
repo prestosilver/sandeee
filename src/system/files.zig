@@ -58,8 +58,8 @@ pub const File = struct {
     }
 
     pub inline fn write(self: *File, contents: []const u8, vmInstance: ?*vm.VM) FileError!void {
-        if (self.pseudoWrite != null) {
-            return self.pseudoWrite.?(contents, vmInstance);
+        if (self.pseudoWrite) |pseudoWrite| {
+            return pseudoWrite(contents, vmInstance);
         } else {
             self.contents.? = try allocator.alloc.realloc(self.contents.?, contents.len);
             @memcpy(self.contents.?, contents);
@@ -67,8 +67,8 @@ pub const File = struct {
     }
 
     pub inline fn read(self: *const File, vmInstance: ?*vm.VM) ![]const u8 {
-        if (self.pseudoRead != null) {
-            return self.pseudoRead.?(vmInstance);
+        if (self.pseudoRead) |pseudoRead| {
+            return pseudoRead(vmInstance);
         } else {
             return self.contents.?;
         }
@@ -333,7 +333,7 @@ pub const Folder = struct {
     }
 
     pub fn getFiles(self: *Folder) ![]*File {
-        if (self.ext) |extPath| {
+        if (self.ext) |*extPath| {
             if (extPath.filesVisited) {
                 return try allocator.alloc.dupe(*File, self.contents.items);
             }
@@ -367,7 +367,7 @@ pub const Folder = struct {
                 }
             }
 
-            self.ext.?.filesVisited = true;
+            extPath.filesVisited = true;
         }
 
         return try allocator.alloc.dupe(*File, self.contents.items);
@@ -572,7 +572,9 @@ pub const Folder = struct {
         defer allocator.alloc.free(fullname);
         for (self.contents.items, 0..) |subfile, idx| {
             if (std.mem.eql(u8, subfile.name, fullname)) {
-                _ = self.contents.orderedRemove(idx);
+                const file = self.contents.orderedRemove(idx);
+                file.deinit();
+
                 return;
             }
         }

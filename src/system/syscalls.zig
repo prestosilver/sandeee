@@ -132,12 +132,14 @@ fn sysRead(self: *vm.VM) VMError!void {
     // std.log.info("fdsa {}", .{idx.data()});
 
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
-    if (fs == null) return error.InvalidStream;
+    if (fs) |stream| {
+        const cont = try stream.Read(@as(u32, @intCast(len.data().value)));
+        defer self.allocator.free(cont);
 
-    const cont = try fs.?.Read(@as(u32, @intCast(len.data().value)));
-    defer self.allocator.free(cont);
-
-    try self.pushStackS(cont);
+        try self.pushStackS(cont);
+    } else {
+        return error.InvalidStream;
+    }
 }
 
 fn sysWrite(self: *vm.VM) VMError!void {
@@ -152,9 +154,11 @@ fn sysWrite(self: *vm.VM) VMError!void {
     if (idx.data().value >= self.streams.items.len) return error.InvalidStream;
 
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
-    if (fs == null) return error.InvalidStream;
-
-    try fs.?.Write(str.data().string);
+    if (fs) |stream| {
+        try stream.Write(str.data().string);
+    } else {
+        return error.InvalidStream;
+    }
 }
 
 fn sysFlush(self: *vm.VM) VMError!void {
@@ -166,9 +170,11 @@ fn sysFlush(self: *vm.VM) VMError!void {
 
     if (idx.data().value >= self.streams.items.len) return error.InvalidStream;
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
-    if (fs == null) return error.InvalidStream;
-
-    try fs.?.Flush();
+    if (fs) |stream| {
+        try stream.Flush();
+    } else {
+        return error.InvalidStream;
+    }
 }
 
 fn sysClose(self: *vm.VM) VMError!void {
@@ -179,10 +185,12 @@ fn sysClose(self: *vm.VM) VMError!void {
     if (idx.data().value >= self.streams.items.len) return error.InvalidStream;
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
 
-    if (fs == null) return error.InvalidStream;
-
-    try fs.?.Close();
-    self.streams.items[@as(usize, @intCast(idx.data().value))] = null;
+    if (fs) |stream| {
+        try stream.Close();
+        self.streams.items[@as(usize, @intCast(idx.data().value))] = null;
+    } else {
+        return error.InvalidStream;
+    }
 }
 
 fn sysArg(self: *vm.VM) VMError!void {

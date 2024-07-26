@@ -98,13 +98,13 @@ pub const CMDData = struct {
             idx += 1;
         } else {
             const result = try self.shell.getVMResult();
-            if (result != null) {
-                defer result.?.deinit();
+            if (result) |result_data| {
+                defer result_data.deinit();
 
                 const start = self.bt.len;
-                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result.?.data.len);
+                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result_data.data.len);
 
-                @memcpy(self.bt[start..], result.?.data);
+                @memcpy(self.bt[start..], result_data.data);
                 try self.processBT();
 
                 idx += 1;

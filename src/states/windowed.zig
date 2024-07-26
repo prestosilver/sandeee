@@ -316,8 +316,8 @@ pub const GSWindowed = struct {
         // setup vm data for update
         if (self.shell.vm != null) {
             const result = self.shell.getVMResult() catch null;
-            if (result != null) {
-                allocator.alloc.free(result.?.data);
+            if (result) |result_data| {
+                allocator.alloc.free(result_data.data);
             }
         }
 
@@ -732,12 +732,12 @@ pub const GSWindowed = struct {
             }
 
             // max size
-            if (dragging.data.contents.props.size.max != null) {
-                if (dragging.data.pos.w > dragging.data.contents.props.size.max.?.x) {
+            if (dragging.data.contents.props.size.max) |max| {
+                if (dragging.data.pos.w > max.x) {
                     dragging.data.pos.w = old.w;
                     dragging.data.pos.x = old.x;
                 }
-                if (dragging.data.pos.h > dragging.data.contents.props.size.max.?.y) {
+                if (dragging.data.pos.h > max.y) {
                     dragging.data.pos.h = old.h;
                     dragging.data.pos.y = old.y;
                 }

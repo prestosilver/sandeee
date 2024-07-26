@@ -93,11 +93,11 @@ pub const ExplorerData = struct {
                 .offsetStart = 34,
             };
         }
-        if (self.lastAction != null) {
-            if (self.lastAction.?.time <= 0) {
+        if (self.lastAction) |*last_action| {
+            if (last_action.time <= 0) {
                 self.lastAction = null;
             } else {
-                self.lastAction.?.time -= 5;
+                last_action.time -= 5;
             }
         }
 
@@ -109,8 +109,8 @@ pub const ExplorerData = struct {
 
         if (self.shell.vm != null) {
             const result = self.shell.getVMResult() catch null;
-            if (result != null) {
-                allocator.alloc.free(result.?.data);
+            if (result) |result_data| {
+                allocator.alloc.free(result_data.data);
             }
         }
 
@@ -145,13 +145,16 @@ pub const ExplorerData = struct {
 
                     try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-                    if (self.selected != null and idx == self.selected.?)
-                        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                    if (self.selected) |selected| {
+                        if (selected == idx) {
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                        }
+                    }
                 }
 
-                if (self.lastAction != null) {
-                    if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(self.lastAction.?.pos)) {
-                        switch (self.lastAction.?.kind) {
+                if (self.lastAction) |last_action| {
+                    if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(last_action.pos)) {
+                        switch (last_action.kind) {
                             .SingleLeft => {
                                 self.selected = idx;
                             },
@@ -159,8 +162,8 @@ pub const ExplorerData = struct {
                                 self.lastAction = null;
 
                                 const newPath = self.shell.root.getFolder(icon.name) catch null;
-                                if (newPath != null) {
-                                    self.shell.root = newPath.?;
+                                if (newPath) |path| {
+                                    self.shell.root = path;
                                     try self.refresh();
                                     self.selected = null;
 
@@ -261,19 +264,25 @@ pub const ExplorerData = struct {
 
         switch (btn.?) {
             0 => {
-                if (self.lastAction != null and mousepos.distSq(self.lastAction.?.pos) < 100) {
-                    self.lastAction = .{
-                        .kind = .DoubleLeft,
-                        .pos = mousepos,
-                        .time = 10,
-                    };
-                } else {
-                    self.lastAction = .{
+                self.lastAction = if (self.lastAction) |last_action|
+                    if (mousepos.distSq(last_action.pos) < 100)
+                        .{
+                            .kind = .DoubleLeft,
+                            .pos = mousepos,
+                            .time = 10,
+                        }
+                    else
+                        .{
+                            .kind = .SingleLeft,
+                            .pos = mousepos,
+                            .time = 100,
+                        }
+                else
+                    .{
                         .kind = .SingleLeft,
                         .pos = mousepos,
                         .time = 100,
                     };
-                }
             },
             else => {},
         }

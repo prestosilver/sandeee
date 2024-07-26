@@ -156,10 +156,10 @@ pub const WindowContents = struct {
     }
 
     pub fn drag(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2) !void {
-        if (self.props.scroll) |*scrollData| {
+        if (self.props.scroll) |*scroll_data| {
             if (self.scrolling) {
-                const pc = (mousepos.y - 14 - scrollData.offsetStart) / (size.y - 28 - scrollData.offsetStart);
-                scrollData.value = std.math.round(scrollData.maxy * pc);
+                const pc = (mousepos.y - 14 - scroll_data.offsetStart) / (size.y - 28 - scroll_data.offsetStart);
+                scroll_data.value = std.math.round(scroll_data.maxy * pc);
 
                 return;
             }
@@ -167,16 +167,16 @@ pub const WindowContents = struct {
     }
 
     pub fn scroll(self: *Self, x: f32, y: f32) !void {
-        if (self.props.scroll != null) {
-            self.props.scroll.?.value -= y * SCROLL_MUL;
+        if (self.props.scroll) |*scroll_data| {
+            scroll_data.value -= y * SCROLL_MUL;
         }
 
         return self.vtable.scroll(self.ptr, x, y);
     }
 
     pub fn move(self: *Self, x: f32, y: f32) !void {
-        if (self.props.scroll != null)
-            return self.vtable.move(self.ptr, x, y + self.props.scroll.?.value);
+        if (self.props.scroll) |*scroll_data|
+            return self.vtable.move(self.ptr, x, y + scroll_data.value);
         return self.vtable.move(self.ptr, x, y);
     }
 
@@ -407,11 +407,13 @@ pub const WindowData = struct {
             return DragMode.Move;
         }
 
-        if (self.contents.props.size.max != null and
-            self.contents.props.size.max.?.x == self.contents.props.size.min.x and
-            self.contents.props.size.max.?.y == self.contents.props.size.min.y)
-        {
-            return DragMode.None;
+        if (self.contents.props.size.max) |max_size| {
+            const min_size = self.contents.props.size.min;
+            if (max_size.x == min_size.x and
+                max_size.y == min_size.y)
+            {
+                return DragMode.None;
+            }
         }
 
         var bottom = self.pos;
@@ -549,12 +551,14 @@ pub const WindowData = struct {
     }
 
     pub fn update(self: *WindowData) void {
-        if (self.contents.props.size.max != null and
-            self.contents.props.size.max.?.y == self.contents.props.size.min.y and
-            self.contents.props.size.max.?.x == self.contents.props.size.min.x)
-        {
-            self.pos.w = self.contents.props.size.min.x;
-            self.pos.h = self.contents.props.size.min.y;
+        if (self.contents.props.size.max) |max| {
+            const min = self.contents.props.size.min;
+            if (max.y == min.y and
+                max.x == min.x)
+            {
+                self.pos.w = self.contents.props.size.min.x;
+                self.pos.h = self.contents.props.size.min.y;
+            }
         }
 
         self.pos = self.pos.round();

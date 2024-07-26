@@ -123,9 +123,9 @@ const full_quad = [_]c.GLfloat{
     0.5,  0.5,  0.0,
 };
 
-// TODO: Move to settings
-const state_refresh_rate = 0.5;
+var state_refresh_rate: f64 = 0.5;
 
+// misc state data
 var gameStates: std.EnumArray(systemEvs.State, states.GameState) = undefined;
 var currentState: systemEvs.State = .Disks;
 
@@ -343,6 +343,12 @@ pub fn settingSet(event: systemEvs.EventSetSetting) !void {
         return;
     }
 
+    if (std.mem.eql(u8, event.setting, "refresh_rate")) {
+        state_refresh_rate = std.fmt.parseFloat(f64, event.value) catch 0.5;
+
+        return;
+    }
+
     if (std.mem.eql(u8, event.setting, "sound_volume")) {
         audio_man.volume = @as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0;
 
@@ -546,22 +552,25 @@ pub fn mainErr() anyerror!void {
 
     while (args.next()) |arg| {
         if (std.mem.eql(u8, arg, "--cwd")) {
-            const path = args.next().?;
-            try std.process.changeCurDir(path);
+            if (args.next()) |path|
+                try std.process.changeCurDir(path)
+            else
+                return error.MissingCwd;
         } else if (std.mem.eql(u8, arg, "--no-crt")) {
             isCrt = false;
         } else if (std.mem.eql(u8, arg, "--headless")) {
             isHeadless = true;
         } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
-            const script = args.next().?;
-            const buff = try allocator.alloc.alloc(u8, 1024);
-            const file = try std.fs.cwd().openFile(script, .{});
+            if (args.next()) |script| {
+                const buff = try allocator.alloc.alloc(u8, 1024);
+                const file = try std.fs.cwd().openFile(script, .{});
 
-            const len = try file.readAll(buff);
-            headlessCmd = buff[0..len];
-            file.close();
+                const len = try file.readAll(buff);
+                headlessCmd = buff[0..len];
+                file.close();
 
-            isHeadless = true;
+                isHeadless = true;
+            } else return error.MissingScript;
         }
     }
 
@@ -889,7 +898,7 @@ pub fn mainErr() anyerror!void {
         }
 
         // track fps
-        if (timer.read() > std.time.ns_per_s * state_refresh_rate) {
+        if (timer.read() > @as(u64, @intFromFloat(std.time.ns_per_s * state_refresh_rate))) {
             try events.EventManager.instance.sendEvent(systemEvs.EventTelemUpdate{});
 
             const lap = timer.lap();

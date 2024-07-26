@@ -229,10 +229,10 @@ pub const VM = struct {
         ) !void {
             _ = options;
             _ = fmt;
-            if (self.string != null) {
-                return std.fmt.format(writer, "{s} \"{s}\"", .{ @tagName(self.code), self.string.? });
-            } else if (self.value != null) {
-                return std.fmt.format(writer, "{s} {}", .{ @tagName(self.code), self.value.? });
+            if (self.string) |string| {
+                return std.fmt.format(writer, "{s} \"{s}\"", .{ @tagName(self.code), string });
+            } else if (self.value) |value| {
+                return std.fmt.format(writer, "{s} {}", .{ @tagName(self.code), value });
             } else {
                 return std.fmt.format(writer, "{s}", .{@tagName(self.code)});
             }
@@ -266,8 +266,8 @@ pub const VM = struct {
         }
 
         for (self.streams.items) |stream| {
-            if (stream != null)
-                try stream.?.Close();
+            if (stream) |strm|
+                try strm.Close();
         }
 
         for (self.args) |*item|
@@ -301,18 +301,12 @@ pub const VM = struct {
         self.pc += 1;
 
         switch (op.code) {
-            Operation.Code.Nop => {
-                return;
-            },
+            Operation.Code.Nop => {},
             Operation.Code.Push => {
-                if (op.string != null) {
-                    try self.pushStackS(op.string.?);
-                    return;
-                }
-
-                if (op.value != null) {
-                    try self.pushStackI(op.value.?);
-                    return;
+                if (op.string) |string| {
+                    try self.pushStackS(string);
+                } else if (op.value) |value| {
+                    try self.pushStackI(value);
                 }
             },
             Operation.Code.Add => {
@@ -382,7 +376,6 @@ pub const VM = struct {
 
                 const a = try self.findStack(op.value.?);
                 try self.pushStack(a);
-                return;
             },
             Operation.Code.Dup => {
                 if (op.value == null) return error.ValueMissing;
@@ -449,7 +442,7 @@ pub const VM = struct {
                     syscalls.SysCall.run(self, index) catch |err| {
                         switch (err) {
                             error.InvalidSys => {
-                                switch (op.value.?) {
+                                switch (index) {
                                     // panic
                                     128 => {
                                         if (@import("builtin").is_test)
@@ -462,7 +455,7 @@ pub const VM = struct {
                                     // secret
                                     255 => {
                                         events.EventManager.instance.sendEvent(systemEvs.EventSys{
-                                            .sysId = op.value.?,
+                                            .sysId = index,
                                         }) catch return error.InvalidSys;
 
                                         if (self.rsp == 0)
@@ -513,7 +506,9 @@ pub const VM = struct {
             },
             Operation.Code.Jmpf => {
                 if (op.value == null) return error.ValueMissing;
+
                 self.pc += @as(usize, @intCast(op.value.?));
+
                 return;
             },
             Operation.Code.Mul => {
@@ -745,20 +740,20 @@ pub const VM = struct {
             Operation.Code.Call => {
                 if (self.retRsp >= self.retStack.len - 1) return error.CallStackOverflow;
 
-                if (op.string != null) {
+                if (op.string) |string| {
                     self.retStack[self.retRsp].location = self.pc;
                     self.retStack[self.retRsp].function = self.inside_fn;
                     self.pc = 0;
-                    self.inside_fn = op.string;
+                    self.inside_fn = string;
                     self.retRsp += 1;
 
                     return;
                 }
 
-                if (op.value != null) {
+                if (op.value) |value| {
                     self.retStack[self.retRsp].location = self.pc;
                     self.retStack[self.retRsp].function = self.inside_fn;
-                    self.pc = @as(usize, @intCast(op.value.?));
+                    self.pc = @as(usize, @intCast(value));
                     self.retRsp += 1;
 
                     return;
@@ -852,11 +847,11 @@ pub const VM = struct {
         for (ops, 0..) |_, idx| {
             list[idx] = ops[idx];
 
-            if (ops[idx].string != null) {
-                const str = try self.allocator.alloc(u8, ops[idx].string.?.len);
+            if (ops[idx].string) |string| {
+                const str = try self.allocator.alloc(u8, string.len);
 
-                for (ops[idx].string.?, 0..) |_, jdx| {
-                    str[jdx] = ops[idx].string.?[jdx];
+                for (string, 0..) |_, jdx| {
+                    str[jdx] = string[jdx];
                 }
 
                 list[idx].string = str;
@@ -929,7 +924,7 @@ pub const VM = struct {
     }
 
     pub fn done(self: *VM) bool {
-        return self.stopped or (self.pc >= self.code.?.len and self.inside_fn == null);
+        return self.code == null or self.stopped or (self.pc >= self.code.?.len and self.inside_fn == null);
     }
 
     pub fn backtrace(self: *VM, i: u8) ![]const u8 {
@@ -959,10 +954,13 @@ pub const VM = struct {
                 }
             }
         } else {
-            oper = if (self.pc == 0)
-                .{ .code = .Nop }
+            oper = if (self.code) |code|
+                if (self.pc == 0)
+                    .{ .code = .Nop }
+                else
+                    code[self.pc - 1]
             else
-                self.code.?[self.pc - 1];
+                .{ .code = .Nop };
         }
 
         return try std.fmt.allocPrint(self.allocator, "In function '{s}' @ {}:\n  Operation: {}\n{s}", .{ self.inside_fn orelse MAIN_NAME, self.pc, oper, bt });
@@ -980,8 +978,13 @@ pub const VM = struct {
             log.err("'{s}', {any}", .{ inside, self.functions.get(inside) });
             return error.UnknownFunction;
         } else {
-            if (self.code.?.len <= self.pc) return null;
-            return self.code.?[self.pc];
+            return if (self.code) |code|
+                if (code.len <= self.pc)
+                    null
+                else
+                    code[self.pc]
+            else
+                null;
         }
 
         return null;
@@ -1003,6 +1006,7 @@ pub const VM = struct {
 
     pub fn runTime(self: *VM, ns: u64, comptime _: bool) !bool {
         if (self.code == null) return error.InvalidASM;
+
         if (self.code.?.len == 0) {
             self.stopped = true;
             return true;

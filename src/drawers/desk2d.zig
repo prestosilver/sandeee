@@ -120,7 +120,7 @@ pub const DeskData = struct {
 
                     const cmd = file.name[index + 1 ..];
 
-                    _ = self.shell.runBg(cmd) catch |err| {
+                    self.shell.runBg(cmd) catch |err| {
                         // TODO: fix leak
                         const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
@@ -266,8 +266,8 @@ pub const DeskData = struct {
     pub fn updateVm(self: *DeskData) !void {
         if (self.shell.vm != null) {
             const result = self.shell.getVMResult() catch null;
-            if (result != null) {
-                allocator.alloc.free(result.?.data);
+            if (result) |result_data| {
+                allocator.alloc.free(result_data.data);
             }
         }
     }

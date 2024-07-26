@@ -69,9 +69,7 @@ pub const GSRecovery = struct {
         var iter = dir.iterate();
 
         while (try iter.next()) |item| {
-            const entry = try allocator.alloc.alloc(u8, item.name.len);
-
-            @memcpy(entry, item.name);
+            const entry = try allocator.alloc.dupe(u8, item.name);
 
             try self.disks.append(entry);
         }
@@ -294,9 +292,9 @@ pub const GSRecovery = struct {
             c.GLFW_KEY_DOWN => {
                 if (self.confirm_sel != null) {
                     self.confirm_sel = false;
-                } else if (self.sub_sel) |sub_sel| {
-                    if (@intFromEnum(sub_sel) < @intFromEnum(RecoveryMenuEntry.Back)) {
-                        self.sub_sel.? = @enumFromInt(@intFromEnum(self.sub_sel.?) + 1);
+                } else if (self.sub_sel) |*sub_sel| {
+                    if (@intFromEnum(sub_sel.*) < @intFromEnum(RecoveryMenuEntry.Back)) {
+                        sub_sel.* = @enumFromInt(@intFromEnum(sub_sel.*) + 1);
 
                         try self.audioMan.playSound(self.blipSound.*);
                     }
@@ -308,9 +306,9 @@ pub const GSRecovery = struct {
             c.GLFW_KEY_UP => {
                 if (self.confirm_sel != null) {
                     self.confirm_sel = true;
-                } else if (self.sub_sel) |sub_sel| {
-                    if (@intFromEnum(sub_sel) > @intFromEnum(RecoveryMenuEntry.Reinstall)) {
-                        self.sub_sel.? = @enumFromInt(@intFromEnum(self.sub_sel.?) - 1);
+                } else if (self.sub_sel) |*sub_sel| {
+                    if (@intFromEnum(sub_sel.*) > @intFromEnum(RecoveryMenuEntry.Reinstall)) {
+                        sub_sel.* = @enumFromInt(@intFromEnum(sub_sel.*) - 1);
                         try self.audioMan.playSound(self.blipSound.*);
                     }
                 } else if (self.sel != 0) {

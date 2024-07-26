@@ -142,6 +142,11 @@ const SettingsData = struct {
         },
         &[_]Setting{
             Setting{
+                .kind = .String,
+                .setting = "Window Update Rate",
+                .key = "refresh_rate",
+            },
+            Setting{
                 .kind = .Dropdown,
                 .kinddata = "No Yes",
                 .setting = "Show Welcome",
@@ -163,11 +168,11 @@ const SettingsData = struct {
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         _ = props;
 
-        if (self.lastAction != null) {
-            if (self.lastAction.?.time <= 0) {
+        if (self.lastAction) |*last_action| {
+            if (last_action.time <= 0) {
                 self.lastAction = null;
             } else {
-                self.lastAction.?.time -= 5;
+                last_action.time -= 5;
             }
         }
 
@@ -387,19 +392,25 @@ const SettingsData = struct {
                     return;
                 }
 
-                if (self.lastAction != null) {
-                    self.lastAction = .{
-                        .kind = .DoubleLeft,
-                        .pos = mousepos,
-                        .time = 10,
-                    };
-                } else {
-                    self.lastAction = .{
+                self.lastAction = if (self.lastAction) |last_action|
+                    if (mousepos.distSq(last_action.pos) < 100)
+                        .{
+                            .kind = .DoubleLeft,
+                            .pos = mousepos,
+                            .time = 10,
+                        }
+                    else
+                        .{
+                            .kind = .SingleLeft,
+                            .pos = mousepos,
+                            .time = 100,
+                        }
+                else
+                    .{
                         .kind = .SingleLeft,
                         .pos = mousepos,
                         .time = 100,
                     };
-                }
             },
             else => {},
         }

@@ -32,10 +32,10 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
     while (true) {
         if (mainShell.vm != null) {
             // setup vm data for update
-            const result = try mainShell.getVMResult();
-            if (result != null) {
-                _ = try stdout.write(result.?.data);
-                allocator.alloc.free(result.?.data);
+            const result_data = try mainShell.getVMResult();
+            if (result_data) |result| {
+                _ = try stdout.write(result.data);
+                allocator.alloc.free(result.data);
             } else {
                 // TODO: fix writing
                 _ = try stdout.write("");
@@ -58,13 +58,13 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
         var data: []const u8 = undefined;
 
-        if (toRun != null) {
-            const idx = std.mem.indexOf(u8, toRun.?, "\n");
+        if (toRun) |command| {
+            const idx = std.mem.indexOf(u8, command, "\n");
             if (idx) |index| {
-                data = toRun.?[0..index];
-                toRun = toRun.?[index + 1 ..];
+                data = command[0..index];
+                toRun = command[index + 1 ..];
             } else {
-                data = toRun.?;
+                data = command;
                 toRun = null;
             }
             _ = try stdout.write(data);
@@ -157,7 +157,7 @@ test "Headless scripts" {
         }
     }
 
-    if (err != null) {
-        return err.?;
+    if (err) |result_err| {
+        return result_err;
     }
 }

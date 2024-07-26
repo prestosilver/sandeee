@@ -41,15 +41,19 @@ pub const EditorData = struct {
         pub fn getRender(self: *const Row, targIdx: usize) []const u8 {
             var idx: usize = 0;
             var aidx: usize = 0;
-            for (self.render.?) |ch| {
-                if (ch < 0xf0) {
-                    if (idx >= targIdx) break;
-                    idx += 1;
+            if (self.render) |render| {
+                for (render) |ch| {
+                    if (ch < 0xf0) {
+                        if (idx >= targIdx) break;
+                        idx += 1;
+                    }
+                    aidx += 1;
                 }
-                aidx += 1;
+
+                return render[0..aidx];
             }
 
-            return self.render.?[0..aidx];
+            return "";
         }
     };
 
@@ -304,6 +308,7 @@ pub const EditorData = struct {
                 if (line.render == null) {
                     line.render = try hlLine(line.text);
                 }
+
                 try font.draw(.{
                     .shader = shader,
                     .text = line.render.?,
@@ -381,57 +386,56 @@ pub const EditorData = struct {
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         self.clickDown = self.clickDown and btn != null;
 
-        if (btn == null) return;
+        if (btn) |button|
+            switch (button) {
+                0 => {
+                    const open = rect.newRect(0, 0, 36, 36);
+                    if (open.contains(mousepos)) {
+                        const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+                        adds.* = .{
+                            .path = try allocator.alloc.dupe(u8, files.home.name),
+                            .data = self,
+                            .submit = &submitOpen,
+                        };
 
-        switch (btn.?) {
-            0 => {
-                const open = rect.newRect(0, 0, 36, 36);
-                if (open.contains(mousepos)) {
-                    const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
-                    adds.* = .{
-                        .path = try allocator.alloc.dupe(u8, files.home.name),
-                        .data = self,
-                        .submit = &submitOpen,
-                    };
-
-                    try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
-                        .popup = .{
-                            .texture = "win",
-                            .data = .{
-                                .title = "Open",
-                                .source = rect.newRect(0, 0, 1, 1),
-                                .pos = rect.newRectCentered(self.bnds, 350, 125),
-                                .contents = popups.PopupData.PopupContents.init(adds),
+                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                            .popup = .{
+                                .texture = "win",
+                                .data = .{
+                                    .title = "Open",
+                                    .source = rect.newRect(0, 0, 1, 1),
+                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
+                                    .contents = popups.PopupData.PopupContents.init(adds),
+                                },
                             },
-                        },
-                    });
-                }
-
-                const saveBnds = rect.newRect(36, 0, 36, 36);
-                if (saveBnds.contains(mousepos)) {
-                    try self.save();
-                }
-
-                const newBnds = rect.newRect(72, 0, 36, 36);
-                if (newBnds.contains(mousepos)) {
-                    try self.newFile();
-                }
-
-                if (self.buffer != null and self.buffer.?.len != 0) {
-                    if (mousepos.y > 40 and mousepos.x > 82) {
-                        self.clickPos = mousepos.sub(.{
-                            .y = 40,
-                            .x = 82,
                         });
-                        self.clickDone = self.clickPos;
-                        self.clickDown = true;
                     }
-                }
-            },
-            else => {},
-        }
 
-        return;
+                    const saveBnds = rect.newRect(36, 0, 36, 36);
+                    if (saveBnds.contains(mousepos)) {
+                        try self.save();
+                    }
+
+                    const newBnds = rect.newRect(72, 0, 36, 36);
+                    if (newBnds.contains(mousepos)) {
+                        try self.newFile();
+                    }
+
+                    if (self.buffer) |buffer| {
+                        if (buffer.len != 0) {
+                            if (mousepos.y > 40 and mousepos.x > 82) {
+                                self.clickPos = mousepos.sub(.{
+                                    .y = 40,
+                                    .x = 82,
+                                });
+                                self.clickDone = self.clickPos;
+                                self.clickDown = true;
+                            }
+                        }
+                    }
+                },
+                else => {},
+            };
     }
 
     pub fn deleteSel(self: *Self) !void {
@@ -470,11 +474,10 @@ pub const EditorData = struct {
 
             try self.clearBuffer();
 
-            if (self.buffer) |_| {
-                self.buffer = try allocator.alloc.realloc(self.buffer.?, new_buffer.items.len);
-            } else {
-                self.buffer = try allocator.alloc.alloc(Row, new_buffer.items.len);
-            }
+            self.buffer = if (self.buffer) |old_buffer|
+                try allocator.alloc.realloc(old_buffer, new_buffer.items.len)
+            else
+                try allocator.alloc.alloc(Row, new_buffer.items.len);
 
             @memcpy(self.buffer.?, new_buffer.items);
         }
@@ -514,7 +517,7 @@ pub const EditorData = struct {
 
     pub fn save(self: *Self) !void {
         if (self.buffer) |buffer| {
-            if (self.file != null) {
+            if (self.file) |file| {
                 var buff = std.ArrayList(u8).init(allocator.alloc);
                 defer buff.deinit();
 
@@ -525,7 +528,7 @@ pub const EditorData = struct {
 
                 _ = buff.pop();
 
-                try self.file.?.write(try allocator.alloc.dupe(u8, buff.items), null);
+                try file.write(try allocator.alloc.dupe(u8, buff.items), null);
                 self.modified = false;
             } else {
                 const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
@@ -572,11 +575,10 @@ pub const EditorData = struct {
             const lines = std.mem.count(u8, fileConts, "\n") + 1;
 
             try self.clearBuffer();
-            if (self.buffer) |buffer| {
-                self.buffer = try allocator.alloc.realloc(buffer, lines);
-            } else {
-                self.buffer = try allocator.alloc.alloc(Row, lines);
-            }
+            self.buffer = if (self.buffer) |buffer|
+                try allocator.alloc.realloc(buffer, lines)
+            else
+                try allocator.alloc.alloc(Row, lines);
 
             var iter = std.mem.split(u8, fileConts, "\n");
             var idx: usize = 0;
@@ -618,7 +620,7 @@ pub const EditorData = struct {
                 allocator.alloc.free(line.text);
             }
 
-            allocator.alloc.free(self.buffer.?);
+            allocator.alloc.free(buffer);
 
             self.buffer = null;
         }
@@ -629,10 +631,9 @@ pub const EditorData = struct {
 
         try self.clearBuffer();
 
-        self.buffer = try allocator.alloc.alloc(Row, 1);
-        self.buffer.?[0] = .{
+        self.buffer = try allocator.alloc.dupe(Row, &[_]Row{Row{
             .text = try allocator.alloc.alloc(u8, 0),
-        };
+        }});
 
         self.file = null;
     }
@@ -713,12 +714,12 @@ pub const EditorData = struct {
                 try self.char(' ', mods);
             },
             c.GLFW_KEY_ENTER => {
-                if (self.buffer) |buffer| {
-                    self.buffer = try allocator.alloc.realloc(buffer, buffer.len + 1);
-                    std.mem.copyBackwards(Row, self.buffer.?[self.cursory + 1 ..], self.buffer.?[self.cursory .. self.buffer.?.len - 1]);
+                if (self.buffer) |*buffer| {
+                    buffer.* = try allocator.alloc.realloc(buffer.*, buffer.len + 1);
+                    std.mem.copyBackwards(Row, buffer.*[self.cursory + 1 ..], buffer.*[self.cursory .. buffer.len - 1]);
 
-                    const line = &self.buffer.?[self.cursory];
-                    self.buffer.?[self.cursory + 1] = .{
+                    const line = &buffer.*[self.cursory];
+                    buffer.*[self.cursory + 1] = .{
                         .text = try allocator.alloc.dupe(u8, line.text[self.cursorx..]),
                     };
 

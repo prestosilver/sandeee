@@ -371,10 +371,13 @@ const EmailData = struct {
             return;
         }
 
-        if (keycode == c.GLFW_KEY_R and self.viewing != null) {
-            if (self.viewing.?.condition != .Submit) return;
-            try self.submitFile();
-            return;
+        if (keycode == c.GLFW_KEY_R) {
+            if (self.viewing) |viewing| {
+                if (viewing.condition != .Submit) return;
+
+                try self.submitFile();
+                return;
+            }
         }
     }
 
