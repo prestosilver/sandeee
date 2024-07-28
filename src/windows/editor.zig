@@ -575,10 +575,12 @@ pub const EditorData = struct {
             const lines = std.mem.count(u8, fileConts, "\n") + 1;
 
             try self.clearBuffer();
-            self.buffer = if (self.buffer) |buffer|
-                try allocator.alloc.realloc(buffer, lines)
-            else
-                try allocator.alloc.alloc(Row, lines);
+
+            if (self.buffer) |buffer| {
+                self.buffer = try allocator.alloc.realloc(buffer, lines);
+            } else {
+                self.buffer = try allocator.alloc.alloc(Row, lines);
+            }
 
             var iter = std.mem.split(u8, fileConts, "\n");
             var idx: usize = 0;
