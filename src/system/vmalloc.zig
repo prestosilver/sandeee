@@ -66,6 +66,15 @@ var objects = std.ArrayList(Object).init(allocator.alloc);
 var freeRef: ?ObjectRef = null;
 var freeLock = std.Thread.Mutex{};
 
+pub fn find(addr: usize) ?ObjectRef {
+    if (addr >= objects.items.len) return null;
+    if (objects.items[addr].data == .free) return null;
+
+    return .{
+        .id = addr,
+    };
+}
+
 pub fn new(data: ObjectData) !ObjectRef {
     freeLock.lock();
     defer freeLock.unlock();

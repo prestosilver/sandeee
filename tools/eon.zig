@@ -447,13 +447,21 @@ const Statement = struct {
                     @memcpy(result[start_res..], adds);
                 }
 
-                while (start != idx.*) {
-                    allocator.free(adds);
-                    adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
-                    start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    idx.* -= 1;
+                {
+                    var count: usize = 0;
+
+                    while (start != idx.*) {
+                        count += 1;
+                        idx.* -= 1;
+                    }
+
+                    if (count > 0) {
+                        allocator.free(adds);
+                        adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
+                        start_res = result.len;
+                        result = try allocator.realloc(result, result.len + adds.len);
+                        @memcpy(result[start_res..], adds);
+                    }
                 }
 
                 allocator.free(adds);
@@ -471,13 +479,21 @@ const Statement = struct {
                         @memcpy(result[start_res..], adds);
                     }
 
-                    for (start..idx.*) |_| {
-                        allocator.free(adds);
-                        adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
-                        start_res = result.len;
-                        result = try allocator.realloc(result, result.len + adds.len);
-                        @memcpy(result[start_res..], adds);
-                        idx.* -= 1;
+                    {
+                        var count: usize = 0;
+
+                        for (start..idx.*) |_| {
+                            count += 1;
+                            idx.* -= 1;
+                        }
+
+                        if (count > 0) {
+                            allocator.free(adds);
+                            adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
+                            start_res = result.len;
+                            result = try allocator.realloc(result, result.len + adds.len);
+                            @memcpy(result[start_res..], adds);
+                        }
                     }
                 }
 
@@ -502,12 +518,20 @@ const Statement = struct {
 
                 idx.* -= 1;
 
-                for (0..idx.*) |_| {
-                    allocator.free(adds);
-                    adds = try std.fmt.allocPrint(allocator, "    disc 1\n", .{});
-                    start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
+                {
+                    var count: usize = 0;
+
+                    for (0..idx.*) |_| {
+                        count += 1;
+                    }
+
+                    if (count > 0) {
+                        allocator.free(adds);
+                        adds = try std.fmt.allocPrint(allocator, "    push 1\n    ndisc {}\n", .{count});
+                        start_res = result.len;
+                        result = try allocator.realloc(result, result.len + adds.len);
+                        @memcpy(result[start_res..], adds);
+                    }
                 }
 
                 allocator.free(adds);
@@ -558,13 +582,21 @@ const Statement = struct {
                 result = try allocator.realloc(result, result.len + adds.len);
                 @memcpy(result[start_res..], adds);
 
-                while (start != idx.*) {
-                    allocator.free(adds);
-                    adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
-                    start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    idx.* -= 1;
+                {
+                    var count: usize = 0;
+
+                    while (start != idx.*) {
+                        count += 1;
+                        idx.* -= 1;
+                    }
+
+                    if (count > 0) {
+                        allocator.free(adds);
+                        adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
+                        start_res = result.len;
+                        result = try allocator.realloc(result, result.len + adds.len);
+                        @memcpy(result[start_res..], adds);
+                    }
                 }
 
                 map.vars = map_start;
@@ -625,13 +657,22 @@ const Statement = struct {
                 @memcpy(result[start_res..], adds);
                 idx.* -= 1;
 
-                while (start != idx.*) {
-                    allocator.free(adds);
-                    adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
-                    start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    idx.* -= 1;
+                {
+                    var count: usize = 0;
+
+                    while (start != idx.*) {
+                        count += 1;
+
+                        idx.* -= 1;
+                    }
+
+                    if (count > 0) {
+                        allocator.free(adds);
+                        adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
+                        start_res = result.len;
+                        result = try allocator.realloc(result, result.len + adds.len);
+                        @memcpy(result[start_res..], adds);
+                    }
                 }
 
                 map.vars = map_start;

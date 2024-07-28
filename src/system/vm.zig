@@ -43,6 +43,7 @@ pub const VM = struct {
         InvalidPassword,
         InvalidStream,
         InvalidAsm,
+        InvalidAddr,
 
         NotImplemented,
         UnknownFunction,
@@ -212,6 +213,8 @@ pub const VM = struct {
             Random,
             Seed,
             Zero,
+            Mem,
+            DiscN,
 
             Last,
             _,
@@ -301,15 +304,17 @@ pub const VM = struct {
         self.pc += 1;
 
         switch (op.code) {
-            Operation.Code.Nop => {},
-            Operation.Code.Push => {
+            .Nop => {},
+            .Push => {
                 if (op.string) |string| {
                     try self.pushStackS(string);
                 } else if (op.value) |value| {
                     try self.pushStackI(value);
+                } else {
+                    return error.NotImplemented;
                 }
             },
-            Operation.Code.Add => {
+            .Add => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -331,7 +336,7 @@ pub const VM = struct {
                     return;
                 }
             },
-            Operation.Code.Sub => {
+            .Sub => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -351,7 +356,7 @@ pub const VM = struct {
                     return;
                 }
             },
-            Operation.Code.Size => {
+            .Size => {
                 const a = try self.popStack();
                 const b = try self.findStack(0);
 
@@ -362,7 +367,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Len => {
+            .Len => {
                 const a = try self.popStack();
 
                 if (a.data().* != .string) return error.StringMissing;
@@ -371,13 +376,13 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Copy => {
+            .Copy => {
                 if (op.value == null) return error.ValueMissing;
 
                 const a = try self.findStack(op.value.?);
                 try self.pushStack(a);
             },
-            Operation.Code.Dup => {
+            .Dup => {
                 if (op.value == null) return error.ValueMissing;
 
                 const a = try self.findStack(op.value.?);
@@ -392,13 +397,13 @@ pub const VM = struct {
                     return;
                 }
             },
-            Operation.Code.Jmp => {
+            .Jmp => {
                 if (op.value == null) return error.ValueMissing;
 
                 self.pc = @as(usize, @intCast(op.value.?));
                 return;
             },
-            Operation.Code.Jz => {
+            .Jz => {
                 const a = try self.popStack();
 
                 if (a.data().* == .string) {
@@ -415,7 +420,7 @@ pub const VM = struct {
                     return;
                 }
             },
-            Operation.Code.Jnz => {
+            .Jnz => {
                 const a = try self.popStack();
 
                 if (a.data().* == .string) {
@@ -432,7 +437,7 @@ pub const VM = struct {
                     return;
                 }
             },
-            Operation.Code.Sys => {
+            .Sys => {
                 //syslock.lock();
                 //defer syslock.unlock();
 
@@ -504,14 +509,14 @@ pub const VM = struct {
                     return;
                 } else return error.ValueMissing;
             },
-            Operation.Code.Jmpf => {
+            .Jmpf => {
                 if (op.value == null) return error.ValueMissing;
 
                 self.pc += @as(usize, @intCast(op.value.?));
 
                 return;
             },
-            Operation.Code.Mul => {
+            .Mul => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -522,7 +527,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Div => {
+            .Div => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -535,7 +540,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Mod => {
+            .Mod => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -548,7 +553,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.And => {
+            .And => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -559,7 +564,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Or => {
+            .Or => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -570,7 +575,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Neg => {
+            .Neg => {
                 const a = try self.popStack();
 
                 if (a.data().* != .value) return error.ValueMissing;
@@ -579,7 +584,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Xor => {
+            .Xor => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -590,7 +595,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Not => {
+            .Not => {
                 const a = try self.popStack();
 
                 if (a.data().* != .value) return error.ValueMissing;
@@ -601,7 +606,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Sin => {
+            .Sin => {
                 const a = try self.popStack();
 
                 if (a.data().* != .value) return error.ValueMissing;
@@ -612,7 +617,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Cos => {
+            .Cos => {
                 const a = try self.popStack();
 
                 if (a.data().* != .value) return error.ValueMissing;
@@ -623,7 +628,7 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Asign => {
+            .Asign => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -633,26 +638,23 @@ pub const VM = struct {
 
                 return;
             },
-            Operation.Code.Disc => {
+            .Disc => {
                 if (op.value == null) return error.ValueMissing;
                 if (op.value.? > self.rsp) return error.StackUnderflow;
 
                 switch (op.value.?) {
                     0 => {
-                        _ = try self.popStack();
+                        self.rsp -= 1;
                     },
                     else => {
                         const items = self.stack[self.rsp - @as(usize, @intCast(op.value.?)) .. self.rsp];
-                        self.rsp -= @as(u8, @intCast(op.value.?));
-                        _ = try self.popStack();
+                        self.rsp -= @as(u8, @intCast(op.value.?)) + 1;
                         std.mem.copyForwards(vmAlloc.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
                         self.rsp += items.len;
                     },
                 }
-
-                return;
             },
-            Operation.Code.Eq => {
+            .Eq => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -660,15 +662,11 @@ pub const VM = struct {
                     if (b.data().* == .string) {
                         const val: u64 = if (std.mem.eql(u8, a.data().string, b.data().string)) 1 else 0;
                         try self.pushStackI(val);
-                        return;
-                    }
-
-                    if (b.data().* == .value) {
+                    } else if (b.data().* == .value) {
                         var val: u64 = 0;
                         if (a.data().string.len != 0 and a.data().string[0] == @as(u8, @intCast(@mod(b.data().value, 256)))) val = 1;
                         if (a.data().string.len == 0 and b.data().value == 0) val = 1;
                         try self.pushStackI(val);
-                        return;
                     }
                 }
 
@@ -678,17 +676,13 @@ pub const VM = struct {
                         if (b.data().string.len != 0 and b.data().string[0] == @as(u8, @intCast(@mod(a.data().value, 256)))) val = 1;
                         if (b.data().string.len == 0 and a.data().value == 0) val = 1;
                         try self.pushStackI(val);
-                        return;
-                    }
-
-                    if (b.data().* == .value) {
+                    } else if (b.data().* == .value) {
                         const val: u64 = if (a.data().value == b.data().value) 1 else 0;
                         try self.pushStackI(val);
-                        return;
                     }
                 }
             },
-            Operation.Code.Less => {
+            .Less => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -699,7 +693,7 @@ pub const VM = struct {
                 try self.pushStackI(val);
                 return;
             },
-            Operation.Code.Greater => {
+            .Greater => {
                 const a = try self.popStack();
                 const b = try self.popStack();
 
@@ -710,7 +704,7 @@ pub const VM = struct {
                 try self.pushStackI(val);
                 return;
             },
-            Operation.Code.Getb => {
+            .Getb => {
                 const a = try self.popStack();
 
                 if (a.data().* == .string) {
@@ -729,7 +723,7 @@ pub const VM = struct {
                     return;
                 }
             },
-            Operation.Code.Ret => {
+            .Ret => {
                 if (self.retRsp == 0) return error.CallStackUnderflow;
 
                 self.retRsp -= 1;
@@ -737,7 +731,7 @@ pub const VM = struct {
                 self.inside_fn = self.retStack[self.retRsp].function;
                 return;
             },
-            Operation.Code.Call => {
+            .Call => {
                 if (self.retRsp >= self.retStack.len - 1) return error.CallStackOverflow;
 
                 if (op.string) |string| {
@@ -773,8 +767,6 @@ pub const VM = struct {
                 }
 
                 self.retRsp += 1;
-
-                return;
             },
             .Cat => {
                 const b = try self.popStack();
@@ -787,17 +779,11 @@ pub const VM = struct {
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
-
-                    return;
-                }
-
-                if (b.data().* == .value) {
+                } else if (b.data().* == .value) {
                     const appends = try std.mem.concat(self.allocator, u8, &.{ a.data().string, std.mem.asBytes(&b.data().value) });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
-
-                    return;
                 }
             },
             .Create => {
@@ -809,15 +795,11 @@ pub const VM = struct {
                 defer self.allocator.free(adds);
 
                 try self.pushStackS(adds);
-
-                return;
             },
             .Random => {
                 const val: u64 = self.rnd.random().int(u64);
 
                 try self.pushStackI(val);
-
-                return;
             },
             .Seed => {
                 const seed = try self.popStack();
@@ -825,8 +807,6 @@ pub const VM = struct {
                 if (seed.data().* != .value) return error.ValueMissing;
 
                 self.rnd.seed(seed.data().value);
-
-                return;
             },
             .Zero => {
                 const b = try self.findStack(0);
@@ -834,10 +814,37 @@ pub const VM = struct {
                 if (b.data().* != .string) return error.ValueMissing;
 
                 @memset(b.data().string, 0);
-
-                return;
             },
-            else => return error.InvalidOp,
+            .Mem => {
+                const a = try self.popStack();
+
+                if (a.data().* != .value) return error.ValueMissing;
+
+                if (vmAlloc.find(a.data().value)) |obj| {
+                    try self.pushStack(obj);
+                } else {
+                    return error.InvalidAddr;
+                }
+            },
+            .DiscN => {
+                if (op.value == null) return error.ValueMissing;
+                if (op.value.? > self.rsp) return error.StackUnderflow;
+
+                const start = try self.popStack();
+
+                if (start.data().* != .value) return error.ValueMissing;
+
+                const start_v: usize = @intCast(start.data().value);
+
+                const items = self.stack[self.rsp - start_v .. self.rsp];
+                self.rsp -= start_v;
+                self.rsp -= op.value.?;
+
+                std.mem.copyForwards(vmAlloc.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
+                self.rsp += items.len;
+            },
+            .Last => return error.InvalidOp,
+            _ => return error.InvalidOp,
         }
     }
 
@@ -862,7 +869,10 @@ pub const VM = struct {
 
     pub fn stringToOps(self: *VM, conts: []const u8) VMError!std.ArrayList(Operation) {
         var ops = std.ArrayList(Operation).init(self.allocator);
-        errdefer ops.deinit();
+        errdefer {
+            log.info("{any}", .{ops.items});
+            ops.deinit();
+        }
 
         var parsePtr: usize = 0;
         while (parsePtr < conts.len) {

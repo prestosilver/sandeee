@@ -23,7 +23,7 @@ const log = @import("../util/log.zig").log;
 const steam = @import("steam");
 const options = @import("options");
 
-const HEADER_SIZE = 256;
+const HEADER_SIZE = 1024;
 
 var web_idx: u8 = 0;
 

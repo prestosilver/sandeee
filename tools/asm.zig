@@ -1,4 +1,5 @@
 const std = @import("std");
+const vm = @import("../src/system/vm.zig");
 
 pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
     if (paths.len != 1) return error.BadPaths;
@@ -59,50 +60,52 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
         if (std.mem.indexOf(u8, l, " ") != null) {
             op = l[0..std.mem.indexOf(u8, l, " ").?];
         }
-        var code: u8 = 255;
+        var code: vm.VM.Operation.Code = .Last;
 
-        if (std.mem.eql(u8, op, "nop")) code = 0;
-        if (std.mem.eql(u8, op, "sys")) code = 1;
-        if (std.mem.eql(u8, op, "push")) code = 2;
-        if (std.mem.eql(u8, op, "add")) code = 3;
-        if (std.mem.eql(u8, op, "sub")) code = 4;
-        if (std.mem.eql(u8, op, "copy")) code = 5;
-        if (std.mem.eql(u8, op, "jmp")) code = 6;
-        if (std.mem.eql(u8, op, "jz")) code = 7;
-        if (std.mem.eql(u8, op, "jnz")) code = 8;
-        if (std.mem.eql(u8, op, "jmpf")) code = 9;
-        if (std.mem.eql(u8, op, "mul")) code = 10;
-        if (std.mem.eql(u8, op, "div")) code = 11;
-        if (std.mem.eql(u8, op, "and")) code = 12;
-        if (std.mem.eql(u8, op, "or")) code = 13;
-        if (std.mem.eql(u8, op, "not")) code = 14;
-        if (std.mem.eql(u8, op, "eq")) code = 15;
-        if (std.mem.eql(u8, op, "getb")) code = 16;
-        if (std.mem.eql(u8, op, "ret")) code = 17;
-        if (std.mem.eql(u8, op, "call")) code = 18;
-        if (std.mem.eql(u8, op, "neg")) code = 19;
-        if (std.mem.eql(u8, op, "xor")) code = 20;
-        if (std.mem.eql(u8, op, "disc")) code = 21;
-        if (std.mem.eql(u8, op, "set")) code = 22;
-        if (std.mem.eql(u8, op, "dup")) code = 23;
-        if (std.mem.eql(u8, op, "lt")) code = 24;
-        if (std.mem.eql(u8, op, "gt")) code = 25;
-        if (std.mem.eql(u8, op, "cat")) code = 26;
-        if (std.mem.eql(u8, op, "mod")) code = 27;
-        if (std.mem.eql(u8, op, "create")) code = 28;
-        if (std.mem.eql(u8, op, "size")) code = 29;
-        if (std.mem.eql(u8, op, "len")) code = 30;
-        if (std.mem.eql(u8, op, "sin")) code = 31;
-        if (std.mem.eql(u8, op, "cos")) code = 32;
-        if (std.mem.eql(u8, op, "rand")) code = 33;
-        if (std.mem.eql(u8, op, "seed")) code = 34;
-        if (std.mem.eql(u8, op, "zero")) code = 35;
+        if (std.mem.eql(u8, op, "nop")) code = .Nop;
+        if (std.mem.eql(u8, op, "sys")) code = .Sys;
+        if (std.mem.eql(u8, op, "push")) code = .Push;
+        if (std.mem.eql(u8, op, "add")) code = .Add;
+        if (std.mem.eql(u8, op, "sub")) code = .Sub;
+        if (std.mem.eql(u8, op, "copy")) code = .Copy;
+        if (std.mem.eql(u8, op, "jmp")) code = .Jmp;
+        if (std.mem.eql(u8, op, "jz")) code = .Jz;
+        if (std.mem.eql(u8, op, "jnz")) code = .Jnz;
+        if (std.mem.eql(u8, op, "jmpf")) code = .Jmpf;
+        if (std.mem.eql(u8, op, "mul")) code = .Mul;
+        if (std.mem.eql(u8, op, "div")) code = .Div;
+        if (std.mem.eql(u8, op, "and")) code = .And;
+        if (std.mem.eql(u8, op, "or")) code = .Or;
+        if (std.mem.eql(u8, op, "not")) code = .Not;
+        if (std.mem.eql(u8, op, "eq")) code = .Eq;
+        if (std.mem.eql(u8, op, "getb")) code = .Getb;
+        if (std.mem.eql(u8, op, "ret")) code = .Ret;
+        if (std.mem.eql(u8, op, "call")) code = .Call;
+        if (std.mem.eql(u8, op, "neg")) code = .Neg;
+        if (std.mem.eql(u8, op, "xor")) code = .Xor;
+        if (std.mem.eql(u8, op, "disc")) code = .Disc;
+        if (std.mem.eql(u8, op, "set")) code = .Asign;
+        if (std.mem.eql(u8, op, "dup")) code = .Dup;
+        if (std.mem.eql(u8, op, "lt")) code = .Less;
+        if (std.mem.eql(u8, op, "gt")) code = .Greater;
+        if (std.mem.eql(u8, op, "cat")) code = .Cat;
+        if (std.mem.eql(u8, op, "mod")) code = .Mod;
+        if (std.mem.eql(u8, op, "create")) code = .Create;
+        if (std.mem.eql(u8, op, "size")) code = .Size;
+        if (std.mem.eql(u8, op, "len")) code = .Len;
+        if (std.mem.eql(u8, op, "sin")) code = .Sin;
+        if (std.mem.eql(u8, op, "cos")) code = .Cos;
+        if (std.mem.eql(u8, op, "rand")) code = .Random;
+        if (std.mem.eql(u8, op, "seed")) code = .Seed;
+        if (std.mem.eql(u8, op, "zero")) code = .Zero;
+        if (std.mem.eql(u8, op, "mem")) code = .Mem;
+        if (std.mem.eql(u8, op, "ndisc")) code = .DiscN;
 
-        if (code == 255) {
+        if (code == .Last) {
             std.log.info("{s}", .{op});
             return error.UnknownOp;
         }
-        try result.appendSlice(&std.mem.toBytes(code));
+        try result.append(@as(u8, @intFromEnum(code)));
 
         if (std.mem.eql(u8, op, l)) {
             try result.appendSlice("\x00");
@@ -239,50 +242,52 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
         if (std.mem.indexOf(u8, l, " ") != null) {
             op = l[0..std.mem.indexOf(u8, l, " ").?];
         }
-        var code: u8 = 255;
+        var code: vm.VM.Operation.Code = .Last;
 
-        if (std.mem.eql(u8, op, "nop")) code = 0;
-        if (std.mem.eql(u8, op, "sys")) code = 1;
-        if (std.mem.eql(u8, op, "push")) code = 2;
-        if (std.mem.eql(u8, op, "add")) code = 3;
-        if (std.mem.eql(u8, op, "sub")) code = 4;
-        if (std.mem.eql(u8, op, "copy")) code = 5;
-        if (std.mem.eql(u8, op, "jmp")) code = 6;
-        if (std.mem.eql(u8, op, "jz")) code = 7;
-        if (std.mem.eql(u8, op, "jnz")) code = 8;
-        if (std.mem.eql(u8, op, "jmpf")) code = 9;
-        if (std.mem.eql(u8, op, "mul")) code = 10;
-        if (std.mem.eql(u8, op, "div")) code = 11;
-        if (std.mem.eql(u8, op, "and")) code = 12;
-        if (std.mem.eql(u8, op, "or")) code = 13;
-        if (std.mem.eql(u8, op, "not")) code = 14;
-        if (std.mem.eql(u8, op, "eq")) code = 15;
-        if (std.mem.eql(u8, op, "getb")) code = 16;
-        if (std.mem.eql(u8, op, "ret")) code = 17;
-        if (std.mem.eql(u8, op, "call")) code = 18;
-        if (std.mem.eql(u8, op, "neg")) code = 19;
-        if (std.mem.eql(u8, op, "xor")) code = 20;
-        if (std.mem.eql(u8, op, "disc")) code = 21;
-        if (std.mem.eql(u8, op, "set")) code = 22;
-        if (std.mem.eql(u8, op, "dup")) code = 23;
-        if (std.mem.eql(u8, op, "lt")) code = 24;
-        if (std.mem.eql(u8, op, "gt")) code = 25;
-        if (std.mem.eql(u8, op, "cat")) code = 26;
-        if (std.mem.eql(u8, op, "mod")) code = 27;
-        if (std.mem.eql(u8, op, "create")) code = 28;
-        if (std.mem.eql(u8, op, "size")) code = 29;
-        if (std.mem.eql(u8, op, "len")) code = 30;
-        if (std.mem.eql(u8, op, "sin")) code = 31;
-        if (std.mem.eql(u8, op, "cos")) code = 32;
-        if (std.mem.eql(u8, op, "rand")) code = 33;
-        if (std.mem.eql(u8, op, "seed")) code = 34;
-        if (std.mem.eql(u8, op, "zero")) code = 35;
+        if (std.mem.eql(u8, op, "nop")) code = .Nop;
+        if (std.mem.eql(u8, op, "sys")) code = .Sys;
+        if (std.mem.eql(u8, op, "push")) code = .Push;
+        if (std.mem.eql(u8, op, "add")) code = .Add;
+        if (std.mem.eql(u8, op, "sub")) code = .Sub;
+        if (std.mem.eql(u8, op, "copy")) code = .Copy;
+        if (std.mem.eql(u8, op, "jmp")) code = .Jmp;
+        if (std.mem.eql(u8, op, "jz")) code = .Jz;
+        if (std.mem.eql(u8, op, "jnz")) code = .Jnz;
+        if (std.mem.eql(u8, op, "jmpf")) code = .Jmpf;
+        if (std.mem.eql(u8, op, "mul")) code = .Mul;
+        if (std.mem.eql(u8, op, "div")) code = .Div;
+        if (std.mem.eql(u8, op, "and")) code = .And;
+        if (std.mem.eql(u8, op, "or")) code = .Or;
+        if (std.mem.eql(u8, op, "not")) code = .Not;
+        if (std.mem.eql(u8, op, "eq")) code = .Eq;
+        if (std.mem.eql(u8, op, "getb")) code = .Getb;
+        if (std.mem.eql(u8, op, "ret")) code = .Ret;
+        if (std.mem.eql(u8, op, "call")) code = .Call;
+        if (std.mem.eql(u8, op, "neg")) code = .Neg;
+        if (std.mem.eql(u8, op, "xor")) code = .Xor;
+        if (std.mem.eql(u8, op, "disc")) code = .Disc;
+        if (std.mem.eql(u8, op, "set")) code = .Asign;
+        if (std.mem.eql(u8, op, "dup")) code = .Dup;
+        if (std.mem.eql(u8, op, "lt")) code = .Less;
+        if (std.mem.eql(u8, op, "gt")) code = .Greater;
+        if (std.mem.eql(u8, op, "cat")) code = .Cat;
+        if (std.mem.eql(u8, op, "mod")) code = .Mod;
+        if (std.mem.eql(u8, op, "create")) code = .Create;
+        if (std.mem.eql(u8, op, "size")) code = .Size;
+        if (std.mem.eql(u8, op, "len")) code = .Len;
+        if (std.mem.eql(u8, op, "sin")) code = .Sin;
+        if (std.mem.eql(u8, op, "cos")) code = .Cos;
+        if (std.mem.eql(u8, op, "rand")) code = .Random;
+        if (std.mem.eql(u8, op, "seed")) code = .Seed;
+        if (std.mem.eql(u8, op, "zero")) code = .Zero;
+        if (std.mem.eql(u8, op, "mem")) code = .Mem;
+        if (std.mem.eql(u8, op, "ndisc")) code = .DiscN;
 
-        if (code == 255) {
+        if (code == .Last) {
             std.log.info("{s}", .{op});
             return error.UnknownOp;
         }
-        try data.appendSlice(&std.mem.toBytes(code));
+        try data.append(@as(u8, @intFromEnum(code)));
 
         if (std.mem.eql(u8, op, l)) {
             try data.appendSlice("\x00");
