@@ -4,14 +4,14 @@ const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const allocator = @import("allocator.zig");
 const batch = @import("spritebatch.zig");
-const texMan = @import("texmanager.zig");
+const texture_manager = @import("texmanager.zig");
 const shd = @import("shader.zig");
 const va = @import("vertArray.zig");
 const tex = @import("texture.zig");
 const files = @import("../system/files.zig");
 const c = @import("../c.zig");
 
-var fontId: u8 = 0;
+var font_id: u8 = 0;
 
 const FONT_COLORS = [16]col.Color{
     .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1 },
@@ -105,14 +105,14 @@ pub const Font = struct {
     }
 
     pub fn initMem(data: []const u8) !Font {
-        if (fontId == 255) @panic("Max Fonts Reached");
+        if (font_id == 255) @panic("Max Fonts Reached");
 
         if (!std.mem.eql(u8, data[0..4], "efnt")) return error.BadFile;
 
-        const charWidth = @as(c_uint, @intCast(data[4]));
-        const charHeight = @as(c_uint, @intCast(data[5]));
+        const char_width = @as(c_uint, @intCast(data[4]));
+        const char_height = @as(c_uint, @intCast(data[5]));
 
-        const atlasSize = vec.newVec2(128 * @as(f32, @floatFromInt(charWidth)), 2 * @as(f32, @floatFromInt(charHeight)));
+        const atlas_size = vec.newVec2(128 * @as(f32, @floatFromInt(char_width)), 2 * @as(f32, @floatFromInt(char_height)));
 
         var result: Font = undefined;
         var texture: c.GLuint = undefined;
@@ -125,67 +125,67 @@ pub const Font = struct {
 
         c.glPixelStorei(c.GL_UNPACK_ALIGNMENT, 1);
 
-        c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, @as(c_int, @intFromFloat(atlasSize.x)), @as(c_int, @intFromFloat(atlasSize.y)), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+        c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, @as(c_int, @intFromFloat(atlas_size.x)), @as(c_int, @intFromFloat(atlas_size.y)), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
 
         var x: c_uint = 0;
 
         for (0..128) |i| {
-            var chStart = 4 + 3 + (charWidth * charHeight * i);
+            var char_start = 4 + 3 + (char_width * char_height * i);
 
-            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), 0, @as(c_int, @intCast(charWidth)), @as(c_int, @intCast(charHeight)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
+            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), 0, @as(c_int, @intCast(char_width)), @as(c_int, @intCast(char_height)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[char_start]);
 
             result.chars[i + 128] = Char{
                 .size = vec.newVec2(
-                    @as(f32, @floatFromInt(charWidth)) * 2,
-                    @as(f32, @floatFromInt(charHeight)) * 2,
+                    @as(f32, @floatFromInt(char_width)) * 2,
+                    @as(f32, @floatFromInt(char_height)) * 2,
                 ),
                 .bearing = vec.newVec2(
                     0,
                     @as(f32, @floatFromInt(data[6])) * 2,
                 ),
-                .ax = @as(f32, @floatFromInt(charWidth)) * 2 - 4,
+                .ax = @as(f32, @floatFromInt(char_width)) * 2 - 4,
                 .ay = 0,
-                .tx = @as(f32, @floatFromInt(x)) / atlasSize.x,
+                .tx = @as(f32, @floatFromInt(x)) / atlas_size.x,
                 .ty = 0.5,
-                .tw = @as(f32, @floatFromInt(charWidth)) / atlasSize.x,
-                .th = @as(f32, @floatFromInt(charHeight)) / atlasSize.y,
+                .tw = @as(f32, @floatFromInt(char_width)) / atlas_size.x,
+                .th = @as(f32, @floatFromInt(char_height)) / atlas_size.y,
             };
 
-            chStart = 4 + 3 + (charWidth * charHeight * (i + 128));
+            char_start = 4 + 3 + (char_width * char_height * (i + 128));
 
-            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), @as(c_int, @intCast(charHeight)), @as(c_int, @intCast(charWidth)), @as(c_int, @intCast(charHeight)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[chStart]);
+            c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), @as(c_int, @intCast(char_height)), @as(c_int, @intCast(char_width)), @as(c_int, @intCast(char_height)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[char_start]);
 
             result.chars[i] = Char{
                 .size = vec.newVec2(
-                    @as(f32, @floatFromInt(charWidth)) * 2,
-                    @as(f32, @floatFromInt(charHeight)) * 2,
+                    @as(f32, @floatFromInt(char_width)) * 2,
+                    @as(f32, @floatFromInt(char_height)) * 2,
                 ),
                 .bearing = vec.newVec2(
                     0,
                     @as(f32, @floatFromInt(data[6])) * 2,
                 ),
-                .ax = @as(f32, @floatFromInt(charWidth)) * 2 - 4,
+                .ax = @as(f32, @floatFromInt(char_width)) * 2 - 4,
                 .ay = 0,
-                .tx = @as(f32, @floatFromInt(x)) / atlasSize.x,
+                .tx = @as(f32, @floatFromInt(x)) / atlas_size.x,
                 .ty = 0,
-                .tw = @as(f32, @floatFromInt(charWidth)) / atlasSize.x,
-                .th = @as(f32, @floatFromInt(charHeight)) / atlasSize.y,
+                .tw = @as(f32, @floatFromInt(char_width)) / atlas_size.x,
+                .th = @as(f32, @floatFromInt(char_height)) / atlas_size.y,
             };
 
-            x += charWidth;
+            x += char_width;
         }
 
-        result.size = @as(f32, @floatFromInt(charHeight * 2));
+        result.size = @as(f32, @floatFromInt(char_height * 2));
 
-        result.tex = try std.fmt.allocPrint(allocator.alloc, "font{}", .{fontId});
+        result.tex = try std.fmt.allocPrint(allocator.alloc, "font{}", .{font_id});
 
-        try texMan.TextureManager.instance.put(result.tex, .{
+        try texture_manager.TextureManager.instance.put(result.tex, .{
             .tex = texture,
-            .size = atlasSize,
+            .size = atlas_size,
             .buffer = try allocator.alloc.alloc([4]u8, 0),
         });
 
-        fontId += 1;
+        font_id += 1;
 
         result.setup = true;
 
@@ -229,12 +229,12 @@ pub const Font = struct {
                     @max(@as(f32, 0), @min(scissor.h, params.pos.y + ((@as(f32, @floatFromInt(max_lines))) * self.size) - scissor.y));
         }
 
-        var vertarray = try va.VertArray.init(params.text.len * 6);
+        var vert_array = try va.VertArray.init(params.text.len * 6);
 
-        var curLine: usize = 0;
-        var lastspace: usize = 0;
-        var lastspaceIdx: usize = 0;
-        var lastLineIdx: usize = 0;
+        var current_line: usize = 0;
+        var last_space: usize = 0;
+        var last_space_idx: usize = 0;
+        var last_line_idx: usize = 0;
         var idx: usize = 0;
 
         while (params.text.len > idx) : (idx += 1) {
@@ -244,9 +244,9 @@ pub const Font = struct {
                 pos.y += self.size * params.scale;
                 pos.x = start.x;
 
-                curLine += 1;
+                current_line += 1;
 
-                lastLineIdx = idx + 1;
+                last_line_idx = idx + 1;
 
                 continue;
             }
@@ -273,26 +273,26 @@ pub const Font = struct {
                 pos.y += self.size * params.scale;
                 pos.x = start.x;
 
-                curLine += 1;
+                current_line += 1;
 
                 if (params.maxlines != null and
-                    curLine >= params.maxlines.?)
+                    current_line >= params.maxlines.?)
                 {
-                    vertarray.setLen(vertarray.items().len - 6);
+                    vert_array.setLen(vert_array.items().len - 6);
                     xpos -= char.ax;
-                } else if (std.mem.containsAtLeast(u8, params.text[lastLineIdx..idx], 1, " ")) {
-                    vertarray.setLen(lastspace);
-                    idx = lastspaceIdx - 1;
+                } else if (std.mem.containsAtLeast(u8, params.text[last_line_idx..idx], 1, " ")) {
+                    vert_array.setLen(last_space);
+                    idx = last_space_idx - 1;
 
-                    lastLineIdx = idx + 1;
+                    last_line_idx = idx + 1;
                     continue;
                 }
 
-                lastLineIdx = idx + 1;
+                last_line_idx = idx + 1;
             }
 
             if (params.maxlines != null and
-                curLine >= params.maxlines.?)
+                current_line >= params.maxlines.?)
             {
                 srect.x = self.chars[0x90].tx;
                 srect.y = self.chars[0x90].ty;
@@ -301,22 +301,22 @@ pub const Font = struct {
             }
 
             if (ach != ' ' or (params.maxlines != null and
-                curLine >= params.maxlines.?))
+                current_line >= params.maxlines.?))
             {
-                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
+                try vert_array.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+                try vert_array.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
+                try vert_array.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
 
-                try vertarray.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-                try vertarray.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-                try vertarray.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
+                try vert_array.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
+                try vert_array.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
+                try vert_array.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
             } else {
-                lastspace = vertarray.items().len;
-                lastspaceIdx = idx + 1;
+                last_space = vert_array.items().len;
+                last_space_idx = idx + 1;
             }
 
             if (params.maxlines != null and
-                curLine >= params.maxlines.?)
+                current_line >= params.maxlines.?)
                 break;
 
             pos.x += char.ax * params.scale;
@@ -329,7 +329,7 @@ pub const Font = struct {
 
         const entry = .{
             .texture = self.tex,
-            .verts = vertarray,
+            .verts = vert_array,
             .shader = params.shader.*,
         };
 
@@ -352,9 +352,9 @@ pub const Font = struct {
 
         var maxx: f32 = 0;
 
-        var curLine: usize = 0;
-        var lastspaceIdx: usize = 0;
-        var lastLineIdx: usize = 0;
+        var current_line: usize = 0;
+        var last_space_idx: usize = 0;
+        var last_line_idx: usize = 0;
         var idx: usize = 0;
 
         while (params.text.len > idx) : (idx += 1) {
@@ -365,9 +365,9 @@ pub const Font = struct {
                 pos.y += self.size * params.scale;
                 pos.x = 0;
 
-                curLine += 1;
+                current_line += 1;
 
-                lastLineIdx = idx + 1;
+                last_line_idx = idx + 1;
 
                 continue;
             }
@@ -386,19 +386,19 @@ pub const Font = struct {
                     pos.y += self.size * params.scale;
                     pos.x = 0;
 
-                    curLine += 1;
+                    current_line += 1;
 
-                    if (std.mem.containsAtLeast(u8, params.text[lastLineIdx..idx], 1, " ")) {
-                        idx = lastspaceIdx - 1;
+                    if (std.mem.containsAtLeast(u8, params.text[last_line_idx..idx], 1, " ")) {
+                        idx = last_space_idx - 1;
 
-                        lastLineIdx = idx + 1;
+                        last_line_idx = idx + 1;
                         continue;
                     }
 
-                    lastLineIdx = idx + 1;
+                    last_line_idx = idx + 1;
                 }
             } else {
-                lastspaceIdx = idx + 1;
+                last_space_idx = idx + 1;
             }
 
             pos.x += char.ax * params.scale;

@@ -14,7 +14,7 @@ const tex = @import("../util/texture.zig");
 const c = @import("../c.zig");
 const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
-const texMan = @import("../util/texmanager.zig");
+const texture_manager = @import("../util/texmanager.zig");
 const eln = @import("../util/eln.zig");
 
 const log = @import("../util/log.zig").log;
@@ -45,7 +45,7 @@ pub const LauncherData = struct {
 
     focused: ?u64 = null,
     selected: usize = 0,
-    lastAction: ?LauncherMouseAction = null,
+    last_action: ?LauncherMouseAction = null,
 
     icon_data: []const eln.ElnData,
     idx: u8,
@@ -56,16 +56,16 @@ pub const LauncherData = struct {
         const folder = files.root.getFolder("conf/apps") catch
             return &.{};
 
-        const subFiles = try folder.getFiles();
-        defer allocator.alloc.free(subFiles);
+        const sub_files = try folder.getFiles();
+        defer allocator.alloc.free(sub_files);
 
-        const result = try allocator.alloc.alloc(eln.ElnData, subFiles.len);
+        const result = try allocator.alloc.alloc(eln.ElnData, sub_files.len);
 
-        for (subFiles, 0..) |file, idx| {
+        for (sub_files, 0..) |file, idx| {
             result[idx] = try eln.ElnData.parse(file);
         }
 
-        self.max_sprites = @max(self.max_sprites, @as(u8, @intCast(subFiles.len)));
+        self.max_sprites = @max(self.max_sprites, @as(u8, @intCast(sub_files.len)));
 
         return result;
     }
@@ -78,13 +78,13 @@ pub const LauncherData = struct {
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 0,
+                .offset_start = 0,
             };
         }
 
-        if (self.lastAction) |*last_action| {
+        if (self.last_action) |*last_action| {
             if (last_action.time <= 0) {
-                self.lastAction = null;
+                self.last_action = null;
             } else {
                 last_action.time -= 5;
             }
@@ -140,7 +140,7 @@ pub const LauncherData = struct {
                     try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
             }
 
-            if (self.lastAction) |last_action| {
+            if (self.last_action) |last_action| {
                 if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(last_action.pos)) {
                     switch (last_action.kind) {
                         .SingleLeft => {
@@ -150,7 +150,7 @@ pub const LauncherData = struct {
                             _ = self.shell.runBg(icon.launches) catch {
                                 //TODO: popup
                             };
-                            self.lastAction = null;
+                            self.last_action = null;
                         },
                     }
                 }
@@ -181,7 +181,7 @@ pub const LauncherData = struct {
 
         switch (btn.?) {
             0 => {
-                self.lastAction = if (self.lastAction) |last_action|
+                self.last_action = if (self.last_action) |last_action|
                     if (mousepos.distSq(last_action.pos) < 100)
                         .{
                             .kind = .DoubleLeft,

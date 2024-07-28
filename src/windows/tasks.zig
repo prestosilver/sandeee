@@ -12,7 +12,7 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const fnt = @import("../util/font.zig");
 const col = @import("../math/colors.zig");
-const vmManager = @import("../system/vmmanager.zig");
+const vm_manager = @import("../system/vmmanager.zig");
 const graph = @import("../drawers/graph2d.zig");
 
 pub const TasksData = struct {
@@ -20,7 +20,7 @@ pub const TasksData = struct {
 
     panel: [2]sprite.Sprite,
     shader: *shd.Shader,
-    stats: []vmManager.VMManager.VMStats,
+    stats: []vm_manager.VMManager.VMStats,
     render_graph: graph.Graph,
     vm_graph: graph.Graph,
 
@@ -32,19 +32,17 @@ pub const TasksData = struct {
     pub fn drawScroll(self: *Self, bnds: rect.Rectangle) !void {
         if (self.scroll_maxy <= 0) return;
 
-        const scrollPc = self.scroll_value / self.scroll_maxy;
+        const scroll_pc = self.scroll_value / self.scroll_maxy;
 
         self.scroll_sprites[1].data.size.y = bnds.h - (20 * 2 - 2) + 2;
 
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y, 0));
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y + 20, 0));
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y + bnds.h - 20 + 2, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, (bnds.h - (20 * 2) - 30 + 4) * scrollPc + bnds.y + 20 - 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, (bnds.h - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + 20 - 2, 0));
     }
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
-        _ = props;
-
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
         self.panel[0].data.size.x = 350;
         self.panel[0].data.size.y = 282;
         self.panel[1].data.size.x = 346;
@@ -150,14 +148,14 @@ pub const TasksData = struct {
 
         allocator.alloc.free(self.stats);
 
-        self.stats = try vmManager.VMManager.instance.getStats();
+        self.stats = try vm_manager.VMManager.instance.getStats();
 
         std.mem.copyForwards(f32, self.vm_graph.data.data[0 .. self.vm_graph.data.data.len - 1], self.vm_graph.data.data[1..]);
         std.mem.copyForwards(f32, self.render_graph.data.data[0 .. self.render_graph.data.data.len - 1], self.render_graph.data.data[1..]);
 
-        var acc: f32 = @floatCast(vmManager.VMManager.last_vm_time / vmManager.VMManager.last_frame_time);
+        var acc: f32 = @floatCast(vm_manager.VMManager.last_vm_time / vm_manager.VMManager.last_frame_time);
         self.vm_graph.data.data[self.vm_graph.data.data.len - 1] = acc;
-        acc += @floatCast(vmManager.VMManager.last_render_time / vmManager.VMManager.last_frame_time);
+        acc += @floatCast(vm_manager.VMManager.last_render_time / vm_manager.VMManager.last_frame_time);
         self.render_graph.data.data[self.render_graph.data.data.len - 1] = acc;
     }
 
@@ -219,7 +217,7 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
             },
         },
         .shader = shader,
-        .stats = try vmManager.VMManager.instance.getStats(),
+        .stats = try vm_manager.VMManager.instance.getStats(),
         .render_graph = graph.Graph.new(
             "white",
             try graph.GraphData.new(.{ .x = 100, .y = 100 }),

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub var logFile: ?std.fs.File = null;
+pub var log_file: ?std.fs.File = null;
 
 pub const log = std.log.scoped(.SandEEE);
 
@@ -40,7 +40,7 @@ pub fn sandEEELogFn(
         nosuspend stderr.print(color ++ prefix ++ format ++ "\x1b[m\n", args) catch return;
     }
 
-    if (logFile) |file| {
+    if (log_file) |file| {
         const writer = file.writer();
         nosuspend writer.print(prefix ++ format ++ "\n", args) catch return;
     }

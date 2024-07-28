@@ -3,8 +3,8 @@ const allocator = @import("../util/allocator.zig");
 const files = @import("files.zig");
 const vm = @import("vm.zig");
 const events = @import("../util/events.zig");
-const windowEvs = @import("../events/window.zig");
-const systemEvs = @import("../events/system.zig");
+const window_events = @import("../events/window.zig");
+const system_events = @import("../events/system.zig");
 const wins = @import("../windows/all.zig");
 const win = @import("../drawers/window2d.zig");
 const tex = @import("../util/texture.zig");
@@ -12,7 +12,7 @@ const shd = @import("../util/shader.zig");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const opener = @import("opener.zig");
-const vmManager = @import("../system/vmmanager.zig");
+const vm_manager = @import("../system/vmmanager.zig");
 const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const font = @import("../util/font.zig");
@@ -40,7 +40,7 @@ const TOTAL_BAR_SPRITES: f32 = 13;
 
 pub const Shell = struct {
     root: *files.Folder,
-    vm: ?vmManager.VMManager.VMHandle = null,
+    vm: ?vm_manager.VMManager.VMHandle = null,
 
     pub fn getPrompt(self: *Shell) []const u8 {
         if (self.root.name.len == 0)
@@ -76,55 +76,55 @@ pub const Shell = struct {
     fn ls(self: *Shell, param: []const u8) !Result {
         if (param.len > 3) {
             const folder = try self.root.getFolder(param[3..]);
-            var resultData = std.ArrayList(u8).init(allocator.alloc);
-            defer resultData.deinit();
+            var result_data = std.ArrayList(u8).init(allocator.alloc);
+            defer result_data.deinit();
 
             const rootlen = folder.name.len;
 
-            const subfolders = try folder.getFolders();
-            defer allocator.alloc.free(subfolders);
+            const sub_folders = try folder.getFolders();
+            defer allocator.alloc.free(sub_folders);
 
-            for (subfolders) |item| {
-                try resultData.appendSlice(item.name[rootlen..]);
-                try resultData.append(' ');
+            for (sub_folders) |item| {
+                try result_data.appendSlice(item.name[rootlen..]);
+                try result_data.append(' ');
             }
 
             const contents = try folder.getFiles();
             defer allocator.alloc.free(contents);
 
             for (contents) |item| {
-                try resultData.appendSlice(item.name[rootlen..]);
-                try resultData.append(' ');
+                try result_data.appendSlice(item.name[rootlen..]);
+                try result_data.append(' ');
             }
 
             return .{
-                .data = try allocator.alloc.dupe(u8, resultData.items),
+                .data = try allocator.alloc.dupe(u8, result_data.items),
             };
         } else {
             const folder = self.root;
-            var resultData = std.ArrayList(u8).init(allocator.alloc);
-            defer resultData.deinit();
+            var result_data = std.ArrayList(u8).init(allocator.alloc);
+            defer result_data.deinit();
 
             const rootlen = folder.name.len;
 
-            const subfolders = try folder.getFolders();
-            defer allocator.alloc.free(subfolders);
+            const sub_folders = try folder.getFolders();
+            defer allocator.alloc.free(sub_folders);
 
-            for (subfolders) |item| {
-                try resultData.appendSlice(item.name[rootlen..]);
-                try resultData.append(' ');
+            for (sub_folders) |item| {
+                try result_data.appendSlice(item.name[rootlen..]);
+                try result_data.append(' ');
             }
 
             const contents = try folder.getFiles();
             defer allocator.alloc.free(contents);
 
             for (contents) |item| {
-                try resultData.appendSlice(item.name[rootlen..]);
-                try resultData.append(' ');
+                try result_data.appendSlice(item.name[rootlen..]);
+                try result_data.append(' ');
             }
 
             return .{
-                .data = try allocator.alloc.dupe(u8, resultData.items),
+                .data = try allocator.alloc.dupe(u8, result_data.items),
             };
         }
     }
@@ -137,7 +137,7 @@ pub const Shell = struct {
 
         const id = try std.fmt.parseInt(u8, param[5..], 16);
 
-        try vmManager.VMManager.instance.destroy(.{
+        try vm_manager.VMManager.instance.destroy(.{
             .id = id,
         });
 
@@ -159,12 +159,12 @@ pub const Shell = struct {
         });
 
         if (param.len > 5) {
-            const cmdself: *wins.cmd.CMDData = @ptrCast(@alignCast(window.data.contents.ptr));
+            const cmd_self: *wins.cmd.CMDData = @ptrCast(@alignCast(window.data.contents.ptr));
 
-            _ = try cmdself.shell.run(param[4..]);
+            _ = try cmd_self.shell.run(param[4..]);
         }
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
         return .{
             .data = try allocator.alloc.dupe(u8, ""),
@@ -184,26 +184,26 @@ pub const Shell = struct {
         });
 
         if (param.len > 5) {
-            const edself: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
+            const ed_self: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
 
             if (param[5] == '/')
-                edself.file = try files.root.getFile(param[5..])
+                ed_self.file = try files.root.getFile(param[5..])
             else
-                edself.file = try self.root.getFile(param[5..]);
+                ed_self.file = try self.root.getFile(param[5..]);
 
-            if (edself.file) |file| {
-                const fileConts = try file.read(null);
-                const lines = std.mem.count(u8, fileConts, "\n") + 1;
+            if (ed_self.file) |file| {
+                const file_conts = try file.read(null);
+                const lines = std.mem.count(u8, file_conts, "\n") + 1;
 
-                edself.buffer = if (edself.buffer) |buffer|
+                ed_self.buffer = if (ed_self.buffer) |buffer|
                     try allocator.alloc.realloc(buffer, lines)
                 else
                     try allocator.alloc.alloc(wins.editor.EditorData.Row, lines);
 
-                var iter = std.mem.split(u8, fileConts, "\n");
+                var iter = std.mem.split(u8, file_conts, "\n");
                 var idx: usize = 0;
                 while (iter.next()) |line| : (idx += 1) {
-                    edself.buffer.?[idx] = .{
+                    ed_self.buffer.?[idx] = .{
                         .text = try allocator.alloc.dupe(u8, line),
                         .render = null,
                     };
@@ -215,7 +215,7 @@ pub const Shell = struct {
             }
         }
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
         return .{
             .data = try allocator.alloc.dupe(u8, ""),
@@ -228,7 +228,7 @@ pub const Shell = struct {
             .active = true,
         });
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
         return .{
             .data = try allocator.alloc.dupe(u8, ""),
@@ -257,7 +257,7 @@ pub const Shell = struct {
             },
         };
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreatePopup{
+        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
             .global = true,
             .popup = .{
                 .texture = "win",
@@ -280,64 +280,59 @@ pub const Shell = struct {
         };
     }
 
-    pub fn runSettings(self: *Shell, _: []const u8) !Result {
-        _ = self;
+    pub fn runSettings(_: *Shell, _: []const u8) !Result {
         const window = win.Window.new("win", win.WindowData{
             .contents = try wins.settings.new(shader),
             .active = true,
         });
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
         return .{
             .data = try allocator.alloc.dupe(u8, ""),
         };
     }
 
-    pub fn runMail(self: *Shell, _: []const u8) !Result {
-        _ = self;
+    pub fn runMail(_: *Shell, _: []const u8) !Result {
         const window = win.Window.new("win", win.WindowData{
             .contents = try wins.email.new(shader),
             .active = true,
         });
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
         return .{
             .data = try allocator.alloc.dupe(u8, ""),
         };
     }
 
-    pub fn runFiles(self: *Shell, _: []const u8) !Result {
-        _ = self;
+    pub fn runFiles(_: *Shell, _: []const u8) !Result {
         const window = win.Window.new("win", win.WindowData{
             .contents = try wins.explorer.new(shader),
             .active = true,
         });
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
         return .{
             .data = try allocator.alloc.dupe(u8, ""),
         };
     }
 
-    pub fn runTask(self: *Shell, _: []const u8) !Result {
-        _ = self;
+    pub fn runTask(_: *Shell, _: []const u8) !Result {
         const window = win.Window.new("win", win.WindowData{
             .contents = try wins.tasks.new(shader),
             .active = true,
         });
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
         return .{
             .data = try allocator.alloc.dupe(u8, ""),
         };
     }
 
-    pub fn runWeb(self: *Shell, param: []const u8) !Result {
-        _ = self;
+    pub fn runWeb(_: *Shell, param: []const u8) !Result {
         const window = win.Window.new("win", win.WindowData{
             .source = rect.Rectangle{
                 .x = 0.0,
@@ -358,7 +353,7 @@ pub const Shell = struct {
             @memcpy(webself.path, new_path);
         }
 
-        try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
         return .{
             .data = try allocator.alloc.dupe(u8, ""),
@@ -366,8 +361,8 @@ pub const Shell = struct {
     }
 
     pub fn runFileInFolder(self: *Shell, folder: *files.Folder, cmd: []const u8, param: []const u8) !Result {
-        var resultData = std.ArrayList(u8).init(allocator.alloc);
-        defer resultData.deinit();
+        var result_data = std.ArrayList(u8).init(allocator.alloc);
+        defer result_data.deinit();
 
         const file = folder.getFile(cmd) catch |err| {
             if (std.mem.endsWith(u8, cmd, ".eep")) return err;
@@ -390,9 +385,9 @@ pub const Shell = struct {
                 if (char == '\n') {
                     const res = try self.runLine(line.items);
                     defer allocator.alloc.free(res.data);
-                    try resultData.appendSlice(res.data);
-                    if (resultData.items.len != 0)
-                        if (resultData.getLast() != '\n') try resultData.append('\n');
+                    try result_data.appendSlice(res.data);
+                    if (result_data.items.len != 0)
+                        if (result_data.getLast() != '\n') try result_data.append('\n');
                     try line.resize(0);
                 } else {
                     try line.append(char);
@@ -400,11 +395,11 @@ pub const Shell = struct {
             }
             const res = try self.runLine(line.items);
             defer allocator.alloc.free(res.data);
-            try resultData.appendSlice(res.data);
-            if (resultData.items.len != 0 and resultData.getLast() != '\n') try resultData.append('\n');
+            try result_data.appendSlice(res.data);
+            if (result_data.items.len != 0 and result_data.getLast() != '\n') try result_data.append('\n');
 
             return .{
-                .data = try allocator.alloc.dupe(u8, resultData.items),
+                .data = try allocator.alloc.dupe(u8, result_data.items),
             };
         }
 
@@ -504,7 +499,7 @@ pub const Shell = struct {
 
     pub fn getVMResult(self: *Shell) !?Result {
         if (self.vm) |vm_handle| {
-            const data = try vmManager.VMManager.instance.getOutput(vm_handle);
+            const data = try vm_manager.VMManager.instance.getOutput(vm_handle);
             defer data.deinit();
 
             if (data.done) self.vm = null;
@@ -519,7 +514,7 @@ pub const Shell = struct {
 
     pub fn appendVMIn(self: *Shell, char: u8) !void {
         if (self.vm) |vm_handle| {
-            try vmManager.VMManager.instance.appendInputSlice(vm_handle, &.{char});
+            try vm_manager.VMManager.instance.appendInputSlice(vm_handle, &.{char});
         }
     }
 
@@ -536,7 +531,7 @@ pub const Shell = struct {
 
                 const ops = cont[4..];
 
-                self.vm = try vmManager.VMManager.instance.spawn(self.root, params, ops);
+                self.vm = try vm_manager.VMManager.instance.spawn(self.root, params, ops);
 
                 return .{
                     .data = try allocator.alloc.dupe(u8, ""),
@@ -568,6 +563,7 @@ pub const Shell = struct {
         if (params.len > 4) {
             var iter = std.mem.split(u8, params, " ");
             _ = iter.next();
+
             const input = iter.next() orelse return error.MissingParameter;
             const output = iter.next() orelse return error.MissingParameter;
 
@@ -597,6 +593,7 @@ pub const Shell = struct {
     pub fn rem(self: *Shell, params: []const u8) !Result {
         if (params.len > 5) {
             var iter = std.mem.split(u8, params, " ");
+
             _ = iter.next();
 
             while (iter.next()) |folder| {
@@ -614,6 +611,7 @@ pub const Shell = struct {
     pub fn drem(self: *Shell, params: []const u8) !Result {
         if (params.len > 5) {
             var iter = std.mem.split(u8, params, " ");
+
             _ = iter.next();
 
             while (iter.next()) |folder| {
@@ -629,7 +627,7 @@ pub const Shell = struct {
     }
 
     pub fn run(self: *Shell, params: []const u8) anyerror!Result {
-        try events.EventManager.instance.sendEvent(systemEvs.EventRunCmd{
+        try events.EventManager.instance.sendEvent(system_events.EventRunCmd{
             .cmd = params,
         });
 
@@ -696,7 +694,7 @@ pub const Shell = struct {
 
     pub fn deinit(self: *Shell) !void {
         if (self.vm) |vm_handle| {
-            try vmManager.VMManager.instance.destroy(vm_handle);
+            try vm_manager.VMManager.instance.destroy(vm_handle);
             self.vm = null;
         }
     }

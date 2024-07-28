@@ -11,7 +11,7 @@ const std = @import("std");
 
 pub const all = @import("../windows/popups/all.zig");
 
-pub var popupShader: *shd.Shader = undefined;
+pub var popup_shader: *shd.Shader = undefined;
 
 const TOTAL_SPRITES: f32 = 9.0;
 const TEX_SIZE: f32 = 32;
@@ -208,14 +208,14 @@ pub const PopupData = struct {
             return .Close;
         }
 
-        const clickPos = mousepos.sub(self.pos.location());
+        const click_pos = mousepos.sub(self.pos.location());
 
-        if (clickPos.x < 0) return .None;
-        if (clickPos.x > self.pos.w or clickPos.y > self.pos.h) return .None;
+        if (click_pos.x < 0) return .None;
+        if (click_pos.x > self.pos.w or click_pos.y > self.pos.h) return .None;
 
-        if (clickPos.y < 34 and clickPos.y > 0) return .Move;
+        if (click_pos.y < 34 and click_pos.y > 0) return .Move;
 
-        try self.contents.click(clickPos);
+        try self.contents.click(click_pos);
 
         return .None;
     }

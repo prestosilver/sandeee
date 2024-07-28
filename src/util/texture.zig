@@ -11,7 +11,7 @@ const log = @import("../util/log.zig").log;
 pub const Texture = struct {
     tex: c.GLuint = 0,
     size: vecs.Vector2,
-    oldSize: vecs.Vector2 = vecs.newVec2(0, 0),
+    old_size: vecs.Vector2 = vecs.newVec2(0, 0),
     buffer: [][4]u8,
 
     pub fn deinit(self: *const Texture) void {
@@ -41,13 +41,13 @@ pub const Texture = struct {
 
         if (self.size.x == 0 or self.size.y == 0) return;
 
-        if (self.size.x == self.oldSize.x and
-            self.size.y == self.oldSize.y)
+        if (self.size.x == self.old_size.x and
+            self.size.y == self.old_size.y)
         {
             c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, 0, 0, @intFromFloat(self.size.x), @intFromFloat(self.size.y), c.GL_RGBA, c.GL_UNSIGNED_BYTE, self.buffer.ptr);
         } else {
             c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @intFromFloat(self.size.x), @intFromFloat(self.size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, self.buffer.ptr);
-            self.oldSize = self.size;
+            self.old_size = self.size;
         }
     }
 };

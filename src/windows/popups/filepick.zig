@@ -10,7 +10,7 @@ const files = @import("../../system/files.zig");
 const vecs = @import("../../math/vecs.zig");
 const fnt = @import("../../util/font.zig");
 const events = @import("../../util/events.zig");
-const windowEvs = @import("../../events/window.zig");
+const window_events = @import("../../events/window.zig");
 const popups = @import("../../drawers/popup2d.zig");
 const c = @import("../../c.zig");
 
@@ -39,7 +39,7 @@ pub const PopupFilePick = struct {
             try allocator.alloc.dupe(u8, self.path);
         defer allocator.alloc.free(text);
 
-        const textbgSprite = spr.Sprite.new("ui", spr.SpriteData.new(
+        const text_background = spr.Sprite.new("ui", spr.SpriteData.new(
             rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             .{
                 .x = bnds.w - 60,
@@ -47,7 +47,7 @@ pub const PopupFilePick = struct {
             },
         ));
 
-        const textfgSprite = spr.Sprite.new("ui", spr.SpriteData.new(
+        const text_foreground = spr.Sprite.new("ui", spr.SpriteData.new(
             rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
             .{
                 .x = bnds.w - 64,
@@ -55,8 +55,8 @@ pub const PopupFilePick = struct {
             },
         ));
 
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &textbgSprite, popups.popupShader, vecs.newVec3(bnds.x + 28, bnds.y + font.size * 2 - 4, 0));
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &textfgSprite, popups.popupShader, vecs.newVec3(bnds.x + 30, bnds.y + font.size * 2 - 2, 0));
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_background, popups.popup_shader, vecs.newVec3(bnds.x + 28, bnds.y + font.size * 2 - 4, 0));
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_foreground, popups.popup_shader, vecs.newVec3(bnds.x + 30, bnds.y + font.size * 2 - 2, 0));
 
         try font.draw(.{
             .shader = shader,
@@ -90,7 +90,7 @@ pub const PopupFilePick = struct {
             };
 
             try self.submit(file, self.data);
-            try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{
+            try events.EventManager.instance.sendEvent(window_events.EventClosePopup{
                 .popup_conts = self,
             });
         }

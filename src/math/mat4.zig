@@ -21,14 +21,14 @@ pub const Mat4 = struct {
     }
 
     pub fn perspective(fovy: f32, aspect: f32, n: f32, f: f32) !Mat4 {
-        const thFov = @tan(fovy / 2);
+        const th_fov = @tan(fovy / 2);
 
         return .{
             .data = .{
-                1.0 / (aspect * thFov), 0,             0,                      0,
-                0,                      1.0 / (thFov), 0,                      0,
-                0,                      0,             (f + n) / (f - n),      1,
-                0,                      0,             -(2 * f + n) / (f - n), 0,
+                1.0 / (aspect * th_fov), 0,              0,                      0,
+                0,                       1.0 / (th_fov), 0,                      0,
+                0,                       0,              (f + n) / (f - n),      1,
+                0,                       0,              -(2 * f + n) / (f - n), 0,
             },
         };
     }

@@ -3,7 +3,7 @@ const vm = @import("vm.zig");
 const files = @import("files.zig");
 const allocator = @import("../util/allocator.zig");
 const c = @import("../c.zig");
-const vmAlloc = @import("vmalloc.zig");
+const vm_allocator = @import("vmalloc.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -70,7 +70,7 @@ pub const VMManager = struct {
         // TODO: free items
         self.threads.deinit();
 
-        vmAlloc.deinit();
+        vm_allocator.deinit();
     }
 
     pub const VMStats = struct {
@@ -142,15 +142,15 @@ pub const VMManager = struct {
         _ = vm_instance.runTime(frame_end - time, @import("builtin").mode == .Debug) catch |err| {
             vm_instance.stopped = true;
 
-            const errString = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});
-            defer allocator.alloc.free(errString);
+            const error_string = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});
+            defer allocator.alloc.free(error_string);
 
-            try vm_instance.out.appendSlice(errString);
+            try vm_instance.out.appendSlice(error_string);
 
-            const msgString = try vm_instance.getOp();
-            defer allocator.alloc.free(msgString);
+            const message_string = try vm_instance.getOp();
+            defer allocator.alloc.free(message_string);
 
-            try vm_instance.out.appendSlice(msgString);
+            try vm_instance.out.appendSlice(message_string);
         };
     }
 
@@ -174,7 +174,7 @@ pub const VMManager = struct {
             try entry.value_ptr.markData();
         }
 
-        try vmAlloc.collect();
+        try vm_allocator.collect();
     }
 
     pub fn update(self: *Self) !void {
@@ -201,14 +201,14 @@ pub const VMManager = struct {
                     .id = vm_id,
                 });
 
-                if (self.results.getPtr(vm_id)) |oldResult| {
+                if (self.results.getPtr(vm_id)) |old_result| {
                     defer result.deinit();
 
-                    const start = oldResult.data.len;
-                    oldResult.data = try allocator.alloc.realloc(oldResult.data, oldResult.data.len + result.data.len);
-                    @memcpy(oldResult.data[start..], result.data);
+                    const start = old_result.data.len;
+                    old_result.data = try allocator.alloc.realloc(old_result.data, old_result.data.len + result.data.len);
+                    @memcpy(old_result.data[start..], result.data);
 
-                    oldResult.done = result.done;
+                    old_result.done = result.done;
                 } else {
                     try self.results.put(vm_id, result);
                 }
@@ -225,14 +225,14 @@ pub const VMManager = struct {
 
             try self.threads.append(try std.Thread.spawn(.{}, updateVmThread, .{ vm_instance, frame_end }));
 
-            if (self.results.getPtr(vm_id)) |oldResult| {
+            if (self.results.getPtr(vm_id)) |old_result| {
                 defer result.deinit();
 
-                const start = oldResult.data.len;
-                oldResult.data = try allocator.alloc.realloc(oldResult.data, oldResult.data.len + result.data.len);
-                @memcpy(oldResult.data[start..], result.data);
+                const start = old_result.data.len;
+                old_result.data = try allocator.alloc.realloc(old_result.data, old_result.data.len + result.data.len);
+                @memcpy(old_result.data[start..], result.data);
 
-                oldResult.done = false;
+                old_result.done = false;
             } else {
                 try self.results.put(vm_id, result);
             }

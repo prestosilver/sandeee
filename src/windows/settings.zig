@@ -12,7 +12,7 @@ const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../util/texture.zig");
 const conf = @import("../system/config.zig");
 const popups = @import("../drawers/popup2d.zig");
-const winEvs = @import("../events/window.zig");
+const window_events = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const files = @import("../system/files.zig");
 const c = @import("../c.zig");
@@ -45,8 +45,8 @@ const SettingsData = struct {
 
     focused: ?usize = null,
     selection: usize = 0,
-    lastAction: ?SettingsMouseAction = null,
-    focusedPane: ?usize = null,
+    last_action: ?SettingsMouseAction = null,
+    focused_pane: ?usize = null,
     editing: ?usize = null,
     bnds: rect.Rectangle = undefined,
 
@@ -165,12 +165,10 @@ const SettingsData = struct {
         },
     };
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
-        _ = props;
-
-        if (self.lastAction) |*last_action| {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
+        if (self.last_action) |*last_action| {
             if (last_action.time <= 0) {
-                self.lastAction = null;
+                self.last_action = null;
             } else {
                 last_action.time -= 5;
             }
@@ -178,7 +176,7 @@ const SettingsData = struct {
 
         self.bnds = bnds.*;
 
-        if (self.focusedPane) |focused| {
+        if (self.focused_pane) |focused| {
             var pos = vecs.newVec2(0, 40);
 
             for (panes[focused]) |item| {
@@ -190,7 +188,7 @@ const SettingsData = struct {
                 });
 
                 // check click
-                if (self.lastAction) |action| {
+                if (self.last_action) |action| {
                     if (rect.newRect(pos.x, pos.y, bnds.w, font.size).contains(action.pos)) {
                         switch (action.kind) {
                             .SingleLeft => {
@@ -207,7 +205,7 @@ const SettingsData = struct {
 
                                         self.value = item.key;
 
-                                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                                             .popup = .{
                                                 .texture = "win",
                                                 .data = .{
@@ -218,7 +216,7 @@ const SettingsData = struct {
                                                 },
                                             },
                                         });
-                                        self.lastAction = null;
+                                        self.last_action = null;
                                     },
                                     .File => {
                                         self.value = conf.SettingManager.instance.get(item.key) orelse "";
@@ -231,7 +229,7 @@ const SettingsData = struct {
 
                                         self.value = item.key;
 
-                                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                                             .popup = .{
                                                 .texture = "win",
                                                 .data = .{
@@ -242,7 +240,7 @@ const SettingsData = struct {
                                                 },
                                             },
                                         });
-                                        self.lastAction = null;
+                                        self.last_action = null;
                                     },
                                     .Folder => {
                                         self.value = conf.SettingManager.instance.get(item.key) orelse "";
@@ -255,7 +253,7 @@ const SettingsData = struct {
 
                                         self.value = item.key;
 
-                                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                                             .popup = .{
                                                 .texture = "win",
                                                 .data = .{
@@ -266,7 +264,7 @@ const SettingsData = struct {
                                                 },
                                             },
                                         });
-                                        self.lastAction = null;
+                                        self.last_action = null;
                                     },
                                 }
                             },
@@ -313,7 +311,7 @@ const SettingsData = struct {
                 if (idx + 1 == self.selection)
                     try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[4], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
 
-                if (self.lastAction) |action| {
+                if (self.last_action) |action| {
                     if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(action.pos)) {
                         switch (action.kind) {
                             .SingleLeft => {
@@ -321,7 +319,7 @@ const SettingsData = struct {
                             },
                             .DoubleLeft => {
                                 self.selection = 0;
-                                self.focusedPane = idx;
+                                self.focused_pane = idx;
                             },
                         }
                     }
@@ -346,7 +344,7 @@ const SettingsData = struct {
 
         const text = try std.mem.concat(allocator.alloc, u8, &.{
             "!SET:/",
-            if (self.focusedPane) |focused| panels[focused].name else "",
+            if (self.focused_pane) |focused| panels[focused].name else "",
         });
         defer allocator.alloc.free(text);
 
@@ -386,13 +384,13 @@ const SettingsData = struct {
             0 => {
                 if (mousepos.y < 40) {
                     if (mousepos.x < 40) {
-                        self.focusedPane = null;
+                        self.focused_pane = null;
                     }
 
                     return;
                 }
 
-                self.lastAction = if (self.lastAction) |last_action|
+                self.last_action = if (self.last_action) |last_action|
                     if (mousepos.distSq(last_action.pos) < 100)
                         .{
                             .kind = .DoubleLeft,
@@ -420,7 +418,7 @@ const SettingsData = struct {
         if (!down) return;
         switch (keycode) {
             c.GLFW_KEY_BACKSPACE => {
-                self.focusedPane = null;
+                self.focused_pane = null;
             },
             else => {},
         }
@@ -433,9 +431,6 @@ const SettingsData = struct {
 
 pub fn new(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(SettingsData);
-
-    const ym = @as(f32, @floatFromInt(self.icons.len));
-    _ = ym;
 
     self.* = .{
         .shader = shader,

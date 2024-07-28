@@ -9,7 +9,7 @@ pub const State = enum {
     Crash,
 };
 
-pub const EventStateChange = struct { targetState: State };
+pub const EventStateChange = struct { target_state: State };
 pub const EventEmailRecv = struct {};
 pub const EventRunCmd = struct { cmd: []const u8 };
 pub const EventSetSetting = struct { setting: []const u8, value: []const u8 };

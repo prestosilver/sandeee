@@ -1,6 +1,6 @@
 const std = @import("std");
 const allocator = @import("allocator.zig");
-const texMan = @import("texmanager.zig");
+const texture_manager = @import("texmanager.zig");
 const tex = @import("texture.zig");
 const files = @import("../system/files.zig");
 
@@ -45,7 +45,7 @@ pub const ElnData = struct {
                 } else {
                     const name = .{ 'e', 'l', 'n', texture };
                     if (tex.newTextureFile(value) catch null) |tmp_tex| {
-                        try texMan.TextureManager.instance.put(&name, tmp_tex);
+                        try texture_manager.TextureManager.instance.put(&name, tmp_tex);
                     } else {
                         log.err("Failed to load image {s}", .{value});
                     }

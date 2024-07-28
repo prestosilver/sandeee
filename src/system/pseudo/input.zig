@@ -1,17 +1,17 @@
 const std = @import("std");
 const allocator = @import("../../util/allocator.zig");
 const files = @import("../files.zig");
-const vmWin = @import("../../windows/vm.zig");
+const vm_window = @import("../../windows/vm.zig");
 const vm = @import("../vm.zig");
 const pwindows = @import("window.zig");
 
 // /fake/inp/char
 
-pub fn readInputChar(vmInstance: ?*vm.VM) ![]const u8 {
-    if (vmInstance != null and vmInstance.?.input.items.len != 0) {
+pub fn readInputChar(vm_instance: ?*vm.VM) ![]const u8 {
+    if (vm_instance != null and vm_instance.?.input.items.len != 0) {
         const result = try allocator.alloc.alloc(u8, 1);
 
-        result[0] = vmInstance.?.input.orderedRemove(0);
+        result[0] = vm_instance.?.input.orderedRemove(0);
 
         return result;
     }
@@ -27,15 +27,15 @@ pub fn writeInputChar(_: []const u8, _: ?*vm.VM) !void {
 
 // /fake/inp/win
 
-pub fn readInputWin(vmInstance: ?*vm.VM) ![]const u8 {
+pub fn readInputWin(vm_instance: ?*vm.VM) ![]const u8 {
     var result = try allocator.alloc.alloc(u8, 0);
-    if (vmInstance == null) return result;
+    if (vm_instance == null) return result;
 
-    if (vmInstance.?.miscData.get("window")) |aid| {
-        for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
-            const item = &pwindows.windowsPtr.*.items[idx];
+    if (vm_instance.?.misc_data.get("window")) |aid| {
+        for (pwindows.windows_ptr.*.items, 0..) |_, idx| {
+            const item = &pwindows.windows_ptr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const self: *vmWin.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
+                const self: *vm_window.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                 if (self.idx == aid[0]) {
                     result = try allocator.alloc.realloc(result, self.input.len * 2);
@@ -58,17 +58,17 @@ pub fn writeInputWin(_: []const u8, _: ?*vm.VM) !void {
 
 // /fake/inp/mouse
 
-pub fn readInputMouse(vmInstance: ?*vm.VM) ![]const u8 {
+pub fn readInputMouse(vm_instance: ?*vm.VM) ![]const u8 {
     const result = try allocator.alloc.alloc(u8, 5);
     @memset(result, 0);
 
-    if (vmInstance == null) return result;
+    if (vm_instance == null) return result;
 
-    if (vmInstance.?.miscData.get("window")) |aid| {
-        for (pwindows.windowsPtr.*.items, 0..) |_, idx| {
-            const item = &pwindows.windowsPtr.*.items[idx];
+    if (vm_instance.?.misc_data.get("window")) |aid| {
+        for (pwindows.windows_ptr.*.items, 0..) |_, idx| {
+            const item = &pwindows.windows_ptr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                const self: *vmWin.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
+                const self: *vm_window.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                 if (self.idx == aid[0]) {
                     result[0] = 255;
@@ -107,8 +107,8 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
     var file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/inp/char", .{}),
-        .pseudoRead = readInputChar,
-        .pseudoWrite = writeInputChar,
+        .pseudo_read = readInputChar,
+        .pseudo_write = writeInputChar,
         .parent = undefined,
     };
 
@@ -117,8 +117,8 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/inp/win", .{}),
-        .pseudoRead = readInputWin,
-        .pseudoWrite = writeInputWin,
+        .pseudo_read = readInputWin,
+        .pseudo_write = writeInputWin,
         .parent = undefined,
     };
 
@@ -127,8 +127,8 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/inp/mouse", .{}),
-        .pseudoRead = readInputMouse,
-        .pseudoWrite = writeInputMouse,
+        .pseudo_read = readInputMouse,
+        .pseudo_write = writeInputMouse,
         .parent = undefined,
     };
 

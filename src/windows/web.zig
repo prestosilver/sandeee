@@ -11,13 +11,13 @@ const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const files = @import("../system/files.zig");
 const tex = @import("../util/texture.zig");
-const winEvs = @import("../events/window.zig");
+const window_events = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
-const texMan = @import("../util/texmanager.zig");
+const texture_manager = @import("../util/texmanager.zig");
 const log = @import("../util/log.zig").log;
 
 const steam = @import("steam");
@@ -60,22 +60,22 @@ pub const WebData = struct {
                     const root = path[1..idx];
                     const sub = path[idx + 1 ..];
                     if (std.mem.eql(u8, root, "list")) {
-                        const pageIdx = try std.fmt.parseInt(u32, sub, 0);
-                        return try steamList(pageIdx);
+                        const page_idx = try std.fmt.parseInt(u32, sub, 0);
+                        return try steamList(page_idx);
                     } else if (std.mem.eql(u8, root, "item")) {
-                        const slashIdx = std.mem.indexOf(u8, sub, "/");
+                        const slash_idx = std.mem.indexOf(u8, sub, "/");
 
                         var tmp_path: []const u8 = "/";
                         var page_idx = sub;
 
-                        if (slashIdx) |slash| {
+                        if (slash_idx) |slash| {
                             page_idx = sub[0..slash];
                             tmp_path = sub[slash + 1 ..];
                         }
 
-                        return steamItem(std.fmt.parseInt(u64, page_idx, 10) catch {
+                        return steamItem(.{ .data = std.fmt.parseInt(u64, page_idx, 10) catch {
                             return try allocator.alloc.dupe(u8, "Error: Invalid list page");
-                        }, path, tmp_path) catch |err| {
+                        } }, path, tmp_path) catch |err| {
                             return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                         };
                     } else {
@@ -149,6 +149,7 @@ pub const WebData = struct {
         }
     }
 
+    // TODO: loading bar?
     // pub const LoadState = enum {
     //     Fetch,
     //     Images,
@@ -227,12 +228,12 @@ pub const WebData = struct {
 
     pub fn steamList(page: u32) ![]const u8 {
         const ugc = steam.getSteamUGC();
-        const query = ugc.createQueryRequest(.RankedByVote, 0, 0, steam.STEAM_APP_ID, page + 1);
+        const query = ugc.createQueryRequest(.RankedByVote, 0, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
         const handle = ugc.sendQueryRequest(query);
-        const steamUtils = steam.getSteamUtils();
+        const steam_utils = steam.getSteamUtils();
 
         var failed = true;
-        while (!steamUtils.isCallComplete(handle, &failed)) {
+        while (!steam_utils.isCallComplete(handle, &failed)) {
             std.time.sleep(200_000_000);
         }
 
@@ -265,31 +266,31 @@ pub const WebData = struct {
 
             added = true;
 
-            if (steam.fakeApi) {
+            if (steam.fake_api) {
                 const old = conts;
                 defer allocator.alloc.free(old);
 
-                const titlePrint = try std.fmt.allocPrint(allocator.alloc, "--- {s} ---", .{details.title});
-                defer allocator.alloc.free(titlePrint);
+                const title_text = try std.fmt.allocPrint(allocator.alloc, "--- {s} ---", .{details.title});
+                defer allocator.alloc.free(title_text);
 
-                const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ details.desc, details.fileId });
-                defer allocator.alloc.free(descPrint);
+                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ details.desc, details.file_id.data });
+                defer allocator.alloc.free(desc_text);
 
-                conts = try std.mem.concat(allocator.alloc, u8, &.{ old, titlePrint, "\n", descPrint, "\n\n" });
+                conts = try std.mem.concat(allocator.alloc, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
             } else {
                 const old = conts;
                 defer allocator.alloc.free(old);
 
                 const title: [*:0]u8 = @ptrCast(&details.title);
 
-                const titlePrint = try std.fmt.allocPrint(allocator.alloc, "--- {s} ---", .{title[0..std.mem.len(title)]});
-                defer allocator.alloc.free(titlePrint);
+                const title_text = try std.fmt.allocPrint(allocator.alloc, "--- {s} ---", .{title[0..std.mem.len(title)]});
+                defer allocator.alloc.free(title_text);
 
                 const desc: [*:0]u8 = @ptrCast(&details.desc);
-                const descPrint = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ desc[0..std.mem.len(desc)], details.fileId });
-                defer allocator.alloc.free(descPrint);
+                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ desc[0..std.mem.len(desc)], details.file_id.data });
+                defer allocator.alloc.free(desc_text);
 
-                conts = try std.mem.concat(allocator.alloc, u8, &.{ old, titlePrint, "\n", descPrint, "\n\n" });
+                conts = try std.mem.concat(allocator.alloc, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
             }
         }
 
@@ -312,7 +313,7 @@ pub const WebData = struct {
         return conts;
     }
 
-    pub fn steamItem(id: u64, parent: []const u8, path: []const u8) ![]const u8 {
+    pub fn steamItem(id: steam.SteamPubFileId, parent: []const u8, path: []const u8) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const BUFFER_SIZE = 256;
 
@@ -330,9 +331,9 @@ pub const WebData = struct {
             }
         }
 
-        const folderPtr = folder[0..std.mem.len(@as([*:0]u8, @ptrCast(&folder)))];
+        const folder_pointer = folder[0..std.mem.len(@as([*:0]u8, @ptrCast(&folder)))];
 
-        const file_path = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ folderPtr, path });
+        const file_path = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ folder_pointer, path });
         defer allocator.alloc.free(file_path);
 
         log.debug("file_path: {s}", .{file_path});
@@ -341,6 +342,7 @@ pub const WebData = struct {
             const file = try std.fs.openFileAbsolute(file_path, .{});
             defer file.close();
             const conts = try file.reader().readAllAlloc(allocator.alloc, 100_000_000);
+            defer allocator.alloc.free(conts);
 
             const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
             _ = std.mem.replace(u8, conts, "\r", "", cont);
@@ -352,6 +354,7 @@ pub const WebData = struct {
             const file = try walker.openFile("index.edf", .{});
             defer file.close();
             const conts = try file.reader().readAllAlloc(allocator.alloc, 100_000_000);
+            defer allocator.alloc.free(conts);
 
             const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
             _ = std.mem.replace(u8, conts, "\r", "", cont);
@@ -413,7 +416,7 @@ pub const WebData = struct {
         const fconts = try self.getConts(path);
         defer allocator.alloc.free(fconts);
 
-        const texture = texMan.TextureManager.instance.get(target).?;
+        const texture = texture_manager.TextureManager.instance.get(target).?;
 
         try tex.uploadTextureMem(texture, fconts);
 
@@ -425,36 +428,36 @@ pub const WebData = struct {
         defer allocator.alloc.free(fconts);
 
         var iter = std.mem.split(u8, fconts, "\n");
-        var currentStyle: *Style = self.styles.getPtr("") orelse unreachable;
+        var current_style: *Style = self.styles.getPtr("") orelse unreachable;
 
         while (iter.next()) |fullLine| {
             if (std.mem.startsWith(u8, fullLine, "#")) {
                 try self.styles.put(try allocator.alloc.dupe(u8, fullLine[1..]), .{});
-                currentStyle = self.styles.getPtr(fullLine[1..]) orelse unreachable;
+                current_style = self.styles.getPtr(fullLine[1..]) orelse unreachable;
             }
             if (std.mem.startsWith(u8, fullLine, "align: ")) {
                 if (std.mem.eql(u8, fullLine, "align: Center")) {
-                    currentStyle.ali = .Center;
+                    current_style.ali = .Center;
                 }
                 if (std.mem.eql(u8, fullLine, "align: Left")) {
-                    currentStyle.ali = .Left;
+                    current_style.ali = .Left;
                 }
                 if (std.mem.eql(u8, fullLine, "align: Right")) {
-                    currentStyle.ali = .Right;
+                    current_style.ali = .Right;
                 }
             }
             if (std.mem.startsWith(u8, fullLine, "suffix: ")) {
-                currentStyle.suffix = try allocator.alloc.dupe(u8, fullLine[8..]);
+                current_style.suffix = try allocator.alloc.dupe(u8, fullLine[8..]);
             }
             if (std.mem.startsWith(u8, fullLine, "prefix: ")) {
-                currentStyle.prefix = try allocator.alloc.dupe(u8, fullLine[8..]);
+                current_style.prefix = try allocator.alloc.dupe(u8, fullLine[8..]);
             }
             if (std.mem.startsWith(u8, fullLine, "scale: ")) {
-                currentStyle.scale = std.fmt.parseFloat(f32, fullLine["scale: ".len..]) catch 1.0;
+                current_style.scale = std.fmt.parseFloat(f32, fullLine["scale: ".len..]) catch 1.0;
             }
             if (std.mem.startsWith(u8, fullLine, "color: ")) {
                 const val = std.fmt.parseInt(u32, fullLine["color: ".len..], 16) catch 0xFF0000;
-                currentStyle.color = col.newColorRGBA(
+                current_style.color = col.newColorRGBA(
                     @intCast((val >> 16) & 0xFF),
                     @intCast((val >> 8) & 0xFF),
                     @intCast((val >> 0) & 0xFF),
@@ -469,8 +472,8 @@ pub const WebData = struct {
         defer copy.deinit();
 
         self.styles.clearAndFree();
-        var styleIter = copy.iterator();
-        while (styleIter.next()) |style| {
+        var style_iter = copy.iterator();
+        while (style_iter.next()) |style| {
             if (style.value_ptr.locked) {
                 try self.styles.put(style.key_ptr.*, style.value_ptr.*);
             } else {
@@ -482,9 +485,9 @@ pub const WebData = struct {
         try self.styles.put("", .{ .locked = true });
     }
 
-    pub fn saveDialog(self: *Self, outputData: []const u8, name: []const u8) !void {
+    pub fn saveDialog(self: *Self, output_data: []const u8, name: []const u8) !void {
         const output = try allocator.alloc.create([]const u8);
-        output.* = outputData;
+        output.* = output_data;
 
         const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
         adds.* = .{
@@ -494,7 +497,7 @@ pub const WebData = struct {
             .prompt = "Pick a path to save the file",
         };
 
-        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
             .popup = .{
                 .texture = "win",
                 .data = .{
@@ -524,7 +527,7 @@ pub const WebData = struct {
 
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 40,
+                .offset_start = 40,
             };
         }
 
@@ -547,7 +550,7 @@ pub const WebData = struct {
                 self.load_thread = null;
             }
 
-            const webWidth = bnds.w - 14;
+            const web_width = bnds.w - 14;
 
             var pos = vecs.newVec2(0, -props.scroll.?.value + 50);
 
@@ -566,12 +569,12 @@ pub const WebData = struct {
             texid[5] = self.web_idx;
 
             // draw text
-            while (iter.next()) |fullLine| {
-                if (std.mem.startsWith(u8, fullLine, "#")) {
+            while (iter.next()) |full_line| {
+                if (std.mem.startsWith(u8, full_line, "#")) {
                     continue;
                 }
 
-                var line = fullLine;
+                var line = full_line;
                 var style: Style = self.styles.get("") orelse .{};
 
                 if (line.len > 1 and line[0] == ':' and std.mem.containsAtLeast(u8, line, 2, ":")) {
@@ -600,20 +603,20 @@ pub const WebData = struct {
                         gfx.Context.makeCurrent();
                         defer gfx.Context.makeNotCurrent();
 
-                        try texMan.TextureManager.instance.putMem(&texid, @embedFile("../images/error.eia"));
+                        try texture_manager.TextureManager.instance.putMem(&texid, @embedFile("../images/error.eia"));
 
-                        texMan.TextureManager.instance.get(&texid).?.size =
-                            texMan.TextureManager.instance.get(&texid).?.size.div(4);
+                        texture_manager.TextureManager.instance.get(&texid).?.size =
+                            texture_manager.TextureManager.instance.get(&texid).?.size.div(4);
 
                         const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                         img_thread.detach();
                     }
 
-                    const size = texMan.TextureManager.instance.get(&texid).?.size.mul(2 * style.scale);
+                    const size = texture_manager.TextureManager.instance.get(&texid).?.size.mul(2 * style.scale);
 
                     switch (style.ali) {
                         .Center => {
-                            const x = (webWidth - size.x) / 2;
+                            const x = (web_width - size.x) / 2;
 
                             try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
                                 .texture = &texid,
@@ -637,7 +640,7 @@ pub const WebData = struct {
                             pos.y += size.y;
                         },
                         .Right => {
-                            const x = webWidth - size.x;
+                            const x = web_width - size.x;
 
                             try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
                                 .texture = &texid,
@@ -681,7 +684,7 @@ pub const WebData = struct {
                                 try self.links.append(link);
                             },
                             .Center => {
-                                const x = (webWidth - size.x) / 2;
+                                const x = (web_width - size.x) / 2;
 
                                 const link = WebData.WebLink{
                                     .url = url,
@@ -690,7 +693,7 @@ pub const WebData = struct {
                                 try self.links.append(link);
                             },
                             .Right => {
-                                const x = (webWidth - size.x) - 7;
+                                const x = (web_width - size.x) - 7;
 
                                 const link = WebData.WebLink{
                                     .url = url,
@@ -709,7 +712,7 @@ pub const WebData = struct {
                 });
                 defer allocator.alloc.free(aline);
 
-                const size = font.sizeText(.{ .text = aline, .scale = style.scale, .wrap = webWidth });
+                const size = font.sizeText(.{ .text = aline, .scale = style.scale, .wrap = web_width });
 
                 if (pos.y > 0 and pos.y + size.y - 20 < bnds.h) {
                     switch (style.ali) {
@@ -720,11 +723,11 @@ pub const WebData = struct {
                                 .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
                                 .color = style.color,
                                 .scale = style.scale,
-                                .wrap = webWidth,
+                                .wrap = web_width,
                             });
                         },
                         .Center => {
-                            const x = (webWidth - size.x) / 2;
+                            const x = (web_width - size.x) / 2;
 
                             try font.draw(.{
                                 .shader = font_shader,
@@ -732,11 +735,11 @@ pub const WebData = struct {
                                 .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
                                 .color = style.color,
                                 .scale = style.scale,
-                                .wrap = webWidth,
+                                .wrap = web_width,
                             });
                         },
                         .Right => {
-                            const x = (webWidth - size.x);
+                            const x = (web_width - size.x);
 
                             try font.draw(.{
                                 .shader = font_shader,
@@ -744,7 +747,7 @@ pub const WebData = struct {
                                 .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
                                 .color = style.color,
                                 .scale = style.scale,
-                                .wrap = webWidth,
+                                .wrap = web_width,
                             });
                         },
                     }
@@ -825,19 +828,20 @@ pub const WebData = struct {
         }
     }
 
+    // TODO: BUG possible leak
     pub fn followLink(self: *Self) !void {
         if (self.highlight_idx == 0) return;
 
-        var lastHost: []const u8 = "";
+        var last_host: []const u8 = "";
         if (std.mem.indexOf(u8, self.path, ":")) |idx|
-            lastHost = self.path[0..idx];
+            last_host = self.path[0..idx];
 
         try self.hist.append(self.path);
 
         const targ = self.links.items[self.highlight_idx - 1].url;
 
         if (std.mem.indexOf(u8, targ, ":") == null) {
-            self.path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ lastHost, targ[1..] });
+            self.path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ last_host, targ[1..] });
         } else {
             self.path = try allocator.alloc.dupe(u8, targ);
         }

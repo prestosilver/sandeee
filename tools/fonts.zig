@@ -1,8 +1,6 @@
 const std = @import("std");
 const zigimg = @import("deps/zigimg/zigimg.zig");
 
-const lol = error{};
-
 // struct FontChar {
 //   []const []const u1: data,
 // }

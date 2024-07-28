@@ -2,10 +2,10 @@ const std = @import("std");
 const vm = @import("vm.zig");
 const files = @import("files.zig");
 const streams = @import("stream.zig");
-const vmManager = @import("vmmanager.zig");
+const vm_manager = @import("vmmanager.zig");
 const log = @import("../util/log.zig").log;
 
-const VMError = vm.VM.VMError;
+const VmError = vm.VM.VMError;
 const StackEntry = vm.VM.StackEntry;
 const Operation = vm.VM.Operation;
 
@@ -14,57 +14,57 @@ pub const SysCall = struct {
 
     const SYS_CALLS = [_]Self{
         // System ops
-        .{ .runFn = sysPrint },
-        .{ .runFn = sysQuit },
+        .{ .run_fn = sysPrint },
+        .{ .run_fn = sysQuit },
 
         // File ops
-        .{ .runFn = sysCreate },
-        .{ .runFn = sysOpen },
-        .{ .runFn = sysRead },
-        .{ .runFn = sysWrite },
-        .{ .runFn = sysFlush },
-        .{ .runFn = sysClose },
+        .{ .run_fn = sysCreate },
+        .{ .run_fn = sysOpen },
+        .{ .run_fn = sysRead },
+        .{ .run_fn = sysWrite },
+        .{ .run_fn = sysFlush },
+        .{ .run_fn = sysClose },
 
         // more system ops
-        .{ .runFn = sysArg },
-        .{ .runFn = sysTime },
+        .{ .run_fn = sysArg },
+        .{ .run_fn = sysTime },
 
         // function ops
-        .{ .runFn = sysCheckFunc },
-        .{ .runFn = sysGetFunc },
-        .{ .runFn = sysRegFunc },
-        .{ .runFn = sysClearFunc },
+        .{ .run_fn = sysCheckFunc },
+        .{ .run_fn = sysGetFunc },
+        .{ .run_fn = sysRegFunc },
+        .{ .run_fn = sysClearFunc },
 
         // heap ops
-        .{ .runFn = sysResizeHeap },
-        .{ .runFn = sysReadHeap },
-        .{ .runFn = sysWriteHeap },
+        .{ .run_fn = sysResizeHeap },
+        .{ .run_fn = sysReadHeap },
+        .{ .run_fn = sysWriteHeap },
 
         // more system ops
-        .{ .runFn = sysYield },
-        .{ .runFn = sysError },
+        .{ .run_fn = sysYield },
+        .{ .run_fn = sysError },
 
         // more file ops
-        .{ .runFn = sysSize },
+        .{ .run_fn = sysSize },
 
         // more system ops
-        .{ .runFn = sysRSP },
-        .{ .runFn = sysSpawn },
-        .{ .runFn = sysStatus },
+        .{ .run_fn = sysRSP },
+        .{ .run_fn = sysSpawn },
+        .{ .run_fn = sysStatus },
     };
 
-    runFn: *const fn (*vm.VM) VMError!void,
+    run_fn: *const fn (*vm.VM) VmError!void,
 
-    pub fn run(self: *vm.VM, index: u64) VMError!void {
+    pub fn run(self: *vm.VM, index: u64) VmError!void {
         if (index < SYS_CALLS.len) {
-            return SYS_CALLS[index].runFn(self);
+            return SYS_CALLS[index].run_fn(self);
         }
 
         return error.InvalidSys;
     }
 };
 
-fn sysPrint(self: *vm.VM) VMError!void {
+fn sysPrint(self: *vm.VM) VmError!void {
     const a = try self.popStack();
 
     if (a.data().* == .string) {
@@ -77,7 +77,7 @@ fn sysPrint(self: *vm.VM) VMError!void {
     }
 }
 
-fn sysQuit(self: *vm.VM) VMError!void {
+fn sysQuit(self: *vm.VM) VmError!void {
     if (self.functions.contains(vm.EXIT_NAME)) {
         if (self.inside_fn) |func| {
             if (std.mem.eql(u8, func, vm.EXIT_NAME)) {
@@ -85,11 +85,11 @@ fn sysQuit(self: *vm.VM) VMError!void {
                 return;
             }
         }
-        self.retStack[self.retRsp].location = self.pc;
-        self.retStack[self.retRsp].function = self.inside_fn;
+        self.return_stack[self.return_rsp].location = self.pc;
+        self.return_stack[self.return_rsp].function = self.inside_fn;
         self.pc = 0;
         self.inside_fn = vm.EXIT_NAME;
-        self.retRsp += 1;
+        self.return_rsp += 1;
 
         return;
     }
@@ -97,7 +97,7 @@ fn sysQuit(self: *vm.VM) VMError!void {
     self.stopped = true;
 }
 
-fn sysCreate(self: *vm.VM) VMError!void {
+fn sysCreate(self: *vm.VM) VmError!void {
     const path = try self.popStack();
 
     if (path.data().* != .string) return error.StringMissing;
@@ -109,18 +109,18 @@ fn sysCreate(self: *vm.VM) VMError!void {
     }
 }
 
-fn sysOpen(self: *vm.VM) VMError!void {
+fn sysOpen(self: *vm.VM) VmError!void {
     const path = try self.popStack();
 
     if (path.data().* != .string) return error.StringMissing;
 
-    const stream = try streams.FileStream.Open(self.root, path.data().string, self);
+    const stream = try streams.FileStream.open(self.root, path.data().string, self);
 
     try self.streams.append(stream);
     try self.pushStackI(self.streams.items.len - 1);
 }
 
-fn sysRead(self: *vm.VM) VMError!void {
+fn sysRead(self: *vm.VM) VmError!void {
     const len = try self.popStack();
     const idx = try self.popStack();
 
@@ -133,7 +133,7 @@ fn sysRead(self: *vm.VM) VMError!void {
 
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
     if (fs) |stream| {
-        const cont = try stream.Read(@as(u32, @intCast(len.data().value)));
+        const cont = try stream.read(@as(u32, @intCast(len.data().value)));
         defer self.allocator.free(cont);
 
         try self.pushStackS(cont);
@@ -142,7 +142,7 @@ fn sysRead(self: *vm.VM) VMError!void {
     }
 }
 
-fn sysWrite(self: *vm.VM) VMError!void {
+fn sysWrite(self: *vm.VM) VmError!void {
     if (self.checker) return;
 
     const str = try self.popStack();
@@ -155,13 +155,13 @@ fn sysWrite(self: *vm.VM) VMError!void {
 
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
     if (fs) |stream| {
-        try stream.Write(str.data().string);
+        try stream.write(str.data().string);
     } else {
         return error.InvalidStream;
     }
 }
 
-fn sysFlush(self: *vm.VM) VMError!void {
+fn sysFlush(self: *vm.VM) VmError!void {
     if (self.checker) return;
 
     const idx = try self.popStack();
@@ -171,13 +171,13 @@ fn sysFlush(self: *vm.VM) VMError!void {
     if (idx.data().value >= self.streams.items.len) return error.InvalidStream;
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
     if (fs) |stream| {
-        try stream.Flush();
+        try stream.flush();
     } else {
         return error.InvalidStream;
     }
 }
 
-fn sysClose(self: *vm.VM) VMError!void {
+fn sysClose(self: *vm.VM) VmError!void {
     const idx = try self.popStack();
 
     if (idx.data().* != .value) return error.ValueMissing;
@@ -186,14 +186,14 @@ fn sysClose(self: *vm.VM) VMError!void {
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
 
     if (fs) |stream| {
-        try stream.Close();
+        try stream.close();
         self.streams.items[@as(usize, @intCast(idx.data().value))] = null;
     } else {
         return error.InvalidStream;
     }
 }
 
-fn sysArg(self: *vm.VM) VMError!void {
+fn sysArg(self: *vm.VM) VmError!void {
     const idx = try self.popStack();
 
     if (idx.data().* != .value) return error.ValueMissing;
@@ -206,11 +206,11 @@ fn sysArg(self: *vm.VM) VMError!void {
     try self.pushStackS(self.args[@as(usize, @intCast(idx.data().value))]);
 }
 
-fn sysTime(self: *vm.VM) VMError!void {
+fn sysTime(self: *vm.VM) VmError!void {
     try self.pushStackI(@as(u64, @intCast(std.time.milliTimestamp())));
 }
 
-fn sysCheckFunc(self: *vm.VM) VMError!void {
+fn sysCheckFunc(self: *vm.VM) VmError!void {
     const name = try self.popStack();
 
     if (name.data().* != .string) return error.StringMissing;
@@ -220,7 +220,7 @@ fn sysCheckFunc(self: *vm.VM) VMError!void {
     try self.pushStackI(val);
 }
 
-fn sysGetFunc(self: *vm.VM) VMError!void {
+fn sysGetFunc(self: *vm.VM) VmError!void {
     const name = try self.popStack();
 
     if (name.data().* != .string) return error.StringMissing;
@@ -232,7 +232,7 @@ fn sysGetFunc(self: *vm.VM) VMError!void {
     try self.pushStackS(val);
 }
 
-fn sysRegFunc(self: *vm.VM) VMError!void {
+fn sysRegFunc(self: *vm.VM) VmError!void {
     const name = try self.popStack();
     const func = try self.popStack();
 
@@ -244,22 +244,22 @@ fn sysRegFunc(self: *vm.VM) VMError!void {
     const ops = try self.stringToOps(dup);
     defer ops.deinit();
 
-    const finalOps = try self.allocator.dupe(Operation, ops.items);
-    const finalName = try self.allocator.dupe(u8, name.data().string);
+    const final_ops = try self.allocator.dupe(Operation, ops.items);
+    const final_name = try self.allocator.dupe(u8, name.data().string);
 
-    if (self.functions.fetchRemove(finalName)) |entry| {
+    if (self.functions.fetchRemove(final_name)) |entry| {
         self.allocator.free(entry.key);
         self.allocator.free(entry.value.ops);
         self.allocator.free(entry.value.string);
     }
 
-    try self.functions.put(finalName, .{
+    try self.functions.put(final_name, .{
         .string = dup,
-        .ops = finalOps,
+        .ops = final_ops,
     });
 }
 
-fn sysClearFunc(self: *vm.VM) VMError!void {
+fn sysClearFunc(self: *vm.VM) VmError!void {
     const name = try self.popStack();
 
     if (name.data().* != .string) return error.StringMissing;
@@ -274,7 +274,7 @@ fn sysClearFunc(self: *vm.VM) VMError!void {
     return error.FunctionMissing;
 }
 
-fn sysResizeHeap(self: *vm.VM) VMError!void {
+fn sysResizeHeap(self: *vm.VM) VmError!void {
     const size = try self.popStack();
 
     if (size.data().* != .value) return error.ValueMissing;
@@ -289,7 +289,7 @@ fn sysResizeHeap(self: *vm.VM) VMError!void {
     }
 }
 
-fn sysReadHeap(self: *vm.VM) VMError!void {
+fn sysReadHeap(self: *vm.VM) VmError!void {
     const item = try self.popStack();
 
     if (item.data().* != .value) return error.ValueMissing;
@@ -307,7 +307,7 @@ fn sysReadHeap(self: *vm.VM) VMError!void {
     }
 }
 
-fn sysWriteHeap(self: *vm.VM) VMError!void {
+fn sysWriteHeap(self: *vm.VM) VmError!void {
     const data = try self.popStack();
     const item = try self.popStack();
 
@@ -337,27 +337,27 @@ fn sysWriteHeap(self: *vm.VM) VMError!void {
     try self.pushStack(data);
 }
 
-fn sysYield(self: *vm.VM) VMError!void {
+fn sysYield(self: *vm.VM) VmError!void {
     self.yield = true;
 }
 
-fn sysError(self: *vm.VM) VMError!void {
+fn sysError(self: *vm.VM) VmError!void {
     const msg = try self.popStack();
 
     if (msg.data().* != .string) return error.StringMissing;
 
-    const msgString = try self.getOp();
-    defer self.allocator.free(msgString);
+    const msg_string = try self.getOp();
+    defer self.allocator.free(msg_string);
 
     try self.out.appendSlice("Error: ");
     try self.out.appendSlice(msg.data().string);
     try self.out.appendSlice("\n");
-    try self.out.appendSlice(msgString);
+    try self.out.appendSlice(msg_string);
 
     self.stopped = true;
 }
 
-fn sysSize(self: *vm.VM) VMError!void {
+fn sysSize(self: *vm.VM) VmError!void {
     const path = try self.popStack();
 
     if (path.data().* != .string) return error.StringMissing;
@@ -377,7 +377,7 @@ fn sysSize(self: *vm.VM) VMError!void {
     try self.pushStackI(file.size());
 }
 
-fn sysRSP(self: *vm.VM) VMError!void {
+fn sysRSP(self: *vm.VM) VmError!void {
     const num = try self.popStack();
 
     if (num.data().* != .value) return error.ValueMissing;
@@ -388,7 +388,7 @@ fn sysRSP(self: *vm.VM) VMError!void {
     self.rsp = num.data().value;
 }
 
-fn sysSpawn(self: *vm.VM) VMError!void {
+fn sysSpawn(self: *vm.VM) VmError!void {
     const exec = try self.popStack();
 
     if (exec.data().* != .string) return error.StringMissing;
@@ -396,12 +396,12 @@ fn sysSpawn(self: *vm.VM) VMError!void {
     const file = try self.root.getFile(exec.data().string);
     const conts = try file.read(null);
 
-    const handle = try vmManager.VMManager.instance.spawn(self.root, exec.data().string, conts[4..]);
+    const handle = try vm_manager.VMManager.instance.spawn(self.root, exec.data().string, conts[4..]);
 
     try self.pushStackI(handle.id);
 }
 
-fn sysStatus(self: *vm.VM) VMError!void {
+fn sysStatus(self: *vm.VM) VmError!void {
     const handle = try self.popStack();
 
     if (handle.data().* != .value) return error.ValueMissing;

@@ -1,18 +1,20 @@
 const std = @import("std");
-
-const root = @import("root");
-pub const fakeApi = @hasDecl(root, "fakeSteam") and root.fakeSteam;
-
-const enableApi = !fakeApi and (@hasDecl(root, "useSteam") and root.useSteam);
-
-pub const STEAM_APP_ID = 480;
-
-const TestUser: SteamUser = .{ .data = 1000 };
-const TestUGC: SteamUGC = .{};
-const TestUtils: SteamUtils = .{};
-const TestStats: SteamUserStats = .{};
-
 const log = std.log.scoped(.Steam);
+
+const options = if (@hasDecl(@import("root"), "steam_options")) @import("root").steam_options else .{};
+
+pub const fake_api = @hasDecl(options, "fake_steam") and options.fake_steam;
+const enable_api = !fake_api and (@hasDecl(options, "use_steam") and options.use_steam);
+
+pub const STEAM_APP_ID: SteamAppId = if (@hasDecl(options, "app_id")) .{ .data = options.app_id } else .{ .data = 480 };
+const TEST_USER: SteamUser = .{ .data = 1000 };
+const TEST_UGC: SteamUGC = .{};
+const TEST_UTILS: SteamUtils = .{};
+const TEST_STATS: SteamUserStats = .{};
+
+pub const NO_APP_ID: SteamAppId = .{ .data = 0 };
+
+pub const allocator = std.heap.c_allocator;
 
 pub const UGCQueryKind = enum(i32) {
     RankedByVote = 0,
@@ -31,14 +33,31 @@ pub const WorkshopFileType = enum(u32) {
     Game = 6,
 };
 
-pub const steamAlloc = std.heap.c_allocator;
+pub const SteamResult = enum(u32) {
+    Ok = 1,
+    Fail = 2,
+    NoConnection = 3,
+    InvalidPassword = 4,
+    LoggedInElsewhere = 5,
+    _,
+};
+
+pub const SteamAppId = struct {
+    data: u32,
+};
+
+pub const SteamPubFileId = struct {
+    data: u64,
+};
 
 pub const SteamUser = extern struct {
     data: i32,
 
     extern fn SteamAPI_ISteamUser_GetSteamID(SteamUser) SteamId;
-    pub fn getSteamId(self: SteamUser) SteamId {
-        if (enableApi) {
+    pub fn getSteamId(
+        self: SteamUser,
+    ) SteamId {
+        if (enable_api) {
             return SteamAPI_ISteamUser_GetSteamID(self);
         } else {
             log.debug("Get Steam Id From User", .{});
@@ -51,8 +70,12 @@ pub const SteamUser = extern struct {
 
 pub const SteamUtils = extern struct {
     extern fn SteamAPI_ISteamUtils_IsAPICallCompleted(*const SteamUtils, APIHandle, *bool) bool;
-    pub fn isCallComplete(self: *const SteamUtils, handle: APIHandle, failed: *bool) bool {
-        if (enableApi) {
+    pub fn isCallComplete(
+        self: *const SteamUtils,
+        handle: APIHandle,
+        failed: *bool,
+    ) bool {
+        if (enable_api) {
             return SteamAPI_ISteamUtils_IsAPICallCompleted(self, handle, failed);
         } else {
             log.debug("Check complete {}", .{handle});
@@ -74,7 +97,7 @@ const APIHandleKind = enum {
     Query,
 };
 
-pub const APIHandle = if (fakeApi) union(APIHandleKind) {
+pub const APIHandle = if (fake_api) union(APIHandleKind) {
     Query: struct {
         handle: UGCQueryHandle,
     },
@@ -82,7 +105,7 @@ pub const APIHandle = if (fakeApi) union(APIHandleKind) {
     data: u64,
 };
 
-pub const UGCQueryHandle = if (fakeApi) struct {
+pub const UGCQueryHandle = if (fake_api) struct {
     kind: UGCQueryKind,
     page: u32,
 } else extern struct {
@@ -93,12 +116,12 @@ pub const PublishedFileId = extern struct {
     id: u64,
 };
 
-pub const UGCDetails = if (fakeApi) struct {
-    fileId: u64,
-    result: u32,
-    fileType: WorkshopFileType,
-    creator: u32,
-    consumer: u32,
+pub const UGCDetails = if (fake_api) struct {
+    file_id: SteamPubFileId,
+    result: SteamResult,
+    file_type: WorkshopFileType,
+    creator: SteamAppId,
+    consumer: SteamAppId,
     title: []const u8,
     desc: []const u8,
     owner: u64,
@@ -108,24 +131,24 @@ pub const UGCDetails = if (fakeApi) struct {
     visible: u8,
     banned: bool,
     acceptable: bool,
-    tagsTurnic: bool,
+    tags_turnic: bool,
     tags: []const u8,
     file: UGCQueryHandle,
-    previewFile: UGCQueryHandle,
-    fileName: []const u8,
-    fileSize: i32,
-    previewFileSize: i32,
-    rgchURL: []const u8,
-    upVotes: u32,
-    downVotes: u32,
+    preview_file: UGCQueryHandle,
+    file_name: []const u8,
+    file_size: i32,
+    preview_file_size: i32,
+    rgch_url: []const u8,
+    up_votes: u32,
+    down_votes: u32,
     score: f32,
     children: u32,
 } else extern struct {
-    fileId: u64,
-    result: u32,
-    fileType: WorkshopFileType,
-    creator: u32,
-    consumer: u32,
+    file_id: SteamPubFileId,
+    result: SteamResult,
+    file_type: WorkshopFileType,
+    creator: SteamAppId,
+    consumer: SteamAppId,
     title: [129]u8,
     desc: [8000]u8,
     owner: u64,
@@ -135,24 +158,28 @@ pub const UGCDetails = if (fakeApi) struct {
     visible: u8,
     banned: bool,
     acceptable: bool,
-    tagsTurnic: bool,
+    tags_turnic: bool,
     tags: [1025]u8,
     file: UGCQueryHandle,
-    previewFile: UGCQueryHandle,
-    fileName: [260]u8,
-    fileSize: i32,
-    previewFileSize: i32,
-    rgchURL: [256]u8,
-    upVotes: u32,
-    downVotes: u32,
+    preview_file: UGCQueryHandle,
+    file_name: [260]u8,
+    file_size: i32,
+    preview_file_size: i32,
+    rgch_url: [256]u8,
+    up_votes: u32,
+    down_votes: u32,
     score: f32,
     children: u32,
 };
 
 pub const SteamUGC = extern struct {
-    extern fn SteamAPI_ISteamUGC_DownloadItem(ugc: *const SteamUGC, id: u64, hp: bool) bool;
-    pub fn downloadItem(ugc: *const SteamUGC, id: u64, hp: bool) bool {
-        if (enableApi) {
+    extern fn SteamAPI_ISteamUGC_DownloadItem(ugc: *const SteamUGC, id: SteamPubFileId, hp: bool) bool;
+    pub fn downloadItem(
+        ugc: *const SteamUGC,
+        id: SteamPubFileId,
+        hp: bool,
+    ) bool {
+        if (enable_api) {
             return SteamAPI_ISteamUGC_DownloadItem(ugc, id, hp);
         } else {
             log.debug("Download Item: {}", .{id});
@@ -160,16 +187,22 @@ pub const SteamUGC = extern struct {
         }
     }
 
-    extern fn SteamAPI_ISteamUGC_GetItemInstallInfo(ugc: *const SteamUGC, id: u64, size: *u64, folder: [*c]u8, folderSize: u32, timestamp: *u32) bool;
-    pub fn getItemInstallInfo(ugc: *const SteamUGC, id: u64, size: *u64, folder: []u8, timestamp: *u32) bool {
-        if (enableApi) {
+    extern fn SteamAPI_ISteamUGC_GetItemInstallInfo(ugc: *const SteamUGC, id: SteamPubFileId, size: *u64, folder: [*c]u8, folderSize: u32, timestamp: *u32) bool;
+    pub fn getItemInstallInfo(
+        ugc: *const SteamUGC,
+        id: SteamPubFileId,
+        size: *u64,
+        folder: []u8,
+        timestamp: *u32,
+    ) bool {
+        if (enable_api) {
             return SteamAPI_ISteamUGC_GetItemInstallInfo(ugc, id, size, folder.ptr, @intCast(folder.len), timestamp);
         } else {
             log.debug("itemInfo: {}", .{id});
 
-            if (id < steamItems.items.len) {
+            if (id.data < steam_items.items.len) {
                 size.* = 0;
-                const path = steamItems.items[id].folder;
+                const path = steam_items.items[id.data].folder;
                 @memcpy(folder[0..path.len], path);
                 timestamp.* = 0;
 
@@ -181,8 +214,11 @@ pub const SteamUGC = extern struct {
     }
 
     extern fn SteamAPI_ISteamUGC_SendQueryUGCRequest(ugc: *const SteamUGC, handle: UGCQueryHandle) APIHandle;
-    pub fn sendQueryRequest(ugc: *const SteamUGC, handle: UGCQueryHandle) APIHandle {
-        if (enableApi) {
+    pub fn sendQueryRequest(
+        ugc: *const SteamUGC,
+        handle: UGCQueryHandle,
+    ) APIHandle {
+        if (enable_api) {
             return SteamAPI_ISteamUGC_SendQueryUGCRequest(ugc, handle);
         } else {
             log.debug("SendQuery: handle: {}", .{handle});
@@ -197,18 +233,18 @@ pub const SteamUGC = extern struct {
     extern fn SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc: *const SteamUGC, queryKind: UGCQueryKind, kind: u32, creatorId: u32, consumerId: u32, page: u32) UGCQueryHandle;
     pub fn createQueryRequest(
         ugc: *const SteamUGC,
-        queryKind: UGCQueryKind,
+        query_kind: UGCQueryKind,
         kind: u32,
-        creatorId: u32,
-        consumerId: u32,
+        creator_id: SteamAppId,
+        consumer_id: SteamAppId,
         page: u32,
     ) UGCQueryHandle {
-        if (enableApi) {
-            return SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc, queryKind, kind, creatorId, consumerId, page);
+        if (enable_api) {
+            return SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc, query_kind, kind, creator_id, consumer_id, page);
         } else {
-            log.debug("Query: querykind: {}, kind: {}, creator: {}, consumer: {}, page: {}", .{ queryKind, kind, creatorId, consumerId, page });
+            log.debug("Query: querykind: {}, kind: {}, creator: {}, consumer: {}, page: {}", .{ query_kind, kind, creator_id, consumer_id, page });
             return .{
-                .kind = queryKind,
+                .kind = query_kind,
                 .page = page,
             };
         }
@@ -221,21 +257,21 @@ pub const SteamUGC = extern struct {
         index: u32,
         details: *UGCDetails,
     ) bool {
-        if (enableApi) {
+        if (enable_api) {
             return SteamAPI_ISteamUGC_GetQueryUGCResult(ugc, handle, index, details);
         } else {
             log.debug("query result", .{});
             if (handle.page != 1) return false;
-            if (index >= steamItems.items.len) return false;
+            if (index >= steam_items.items.len) return false;
 
             details.* = .{
-                .fileId = index,
-                .result = 0,
-                .fileType = .Community,
-                .creator = 0,
-                .consumer = 0,
-                .title = steamItems.items[index].title,
-                .desc = steamItems.items[index].desc,
+                .file_id = .{ .data = @intCast(index) },
+                .result = .Ok,
+                .file_type = .Community,
+                .creator = STEAM_APP_ID,
+                .consumer = STEAM_APP_ID,
+                .title = steam_items.items[index].title,
+                .desc = steam_items.items[index].desc,
                 .owner = 0,
                 .created = 0,
                 .updated = 0,
@@ -243,16 +279,16 @@ pub const SteamUGC = extern struct {
                 .visible = 0,
                 .banned = false,
                 .acceptable = true,
-                .tagsTurnic = false,
+                .tags_turnic = false,
                 .tags = "test,steam",
                 .file = handle,
-                .previewFile = undefined,
-                .fileName = "test",
-                .fileSize = 0,
-                .previewFileSize = 0,
-                .rgchURL = "",
-                .upVotes = 0,
-                .downVotes = 0,
+                .preview_file = undefined,
+                .file_name = "test",
+                .file_size = 0,
+                .preview_file_size = 0,
+                .rgch_url = "",
+                .up_votes = 0,
+                .down_votes = 0,
                 .score = 0,
                 .children = 0,
             };
@@ -265,7 +301,7 @@ pub const SteamUGC = extern struct {
         ugc: *const SteamUGC,
         handle: UGCQueryHandle,
     ) bool {
-        if (enableApi) {
+        if (enable_api) {
             return SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(ugc, handle);
         } else {
             log.debug("query free", .{});
@@ -284,11 +320,11 @@ pub const FakeUGCEntry = struct {
     folder: []const u8,
 };
 
-pub var steamItems = std.ArrayList(FakeUGCEntry).init(steamAlloc);
+pub var steam_items = std.ArrayList(FakeUGCEntry).init(allocator);
 
 extern fn SteamAPI_Init() bool;
 pub fn init() !void {
-    if (enableApi) {
+    if (enable_api) {
         if (!SteamAPI_Init()) {
             return error.SteamInitFail;
         }
@@ -297,34 +333,36 @@ pub fn init() !void {
         const file = try std.fs.cwd().openFile("fake_steam/ugc.csv", .{});
         const reader = file.reader();
 
-        while (reader.readUntilDelimiterOrEofAlloc(steamAlloc, '\n', 1000) catch null) |buffer| {
-            defer steamAlloc.free(buffer);
+        while (reader.readUntilDelimiterOrEofAlloc(allocator, '\n', 1000) catch null) |buffer| {
+            defer allocator.free(buffer);
 
             var iter = std.mem.split(u8, buffer, ",");
             const title = iter.next() orelse return error.SteamParse;
             const desc = iter.next() orelse return error.SteamParse;
             const folder = iter.next() orelse return error.SteamParse;
 
-            try steamItems.append(.{
-                .title = try steamAlloc.dupe(u8, title),
-                .desc = try steamAlloc.dupe(u8, desc),
-                .folder = try std.mem.concat(steamAlloc, u8, &.{
+            try steam_items.append(.{
+                .title = try allocator.dupe(u8, title),
+                .desc = try allocator.dupe(u8, desc),
+                .folder = try std.mem.concat(allocator, u8, &.{
                     "/home/john/doc/rep/github.com/sandeee/fake_steam/",
                     folder,
                 }),
             });
         }
 
-        log.debug("UGC Count {}", .{steamItems.items.len});
+        log.debug("UGC Count {}", .{steam_items.items.len});
 
         log.debug("Init Steam", .{});
         return;
     }
 }
 
-extern fn SteamAPI_RestartAppIfNecessary(app_id: u32) bool;
-pub fn restartIfNeeded(app_id: u32) bool {
-    if (enableApi) {
+extern fn SteamAPI_RestartAppIfNecessary(app_id: SteamAppId) bool;
+pub fn restartIfNeeded(
+    app_id: SteamAppId,
+) bool {
+    if (enable_api) {
         return SteamAPI_RestartAppIfNecessary(app_id);
     } else {
         log.debug("Restart If Needed: {}", .{app_id});
@@ -334,51 +372,51 @@ pub fn restartIfNeeded(app_id: u32) bool {
 
 extern fn SteamAPI_SteamUGC_v017() *const SteamUGC;
 pub fn getSteamUGC() *const SteamUGC {
-    if (enableApi) {
+    if (enable_api) {
         return SteamAPI_SteamUGC_v017();
     } else {
         log.debug("Get UGC", .{});
-        return &TestUGC;
+        return &TEST_UGC;
     }
 }
 
 extern fn SteamAPI_SteamUser_v023() SteamUser;
 pub fn getUser() SteamUser {
-    if (enableApi) {
+    if (enable_api) {
         return SteamAPI_SteamUser_v023();
     } else {
         log.debug("Get User", .{});
-        return TestUser;
+        return TEST_USER;
     }
 }
 
 extern fn SteamAPI_SteamUtils_v010() *const SteamUtils;
 pub fn getSteamUtils() *const SteamUtils {
-    if (enableApi) {
+    if (enable_api) {
         return SteamAPI_SteamUtils_v010();
     } else {
         log.debug("Init Steam Utils", .{});
-        return &TestUtils;
+        return &TEST_UTILS;
     }
 }
 
 extern fn SteamAPI_SteamUserStats_v012() *const SteamUserStats;
 pub fn getUserStats() *const SteamUserStats {
-    if (enableApi) {
+    if (enable_api) {
         return SteamAPI_SteamUserStats_v012();
     } else {
         log.debug("Init Steam Utils", .{});
-        return &TestStats;
+        return &TEST_STATS;
     }
 }
 
 extern fn SteamAPI_RunCallbacks() void;
 pub fn runCallbacks() void {
-    if (enableApi) {
+    if (enable_api) {
         return SteamAPI_RunCallbacks();
     } else {
         log.debug("Init Steam Utils", .{});
-        return &TestStats;
+        return &TEST_STATS;
     }
 }
 
@@ -388,10 +426,10 @@ pub const CallbackMsg = extern struct {
     user: SteamUser,
     callback: i32,
     param: *void,
-    paramSize: i32,
+    param_size: i32,
 };
 
-var manualSetup: bool = false;
+var manual_setup: bool = false;
 
 extern fn SteamAPI_GetHSteamPipe() *const SteamPipe;
 extern fn SteamAPI_ManualDispatch_Init() void;
@@ -399,19 +437,19 @@ extern fn SteamAPI_ManualDispatch_RunFrame(*const SteamPipe) void;
 extern fn SteamAPI_ManualDispatch_GetNextCallback(*const SteamPipe, *CallbackMsg) bool;
 extern fn SteamAPI_ManualDispatch_FreeLastCallback(*const SteamPipe) void;
 pub fn manualCallback(comptime calls: fn (CallbackMsg) anyerror!void) !void {
-    if (enableApi) {
-        if (!manualSetup) {
+    if (enable_api) {
+        if (!manual_setup) {
             SteamAPI_ManualDispatch_Init();
         }
 
-        const steamPipe = SteamAPI_GetHSteamPipe();
-        SteamAPI_ManualDispatch_RunFrame(steamPipe);
+        const steam_pipe = SteamAPI_GetHSteamPipe();
+        SteamAPI_ManualDispatch_RunFrame(steam_pipe);
         var callback: CallbackMsg = undefined;
 
-        while (SteamAPI_ManualDispatch_GetNextCallback(steamPipe, &callback)) {
+        while (SteamAPI_ManualDispatch_GetNextCallback(steam_pipe, &callback)) {
             try calls(callback);
 
-            SteamAPI_ManualDispatch_FreeLastCallback(steamPipe);
+            SteamAPI_ManualDispatch_FreeLastCallback(steam_pipe);
         }
     }
 }

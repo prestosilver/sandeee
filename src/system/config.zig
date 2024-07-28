@@ -2,7 +2,7 @@ const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const system_events = @import("../events/system.zig");
 
 pub const SettingManager = struct {
     pub var instance: SettingManager = undefined;
@@ -21,7 +21,7 @@ pub const SettingManager = struct {
 
         try self.*.settings.put(try allocator.alloc.dupe(u8, setting), try allocator.alloc.dupe(u8, value));
 
-        try events.EventManager.instance.sendEvent(systemEvs.EventSetSetting{
+        try events.EventManager.instance.sendEvent(system_events.EventSetSetting{
             .setting = setting,
             .value = value,
         });

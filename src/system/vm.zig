@@ -3,12 +3,12 @@ const streams = @import("stream.zig");
 const files = @import("files.zig");
 const telem = @import("telem.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
-const windowedState = @import("../states/windowed.zig");
+const system_events = @import("../events/system.zig");
+const windowed_state = @import("../states/windowed.zig");
 const syscalls = @import("syscalls.zig");
-const vmAlloc = @import("vmalloc.zig");
+const vm_allocator = @import("vmalloc.zig");
 
-const vmManager = @import("vmmanager.zig");
+const vm_manager = @import("vmmanager.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -71,20 +71,20 @@ pub const VM = struct {
     };
 
     allocator: std.mem.Allocator,
-    stack: [STACK_MAX]vmAlloc.ObjectRef = undefined,
+    stack: [STACK_MAX]vm_allocator.ObjectRef = undefined,
     rsp: usize = 0,
 
     functions: std.StringHashMap(VMFunc),
     inside_fn: ?[]const u8 = null,
 
-    retStack: [RET_STACK_MAX]RetStackEntry = undefined,
-    retRsp: u8 = 0,
+    return_stack: [RET_STACK_MAX]RetStackEntry = undefined,
+    return_rsp: u8 = 0,
 
     pc: usize = 0,
     code: ?[]const Operation = null,
     stopped: bool = false,
     yield: bool = false,
-    miscData: std.StringHashMap([]const u8),
+    misc_data: std.StringHashMap([]const u8),
     input: std.ArrayList(u8),
     last_exec: usize = 0,
 
@@ -102,31 +102,31 @@ pub const VM = struct {
     rnd: std.rand.DefaultPrng,
 
     pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8, comptime checker: bool) VMError!VM {
-        var splitIter = std.mem.split(u8, args, " ");
+        var split_iter = std.mem.split(u8, args, " ");
 
-        var tmpArgs = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
+        var tmp_args = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
 
         var idx: usize = 0;
-        while (splitIter.next()) |item| : (idx += 1)
-            tmpArgs[idx] = alloc.dupe(u8, item) catch return error.OutOfMemory;
+        while (split_iter.next()) |item| : (idx += 1)
+            tmp_args[idx] = alloc.dupe(u8, item) catch return error.OutOfMemory;
 
         return VM{
             .allocator = alloc,
             .streams = std.ArrayList(?*streams.FileStream).init(alloc),
             .functions = std.StringHashMap(VMFunc).init(alloc),
-            .miscData = std.StringHashMap([]const u8).init(alloc),
+            .misc_data = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
             .input = std.ArrayList(u8).init(alloc),
             .heap = alloc.alloc(HeapEntry, 0) catch return error.OutOfMemory,
-            .args = tmpArgs,
+            .args = tmp_args,
             .root = root,
             .checker = checker,
-            .name = alloc.dupe(u8, tmpArgs[0]) catch return error.OutOfMemory,
+            .name = alloc.dupe(u8, tmp_args[0]) catch return error.OutOfMemory,
             .rnd = std.rand.DefaultPrng.init(0),
         };
     }
 
-    pub inline fn pushStack(self: *VM, entry: vmAlloc.ObjectRef) VMError!void {
+    pub inline fn pushStack(self: *VM, entry: vm_allocator.ObjectRef) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
         self.stack[self.rsp] = entry;
         self.rsp += 1;
@@ -135,29 +135,29 @@ pub const VM = struct {
     pub inline fn pushStackI(self: *VM, value: u64) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
 
-        self.stack[self.rsp] = try vmAlloc.new(.{ .value = value });
+        self.stack[self.rsp] = try vm_allocator.new(.{ .value = value });
         self.rsp += 1;
     }
 
     pub inline fn pushStackS(self: *VM, string: []const u8) VMError!void {
         if (self.rsp == STACK_MAX) return error.StackOverflow;
 
-        self.stack[self.rsp] = try vmAlloc.new(.{ .string = try self.allocator.dupe(u8, string) });
+        self.stack[self.rsp] = try vm_allocator.new(.{ .string = try self.allocator.dupe(u8, string) });
         self.rsp += 1;
     }
 
-    pub inline fn popStack(self: *VM) VMError!vmAlloc.ObjectRef {
+    pub inline fn popStack(self: *VM) VMError!vm_allocator.ObjectRef {
         if (self.rsp == 0) return error.StackUnderflow;
         self.rsp -= 1;
         return self.stack[self.rsp];
     }
 
-    pub inline fn findStack(self: *VM, idx: u64) VMError!vmAlloc.ObjectRef {
+    pub inline fn findStack(self: *VM, idx: u64) VMError!vm_allocator.ObjectRef {
         if (self.rsp <= idx) return error.StackUnderflow;
         return self.stack[self.rsp - 1 - @as(usize, @intCast(idx))];
     }
 
-    pub inline fn replaceStack(self: *VM, a: vmAlloc.ObjectRef, b: vmAlloc.ObjectRef) VMError!void {
+    pub inline fn replaceStack(self: *VM, a: vm_allocator.ObjectRef, b: vm_allocator.ObjectRef) VMError!void {
         for (self.stack[0..self.rsp]) |*entry| {
             if (entry.*.id == a.id) {
                 entry.* = b;
@@ -226,12 +226,10 @@ pub const VM = struct {
 
         pub fn format(
             self: Operation,
-            comptime fmt: []const u8,
-            options: std.fmt.FormatOptions,
+            comptime _: []const u8,
+            _: std.fmt.FormatOptions,
             writer: anytype,
         ) !void {
-            _ = options;
-            _ = fmt;
             if (self.string) |string| {
                 return std.fmt.format(writer, "{s} \"{s}\"", .{ @tagName(self.code), string });
             } else if (self.value) |value| {
@@ -244,7 +242,7 @@ pub const VM = struct {
 
     pub fn getMetaUsage(self: *VM) !usize {
         var result = self.rsp;
-        result += self.retRsp;
+        result += self.return_rsp;
         result += self.heap.len;
 
         return result;
@@ -270,7 +268,7 @@ pub const VM = struct {
 
         for (self.streams.items) |stream| {
             if (stream) |strm|
-                try strm.Close();
+                try strm.close();
         }
 
         for (self.args) |*item|
@@ -282,22 +280,22 @@ pub const VM = struct {
                 else => {},
             };
 
-        var miscIter = self.miscData.iterator();
+        var misc_iter = self.misc_data.iterator();
 
-        while (miscIter.next()) |entry|
+        while (misc_iter.next()) |entry|
             self.allocator.free(entry.value_ptr.*);
 
         self.allocator.free(self.name);
         self.allocator.free(self.args);
         self.allocator.free(self.heap);
         self.functions.deinit();
-        self.miscData.deinit();
+        self.misc_data.deinit();
         self.streams.deinit();
         self.out.deinit();
     }
 
     pub inline fn runOp(self: *VM, op: Operation) VMError!void {
-        telem.Telem.instance.instructionCalls += 1;
+        telem.Telem.instance.instruction_calls += 1;
 
         //log.debug("{}", .{op});
 
@@ -452,14 +450,14 @@ pub const VM = struct {
                                     128 => {
                                         if (@import("builtin").is_test)
                                             return error.InvalidSys;
-                                        if (!windowedState.GSWindowed.globalSelf.debug_enabled)
+                                        if (!windowed_state.GSWindowed.global_self.debug_enabled)
                                             return error.InvalidSys;
 
                                         @panic("VM Crash Called");
                                     },
                                     // secret
                                     255 => {
-                                        events.EventManager.instance.sendEvent(systemEvs.EventSys{
+                                        events.EventManager.instance.sendEvent(system_events.EventSys{
                                             .sysId = index,
                                         }) catch return error.InvalidSys;
 
@@ -482,7 +480,7 @@ pub const VM = struct {
                                         if (std.mem.eql(u8, pass.data().string, dbg_pass)) {
                                             try self.out.appendSlice("Debug Mode Enabled\n");
 
-                                            events.EventManager.instance.sendEvent(systemEvs.EventDebugSet{
+                                            events.EventManager.instance.sendEvent(system_events.EventDebugSet{
                                                 .enabled = true,
                                             }) catch {
                                                 return error.InvalidSys;
@@ -649,7 +647,7 @@ pub const VM = struct {
                     else => {
                         const items = self.stack[self.rsp - @as(usize, @intCast(op.value.?)) .. self.rsp];
                         self.rsp -= @as(u8, @intCast(op.value.?)) + 1;
-                        std.mem.copyForwards(vmAlloc.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
+                        std.mem.copyForwards(vm_allocator.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
                         self.rsp += items.len;
                     },
                 }
@@ -724,31 +722,31 @@ pub const VM = struct {
                 }
             },
             .Ret => {
-                if (self.retRsp == 0) return error.CallStackUnderflow;
+                if (self.return_rsp == 0) return error.CallStackUnderflow;
 
-                self.retRsp -= 1;
-                self.pc = @as(usize, @intCast(self.retStack[self.retRsp].location));
-                self.inside_fn = self.retStack[self.retRsp].function;
+                self.return_rsp -= 1;
+                self.pc = @as(usize, @intCast(self.return_stack[self.return_rsp].location));
+                self.inside_fn = self.return_stack[self.return_rsp].function;
                 return;
             },
             .Call => {
-                if (self.retRsp >= self.retStack.len - 1) return error.CallStackOverflow;
+                if (self.return_rsp >= self.return_stack.len - 1) return error.CallStackOverflow;
 
                 if (op.string) |string| {
-                    self.retStack[self.retRsp].location = self.pc;
-                    self.retStack[self.retRsp].function = self.inside_fn;
+                    self.return_stack[self.return_rsp].location = self.pc;
+                    self.return_stack[self.return_rsp].function = self.inside_fn;
                     self.pc = 0;
                     self.inside_fn = string;
-                    self.retRsp += 1;
+                    self.return_rsp += 1;
 
                     return;
                 }
 
                 if (op.value) |value| {
-                    self.retStack[self.retRsp].location = self.pc;
-                    self.retStack[self.retRsp].function = self.inside_fn;
+                    self.return_stack[self.return_rsp].location = self.pc;
+                    self.return_stack[self.return_rsp].function = self.inside_fn;
                     self.pc = @as(usize, @intCast(value));
-                    self.retRsp += 1;
+                    self.return_rsp += 1;
 
                     return;
                 }
@@ -757,8 +755,8 @@ pub const VM = struct {
 
                 if (name.data().* != .string) return error.StringMissing;
 
-                self.retStack[self.retRsp].location = self.pc;
-                self.retStack[self.retRsp].function = self.inside_fn;
+                self.return_stack[self.return_rsp].location = self.pc;
+                self.return_stack[self.return_rsp].function = self.inside_fn;
                 self.pc = 0;
                 if (self.functions.getEntry(name.data().string)) |entry| {
                     self.inside_fn = entry.key_ptr.*;
@@ -766,7 +764,7 @@ pub const VM = struct {
                     return error.FunctionMissing;
                 }
 
-                self.retRsp += 1;
+                self.return_rsp += 1;
             },
             .Cat => {
                 const b = try self.popStack();
@@ -820,7 +818,7 @@ pub const VM = struct {
 
                 if (a.data().* != .value) return error.ValueMissing;
 
-                if (vmAlloc.find(a.data().value)) |obj| {
+                if (vm_allocator.find(a.data().value)) |obj| {
                     try self.pushStack(obj);
                 } else {
                     return error.InvalidAddr;
@@ -840,7 +838,7 @@ pub const VM = struct {
                 self.rsp -= start_v;
                 self.rsp -= op.value.?;
 
-                std.mem.copyForwards(vmAlloc.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
+                std.mem.copyForwards(vm_allocator.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
                 self.rsp += items.len;
             },
             .Last => return error.InvalidOp,
@@ -874,46 +872,46 @@ pub const VM = struct {
             ops.deinit();
         }
 
-        var parsePtr: usize = 0;
-        while (parsePtr < conts.len) {
-            if (parsePtr >= conts.len) {
+        var parse_ptr: usize = 0;
+        while (parse_ptr < conts.len) {
+            if (parse_ptr >= conts.len) {
                 return error.InvalidAsm;
             }
-            const code: Operation.Code = std.meta.intToEnum(Operation.Code, conts[parsePtr]) catch {
+            const code: Operation.Code = std.meta.intToEnum(Operation.Code, conts[parse_ptr]) catch {
                 return error.InvalidAsm;
             };
-            parsePtr += 1;
-            if (parsePtr >= conts.len) {
+            parse_ptr += 1;
+            if (parse_ptr >= conts.len) {
                 return error.InvalidAsm;
             }
-            const kind = conts[parsePtr];
-            parsePtr += 1;
+            const kind = conts[parse_ptr];
+            parse_ptr += 1;
 
             if (kind == 1) {
-                if (parsePtr + 7 >= conts.len) {
+                if (parse_ptr + 7 >= conts.len) {
                     return error.InvalidAsm;
                 }
-                const value = @as(u64, @bitCast(conts[parsePtr..][0..8].*));
+                const value = @as(u64, @bitCast(conts[parse_ptr..][0..8].*));
 
-                parsePtr += 8;
+                parse_ptr += 8;
 
                 try ops.append(VM.Operation{ .code = code, .value = value });
             } else if (kind == 2) {
-                var buffPtr: usize = 0;
-                while (parsePtr + buffPtr < conts.len and conts[parsePtr + buffPtr] != 0) {
-                    buffPtr += 1;
-                    if (buffPtr + parsePtr >= conts.len) {
+                var buff_ptr: usize = 0;
+                while (parse_ptr + buff_ptr < conts.len and conts[parse_ptr + buff_ptr] != 0) {
+                    buff_ptr += 1;
+                    if (buff_ptr + parse_ptr >= conts.len) {
                         return error.InvalidAsm;
                     }
                 }
-                try ops.append(VM.Operation{ .code = code, .string = conts[parsePtr .. parsePtr + buffPtr] });
-                parsePtr += buffPtr + 1;
+                try ops.append(VM.Operation{ .code = code, .string = conts[parse_ptr .. parse_ptr + buff_ptr] });
+                parse_ptr += buff_ptr + 1;
             } else if (kind == 3) {
-                if (parsePtr >= conts.len) {
+                if (parse_ptr >= conts.len) {
                     return error.InvalidAsm;
                 }
-                const value = conts[parsePtr];
-                parsePtr += 1;
+                const value = conts[parse_ptr];
+                parse_ptr += 1;
 
                 try ops.append(VM.Operation{ .code = code, .value = @as(u64, @intCast(value)) });
             } else if (kind == 0) {
@@ -944,12 +942,12 @@ pub const VM = struct {
         const bt = try self.backtrace(i - 1);
         defer self.allocator.free(bt);
 
-        return try std.fmt.allocPrint(self.allocator, "{}: {s} {}\n{s}", .{ i, self.retStack[i - 1].function orelse MAIN_NAME, self.retStack[i - 1].location, bt });
+        return try std.fmt.allocPrint(self.allocator, "{}: {s} {}\n{s}", .{ i, self.return_stack[i - 1].function orelse MAIN_NAME, self.return_stack[i - 1].location, bt });
     }
 
     pub fn getOp(self: *VM) ![]u8 {
         var oper: Operation = undefined;
-        const bt = try self.backtrace(self.retRsp);
+        const bt = try self.backtrace(self.return_rsp);
 
         defer self.allocator.free(bt);
 

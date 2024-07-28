@@ -8,10 +8,10 @@ const cols = @import("../../math/colors.zig");
 const files = @import("../../system/files.zig");
 const vecs = @import("../../math/vecs.zig");
 const fnt = @import("../../util/font.zig");
-const logoutState = @import("../../states/logout.zig");
+const logout_state = @import("../../states/logout.zig");
 const events = @import("../../util/events.zig");
-const windowEvs = @import("../../events/window.zig");
-const systemEvs = @import("../../events/system.zig");
+const window_events = @import("../../events/window.zig");
+const system_events = @import("../../events/system.zig");
 const gfx = @import("../../util/graphics.zig");
 const spr = @import("../../drawers/sprite2d.zig");
 const c = @import("../../c.zig");
@@ -53,15 +53,15 @@ pub const PopupQuit = struct {
         if (self.done) |rets| {
             switch (rets) {
                 0 => {
-                    logoutState.target = .Bios;
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Logout,
+                    logout_state.target = .Bios;
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Logout,
                     });
                 },
                 1 => {
-                    logoutState.target = .Quit;
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Logout,
+                    logout_state.target = .Quit;
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Logout,
                     });
                 },
                 else => return,

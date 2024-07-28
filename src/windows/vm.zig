@@ -22,7 +22,7 @@ pub const VMData = struct {
     shader: *shd.Shader,
 
     back: bool = true,
-    frameCounter: f32 = 0,
+    frame_counter: f32 = 0,
     time: f32 = 0,
     fps: f32 = 0,
     debug: bool = false,
@@ -31,8 +31,8 @@ pub const VMData = struct {
     mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
 
     const VMDataKind = enum {
-        Rect,
-        Text,
+        rect,
+        text,
     };
 
     const VMDataRect = struct {
@@ -46,13 +46,13 @@ pub const VMData = struct {
     };
 
     const VMDataEntry = union(VMDataKind) {
-        Rect: VMDataRect,
-        Text: VMDataText,
+        rect: VMDataRect,
+        text: VMDataText,
     };
 
     pub fn addRect(self: *VMData, texture: []const u8, src: rect.Rectangle, dst: rect.Rectangle) !void {
         const appends: VMDataEntry = .{
-            .Rect = .{
+            .rect = .{
                 .loc = vecs.newVec3(dst.x, dst.y, 0),
                 .s = spr.Sprite{
                     .texture = try allocator.alloc.dupe(u8, texture),
@@ -67,7 +67,7 @@ pub const VMData = struct {
 
     pub fn addText(self: *VMData, dst: vecs.Vector2, text: []const u8) !void {
         const appends: VMDataEntry = .{
-            .Text = .{
+            .text = .{
                 .pos = dst,
                 .text = try allocator.alloc.dupe(u8, text),
             },
@@ -78,7 +78,7 @@ pub const VMData = struct {
     }
 
     pub fn flip(self: *VMData) void {
-        self.frameCounter += 1;
+        self.frame_counter += 1;
         self.back = !self.back;
         self.clear();
     }
@@ -87,11 +87,11 @@ pub const VMData = struct {
         const rects = if (!self.back) &self.rects[1] else &self.rects[0];
         for (rects.items) |item| {
             switch (item) {
-                .Text => {
-                    allocator.alloc.free(item.Text.text);
+                .text => {
+                    allocator.alloc.free(item.text.text);
                 },
-                .Rect => {
-                    allocator.alloc.free(item.Rect.s.texture);
+                .rect => {
+                    allocator.alloc.free(item.rect.s.texture);
                 },
             }
         }
@@ -99,24 +99,23 @@ pub const VMData = struct {
         rects.*.clearAndFree();
     }
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
         vm.syslock.lock();
         defer vm.syslock.unlock();
 
-        _ = props;
         const rects = if (self.back) self.rects[1] else self.rects[0];
 
         for (rects.items, 0..) |_, idx| {
             switch (rects.items[idx]) {
-                .Rect => {
-                    try batch.SpriteBatch.instance.draw(spr.Sprite, &rects.items[idx].Rect.s, self.shader, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].Rect.loc));
+                .rect => {
+                    try batch.SpriteBatch.instance.draw(spr.Sprite, &rects.items[idx].rect.s, self.shader, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].rect.loc));
                 },
-                .Text => {
+                .text => {
                     try font.draw(
                         .{
                             .shader = font_shader,
-                            .pos = rects.items[idx].Text.pos.add(bnds.location()),
-                            .text = rects.items[idx].Text.text,
+                            .pos = rects.items[idx].text.pos.add(bnds.location()),
+                            .text = rects.items[idx].text.text,
                         },
                     );
                 },
@@ -125,8 +124,8 @@ pub const VMData = struct {
 
         self.time += 1.0 / 60.0;
         if (self.time > 1.0) {
-            self.fps = self.frameCounter / self.time;
-            self.frameCounter = 0;
+            self.fps = self.frame_counter / self.time;
+            self.frame_counter = 0;
             self.time = 0;
         }
 
@@ -144,11 +143,11 @@ pub const VMData = struct {
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (!down) {
-            const oldInput = self.input;
-            defer allocator.alloc.free(oldInput);
+            const old_input = self.input;
+            defer allocator.alloc.free(old_input);
 
             self.input = try allocator.alloc.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
-            _ = std.mem.replace(i32, oldInput, &.{keycode}, &.{}, self.input);
+            _ = std.mem.replace(i32, old_input, &.{keycode}, &.{}, self.input);
 
             return;
         }

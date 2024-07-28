@@ -12,8 +12,8 @@ const shd = @import("../../util/shader.zig");
 const vm = @import("../vm.zig");
 const vecs = @import("../../math/vecs.zig");
 const sb = @import("../../util/spritebatch.zig");
-const texMan = @import("../../util/texmanager.zig");
-const windowedState = @import("../../states/windowed.zig");
+const texture_manager = @import("../../util/texmanager.zig");
+const windowed_state = @import("../../states/windowed.zig");
 const colors = @import("../../math/colors.zig");
 
 const log = @import("../../util/log.zig").log;
@@ -21,13 +21,13 @@ const log = @import("../../util/log.zig").log;
 pub var wintex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
 
-pub var vmIdx: u8 = 0;
-pub var windowsPtr: *std.ArrayList(win.Window) = undefined;
+pub var vm_idx: u8 = 0;
+pub var windows_ptr: *std.ArrayList(win.Window) = undefined;
 
 // /fake/win/new
-pub fn readWinNew(vmInstance: ?*vm.VM) files.FileError![]const u8 {
+pub fn readWinNew(vm_instance: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
-    const winDat = try vmwin.new(vmIdx, shader);
+    const window_data = try vmwin.new(vm_idx, shader);
 
     const window = win.Window.new("win", win.WindowData{
         .source = rect.Rectangle{
@@ -36,7 +36,7 @@ pub fn readWinNew(vmInstance: ?*vm.VM) files.FileError![]const u8 {
             .w = 1.0,
             .h = 1.0,
         },
-        .contents = winDat,
+        .contents = window_data,
         .active = true,
     });
 
@@ -44,11 +44,11 @@ pub fn readWinNew(vmInstance: ?*vm.VM) files.FileError![]const u8 {
         return error.InvalidPsuedoData;
     };
 
-    result[0] = vmIdx;
-    vmIdx = vmIdx +% 1;
+    result[0] = vm_idx;
+    vm_idx = vm_idx +% 1;
 
-    const windowId = try allocator.alloc.dupe(u8, result);
-    try vmInstance.?.miscData.put("window", windowId);
+    const window_id = try allocator.alloc.dupe(u8, result);
+    try vm_instance.?.misc_data.put("window", window_id);
 
     return result;
 }
@@ -59,15 +59,15 @@ pub fn writeWinNew(_: []const u8, _: ?*vm.VM) files.FileError!void {
 
 // /fake/win/size
 
-pub fn readWinSize(vmInstance: ?*vm.VM) files.FileError![]const u8 {
+pub fn readWinSize(vm_instance: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 4);
     @memset(result, 0);
 
-    if (vmInstance == null) return result;
+    if (vm_instance == null) return result;
 
-    if (vmInstance.?.miscData.get("window")) |aid| {
-        for (windowsPtr.*.items, 0..) |_, idx| {
-            const item = &windowsPtr.*.items[idx];
+    if (vm_instance.?.misc_data.get("window")) |aid| {
+        for (windows_ptr.*.items, 0..) |_, idx| {
+            const item = &windows_ptr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -85,10 +85,10 @@ pub fn readWinSize(vmInstance: ?*vm.VM) files.FileError![]const u8 {
     return result;
 }
 
-pub fn writeWinSize(data: []const u8, vmInstance: ?*vm.VM) files.FileError!void {
-    if (vmInstance.?.miscData.get("window")) |aid| {
-        for (windowsPtr.*.items, 0..) |_, idx| {
-            const item = &windowsPtr.*.items[idx];
+pub fn writeWinSize(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
+    if (vm_instance.?.misc_data.get("window")) |aid| {
+        for (windows_ptr.*.items, 0..) |_, idx| {
+            const item = &windows_ptr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -113,20 +113,20 @@ pub fn readWinDestroy(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) files.FileError!void {
+pub fn writeWinDestroy(id: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
     if (id.len != 1) return;
     const aid = id[0];
 
-    if (vmInstance.?.miscData.get("window")) |aaid| {
+    if (vm_instance.?.misc_data.get("window")) |aaid| {
         if (aid != aaid[0]) return;
 
-        for (windowsPtr.*.items, 0..) |_, idx| {
-            const item = &windowsPtr.*.items[idx];
+        for (windows_ptr.*.items, 0..) |_, idx| {
+            const item = &windows_ptr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aid) {
-                    item.data.shouldClose = true;
+                    item.data.should_close = true;
                     return;
                 }
             }
@@ -136,15 +136,15 @@ pub fn writeWinDestroy(id: []const u8, vmInstance: ?*vm.VM) files.FileError!void
 
 // /fake/win/open
 
-pub fn readWinOpen(vmInstance: ?*vm.VM) files.FileError![]const u8 {
+pub fn readWinOpen(vm_instance: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
     @memset(result, 0);
 
-    if (vmInstance == null) return result;
+    if (vm_instance == null) return result;
 
-    if (vmInstance.?.miscData.get("window")) |aid| {
-        for (windowsPtr.*.items, 0..) |_, idx| {
-            const item = &windowsPtr.*.items[idx];
+    if (vm_instance.?.misc_data.get("window")) |aid| {
+        for (windows_ptr.*.items, 0..) |_, idx| {
+            const item = &windows_ptr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -171,10 +171,10 @@ pub fn readWinRules(_: ?*vm.VM) files.FileError![]const u8 {
     return result;
 }
 
-pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) files.FileError!void {
-    if (vmInstance.?.miscData.get("window")) |aaid| {
-        for (windowsPtr.*.items, 0..) |_, idx| {
-            const item = &windowsPtr.*.items[idx];
+pub fn writeWinRules(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
+    if (vm_instance.?.misc_data.get("window")) |aaid| {
+        for (windows_ptr.*.items, 0..) |_, idx| {
+            const item = &windows_ptr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -186,7 +186,7 @@ pub fn writeWinRules(data: []const u8, vmInstance: ?*vm.VM) files.FileError!void
                         const color = colors.Color.parseColor(data[3..][1..7].*) catch {
                             return error.InvalidPsuedoData;
                         };
-                        item.data.contents.props.clearColor = color;
+                        item.data.contents.props.clear_color = color;
                     } else if (std.mem.eql(u8, data[0..3], "min")) {
                         if (data[3..].len < 4) {
                             return error.InvalidPsuedoData;
@@ -224,8 +224,8 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) files.FileError!void {
     if (id.len != 1) return;
     const aid = id[0];
 
-    for (windowsPtr.*.items, 0..) |_, idx| {
-        const item = &windowsPtr.*.items[idx];
+    for (windows_ptr.*.items, 0..) |_, idx| {
+        const item = &windows_ptr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
             const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -241,12 +241,12 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) files.FileError!void {
 
 // /fake/win/title
 
-pub fn readWinTitle(vmInstance: ?*vm.VM) files.FileError![]const u8 {
-    if (vmInstance == null) return allocator.alloc.alloc(u8, 0);
+pub fn readWinTitle(vm_instance: ?*vm.VM) files.FileError![]const u8 {
+    if (vm_instance == null) return allocator.alloc.alloc(u8, 0);
 
-    if (vmInstance.?.miscData.get("window")) |aaid| {
-        for (windowsPtr.*.items, 0..) |_, idx| {
-            const item = &windowsPtr.*.items[idx];
+    if (vm_instance.?.misc_data.get("window")) |aaid| {
+        for (windows_ptr.*.items, 0..) |_, idx| {
+            const item = &windows_ptr.*.items[idx];
             if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -264,8 +264,8 @@ pub fn writeWinTitle(id: []const u8, _: ?*vm.VM) files.FileError!void {
     if (id.len < 2) return;
     const aid = id[0];
 
-    for (windowsPtr.*.items, 0..) |_, idx| {
-        const item = &windowsPtr.*.items[idx];
+    for (windows_ptr.*.items, 0..) |_, idx| {
+        const item = &windows_ptr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
             const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -291,7 +291,7 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) files.FileError!void {
         return;
     }
 
-    if (texMan.TextureManager.instance.get(data[1..2]) == null) {
+    if (texture_manager.TextureManager.instance.get(data[1..2]) == null) {
         log.debug("{any}", .{data[1..2]});
         return;
     }
@@ -312,8 +312,8 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) files.FileError!void {
         @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[58..66]))) / 1024,
     );
 
-    for (windowsPtr.*.items, 0..) |_, idx| {
-        const item = &windowsPtr.*.items[idx];
+    for (windows_ptr.*.items, 0..) |_, idx| {
+        const item = &windows_ptr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
             const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -344,8 +344,8 @@ pub fn writeWinText(data: []const u8, _: ?*vm.VM) files.FileError!void {
 
     const text = data[5..];
 
-    for (windowsPtr.*.items, 0..) |_, idx| {
-        const item = &windowsPtr.*.items[idx];
+    for (windows_ptr.*.items, 0..) |_, idx| {
+        const item = &windows_ptr.*.items[idx];
         if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
             const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
@@ -373,8 +373,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     var file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/new", .{}),
-        .pseudoRead = readWinNew,
-        .pseudoWrite = writeWinNew,
+        .pseudo_read = readWinNew,
+        .pseudo_write = writeWinNew,
         .parent = undefined,
     };
 
@@ -383,8 +383,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/open", .{}),
-        .pseudoRead = readWinOpen,
-        .pseudoWrite = writeWinOpen,
+        .pseudo_read = readWinOpen,
+        .pseudo_write = writeWinOpen,
         .parent = undefined,
     };
 
@@ -393,8 +393,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/destroy", .{}),
-        .pseudoRead = readWinDestroy,
-        .pseudoWrite = writeWinDestroy,
+        .pseudo_read = readWinDestroy,
+        .pseudo_write = writeWinDestroy,
         .parent = undefined,
     };
 
@@ -403,8 +403,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/render", .{}),
-        .pseudoRead = readWinRender,
-        .pseudoWrite = writeWinRender,
+        .pseudo_read = readWinRender,
+        .pseudo_write = writeWinRender,
         .parent = undefined,
     };
 
@@ -413,8 +413,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/flip", .{}),
-        .pseudoRead = readWinFlip,
-        .pseudoWrite = writeWinFlip,
+        .pseudo_read = readWinFlip,
+        .pseudo_write = writeWinFlip,
         .parent = undefined,
     };
 
@@ -423,8 +423,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/title", .{}),
-        .pseudoRead = readWinTitle,
-        .pseudoWrite = writeWinTitle,
+        .pseudo_read = readWinTitle,
+        .pseudo_write = writeWinTitle,
         .parent = undefined,
     };
 
@@ -433,8 +433,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/size", .{}),
-        .pseudoRead = readWinSize,
-        .pseudoWrite = writeWinSize,
+        .pseudo_read = readWinSize,
+        .pseudo_write = writeWinSize,
         .parent = undefined,
     };
 
@@ -443,8 +443,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/rules", .{}),
-        .pseudoRead = readWinRules,
-        .pseudoWrite = writeWinRules,
+        .pseudo_read = readWinRules,
+        .pseudo_write = writeWinRules,
         .parent = undefined,
     };
 
@@ -453,8 +453,8 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/text", .{}),
-        .pseudoRead = readWinText,
-        .pseudoWrite = writeWinText,
+        .pseudo_read = readWinText,
+        .pseudo_write = writeWinText,
         .parent = undefined,
     };
 

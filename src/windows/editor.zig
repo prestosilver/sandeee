@@ -13,8 +13,8 @@ const shd = @import("../util/shader.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const c = @import("../c.zig");
 const popups = @import("../drawers/popup2d.zig");
-const winEvs = @import("../events/window.zig");
-const systemEvs = @import("../events/system.zig");
+const window_events = @import("../events/window.zig");
+const system_events = @import("../events/system.zig");
 const events = @import("../util/events.zig");
 
 const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else ", "asm " };
@@ -59,15 +59,15 @@ pub const EditorData = struct {
 
     buffer: ?[]Row = null,
     menubar: sp.Sprite,
-    numLeft: sp.Sprite,
-    numRight: sp.Sprite,
+    num_left: sp.Sprite,
+    num_right: sp.Sprite,
     sel: sp.Sprite,
     icons: [3]sp.Sprite,
     shader: *shd.Shader,
 
-    clickPos: ?vecs.Vector2 = null,
-    clickDone: ?vecs.Vector2 = null,
-    clickDown: bool = false,
+    click_pos: ?vecs.Vector2 = null,
+    click_done: ?vecs.Vector2 = null,
+    click_down: bool = false,
 
     cursorx: usize = 0,
     cursory: usize = 0,
@@ -99,14 +99,14 @@ pub const EditorData = struct {
             });
             defer allocator.alloc.free(replacement);
 
-            const oldLine = line;
-            defer allocator.alloc.free(oldLine);
+            const old_line = line;
+            defer allocator.alloc.free(old_line);
 
-            const repSize = std.mem.replacementSize(u8, line[0..comment], keyword, replacement);
+            const rep_size = std.mem.replacementSize(u8, line[0..comment], keyword, replacement);
 
-            line = try allocator.alloc.alloc(u8, repSize + (line.len - comment));
-            _ = std.mem.replace(u8, oldLine[0..comment], keyword, replacement, line);
-            @memcpy(line[repSize..], oldLine[comment..]);
+            line = try allocator.alloc.alloc(u8, rep_size + (line.len - comment));
+            _ = std.mem.replace(u8, old_line[0..comment], keyword, replacement, line);
+            @memcpy(line[rep_size..], old_line[comment..]);
         }
 
         for (HL_KEYWORD2) |keyword| {
@@ -117,11 +117,11 @@ pub const EditorData = struct {
             });
             defer allocator.alloc.free(replacement);
 
-            const oldLine = line;
-            defer allocator.alloc.free(oldLine);
+            const old_line = line;
+            defer allocator.alloc.free(old_line);
 
             line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
-            _ = std.mem.replace(u8, oldLine, keyword, replacement, line);
+            _ = std.mem.replace(u8, old_line, keyword, replacement, line);
         }
 
         {
@@ -131,41 +131,41 @@ pub const EditorData = struct {
             });
             defer allocator.alloc.free(replacement);
 
-            const oldLine = line;
-            defer allocator.alloc.free(oldLine);
+            const old_line = line;
+            defer allocator.alloc.free(old_line);
 
             line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, COMMENT_START, replacement));
-            _ = std.mem.replace(u8, oldLine, COMMENT_START, replacement, line);
+            _ = std.mem.replace(u8, old_line, COMMENT_START, replacement, line);
         }
 
         {
-            const oldLine = line;
-            defer allocator.alloc.free(oldLine);
+            const old_line = line;
+            defer allocator.alloc.free(old_line);
 
             var count: usize = 0;
 
             {
-                var inString = false;
+                var in_string = false;
 
-                for (oldLine, 0..) |ch, idx| {
+                for (old_line, 0..) |ch, idx| {
                     if (ch == STRING_START) {
-                        if (inString) {
-                            if (oldLine[idx - 1] == ESCAPE_CHAR)
+                        if (in_string) {
+                            if (old_line[idx - 1] == ESCAPE_CHAR)
                                 continue;
 
-                            inString = !inString;
+                            in_string = !in_string;
                             count += 1;
                         }
                     }
                 }
 
-                if (inString) {
+                if (in_string) {
                     count += STRING_ERROR.len;
                 }
 
                 line = try allocator.alloc.alloc(u8, line.len + count);
 
-                if (inString) {
+                if (in_string) {
                     @memcpy(
                         line[line.len - STRING_ERROR.len .. line.len],
                         STRING_ERROR,
@@ -174,11 +174,11 @@ pub const EditorData = struct {
             }
 
             var idx: usize = 0;
-            var inString = false;
+            var in_string = false;
 
-            for (oldLine) |ch| {
-                if (ch == STRING_START and !inString) {
-                    inString = !inString;
+            for (old_line) |ch| {
+                if (ch == STRING_START and !in_string) {
+                    in_string = !in_string;
                     line[idx] = fnt.COLOR_DARK_GREEN[0];
                     idx = idx + 1;
                     line[idx] = ch;
@@ -187,11 +187,11 @@ pub const EditorData = struct {
                 }
                 line[idx] = ch;
                 idx = idx + 1;
-                if (ch == STRING_START and inString) {
-                    if (idx > 0 and oldLine[idx - 1] == ESCAPE_CHAR)
+                if (ch == STRING_START and in_string) {
+                    if (idx > 0 and old_line[idx - 1] == ESCAPE_CHAR)
                         continue;
 
-                    inString = !inString;
+                    in_string = !in_string;
                     line[idx] = fnt.COLOR_BLACK[0];
                     idx = idx + 1;
                 }
@@ -204,13 +204,13 @@ pub const EditorData = struct {
     pub fn draw(self: *Self, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 40,
+                .offset_start = 40,
             };
         }
 
         self.bnds = bnds.*;
 
-        const charSize = font.sizeText(.{
+        const char_size = font.sizeText(.{
             .text = "A",
         }).x;
 
@@ -226,34 +226,34 @@ pub const EditorData = struct {
 
         self.menubar.data.size.x = bnds.w;
 
-        self.numLeft.data.size.y = bnds.h - 40;
-        self.numRight.data.size.y = bnds.h - 40;
+        self.num_left.data.size.y = bnds.h - 40;
+        self.num_right.data.size.y = bnds.h - 40;
 
         // draw number sidebar
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.numLeft, self.shader, vecs.newVec3(bnds.x, bnds.y + 40, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.num_left, self.shader, vecs.newVec3(bnds.x, bnds.y + 40, 0));
 
         // draw number sidebar
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.numRight, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.num_right, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
 
         // draw file text
         if (self.buffer) |buffer| {
-            if (self.clickDone) |clickDone| blk: {
-                defer self.clickDone = null;
+            if (self.click_done) |click_done| blk: {
+                defer self.click_done = null;
 
-                if (clickDone.x > bnds.w) break :blk;
-                if (clickDone.y - props.scroll.?.value > bnds.h) break :blk;
-                if (clickDone.x < 0) break :blk;
-                if (clickDone.y - props.scroll.?.value < 0) break :blk;
+                if (click_done.x > bnds.w) break :blk;
+                if (click_done.y - props.scroll.?.value > bnds.h) break :blk;
+                if (click_done.x < 0) break :blk;
+                if (click_done.y - props.scroll.?.value < 0) break :blk;
 
-                const clickPos = self.clickPos.?;
+                const click_pos = self.click_pos.?;
 
-                const doneBig = if (@abs(@round(clickPos.y / font.size) - @round((clickDone.y - props.scroll.?.value) / font.size)) < 1)
-                    @round(clickPos.x / charSize) < @round(clickDone.x / charSize)
+                const done_big = if (@abs(@round(click_pos.y / font.size) - @round((click_done.y - props.scroll.?.value) / font.size)) < 1)
+                    @round(click_pos.x / char_size) < @round(click_done.x / char_size)
                 else
-                    @round(clickPos.y / font.size) < @round((clickDone.y - props.scroll.?.value) / font.size);
+                    @round(click_pos.y / font.size) < @round((click_done.y - props.scroll.?.value) / font.size);
 
-                const start = if (doneBig) clickPos else clickDone.sub(.{ .x = 0, .y = props.scroll.?.value });
-                const end = if (doneBig) clickDone.sub(.{ .x = 0, .y = props.scroll.?.value }) else clickPos;
+                const start = if (done_big) click_pos else click_done.sub(.{ .x = 0, .y = props.scroll.?.value });
+                const end = if (done_big) click_done.sub(.{ .x = 0, .y = props.scroll.?.value }) else click_pos;
 
                 self.cursory = @as(usize, @intFromFloat((start.y + props.scroll.?.value) / font.size));
                 self.cursorx = @as(usize, @intFromFloat(start.x / font.chars[0].ax));
@@ -284,7 +284,7 @@ pub const EditorData = struct {
                     }
                 }
 
-                if (doneBig) {
+                if (done_big) {
                     self.cursor_len *= -1;
                 }
             }
@@ -302,7 +302,7 @@ pub const EditorData = struct {
 
             props.scroll.?.maxy = -bnds.h + 40;
 
-            var selRemaining: usize = @intCast(@abs(self.cursor_len));
+            var sel_remaining: usize = @intCast(@abs(self.cursor_len));
 
             for (buffer, 0..) |*line, lineidx| {
                 if (line.render == null) {
@@ -331,12 +331,12 @@ pub const EditorData = struct {
                         .cursor = true,
                     }).x;
 
-                    const width = @min(selRemaining, line.text.len - self.cursorx + 1);
+                    const width = @min(sel_remaining, line.text.len - self.cursorx + 1);
 
-                    self.sel.data.size.x = charSize * @as(f32, @floatFromInt(width));
+                    self.sel.data.size.x = char_size * @as(f32, @floatFromInt(width));
                     self.sel.data.size.y = font.size;
 
-                    selRemaining -= width;
+                    sel_remaining -= width;
 
                     try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82 + posx, y, 0));
 
@@ -347,15 +347,15 @@ pub const EditorData = struct {
                             .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
                         });
                     }
-                } else if (selRemaining > 0 and self.cursory < lineidx) {
-                    const width = @min(selRemaining, line.text.len + 1);
-                    self.sel.data.size.x = charSize * @as(f32, @floatFromInt(width));
+                } else if (sel_remaining > 0 and self.cursory < lineidx) {
+                    const width = @min(sel_remaining, line.text.len + 1);
+                    self.sel.data.size.x = char_size * @as(f32, @floatFromInt(width));
                     self.sel.data.size.y = font.size;
 
-                    selRemaining -= width;
+                    sel_remaining -= width;
 
                     try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82, y, 0));
-                    if (self.cursor_len < 0 and selRemaining == 0) {
+                    if (self.cursor_len < 0 and sel_remaining == 0) {
                         const posx = font.sizeText(.{
                             .text = line.getRender(width),
                             .cursor = true,
@@ -384,7 +384,7 @@ pub const EditorData = struct {
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
-        self.clickDown = self.clickDown and btn != null;
+        self.click_down = self.click_down and btn != null;
 
         if (btn) |button|
             switch (button) {
@@ -398,7 +398,7 @@ pub const EditorData = struct {
                             .submit = &submitOpen,
                         };
 
-                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                             .popup = .{
                                 .texture = "win",
                                 .data = .{
@@ -411,25 +411,25 @@ pub const EditorData = struct {
                         });
                     }
 
-                    const saveBnds = rect.newRect(36, 0, 36, 36);
-                    if (saveBnds.contains(mousepos)) {
+                    const save_bnds = rect.newRect(36, 0, 36, 36);
+                    if (save_bnds.contains(mousepos)) {
                         try self.save();
                     }
 
-                    const newBnds = rect.newRect(72, 0, 36, 36);
-                    if (newBnds.contains(mousepos)) {
+                    const new_bnds = rect.newRect(72, 0, 36, 36);
+                    if (new_bnds.contains(mousepos)) {
                         try self.newFile();
                     }
 
                     if (self.buffer) |buffer| {
                         if (buffer.len != 0) {
                             if (mousepos.y > 40 and mousepos.x > 82) {
-                                self.clickPos = mousepos.sub(.{
+                                self.click_pos = mousepos.sub(.{
                                     .y = 40,
                                     .x = 82,
                                 });
-                                self.clickDone = self.clickPos;
-                                self.clickDown = true;
+                                self.click_done = self.click_pos;
+                                self.click_down = true;
                             }
                         }
                     }
@@ -486,9 +486,9 @@ pub const EditorData = struct {
     }
 
     pub fn getSel(self: *Self) ![]const u8 {
-        const absSel: usize = @intCast(@abs(self.cursor_len));
+        const abs_sel: usize = @intCast(@abs(self.cursor_len));
 
-        var result = try std.ArrayList(u8).initCapacity(allocator.alloc, absSel);
+        var result = try std.ArrayList(u8).initCapacity(allocator.alloc, abs_sel);
         defer result.deinit();
 
         var idx: usize = 0;
@@ -496,7 +496,7 @@ pub const EditorData = struct {
         if (self.buffer) |buffer| {
             for (buffer[self.cursory..]) |line| {
                 for (line.text) |ch| {
-                    if (idx >= self.cursorx and idx < self.cursorx + absSel) {
+                    if (idx >= self.cursorx and idx < self.cursorx + abs_sel) {
                         result.appendAssumeCapacity(ch);
                     }
 
@@ -504,7 +504,7 @@ pub const EditorData = struct {
                 }
 
                 // new line
-                if (idx >= self.cursorx and idx < self.cursorx + absSel) {
+                if (idx >= self.cursorx and idx < self.cursorx + abs_sel) {
                     result.appendAssumeCapacity('\n');
                 }
 
@@ -539,7 +539,7 @@ pub const EditorData = struct {
                     .data = self,
                 };
 
-                try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                     .popup = .{
                         .texture = "win",
                         .data = .{
@@ -571,8 +571,8 @@ pub const EditorData = struct {
             const self: *Self = @ptrCast(@alignCast(data));
             self.file = target;
 
-            const fileConts = try self.file.?.read(null);
-            const lines = std.mem.count(u8, fileConts, "\n") + 1;
+            const file_conts = try self.file.?.read(null);
+            const lines = std.mem.count(u8, file_conts, "\n") + 1;
 
             try self.clearBuffer();
 
@@ -582,7 +582,7 @@ pub const EditorData = struct {
                 self.buffer = try allocator.alloc.alloc(Row, lines);
             }
 
-            var iter = std.mem.split(u8, fileConts, "\n");
+            var iter = std.mem.split(u8, file_conts, "\n");
             var idx: usize = 0;
             while (iter.next()) |line| {
                 self.buffer.?[idx] = .{
@@ -596,9 +596,9 @@ pub const EditorData = struct {
     }
 
     pub fn move(self: *Self, x: f32, y: f32) !void {
-        if (!self.clickDown) return;
+        if (!self.click_down) return;
 
-        self.clickDone = .{
+        self.click_done = .{
             .x = x - 82,
             .y = y - 40,
         };
@@ -697,7 +697,7 @@ pub const EditorData = struct {
                     const sel = try self.getSel();
                     defer allocator.alloc.free(sel);
 
-                    try events.EventManager.instance.sendEvent(systemEvs.EventCopy{
+                    try events.EventManager.instance.sendEvent(system_events.EventCopy{
                         .value = sel,
                     });
 
@@ -775,8 +775,8 @@ pub const EditorData = struct {
 
                         self.cursorx -= 1;
                     } else if (self.cursory > 0) {
-                        const oldLine = buffer[self.cursory - 1].text;
-                        defer allocator.alloc.free(oldLine);
+                        const old_line = buffer[self.cursory - 1].text;
+                        defer allocator.alloc.free(old_line);
 
                         buffer[self.cursory - 1].text = try std.mem.concat(allocator.alloc, u8, &.{
                             buffer[self.cursory - 1].text,
@@ -790,7 +790,7 @@ pub const EditorData = struct {
 
                         self.modified = true;
 
-                        self.cursorx = oldLine.len;
+                        self.cursorx = old_line.len;
                         self.cursory -= 1;
                     }
                 }
@@ -882,11 +882,11 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
             rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
             vecs.newVec2(0, 40.0),
         )),
-        .numLeft = sp.Sprite.new("ui", sp.SpriteData.new(
+        .num_left = sp.Sprite.new("ui", sp.SpriteData.new(
             rect.newRect(4.0 / 8.0, 4.0 / 8.0, 2.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(40, 0),
         )),
-        .numRight = sp.Sprite.new("ui", sp.SpriteData.new(
+        .num_right = sp.Sprite.new("ui", sp.SpriteData.new(
             rect.newRect(4.0 / 8.0, 4.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0),
             vecs.newVec2(40, 0),
         )),

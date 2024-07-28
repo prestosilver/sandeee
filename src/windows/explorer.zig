@@ -15,8 +15,8 @@ const c = @import("../c.zig");
 const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
 const popups = @import("../drawers/popup2d.zig");
-const winEvs = @import("../events/window.zig");
-const systemEvs = @import("../events/system.zig");
+const window_events = @import("../events/window.zig");
+const system_events = @import("../events/system.zig");
 const events = @import("../util/events.zig");
 const gfx = @import("../util/graphics.zig");
 const va = @import("../util/vertArray.zig");
@@ -51,20 +51,20 @@ pub const ExplorerData = struct {
 
     focused: ?u64 = null,
     selected: ?usize = null,
-    lastAction: ?ExplorerMouseAction = null,
+    last_action: ?ExplorerMouseAction = null,
     icon_data: []const ExplorerIcon,
     bnds: rect.Rectangle = undefined,
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
-        const subFolders = try self.shell.root.getFolders();
-        const subFiles = try self.shell.root.getFiles();
-        defer allocator.alloc.free(subFolders);
-        defer allocator.alloc.free(subFiles);
+        const sub_folders = try self.shell.root.getFolders();
+        const sub_files = try self.shell.root.getFiles();
+        defer allocator.alloc.free(sub_folders);
+        defer allocator.alloc.free(sub_files);
 
-        const result = try allocator.alloc.alloc(ExplorerIcon, subFolders.len + subFiles.len);
+        const result = try allocator.alloc.alloc(ExplorerIcon, sub_folders.len + sub_files.len);
         var idx: usize = 0;
 
-        for (subFolders) |folder| {
+        for (sub_folders) |folder| {
             result[idx] = ExplorerIcon{
                 .name = folder.name[self.shell.root.name.len .. folder.name.len - 1],
                 .icon = 2,
@@ -72,7 +72,7 @@ pub const ExplorerData = struct {
             idx += 1;
         }
 
-        for (subFiles) |file| {
+        for (sub_files) |file| {
             result[idx] = ExplorerIcon{
                 .name = file.name[self.shell.root.name.len..],
                 .icon = 1,
@@ -83,19 +83,19 @@ pub const ExplorerData = struct {
         return result;
     }
 
-    pub const errorData = struct {
+    pub const ErrorData = struct {
         pub fn ok(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
     };
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 34,
+                .offset_start = 34,
             };
         }
-        if (self.lastAction) |*last_action| {
+        if (self.last_action) |*last_action| {
             if (last_action.time <= 0) {
-                self.lastAction = null;
+                self.last_action = null;
             } else {
                 last_action.time -= 5;
             }
@@ -152,17 +152,17 @@ pub const ExplorerData = struct {
                     }
                 }
 
-                if (self.lastAction) |last_action| {
+                if (self.last_action) |last_action| {
                     if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(last_action.pos)) {
                         switch (last_action.kind) {
                             .SingleLeft => {
                                 self.selected = idx;
                             },
                             .DoubleLeft => {
-                                self.lastAction = null;
+                                self.last_action = null;
 
-                                const newPath = self.shell.root.getFolder(icon.name) catch null;
-                                if (newPath) |path| {
+                                const new_path = self.shell.root.getFolder(icon.name) catch null;
+                                if (new_path) |path| {
                                     self.shell.root = path;
                                     try self.refresh();
                                     self.selected = null;
@@ -173,7 +173,7 @@ pub const ExplorerData = struct {
                                         .texture = "",
                                         .verts = try va.VertArray.init(0),
                                         .shader = self.shader.*,
-                                        .clear = props.clearColor,
+                                        .clear = props.clear_color,
                                     });
 
                                     done = false;
@@ -187,11 +187,11 @@ pub const ExplorerData = struct {
                                         adds.* = .{
                                             .data = self,
                                             .message = message,
-                                            .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
+                                            .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(ErrorData),
                                             .shader = self.shader,
                                         };
 
-                                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                                             .popup = .{
                                                 .texture = "win",
                                                 .data = .{
@@ -264,7 +264,7 @@ pub const ExplorerData = struct {
 
         switch (btn.?) {
             0 => {
-                self.lastAction = if (self.lastAction) |last_action|
+                self.last_action = if (self.last_action) |last_action|
                     if (mousepos.distSq(last_action.pos) < 100)
                         .{
                             .kind = .DoubleLeft,
@@ -325,7 +325,7 @@ pub const ExplorerData = struct {
                         .shader = self.shader,
                     };
 
-                    try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                    try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                         .popup = .{
                             .texture = "win",
                             .data = .{

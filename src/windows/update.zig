@@ -13,9 +13,9 @@ const allocator = @import("../util/allocator.zig");
 const tex = @import("../util/texture.zig");
 const col = @import("../math/colors.zig");
 const files = @import("../system/files.zig");
-const logoutState = @import("../states/logout.zig");
+const logout_state = @import("../states/logout.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const system_events = @import("../events/system.zig");
 
 pub const UpdateData = struct {
     const Self = @This();
@@ -77,11 +77,11 @@ pub const UpdateData = struct {
     pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, _: ?i32) !void {
         _ = pos;
         if (self.focused_link) {
-            const idx = std.mem.lastIndexOf(u8, files.rootOut.?, "/") orelse unreachable;
-            logoutState.targetFile = try allocator.alloc.dupe(u8, files.rootOut.?[idx + 1 ..]);
-            logoutState.target = .Update;
-            try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                .targetState = .Logout,
+            const idx = std.mem.lastIndexOf(u8, files.root_out.?, "/") orelse unreachable;
+            logout_state.target_file = try allocator.alloc.dupe(u8, files.root_out.?[idx + 1 ..]);
+            logout_state.target = .Update;
+            try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                .target_state = .Logout,
             });
         }
     }

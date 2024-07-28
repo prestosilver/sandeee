@@ -28,9 +28,9 @@ pub const Color = struct {
 
     pub inline fn contrast(c: Color) Color {
         const gamma = 2.2;
-        const L = 0.2126 * std.math.pow(f32, c.r, gamma) + 0.7152 * std.math.pow(f32, c.g, gamma) + 0.0722 * std.math.pow(f32, c.b, gamma);
+        const luma = 0.2126 * std.math.pow(f32, c.r, gamma) + 0.7152 * std.math.pow(f32, c.g, gamma) + 0.0722 * std.math.pow(f32, c.b, gamma);
 
-        if (L > std.math.pow(f32, 0.5, gamma)) {
+        if (luma > std.math.pow(f32, 0.5, gamma)) {
             return newColor(0, 0, 0, 1);
         } else {
             return newColor(1, 1, 1, 1);

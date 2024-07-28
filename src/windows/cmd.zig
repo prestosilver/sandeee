@@ -11,7 +11,7 @@ const shd = @import("../util/shader.zig");
 const shell = @import("../system/shell.zig");
 const files = @import("../system/files.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const system_events = @import("../events/system.zig");
 const c = @import("../c.zig");
 
 const MAX_SIZE = 100000;
@@ -20,12 +20,12 @@ pub const CMDData = struct {
     const Self = @This();
 
     bt: []u8,
-    inputBuffer: [256]u8 = undefined,
-    inputLen: u8 = 0,
-    inputIdx: u8 = 0,
+    input_buffer: [256]u8 = undefined,
+    input_len: u8 = 0,
+    input_idx: u8 = 0,
 
     history: std.ArrayList([]const u8),
-    historyIdx: usize = 0,
+    history_idx: usize = 0,
     shell: shell.Shell,
     bot: bool = false,
     close: bool = false,
@@ -58,7 +58,7 @@ pub const CMDData = struct {
     pub fn draw(self: *Self, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 0,
+                .offset_start = 0,
             };
         }
 
@@ -74,9 +74,9 @@ pub const CMDData = struct {
         const offset = if (self.bot) 0 else props.scroll.?.maxy - props.scroll.?.value;
 
         if (self.shell.vm == null) {
-            const shellPrompt = self.shell.getPrompt();
-            defer allocator.alloc.free(shellPrompt);
-            const prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shellPrompt, self.inputBuffer[0..self.inputLen] });
+            const shell_prompt = self.shell.getPrompt();
+            defer allocator.alloc.free(shell_prompt);
+            const prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shell_prompt, self.input_buffer[0..self.input_len] });
             defer allocator.alloc.free(prompt);
             try font.draw(.{
                 .shader = shader,
@@ -89,7 +89,7 @@ pub const CMDData = struct {
                 .text = "|",
                 .pos = vecs.newVec2(
                     bnds.x + font.sizeText(.{
-                        .text = prompt[0 .. shellPrompt.len + self.inputIdx],
+                        .text = prompt[0 .. shell_prompt.len + self.input_idx],
                     }).x,
                     bnds.y + bnds.h - font.size - 6 + offset,
                 ),
@@ -150,11 +150,11 @@ pub const CMDData = struct {
         }
 
         if (code == '\n') return;
-        if (self.inputLen < 255) {
-            std.mem.copyBackwards(u8, self.inputBuffer[self.inputIdx + 1 ..], self.inputBuffer[self.inputIdx..255]);
-            self.inputBuffer[self.inputIdx] = @as(u8, @intCast(code));
-            self.inputLen += 1;
-            self.inputIdx += 1;
+        if (self.input_len < 255) {
+            std.mem.copyBackwards(u8, self.input_buffer[self.input_idx + 1 ..], self.input_buffer[self.input_idx..255]);
+            self.input_buffer[self.input_idx] = @as(u8, @intCast(code));
+            self.input_len += 1;
+            self.input_idx += 1;
         }
         _ = mods;
     }
@@ -186,19 +186,19 @@ pub const CMDData = struct {
                     return;
                 }
 
-                if (self.inputLen != 0 and (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.inputBuffer[0..self.inputLen])))
-                    try self.history.append(try allocator.alloc.dupe(u8, self.inputBuffer[0..self.inputLen]));
+                if (self.input_len != 0 and (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.input_buffer[0..self.input_len])))
+                    try self.history.append(try allocator.alloc.dupe(u8, self.input_buffer[0..self.input_len]));
 
-                const shellPrompt = self.shell.getPrompt();
-                defer allocator.alloc.free(shellPrompt);
-                const prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shellPrompt, self.inputBuffer[0..self.inputLen] });
+                const shell_prompt = self.shell.getPrompt();
+                defer allocator.alloc.free(shell_prompt);
+                const prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shell_prompt, self.input_buffer[0..self.input_len] });
                 defer allocator.alloc.free(prompt);
                 var start = self.bt.len;
 
                 self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + prompt.len);
                 @memcpy(self.bt[start .. start + prompt.len], prompt);
 
-                const al = self.shell.run(self.inputBuffer[0..self.inputLen]) catch |err| {
+                const al = self.shell.run(self.input_buffer[0..self.input_len]) catch |err| {
                     const msg = @errorName(err);
 
                     start = self.bt.len;
@@ -209,9 +209,9 @@ pub const CMDData = struct {
                     self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + msg.len);
                     @memcpy(self.bt[start..], msg);
 
-                    self.inputLen = 0;
-                    self.inputIdx = 0;
-                    self.historyIdx = self.history.items.len;
+                    self.input_len = 0;
+                    self.input_idx = 0;
+                    self.history_idx = self.history.items.len;
                     return;
                 };
 
@@ -233,54 +233,54 @@ pub const CMDData = struct {
                     @memcpy(self.bt[start..], al.data);
                 }
 
-                self.inputLen = 0;
-                self.inputIdx = 0;
-                self.historyIdx = self.history.items.len;
+                self.input_len = 0;
+                self.input_idx = 0;
+                self.history_idx = self.history.items.len;
 
                 try self.processBT();
             },
             c.GLFW_KEY_UP => {
-                if (self.historyIdx > 0) {
-                    self.historyIdx -= 1;
-                    self.inputLen = @as(u8, @intCast(self.history.items[self.historyIdx].len));
-                    self.inputIdx = self.inputLen;
-                    @memcpy(self.inputBuffer[0..self.inputLen], self.history.items[self.historyIdx]);
+                if (self.history_idx > 0) {
+                    self.history_idx -= 1;
+                    self.input_len = @as(u8, @intCast(self.history.items[self.history_idx].len));
+                    self.input_idx = self.input_len;
+                    @memcpy(self.input_buffer[0..self.input_len], self.history.items[self.history_idx]);
                 }
             },
             c.GLFW_KEY_DOWN => {
-                if (self.historyIdx < self.history.items.len) {
-                    self.historyIdx += 1;
-                    if (self.historyIdx == self.history.items.len) {
-                        self.inputLen = 0;
-                        self.inputIdx = 0;
+                if (self.history_idx < self.history.items.len) {
+                    self.history_idx += 1;
+                    if (self.history_idx == self.history.items.len) {
+                        self.input_len = 0;
+                        self.input_idx = 0;
                     } else {
-                        self.inputLen = @as(u8, @intCast(self.history.items[self.historyIdx].len));
-                        self.inputIdx = self.inputLen;
-                        @memcpy(self.inputBuffer[0..self.inputLen], self.history.items[self.historyIdx]);
+                        self.input_len = @as(u8, @intCast(self.history.items[self.history_idx].len));
+                        self.input_idx = self.input_len;
+                        @memcpy(self.input_buffer[0..self.input_len], self.history.items[self.history_idx]);
                     }
                 }
             },
             c.GLFW_KEY_LEFT => {
-                if (self.inputIdx != 0) {
-                    self.inputIdx -= 1;
+                if (self.input_idx != 0) {
+                    self.input_idx -= 1;
                 }
             },
             c.GLFW_KEY_RIGHT => {
-                if (self.inputIdx != self.inputLen) {
-                    self.inputIdx += 1;
+                if (self.input_idx != self.input_len) {
+                    self.input_idx += 1;
                 }
             },
             c.GLFW_KEY_BACKSPACE => {
-                if (self.inputIdx != 0) {
-                    self.inputLen -= 1;
-                    self.inputIdx -= 1;
-                    std.mem.copyForwards(u8, self.inputBuffer[self.inputIdx..255], self.inputBuffer[self.inputIdx + 1 ..]);
+                if (self.input_idx != 0) {
+                    self.input_len -= 1;
+                    self.input_idx -= 1;
+                    std.mem.copyForwards(u8, self.input_buffer[self.input_idx..255], self.input_buffer[self.input_idx + 1 ..]);
                 }
             },
             c.GLFW_KEY_DELETE => {
-                if (self.inputIdx != self.inputLen) {
-                    std.mem.copyForwards(u8, self.inputBuffer[self.inputIdx..255], self.inputBuffer[self.inputIdx + 1 ..]);
-                    self.inputLen -= 1;
+                if (self.input_idx != self.input_len) {
+                    std.mem.copyForwards(u8, self.input_buffer[self.input_idx..255], self.input_buffer[self.input_idx + 1 ..]);
+                    self.input_len -= 1;
                 }
             },
             else => {},

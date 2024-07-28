@@ -2,10 +2,10 @@ const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
-const windowEvs = @import("../events/window.zig");
+const system_events = @import("../events/system.zig");
+const window_events = @import("../events/window.zig");
 const files = @import("../system/files.zig");
-const emailWin = @import("../windows/email.zig");
+const email_window = @import("../windows/email.zig");
 
 const log = @import("../util/log.zig").log;
 const font = @import("../util/font.zig");
@@ -67,7 +67,7 @@ pub const EmailManager = struct {
         deps: []u8,
 
         viewed: bool = false,
-        isComplete: bool = false,
+        is_complete: bool = false,
         show: bool = true,
         condition: Condition = .None,
         box: u8 = 0,
@@ -189,7 +189,7 @@ pub const EmailManager = struct {
         for (self.emails.items) |email| {
             if (email.box != box) continue;
             total += 1;
-            if (email.isComplete) comp += 1;
+            if (email.is_complete) comp += 1;
         }
 
         if (total == 0) return 100;
@@ -215,7 +215,7 @@ pub const EmailManager = struct {
         for (self.emails.items) |dep| {
             if (dep.box != email.box) continue;
             if (std.mem.indexOf(u8, email.deps, &.{dep.id})) |_| {
-                if (!dep.isComplete) return false;
+                if (!dep.is_complete) return false;
             }
         }
 
@@ -223,20 +223,20 @@ pub const EmailManager = struct {
     }
 
     pub fn setEmailComplete(self: *EmailManager, email: *Email) !void {
-        email.isComplete = true;
+        email.is_complete = true;
         if (self.getEmailUnlocks(email)) {
             for (self.emails.items) |*dep| {
                 if (dep.box != email.box) continue;
                 if (std.mem.indexOf(u8, dep.deps, &.{email.id})) |_| {
                     if (self.getEmailVisible(dep, "admin@eee.org"))
-                        try events.EventManager.instance.sendEvent(windowEvs.EventNotification{
+                        try events.EventManager.instance.sendEvent(window_events.EventNotification{
                             .title = "You got mail",
                             .text = dep.subject,
-                            .icon = emailWin.notif,
+                            .icon = email_window.notif,
                         });
                 }
             }
-            try events.EventManager.instance.sendEvent(systemEvs.EventEmailRecv{});
+            try events.EventManager.instance.sendEvent(system_events.EventEmailRecv{});
         }
     }
 
@@ -286,7 +286,7 @@ pub const EmailManager = struct {
 
         for (self.emails.items) |*email| {
             if (email.viewed) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 0;
-            if (email.isComplete) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 1;
+            if (email.is_complete) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 1;
         }
 
         _ = try files.root.newFile(path);
@@ -324,7 +324,7 @@ pub const EmailManager = struct {
                         if (email.box != boxidx) continue;
 
                         email.viewed = (conts[startidx + email.id + 256 * nameidx] & (1 << 0)) != 0;
-                        email.isComplete = (conts[startidx + email.id + 256 * nameidx] & (1 << 1)) != 0;
+                        email.is_complete = (conts[startidx + email.id + 256 * nameidx] & (1 << 1)) != 0;
                     }
                 }
             }
@@ -343,35 +343,35 @@ pub const EmailManager = struct {
         for (self.emails.items) |email| {
             const start = result.len;
 
-            const cond = try email.condition.toString();
+            const conds = try email.condition.toString();
 
-            const idStr = std.mem.toBytes(email.id);
+            const id_string = std.mem.toBytes(email.id);
             const show = std.mem.toBytes(email.show);
-            const toLen = std.mem.toBytes(email.to.len)[0..4];
-            const fromLen = std.mem.toBytes(email.from.len)[0..4];
-            const depsLen = std.mem.toBytes(email.deps.len)[0..4];
-            const condsLen = std.mem.toBytes(cond.len)[0..4];
-            const subjectLen = std.mem.toBytes(email.subject.len)[0..4];
-            const contentLen = std.mem.toBytes(email.contents.len)[0..4];
+            const to_length = std.mem.toBytes(email.to.len)[0..4];
+            const from_length = std.mem.toBytes(email.from.len)[0..4];
+            const deps_length = std.mem.toBytes(email.deps.len)[0..4];
+            const conds_length = std.mem.toBytes(conds.len)[0..4];
+            const subject_length = std.mem.toBytes(email.subject.len)[0..4];
+            const content_length = std.mem.toBytes(email.contents.len)[0..4];
 
             const appends = try std.mem.concat(
                 allocator.alloc,
                 u8,
                 &[_][]const u8{
-                    &idStr,
+                    &id_string,
                     &show,
                     &.{@intFromEnum(email.condition)},
-                    condsLen,
-                    cond,
-                    depsLen,
+                    conds_length,
+                    conds,
+                    deps_length,
                     email.deps,
-                    toLen,
+                    to_length,
                     email.to,
-                    fromLen,
+                    from_length,
                     email.from,
-                    subjectLen,
+                    subject_length,
                     email.subject,
-                    contentLen,
+                    content_length,
                     email.contents,
                 },
             );
@@ -386,15 +386,15 @@ pub const EmailManager = struct {
 
     pub fn loadFromFolder(self: *EmailManager, path: []const u8) !void {
         const folder = try files.root.getFolder(path);
-        var fileList = std.ArrayList(*const files.File).init(allocator.alloc);
-        defer fileList.deinit();
-        try folder.getFilesRec(&fileList);
+        var file_list = std.ArrayList(*const files.File).init(allocator.alloc);
+        defer file_list.deinit();
+        try folder.getFilesRec(&file_list);
 
-        self.boxes = try allocator.alloc.alloc([]u8, fileList.items.len + 1);
+        self.boxes = try allocator.alloc.alloc([]u8, file_list.items.len + 1);
 
         self.boxes[self.boxes.len - 1] = "outbox";
 
-        for (fileList.items, 0..) |file, boxid| {
+        for (file_list.items, 0..) |file, boxid| {
             log.debug("load emails: {s}", .{file.name});
 
             self.boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
@@ -412,7 +412,7 @@ pub const EmailManager = struct {
 
             for (start..start + count) |idx| {
                 self.emails.items[idx].viewed = false;
-                self.emails.items[idx].isComplete = false;
+                self.emails.items[idx].is_complete = false;
 
                 self.emails.items[idx].id = conts[fidx];
                 fidx += 1;
@@ -422,13 +422,13 @@ pub const EmailManager = struct {
 
                 self.emails.items[idx].box = @as(u8, @intCast(boxid));
 
-                const condKind = @as(Email.ConditionKind, @enumFromInt(conts[fidx]));
+                const cond_kind = @as(Email.ConditionKind, @enumFromInt(conts[fidx]));
 
                 fidx += 1;
 
                 const kind = *align(1) const u32;
 
-                switch (condKind) {
+                switch (cond_kind) {
                     .None => {
                         self.emails.items[idx].condition = .{ .None = .{} };
                         fidx += 4;
@@ -509,6 +509,7 @@ pub const EmailManager = struct {
                 self.emails.items[idx].contents = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
             }
+
             std.sort.insertion(Email, self.emails.items[start..], false, Email.lessThan);
         }
     }

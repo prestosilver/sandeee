@@ -2,7 +2,7 @@ const std = @import("std");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const system_events = @import("../events/system.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const shd = @import("../util/shader.zig");
 const batch = @import("../util/spritebatch.zig");
@@ -14,16 +14,16 @@ const cols = @import("../math/colors.zig");
 const wall = @import("../drawers/wall2d.zig");
 const audio = @import("../util/audio.zig");
 const c = @import("../c.zig");
-const vmManager = @import("../system/vmmanager.zig");
+const vm_manager = @import("../system/vmmanager.zig");
 
 pub var target: enum { Quit, Bios, Update } = .Quit;
-pub var targetFile: []const u8 = "";
+pub var target_file: []const u8 = "";
 
 pub const GSLogout = struct {
     const Self = @This();
 
     shader: *shd.Shader,
-    clearShader: *shd.Shader,
+    clear_shader: *shd.Shader,
     face: *font.Font,
     font_shader: *shd.Shader,
     wallpaper: *wall.Wallpaper,
@@ -34,7 +34,7 @@ pub const GSLogout = struct {
 
     pub fn setup(self: *Self) !void {
         try self.audio_man.playSound(self.logout_sound.*);
-        try vmManager.VMManager.logout();
+        try vm_manager.VMManager.logout();
         self.time = 3;
     }
 
@@ -45,7 +45,7 @@ pub const GSLogout = struct {
 
         try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
 
-        const clearSprite = sp.Sprite{
+        const clear_sprite = sp.Sprite{
             .texture = "none",
             .data = .{
                 .size = vecs.newVec2(size.x, size.y),
@@ -53,20 +53,20 @@ pub const GSLogout = struct {
             },
         };
 
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &clearSprite, self.clearShader, vecs.newVec3(0, 0, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &clear_sprite, self.clear_shader, vecs.newVec3(0, 0, 0));
 
         const text = if (target == .Update) "Updating" else "Logging Out";
 
-        const logoutSize = self.face.sizeText(.{
+        const logout_size = self.face.sizeText(.{
             .text = text,
         });
 
-        const logoutPos = size.sub(logoutSize).div(2);
+        const logout_pos = size.sub(logout_size).div(2);
 
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = text,
-            .pos = logoutPos,
+            .pos = logout_pos,
             .color = cols.newColor(1, 1, 1, 1),
         });
     }
@@ -80,19 +80,19 @@ pub const GSLogout = struct {
                     c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
                 },
                 .Bios => {
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Disks,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Disks,
                     });
                 },
                 .Update => {
-                    try files.Folder.recoverDisk(targetFile, false);
+                    try files.Folder.recoverDisk(target_file, false);
 
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Disks,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Disks,
                     });
 
-                    allocator.alloc.free(targetFile);
-                    targetFile = "";
+                    allocator.alloc.free(target_file);
+                    target_file = "";
                 },
             }
         }

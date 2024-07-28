@@ -15,10 +15,10 @@ pub fn convert(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(
     for (in) |item| {
         const idx = std.mem.indexOf(u8, item, ":") orelse return error.BadInput;
         const name = item[idx + 1 ..];
-        const nameLen: u16 = @intCast(name.len);
+        const name_len: u16 = @intCast(name.len);
 
-        try result.append(std.mem.asBytes(&nameLen)[1]);
-        try result.append(std.mem.asBytes(&nameLen)[0]);
+        try result.append(std.mem.asBytes(&name_len)[1]);
+        try result.append(std.mem.asBytes(&name_len)[0]);
         try result.appendSlice(name);
 
         const ext = item[idx - 4 .. idx];
@@ -38,10 +38,10 @@ pub fn convert(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(
             const data = try asma.compile(&.{"/tmp/eon.asm"}, alloc);
             defer data.deinit();
 
-            const dataLen: u16 = @intCast(data.items.len);
+            const data_len: u16 = @intCast(data.items.len);
 
-            try result.append(std.mem.asBytes(&dataLen)[1]);
-            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.append(std.mem.asBytes(&data_len)[1]);
+            try result.append(std.mem.asBytes(&data_len)[0]);
             try result.appendSlice(data.items);
 
             continue;
@@ -51,10 +51,10 @@ pub fn convert(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(
             const data = try asma.compile(&.{item[0..idx]}, alloc);
             defer data.deinit();
 
-            const dataLen: u16 = @intCast(data.items.len);
+            const data_len: u16 = @intCast(data.items.len);
 
-            try result.append(std.mem.asBytes(&dataLen)[1]);
-            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.append(std.mem.asBytes(&data_len)[1]);
+            try result.append(std.mem.asBytes(&data_len)[0]);
             try result.appendSlice(data.items);
 
             continue;
@@ -64,10 +64,10 @@ pub fn convert(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(
             const data = try sounds.convert(&.{item[0..idx]}, alloc);
             defer data.deinit();
 
-            const dataLen: u16 = @intCast(data.items.len);
+            const data_len: u16 = @intCast(data.items.len);
 
-            try result.append(std.mem.asBytes(&dataLen)[1]);
-            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.append(std.mem.asBytes(&data_len)[1]);
+            try result.append(std.mem.asBytes(&data_len)[0]);
             try result.appendSlice(data.items);
 
             continue;
@@ -77,10 +77,10 @@ pub fn convert(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(
             const data = try textures.convert(&.{item[0..idx]}, alloc);
             defer data.deinit();
 
-            const dataLen: u16 = @intCast(data.items.len);
+            const data_len: u16 = @intCast(data.items.len);
 
-            try result.append(std.mem.asBytes(&dataLen)[1]);
-            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.append(std.mem.asBytes(&data_len)[1]);
+            try result.append(std.mem.asBytes(&data_len)[0]);
             try result.appendSlice(data.items);
 
             continue;
@@ -90,10 +90,10 @@ pub fn convert(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(
             const data = try std.fs.cwd().readFileAlloc(alloc, item[0..idx], 100);
             defer alloc.free(data);
 
-            const dataLen: u16 = @intCast(data.len);
+            const data_len: u16 = @intCast(data.len);
 
-            try result.append(std.mem.asBytes(&dataLen)[1]);
-            try result.append(std.mem.asBytes(&dataLen)[0]);
+            try result.append(std.mem.asBytes(&data_len)[1]);
+            try result.append(std.mem.asBytes(&data_len)[0]);
             try result.appendSlice(data);
 
             continue;

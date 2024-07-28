@@ -10,14 +10,14 @@ const fm = @import("../util/files.zig");
 const audio = @import("../util/audio.zig");
 const conf = @import("../system/config.zig");
 const tex = @import("../util/texture.zig");
-const texMan = @import("../util/texmanager.zig");
+const texture_manager = @import("../util/texmanager.zig");
 const font = @import("../util/font.zig");
 const gfx = @import("../util/graphics.zig");
 const wins = @import("../windows/all.zig");
 const pseudo = @import("../system/pseudo/all.zig");
 const shell = @import("../system/shell.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const system_events = @import("../events/system.zig");
 const mail = @import("../system/mail.zig");
 const allocator = @import("../util/allocator.zig");
 const builtin = @import("builtin");
@@ -25,7 +25,7 @@ const builtin = @import("builtin");
 pub const GSLoading = struct {
     const Self = @This();
 
-    const textureNames = [_][2][]const u8{
+    const TEXTURE_NAMES = [_][2][]const u8{
         .{ "window_frame_path", "win" },
         .{ "wallpaper_path", "wall" },
         .{ "bar_texture_path", "bar" },
@@ -55,7 +55,7 @@ pub const GSLoading = struct {
 
     loading: *const fn (*Self) void,
 
-    emailManager: *mail.EmailManager,
+    email_manager: *mail.EmailManager,
     face: *font.Font,
 
     logo_sprite: sp.Sprite,
@@ -64,7 +64,7 @@ pub const GSLoading = struct {
     disk: *?[]u8,
     audio_man: *audio.Audio,
 
-    loadingThread: std.Thread = undefined,
+    loading_thread: std.Thread = undefined,
 
     loader: *worker.WorkerContext,
 
@@ -88,8 +88,8 @@ pub const GSLoading = struct {
         try self.loader.enqueue(*const []const u8, *const u8, &settingspath, &zero, worker.settings.loadSettings);
 
         // textures
-        for (&textureNames) |*textureEntry| {
-            try self.loader.enqueue(*const []const u8, *const []const u8, &textureEntry[0], &textureEntry[1], worker.texture.loadTexture);
+        for (&TEXTURE_NAMES) |*texture_entry| {
+            try self.loader.enqueue(*const []const u8, *const []const u8, &texture_entry[0], &texture_entry[1], worker.texture.loadTexture);
 
             // delay
             try self.loader.enqueue(*const u64, *const u8, &tdelay, &zero, worker.delay.loadDelay);
@@ -107,7 +107,7 @@ pub const GSLoading = struct {
         try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
 
         // mail
-        try self.loader.enqueue(*const []const u8, *mail.EmailManager, &mailpath, self.emailManager, worker.mail.loadMail);
+        try self.loader.enqueue(*const []const u8, *mail.EmailManager, &mailpath, self.email_manager, worker.mail.loadMail);
 
         // delay
         try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
@@ -117,14 +117,14 @@ pub const GSLoading = struct {
 
         self.load_progress = 0;
 
-        self.loadingThread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
+        self.loading_thread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
         try self.loader.run(&self.load_progress);
 
         // setup some pointers
-        pseudo.snd.audioPtr = self.audio_man;
+        pseudo.snd.audio_ptr = self.audio_man;
         pseudo.win.shader = self.shader;
 
-        wins.email.emailManager = self.emailManager;
+        wins.email.email_manager = self.email_manager;
         wins.email.notif = .{
             .texture = "icons",
             .data = .{
@@ -135,12 +135,12 @@ pub const GSLoading = struct {
     }
 
     pub fn deinit(self: *Self) !void {
-        self.loadingThread.join();
+        self.loading_thread.join();
     }
 
     pub fn update(self: *Self, _: f32) !void {
-        try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-            .targetState = .Windowed,
+        try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+            .target_state = .Windowed,
         });
 
         // play login sound
@@ -151,15 +151,15 @@ pub const GSLoading = struct {
         if (self.done.load(.monotonic))
             return;
 
-        const logoOff = size.sub(self.logo_sprite.data.size).div(2);
+        const logo_offset = size.sub(self.logo_sprite.data.size).div(2);
 
         // draw the logo
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logo_offset.x, logo_offset.y, 0));
 
         // progress bar
         self.load_sprite.data.size.x = (self.load_progress * 320 * 0.5 + self.load_sprite.data.size.x * 0.5);
         self.load_sprite.data.source.w = self.load_sprite.data.size.x / self.load_sprite.data.size.y;
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logoOff.x, logoOff.y + 100, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logo_offset.x, logo_offset.y + 100, 0));
 
         if (self.load_sprite.data.size.x > 319)
             self.done.store(true, .monotonic);

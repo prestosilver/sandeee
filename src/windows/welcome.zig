@@ -63,12 +63,12 @@ pub const WelcomeData = struct {
             const remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
             if (remaining < 0) @panic("Demo Over");
 
-            const demoText = try std.fmt.allocPrint(allocator.alloc, "{} seconds remianing.", .{@as(usize, @intFromFloat(remaining / 1e+9))});
-            defer allocator.alloc.free(demoText);
+            const demo_text = try std.fmt.allocPrint(allocator.alloc, "{} seconds remianing.", .{@as(usize, @intFromFloat(remaining / 1e+9))});
+            defer allocator.alloc.free(demo_text);
 
             try font.draw(.{
                 .shader = font_shader,
-                .text = demoText,
+                .text = demo_text,
                 .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 10 * font.size),
                 .scale = 2,
                 .color = col.newColor(1, 0, 0, 1),
@@ -93,12 +93,12 @@ pub const WelcomeData = struct {
             });
         }
 
-        const versionText = try std.fmt.allocPrint(allocator.alloc, "(" ++ options.VersionText ++ ")", .{options.SandEEEVersion});
-        defer allocator.alloc.free(versionText);
+        const version_text = try std.fmt.allocPrint(allocator.alloc, "(" ++ options.VersionText ++ ")", .{options.SandEEEVersion});
+        defer allocator.alloc.free(version_text);
 
         try font.draw(.{
             .shader = font_shader,
-            .text = versionText,
+            .text = version_text,
             .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - 1.5 * font.size),
         });
     }

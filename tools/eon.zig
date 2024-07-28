@@ -775,7 +775,7 @@ const VarMap = struct {
     vars: []Var,
 };
 
-pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
+pub fn lexFile(in: []const u8) !std.ArrayList(Token) {
     var f = try std.fs.cwd().openFile(in, .{});
     defer f.close();
     var reader = f.reader();
@@ -789,7 +789,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
         if (size == 0) break;
 
         const char = buff[0];
-        const charStr: []const u8 = &buff;
+        const char_string: []const u8 = &buff;
 
         if (prev == '\\') {
             if (char == '"') {
@@ -811,7 +811,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
                 const target = try std.mem.concat(allocator, u8, &.{ "content/disk", stmt[9 .. stmt.len - 1] });
 
-                var toks = try lex_file(target);
+                var toks = try lexFile(target);
                 defer toks.deinit();
 
                 _ = toks.pop();
@@ -823,7 +823,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
             continue;
         }
 
-        if (code.len != 0 and (std.mem.indexOf(u8, " @${}();,\t\n~![]", charStr) != null or std.mem.indexOf(u8, " $@{}();,\t\n~![]", code[code.len - 1 ..]) != null)) {
+        if (code.len != 0 and (std.mem.indexOf(u8, " @${}();,\t\n~![]", char_string) != null or std.mem.indexOf(u8, " $@{}();,\t\n~![]", code[code.len - 1 ..]) != null)) {
             if (std.mem.eql(u8, code, "{")) {
                 try result.append(.{
                     .kind = .TOKEN_OPEN_BRACE,
@@ -1067,30 +1067,30 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
                     code = code[1..];
                 }
 
-                var isIdent = true;
+                var is_ident = true;
 
                 for (code) |ch| {
                     if (!std.ascii.isAlphabetic(ch) and ch != '_') {
-                        isIdent = false;
+                        is_ident = false;
                         break;
                     }
                 }
-                if (isIdent) {
+                if (is_ident) {
                     try result.append(.{
                         .kind = .TOKEN_IDENT,
                         .value = code,
                     });
                     code = try allocator.alloc(u8, 0);
                 } else {
-                    var isDigit = true;
+                    var is_digit = true;
 
                     for (code) |ch| {
                         if (!std.ascii.isDigit(ch)) {
-                            isDigit = false;
+                            is_digit = false;
                             break;
                         }
                     }
-                    if (isDigit) {
+                    if (is_digit) {
                         try result.append(.{
                             .kind = .TOKEN_INT_LIT,
                             .value = code,
@@ -1110,7 +1110,7 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
 
             var stmt_buff: [512]u8 = undefined;
             _ = try reader.readUntilDelimiterOrEof(&stmt_buff, '\n');
-        } else if ((std.mem.indexOf(u8, "\t\r\n ", charStr) == null or (code.len != 0 and code[0] == '"'))) {
+        } else if ((std.mem.indexOf(u8, "\t\r\n ", char_string) == null or (code.len != 0 and code[0] == '"'))) {
             code = try allocator.realloc(code, code.len + 1);
             code[code.len - 1] = char;
         }
@@ -1126,13 +1126,13 @@ pub fn lex_file(in: []const u8) !std.ArrayList(Token) {
     return result;
 }
 
-const emptyExpr = [_]Expression{};
+const EMPTY_EXPR = [_]Expression{};
 
 pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) !Expression {
     var result: Expression = .{
-        .a = &emptyExpr,
+        .a = &EMPTY_EXPR,
         .op = null,
-        .b = &emptyExpr,
+        .b = &EMPTY_EXPR,
     };
 
     if (tokens[idx.*].kind == .TOKEN_OPEN_PAREN) {
@@ -1146,7 +1146,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
         result = .{
             .a = a,
             .op = &tokens[idx.* - 1],
-            .b = &emptyExpr,
+            .b = &EMPTY_EXPR,
         };
 
         return result;
@@ -1161,9 +1161,9 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
             const op = &tokens[idx.* + 1];
             var a = try allocator.alloc(Expression, 1);
             a[0] = .{
-                .a = &emptyExpr,
+                .a = &EMPTY_EXPR,
                 .op = &tokens[idx.*],
-                .b = &emptyExpr,
+                .b = &EMPTY_EXPR,
             };
 
             idx.* += 2;
@@ -1194,14 +1194,14 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
             result = .{
                 .a = b,
                 .op = ident,
-                .b = &emptyExpr,
+                .b = &EMPTY_EXPR,
             };
             return result;
         } else {
             result = .{
-                .a = &emptyExpr,
+                .a = &EMPTY_EXPR,
                 .op = &tokens[idx.*],
-                .b = &emptyExpr,
+                .b = &EMPTY_EXPR,
             };
             idx.* += 1;
             return result;
@@ -1213,7 +1213,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
         b[0] = try parseFactor(tokens, heap, idx);
 
         result = .{
-            .a = &emptyExpr,
+            .a = &EMPTY_EXPR,
             .op = ident,
             .b = b,
         };
@@ -1228,7 +1228,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
         b[0] = try parseFactor(tokens, heap, idx);
 
         result = .{
-            .a = &emptyExpr,
+            .a = &EMPTY_EXPR,
             .op = ident,
             .b = b,
         };
@@ -1239,9 +1239,9 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
 
 pub fn parseSum(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) !Expression {
     var result: Expression = .{
-        .a = &emptyExpr,
+        .a = &EMPTY_EXPR,
         .op = null,
-        .b = &emptyExpr,
+        .b = &EMPTY_EXPR,
     };
 
     var a = try allocator.alloc(Expression, 1);
@@ -1265,7 +1265,7 @@ pub fn parseSum(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) 
         result = .{
             .a = a,
             .op = null,
-            .b = &emptyExpr,
+            .b = &EMPTY_EXPR,
         };
     }
     return result;
@@ -1273,9 +1273,9 @@ pub fn parseSum(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) 
 
 pub fn parseExpression(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) anyerror!Expression {
     var result: Expression = .{
-        .a = &emptyExpr,
+        .a = &EMPTY_EXPR,
         .op = null,
-        .b = &emptyExpr,
+        .b = &EMPTY_EXPR,
     };
 
     var a = try allocator.alloc(Expression, 1);
@@ -1307,7 +1307,7 @@ pub fn parseExpression(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *
         result = .{
             .a = a,
             .op = null,
-            .b = &emptyExpr,
+            .b = &EMPTY_EXPR,
         };
     }
 
@@ -1530,7 +1530,7 @@ pub fn parseFunctionDecl(fnPrefix: *[]const u8, tokens: []Token, heap: *std.Arra
     return result;
 }
 
-pub fn parseProgram(fnPrefix: *[]const u8, tokens: []Token) !Program {
+pub fn parseProgram(fn_prefix: *[]const u8, tokens: []Token) !Program {
     var result: Program = undefined;
     var idx: usize = 0;
     result = .{
@@ -1539,7 +1539,7 @@ pub fn parseProgram(fnPrefix: *[]const u8, tokens: []Token) !Program {
     };
 
     while (true) {
-        if (parseFunctionDecl(fnPrefix, tokens, &result.heap, &idx) catch null) |func| {
+        if (parseFunctionDecl(fn_prefix, tokens, &result.heap, &idx) catch null) |func| {
             result.funcs = try allocator.realloc(result.funcs, result.funcs.len + 1);
             result.funcs[result.funcs.len - 1] = func;
         } else if (tokens[idx].kind == .TOKEN_KEYWORD_VAR) {
@@ -1553,23 +1553,23 @@ pub fn parseProgram(fnPrefix: *[]const u8, tokens: []Token) !Program {
         } else if (tokens[idx].kind == .TOKEN_KEYWORD_FNSET) {
             idx += 1;
             if (tokens[idx].kind != .TOKEN_IDENT) return error.ExpectedIdent;
-            const oldPrefix = fnPrefix.*;
-            defer allocator.free(oldPrefix);
-            fnPrefix.* = try std.fmt.allocPrint(allocator, "{s}.", .{tokens[idx].value});
+            const old_prefix = fn_prefix.*;
+            defer allocator.free(old_prefix);
+            fn_prefix.* = try std.fmt.allocPrint(allocator, "{s}.", .{tokens[idx].value});
             idx += 1;
             if (tokens[idx].kind != .TOKEN_OPEN_BRACE) return error.ExpectedIdent;
             idx += 1;
         } else if (tokens[idx].kind == .TOKEN_CLOSE_BRACE) {
             idx += 1;
-            const dotidx = if (std.mem.lastIndexOf(u8, fnPrefix.*[0 .. fnPrefix.*.len - 1], ".")) |ind| ind + 1 else 0;
+            const dotidx = if (std.mem.lastIndexOf(u8, fn_prefix.*[0 .. fn_prefix.*.len - 1], ".")) |ind| ind + 1 else 0;
 
-            fnPrefix.* = try allocator.dupe(u8, fnPrefix.*[0..dotidx]);
+            fn_prefix.* = try allocator.dupe(u8, fn_prefix.*[0..dotidx]);
         } else {
             break;
         }
     }
 
-    if (fnPrefix.len != 0) return error.POOPIE;
+    if (fn_prefix.len != 0) return error.POOPIE;
 
     if (tokens[idx].kind != .TOKEN_EOF) {
         for (tokens[idx..]) |tok|
@@ -1587,14 +1587,14 @@ pub fn compileEon(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
-    var fnPrefix: []const u8 = "";
+    var fn_prefix: []const u8 = "";
 
     allocator = alloc;
 
-    var tokens = try lex_file(in);
+    var tokens = try lexFile(in);
     defer tokens.deinit();
 
-    var prog = try parseProgram(&fnPrefix, tokens.items);
+    var prog = try parseProgram(&fn_prefix, tokens.items);
 
     var result = std.ArrayList(u8).init(alloc);
 
@@ -1608,14 +1608,14 @@ pub fn compileEonLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.A
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
-    var fnPrefix: []const u8 = "";
+    var fn_prefix: []const u8 = "";
 
     allocator = alloc;
 
-    var tokens = try lex_file(in);
+    var tokens = try lexFile(in);
     defer tokens.deinit();
 
-    var prog = try parseProgram(&fnPrefix, tokens.items);
+    var prog = try parseProgram(&fn_prefix, tokens.items);
 
     var result = std.ArrayList(u8).init(alloc);
 

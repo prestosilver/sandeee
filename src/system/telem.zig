@@ -5,7 +5,7 @@ const allocator = @import("../util/allocator.zig");
 const win = @import("../drawers/window2d.zig");
 const wins = @import("../windows/all.zig");
 const events = @import("../util/events.zig");
-const windowEvs = @import("../events/window.zig");
+const window_events = @import("../events/window.zig");
 const rect = @import("../math/rects.zig");
 
 const log = @import("../util/log.zig").log;
@@ -14,12 +14,12 @@ pub const Telem = packed struct {
     pub const PATH = "/_priv/telem.bin";
 
     pub var instance: Telem = .{
-        .randomId = 0,
+        .random_id = 0,
     };
 
     logins: u64 = 0,
-    instructionCalls: u128 = 0,
-    randomId: u64,
+    instruction_calls: u128 = 0,
+    random_id: u64,
 
     version: packed struct {
         major: u16,
@@ -53,7 +53,7 @@ pub const Telem = packed struct {
                 .active = true,
             });
 
-            events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = update_window, .center = true }) catch return;
+            events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = update_window, .center = true }) catch return;
         }
     }
 
@@ -69,7 +69,7 @@ pub const Telem = packed struct {
         } else {
             var rnd = std.rand.DefaultPrng.init(@bitCast(std.time.timestamp()));
             instance = .{
-                .randomId = rnd.random().int(u64),
+                .random_id = rnd.random().int(u64),
             };
 
             const pass = try getDebugPassword();
@@ -86,8 +86,8 @@ pub const Telem = packed struct {
     }
 
     pub fn getDebugPassword() ![]u8 {
-        const a: u32 = @intCast(instance.randomId >> 0 & std.math.maxInt(u32));
-        const b: u32 = @intCast(instance.randomId >> 32 & std.math.maxInt(u32));
+        const a: u32 = @intCast(instance.random_id >> 0 & std.math.maxInt(u32));
+        const b: u32 = @intCast(instance.random_id >> 32 & std.math.maxInt(u32));
 
         const a_bytes = std.mem.asBytes(&a);
         const b_bytes = std.mem.asBytes(&b);

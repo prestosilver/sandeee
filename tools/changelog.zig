@@ -1,7 +1,7 @@
 const std = @import("std");
 const files = @import("../src/system/files.zig");
 
-const LogHeader: []const u8 =
+const LOG_HEADER: []const u8 =
     \\#Style @/style.eds
     \\:logo: [@/logo.eia]
     \\
@@ -13,7 +13,7 @@ const LogHeader: []const u8 =
     \\
 ;
 
-const LogFooter: []const u8 =
+const LOG_FOOTER: []const u8 =
     \\
     \\:center: --- EEE Sees All ---
 ;
@@ -45,7 +45,7 @@ pub const ChangelogStep = struct {
         var file = try std.fs.cwd().createFile(self.output, .{});
         defer file.close();
 
-        _ = try file.write(LogHeader);
+        _ = try file.write(LOG_HEADER);
 
         const git_log = b.run(&.{ "git", "log", "master", "--pretty=format:%h" });
 
@@ -115,6 +115,6 @@ pub const ChangelogStep = struct {
             }
         }
 
-        _ = try file.write(LogFooter);
+        _ = try file.write(LOG_FOOTER);
     }
 };

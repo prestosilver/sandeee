@@ -7,7 +7,7 @@ const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 const allocator = @import("../util/allocator.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const system_events = @import("../events/system.zig");
 const files = @import("../system/files.zig");
 const audio = @import("../util/audio.zig");
 
@@ -28,9 +28,9 @@ pub const GSRecovery = struct {
     shader: *shd.Shader,
     face: *font.Font,
     font_shader: *shd.Shader,
-    blipSound: *audio.Sound,
-    selectSound: *audio.Sound,
-    audioMan: *audio.Audio,
+    blip_sound: *audio.Sound,
+    select_sound: *audio.Sound,
+    audio_manager: *audio.Audio,
 
     sel: usize = 0,
     disks: std.ArrayList([]const u8) = undefined,
@@ -110,15 +110,14 @@ pub const GSRecovery = struct {
         "N No",
     };
 
-    pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        _ = size;
+    pub fn draw(self: *Self, _: vecs.Vector2) !void {
         var y: f32 = 100;
 
-        const titleLine = try std.fmt.allocPrint(allocator.alloc, "Recover" ++ font.EEE ++ " v_{s}", .{VERSION});
-        defer allocator.alloc.free(titleLine);
+        const title_text = try std.fmt.allocPrint(allocator.alloc, "Recover" ++ font.EEE ++ " v_{s}", .{VERSION});
+        defer allocator.alloc.free(title_text);
         try self.face.draw(.{
             .shader = self.font_shader,
-            .text = titleLine,
+            .text = title_text,
             .pos = vecs.newVec2(100, y),
             .color = cols.newColor(1, 1, 1, 1),
         });
@@ -215,8 +214,8 @@ pub const GSRecovery = struct {
                 else if (self.sub_sel != null)
                     self.sub_sel = null
                 else
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Disks,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Disks,
                     });
             },
             c.GLFW_KEY_ENTER => {
@@ -227,12 +226,12 @@ pub const GSRecovery = struct {
                                 .Reinstall => {
                                     try files.Folder.recoverDisk(self.disks.items[self.sel][2..], false);
                                     self.status = "Reinstalled";
-                                    try self.audioMan.playSound(self.selectSound.*);
+                                    try self.audio_manager.playSound(self.select_sound.*);
                                 },
                                 .ReinstallReset => {
                                     try files.Folder.recoverDisk(self.disks.items[self.sel][2..], true);
                                     self.status = "Reinstalled & Reset";
-                                    try self.audioMan.playSound(self.selectSound.*);
+                                    try self.audio_manager.playSound(self.select_sound.*);
                                 },
                                 .Delete => {
                                     const path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
@@ -249,11 +248,11 @@ pub const GSRecovery = struct {
                                     self.sel = 0;
 
                                     if (self.disks.items.len == 1) {
-                                        try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                                            .targetState = .Disks,
+                                        try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                                            .target_state = .Disks,
                                         });
 
-                                        try self.audioMan.playSound(self.selectSound.*);
+                                        try self.audio_manager.playSound(self.select_sound.*);
                                     }
 
                                     return;
@@ -264,7 +263,7 @@ pub const GSRecovery = struct {
 
                         self.confirm_sel = null;
 
-                        try self.audioMan.playSound(self.selectSound.*);
+                        try self.audio_manager.playSound(self.select_sound.*);
 
                         self.sub_sel = .Reinstall;
                         self.sel = 0;
@@ -272,21 +271,21 @@ pub const GSRecovery = struct {
                         return;
                     } else if (sub_sel == .Back) {
                         self.sub_sel = null;
-                        try self.audioMan.playSound(self.selectSound.*);
+                        try self.audio_manager.playSound(self.select_sound.*);
                     } else {
                         self.confirm_sel = true;
-                        try self.audioMan.playSound(self.selectSound.*);
+                        try self.audio_manager.playSound(self.select_sound.*);
                     }
                 } else if (self.sel == self.disks.items.len - 1) {
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Disks,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Disks,
                     });
 
-                    try self.audioMan.playSound(self.selectSound.*);
+                    try self.audio_manager.playSound(self.select_sound.*);
                 } else {
                     self.sub_sel = .Reinstall;
 
-                    try self.audioMan.playSound(self.selectSound.*);
+                    try self.audio_manager.playSound(self.select_sound.*);
                 }
             },
             c.GLFW_KEY_DOWN => {
@@ -296,11 +295,11 @@ pub const GSRecovery = struct {
                     if (@intFromEnum(sub_sel.*) < @intFromEnum(RecoveryMenuEntry.Back)) {
                         sub_sel.* = @enumFromInt(@intFromEnum(sub_sel.*) + 1);
 
-                        try self.audioMan.playSound(self.blipSound.*);
+                        try self.audio_manager.playSound(self.blip_sound.*);
                     }
                 } else if (self.sel < self.disks.items.len - 1) {
                     self.sel += 1;
-                    try self.audioMan.playSound(self.blipSound.*);
+                    try self.audio_manager.playSound(self.blip_sound.*);
                 }
             },
             c.GLFW_KEY_UP => {
@@ -309,11 +308,11 @@ pub const GSRecovery = struct {
                 } else if (self.sub_sel) |*sub_sel| {
                     if (@intFromEnum(sub_sel.*) > @intFromEnum(RecoveryMenuEntry.Reinstall)) {
                         sub_sel.* = @enumFromInt(@intFromEnum(sub_sel.*) - 1);
-                        try self.audioMan.playSound(self.blipSound.*);
+                        try self.audio_manager.playSound(self.blip_sound.*);
                     }
                 } else if (self.sel != 0) {
                     self.sel -= 1;
-                    try self.audioMan.playSound(self.blipSound.*);
+                    try self.audio_manager.playSound(self.blip_sound.*);
                 }
             },
             else => {
@@ -323,27 +322,27 @@ pub const GSRecovery = struct {
                     if (self.sub_sel) |_| {
                         self.sub_sel = null;
 
-                        try self.audioMan.playSound(self.selectSound.*);
+                        try self.audio_manager.playSound(self.select_sound.*);
                         return;
                     }
 
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Disks,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Disks,
                     });
 
-                    try self.audioMan.playSound(self.selectSound.*);
+                    try self.audio_manager.playSound(self.select_sound.*);
                 } else if (self.sub_sel) |sub_sel| {
                     _ = sub_sel;
                     switch (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0])) {
                         'R' => {
                             try files.Folder.recoverDisk(self.disks.items[self.sel][2..], false);
                             self.status = "Reinstalled";
-                            try self.audioMan.playSound(self.selectSound.*);
+                            try self.audio_manager.playSound(self.select_sound.*);
                         },
                         'S' => {
                             try files.Folder.recoverDisk(self.disks.items[self.sel][2..], true);
                             self.status = "Reinstalled & Reset";
-                            try self.audioMan.playSound(self.selectSound.*);
+                            try self.audio_manager.playSound(self.select_sound.*);
                         },
                         'D' => {
                             const path = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{self.disks.items[self.sel][2..]});
@@ -359,16 +358,16 @@ pub const GSRecovery = struct {
                             self.sel = 0;
 
                             if (self.disks.items.len == 1) {
-                                try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                                    .targetState = .Disks,
+                                try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                                    .target_state = .Disks,
                                 });
 
-                                try self.audioMan.playSound(self.selectSound.*);
+                                try self.audio_manager.playSound(self.select_sound.*);
 
                                 return;
                             }
 
-                            try self.audioMan.playSound(self.selectSound.*);
+                            try self.audio_manager.playSound(self.select_sound.*);
                         },
                         else => {},
                     }
@@ -378,7 +377,7 @@ pub const GSRecovery = struct {
                             self.sel = idx;
                             self.sub_sel = .Reinstall;
 
-                            try self.audioMan.playSound(self.selectSound.*);
+                            try self.audio_manager.playSound(self.select_sound.*);
                         }
                     }
                 }

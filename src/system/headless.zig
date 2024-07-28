@@ -3,11 +3,11 @@ const fm = @import("../util/files.zig");
 const files = @import("files.zig");
 const shell = @import("shell.zig");
 const allocator = @import("../util/allocator.zig");
-const vmManager = @import("../system/vmmanager.zig");
+const vm_manager = @import("../system/vmmanager.zig");
 
 const DISK = "headless.eee";
 
-pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.File) anyerror!void {
+pub fn headlessMain(cmd: ?[]const u8, comptime exit_fail: bool, logging: ?std.fs.File) anyerror!void {
     const diskpath = try fm.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
 
@@ -19,7 +19,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
     defer files.deinit();
 
-    var mainShell = shell.Shell{ .root = files.home };
+    var main_shell = shell.Shell{ .root = files.home };
 
     const stdin = std.io.getStdIn().reader();
     const stdout = logging orelse std.io.getStdOut();
@@ -27,12 +27,12 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
     _ = try stdout.write("Welcome To ShEEEl\n");
 
-    var toRun = cmd;
+    var to_run = cmd;
 
     while (true) {
-        if (mainShell.vm != null) {
+        if (main_shell.vm != null) {
             // setup vm data for update
-            const result_data = try mainShell.getVMResult();
+            const result_data = try main_shell.getVMResult();
             if (result_data) |result| {
                 _ = try stdout.write(result.data);
                 allocator.alloc.free(result.data);
@@ -41,16 +41,16 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
                 _ = try stdout.write("");
             }
 
-            try vmManager.VMManager.instance.update();
+            try vm_manager.VMManager.instance.update();
 
-            if (mainShell.vm == null) {
+            if (main_shell.vm == null) {
                 _ = try stdout.write("\n");
             }
 
             continue;
         }
 
-        const prompt = mainShell.getPrompt();
+        const prompt = main_shell.getPrompt();
 
         _ = try stdout.write(prompt);
 
@@ -58,14 +58,14 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
         var data: []const u8 = undefined;
 
-        if (toRun) |command| {
+        if (to_run) |command| {
             const idx = std.mem.indexOf(u8, command, "\n");
             if (idx) |index| {
                 data = command[0..index];
-                toRun = command[index + 1 ..];
+                to_run = command[index + 1 ..];
             } else {
                 data = command;
-                toRun = null;
+                to_run = null;
             }
             _ = try stdout.write(data);
             _ = try stdout.write("\n");
@@ -75,14 +75,14 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 
         const command = std.mem.trim(u8, data, "\r\n ");
 
-        const result = mainShell.run(command) catch |err| {
+        const result = main_shell.run(command) catch |err| {
             const msg = @errorName(err);
 
             _ = try stdout.write("Error: ");
             _ = try stdout.write(msg);
             _ = try stdout.write("\n");
 
-            if (exitFail) {
+            if (exit_fail) {
                 return err;
             }
 
@@ -106,11 +106,11 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exitFail: bool, logging: ?std.fs.
 }
 
 test "Headless scripts" {
-    vmManager.VMManager.init();
-    defer vmManager.VMManager.deinit();
+    vm_manager.VMManager.init();
+    defer vm_manager.VMManager.deinit();
 
-    vmManager.VMManager.vm_time = 1.0;
-    vmManager.VMManager.last_frame_time = 10.0;
+    vm_manager.VMManager.vm_time = 1.0;
+    vm_manager.VMManager.last_frame_time = 10.0;
 
     var logging = try std.fs.cwd().createFile("zig-out/test_output.md", .{});
     defer logging.close();

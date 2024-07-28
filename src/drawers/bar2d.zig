@@ -17,7 +17,7 @@ const popups = @import("popup2d.zig");
 const files = @import("../system/files.zig");
 const conf = @import("../system/config.zig");
 const events = @import("../util/events.zig");
-const windowEvs = @import("../events/window.zig");
+const window_events = @import("../events/window.zig");
 const shell = @import("../system/shell.zig");
 const eln = @import("../util/eln.zig");
 
@@ -27,7 +27,7 @@ const TEX_SIZE: f32 = 32;
 pub const BarData = struct {
     screendims: *vecs.Vector2,
     height: f32,
-    btnActive: bool = false,
+    btn_active: bool = false,
     btns: i32 = 0,
     shell: shell.Shell,
     shader: *shd.Shader,
@@ -76,19 +76,19 @@ pub const BarData = struct {
         const ts = std.time.timestamp();
         const hours = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_hour)) - conf.SettingManager.instance.getInt("hours_offset");
         const mins = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_min)) - conf.SettingManager.instance.getInt("minutes_offset");
-        const clockString = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{
+        const clock_text = try std.fmt.allocPrint(allocator.alloc, "{d: >2}:{d:0>2}", .{
             @as(u8, @intCast(@rem(hours, 24))),
             @as(u8, @intCast(@rem(mins, 60))),
         });
-        defer allocator.alloc.free(clockString);
+        defer allocator.alloc.free(clock_text);
 
-        const clockSize = font.sizeText(.{ .text = clockString });
-        const clockPos = vecs.newVec2(self.screendims.x - clockSize.x - 10, pos.y);
+        const clock_size = font.sizeText(.{ .text = clock_text });
+        const clock_pos = vecs.newVec2(self.screendims.x - clock_size.x - 10, pos.y);
 
         try font.draw(.{
             .shader = font_shader,
-            .text = clockString,
-            .pos = clockPos,
+            .text = clock_text,
+            .pos = clock_pos,
         });
 
         self.btns = 0;
@@ -113,7 +113,7 @@ pub const BarData = struct {
         const apps = try getApps();
         defer allocator.alloc.free(apps);
 
-        if (self.btnActive) {
+        if (self.btn_active) {
             try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
 
             for (apps, 0..) |app, i| {
@@ -174,14 +174,14 @@ pub const BarData = struct {
         var added = false;
 
         if (self.screendims.y - self.height <= pos.y) {
-            var newTop: ?u32 = null;
+            var new_top: ?u32 = null;
 
             for (windows.items, 0..) |*window, idx| {
                 const offset = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
 
-                const btnBnds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
+                const button_bounds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
 
-                if (btnBnds.contains(pos)) {
+                if (button_bounds.contains(pos)) {
                     if (window.data.active or window.data.min) {
                         window.data.min = !window.data.min;
                     }
@@ -189,14 +189,14 @@ pub const BarData = struct {
                         window.data.active = false;
                     } else {
                         window.data.active = true;
-                        newTop = @as(u32, @intCast(idx));
+                        new_top = @as(u32, @intCast(idx));
                     }
                 } else {
                     window.data.active = false;
                 }
             }
 
-            if (newTop) |top| {
+            if (new_top) |top| {
                 var swap = windows.orderedRemove(@as(usize, @intCast(top)));
                 try swap.data.contents.focus();
                 try windows.append(swap);
@@ -206,7 +206,7 @@ pub const BarData = struct {
         const apps = try getApps();
         defer allocator.alloc.free(apps);
 
-        if (self.btnActive) {
+        if (self.btn_active) {
             for (apps, 0..) |app, i| {
                 const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 const item = rect.newRect(36, y, 160, 67);
@@ -220,9 +220,9 @@ pub const BarData = struct {
             }
         }
 
-        self.btnActive = !self.btnActive and btn.contains(pos);
+        self.btn_active = !self.btn_active and btn.contains(pos);
         if (!btn.contains(pos)) {
-            self.btnActive = false;
+            self.btn_active = false;
         }
 
         const bnds = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
@@ -230,8 +230,7 @@ pub const BarData = struct {
         return bnds.contains(pos) or added;
     }
 
-    pub fn submitPopup(_: ?*files.File, data: *anyopaque) !void {
-        _ = data;
+    pub fn submitPopup(_: ?*files.File, _: *anyopaque) !void {
         c.glfwSetWindowShouldClose(gfx.gContext.window, 1);
     }
 
@@ -253,7 +252,7 @@ pub const BarData = struct {
 
         try addQuad(&result, 3, icon, rect.newRect(0, 0, 1, 1));
 
-        if (self.btnActive) {
+        if (self.btn_active) {
             const menu = rect.newRect(0, self.screendims.y - 466 - self.height, 300, 466);
 
             try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);

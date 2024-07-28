@@ -8,7 +8,7 @@ const font = @import("../util/font.zig");
 const allocator = @import("../util/allocator.zig");
 const fm = @import("../util/files.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const system_events = @import("../events/system.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 const audio = @import("../util/audio.zig");
@@ -17,19 +17,21 @@ const c = @import("../c.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
+
     const VERSION = std.fmt.comptimePrint("Boot" ++ font.EEE ++ " V_0.2.0\nFor Sand" ++ font.EEE ++ " " ++ options.VersionText, .{options.SandEEEVersion});
     const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
-
     const TOTAL_LINES = 10;
+
+    const DISK_LIST = "0123456789ABCDEF";
 
     face: *font.Font,
     font_shader: *shd.Shader,
     shader: *shd.Shader,
     logo_sprite: sp.Sprite,
     disk: *?[]u8,
-    blipSound: *audio.Sound,
-    selectSound: *audio.Sound,
-    audioMan: *audio.Audio,
+    blip_sound: *audio.Sound,
+    select_sound: *audio.Sound,
+    audio_manager: *audio.Audio,
 
     remaining: f32 = 10,
     sel: usize = 0,
@@ -48,8 +50,6 @@ pub const GSDisks = struct {
     pub fn sortDisksLt(_: u0, a: []const u8, b: []const u8) bool {
         return getDate(b) < getDate(a);
     }
-
-    const DISK_LIST = "0123456789ABCDEF";
 
     pub fn setup(self: *Self) !void {
         gfx.Context.instance.color = cols.newColor(0, 0, 0, 1);
@@ -104,7 +104,7 @@ pub const GSDisks = struct {
         if (self.auto) self.remaining -= dt;
 
         if (self.remaining <= 0) {
-            try self.audioMan.playSound(self.selectSound.*);
+            try self.audio_manager.playSound(self.select_sound.*);
             self.disk.* = null;
 
             if (self.disks.items.len > 2) {
@@ -117,22 +117,22 @@ pub const GSDisks = struct {
                 if (self.sel == self.disks.items.len - 1) {
                     c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
                 } else if (self.sel == self.disks.items.len - 2) {
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Recovery,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Recovery,
                     });
                 } else if (self.sel == self.disks.items.len - 3) {
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Installer,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Installer,
                     });
                 } else {
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Loading,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Loading,
                     });
                 }
             } else {
                 if (self.sel == 0) {
-                    try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                        .targetState = .Installer,
+                    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                        .target_state = .Installer,
                     });
                 } else {
                     c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
@@ -212,7 +212,7 @@ pub const GSDisks = struct {
                         self.start += 1;
                     }
                     self.sel += 1;
-                    try self.audioMan.playSound(self.blipSound.*);
+                    try self.audio_manager.playSound(self.blip_sound.*);
                 }
             },
             c.GLFW_KEY_UP => {
@@ -223,7 +223,7 @@ pub const GSDisks = struct {
                     }
 
                     self.sel -= 1;
-                    try self.audioMan.playSound(self.blipSound.*);
+                    try self.audio_manager.playSound(self.blip_sound.*);
                 }
             },
             else => {

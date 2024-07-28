@@ -13,8 +13,8 @@ const shd = @import("../util/shader.zig");
 const font = @import("../util/font.zig");
 const tex = @import("../util/texture.zig");
 const events = @import("../util/events.zig");
-const windowEvs = @import("../events/window.zig");
-const systemEvs = @import("../events/system.zig");
+const window_events = @import("../events/window.zig");
+const system_events = @import("../events/system.zig");
 const pseudo = @import("../system/pseudo/all.zig");
 const files = @import("../system/files.zig");
 const emails = @import("../system/mail.zig");
@@ -29,8 +29,8 @@ const notifications = @import("../drawers/notification2d.zig");
 const va = @import("../util/vertArray.zig");
 const telem = @import("../system/telem.zig");
 const c = @import("../c.zig");
-const vmManager = @import("../system/vmmanager.zig");
-const texMan = @import("../util/texmanager.zig");
+const vm_manager = @import("../system/vmmanager.zig");
+const texture_manager = @import("../util/texmanager.zig");
 const eln = @import("../util/eln.zig");
 
 const log = @import("../util/log.zig").log;
@@ -38,8 +38,8 @@ const log = @import("../util/log.zig").log;
 pub const GSWindowed = struct {
     const Self = @This();
 
-    dragmode: win.DragMode = .None,
-    draggingStart: vecs.Vector2 = vecs.newVec2(0, 0),
+    dragging_mode: win.DragMode = .None,
+    dragging_start: vecs.Vector2 = vecs.newVec2(0, 0),
     dragging_window: ?*win.Window = null,
     dragging_popup: ?*popups.Popup = null,
     down: bool = false,
@@ -48,15 +48,15 @@ pub const GSWindowed = struct {
     windows: std.ArrayList(win.Window) = undefined,
 
     notifs: std.ArrayList(notifications.Notification) = undefined,
-    openWindow: vecs.Vector2 = vecs.newVec2(0, 0),
+    open_window: vecs.Vector2 = vecs.newVec2(0, 0),
 
     wallpaper: *wall.Wallpaper,
     bar: bar.Bar,
     shader: *shd.Shader,
     font_shader: *shd.Shader,
-    clearShader: *shd.Shader,
+    clear_shader: *shd.Shader,
     face: *font.Font,
-    emailManager: *emails.EmailManager,
+    email_manager: *emails.EmailManager,
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
     init: bool = false,
@@ -69,28 +69,28 @@ pub const GSWindowed = struct {
     color: cols.Color = cols.newColor(0, 0, 0, 1),
     debug_enabled: bool = false,
 
-    pub var globalSelf: *Self = undefined;
+    pub var global_self: *Self = undefined;
 
-    fn createPopup(event: windowEvs.EventCreatePopup) !void {
-        try globalSelf.popups.append(event.popup);
+    fn createPopup(event: window_events.EventCreatePopup) !void {
+        try global_self.popups.append(event.popup);
     }
 
-    fn closePopup(event: windowEvs.EventClosePopup) !void {
-        const idx = for (globalSelf.popups.items, 0..) |_, idx| {
-            if (globalSelf.popups.items[idx].data.contents.ptr == event.popup_conts) {
+    fn closePopup(event: window_events.EventClosePopup) !void {
+        const idx = for (global_self.popups.items, 0..) |_, idx| {
+            if (global_self.popups.items[idx].data.contents.ptr == event.popup_conts) {
                 break idx;
             }
         } else null;
 
         if (idx) |remove_idx| {
-            var tmp_popup = globalSelf.popups.orderedRemove(remove_idx);
+            var tmp_popup = global_self.popups.orderedRemove(remove_idx);
             try tmp_popup.data.contents.deinit();
         }
     }
 
-    fn createWindow(event: windowEvs.EventCreateWindow) !void {
-        const draggingIdx = if (globalSelf.dragging_window) |dragging| blk: {
-            for (globalSelf.windows.items, 0..) |*window, idx| {
+    fn createWindow(event: window_events.EventCreateWindow) !void {
+        const dragging_idx = if (global_self.dragging_window) |dragging| blk: {
+            for (global_self.windows.items, 0..) |*window, idx| {
                 if (window == dragging) break :blk idx;
             }
             break :blk null;
@@ -98,34 +98,34 @@ pub const GSWindowed = struct {
 
         var target = vecs.newVec2(100, 100);
 
-        for (globalSelf.windows.items, 0..) |_, idx| {
-            globalSelf.windows.items[idx].data.active = false;
+        for (global_self.windows.items, 0..) |_, idx| {
+            global_self.windows.items[idx].data.active = false;
 
-            if (globalSelf.windows.items[idx].data.pos.x == 100 or globalSelf.windows.items[idx].data.pos.y == 100)
-                target = globalSelf.openWindow;
+            if (global_self.windows.items[idx].data.pos.x == 100 or global_self.windows.items[idx].data.pos.y == 100)
+                target = global_self.open_window;
         }
 
-        try globalSelf.windows.append(event.window);
+        try global_self.windows.append(event.window);
 
         if (event.center) {
             target.x = (gfx.Context.instance.size.x - event.window.data.pos.w) / 2;
             target.y = (gfx.Context.instance.size.y - event.window.data.pos.h) / 2;
         }
 
-        globalSelf.windows.items[globalSelf.windows.items.len - 1].data.pos.x = target.x;
-        globalSelf.windows.items[globalSelf.windows.items.len - 1].data.pos.y = target.y;
-        globalSelf.windows.items[globalSelf.windows.items.len - 1].data.idx = globalSelf.windows.items.len;
+        global_self.windows.items[global_self.windows.items.len - 1].data.pos.x = target.x;
+        global_self.windows.items[global_self.windows.items.len - 1].data.pos.y = target.y;
+        global_self.windows.items[global_self.windows.items.len - 1].data.idx = global_self.windows.items.len;
 
-        globalSelf.openWindow.x = target.x + 25;
-        globalSelf.openWindow.y = target.y + 25;
+        global_self.open_window.x = target.x + 25;
+        global_self.open_window.y = target.y + 25;
 
-        if (draggingIdx) |idx| globalSelf.dragging_window = &globalSelf.windows.items[idx];
+        if (dragging_idx) |idx| global_self.dragging_window = &global_self.windows.items[idx];
 
-        try globalSelf.windows.items[globalSelf.windows.items.len - 1].data.refresh();
+        try global_self.windows.items[global_self.windows.items.len - 1].data.refresh();
     }
 
-    pub fn notification(event: windowEvs.EventNotification) !void {
-        try globalSelf.notifs.append(
+    pub fn notification(event: window_events.EventNotification) !void {
+        try global_self.notifs.append(
             .{
                 .texture = "ui",
                 .data = .{
@@ -137,30 +137,30 @@ pub const GSWindowed = struct {
         );
     }
 
-    pub fn debugSet(event: systemEvs.EventDebugSet) !void {
-        if (!globalSelf.init) return;
+    pub fn debugSet(event: system_events.EventDebugSet) !void {
+        if (!global_self.init) return;
 
-        globalSelf.debug_enabled = event.enabled;
-        try globalSelf.emailManager.updateDebug();
+        global_self.debug_enabled = event.enabled;
+        try global_self.email_manager.updateDebug();
     }
 
-    pub fn settingSet(event: systemEvs.EventSetSetting) !void {
-        if (!globalSelf.init) return;
+    pub fn settingSet(event: system_events.EventSetSetting) !void {
+        if (!global_self.init) return;
 
         if (std.mem.eql(u8, event.setting, "wallpaper_color")) {
             if (event.value.len != 6) {
-                globalSelf.color.r = 0;
-                globalSelf.color.g = 0;
-                globalSelf.color.b = 0;
+                global_self.color.r = 0;
+                global_self.color.g = 0;
+                global_self.color.b = 0;
             } else {
-                globalSelf.color.r = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[0..2], 16) catch 0)) / 255;
-                globalSelf.color.g = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[2..4], 16) catch 0)) / 255;
-                globalSelf.color.b = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[4..6], 16) catch 0)) / 255;
+                global_self.color.r = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[0..2], 16) catch 0)) / 255;
+                global_self.color.g = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[2..4], 16) catch 0)) / 255;
+                global_self.color.b = @as(f32, @floatFromInt(std.fmt.parseInt(u8, event.value[4..6], 16) catch 0)) / 255;
             }
 
-            gfx.Context.instance.color = globalSelf.color;
+            gfx.Context.instance.color = global_self.color;
         } else if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
-            const texture = texMan.TextureManager.instance.get("wall") orelse return;
+            const texture = texture_manager.TextureManager.instance.get("wall") orelse return;
             tex.uploadTextureFile(texture, event.value) catch return;
         }
     }
@@ -168,7 +168,7 @@ pub const GSWindowed = struct {
     pub fn setup(self: *Self) !void {
         self.init = true;
 
-        popups.popupShader = self.shader;
+        popups.popup_shader = self.shader;
 
         // create lists
         self.windows = std.ArrayList(win.Window).init(allocator.alloc);
@@ -178,11 +178,11 @@ pub const GSWindowed = struct {
 
         gfx.Context.instance.color = self.color;
 
-        pseudo.win.windowsPtr = &self.windows;
+        pseudo.win.windows_ptr = &self.windows;
 
-        globalSelf = self;
+        global_self = self;
 
-        win.WindowContents.scrollSp[0] = .{
+        win.WindowContents.scroll_sp[0] = .{
             .texture = "ui",
             .data = .{
                 .source = rect.newRect(0, 0, 2.0 / 8.0, 2.0 / 8.0),
@@ -190,7 +190,7 @@ pub const GSWindowed = struct {
             },
         };
 
-        win.WindowContents.scrollSp[1] = .{
+        win.WindowContents.scroll_sp[1] = .{
             .texture = "ui",
             .data = .{
                 .source = rect.newRect(0, 2.0 / 8.0, 2.0 / 8.0, 1.0 / 8.0),
@@ -198,7 +198,7 @@ pub const GSWindowed = struct {
             },
         };
 
-        win.WindowContents.scrollSp[2] = .{
+        win.WindowContents.scroll_sp[2] = .{
             .texture = "ui",
             .data = .{
                 .source = rect.newRect(0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
@@ -206,7 +206,7 @@ pub const GSWindowed = struct {
             },
         };
 
-        win.WindowContents.scrollSp[3] = .{
+        win.WindowContents.scroll_sp[3] = .{
             .texture = "ui",
             .data = .{
                 .source = rect.newRect(0, 3.0 / 8.0, 2.0 / 8.0, 3.0 / 8.0),
@@ -217,12 +217,12 @@ pub const GSWindowed = struct {
         win.WindowContents.shader = self.shader;
         shell.shader = self.shader;
 
-        try events.EventManager.instance.registerListener(windowEvs.EventCreatePopup, createPopup);
-        try events.EventManager.instance.registerListener(windowEvs.EventClosePopup, closePopup);
-        try events.EventManager.instance.registerListener(windowEvs.EventCreateWindow, createWindow);
-        try events.EventManager.instance.registerListener(windowEvs.EventNotification, notification);
-        try events.EventManager.instance.registerListener(systemEvs.EventSetSetting, settingSet);
-        try events.EventManager.instance.registerListener(systemEvs.EventDebugSet, debugSet);
+        try events.EventManager.instance.registerListener(window_events.EventCreatePopup, createPopup);
+        try events.EventManager.instance.registerListener(window_events.EventClosePopup, closePopup);
+        try events.EventManager.instance.registerListener(window_events.EventCreateWindow, createWindow);
+        try events.EventManager.instance.registerListener(window_events.EventNotification, notification);
+        try events.EventManager.instance.registerListener(system_events.EventSetSetting, settingSet);
+        try events.EventManager.instance.registerListener(system_events.EventDebugSet, debugSet);
 
         if (conf.SettingManager.instance.getBool("show_welcome")) {
             const window = win.Window.new("win", win.WindowData{
@@ -242,7 +242,7 @@ pub const GSWindowed = struct {
                 .active = true,
             });
 
-            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = true });
+            try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = true });
         }
 
         self.desk.data.shell.root = files.home;
@@ -257,7 +257,7 @@ pub const GSWindowed = struct {
         try telem.Telem.load();
 
         telem.Telem.instance.logins += 1;
-        try self.emailManager.updateLogins(telem.Telem.instance.logins);
+        try self.email_manager.updateLogins(telem.Telem.instance.logins);
 
         if (conf.SettingManager.instance.get("startup_file")) |startupCmd| {
             self.shell = .{ .root = files.root };
@@ -273,7 +273,7 @@ pub const GSWindowed = struct {
         try telem.Telem.save();
 
         // save email data
-        try self.emailManager.saveStateFile("/_priv/emails.bin");
+        try self.email_manager.saveStateFile("/_priv/emails.bin");
 
         // close all windows
         for (self.windows.items) |*window| {
@@ -298,7 +298,7 @@ pub const GSWindowed = struct {
         // deinit lists
         self.windows.deinit();
         self.popups.deinit();
-        self.emailManager.deinit();
+        self.email_manager.deinit();
         self.notifs.deinit();
         files.deinit();
     }
@@ -310,8 +310,8 @@ pub const GSWindowed = struct {
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        if (self.openWindow.x > size.x - 500) self.openWindow.x = 100;
-        if (self.openWindow.y > size.y - 400) self.openWindow.y = 100;
+        if (self.open_window.x > size.x - 500) self.open_window.x = 100;
+        if (self.open_window.y > size.y - 400) self.open_window.y = 100;
 
         // setup vm data for update
         if (self.shell.vm != null) {
@@ -376,12 +376,12 @@ pub const GSWindowed = struct {
         try batch.SpriteBatch.instance.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
 
         // vm manager
-        try vmManager.VMManager.instance.update();
+        try vm_manager.VMManager.instance.update();
     }
 
     pub fn update(self: *Self, dt: f32) !void {
         for (self.windows.items, 0..) |*window, idx| {
-            if (window.data.shouldClose) {
+            if (window.data.should_close) {
                 if (self.dragging_window) |drag|
                     if (window == drag) {
                         self.dragging_window = null;
@@ -427,12 +427,12 @@ pub const GSWindowed = struct {
         for (self.windows.items, 0..) |_, idx| {
             if (self.windows.items[idx].data.min) continue;
 
-            const windowPos = self.windows.items[idx].data.pos;
+            const window_pos = self.windows.items[idx].data.pos;
             const pos = rect.Rectangle{
-                .x = windowPos.x - 10,
-                .y = windowPos.y - 10,
-                .w = windowPos.w + 20,
-                .h = windowPos.h + 20,
+                .x = window_pos.x - 10,
+                .y = window_pos.y - 10,
+                .w = window_pos.w + 20,
+                .h = window_pos.h + 20,
             };
 
             if (pos.contains(self.mousepos)) {
@@ -472,7 +472,7 @@ pub const GSWindowed = struct {
         };
 
         for (self.windows.items) |*window| {
-            if (!screen_bounds.contains_some(window.data.pos)) {
+            if (!screen_bounds.containsSome(window.data.pos)) {
                 window.data.pos.x = 100;
                 window.data.pos.y = 100;
             }
@@ -480,8 +480,8 @@ pub const GSWindowed = struct {
     }
 
     pub fn keypress(self: *Self, key: c_int, mods: c_int, down: bool) !void {
-        if (self.bar.data.btnActive and !down) {
-            self.bar.data.btnActive = false;
+        if (self.bar.data.btn_active and !down) {
+            self.bar.data.btn_active = false;
 
             return;
         }
@@ -511,7 +511,7 @@ pub const GSWindowed = struct {
                 .active = true,
             });
 
-            try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window, .center = false });
+            try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = false });
 
             return;
         }
@@ -524,7 +524,7 @@ pub const GSWindowed = struct {
     }
 
     pub fn keychar(self: *Self, code: u32, mods: c_int) !void {
-        if (self.bar.data.btnActive) return;
+        if (self.bar.data.btn_active) return;
 
         if (self.popups.items.len != 0) {
             const top_popup = &self.popups.items[0];
@@ -548,10 +548,10 @@ pub const GSWindowed = struct {
                 .Close => _ = self.popups.orderedRemove(0),
                 .Move => {
                     self.dragging_popup = &self.popups.items[0];
-                    self.dragmode = .Move;
+                    self.dragging_mode = .Move;
 
                     const start = self.dragging_popup.?.data.pos;
-                    self.draggingStart = vecs.newVec2(start.x - self.mousepos.x, start.y - self.mousepos.y);
+                    self.dragging_start = vecs.newVec2(start.x - self.mousepos.x, start.y - self.mousepos.y);
                 },
                 .None => {},
             }
@@ -563,7 +563,7 @@ pub const GSWindowed = struct {
             0 => {
                 if (try self.bar.data.doClick(&self.windows, self.shader, self.mousepos)) return;
 
-                var newTop: ?u32 = null;
+                var new_top: ?u32 = null;
 
                 for (self.windows.items, 0..) |_, idx| {
                     if (self.windows.items[idx].data.min) continue;
@@ -577,13 +577,13 @@ pub const GSWindowed = struct {
                     };
 
                     if (pos.contains(self.mousepos)) {
-                        newTop = @as(u32, @intCast(idx));
+                        new_top = @as(u32, @intCast(idx));
                     }
 
                     self.windows.items[idx].data.active = false;
                 }
 
-                if (newTop) |top| {
+                if (new_top) |top| {
                     var swap = self.windows.orderedRemove(@as(usize, @intCast(top)));
 
                     if (!swap.data.active) {
@@ -621,10 +621,10 @@ pub const GSWindowed = struct {
                         else => {
                             try self.windows.append(swap);
                             if (!swap.data.full) {
-                                self.dragmode = mode;
+                                self.dragging_mode = mode;
                                 self.dragging_window = &self.windows.items[self.windows.items.len - 1];
                                 const start = self.dragging_window.?.data.pos;
-                                self.draggingStart = switch (self.dragmode) {
+                                self.dragging_start = switch (self.dragging_mode) {
                                     win.DragMode.None => vecs.newVec2(0, 0),
                                     win.DragMode.Close => vecs.newVec2(0, 0),
                                     win.DragMode.Full => vecs.newVec2(0, 0),
@@ -676,9 +676,9 @@ pub const GSWindowed = struct {
         self.mousepos = pos;
 
         if (self.dragging_popup) |dragging| {
-            const winpos = pos.add(self.draggingStart);
+            const winpos = pos.add(self.dragging_start);
 
-            switch (self.dragmode) {
+            switch (self.dragging_mode) {
                 .Move => {
                     dragging.data.pos.x = winpos.x;
                     dragging.data.pos.y = winpos.y;
@@ -689,9 +689,9 @@ pub const GSWindowed = struct {
 
         if (self.dragging_window) |dragging| {
             const old = dragging.data.pos;
-            const winpos = pos.add(self.draggingStart);
+            const winpos = pos.add(self.dragging_start);
 
-            switch (self.dragmode) {
+            switch (self.dragging_mode) {
                 .None => {},
                 .Close => {},
                 .Full => {},
@@ -705,7 +705,7 @@ pub const GSWindowed = struct {
                 },
                 .ResizeL => {
                     dragging.data.pos.x = pos.x;
-                    dragging.data.pos.w = self.draggingStart.x - pos.x;
+                    dragging.data.pos.w = self.dragging_start.x - pos.x;
                 },
                 .ResizeB => {
                     dragging.data.pos.h = winpos.y;
@@ -716,7 +716,7 @@ pub const GSWindowed = struct {
                 },
                 .ResizeLB => {
                     dragging.data.pos.x = pos.x;
-                    dragging.data.pos.w = self.draggingStart.x - pos.x;
+                    dragging.data.pos.w = self.dragging_start.x - pos.x;
                     dragging.data.pos.h = winpos.y;
                 },
             }
@@ -743,7 +743,7 @@ pub const GSWindowed = struct {
                 }
             }
         }
-        if (self.down and self.dragmode == .None) {
+        if (self.down and self.dragging_mode == .None) {
             for (self.windows.items) |*window| {
                 if (!window.data.active) continue;
 
@@ -757,7 +757,7 @@ pub const GSWindowed = struct {
             }
         }
 
-        if (self.dragmode == .None) {
+        if (self.dragging_mode == .None) {
             for (self.windows.items) |*window| {
                 if (!window.data.active) continue;
                 try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
@@ -766,25 +766,25 @@ pub const GSWindowed = struct {
     }
 
     pub fn mousescroll(self: *Self, dir: vecs.Vector2) !void {
-        var newTop: ?u32 = null;
+        var new_top: ?u32 = null;
 
         for (self.windows.items, 0..) |_, idx| {
             if (self.windows.items[idx].data.min) continue;
 
-            const windowPos = self.windows.items[idx].data.pos;
+            const window_pos = self.windows.items[idx].data.pos;
             const pos = rect.Rectangle{
-                .x = windowPos.x - 10,
-                .y = windowPos.y - 10,
-                .w = windowPos.w + 20,
-                .h = windowPos.h + 20,
+                .x = window_pos.x - 10,
+                .y = window_pos.y - 10,
+                .w = window_pos.w + 20,
+                .h = window_pos.h + 20,
             };
 
             if (pos.contains(self.mousepos)) {
-                newTop = @as(u32, @intCast(idx));
+                new_top = @as(u32, @intCast(idx));
             }
         }
 
-        if (newTop) |top| {
+        if (new_top) |top| {
             try self.windows.items[top].data.contents.scroll(dir.x, dir.y);
         }
     }

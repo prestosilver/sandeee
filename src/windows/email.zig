@@ -13,7 +13,7 @@ const tex = @import("../util/texture.zig");
 const mail = @import("../system/mail.zig");
 const popups = @import("../drawers/popup2d.zig");
 const files = @import("../system/files.zig");
-const winEvs = @import("../events/window.zig");
+const window_events = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const vm = @import("../system/vm.zig");
 const log = @import("../util/log.zig").log;
@@ -23,7 +23,7 @@ const e_data = @import("../data/email.zig");
 const c = @import("../c.zig");
 
 pub var notif: sprite.Sprite = undefined;
-pub var emailManager: *mail.EmailManager = undefined;
+pub var email_manager: *mail.EmailManager = undefined;
 
 const EmailData = struct {
     const Self = @This();
@@ -42,7 +42,7 @@ const EmailData = struct {
 
     shader: *shd.Shader,
 
-    scrollTop: bool = false,
+    scroll_top: bool = false,
     box: usize = 0,
     viewing: ?*mail.EmailManager.Email = null,
     selected: ?*mail.EmailManager.Email = null,
@@ -61,7 +61,7 @@ const EmailData = struct {
         self.bnds = bnds.*;
 
         if (self.login == null) {
-            props.clearColor = col.newColorRGBA(192, 192, 192, 255);
+            props.clear_color = col.newColorRGBA(192, 192, 192, 255);
             if (self.login_error) |err| {
                 try font.draw(.{
                     .shader = font_shader,
@@ -155,22 +155,22 @@ const EmailData = struct {
             return;
         }
 
-        props.clearColor = col.newColorRGBA(255, 255, 255, 255);
+        props.clear_color = col.newColorRGBA(255, 255, 255, 255);
 
         if (props.scroll == null) {
             props.scroll = .{
-                .offsetStart = 0,
+                .offset_start = 0,
             };
         }
 
         self.offset = &props.scroll.?.value;
 
-        if (self.scrollTop) {
+        if (self.scroll_top) {
             props.scroll.?.value = 0;
-            self.scrollTop = false;
+            self.scroll_top = false;
         }
 
-        props.scroll.?.offsetStart = if (self.viewing == null) 0 else 38;
+        props.scroll.?.offset_start = if (self.viewing == null) 0 else 38;
 
         self.divx.data.size.y = bnds.h;
 
@@ -181,25 +181,25 @@ const EmailData = struct {
         if (self.viewing == null) {
             var y: f32 = bnds.y + 4.0 - props.scroll.?.value;
 
-            for (emailManager.emails.items) |*email| {
+            for (email_manager.emails.items) |*email| {
                 var inbox = false;
 
                 if (std.mem.eql(u8, email.from, self.login.?)) {
                     inbox = true;
 
-                    if (self.box != emailManager.boxes.len - 1) continue;
+                    if (self.box != email_manager.boxes.len - 1) continue;
                 } else if (email.box != self.box) continue;
                 var color = col.newColor(0, 0, 0, 1);
                 if (@import("builtin").mode == .Debug) {
-                    if (!emailManager.getEmailVisible(email, self.login.?)) color.a = 0.5;
+                    if (!email_manager.getEmailVisible(email, self.login.?)) color.a = 0.5;
                 } else {
-                    if (!emailManager.getEmailVisible(email, self.login.?)) continue;
+                    if (!email_manager.getEmailVisible(email, self.login.?)) continue;
                 }
 
                 const text = try std.fmt.allocPrint(allocator.alloc, "{s} - {s}", .{ email.from, email.subject });
                 defer allocator.alloc.free(text);
 
-                if (email.isComplete or inbox) {
+                if (email.is_complete or inbox) {
                     try font.draw(.{
                         .shader = font_shader,
                         .text = fnt.CHECK,
@@ -261,7 +261,7 @@ const EmailData = struct {
 
             try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, bnds.y + 44 + font.size * 2, 0));
 
-            const oldScissor = batch.SpriteBatch.instance.scissor;
+            const old_scissor = batch.SpriteBatch.instance.scissor;
             batch.SpriteBatch.instance.scissor.?.y = bnds.y + 48 + font.size * 2;
             batch.SpriteBatch.instance.scissor.?.h = bnds.h - 48 - font.size * 2;
 
@@ -272,7 +272,7 @@ const EmailData = struct {
                 .wrap = bnds.w - 116.0 - 20,
             });
 
-            batch.SpriteBatch.instance.scissor = oldScissor;
+            batch.SpriteBatch.instance.scissor = old_scissor;
 
             props.scroll.?.maxy = font.sizeText(.{
                 .text = email.contents,
@@ -280,11 +280,11 @@ const EmailData = struct {
             }).y;
         }
 
-        for (emailManager.boxes, 0..) |box, idx| {
+        for (email_manager.boxes, 0..) |box, idx| {
             const pos = vecs.newVec2(bnds.x + 2, bnds.y + font.size * @as(f32, @floatFromInt(idx)));
 
             if (idx == self.box) {
-                const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], emailManager.getPc(idx) });
+                const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], email_manager.getPc(idx) });
                 defer allocator.alloc.free(text);
 
                 try font.draw(.{
@@ -315,7 +315,7 @@ const EmailData = struct {
             .submit = &submit,
         };
 
-        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
             .popup = .{
                 .texture = "win",
                 .data = .{
@@ -402,57 +402,57 @@ const EmailData = struct {
                     const idx = std.mem.indexOf(u8, cond, "=") orelse cond.len - 1;
                     const name = cond[0..idx];
                     if (std.mem.eql(u8, name, "conts")) {
-                        const targetText = cond[idx + 1 ..];
-                        const targetConts = std.mem.trim(u8, conts, &.{'\n'});
+                        const target_text = cond[idx + 1 ..];
+                        const target_conts = std.mem.trim(u8, conts, &.{'\n'});
 
-                        good = good and std.ascii.eqlIgnoreCase(targetText, targetConts);
+                        good = good and std.ascii.eqlIgnoreCase(target_text, target_conts);
                     } else if (std.mem.eql(u8, name, "input")) {
                         input.clearAndFree();
                         try input.appendSlice(cond[idx + 1 ..]);
                     } else if (std.mem.eql(u8, name, "libfn")) {
                         libfn = cond[idx + 1 ..];
                     } else if (std.mem.eql(u8, name, "runs")) blk: {
-                        const targetText = cond[idx + 1 ..];
+                        const target_text = cond[idx + 1 ..];
 
                         if (libfn) |fnname| {
                             if (!std.mem.startsWith(u8, conts, "elib")) return;
-                            var libIdx: usize = 7;
-                            var startIdx: usize = 256 * @as(usize, @intCast(conts[4])) + @as(usize, @intCast(conts[5]));
+                            var library_idx: usize = 7;
+                            var start_idx: usize = 256 * @as(usize, @intCast(conts[4])) + @as(usize, @intCast(conts[5]));
 
                             for (0..@as(usize, @intCast(conts[6]))) |_| {
-                                const nameLen: usize = @intCast(conts[libIdx]);
-                                libIdx += 1;
-                                if (libIdx + nameLen < conts.len and std.mem.eql(u8, fnname, conts[libIdx .. libIdx + nameLen])) {
-                                    const fnsize = @as(usize, @intCast(conts[libIdx + 1 + nameLen])) * 256 + @as(usize, @intCast(conts[libIdx + 2 + nameLen]));
+                                const name_len: usize = @intCast(conts[library_idx]);
+                                library_idx += 1;
+                                if (library_idx + name_len < conts.len and std.mem.eql(u8, fnname, conts[library_idx .. library_idx + name_len])) {
+                                    const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
 
-                                    var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
-                                    defer vmInstance.deinit() catch {};
+                                    var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
+                                    defer vm_instance.deinit() catch {};
 
-                                    vmInstance.loadString(conts[startIdx .. startIdx + fnsize]) catch {
+                                    vm_instance.loadString(conts[start_idx .. start_idx + fnsize]) catch {
                                         return;
                                     };
-                                    vmInstance.retStack[0] = .{
+                                    vm_instance.return_stack[0] = .{
                                         .function = null,
-                                        .location = vmInstance.code.?.len + 1,
+                                        .location = vm_instance.code.?.len + 1,
                                     };
-                                    vmInstance.retRsp = 1;
+                                    vm_instance.return_rsp = 1;
 
-                                    vmInstance.runAll() catch {
+                                    vm_instance.runAll() catch {
                                         good = false;
                                         break :blk;
                                     };
 
-                                    const result = try vmInstance.popStack();
+                                    const result = try vm_instance.popStack();
 
-                                    good = good and result.data().* == .string and std.mem.eql(u8, result.data().string, targetText);
+                                    good = good and result.data().* == .string and std.mem.eql(u8, result.data().string, target_text);
 
                                     break :blk;
                                 }
-                                libIdx += 1 + nameLen;
-                                startIdx += @as(usize, @intCast(conts[libIdx])) * 256;
-                                libIdx += 1;
-                                startIdx += @intCast(conts[libIdx]);
-                                libIdx += 1;
+                                library_idx += 1 + name_len;
+                                start_idx += @as(usize, @intCast(conts[library_idx])) * 256;
+                                library_idx += 1;
+                                start_idx += @intCast(conts[library_idx]);
+                                library_idx += 1;
                             }
 
                             good = false;
@@ -471,12 +471,12 @@ const EmailData = struct {
                         try vmInstance.runAll();
                         const trimmed = std.mem.trimLeft(u8, vmInstance.out.items, " \n");
 
-                        good = good and std.ascii.endsWithIgnoreCase(trimmed, targetText);
+                        good = good and std.ascii.endsWithIgnoreCase(trimmed, target_text);
                     }
                 }
 
                 if (good) {
-                    try emailManager.setEmailComplete(selected);
+                    try email_manager.setEmailComplete(selected);
                 }
             }
         }
@@ -552,31 +552,31 @@ const EmailData = struct {
         switch (btn.?) {
             0 => {
                 if (self.viewing) |_| {
-                    const replyBnds = rect.newRect(104, 0, 32, 32);
-                    if (replyBnds.contains(mousepos)) {
+                    const reply_bnds = rect.newRect(104, 0, 32, 32);
+                    if (reply_bnds.contains(mousepos)) {
                         try self.submitFile();
                     }
 
-                    const backBnds = rect.newRect(144, 0, 32, 32);
-                    if (backBnds.contains(mousepos)) {
+                    const back_bnds = rect.newRect(144, 0, 32, 32);
+                    if (back_bnds.contains(mousepos)) {
                         self.viewing = null;
                         return;
                     }
                 }
 
-                const contBnds = rect.newRect(102, 0, size.x - 102, size.y);
-                if (contBnds.contains(mousepos)) {
+                const cont_bnds = rect.newRect(102, 0, size.x - 102, size.y);
+                if (cont_bnds.contains(mousepos)) {
                     if (self.viewing != null) return;
 
                     var y: i32 = 2 - @as(i32, @intFromFloat(self.offset.*));
 
-                    for (emailManager.emails.items) |*email| {
+                    for (email_manager.emails.items) |*email| {
                         if (std.mem.eql(u8, email.from, self.login.?)) {
-                            if (self.box != emailManager.boxes.len - 1) continue;
+                            if (self.box != email_manager.boxes.len - 1) continue;
                         } else if (email.box != self.box) continue;
 
                         if (@import("builtin").mode != .Debug) {
-                            if (!emailManager.getEmailVisible(email, self.login.?)) continue;
+                            if (!email_manager.getEmailVisible(email, self.login.?)) continue;
                         }
 
                         const bnds = rect.newRect(102, @as(f32, @floatFromInt(y)), size.x - 102, self.rowsize);
@@ -585,10 +585,10 @@ const EmailData = struct {
 
                         if (bnds.contains(mousepos)) {
                             if (self.selected != null and email == self.selected.?) {
-                                try emailManager.viewEmail(email);
+                                try email_manager.viewEmail(email);
                                 self.selected = null;
                                 self.viewing = email;
-                                self.scrollTop = true;
+                                self.scroll_top = true;
                             } else {
                                 self.selected = email;
                             }
@@ -602,12 +602,12 @@ const EmailData = struct {
                         self.box = @as(u8, @intCast(@as(i32, @intFromFloat(id + 0.5))));
 
                         self.viewing = null;
-                        self.scrollTop = true;
+                        self.scroll_top = true;
 
                         if (self.box < 0) {
                             self.box = 0;
-                        } else if (self.box > emailManager.boxes.len - 1) {
-                            self.box = emailManager.boxes.len - 1;
+                        } else if (self.box > email_manager.boxes.len - 1) {
+                            self.box = email_manager.boxes.len - 1;
                         }
                     }
                 }

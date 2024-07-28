@@ -18,7 +18,7 @@ pub const GSCrash = struct {
     face: *font.Font,
     font_shader: *shd.Shader,
 
-    prevState: *u8,
+    prev_state: *u8,
 
     sad_sprite: sp.Sprite,
 
@@ -54,12 +54,12 @@ pub const GSCrash = struct {
             .wrap = size.x - 400,
         }).y;
 
-        const stateLine = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prevState.*});
-        defer allocator.alloc.free(stateLine);
+        const state_text = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prev_state.*});
+        defer allocator.alloc.free(state_text);
 
         try self.face.draw(.{
             .shader = self.font_shader,
-            .text = stateLine,
+            .text = state_text,
             .pos = vecs.newVec2(300, 100 + self.face.size * 1 + offset),
             .color = cols.newColor(1, 1, 1, 1),
             .wrap = size.x - 400,

@@ -25,7 +25,7 @@ pub const Sound = struct {
     }
 };
 
-const bgSound = @embedFile("../sounds/bg.era");
+const background_sound = @embedFile("../sounds/bg.era");
 
 pub const Audio = struct {
     pub const SOURCES = 30;
@@ -76,9 +76,9 @@ pub const Audio = struct {
             .bg = undefined,
         };
 
-        const devicename = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
+        const device_name = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
 
-        result.device = c.alcOpenDevice(devicename);
+        result.device = c.alcOpenDevice(device_name);
 
         result.context = c.alcCreateContext(result.device, null);
 
@@ -97,7 +97,7 @@ pub const Audio = struct {
         c.alAuxiliaryEffectSloti.?(result.slot, c.AL_EFFECTSLOT_AUXILIARY_SEND_AUTO, c.AL_TRUE);
         c.alAuxiliaryEffectSloti.?(result.slot, c.AL_EFFECTSLOT_EFFECT, @intCast(result.effect));
 
-        const bgData = Sound.init(bgSound);
+        const background_data = Sound.init(background_sound);
 
         // generate sources for sfx
         c.alGenSources(SOURCES, &result.sources);
@@ -110,7 +110,7 @@ pub const Audio = struct {
         c.alSourcei(result.bg, c.AL_LOOPING, c.AL_TRUE);
         c.alSourcef(result.bg, c.AL_GAIN, 0.5);
 
-        c.alSourcei(result.bg, c.AL_BUFFER, @intCast(bgData.buffer));
+        c.alSourcei(result.bg, c.AL_BUFFER, @intCast(background_data.buffer));
 
         c.alSourcePlay(result.bg);
 
@@ -120,10 +120,10 @@ pub const Audio = struct {
     pub fn playSound(self: *Audio, snd: Sound) !void {
         if (self.muted) return;
 
-        var sourceState: c.ALint = 0;
+        var source_state: c.ALint = 0;
 
-        c.alGetSourcei(self.sources[self.next], c.AL_SOURCE_STATE, &sourceState);
-        if (sourceState != c.AL_PLAYING) {
+        c.alGetSourcei(self.sources[self.next], c.AL_SOURCE_STATE, &source_state);
+        if (source_state != c.AL_PLAYING) {
             c.alSource3i(self.sources[self.next], c.AL_AUXILIARY_SEND_FILTER, @intCast(self.slot), 0, c.AL_FILTER_NULL);
             c.alSourcei(self.sources[self.next], c.AL_BUFFER, @as(c_int, @intCast(snd.buffer)));
             c.alSourcef(self.sources[self.next], c.AL_GAIN, self.volume);

@@ -66,10 +66,10 @@ pub fn create(_: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
 
         stack -= INSTRUCTION_TYPES[inst].stack_in;
 
-        var dataType = rnd.random().int(u8) % 3;
+        var data_type = rnd.random().int(u8) % 3;
 
-        while (!INSTRUCTION_TYPES[inst].params[dataType]) {
-            dataType = rnd.random().int(u8) % 3;
+        while (!INSTRUCTION_TYPES[inst].params[data_type]) {
+            data_type = rnd.random().int(u8) % 3;
         }
 
         if (INSTRUCTION_TYPES[inst].cstack[0])
@@ -78,7 +78,7 @@ pub fn create(_: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
         if (INSTRUCTION_TYPES[inst].cstack[1])
             cstack -= 1;
 
-        switch (dataType) {
+        switch (data_type) {
             else => {
                 if (idx + 2 >= buffer.len) break;
                 buffer[idx + 0] = inst;

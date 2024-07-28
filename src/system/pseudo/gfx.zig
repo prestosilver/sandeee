@@ -11,24 +11,24 @@ const vecs = @import("../../math/vecs.zig");
 const gfx = @import("../../util/graphics.zig");
 const vm = @import("../vm.zig");
 const sb = @import("../../util/spritebatch.zig");
-const texMan = @import("../../util/texmanager.zig");
+const texture_manager = @import("../../util/texmanager.zig");
 const cols = @import("../../math/colors.zig");
 
-pub var texIdx: u8 = 0;
+pub var texture_idx: u8 = 0;
 
 pub fn readGfxNew(_: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
 
-    result[0] = texIdx;
+    result[0] = texture_idx;
 
     {
         gfx.Context.makeCurrent();
         defer gfx.Context.makeNotCurrent();
 
-        try texMan.TextureManager.instance.put(result, try tex.newTextureSize(vecs.newVec2(0, 0)));
+        try texture_manager.TextureManager.instance.put(result, try tex.newTextureSize(vecs.newVec2(0, 0)));
     }
 
-    texIdx = texIdx +% 1;
+    texture_idx = texture_idx +% 1;
 
     return result;
 }
@@ -45,7 +45,7 @@ pub fn readGfxDestroy(_: ?*vm.VM) files.FileError![]const u8 {
 
 pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) files.FileError!void {
     const idx = data[0];
-    const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
+    const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
 
     {
         gfx.Context.makeCurrent();
@@ -54,10 +54,10 @@ pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) files.FileError!void {
         texture.deinit();
     }
 
-    const key = texMan.TextureManager.instance.textures.getKeyPtr(&.{idx}) orelse return;
+    const key = texture_manager.TextureManager.instance.textures.getKeyPtr(&.{idx}) orelse return;
     allocator.alloc.free(key.*);
 
-    _ = texMan.TextureManager.instance.textures.removeByPtr(key);
+    _ = texture_manager.TextureManager.instance.textures.removeByPtr(key);
 }
 
 // /fake/gfx/upload
@@ -70,7 +70,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) files.FileError!void {
     if (data.len == 1) {
         const idx = data[0];
 
-        const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
+        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
 
         gfx.Context.makeCurrent();
         defer gfx.Context.makeNotCurrent();
@@ -83,7 +83,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) files.FileError!void {
     const idx = data[0];
     const image = data[1..];
 
-    const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
+    const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
 
     tex.uploadTextureMem(texture, image) catch {
         return error.InvalidPsuedoData;
@@ -96,13 +96,13 @@ pub fn readGfxSave(_: ?*vm.VM) files.FileError![]const u8 {
     return allocator.alloc.alloc(u8, 0);
 }
 
-pub fn writeGfxSave(data: []const u8, vmInstance: ?*vm.VM) files.FileError!void {
+pub fn writeGfxSave(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
     const idx = data[0];
     const image = data[1..];
 
-    const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
+    const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
 
-    if (vmInstance) |vmi| {
+    if (vm_instance) |vmi| {
         try vmi.root.newFile(image);
 
         const conts = try std.mem.concat(allocator.alloc, u8, &.{
@@ -127,7 +127,7 @@ pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) files.FileError!void {
     const idx = data[0];
     var tmp = data[1..];
 
-    const texture = texMan.TextureManager.instance.get(&.{idx}) orelse return;
+    const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
 
     while (tmp.len > 7) {
         const x = std.mem.bytesToValue(u16, tmp[0..2]);
@@ -157,8 +157,8 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     var file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/new", .{}),
-        .pseudoRead = readGfxNew,
-        .pseudoWrite = writeGfxNew,
+        .pseudo_read = readGfxNew,
+        .pseudo_write = writeGfxNew,
         .parent = undefined,
     };
 
@@ -167,8 +167,8 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/pixel", .{}),
-        .pseudoRead = readGfxPixel,
-        .pseudoWrite = writeGfxPixel,
+        .pseudo_read = readGfxPixel,
+        .pseudo_write = writeGfxPixel,
         .parent = undefined,
     };
 
@@ -177,8 +177,8 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/destroy", .{}),
-        .pseudoRead = readGfxDestroy,
-        .pseudoWrite = writeGfxDestroy,
+        .pseudo_read = readGfxDestroy,
+        .pseudo_write = writeGfxDestroy,
         .parent = undefined,
     };
 
@@ -187,8 +187,8 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/upload", .{}),
-        .pseudoRead = readGfxUpload,
-        .pseudoWrite = writeGfxUpload,
+        .pseudo_read = readGfxUpload,
+        .pseudo_write = writeGfxUpload,
         .parent = undefined,
     };
 
@@ -197,8 +197,8 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/save", .{}),
-        .pseudoRead = readGfxSave,
-        .pseudoWrite = writeGfxSave,
+        .pseudo_read = readGfxSave,
+        .pseudo_write = writeGfxSave,
         .parent = undefined,
     };
 

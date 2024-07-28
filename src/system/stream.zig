@@ -14,32 +14,31 @@ pub const FileStream = struct {
     contents: []u8,
     offset: u32,
     updated: bool,
-    vmInstance: ?*vm.VM,
+    vm_instance: ?*vm.VM,
 
-    pub fn Open(root: *files.Folder, path: []const u8, vmInstance: ?*vm.VM) StreamError!*FileStream {
+    pub fn open(root: *files.Folder, path: []const u8, vm_instance: ?*vm.VM) StreamError!*FileStream {
         if (path.len == 0) return error.FileMissing;
 
         const folder = if (path[0] == '/') files.root else root;
         const file = try folder.getFile(path);
 
         const result = try allocator.alloc.create(FileStream);
+        const conts = try file.read(vm_instance);
 
-        result.path = try allocator.alloc.dupe(u8, file.name);
-        const cont = try file.read(vmInstance);
-        result.contents = try allocator.alloc.dupe(u8, cont);
-        result.updated = false;
-        result.vmInstance = vmInstance;
+        defer if (file.pseudo_read) |_| allocator.alloc.free(conts);
 
-        result.offset = 0;
-
-        if (file.pseudoRead != null) {
-            allocator.alloc.free(cont);
-        }
+        result.* = .{
+            .path = try allocator.alloc.dupe(u8, file.name),
+            .contents = try allocator.alloc.dupe(u8, conts),
+            .updated = false,
+            .vm_instance = vm_instance,
+            .offset = 0,
+        };
 
         return result;
     }
 
-    pub fn Read(self: *FileStream, len: u32) StreamError![]const u8 {
+    pub fn read(self: *FileStream, len: u32) StreamError![]const u8 {
         const target = @min(self.contents.len - self.offset, len);
 
         const input = self.contents[self.offset .. self.offset + target];
@@ -51,7 +50,7 @@ pub const FileStream = struct {
         return result;
     }
 
-    pub fn Write(self: *FileStream, data: []const u8) StreamError!void {
+    pub fn write(self: *FileStream, data: []const u8) StreamError!void {
         const targetsize = self.offset + data.len;
 
         self.contents = try allocator.alloc.realloc(self.contents, targetsize);
@@ -62,14 +61,14 @@ pub const FileStream = struct {
         self.updated = true;
     }
 
-    pub fn Flush(self: *FileStream) StreamError!void {
+    pub fn flush(self: *FileStream) StreamError!void {
         if (self.updated)
-            try files.root.writeFile(self.path, self.contents, self.vmInstance);
+            try files.root.writeFile(self.path, self.contents, self.vm_instance);
         self.updated = false;
     }
 
-    pub fn Close(self: *FileStream) StreamError!void {
-        try self.Flush();
+    pub fn close(self: *FileStream) StreamError!void {
+        try self.flush();
         allocator.alloc.free(self.contents);
         allocator.alloc.free(self.path);
         allocator.alloc.destroy(self);

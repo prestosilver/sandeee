@@ -38,8 +38,8 @@ pub const ObjectRef = struct {
     }
 
     pub fn deinit(self: ObjectRef) void {
-        freeLock.lock();
-        defer freeLock.unlock();
+        free_lock.lock();
+        defer free_lock.unlock();
 
         if (objects.items[self.id].data == .free) {
             log.err("Double Free", .{});
@@ -55,16 +55,16 @@ pub const ObjectRef = struct {
         }
 
         self.data().* = .{
-            .free = freeRef,
+            .free = free_ref,
         };
 
-        freeRef = self;
+        free_ref = self;
     }
 };
 
 var objects = std.ArrayList(Object).init(allocator.alloc);
-var freeRef: ?ObjectRef = null;
-var freeLock = std.Thread.Mutex{};
+var free_ref: ?ObjectRef = null;
+var free_lock = std.Thread.Mutex{};
 
 pub fn find(addr: usize) ?ObjectRef {
     if (addr >= objects.items.len) return null;
@@ -76,11 +76,11 @@ pub fn find(addr: usize) ?ObjectRef {
 }
 
 pub fn new(data: ObjectData) !ObjectRef {
-    freeLock.lock();
-    defer freeLock.unlock();
+    free_lock.lock();
+    defer free_lock.unlock();
 
-    if (freeRef) |result| {
-        freeRef = objects.items[result.id].data.free;
+    if (free_ref) |result| {
+        free_ref = objects.items[result.id].data.free;
         objects.items[result.id].data = data;
 
         return result;
@@ -111,7 +111,7 @@ pub fn clean() !void {
 
     objects.shrinkAndFree(new_size);
 
-    var prev_ref = &freeRef;
+    var prev_ref = &free_ref;
 
     for (objects.items, 0..) |*entry, id| {
         if (entry.data == .free) {

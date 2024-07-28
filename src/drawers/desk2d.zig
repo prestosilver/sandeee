@@ -10,12 +10,11 @@ const fnt = @import("../util/font.zig");
 const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
 const events = @import("../util/events.zig");
-const windowEvs = @import("../events/window.zig");
 const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
-const winEvs = @import("../events/window.zig");
+const window_events = @import("../events/window.zig");
 const popups = @import("popup2d.zig");
 
 const SPACING = vecs.newVec2(128, 100);
@@ -71,10 +70,10 @@ pub const DeskData = struct {
         var position = vecs.newVec2(0, 0);
         var idx: usize = 0;
 
-        const subFolders = try files.home.getFolders();
-        defer allocator.alloc.free(subFolders);
+        const sub_folders = try files.home.getFolders();
+        defer allocator.alloc.free(sub_folders);
 
-        for (subFolders) |folder| {
+        for (sub_folders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
@@ -90,11 +89,11 @@ pub const DeskData = struct {
                         .active = true,
                     });
 
-                    const explorerSelf: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
+                    const explorer_self: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
 
-                    explorerSelf.shell.root = folder;
+                    explorer_self.shell.root = folder;
 
-                    try events.EventManager.instance.sendEvent(windowEvs.EventCreateWindow{ .window = window });
+                    try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
                     self.sel = null;
 
@@ -108,10 +107,10 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        const subFiles = try files.home.getFiles();
-        defer allocator.alloc.free(subFiles);
+        const sub_files = try files.home.getFiles();
+        defer allocator.alloc.free(sub_files);
 
-        for (subFiles) |file| {
+        for (sub_files) |file| {
             if (!checkIconSkip(file.name)) continue;
 
             if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
@@ -132,7 +131,7 @@ pub const DeskData = struct {
                             .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
                         };
 
-                        try events.EventManager.instance.sendEvent(winEvs.EventCreatePopup{
+                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                             .global = true,
                             .popup = .{
                                 .texture = "win",
@@ -174,10 +173,10 @@ pub const DeskData = struct {
         var position = vecs.newVec2(0, 0);
         var idx: usize = 0;
 
-        const subFolders = try files.home.getFolders();
-        defer allocator.alloc.free(subFolders);
+        const sub_folders = try files.home.getFolders();
+        defer allocator.alloc.free(sub_folders);
 
-        for (subFolders) |folder| {
+        for (sub_folders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             try addQuad(&result, 1, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
@@ -192,10 +191,10 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        const subFiles = try files.home.getFiles();
-        defer allocator.alloc.free(subFiles);
+        const sub_files = try files.home.getFiles();
+        defer allocator.alloc.free(sub_files);
 
-        for (subFiles) |file| {
+        for (sub_files) |file| {
             if (!checkIconSkip(file.name)) continue;
 
             try addQuad(&result, 0, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
@@ -236,28 +235,28 @@ pub const DeskData = struct {
     }
 
     pub fn addText(_: *DeskData, font_shader: *shd.Shader, font: *fnt.Font) !void {
-        const textColor = gfx.Context.instance.color.contrast();
+        const text_color = gfx.Context.instance.color.contrast();
 
         var position = vecs.newVec2(0, 0);
 
-        const subFolders = try files.home.getFolders();
-        defer allocator.alloc.free(subFolders);
+        const sub_folders = try files.home.getFolders();
+        defer allocator.alloc.free(sub_folders);
 
-        for (subFolders) |folder| {
+        for (sub_folders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
-            try addIconText(position, folder.name[0 .. folder.name.len - 1], font_shader, font, textColor);
+            try addIconText(position, folder.name[0 .. folder.name.len - 1], font_shader, font, text_color);
 
             updatePos(&position);
         }
 
-        const subFiles = try files.home.getFiles();
-        defer allocator.alloc.free(subFiles);
+        const sub_files = try files.home.getFiles();
+        defer allocator.alloc.free(sub_files);
 
-        for (subFiles) |file| {
+        for (sub_files) |file| {
             if (!checkIconSkip(file.name)) continue;
 
-            try addIconText(position, file.name, font_shader, font, textColor);
+            try addIconText(position, file.name, font_shader, font, text_color);
 
             updatePos(&position);
         }

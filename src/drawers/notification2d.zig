@@ -40,8 +40,7 @@ pub const NotificationData = struct {
         self.time = @max(@as(f32, 0), self.time - dt);
     }
 
-    pub fn getVerts(self: *const NotificationData, pos: vecs.Vector3) !va.VertArray {
-        _ = self;
+    pub fn getVerts(_: *const NotificationData, pos: vecs.Vector3) !va.VertArray {
         const target2d = gfx.Context.instance.size.sub(.{ .x = 260, .y = 100 + 80 * pos.x });
 
         var result = try va.VertArray.init(9 * 6);
@@ -55,13 +54,13 @@ pub const NotificationData = struct {
     }
 
     pub fn drawContents(self: *NotificationData, shader: *shd.Shader, font: *fnt.Font, font_shader: *shd.Shader, idx: usize) !void {
-        const deskSize = gfx.Context.instance.size;
+        const desk_size = gfx.Context.instance.size;
 
         if (self.icon) |*icon| {
             icon.data.size.x = 60;
             icon.data.size.y = 60;
 
-            const pos = deskSize.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
+            const pos = desk_size.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
 
             try batch.SpriteBatch.instance.draw(
                 spr.Sprite,
@@ -74,7 +73,7 @@ pub const NotificationData = struct {
         try font.draw(.{
             .shader = font_shader,
             .text = self.title,
-            .pos = deskSize.sub(.{ .x = 180, .y = 100 + 80 * @as(f32, @floatFromInt(idx)) }),
+            .pos = desk_size.sub(.{ .x = 180, .y = 100 + 80 * @as(f32, @floatFromInt(idx)) }),
             .color = cols.newColor(0, 0, 0, 1),
             .wrap = 160,
             .maxlines = 1,
@@ -83,7 +82,7 @@ pub const NotificationData = struct {
         try font.draw(.{
             .shader = font_shader,
             .text = self.text,
-            .pos = deskSize.sub(.{ .x = 180, .y = 100 - font.size + 80 * @as(f32, @floatFromInt(idx)) }),
+            .pos = desk_size.sub(.{ .x = 180, .y = 100 - font.size + 80 * @as(f32, @floatFromInt(idx)) }),
             .color = cols.newColor(0, 0, 0, 1),
             .wrap = 160,
             .maxlines = 3,

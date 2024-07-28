@@ -4,7 +4,7 @@ const vecs = @import("../math/vecs.zig");
 pub const GameState = struct {
     const Self = @This();
 
-    pub const VTable = struct {
+    pub const Vtable = struct {
         setup: *const fn (*anyopaque) anyerror!void,
         deinit: *const fn (*anyopaque) anyerror!void,
         refresh: *const fn (*anyopaque) anyerror!void,
@@ -19,19 +19,19 @@ pub const GameState = struct {
     };
 
     ptr: *anyopaque,
-    vtable: *const VTable,
-    isSetup: bool,
+    vtable: *const Vtable,
+    is_setup: bool,
 
     pub fn setup(state: *Self) anyerror!void {
-        if (!state.isSetup)
+        if (!state.is_setup)
             try state.vtable.setup(state.ptr);
-        state.isSetup = true;
+        state.is_setup = true;
     }
 
     pub fn deinit(state: *Self) anyerror!void {
-        if (state.isSetup)
+        if (state.is_setup)
             try state.vtable.deinit(state.ptr);
-        state.isSetup = false;
+        state.is_setup = false;
     }
 
     pub fn refresh(state: *Self) anyerror!void {
@@ -164,7 +164,7 @@ pub const GameState = struct {
                 }
             }
 
-            const vtable = VTable{
+            const vtable = Vtable{
                 .setup = setupImpl,
                 .deinit = deinitImpl,
                 .refresh = refreshImpl,
@@ -182,7 +182,7 @@ pub const GameState = struct {
         return .{
             .ptr = ptr,
             .vtable = &gen.vtable,
-            .isSetup = false,
+            .is_setup = false,
         };
     }
 };

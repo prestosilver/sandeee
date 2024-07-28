@@ -10,11 +10,11 @@ const files = @import("../../system/files.zig");
 const vecs = @import("../../math/vecs.zig");
 const fnt = @import("../../util/font.zig");
 const events = @import("../../util/events.zig");
-const windowEvs = @import("../../events/window.zig");
+const window_events = @import("../../events/window.zig");
 const popups = @import("../../drawers/popup2d.zig");
 const c = @import("../../c.zig");
 
-var outlineSprites = [_]spr.Sprite{
+var outline_sprites = [_]spr.Sprite{
     .{
         .texture = "ui",
         .data = spr.SpriteData.new(
@@ -50,14 +50,14 @@ pub const PopupConfirm = struct {
     };
 
     pub fn createButtonsFromStruct(comptime T: anytype) []const ConfirmButton {
-        const typeInfo = @typeInfo(T);
-        if (typeInfo != .Struct)
+        const type_info = @typeInfo(T);
+        if (type_info != .Struct)
             @compileError("expected struct");
 
         const len: usize = comptime blk: {
             var len: usize = 0;
 
-            for (typeInfo.Struct.decls) |decl| {
+            for (type_info.Struct.decls) |decl| {
                 const info = @typeInfo(@TypeOf(@field(T, decl.name)));
                 if (info != .Fn) {
                     continue;
@@ -73,7 +73,7 @@ pub const PopupConfirm = struct {
 
             var idx = 0;
 
-            for (typeInfo.Struct.decls) |decl| {
+            for (type_info.Struct.decls) |decl| {
                 const info = @typeInfo(@TypeOf(@field(T, decl.name)));
                 if (info != .Fn)
                     continue;
@@ -98,7 +98,7 @@ pub const PopupConfirm = struct {
     buttons: []const ConfirmButton,
     shader: *shd.Shader,
 
-    singleWidth: f32 = 1,
+    single_width: f32 = 1,
 
     pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
         const midy = bnds.y + bnds.h / 2;
@@ -110,26 +110,26 @@ pub const PopupConfirm = struct {
             .color = cols.newColor(0, 0, 0, 1),
         });
 
-        self.singleWidth = bnds.w / @as(f32, @floatFromInt(self.buttons.len));
+        self.single_width = bnds.w / @as(f32, @floatFromInt(self.buttons.len));
 
         for (self.buttons, 0..) |btn, idx| {
             const width = font.sizeText(.{
                 .text = btn.text,
             }).x;
 
-            const startx = ((self.singleWidth - width) / 2) + bnds.x + (self.singleWidth) * @as(f32, @floatFromInt(idx));
+            const startx = ((self.single_width - width) / 2) + bnds.x + (self.single_width) * @as(f32, @floatFromInt(idx));
 
-            outlineSprites[0].data.size = vecs.Vector2{
+            outline_sprites[0].data.size = vecs.Vector2{
                 .x = width + 10,
                 .y = font.size + 8,
             };
-            outlineSprites[1].data.size = vecs.Vector2{
+            outline_sprites[1].data.size = vecs.Vector2{
                 .x = width + 6,
                 .y = font.size + 4,
             };
 
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &outlineSprites[0], self.shader, vecs.newVec3(startx - 4, midy - 4, 0.0));
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &outlineSprites[1], self.shader, vecs.newVec3(startx - 2, midy - 2, 0.0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &outline_sprites[0], self.shader, vecs.newVec3(startx - 4, midy - 4, 0.0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &outline_sprites[1], self.shader, vecs.newVec3(startx - 2, midy - 2, 0.0));
 
             try font.draw(.{
                 .shader = shader,
@@ -143,12 +143,12 @@ pub const PopupConfirm = struct {
     }
 
     pub fn click(self: *Self, pos: vecs.Vector2) !void {
-        const idx: usize = @intFromFloat(pos.x / self.singleWidth);
+        const idx: usize = @intFromFloat(pos.x / self.single_width);
 
         if (idx > self.buttons.len) return;
 
         try self.buttons[idx].calls(self.data);
-        try events.EventManager.instance.sendEvent(windowEvs.EventClosePopup{
+        try events.EventManager.instance.sendEvent(window_events.EventClosePopup{
             .popup_conts = self,
         });
     }

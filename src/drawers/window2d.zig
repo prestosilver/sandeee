@@ -36,7 +36,7 @@ pub const WindowContents = struct {
 
     pub const WindowProps = struct {
         const ScrollData = struct {
-            offsetStart: f32 = 0,
+            offset_start: f32 = 0,
             value: f32 = 0,
             maxy: f32 = 0,
         };
@@ -58,7 +58,7 @@ pub const WindowContents = struct {
             .max = null,
         },
         close: bool = false,
-        clearColor: cols.Color,
+        clear_color: cols.Color,
 
         no_min: bool = false,
         no_close: bool = false,
@@ -71,7 +71,7 @@ pub const WindowContents = struct {
         }
     };
 
-    const VTable = struct {
+    const Vtable = struct {
         draw: *const fn (*anyopaque, *shd.Shader, *rect.Rectangle, *fnt.Font, *WindowProps) anyerror!void,
         click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, ?i32) anyerror!void,
         key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
@@ -86,7 +86,7 @@ pub const WindowContents = struct {
         deinit: *const fn (*anyopaque) anyerror!void,
     };
 
-    pub var scrollSp: [4]spr.Sprite = undefined;
+    pub var scroll_sp: [4]spr.Sprite = undefined;
     pub var shader: *shd.Shader = undefined;
 
     props: WindowProps,
@@ -94,29 +94,29 @@ pub const WindowContents = struct {
     scrolling: bool = false,
 
     ptr: *anyopaque,
-    vtable: *const VTable,
+    vtable: *const Vtable,
 
     pub fn drawScroll(self: *Self, bnds: *rect.Rectangle) !void {
-        if (self.props.scroll) |scrolldat| {
-            if (scrolldat.maxy <= 0) return;
+        if (self.props.scroll) |scroll_data| {
+            if (scroll_data.maxy <= 0) return;
 
-            const scrollPc = scrolldat.value / scrolldat.maxy;
+            const scroll_pc = scroll_data.value / scroll_data.maxy;
 
-            scrollSp[1].data.size.y = bnds.h - scrolldat.offsetStart - (20 * 2 - 2) + 2;
+            scroll_sp[1].data.size.y = bnds.h - scroll_data.offset_start - (20 * 2 - 2) + 2;
 
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scrollSp[0], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scrolldat.offsetStart, 0));
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scrollSp[1], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scrolldat.offsetStart + 20, 0));
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scrollSp[2], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + bnds.h - 20 + 2, 0));
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scrollSp[3], shader, vecs.newVec3(bnds.x + bnds.w - 20, (bnds.h - scrolldat.offsetStart - (20 * 2) - 30 + 4) * scrollPc + bnds.y + scrolldat.offsetStart + 20 - 2, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[0], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scroll_data.offset_start, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[1], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scroll_data.offset_start + 20, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[2], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + bnds.h - 20 + 2, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[3], shader, vecs.newVec3(bnds.x + bnds.w - 20, (bnds.h - scroll_data.offset_start - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + scroll_data.offset_start + 20 - 2, 0));
         }
     }
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
-        if (self.props.scroll) |*scrollData| {
-            if (scrollData.value > scrollData.maxy)
-                scrollData.value = scrollData.maxy;
-            if (scrollData.value < 0)
-                scrollData.value = 0;
+        if (self.props.scroll) |*scroll_data| {
+            if (scroll_data.value > scroll_data.maxy)
+                scroll_data.value = scroll_data.maxy;
+            if (scroll_data.value < 0)
+                scroll_data.value = 0;
         }
 
         try self.vtable.draw(self.ptr, font_shader, bnds, font, &self.props);
@@ -125,11 +125,11 @@ pub const WindowContents = struct {
 
     pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
         if (keycode == c.GLFW_KEY_PAGE_UP) {
-            if (self.props.scroll) |*scrollData|
-                scrollData.value -= 1 * SCROLL_MUL;
+            if (self.props.scroll) |*scroll_data|
+                scroll_data.value -= 1 * SCROLL_MUL;
         } else if (keycode == c.GLFW_KEY_PAGE_DOWN) {
-            if (self.props.scroll) |*scrollData|
-                scrollData.value += 1 * SCROLL_MUL;
+            if (self.props.scroll) |*scroll_data|
+                scroll_data.value += 1 * SCROLL_MUL;
         } else {
             return self.vtable.key(self.ptr, keycode, mods, down);
         }
@@ -141,11 +141,11 @@ pub const WindowContents = struct {
 
     pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
         if (btn) |_| {
-            if (self.props.scroll) |*scrollData| {
+            if (self.props.scroll) |*scroll_data| {
                 self.scrolling = false;
-                if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scrollData.offsetStart + 14) {
-                    const pc = (mousepos.y - 14 - scrollData.offsetStart) / (size.y - 28 - scrollData.offsetStart);
-                    scrollData.value = std.math.round(scrollData.maxy * pc);
+                if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scroll_data.offset_start + 14) {
+                    const pc = (mousepos.y - 14 - scroll_data.offset_start) / (size.y - 28 - scroll_data.offset_start);
+                    scroll_data.value = std.math.round(scroll_data.maxy * pc);
                     self.scrolling = true;
                     return;
                 }
@@ -158,7 +158,7 @@ pub const WindowContents = struct {
     pub fn drag(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2) !void {
         if (self.props.scroll) |*scroll_data| {
             if (self.scrolling) {
-                const pc = (mousepos.y - 14 - scroll_data.offsetStart) / (size.y - 28 - scroll_data.offsetStart);
+                const pc = (mousepos.y - 14 - scroll_data.offset_start) / (size.y - 28 - scroll_data.offset_start);
                 scroll_data.value = std.math.round(scroll_data.maxy * pc);
 
                 return;
@@ -197,7 +197,7 @@ pub const WindowContents = struct {
         return self.vtable.deinit(self.ptr);
     }
 
-    pub fn init(ptr: anytype, kind: []const u8, name: []const u8, clearColor: cols.Color) !Self {
+    pub fn init(ptr: anytype, kind: []const u8, name: []const u8, clear_color: cols.Color) !Self {
         const Ptr = @TypeOf(ptr);
         const ptr_info = @typeInfo(Ptr);
 
@@ -289,7 +289,7 @@ pub const WindowContents = struct {
                 }
             }
 
-            const vtable = VTable{
+            const vtable = Vtable{
                 .draw = drawImpl,
                 .key = keyImpl,
                 .char = charImpl,
@@ -310,7 +310,7 @@ pub const WindowContents = struct {
                     .kind = kind,
                     .name = try allocator.alloc.dupe(u8, name),
                 },
-                .clearColor = clearColor,
+                .clear_color = clear_color,
             },
             .vtable = &gen.vtable,
         };
@@ -326,7 +326,7 @@ pub const WindowData = struct {
     full: bool = false,
     min: bool = false,
     idx: usize = 0,
-    shouldClose: bool = false,
+    should_close: bool = false,
 
     contents: WindowContents,
 
@@ -472,11 +472,11 @@ pub const WindowData = struct {
     }
 
     pub fn drawContents(self: *WindowData, shader: *shd.Shader, font: *fnt.Font) !void {
-        const deskSize = gfx.Context.instance.size;
+        const desk_size = gfx.Context.instance.size;
 
         if (self.full) {
-            self.pos.w = deskSize.x;
-            self.pos.h = deskSize.y - 38;
+            self.pos.w = desk_size.x;
+            self.pos.h = desk_size.y - 38;
             self.pos.x = 0;
             self.pos.y = 0;
         }
@@ -492,7 +492,7 @@ pub const WindowData = struct {
             .texture = "",
             .verts = try va.VertArray.init(0),
             .shader = shader.*,
-            .clear = self.contents.props.clearColor,
+            .clear = self.contents.props.clear_color,
         });
 
         try self.contents.draw(shader, &bnds, font);

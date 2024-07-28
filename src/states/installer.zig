@@ -9,7 +9,7 @@ const font = @import("../util/font.zig");
 const allocator = @import("../util/allocator.zig");
 const c = @import("../c.zig");
 const events = @import("../util/events.zig");
-const systemEvs = @import("../events/system.zig");
+const system_events = @import("../events/system.zig");
 const files = @import("../system/files.zig");
 const audio = @import("../util/audio.zig");
 
@@ -26,7 +26,7 @@ pub const GSInstall = struct {
         Done,
     };
 
-    const Settings = [_][3][]const u8{
+    const SETTINGS = [_][3][]const u8{
         .{ "What is the current Hour", "", "00" },
         .{ "What is the current Minute", "", "00" },
         .{ "Do you want to keep the CRT Shader", "crt_shader", "Yes" },
@@ -39,47 +39,48 @@ pub const GSInstall = struct {
     face: *font.Font,
     font_shader: *shd.Shader,
     load_sprite: sp.Sprite,
-    selectSound: *audio.Sound,
-    audioMan: *audio.Audio,
+    select_sound: *audio.Sound,
+    audio_manager: *audio.Audio,
 
-    settingValues: [Settings.len][MAX_VALUE_LEN]u8 = undefined,
-    settingLens: [Settings.len]u8 = [_]u8{0} ** Settings.len,
+    setting_values: [SETTINGS.len][MAX_VALUE_LEN]u8 = undefined,
+    setting_lengths: [SETTINGS.len]u8 = [_]u8{0} ** SETTINGS.len,
+    setting_id: usize = 0,
+
     timer: f32 = 1,
-    settingId: usize = 0,
     status: Status = .Naming,
-    diskName: std.ArrayList(u8) = undefined,
+    disk_name: std.ArrayList(u8) = undefined,
     offset: f32 = 0,
 
     pub fn setup(self: *Self) !void {
         gfx.Context.instance.color = cols.newColor(0, 0, 0.5, 1);
 
-        @memset(&self.settingLens, 0);
+        @memset(&self.setting_lengths, 0);
 
-        self.settingId = 0;
+        self.setting_id = 0;
         self.offset = 0;
         self.timer = 1;
         self.status = .Naming;
-        self.diskName = std.ArrayList(u8).init(allocator.alloc);
+        self.disk_name = std.ArrayList(u8).init(allocator.alloc);
         self.load_sprite.data.color.b = 0;
     }
 
     pub fn updateSettingsVals(self: *Self) ![]const u8 {
         const ts = std.time.timestamp();
-        const aHours = @as(u64, @intCast(ts)) / std.time.s_per_hour % 24;
-        const aMins = @as(u64, @intCast(ts)) / std.time.s_per_min % 60;
-        const inputHours = std.fmt.parseInt(i8, self.settingValues[0][0..self.settingLens[0]], 0) catch 0;
-        const inputMins = std.fmt.parseInt(i8, self.settingValues[1][0..self.settingLens[1]], 0) catch 0;
+        const system_hours = @as(u64, @intCast(ts)) / std.time.s_per_hour % 24;
+        const system_minutes = @as(u64, @intCast(ts)) / std.time.s_per_min % 60;
+        const input_hours = std.fmt.parseInt(i8, self.setting_values[0][0..self.setting_lengths[0]], 0) catch 0;
+        const input_minutes = std.fmt.parseInt(i8, self.setting_values[1][0..self.setting_lengths[1]], 0) catch 0;
 
-        const hoursOffset = @as(i8, @intCast(aHours)) - inputHours;
-        const minsOffset = @as(i8, @intCast(aMins)) - inputMins;
+        const hours_offset = @as(i8, @intCast(system_hours)) - input_hours;
+        const minutes_offset = @as(i8, @intCast(system_minutes)) - input_minutes;
 
-        var result = try std.fmt.allocPrint(allocator.alloc, "hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hoursOffset, minsOffset });
-        for (Settings[2..], self.settingValues[2..], self.settingLens[2..]) |setting, value, len| {
-            const oldResult = result;
-            defer allocator.alloc.free(oldResult);
+        var result = try std.fmt.allocPrint(allocator.alloc, "hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hours_offset, minutes_offset });
+        for (SETTINGS[2..], self.setting_values[2..], self.setting_lengths[2..]) |setting, value, len| {
+            const old_result = result;
+            defer allocator.alloc.free(old_result);
 
             const val = if (len == 0) setting[2] else value[0..len];
-            result = try std.fmt.allocPrint(allocator.alloc, "{s}{s} = \"{s}\"\n", .{ oldResult, setting[1], val });
+            result = try std.fmt.allocPrint(allocator.alloc, "{s}{s} = \"{s}\"\n", .{ old_result, setting[1], val });
         }
 
         return result;
@@ -89,11 +90,11 @@ pub const GSInstall = struct {
         var y: f32 = 100 - self.offset;
         defer self.offset = @max(@as(f32, 0), (y + self.offset) - (size.y - 100));
 
-        const titleLine = try std.fmt.allocPrint(allocator.alloc, "Sand" ++ font.EEE ++ " Installer v_{s}", .{VERSION});
-        defer allocator.alloc.free(titleLine);
+        const title_text = try std.fmt.allocPrint(allocator.alloc, "Sand" ++ font.EEE ++ " Installer v_{s}", .{VERSION});
+        defer allocator.alloc.free(title_text);
         try self.face.draw(.{
             .shader = self.font_shader,
-            .text = titleLine,
+            .text = title_text,
             .pos = vecs.newVec2(100, y),
             .color = cols.newColor(1, 1, 1, 1),
         });
@@ -109,7 +110,7 @@ pub const GSInstall = struct {
 
         try self.face.draw(.{
             .shader = self.font_shader,
-            .text = self.diskName.items,
+            .text = self.disk_name.items,
             .pos = vecs.newVec2(100, y),
             .color = cols.newColor(1, 1, 1, 1),
         });
@@ -117,12 +118,12 @@ pub const GSInstall = struct {
         if (@intFromEnum(self.status) < @intFromEnum(Status.Settings)) return;
 
         y += self.face.size * 2;
-        for (0..self.settingId + 1) |idx| {
-            if (idx > Settings.len) return;
+        for (0..self.setting_id + 1) |idx| {
+            if (idx > SETTINGS.len) return;
             const text = try std.fmt.allocPrint(allocator.alloc, "{s}?\n  [Def: {s}] {s}", .{
-                Settings[idx][0],
-                Settings[idx][2],
-                self.settingValues[idx][0..self.settingLens[idx]],
+                SETTINGS[idx][0],
+                SETTINGS[idx][2],
+                self.setting_values[idx][0..self.setting_lengths[idx]],
             });
             defer allocator.alloc.free(text);
 
@@ -166,12 +167,12 @@ pub const GSInstall = struct {
         });
         y += self.face.size * 1;
 
-        const rebootLine = try std.fmt.allocPrint(allocator.alloc, "Rebooting in {}", .{@as(u32, @intFromFloat(0.5 + self.timer))});
-        defer allocator.alloc.free(rebootLine);
+        const reboot_text = try std.fmt.allocPrint(allocator.alloc, "Rebooting in {}", .{@as(u32, @intFromFloat(0.5 + self.timer))});
+        defer allocator.alloc.free(reboot_text);
 
         try self.face.draw(.{
             .shader = self.font_shader,
-            .text = rebootLine,
+            .text = reboot_text,
             .pos = vecs.newVec2(100, y),
             .color = cols.newColor(1, 1, 1, 1),
         });
@@ -187,15 +188,15 @@ pub const GSInstall = struct {
                 const vals = try self.updateSettingsVals();
                 defer allocator.alloc.free(vals);
 
-                try files.Folder.setupDisk(self.diskName.items, vals);
+                try files.Folder.setupDisk(self.disk_name.items, vals);
             }
         } else if (self.status == .Done) {
             self.timer -= dt;
             if (self.timer < 0) {
                 self.timer = 0;
 
-                try events.EventManager.instance.sendEvent(systemEvs.EventStateChange{
-                    .targetState = .Disks,
+                try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+                    .target_state = .Disks,
                 });
             }
         }
@@ -204,13 +205,13 @@ pub const GSInstall = struct {
     pub fn appendChar(self: *Self, char: u8) !void {
         switch (self.status) {
             .Naming => {
-                if (self.diskName.items.len < MAX_VALUE_LEN)
-                    try self.diskName.append(char);
+                if (self.disk_name.items.len < MAX_VALUE_LEN)
+                    try self.disk_name.append(char);
             },
             .Settings => {
-                if (self.settingLens[self.settingId] < MAX_VALUE_LEN) {
-                    self.settingValues[self.settingId][self.settingLens[self.settingId]] = char;
-                    self.settingLens[self.settingId] += 1;
+                if (self.setting_lengths[self.setting_id] < MAX_VALUE_LEN) {
+                    self.setting_values[self.setting_id][self.setting_lengths[self.setting_id]] = char;
+                    self.setting_lengths[self.setting_id] += 1;
                 }
             },
             else => {},
@@ -220,11 +221,11 @@ pub const GSInstall = struct {
     pub fn removeChar(self: *Self) !void {
         switch (self.status) {
             .Naming => {
-                _ = self.diskName.popOrNull();
+                _ = self.disk_name.popOrNull();
             },
             .Settings => {
-                if (self.settingLens[self.settingId] > 0) {
-                    self.settingLens[self.settingId] -= 1;
+                if (self.setting_lengths[self.setting_id] > 0) {
+                    self.setting_lengths[self.setting_id] -= 1;
                 }
             },
             else => {},
@@ -259,28 +260,28 @@ pub const GSInstall = struct {
             c.GLFW_KEY_ENTER => {
                 switch (self.status) {
                     .Naming => {
-                        try self.audioMan.playSound(self.selectSound.*);
+                        try self.audio_manager.playSound(self.select_sound.*);
 
-                        if (self.diskName.items.len == 0) return;
-                        if (std.mem.containsAtLeast(u8, self.diskName.items, 1, ".")) {
-                            if (!std.mem.endsWith(u8, self.diskName.items, ".eee")) return;
+                        if (self.disk_name.items.len == 0) return;
+                        if (std.mem.containsAtLeast(u8, self.disk_name.items, 1, ".")) {
+                            if (!std.mem.endsWith(u8, self.disk_name.items, ".eee")) return;
                         } else {
-                            try self.diskName.appendSlice(".eee");
+                            try self.disk_name.appendSlice(".eee");
                         }
                         self.status = .Settings;
                     },
                     .Settings => {
-                        try self.audioMan.playSound(self.selectSound.*);
+                        try self.audio_manager.playSound(self.select_sound.*);
 
-                        if (self.settingLens[self.settingId] == 0) {
-                            self.settingLens[self.settingId] = @as(u8, @intCast(Settings[self.settingId][2].len));
-                            @memcpy(self.settingValues[self.settingId][0..self.settingLens[self.settingId]], Settings[self.settingId][2]);
+                        if (self.setting_lengths[self.setting_id] == 0) {
+                            self.setting_lengths[self.setting_id] = @as(u8, @intCast(SETTINGS[self.setting_id][2].len));
+                            @memcpy(self.setting_values[self.setting_id][0..self.setting_lengths[self.setting_id]], SETTINGS[self.setting_id][2]);
                         }
 
-                        self.settingId += 1;
-                        if (self.settingId >= Settings.len) {
+                        self.setting_id += 1;
+                        if (self.setting_id >= SETTINGS.len) {
                             self.status = .Installing;
-                            self.settingId -= 1;
+                            self.setting_id -= 1;
                         }
                     },
                     else => {},

@@ -1,13 +1,13 @@
 const std = @import("std");
 
-const DocHeader: []const u8 =
+const DOC_HEADER: []const u8 =
     \\#Style @/style.eds
     \\:logo: [@/logo.eia]
     \\
     \\
 ;
 
-const DocFooter =
+const DOC_FOOTER =
     \\
     \\:center: --- EEE Sees all ---
 ;
@@ -72,7 +72,7 @@ pub const DocStep = struct {
 
                     var reader = input_file.reader();
 
-                    _ = try output_file.write(DocHeader);
+                    _ = try output_file.write(DOC_HEADER);
 
                     while (try reader.readUntilDelimiterOrEofAlloc(b.allocator, '\n', 1024)) |line| {
                         defer b.allocator.free(line);
@@ -90,7 +90,7 @@ pub const DocStep = struct {
                         _ = try output_file.write("\n");
                     }
 
-                    _ = try output_file.write(DocFooter);
+                    _ = try output_file.write(DOC_FOOTER);
                 },
                 else => {
                     continue;
