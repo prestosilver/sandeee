@@ -132,7 +132,7 @@ pub const GSDisks = struct {
             } else {
                 if (self.sel == 0) {
                     try events.EventManager.instance.sendEvent(system_events.EventStateChange{
-                        .target_state = .Installer,
+                        .targetState = .Installer,
                     });
                 } else {
                     c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
@@ -228,6 +228,7 @@ pub const GSDisks = struct {
             },
             else => {
                 if (c.glfwGetKeyName(key, 0) == null) return;
+
                 for (self.disks.items, 0..) |disk, idx| {
                     if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
                         self.sel = idx;
