@@ -56,49 +56,45 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exit_fail: bool, logging: ?std.fs
 
         allocator.alloc.free(prompt);
 
-        var data: []const u8 = undefined;
+        if (to_run) |runs| {
+            var iter = std.mem.split(u8, runs, "\n");
 
-        if (to_run) |command| {
-            const idx = std.mem.indexOf(u8, command, "\n");
-            if (idx) |index| {
-                data = command[0..index];
-                to_run = command[index + 1 ..];
-            } else {
-                data = command;
-                to_run = null;
-            }
-            _ = try stdout.write(data);
-            _ = try stdout.write("\n");
-        } else {
-            data = try stdin.readUntilDelimiter(&buffer, '\n');
-        }
+            while (iter.next()) |data| {
+                _ = try stdout.write(data);
+                _ = try stdout.write("\n");
 
-        const command = std.mem.trim(u8, data, "\r\n ");
+                const command = std.mem.trim(u8, data, "\r\n ");
 
-        const result = main_shell.run(command) catch |err| {
-            const msg = @errorName(err);
+                const result = main_shell.run(command) catch |err| {
+                    const msg = @errorName(err);
 
-            _ = try stdout.write("Error: ");
-            _ = try stdout.write(msg);
-            _ = try stdout.write("\n");
-
-            if (exit_fail) {
-                return err;
-            }
-
-            continue;
-        };
-
-        defer allocator.alloc.free(result.data);
-
-        if (result.exit) {
-            break;
-        } else {
-            if (result.data.len != 0) {
-                _ = try stdout.write(result.data);
-                if (result.data[result.data.len - 1] != '\n')
+                    _ = try stdout.write("Error: ");
+                    _ = try stdout.write(msg);
                     _ = try stdout.write("\n");
+
+                    if (exit_fail) {
+                        return err;
+                    }
+
+                    continue;
+                };
+
+                defer allocator.alloc.free(result.data);
+
+                if (result.exit) {
+                    break;
+                } else {
+                    if (result.data.len != 0) {
+                        _ = try stdout.write(result.data);
+                        if (result.data[result.data.len - 1] != '\n')
+                            _ = try stdout.write("\n");
+                    }
+                }
             }
+
+            to_run = null;
+        } else {
+            to_run = try stdin.readUntilDelimiter(&buffer, '\n');
         }
     }
 
@@ -107,7 +103,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exit_fail: bool, logging: ?std.fs
 
 test "Headless scripts" {
     vm_manager.VMManager.init();
-    defer vm_manager.VMManager.deinit();
+    defer vm_manager.VMManager.instance.deinit();
 
     vm_manager.VMManager.vm_time = 1.0;
     vm_manager.VMManager.last_frame_time = 10.0;
