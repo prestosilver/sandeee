@@ -25,7 +25,7 @@ pub const FileStream = struct {
         const result = try allocator.alloc.create(FileStream);
         const conts = try file.read(vm_instance);
 
-        defer if (file.pseudo_read) |_| allocator.alloc.free(conts);
+        defer if (file.data != .Disk) allocator.alloc.free(conts);
 
         result.* = .{
             .path = try allocator.alloc.dupe(u8, file.name),

@@ -157,8 +157,12 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     var file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/new", .{}),
-        .pseudo_read = readGfxNew,
-        .pseudo_write = writeGfxNew,
+        .data = .{
+            .Pseudo = .{
+                .pseudo_read = readGfxNew,
+                .pseudo_write = writeGfxNew,
+            },
+        },
         .parent = undefined,
     };
 
@@ -167,8 +171,12 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/pixel", .{}),
-        .pseudo_read = readGfxPixel,
-        .pseudo_write = writeGfxPixel,
+        .data = .{
+            .Pseudo = .{
+                .pseudo_read = readGfxPixel,
+                .pseudo_write = writeGfxPixel,
+            },
+        },
         .parent = undefined,
     };
 
@@ -177,8 +185,12 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/destroy", .{}),
-        .pseudo_read = readGfxDestroy,
-        .pseudo_write = writeGfxDestroy,
+        .data = .{
+            .Pseudo = .{
+                .pseudo_read = readGfxDestroy,
+                .pseudo_write = writeGfxDestroy,
+            },
+        },
         .parent = undefined,
     };
 
@@ -187,8 +199,12 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/upload", .{}),
-        .pseudo_read = readGfxUpload,
-        .pseudo_write = writeGfxUpload,
+        .data = .{
+            .Pseudo = .{
+                .pseudo_read = readGfxUpload,
+                .pseudo_write = writeGfxUpload,
+            },
+        },
         .parent = undefined,
     };
 
@@ -197,8 +213,12 @@ pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/save", .{}),
-        .pseudo_read = readGfxSave,
-        .pseudo_write = writeGfxSave,
+        .data = .{
+            .Pseudo = .{
+                .pseudo_read = readGfxSave,
+                .pseudo_write = writeGfxSave,
+            },
+        },
         .parent = undefined,
     };
 

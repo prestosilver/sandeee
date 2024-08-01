@@ -107,8 +107,12 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
     var file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/inp/char", .{}),
-        .pseudo_read = readInputChar,
-        .pseudo_write = writeInputChar,
+        .data = .{
+            .Pseudo = .{
+                .pseudo_read = readInputChar,
+                .pseudo_write = writeInputChar,
+            },
+        },
         .parent = undefined,
     };
 
@@ -117,8 +121,12 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/inp/win", .{}),
-        .pseudo_read = readInputWin,
-        .pseudo_write = writeInputWin,
+        .data = .{
+            .Pseudo = .{
+                .pseudo_read = readInputWin,
+                .pseudo_write = writeInputWin,
+            },
+        },
         .parent = undefined,
     };
 
@@ -127,8 +135,12 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
     file = try allocator.alloc.create(files.File);
     file.* = .{
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/inp/mouse", .{}),
-        .pseudo_read = readInputMouse,
-        .pseudo_write = writeInputMouse,
+        .data = .{
+            .Pseudo = .{
+                .pseudo_read = readInputMouse,
+                .pseudo_write = writeInputMouse,
+            },
+        },
         .parent = undefined,
     };
 

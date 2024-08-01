@@ -31,7 +31,7 @@ pub const FileError = error{
     FileNotFound,
 
     OutOfMemory,
-} || std.fs.File.ReadError || error{StreamTooLong};
+} || std.fs.File.SeekError || std.fs.File.ReadError || std.fs.File.WriteError || error{StreamTooLong};
 
 pub const DiskError = error{
     BadDiskSize,
@@ -45,45 +45,95 @@ pub const DiskError = error{
 } || FileError || std.fs.File.ReadError;
 
 pub const File = struct {
+    const FileKind = enum {
+        Os,
+        Disk,
+        Pseudo,
+    };
+
+    const FileData = union(FileKind) {
+        Os: std.fs.File,
+        Disk: []u8,
+        Pseudo: struct {
+            pseudo_write: *const fn ([]const u8, ?*vm.VM) FileError!void,
+            pseudo_read: *const fn (?*vm.VM) FileError![]const u8,
+        },
+    };
+
     parent: *Folder,
     name: []const u8,
-    contents: ?[]u8 = null,
 
-    pseudo_write: ?*const fn ([]const u8, ?*vm.VM) FileError!void = null,
-    pseudo_read: ?*const fn (?*vm.VM) FileError![]const u8 = null,
+    data: FileData,
 
-    pub fn size(self: *const File) usize {
-        if (self.pseudo_read != null) return 0;
-        return self.contents.?.len;
-    }
-
-    pub inline fn write(self: *File, contents: []const u8, vm_instance: ?*vm.VM) FileError!void {
-        if (self.pseudo_write) |pseudo_write| {
-            return pseudo_write(contents, vm_instance);
-        } else {
-            self.contents.? = try allocator.alloc.realloc(self.contents.?, contents.len);
-            @memcpy(self.contents.?, contents);
+    pub fn size(self: *const File) FileError!usize {
+        switch (self.data) {
+            .Os => |os_file| {
+                const stat = try os_file.stat();
+                return stat.size;
+            },
+            .Disk => |disk_file| {
+                return disk_file.len;
+            },
+            .Pseudo => {
+                return 0;
+            },
         }
     }
 
-    pub inline fn read(self: *const File, vm_instance: ?*vm.VM) ![]const u8 {
-        if (self.pseudo_read) |pseudo_read| {
-            return pseudo_read(vm_instance);
-        } else {
-            return self.contents.?;
+    pub inline fn write(self: *File, contents: []const u8, vm_instance: ?*vm.VM) FileError!void {
+        switch (self.data) {
+            .Os => |os_file| {
+                try os_file.writeAll(contents);
+            },
+            .Disk => |*disk_file| {
+                disk_file.* = try allocator.alloc.realloc(disk_file.*, contents.len);
+                @memcpy(disk_file.*, contents);
+            },
+            .Pseudo => |pseudo_file| {
+                try pseudo_file.pseudo_write(contents, vm_instance);
+            },
+        }
+    }
+
+    pub inline fn read(self: *const File, vm_instance: ?*vm.VM) FileError![]const u8 {
+        switch (self.data) {
+            .Os => |os_file| {
+                const stat = try os_file.stat();
+                const result = try allocator.alloc.alloc(u8, stat.size);
+
+                try os_file.seekTo(0);
+                _ = try os_file.readAll(result);
+
+                return result;
+            },
+            .Disk => |*disk_file| {
+                return disk_file.*;
+            },
+            .Pseudo => |pseudo_file| {
+                return try pseudo_file.pseudo_read(vm_instance);
+            },
         }
     }
 
     pub fn deinit(self: *File) void {
         allocator.alloc.free(self.name);
-        if (self.contents) |cont|
-            allocator.alloc.free(cont);
+        switch (self.data) {
+            .Os => |os_file| {
+                os_file.close();
+            },
+            .Disk => |disk_file| {
+                allocator.alloc.free(disk_file);
+            },
+            else => {},
+        }
+
         allocator.alloc.destroy(self);
     }
 
     pub fn copyTo(self: *File, target: *Folder) FileError!void {
         if (self.parent.protected) return error.FolderProtected;
         if (target.protected) return error.FolderProtected;
+        if (self.data != .Disk) return error.InvalidFileName;
 
         const last_idx = std.mem.lastIndexOf(u8, self.name, "/") orelse return error.InvalidFileName;
         const name = self.name[last_idx + 1 ..];
@@ -92,7 +142,9 @@ pub const File = struct {
         clone.* = .{
             .parent = target,
             .name = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ target.name, name }),
-            .contents = try allocator.alloc.dupe(u8, self.contents.?),
+            .data = .{
+                .Disk = try allocator.alloc.dupe(u8, self.data.Disk),
+            },
         };
 
         try target.contents.append(clone);
@@ -323,12 +375,14 @@ pub const Folder = struct {
         std.mem.writeInt(u32, &len, @as(u32, @intCast(files.items.len)), .big);
         _ = try writer.write(&len);
         for (files.items) |file| {
+            if (file.data != .Disk) continue;
+
             std.mem.writeInt(u32, &len, @as(u32, @intCast(file.name.len)), .big);
             _ = try writer.write(&len);
             _ = try writer.write(file.name);
-            std.mem.writeInt(u32, &len, @as(u32, @intCast(file.contents.?.len)), .big);
+            std.mem.writeInt(u32, &len, @as(u32, @intCast(file.data.Disk.len)), .big);
             _ = try writer.write(&len);
-            _ = try writer.write(file.contents.?);
+            _ = try writer.write(file.data.Disk);
         }
     }
 
@@ -357,7 +411,9 @@ pub const Folder = struct {
                         const sub_file = try allocator.alloc.create(File);
                         sub_file.* = .{
                             .parent = self,
-                            .contents = try file_reader.reader().readAllAlloc(allocator.alloc, std.math.maxInt(usize)),
+                            .data = .{
+                                .Disk = try file_reader.reader().readAllAlloc(allocator.alloc, std.math.maxInt(usize)),
+                            },
                             .name = try allocator.alloc.dupe(u8, fullname),
                         };
 
@@ -481,8 +537,10 @@ pub const Folder = struct {
         const adds = try allocator.alloc.create(File);
         adds.* = .{
             .name = fullname,
-            .contents = cont,
             .parent = folder,
+            .data = .{
+                .Disk = cont,
+            },
         };
         try folder.contents.append(adds);
 
@@ -631,12 +689,14 @@ pub const Folder = struct {
             }
 
             if (os_folder.dir.openFile(name, .{}) catch null) |os_file| {
-                defer os_file.close();
                 const file = try allocator.alloc.create(File);
                 file.* = .{
                     .parent = self,
-                    .contents = try os_file.reader().readAllAlloc(allocator.alloc, std.math.maxInt(usize)),
                     .name = try allocator.alloc.dupe(u8, fullname),
+
+                    .data = .{
+                        .Os = os_file,
+                    },
                 };
 
                 try self.contents.append(file);
@@ -779,12 +839,14 @@ pub const Folder = struct {
         std.mem.writeInt(u32, &len, @as(u32, @intCast(files.items.len)), .big);
         try result.appendSlice(&len);
         for (files.items) |file| {
-            std.mem.writeInt(u32, &len, @as(u32, @intCast(file.name.len)), .big);
-            try result.appendSlice(&len);
-            try result.appendSlice(file.name);
-            std.mem.writeInt(u32, &len, @as(u32, @intCast(file.contents.?.len)), .big);
-            try result.appendSlice(&len);
-            try result.appendSlice(file.contents.?);
+            if (file.data == .Disk) {
+                std.mem.writeInt(u32, &len, @as(u32, @intCast(file.name.len)), .big);
+                try result.appendSlice(&len);
+                try result.appendSlice(file.name);
+                std.mem.writeInt(u32, &len, @as(u32, @intCast(file.data.Disk.len)), .big);
+                try result.appendSlice(&len);
+                try result.appendSlice(file.data.Disk);
+            }
         }
         return result;
     }
