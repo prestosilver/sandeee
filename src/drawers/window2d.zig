@@ -330,13 +330,6 @@ pub const WindowData = struct {
 
     contents: WindowContents,
 
-    pub fn new(source: rect.Rectangle, size: vecs.Vector2) WindowData {
-        return WindowData{
-            .source = source,
-            .size = size,
-        };
-    }
-
     pub fn deinit(self: *WindowData) void {
         self.contents.deinit();
     }

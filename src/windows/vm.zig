@@ -56,7 +56,10 @@ pub const VMData = struct {
                 .loc = .{ .x = dst.x, .y = dst.y },
                 .s = spr.Sprite{
                     .texture = try allocator.alloc.dupe(u8, texture),
-                    .data = spr.SpriteData.new(src, .{ .x = dst.w, .y = dst.h }),
+                    .data = .{
+                        .source = src,
+                        .size = .{ .x = dst.w, .y = dst.h },
+                    },
                 },
             },
         };
@@ -184,7 +187,7 @@ pub const VMData = struct {
     }
 };
 
-pub fn new(idx: u8, shader: *shd.Shader) !win.WindowContents {
+pub fn init(idx: u8, shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(VMData);
 
     self.* = .{

@@ -172,18 +172,24 @@ pub const TasksData = struct {
     }
 };
 
-pub fn new(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(TasksData);
     self.* = .{
         .panel = .{
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 2.0, .y = 32.0 },
-            )),
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 2.0, .y = 28.0 },
-            )),
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 2.0, .y = 32.0 },
+                },
+            },
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 2.0, .y = 28.0 },
+                },
+            },
         },
         .scroll_sprites = .{
             .{
@@ -217,14 +223,20 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         },
         .shader = shader,
         .stats = try vm_manager.VMManager.instance.getStats(),
-        .render_graph = graph.Graph.new(
-            "white",
-            try graph.GraphData.new(.{ .x = 100, .y = 100 }),
-        ),
-        .vm_graph = graph.Graph.new(
-            "white",
-            try graph.GraphData.new(.{ .x = 100, .y = 100 }),
-        ),
+        .render_graph = .{
+            .texture = "white",
+            .data = .{
+                .size = .{ .x = 100, .y = 100 },
+                .data = try allocator.alloc.alloc(f32, 0),
+            },
+        },
+        .vm_graph = .{
+            .texture = "white",
+            .data = .{
+                .size = .{ .x = 100, .y = 100 },
+                .data = try allocator.alloc.alloc(f32, 0),
+            },
+        },
     };
 
     allocator.alloc.free(self.render_graph.data.data);

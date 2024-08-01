@@ -679,10 +679,13 @@ pub fn mainErr() anyerror!void {
     try texture_manager.TextureManager.instance.putMem("error", ERROR_IMAGE);
     try texture_manager.TextureManager.instance.putMem("white", &WHITE_IMAGE);
 
-    wallpaper = wall.Wallpaper.new("wall", wall.WallData{
-        .dims = &gfx.Context.instance.size,
-        .mode = .Center,
-    });
+    wallpaper = .{
+        .texture = "wall",
+        .data = .{
+            .dims = &gfx.Context.instance.size,
+            .mode = .Center,
+        },
+    };
 
     // disks state
     var gs_disks = disk_state.GSDisks{
@@ -695,10 +698,10 @@ pub fn mainErr() anyerror!void {
         .audio_manager = &audio_manager,
         .logo_sprite = .{
             .texture = "bios",
-            .data = sprite.SpriteData.new(
-                .{ .w = 1, .h = 1 },
-                .{ .x = 168, .y = 84 },
-            ),
+            .data = .{
+                .source = .{ .w = 1, .h = 1 },
+                .size = .{ .x = 168, .y = 84 },
+            },
         },
     };
 
@@ -712,17 +715,17 @@ pub fn mainErr() anyerror!void {
         .message_snd = &message_snd,
         .logo_sprite = .{
             .texture = "logo",
-            .data = sprite.SpriteData.new(
-                .{ .w = 1, .h = 1 },
-                .{ .x = 320, .y = 64 },
-            ),
+            .data = .{
+                .source = .{ .w = 1, .h = 1 },
+                .size = .{ .x = 320, .y = 64 },
+            },
         },
         .load_sprite = .{
             .texture = "load",
-            .data = sprite.SpriteData.new(
-                .{ .w = 1, .h = 1 },
-                .{ .x = 0, .y = 16 },
-            ),
+            .data = .{
+                .source = .{ .w = 1, .h = 1 },
+                .size = .{ .x = 0, .y = 16 },
+            },
         },
         .shader = &shader,
         .disk = &disk,
@@ -738,10 +741,10 @@ pub fn mainErr() anyerror!void {
         .email_manager = &email_manager,
         .bar_logo_sprite = .{
             .texture = "barlogo",
-            .data = sprite.SpriteData.new(
-                .{ .w = 1, .h = 1 },
-                .{ .x = 36, .y = 464 },
-            ),
+            .data = .{
+                .source = .{ .w = 1, .h = 1 },
+                .size = .{ .x = 36, .y = 464 },
+            },
         },
         .desk = .{
             .texture = "big_icons",
@@ -753,25 +756,28 @@ pub fn mainErr() anyerror!void {
         },
         .cursor = .{
             .texture = "cursor",
-            .data = cursor.CursorData.new(
-                .{ .w = 1, .h = 1 },
-                6,
-            ),
+            .data = .{
+                .source = .{ .w = 1, .h = 1 },
+                .total = 6,
+            },
         },
         .wallpaper = &wallpaper,
-        .bar = bar.Bar.new("bar", bar.BarData{
-            .height = 38,
-            .screendims = &gfx.Context.instance.size,
-            .shell = .{
-                .root = undefined,
+        .bar = .{
+            .texture = "bar",
+            .data = .{
+                .height = 38,
+                .screendims = &gfx.Context.instance.size,
+                .shell = .{
+                    .root = undefined,
+                },
+                .shader = &shader,
             },
-            .shader = &shader,
-        }),
+        },
     };
 
     // crashed state
     const gs_crash = try allocator.alloc.create(crash_state.GSCrash);
-    gs_crash.* = crash_state.GSCrash{
+    gs_crash.* = .{
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &bios_font,
@@ -779,10 +785,10 @@ pub fn mainErr() anyerror!void {
         .prev_state = &error_state,
         .sad_sprite = .{
             .texture = "sad",
-            .data = sprite.SpriteData.new(
-                .{ .w = 1, .h = 1 },
-                .{ .x = 150, .y = 150 },
-            ),
+            .data = .{
+                .source = .{ .w = 1, .h = 1 },
+                .size = .{ .x = 150, .y = 150 },
+            },
         },
     };
 
@@ -795,10 +801,10 @@ pub fn mainErr() anyerror!void {
         .audio_manager = &audio_manager,
         .load_sprite = .{
             .texture = "white",
-            .data = sprite.SpriteData.new(
-                .{ .w = 1, .h = 1 },
-                .{ .x = 20, .y = 32 },
-            ),
+            .data = .{
+                .source = .{ .w = 1, .h = 1 },
+                .size = .{ .x = 20, .y = 32 },
+            },
         },
     };
 

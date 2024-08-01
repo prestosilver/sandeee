@@ -91,7 +91,7 @@ pub const UpdateData = struct {
     }
 };
 
-pub fn new() !win.WindowContents {
+pub fn init() !win.WindowContents {
     const self = try allocator.alloc.create(UpdateData);
 
     self.* = UpdateData{};

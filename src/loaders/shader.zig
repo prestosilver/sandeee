@@ -11,7 +11,7 @@ pub fn loadShader(self: *worker.WorkerQueueEntry(*const [2]shd.ShaderFile, *shd.
     defer gfx.Context.makeNotCurrent();
 
     log.debug("load shader", .{});
-    self.out.* = try shd.Shader.new(2, self.indata.*);
+    self.out.* = try shd.Shader.init(2, self.indata.*);
     try gfx.Context.regShader(self.out.*);
 
     return true;

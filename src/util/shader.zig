@@ -12,7 +12,7 @@ pub const ShaderFile = struct {
 pub const Shader = struct {
     id: c.GLuint = 0,
 
-    pub fn new(comptime total: u32, files: [total]ShaderFile) !Shader {
+    pub fn init(comptime total: u32, files: [total]ShaderFile) !Shader {
         const prog = c.glCreateProgram();
         var success: c.GLint = 0;
 

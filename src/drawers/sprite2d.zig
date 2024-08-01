@@ -9,13 +9,6 @@ pub const SpriteData = struct {
     size: vecs.Vector2,
     color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
 
-    pub fn new(source: rect.Rectangle, size: vecs.Vector2) SpriteData {
-        return SpriteData{
-            .source = source,
-            .size = size,
-        };
-    }
-
     pub fn getVerts(self: *const SpriteData, pos: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(6);
 

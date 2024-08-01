@@ -8,20 +8,11 @@ const c = @import("../c.zig");
 
 pub const CursorData = struct {
     source: rect.Rectangle,
-    size: vecs.Vector2,
-    color: cols.Color,
+    size: vecs.Vector2 = .{ .x = 32, .y = 32 },
+    color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
     total: usize,
     index: usize = 0,
     flip: bool = false,
-
-    pub fn new(source: rect.Rectangle, total: usize) CursorData {
-        return CursorData{
-            .source = source,
-            .size = .{ .x = 32, .y = 32 },
-            .color = .{ .r = 1, .g = 1, .b = 1 },
-            .total = total,
-        };
-    }
 
     pub fn getVerts(self: *const CursorData, pos: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(6);

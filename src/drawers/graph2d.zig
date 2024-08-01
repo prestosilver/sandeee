@@ -16,13 +16,6 @@ pub const GraphData = struct {
     data: []f32,
     max: f32 = 1.0,
 
-    pub fn new(size: vecs.Vector2) !GraphData {
-        return GraphData{
-            .size = size,
-            .data = try allocator.alloc.alloc(f32, 0),
-        };
-    }
-
     pub fn getVerts(self: *const GraphData, pos: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(self.data.len * 6);
 

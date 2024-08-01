@@ -150,13 +150,6 @@ pub const PopupData = struct {
         try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + pos.h - sc * b, .w = sc * r, .h = sc * b }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = r / TEX_SIZE, .h = b / TEX_SIZE }, color);
     }
 
-    pub fn new(source: rect.Rectangle, size: vecs.Vector2) PopupData {
-        return PopupData{
-            .source = source,
-            .size = size,
-        };
-    }
-
     pub fn drawName(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
         try font.draw(.{
             .shader = shader,

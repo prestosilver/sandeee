@@ -117,7 +117,7 @@ pub const WelcomeData = struct {
     }
 };
 
-pub fn new(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(WelcomeData);
 
     self.* = WelcomeData{
@@ -126,14 +126,20 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
             .vm = null,
         },
         .check_box = .{
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 4.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                .{ .x = 20, .y = 20 },
-            )),
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 6.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                .{ .x = 20, .y = 20 },
-            )),
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 4.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                    .size = .{ .x = 20, .y = 20 },
+                },
+            },
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 6.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                    .size = .{ .x = 20, .y = 20 },
+                },
+            },
         },
         .shader = shader,
         .timer = try std.time.Timer.start(),

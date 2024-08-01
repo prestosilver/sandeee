@@ -130,7 +130,7 @@ pub const CMDData = struct {
             try font.draw(.{
                 .shader = shader,
                 .text = line,
-                .pos = .{ .x = bnds.x + 6, .y = bnds.y },
+                .pos = .{ .x = bnds.x + 6, .y = y },
                 .color = .{ .r = 1, .g = 1, .b = 1 },
                 .wrap = bnds.w - 30,
             });
@@ -308,7 +308,7 @@ pub const CMDData = struct {
     }
 };
 
-pub fn new() !win.WindowContents {
+pub fn init() !win.WindowContents {
     const self = try allocator.alloc.create(CMDData);
 
     self.* = .{

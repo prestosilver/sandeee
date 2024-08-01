@@ -17,27 +17,17 @@ const c = @import("../../c.zig");
 var outline_sprites = [_]spr.Sprite{
     .{
         .texture = "ui",
-        .data = spr.SpriteData.new(
-            .{
-                .x = 2.0 / 8.0,
-                .y = 0.0 / 8.0,
-                .w = 1.0 / 8.0,
-                .h = 1.0 / 8.0,
-            },
-            .{ .x = 32, .y = 32 },
-        ),
+        .data = .{
+            .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 32, .y = 32 },
+        },
     },
     .{
         .texture = "ui",
-        .data = spr.SpriteData.new(
-            .{
-                .x = 3.0 / 8.0,
-                .y = 0.0 / 8.0,
-                .w = 1.0 / 8.0,
-                .h = 1.0 / 8.0,
-            },
-            .{ .x = 32, .y = 32 },
-        ),
+        .data = .{
+            .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 32, .y = 32 },
+        },
     },
 };
 

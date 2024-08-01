@@ -36,22 +36,15 @@ pub const Telem = packed struct {
             instance.version.minor != options.SandEEEVersion.minor or
             instance.version.patch != options.SandEEEVersion.patch)
         {
-            const update_window = win.Window.new("win", win.WindowData{
-                .source = rect.Rectangle{
-                    .x = 0.0,
-                    .y = 0.0,
-                    .w = 1.0,
-                    .h = 1.0,
+            const update_window = .{
+                .texture = "win",
+                .data = .{
+                    .source = .{ .w = 1, .h = 1 },
+                    .pos = .{ .w = 600, .h = 350 },
+                    .contents = wins.update.init() catch return,
+                    .active = true,
                 },
-                .pos = .{
-                    .x = 0,
-                    .y = 0,
-                    .w = 600,
-                    .h = 350,
-                },
-                .contents = wins.update.new() catch return,
-                .active = true,
-            });
+            };
 
             events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = update_window, .center = true }) catch return;
         }

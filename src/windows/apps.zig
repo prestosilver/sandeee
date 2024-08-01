@@ -122,16 +122,19 @@ pub const LauncherData = struct {
                 });
 
                 const icon_spr =
-                    if (icon.icon) |icn|
-                    sprite.Sprite.new(&.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) }, sprite.SpriteData.new(
-                        .{ .w = 1.0, .h = 1.0 },
-                        .{ .x = 64, .y = 64 },
-                    ))
-                else
-                    sprite.Sprite.new("error", sprite.SpriteData.new(
-                        .{ .w = 1.0, .h = 1.0 },
-                        .{ .x = 64, .y = 64 },
-                    ));
+                    if (icon.icon) |icn| sprite.Sprite{
+                    .texture = &.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) },
+                    .data = .{
+                        .source = .{ .w = 1, .h = 1 },
+                        .size = .{ .x = 64, .y = 64 },
+                    },
+                } else sprite.Sprite{
+                    .texture = "error",
+                    .data = .{
+                        .source = .{ .w = 1, .h = 1 },
+                        .size = .{ .x = 64, .y = 64 },
+                    },
+                };
 
                 try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
@@ -213,35 +216,50 @@ pub const LauncherData = struct {
     }
 };
 
-pub fn new(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(LauncherData);
 
     self.* = .{
         .icon_data = try allocator.alloc.alloc(eln.ElnData, 0),
         .idx = g_idx,
 
-        .gray = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .x = 72, .y = 72 },
-        )),
-        .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-            .{ .y = 40.0 },
-        )),
-        .text_box = .{
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 2.0, .y = 32.0 },
-            )),
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 2.0, .y = 28.0 },
-            )),
+        .gray = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 72, .y = 72 },
+            },
         },
-        .sel = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
-            .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .x = 64.0, .y = 64.0 },
-        )),
+        .menubar = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+                .size = .{ .y = 40.0 },
+            },
+        },
+        .text_box = .{
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 2.0, .y = 32.0 },
+                },
+            },
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 2.0, .y = 28.0 },
+                },
+            },
+        },
+        .sel = .{
+            .texture = "big_icons",
+            .data = .{
+                .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 64.0, .y = 64.0 },
+            },
+        },
         .shader = shader,
         .shell = .{
             .root = files.home,

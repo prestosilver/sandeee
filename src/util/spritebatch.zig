@@ -20,13 +20,6 @@ pub fn Drawer(comptime T: type) type {
         pub inline fn getVerts(self: *const Self, pos: vecs.Vector3) !va.VertArray {
             return self.data.getVerts(pos);
         }
-
-        pub inline fn new(texture: []const u8, self: T) Drawer(T) {
-            return Self{
-                .texture = texture,
-                .data = self,
-            };
-        }
     };
 }
 

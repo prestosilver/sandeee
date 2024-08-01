@@ -123,15 +123,21 @@ pub const BarData = struct {
 
             for (apps, 0..) |app, i| {
                 const icon_spr = if (app.icon) |icn|
-                    spr.Sprite.new(&.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) }, spr.SpriteData.new(
-                        .{ .w = 1, .h = 1 },
-                        .{ .x = 64, .y = 64 },
-                    ))
+                    spr.Sprite{
+                        .texture = &.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) },
+                        .data = .{
+                            .source = .{ .w = 1, .h = 1 },
+                            .size = .{ .x = 64, .y = 64 },
+                        },
+                    }
                 else
-                    spr.Sprite.new("error", spr.SpriteData.new(
-                        .{ .w = 1, .h = 1 },
-                        .{ .x = 64, .y = 64 },
-                    ));
+                    spr.Sprite{
+                        .texture = "error",
+                        .data = .{
+                            .source = .{ .w = 1, .h = 1 },
+                            .size = .{ .x = 64, .y = 64 },
+                        },
+                    };
                 const height = font.size * 1;
                 const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 const text = app.name;

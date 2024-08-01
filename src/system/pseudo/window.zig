@@ -27,18 +27,16 @@ pub var windows_ptr: *std.ArrayList(win.Window) = undefined;
 // /fake/win/new
 pub fn readWinNew(vm_instance: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
-    const window_data = try vmwin.new(vm_idx, shader);
+    const window_data = try vmwin.init(vm_idx, shader);
 
-    const window = win.Window.new("win", win.WindowData{
-        .source = rect.Rectangle{
-            .x = 0.0,
-            .y = 0.0,
-            .w = 1.0,
-            .h = 1.0,
+    const window = .{
+        .texture = "win",
+        .data = .{
+            .source = rect.Rectangle{ .w = 1, .h = 1 },
+            .contents = window_data,
+            .active = true,
         },
-        .contents = window_data,
-        .active = true,
-    });
+    };
 
     events.EventManager.instance.sendEvent(winev.EventCreateWindow{ .window = window }) catch {
         return error.InvalidPsuedoData;

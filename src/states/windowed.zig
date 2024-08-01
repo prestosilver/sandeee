@@ -225,12 +225,15 @@ pub const GSWindowed = struct {
         try events.EventManager.instance.registerListener(system_events.EventDebugSet, debugSet);
 
         if (conf.SettingManager.instance.getBool("show_welcome")) {
-            const window = win.Window.new("win", win.WindowData{
-                .source = rect.Rectangle{ .w = 1, .h = 1 },
-                .pos = .{ .w = 600, .h = 350 },
-                .contents = try wins.welcome.new(self.shader),
-                .active = true,
-            });
+            const window = .{
+                .texture = "win",
+                .data = .{
+                    .source = rect.Rectangle{ .w = 1, .h = 1 },
+                    .pos = .{ .w = 600, .h = 350 },
+                    .contents = try wins.welcome.init(self.shader),
+                    .active = true,
+                },
+            };
 
             try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = true });
         }
@@ -486,22 +489,15 @@ pub const GSWindowed = struct {
         }
 
         if (key == c.GLFW_KEY_P and mods == (c.GLFW_MOD_CONTROL | c.GLFW_MOD_SHIFT) and down) {
-            const window = win.Window.new("win", win.WindowData{
-                .source = .{
-                    .x = 0.0,
-                    .y = 0.0,
-                    .w = 1.0,
-                    .h = 1.0,
+            const window = .{
+                .texture = "win",
+                .data = .{
+                    .source = .{ .w = 1, .h = 1 },
+                    .pos = .{ .w = 400, .h = 500 },
+                    .contents = try wins.tasks.init(self.shader),
+                    .active = true,
                 },
-                .pos = .{
-                    .x = 0,
-                    .y = 0,
-                    .w = 400,
-                    .h = 500,
-                },
-                .contents = try wins.tasks.new(self.shader),
-                .active = true,
-            });
+            };
 
             try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = false });
 

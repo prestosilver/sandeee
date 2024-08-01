@@ -147,16 +147,19 @@ pub const Shell = struct {
     }
 
     pub fn runCmd(_: *Shell, param: []const u8) !Result {
-        const window = win.Window.new("win", win.WindowData{
-            .source = rect.Rectangle{
-                .x = 0.0,
-                .y = 0.0,
-                .w = 1.0,
-                .h = 1.0,
+        const window = .{
+            .texture = "win",
+            .data = .{
+                .source = rect.Rectangle{
+                    .x = 0.0,
+                    .y = 0.0,
+                    .w = 1.0,
+                    .h = 1.0,
+                },
+                .contents = try wins.cmd.init(),
+                .active = true,
             },
-            .contents = try wins.cmd.new(),
-            .active = true,
-        });
+        };
 
         if (param.len > 5) {
             const cmd_self: *wins.cmd.CMDData = @ptrCast(@alignCast(window.data.contents.ptr));
@@ -172,16 +175,14 @@ pub const Shell = struct {
     }
 
     pub fn runEdit(self: *Shell, param: []const u8) !Result {
-        const window = win.Window.new("win", win.WindowData{
-            .source = rect.Rectangle{
-                .x = 0.0,
-                .y = 0.0,
-                .w = 1.0,
-                .h = 1.0,
+        const window = .{
+            .texture = "win",
+            .data = .{
+                .source = rect.Rectangle{ .w = 1, .h = 1 },
+                .contents = try wins.editor.init(shader),
+                .active = true,
             },
-            .contents = try wins.editor.new(shader),
-            .active = true,
-        });
+        };
 
         if (param.len > 5) {
             const ed_self: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
@@ -223,10 +224,13 @@ pub const Shell = struct {
     }
 
     pub fn runLaunch(_: *Shell, _: []const u8) !Result {
-        const window = win.Window.new("win", win.WindowData{
-            .contents = try wins.apps.new(shader),
-            .active = true,
-        });
+        const window = .{
+            .texture = "win",
+            .data = win.WindowData{
+                .contents = try wins.apps.init(shader),
+                .active = true,
+            },
+        };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
@@ -281,10 +285,13 @@ pub const Shell = struct {
     }
 
     pub fn runSettings(_: *Shell, _: []const u8) !Result {
-        const window = win.Window.new("win", win.WindowData{
-            .contents = try wins.settings.new(shader),
-            .active = true,
-        });
+        const window = .{
+            .texture = "win",
+            .data = win.WindowData{
+                .contents = try wins.settings.init(shader),
+                .active = true,
+            },
+        };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
@@ -294,10 +301,13 @@ pub const Shell = struct {
     }
 
     pub fn runMail(_: *Shell, _: []const u8) !Result {
-        const window = win.Window.new("win", win.WindowData{
-            .contents = try wins.email.new(shader),
-            .active = true,
-        });
+        const window = .{
+            .texture = "win",
+            .data = .{
+                .contents = try wins.email.init(shader),
+                .active = true,
+            },
+        };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
@@ -307,10 +317,13 @@ pub const Shell = struct {
     }
 
     pub fn runFiles(_: *Shell, _: []const u8) !Result {
-        const window = win.Window.new("win", win.WindowData{
-            .contents = try wins.explorer.new(shader),
-            .active = true,
-        });
+        const window = .{
+            .texture = "win",
+            .data = win.WindowData{
+                .contents = try wins.explorer.init(shader),
+                .active = true,
+            },
+        };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
@@ -320,10 +333,13 @@ pub const Shell = struct {
     }
 
     pub fn runTask(_: *Shell, _: []const u8) !Result {
-        const window = win.Window.new("win", win.WindowData{
-            .contents = try wins.tasks.new(shader),
-            .active = true,
-        });
+        const window = .{
+            .texture = "win",
+            .data = win.WindowData{
+                .contents = try wins.tasks.init(shader),
+                .active = true,
+            },
+        };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
@@ -333,16 +349,14 @@ pub const Shell = struct {
     }
 
     pub fn runWeb(_: *Shell, param: []const u8) !Result {
-        const window = win.Window.new("win", win.WindowData{
-            .source = rect.Rectangle{
-                .x = 0.0,
-                .y = 0.0,
-                .w = 1.0,
-                .h = 1.0,
+        const window = .{
+            .texture = "win",
+            .data = win.WindowData{
+                .source = rect.Rectangle{ .w = 1, .h = 1 },
+                .contents = try wins.web.init(shader),
+                .active = true,
             },
-            .contents = try wins.web.new(shader),
-            .active = true,
-        });
+        };
 
         if (param.len > 4) {
             const webself: *wins.web.WebData = @ptrCast(@alignCast(window.data.contents.ptr));

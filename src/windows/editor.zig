@@ -874,44 +874,64 @@ pub const EditorData = struct {
     }
 };
 
-pub fn new(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(EditorData);
 
     self.* = .{
-        .menubar = sp.Sprite.new("ui", sp.SpriteData.new(
-            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-            .{ .y = 40 },
-        )),
-        .num_left = sp.Sprite.new("ui", sp.SpriteData.new(
-            .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .x = 40 },
-        )),
-        .num_right = sp.Sprite.new("ui", sp.SpriteData.new(
-            .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 4.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .x = 40 },
-        )),
-        .icons = .{
-            sp.Sprite.new("icons", sp.SpriteData.new(
-                .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 32, .y = 32 },
-            )),
-            sp.Sprite.new("icons", sp.SpriteData.new(
-                .{ .x = 0.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 32, .y = 32 },
-            )),
-            sp.Sprite.new("icons", sp.SpriteData.new(
-                .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 32, .y = 32 },
-            )),
+        .menubar = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+                .size = .{ .y = 40 },
+            },
         },
-        .sel = sp.Sprite.new("ui", sp.SpriteData.new(
-            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .y = 6 },
-        )),
+        .num_left = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 40 },
+            },
+        },
+        .num_right = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 4.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 40 },
+            },
+        },
+        .icons = .{
+            .{
+                .texture = "icons",
+                .data = .{
+                    .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 32, .y = 32 },
+                },
+            },
+            .{
+                .texture = "icons",
+                .data = .{
+                    .source = .{ .x = 0.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 32, .y = 32 },
+                },
+            },
+            .{
+                .texture = "icons",
+                .data = .{
+                    .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 32, .y = 32 },
+                },
+            },
+        },
+        .sel = .{
+            .texture = "ui",
+            .data = .{
+                .color = .{ .r = 1, .g = 1, .b = 1 },
+                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .y = 6 },
+            },
+        },
         .shader = shader,
     };
-
-    self.sel.data.color = .{ .r = 1, .g = 0, .b = 0 };
 
     return win.WindowContents.init(self, "editor", fnt.EEE ++ "DT", .{ .r = 1, .g = 1, .b = 1 });
 }

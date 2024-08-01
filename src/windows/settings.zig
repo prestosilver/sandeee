@@ -429,44 +429,62 @@ const SettingsData = struct {
     }
 };
 
-pub fn new(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(SettingsData);
 
     self.* = .{
         .shader = shader,
-        .highlight = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .x = 2.0, .y = 28.0 },
-        )),
-        .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-            .{ .y = 40.0 },
-        )),
+        .highlight = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 28.0 },
+            },
+        },
+        .menubar = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+                .size = .{ .y = 40.0 },
+            },
+        },
         .text_box = .{
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 2.0, .y = 32.0 },
-            )),
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 2.0, .y = 28.0 },
-            )),
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 2.0, .y = 32.0 },
+                },
+            },
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 2.0, .y = 28.0 },
+                },
+            },
         },
         .icons = undefined,
-        .back_button = sprite.Sprite.new("icons", sprite.SpriteData.new(
-            .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .x = 32.0, .y = 32.0 },
-        )),
+        .back_button = .{
+            .texture = "icons",
+            .data = .{
+                .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32.0, .y = 32.0 },
+            },
+        },
         .value = "",
     };
 
     for (self.icons, 0..) |_, idx| {
         const i = @as(f32, @floatFromInt(idx));
 
-        self.icons[idx] = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
-            .{ .x = i / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .x = 64, .y = 64 },
-        ));
+        self.icons[idx] = .{
+            .texture = "big_icons",
+            .data = .{
+                .source = .{ .x = i / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 64, .y = 64 },
+            },
+        };
     }
 
     return win.WindowContents.init(self, "settings", "Settings", .{ .r = 1, .g = 1, .b = 1 });

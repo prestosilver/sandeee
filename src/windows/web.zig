@@ -957,39 +957,57 @@ pub const WebData = struct {
     }
 };
 
-pub fn new(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(WebData);
 
     log.info("{s}", .{conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
 
     self.* = .{
-        .highlight = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-            .{ .x = 2, .y = 28 },
-        )),
-        .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-            .{ .y = 40 },
-        )),
+        .highlight = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 28 },
+            },
+        },
+        .menubar = .{
+            .texture = "ui",
+            .data = .{
+                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+                .size = .{ .y = 40 },
+            },
+        },
         .text_box = .{
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 2, .y = 32 },
-            )),
-            sprite.Sprite.new("ui", sprite.SpriteData.new(
-                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 2, .y = 28 },
-            )),
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 2, .y = 32 },
+                },
+            },
+            .{
+                .texture = "ui",
+                .data = .{
+                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 2, .y = 28 },
+                },
+            },
         },
         .icons = .{
-            sprite.Sprite.new("icons", sprite.SpriteData.new(
-                .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 32, .y = 32 },
-            )),
-            sprite.Sprite.new("icons", sprite.SpriteData.new(
-                .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .{ .x = 32, .y = 32 },
-            )),
+            .{
+                .texture = "icons",
+                .data = .{
+                    .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 32, .y = 32 },
+                },
+            },
+            .{
+                .texture = "icons",
+                .data = .{
+                    .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 32, .y = 32 },
+                },
+            },
         },
         .path = try allocator.alloc.dupe(u8, conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"),
         .conts = null,

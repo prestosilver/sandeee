@@ -77,11 +77,14 @@ pub const DeskData = struct {
 
             if ((rect.Rectangle{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
-                    const window = win.Window.new("win", win.WindowData{
-                        .source = rect.Rectangle{ .w = 1, .h = 1 },
-                        .contents = try wins.explorer.new(shader),
-                        .active = true,
-                    });
+                    const window = .{
+                        .texture = "win",
+                        .data = .{
+                            .source = rect.Rectangle{ .w = 1, .h = 1 },
+                            .contents = try wins.explorer.init(shader),
+                            .active = true,
+                        },
+                    };
 
                     const explorer_self: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
 
