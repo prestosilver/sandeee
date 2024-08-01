@@ -7,7 +7,7 @@ const va = @import("../util/vertArray.zig");
 pub const SpriteData = struct {
     source: rect.Rectangle,
     size: vecs.Vector2,
-    color: cols.Color = cols.newColor(1, 1, 1, 1),
+    color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
 
     pub fn new(source: rect.Rectangle, size: vecs.Vector2) SpriteData {
         return SpriteData{
@@ -19,13 +19,13 @@ pub const SpriteData = struct {
     pub fn getVerts(self: *const SpriteData, pos: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(6);
 
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(0, self.size.y, 0)), vecs.newVec2(self.source.x, self.source.y + self.source.h), self.color);
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(self.size.x, self.size.y, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y + self.source.h), self.color);
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(self.size.x, 0, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y), self.color);
+        try result.append(vecs.Vector3.add(pos, .{ .y = self.size.y }), .{ .x = self.source.x, .y = self.source.y + self.source.h }, self.color);
+        try result.append(vecs.Vector3.add(pos, .{ .x = self.size.x, .y = self.size.y }), .{ .x = self.source.x + self.source.w, .y = self.source.y + self.source.h }, self.color);
+        try result.append(vecs.Vector3.add(pos, .{ .x = self.size.x }), .{ .x = self.source.x + self.source.w, .y = self.source.y }, self.color);
 
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(0, self.size.y, 0)), vecs.newVec2(self.source.x, self.source.y + self.source.h), self.color);
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(0, 0, 0)), vecs.newVec2(self.source.x, self.source.y), self.color);
-        try result.append(vecs.Vector3.add(pos, vecs.newVec3(self.size.x, 0, 0)), vecs.newVec2(self.source.x + self.source.w, self.source.y), self.color);
+        try result.append(vecs.Vector3.add(pos, .{ .y = self.size.y }), .{ .x = self.source.x, .y = self.source.y + self.source.h }, self.color);
+        try result.append(vecs.Vector3.add(pos, .{}), .{ .x = self.source.x, .y = self.source.y }, self.color);
+        try result.append(vecs.Vector3.add(pos, .{ .x = self.size.x }), .{ .x = self.source.x + self.source.w, .y = self.source.y }, self.color);
 
         return result;
     }

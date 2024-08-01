@@ -1,8 +1,8 @@
 const std = @import("std");
 
 pub const Vector2 = struct {
-    x: f32,
-    y: f32,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
 
     pub inline fn round(a: Vector2) Vector2 {
         return Vector2{
@@ -74,9 +74,9 @@ pub const Vector2 = struct {
 };
 
 pub const Vector3 = struct {
-    x: f32,
-    y: f32,
-    z: f32,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    z: f32 = 0.0,
 
     pub inline fn add(a: Vector3, b: Vector3) Vector3 {
         return Vector3{
@@ -106,18 +106,3 @@ pub const Vector3 = struct {
         return a * (1 / a.mag);
     }
 };
-
-pub inline fn newVec2(x: f32, y: f32) Vector2 {
-    return Vector2{
-        .x = x,
-        .y = y,
-    };
-}
-
-pub inline fn newVec3(x: f32, y: f32, z: f32) Vector3 {
-    return Vector3{
-        .x = x,
-        .y = y,
-        .z = z,
-    };
-}

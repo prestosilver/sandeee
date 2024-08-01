@@ -126,28 +126,28 @@ pub const PopupData = struct {
 
         source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), color);
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x, pos.y, 0), vecs.newVec2(source.x, source.y), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), color);
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y }, .{ .x = source.x, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32, color: cols.Color) !void {
         const sc = @as(f32, @floatFromInt(scale));
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y, sc * r, sc * t), rect.newRect((TEX_SIZE - r) / TEX_SIZE, 0, r / TEX_SIZE, t / TEX_SIZE), color);
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y, .w = sc * l, .h = sc * t }, .{ .w = l / TEX_SIZE, .h = t / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y, .w = pos.w - sc * (l + r), .h = sc * t }, .{ .x = l / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = t / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y, .w = sc * r, .h = sc * t }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .w = r / TEX_SIZE, .h = t / TEX_SIZE }, color);
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y + sc * t, sc * l, pos.h - sc * (t + b)), rect.newRect(0, t / TEX_SIZE, l / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + sc * t, pos.w - sc * (l + r), pos.h - sc * (t + b)), rect.newRect(l / TEX_SIZE, t / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + sc * t, sc * r, pos.h - sc * (t + b)), rect.newRect((TEX_SIZE - r) / TEX_SIZE, t / TEX_SIZE, r / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE), color);
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + sc * t, .w = sc * l, .h = pos.h - sc * (t + b) }, .{ .y = t / TEX_SIZE, .w = l / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + sc * t, .w = pos.w - sc * (l + r), .h = pos.h - sc * (t + b) }, .{ .x = l / TEX_SIZE, .y = t / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + sc * t, .w = sc * r, .h = pos.h - sc * (t + b) }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = t / TEX_SIZE, .w = r / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y + pos.h - sc * b, sc * l, sc * b), rect.newRect(0, (TEX_SIZE - b) / TEX_SIZE, l / TEX_SIZE, b / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + pos.h - sc * b, pos.w - sc * (l + r), sc * b), rect.newRect(l / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, b / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE), color);
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + pos.h - sc * b, .w = sc * l, .h = sc * b }, .{ .y = (TEX_SIZE - b) / TEX_SIZE, .w = l / TEX_SIZE, .h = b / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + pos.h - sc * b, .w = pos.w - sc * (l + r), .h = sc * b }, .{ .x = l / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = b / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + pos.h - sc * b, .w = sc * r, .h = sc * b }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = r / TEX_SIZE, .h = b / TEX_SIZE }, color);
     }
 
     pub fn new(source: rect.Rectangle, size: vecs.Vector2) PopupData {
@@ -158,12 +158,11 @@ pub const PopupData = struct {
     }
 
     pub fn drawName(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
-        const color = cols.newColorRGBA(255, 255, 255, 255);
         try font.draw(.{
             .shader = shader,
             .text = self.title,
-            .pos = vecs.newVec2(self.pos.x + 9, self.pos.y + 8),
-            .color = color,
+            .pos = .{ .x = self.pos.x + 9, .y = self.pos.y + 8 },
+            .color = .{ .r = 1, .g = 1, .b = 1 },
             .wrap = self.pos.w - 64,
             .maxlines = 1,
         });
@@ -174,7 +173,7 @@ pub const PopupData = struct {
             .texture = "",
             .verts = try va.VertArray.init(0),
             .shader = shader.*,
-            .clear = cols.newColorRGBA(192, 192, 192, 255),
+            .clear = .{ .r = 0.75, .g = 0.75, .b = 0.75 },
         });
 
         try self.contents.draw(shader, self.scissor(), font);
@@ -184,11 +183,15 @@ pub const PopupData = struct {
         var result = try va.VertArray.init(9 * 6 * 2);
         const sprite: u8 = 2;
 
-        const close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);
+        const close = rect.Rectangle{
+            .x = self.pos.x + self.pos.w - 64,
+            .y = self.pos.y,
+            .w = 64,
+            .h = 64,
+        };
 
-        try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-
-        try addUiQuad(&result, 3, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, .{ .r = 1, .g = 1, .b = 1 });
+        try addUiQuad(&result, 3, close, 2, 3, 3, 17, 3, .{ .r = 1, .g = 1, .b = 1 });
 
         return result;
     }
@@ -199,11 +202,15 @@ pub const PopupData = struct {
         None,
     };
 
+    const PADDING = 26;
+
     pub fn click(self: *PopupData, mousepos: vecs.Vector2) !ClickKind {
-        var close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);
-        close.h = 26;
-        close.x += close.w - 26;
-        close.w = 26;
+        const close = rect.Rectangle{
+            .x = self.pos.x + self.pos.w - 64 + 64 - PADDING,
+            .y = self.pos.y,
+            .w = PADDING,
+            .h = PADDING,
+        };
         if (close.contains(mousepos)) {
             return .Close;
         }

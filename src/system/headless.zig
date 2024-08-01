@@ -37,7 +37,6 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exit_fail: bool, logging: ?std.fs
                 _ = try stdout.write(result.data);
                 allocator.alloc.free(result.data);
             } else {
-                // TODO: fix writing
                 _ = try stdout.write("");
             }
 

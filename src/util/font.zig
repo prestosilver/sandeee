@@ -112,7 +112,7 @@ pub const Font = struct {
         const char_width = @as(c_uint, @intCast(data[4]));
         const char_height = @as(c_uint, @intCast(data[5]));
 
-        const atlas_size = vec.newVec2(128 * @as(f32, @floatFromInt(char_width)), 2 * @as(f32, @floatFromInt(char_height)));
+        const atlas_size = vec.Vector2{ .x = 128 * @as(f32, @floatFromInt(char_width)), .y = 2 * @as(f32, @floatFromInt(char_height)) };
 
         var result: Font = undefined;
         var texture: c.GLuint = undefined;
@@ -135,14 +135,13 @@ pub const Font = struct {
             c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), 0, @as(c_int, @intCast(char_width)), @as(c_int, @intCast(char_height)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[char_start]);
 
             result.chars[i + 128] = Char{
-                .size = vec.newVec2(
-                    @as(f32, @floatFromInt(char_width)) * 2,
-                    @as(f32, @floatFromInt(char_height)) * 2,
-                ),
-                .bearing = vec.newVec2(
-                    0,
-                    @as(f32, @floatFromInt(data[6])) * 2,
-                ),
+                .size = .{
+                    .x = @as(f32, @floatFromInt(char_width)) * 2,
+                    .y = @as(f32, @floatFromInt(char_height)) * 2,
+                },
+                .bearing = .{
+                    .y = @as(f32, @floatFromInt(data[6])) * 2,
+                },
                 .ax = @as(f32, @floatFromInt(char_width)) * 2 - 4,
                 .ay = 0,
                 .tx = @as(f32, @floatFromInt(x)) / atlas_size.x,
@@ -156,14 +155,13 @@ pub const Font = struct {
             c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), @as(c_int, @intCast(char_height)), @as(c_int, @intCast(char_width)), @as(c_int, @intCast(char_height)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[char_start]);
 
             result.chars[i] = Char{
-                .size = vec.newVec2(
-                    @as(f32, @floatFromInt(char_width)) * 2,
-                    @as(f32, @floatFromInt(char_height)) * 2,
-                ),
-                .bearing = vec.newVec2(
-                    0,
-                    @as(f32, @floatFromInt(data[6])) * 2,
-                ),
+                .size = .{
+                    .x = @as(f32, @floatFromInt(char_width)) * 2,
+                    .y = @as(f32, @floatFromInt(char_height)) * 2,
+                },
+                .bearing = .{
+                    .y = @as(f32, @floatFromInt(data[6])) * 2,
+                },
                 .ax = @as(f32, @floatFromInt(char_width)) * 2 - 4,
                 .ay = 0,
                 .tx = @as(f32, @floatFromInt(x)) / atlas_size.x,
@@ -198,7 +196,7 @@ pub const Font = struct {
         text: []const u8,
         origin: ?*vec.Vector2 = null,
         scale: f32 = 1,
-        color: col.Color = col.newColor(0, 0, 0, 1),
+        color: col.Color = .{ .r = 0, .g = 0, .b = 0 },
         wrap: ?f32 = null,
         maxlines: ?usize = null,
         newlines: bool = true,
@@ -206,7 +204,7 @@ pub const Font = struct {
 
     pub fn draw(self: *Font, params: drawParams) !void {
         var pos = if (params.origin) |orig| orig.* else params.pos;
-        var srect = rect.newRect(0, 0, 1, 1);
+        var srect = rect.Rectangle{ .w = 1, .h = 1 };
         var color = params.color;
 
         pos.x = @round(pos.x);
@@ -303,13 +301,13 @@ pub const Font = struct {
             if (ach != ' ' or (params.maxlines != null and
                 current_line >= params.maxlines.?))
             {
-                try vert_array.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-                try vert_array.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-                try vert_array.append(vec.newVec3(xpos + w, ypos, 0), vec.newVec2(srect.x + srect.w, srect.y), color);
+                try vert_array.append(.{ .x = xpos, .y = ypos }, .{ .x = srect.x, .y = srect.y }, color);
+                try vert_array.append(.{ .x = xpos + w, .y = ypos + h }, .{ .x = srect.x + srect.w, .y = srect.y + srect.h }, color);
+                try vert_array.append(.{ .x = xpos + w, .y = ypos }, .{ .x = srect.x + srect.w, .y = srect.y }, color);
 
-                try vert_array.append(vec.newVec3(xpos, ypos, 0), vec.newVec2(srect.x, srect.y), color);
-                try vert_array.append(vec.newVec3(xpos + w, ypos + h, 0), vec.newVec2(srect.x + srect.w, srect.y + srect.h), color);
-                try vert_array.append(vec.newVec3(xpos, ypos + h, 0), vec.newVec2(srect.x, srect.y + srect.h), color);
+                try vert_array.append(.{ .x = xpos, .y = ypos }, .{ .x = srect.x, .y = srect.y }, color);
+                try vert_array.append(.{ .x = xpos + w, .y = ypos + h }, .{ .x = srect.x + srect.w, .y = srect.y + srect.h }, color);
+                try vert_array.append(.{ .x = xpos, .y = ypos + h }, .{ .x = srect.x, .y = srect.y + srect.h }, color);
             } else {
                 last_space = vert_array.items().len;
                 last_space_idx = idx + 1;

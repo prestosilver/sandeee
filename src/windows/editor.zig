@@ -230,10 +230,10 @@ pub const EditorData = struct {
         self.num_right.data.size.y = bnds.h - 40;
 
         // draw number sidebar
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.num_left, self.shader, vecs.newVec3(bnds.x, bnds.y + 40, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.num_left, self.shader, .{ .x = bnds.x, .y = bnds.y + 40 });
 
         // draw number sidebar
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.num_right, self.shader, vecs.newVec3(bnds.x + 40, bnds.y + 40, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.num_right, self.shader, .{ .x = bnds.x + 40, .y = bnds.y + 40 });
 
         // draw file text
         if (self.buffer) |buffer| {
@@ -312,7 +312,7 @@ pub const EditorData = struct {
                 try font.draw(.{
                     .shader = shader,
                     .text = line.render.?,
-                    .pos = vecs.newVec2(bnds.x + 82, y),
+                    .pos = .{ .x = bnds.x + 82, .y = y },
                     .wrap = bnds.w - 82,
                     .maxlines = 1,
                 });
@@ -322,7 +322,7 @@ pub const EditorData = struct {
                 try font.draw(.{
                     .shader = shader,
                     .text = linenr,
-                    .pos = vecs.newVec2(bnds.x + 6, y),
+                    .pos = .{ .x = bnds.x + 6, .y = y },
                 });
 
                 if (self.cursory == lineidx) {
@@ -338,13 +338,13 @@ pub const EditorData = struct {
 
                     sel_remaining -= width;
 
-                    try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82 + posx, y, 0));
+                    try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + posx, .y = y });
 
                     if (self.cursor_len >= 0) {
                         try font.draw(.{
                             .shader = shader,
                             .text = "|",
-                            .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
+                            .pos = .{ .x = bnds.x + 82 + posx - 6, .y = y },
                         });
                     }
                 } else if (sel_remaining > 0 and self.cursory < lineidx) {
@@ -354,7 +354,7 @@ pub const EditorData = struct {
 
                     sel_remaining -= width;
 
-                    try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 82, y, 0));
+                    try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
                     if (self.cursor_len < 0 and sel_remaining == 0) {
                         const posx = font.sizeText(.{
                             .text = line.getRender(width),
@@ -364,7 +364,7 @@ pub const EditorData = struct {
                         try font.draw(.{
                             .shader = shader,
                             .text = "|",
-                            .pos = vecs.newVec2(bnds.x + 82 + posx - 6, y),
+                            .pos = .{ .x = bnds.x + 82 + posx - 6, .y = y },
                         });
                     }
                 }
@@ -375,12 +375,12 @@ pub const EditorData = struct {
         }
 
         // draw toolbar
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         // draw toolbar icons
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 4, 0));
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[2], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 4 });
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 4 });
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[2], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
@@ -389,7 +389,7 @@ pub const EditorData = struct {
         if (btn) |button|
             switch (button) {
                 0 => {
-                    const open = rect.newRect(0, 0, 36, 36);
+                    const open = rect.Rectangle{ .w = 36, .h = 36 };
                     if (open.contains(mousepos)) {
                         const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
                         adds.* = .{
@@ -403,20 +403,20 @@ pub const EditorData = struct {
                                 .texture = "win",
                                 .data = .{
                                     .title = "Open",
-                                    .source = rect.newRect(0, 0, 1, 1),
-                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
+                                    .source = .{ .w = 1, .h = 1 },
+                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                                     .contents = popups.PopupData.PopupContents.init(adds),
                                 },
                             },
                         });
                     }
 
-                    const save_bnds = rect.newRect(36, 0, 36, 36);
+                    const save_bnds = rect.Rectangle{ .x = 36, .w = 36, .h = 36 };
                     if (save_bnds.contains(mousepos)) {
                         try self.save();
                     }
 
-                    const new_bnds = rect.newRect(72, 0, 36, 36);
+                    const new_bnds = rect.Rectangle{ .x = 72, .w = 36, .h = 36 };
                     if (new_bnds.contains(mousepos)) {
                         try self.newFile();
                     }
@@ -535,7 +535,7 @@ pub const EditorData = struct {
                 adds.* = .{
                     .text = try allocator.alloc.dupe(u8, files.home.name),
                     .submit = &submitSave,
-                    .prompt = "Enter the file path",
+                    .prompt = try allocator.alloc.dupe(u8, "Enter the file path"),
                     .data = self,
                 };
 
@@ -544,8 +544,8 @@ pub const EditorData = struct {
                         .texture = "win",
                         .data = .{
                             .title = "Save As",
-                            .source = rect.newRect(0, 0, 1, 1),
-                            .pos = rect.newRectCentered(self.bnds, 350, 125),
+                            .source = .{ .w = 1, .h = 1 },
+                            .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                             .contents = popups.PopupData.PopupContents.init(adds),
                         },
                     },
@@ -879,39 +879,39 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .menubar = sp.Sprite.new("ui", sp.SpriteData.new(
-            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
-            vecs.newVec2(0, 40.0),
+            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .{ .y = 40 },
         )),
         .num_left = sp.Sprite.new("ui", sp.SpriteData.new(
-            rect.newRect(4.0 / 8.0, 4.0 / 8.0, 2.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(40, 0),
+            .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 40 },
         )),
         .num_right = sp.Sprite.new("ui", sp.SpriteData.new(
-            rect.newRect(4.0 / 8.0, 4.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(40, 0),
+            .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 4.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 40 },
         )),
         .icons = .{
             sp.Sprite.new("icons", sp.SpriteData.new(
-                rect.newRect(1.0 / 8.0, 0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(32, 32),
+                .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 32, .y = 32 },
             )),
             sp.Sprite.new("icons", sp.SpriteData.new(
-                rect.newRect(0, 0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(32, 32),
+                .{ .x = 0.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 32, .y = 32 },
             )),
             sp.Sprite.new("icons", sp.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(32, 32),
+                .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 32, .y = 32 },
             )),
         },
         .sel = sp.Sprite.new("ui", sp.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(100, 6),
+            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .y = 6 },
         )),
         .shader = shader,
     };
 
-    self.sel.data.color = col.newColorRGBA(255, 0, 0, 255);
+    self.sel.data.color = .{ .r = 1, .g = 0, .b = 0 };
 
-    return win.WindowContents.init(self, "editor", fnt.EEE ++ "DT", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "editor", fnt.EEE ++ "DT", .{ .r = 1, .g = 1, .b = 1 });
 }

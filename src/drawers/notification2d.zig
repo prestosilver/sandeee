@@ -17,8 +17,8 @@ pub const NotificationData = struct {
     icon: ?spr.Sprite,
     title: []const u8,
     text: []const u8,
-    source: rect.Rectangle = rect.newRect(0, 0, 1, 1),
-    color: cols.Color = cols.newColor(1, 1, 1, 1),
+    source: rect.Rectangle = .{ .w = 1, .h = 1 },
+    color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
 
     inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
         var source = src;
@@ -28,12 +28,12 @@ pub const NotificationData = struct {
 
         source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), color);
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x, pos.y, 0), vecs.newVec2(source.x, source.y), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), color);
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y }, .{ .x = source.x, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
     }
 
     pub fn update(self: *NotificationData, dt: f32) !void {
@@ -45,10 +45,10 @@ pub const NotificationData = struct {
 
         var result = try va.VertArray.init(9 * 6);
 
-        const targetpos = vecs.newVec3(target2d.x, target2d.y, 0);
+        const targetpos = vecs.Vector3{ .x = target2d.x, .y = target2d.y };
 
-        try addQuad(&result, 0, rect.newRect(targetpos.x, targetpos.y, 250, 70), rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0), cols.newColor(1, 1, 1, 1));
-        try addQuad(&result, 0, rect.newRect(targetpos.x + 2, targetpos.y + 2, 250 - 4, 70 - 4), rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0), cols.newColor(1, 1, 1, 1));
+        try addQuad(&result, 0, .{ .x = targetpos.x, .y = targetpos.y, .w = 250, .h = 70 }, .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 }, .{ .r = 1, .g = 1, .b = 1 });
+        try addQuad(&result, 0, .{ .x = targetpos.x + 2, .y = targetpos.y + 2, .w = 250 - 4, .h = 70 - 4 }, .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 }, .{ .r = 1, .g = 1, .b = 1 });
 
         return result;
     }
@@ -62,19 +62,14 @@ pub const NotificationData = struct {
 
             const pos = desk_size.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
 
-            try batch.SpriteBatch.instance.draw(
-                spr.Sprite,
-                icon,
-                shader,
-                vecs.newVec3(pos.x, pos.y, 0),
-            );
+            try batch.SpriteBatch.instance.draw(spr.Sprite, icon, shader, .{ .x = pos.y, .y = pos.y });
         }
 
         try font.draw(.{
             .shader = font_shader,
             .text = self.title,
             .pos = desk_size.sub(.{ .x = 180, .y = 100 + 80 * @as(f32, @floatFromInt(idx)) }),
-            .color = cols.newColor(0, 0, 0, 1),
+            .color = .{ .r = 0, .g = 0, .b = 0 },
             .wrap = 160,
             .maxlines = 1,
         });
@@ -83,7 +78,7 @@ pub const NotificationData = struct {
             .shader = font_shader,
             .text = self.text,
             .pos = desk_size.sub(.{ .x = 180, .y = 100 - font.size + 80 * @as(f32, @floatFromInt(idx)) }),
-            .color = cols.newColor(0, 0, 0, 1),
+            .color = .{ .r = 0, .g = 0, .b = 0 },
             .wrap = 160,
             .maxlines = 3,
         });

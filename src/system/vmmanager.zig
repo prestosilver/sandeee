@@ -55,20 +55,34 @@ pub const VMManager = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        var iter = instance.vms.iterator();
+        {
+            var iter = instance.vms.iterator();
 
-        while (iter.next()) |entry| {
-            entry.value_ptr.*.deinit();
-            _ = instance.vms.remove(entry.key_ptr.*);
+            while (iter.next()) |entry| {
+                entry.value_ptr.*.deinit();
+                _ = instance.vms.remove(entry.key_ptr.*);
+            }
+
+            self.vms.deinit();
         }
 
-        self.vms.deinit();
+        {
+            var iter = self.results.iterator();
 
-        // TODO: free items
-        self.results.deinit();
+            while (iter.next()) |item| {
+                item.value_ptr.deinit();
+            }
 
-        // TODO: free items
-        self.threads.deinit();
+            self.results.deinit();
+        }
+
+        {
+            for (self.threads.items) |item| {
+                item.join();
+            }
+
+            self.threads.deinit();
+        }
 
         vm_allocator.deinit();
     }

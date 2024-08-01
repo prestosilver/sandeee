@@ -25,7 +25,7 @@ pub fn readGfxNew(_: ?*vm.VM) files.FileError![]const u8 {
         gfx.Context.makeCurrent();
         defer gfx.Context.makeNotCurrent();
 
-        try texture_manager.TextureManager.instance.put(result, try tex.newTextureSize(vecs.newVec2(0, 0)));
+        try texture_manager.TextureManager.instance.put(result, try tex.newTextureSize(.{}));
     }
 
     texture_idx = texture_idx +% 1;

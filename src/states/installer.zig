@@ -52,7 +52,7 @@ pub const GSInstall = struct {
     offset: f32 = 0,
 
     pub fn setup(self: *Self) !void {
-        gfx.Context.instance.color = cols.newColor(0, 0, 0.5, 1);
+        gfx.Context.instance.color = .{ .r = 0, .g = 0, .b = 0.5 };
 
         @memset(&self.setting_lengths, 0);
 
@@ -95,24 +95,24 @@ pub const GSInstall = struct {
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = title_text,
-            .pos = vecs.newVec2(100, y),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 100, .y = y },
+            .color = .{ .r = 1, .b = 1, .g = 1 },
         });
         y += self.face.size * 2;
 
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = "Please Enter new disk name:",
-            .pos = vecs.newVec2(100, y),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 100, .y = y },
+            .color = .{ .r = 1, .b = 1, .g = 1 },
         });
         y += self.face.size * 1;
 
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = self.disk_name.items,
-            .pos = vecs.newVec2(100, y),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 100, .y = y },
+            .color = .{ .r = 1, .b = 1, .g = 1 },
         });
 
         if (@intFromEnum(self.status) < @intFromEnum(Status.Settings)) return;
@@ -130,9 +130,9 @@ pub const GSInstall = struct {
             try self.face.draw(.{
                 .shader = self.font_shader,
                 .text = text,
-                .pos = vecs.newVec2(100, y),
+                .pos = .{ .x = 100, .y = y },
                 .wrap = gfx.Context.instance.size.x - 200,
-                .color = cols.newColor(1, 1, 1, 1),
+                .color = .{ .r = 1, .b = 1, .g = 1 },
             });
 
             y += self.face.sizeText(.{
@@ -147,14 +147,14 @@ pub const GSInstall = struct {
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = "Installing...",
-            .pos = vecs.newVec2(100, y),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 100, .y = y },
+            .color = .{ .r = 1, .b = 1, .g = 1 },
         });
         y += self.face.size * 2;
 
         self.load_sprite.data.size.x = (size.x - 200);
         if (self.status == .Installing) self.load_sprite.data.size.x *= 1 - self.timer;
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(100, y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, .{ .x = 100 });
 
         if (@intFromEnum(self.status) < @intFromEnum(Status.Done)) return;
 
@@ -162,8 +162,8 @@ pub const GSInstall = struct {
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = "Done!",
-            .pos = vecs.newVec2(100, y),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 100, .y = y },
+            .color = .{ .r = 1, .b = 1, .g = 1 },
         });
         y += self.face.size * 1;
 
@@ -173,8 +173,8 @@ pub const GSInstall = struct {
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = reboot_text,
-            .pos = vecs.newVec2(100, y),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 100, .y = y },
+            .color = .{ .r = 1, .b = 1, .g = 1 },
         });
     }
 

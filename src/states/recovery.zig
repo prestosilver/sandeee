@@ -39,7 +39,7 @@ pub const GSRecovery = struct {
     confirm_sel: ?bool = null,
 
     const DISK_LIST = "0123456789ABCDEF";
-    const TEXT_COLOR = cols.newColor(1, 1, 1, 1);
+    const TEXT_COLOR = .{ .r = 1, .g = 1, .b = 1 };
 
     pub fn getDate(name: []const u8) i128 {
         const path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;
@@ -54,7 +54,7 @@ pub const GSRecovery = struct {
     }
 
     pub fn setup(self: *Self) !void {
-        gfx.Context.instance.color = cols.newColor(0, 0, 0.3333, 1);
+        gfx.Context.instance.color = .{ .r = 0, .g = 0, .b = 0.3333 };
 
         self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
@@ -118,16 +118,16 @@ pub const GSRecovery = struct {
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = title_text,
-            .pos = vecs.newVec2(100, y),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 100, .y = y },
+            .color = .{ .r = 1, .g = 1, .b = 1 },
         });
         y += self.face.size * 1;
 
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = self.status,
-            .pos = vecs.newVec2(100, y),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 100, .y = y },
+            .color = .{ .r = 1, .g = 1, .b = 1 },
         });
         y += self.face.size * 2;
 
@@ -142,7 +142,7 @@ pub const GSRecovery = struct {
             try self.face.draw(.{
                 .shader = self.font_shader,
                 .text = prompt,
-                .pos = vecs.newVec2(100, y),
+                .pos = .{ .x = 100, .y = y },
                 .color = TEXT_COLOR,
             });
             y += self.face.size * 1;
@@ -162,7 +162,7 @@ pub const GSRecovery = struct {
                 try self.face.draw(.{
                     .shader = self.font_shader,
                     .text = line,
-                    .pos = vecs.newVec2(100, y),
+                    .pos = .{ .x = 100, .y = y },
                     .color = TEXT_COLOR,
                 });
                 y += self.face.size * 1;
@@ -179,7 +179,7 @@ pub const GSRecovery = struct {
                 try self.face.draw(.{
                     .shader = self.font_shader,
                     .text = line,
-                    .pos = vecs.newVec2(100, y),
+                    .pos = .{ .x = 100, .y = y },
                     .color = TEXT_COLOR,
                 });
                 y += self.face.size * 1;
@@ -196,7 +196,7 @@ pub const GSRecovery = struct {
                 try self.face.draw(.{
                     .shader = self.font_shader,
                     .text = line,
-                    .pos = vecs.newVec2(100, y),
+                    .pos = .{ .x = 100, .y = y },
                     .color = TEXT_COLOR,
                 });
                 y += self.face.size * 1;

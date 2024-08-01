@@ -43,17 +43,17 @@ pub const GSLogout = struct {
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         batch.SpriteBatch.instance.scissor = null;
 
-        try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
+        try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, .{});
 
         const clear_sprite = sp.Sprite{
             .texture = "none",
             .data = .{
-                .size = vecs.newVec2(size.x, size.y),
-                .source = rect.newRect(0, 0, size.x, size.y),
+                .size = size,
+                .source = .{ .w = size.x, .h = size.y },
             },
         };
 
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &clear_sprite, self.clear_shader, vecs.newVec3(0, 0, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &clear_sprite, self.clear_shader, .{});
 
         const text = if (target == .Update) "Updating" else "Logging Out";
 
@@ -67,7 +67,7 @@ pub const GSLogout = struct {
             .shader = self.font_shader,
             .text = text,
             .pos = logout_pos,
-            .color = cols.newColor(1, 1, 1, 1),
+            .color = .{ .r = 1, .g = 1, .b = 1 },
         });
     }
 

@@ -28,7 +28,7 @@ pub const VMData = struct {
     debug: bool = false,
     input: []i32,
     mousebtn: ?i32 = null,
-    mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
+    mousepos: vecs.Vector2 = .{},
 
     const VMDataKind = enum {
         rect,
@@ -53,10 +53,10 @@ pub const VMData = struct {
     pub fn addRect(self: *VMData, texture: []const u8, src: rect.Rectangle, dst: rect.Rectangle) !void {
         const appends: VMDataEntry = .{
             .rect = .{
-                .loc = vecs.newVec3(dst.x, dst.y, 0),
+                .loc = .{ .x = dst.x, .y = dst.y },
                 .s = spr.Sprite{
                     .texture = try allocator.alloc.dupe(u8, texture),
-                    .data = spr.SpriteData.new(src, vecs.newVec2(dst.w, dst.h)),
+                    .data = spr.SpriteData.new(src, .{ .x = dst.w, .y = dst.h }),
                 },
             },
         };
@@ -108,7 +108,7 @@ pub const VMData = struct {
         for (rects.items, 0..) |_, idx| {
             switch (rects.items[idx]) {
                 .rect => {
-                    try batch.SpriteBatch.instance.draw(spr.Sprite, &rects.items[idx].rect.s, self.shader, vecs.newVec3(bnds.x, bnds.y, 0).add(rects.items[idx].rect.loc));
+                    try batch.SpriteBatch.instance.draw(spr.Sprite, &rects.items[idx].rect.s, self.shader, .{ .x = bnds.x + rects.items[idx].rect.loc.x, .y = bnds.y + rects.items[idx].rect.loc.y, .z = rects.items[idx].rect.loc.z });
                 },
                 .text => {
                     try font.draw(
@@ -166,7 +166,7 @@ pub const VMData = struct {
     }
 
     pub fn move(self: *Self, x: f32, y: f32) !void {
-        const pos = vecs.newVec2(x, y);
+        const pos = .{ .x = x, .y = y };
 
         self.mousepos = pos;
     }
@@ -197,5 +197,5 @@ pub fn new(idx: u8, shader: *shd.Shader) !win.WindowContents {
         .input = try allocator.alloc.alloc(i32, 0),
     };
 
-    return win.WindowContents.init(self, "vm", "VM Window", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "vm", "VM Window", .{ .r = 1, .g = 1, .b = 1 });
 }

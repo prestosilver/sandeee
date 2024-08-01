@@ -39,16 +39,16 @@ pub const GSWindowed = struct {
     const Self = @This();
 
     dragging_mode: win.DragMode = .None,
-    dragging_start: vecs.Vector2 = vecs.newVec2(0, 0),
+    dragging_start: vecs.Vector2 = .{},
     dragging_window: ?*win.Window = null,
     dragging_popup: ?*popups.Popup = null,
     down: bool = false,
 
-    mousepos: vecs.Vector2 = vecs.newVec2(0, 0),
+    mousepos: vecs.Vector2 = .{},
     windows: std.ArrayList(win.Window) = undefined,
 
     notifs: std.ArrayList(notifications.Notification) = undefined,
-    open_window: vecs.Vector2 = vecs.newVec2(0, 0),
+    open_window: vecs.Vector2 = .{},
 
     wallpaper: *wall.Wallpaper,
     bar: bar.Bar,
@@ -66,7 +66,7 @@ pub const GSWindowed = struct {
     popups: std.ArrayList(popups.Popup) = undefined,
     shell: shell.Shell = undefined,
 
-    color: cols.Color = cols.newColor(0, 0, 0, 1),
+    color: cols.Color = .{ .r = 0, .g = 0, .b = 0 },
     debug_enabled: bool = false,
 
     pub var global_self: *Self = undefined;
@@ -96,7 +96,7 @@ pub const GSWindowed = struct {
             break :blk null;
         } else null;
 
-        var target = vecs.newVec2(100, 100);
+        var target = vecs.Vector2{ .x = 100, .y = 100 };
 
         for (global_self.windows.items, 0..) |_, idx| {
             global_self.windows.items[idx].data.active = false;
@@ -185,32 +185,32 @@ pub const GSWindowed = struct {
         win.WindowContents.scroll_sp[0] = .{
             .texture = "ui",
             .data = .{
-                .source = rect.newRect(0, 0, 2.0 / 8.0, 2.0 / 8.0),
-                .size = vecs.newVec2(20, 20),
+                .source = .{ .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                .size = .{ .x = 20, .y = 20 },
             },
         };
 
         win.WindowContents.scroll_sp[1] = .{
             .texture = "ui",
             .data = .{
-                .source = rect.newRect(0, 2.0 / 8.0, 2.0 / 8.0, 1.0 / 8.0),
-                .size = vecs.newVec2(20, 64),
+                .source = .{ .y = 2.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 20, .y = 64 },
             },
         };
 
         win.WindowContents.scroll_sp[2] = .{
             .texture = "ui",
             .data = .{
-                .source = rect.newRect(0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
-                .size = vecs.newVec2(20, 20),
+                .source = .{ .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                .size = .{ .x = 20, .y = 20 },
             },
         };
 
         win.WindowContents.scroll_sp[3] = .{
             .texture = "ui",
             .data = .{
-                .source = rect.newRect(0, 3.0 / 8.0, 2.0 / 8.0, 3.0 / 8.0),
-                .size = vecs.newVec2(20, 30),
+                .source = .{ .y = 3.0 / 8.0, .w = 2.0 / 8.0, .h = 3.0 / 8.0 },
+                .size = .{ .x = 20, .y = 30 },
             },
         };
 
@@ -226,18 +226,8 @@ pub const GSWindowed = struct {
 
         if (conf.SettingManager.instance.getBool("show_welcome")) {
             const window = win.Window.new("win", win.WindowData{
-                .source = rect.Rectangle{
-                    .x = 0.0,
-                    .y = 0.0,
-                    .w = 1.0,
-                    .h = 1.0,
-                },
-                .pos = .{
-                    .x = 0,
-                    .y = 0,
-                    .w = 600,
-                    .h = 350,
-                },
+                .source = rect.Rectangle{ .w = 1, .h = 1 },
+                .pos = .{ .w = 600, .h = 350 },
                 .contents = try wins.welcome.new(self.shader),
                 .active = true,
             });
@@ -324,8 +314,8 @@ pub const GSWindowed = struct {
         }
 
         // draw wallpaper
-        try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, vecs.newVec3(0, 0, 0));
-        try batch.SpriteBatch.instance.draw(desk.Desk, &self.desk, self.shader, vecs.newVec3(0, 0, 0));
+        try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, .{});
+        try batch.SpriteBatch.instance.draw(desk.Desk, &self.desk, self.shader, .{});
         try self.desk.data.addText(self.font_shader, self.face);
         try self.desk.data.updateVm();
 
@@ -334,7 +324,7 @@ pub const GSWindowed = struct {
             window.data.update();
 
             // draw the window border
-            try batch.SpriteBatch.instance.draw(win.Window, window, self.shader, vecs.newVec3(0, 0, 0));
+            try batch.SpriteBatch.instance.draw(win.Window, window, self.shader, .{});
 
             // draw the windows name
             try window.data.drawName(self.font_shader, self.face);
@@ -351,7 +341,7 @@ pub const GSWindowed = struct {
 
         // draw popups
         for (self.popups.items) |*popup| {
-            try batch.SpriteBatch.instance.draw(popups.Popup, popup, self.shader, vecs.newVec3(0, 0, 0));
+            try batch.SpriteBatch.instance.draw(popups.Popup, popup, self.shader, .{});
 
             try popup.data.drawName(self.font_shader, self.face);
 
@@ -365,17 +355,17 @@ pub const GSWindowed = struct {
         }
 
         // draw bar
-        try batch.SpriteBatch.instance.draw(bar.Bar, &self.bar, self.shader, vecs.newVec3(0, 0, 0));
+        try batch.SpriteBatch.instance.draw(bar.Bar, &self.bar, self.shader, .{});
         try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, &self.windows);
 
         // draw notifications
         for (self.notifs.items, 0..) |*notif, idx| {
-            try batch.SpriteBatch.instance.draw(notifications.Notification, notif, self.shader, vecs.newVec3(@as(f32, @floatFromInt(idx)), 0, 0));
+            try batch.SpriteBatch.instance.draw(notifications.Notification, notif, self.shader, .{ .x = @floatFromInt(idx) });
             try notif.data.drawContents(self.shader, self.face, self.font_shader, idx);
         }
 
         // draw cursor
-        try batch.SpriteBatch.instance.draw(cursor.Cursor, &self.cursor, self.shader, vecs.newVec3(0, 0, 0));
+        try batch.SpriteBatch.instance.draw(cursor.Cursor, &self.cursor, self.shader, .{});
 
         // vm manager
         try vm_manager.VMManager.instance.update();
@@ -553,7 +543,7 @@ pub const GSWindowed = struct {
                     self.dragging_mode = .Move;
 
                     const start = self.dragging_popup.?.data.pos;
-                    self.dragging_start = vecs.newVec2(start.x - self.mousepos.x, start.y - self.mousepos.y);
+                    self.dragging_start = .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y };
                 },
                 .None => {},
             }
@@ -627,16 +617,16 @@ pub const GSWindowed = struct {
                                 self.dragging_window = &self.windows.items[self.windows.items.len - 1];
                                 const start = self.dragging_window.?.data.pos;
                                 self.dragging_start = switch (self.dragging_mode) {
-                                    win.DragMode.None => vecs.newVec2(0, 0),
-                                    win.DragMode.Close => vecs.newVec2(0, 0),
-                                    win.DragMode.Full => vecs.newVec2(0, 0),
-                                    win.DragMode.Min => vecs.newVec2(0, 0),
-                                    win.DragMode.Move => vecs.newVec2(start.x - self.mousepos.x, start.y - self.mousepos.y),
-                                    win.DragMode.ResizeR => vecs.newVec2(start.w - self.mousepos.x, 0),
-                                    win.DragMode.ResizeB => vecs.newVec2(0, start.h - self.mousepos.y),
-                                    win.DragMode.ResizeL => vecs.newVec2(start.w + start.x, 0),
-                                    win.DragMode.ResizeRB => vecs.newVec2(start.w - self.mousepos.x, start.h - self.mousepos.y),
-                                    win.DragMode.ResizeLB => vecs.newVec2(start.w + start.x, start.h - self.mousepos.y),
+                                    win.DragMode.None => .{},
+                                    win.DragMode.Close => .{},
+                                    win.DragMode.Full => .{},
+                                    win.DragMode.Min => .{},
+                                    win.DragMode.Move => .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y },
+                                    win.DragMode.ResizeR => .{ .x = start.w - self.mousepos.x },
+                                    win.DragMode.ResizeB => .{ .y = start.h - self.mousepos.y },
+                                    win.DragMode.ResizeL => .{ .x = start.w + start.x },
+                                    win.DragMode.ResizeRB => .{ .x = start.w - self.mousepos.x, .y = start.h - self.mousepos.y },
+                                    win.DragMode.ResizeLB => .{ .x = start.w + start.x, .y = start.h - self.mousepos.y },
                                 };
                             }
                         },

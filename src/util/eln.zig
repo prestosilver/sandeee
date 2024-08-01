@@ -3,6 +3,13 @@ const allocator = @import("allocator.zig");
 const texture_manager = @import("texmanager.zig");
 const tex = @import("texture.zig");
 const files = @import("../system/files.zig");
+const shell = @import("../system/shell.zig");
+const popups = @import("../drawers/popup2d.zig");
+const shader = @import("../util/shader.zig");
+const events = @import("../util/events.zig");
+const window_events = @import("../events/window.zig");
+const rect = @import("../math/rects.zig");
+const gfx = @import("../util/graphics.zig");
 
 const log = @import("log.zig").log;
 
@@ -19,6 +26,40 @@ pub const ElnData = struct {
 
         textures = std.StringHashMap(u8).init(allocator.alloc);
         texture = 0;
+    }
+
+    pub const errorData = struct {
+        pub fn ok(_: *align(@alignOf(ElnData)) const anyopaque) anyerror!void {}
+    };
+
+    pub fn run(self: *const ElnData, shell_instance: *shell.Shell, shd: *shader.Shader) !void {
+        shell_instance.runBg(self.launches) catch |err| {
+            const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
+
+            const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
+            adds.* = .{
+                .data = self,
+                .message = message,
+                .shader = shd,
+                .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
+            };
+
+            try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                .global = true,
+                .popup = .{
+                    .texture = "win",
+                    .data = .{
+                        .title = "Error",
+                        .source = .{ .w = 1, .h = 1 },
+                        .pos = rect.Rectangle.initCentered(.{
+                            .w = gfx.Context.instance.size.x,
+                            .h = gfx.Context.instance.size.y,
+                        }, 350, 125),
+                        .contents = popups.PopupData.PopupContents.init(adds),
+                    },
+                },
+            });
+        };
     }
 
     pub fn parse(file: *files.File) !ElnData {

@@ -243,15 +243,15 @@ pub const Shell = struct {
                 .{
                     .texture = "bar",
                     .data = .{
-                        .source = rect.newRect(0, 11.0 / TOTAL_BAR_SPRITES, 1.0, 1.0 / TOTAL_BAR_SPRITES),
-                        .size = vecs.newVec2(64, 64),
+                        .source = .{ .y = 11.0 / TOTAL_BAR_SPRITES, .w = 1.0, .h = 1.0 / TOTAL_BAR_SPRITES },
+                        .size = .{ .x = 64, .y = 64 },
                     },
                 },
                 .{
                     .texture = "bar",
                     .data = .{
-                        .source = rect.newRect(0, 12.0 / TOTAL_BAR_SPRITES, 1.0, 1.0 / TOTAL_BAR_SPRITES),
-                        .size = vecs.newVec2(64, 64),
+                        .source = .{ .y = 12.0 / TOTAL_BAR_SPRITES, .w = 1.0, .h = 1.0 / TOTAL_BAR_SPRITES },
+                        .size = .{ .x = 64, .y = 64 },
                     },
                 },
             },
@@ -263,8 +263,8 @@ pub const Shell = struct {
                 .texture = "win",
                 .data = .{
                     .title = "Quit SandEEE",
-                    .source = rect.newRect(0, 0, 1, 1),
-                    .pos = rect.newRectCentered(.{
+                    .source = .{ .w = 0, .h = 0 },
+                    .pos = rect.Rectangle.initCentered(.{
                         .x = 0,
                         .y = 0,
                         .w = gfx.Context.instance.size.x,

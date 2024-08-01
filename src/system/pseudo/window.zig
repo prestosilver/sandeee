@@ -298,19 +298,19 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) files.FileError!void {
 
     const aid = data[0];
 
-    const dst = rect.newRect(
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[2..10]))),
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[10..18]))),
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[18..26]))),
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[26..34]))),
-    );
+    const dst = rect.Rectangle{
+        .x = @floatFromInt(std.mem.bytesToValue(u64, data[2..10])),
+        .y = @floatFromInt(std.mem.bytesToValue(u64, data[10..18])),
+        .w = @floatFromInt(std.mem.bytesToValue(u64, data[18..26])),
+        .h = @floatFromInt(std.mem.bytesToValue(u64, data[26..34])),
+    };
 
-    const src = rect.newRect(
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[34..42]))) / 1024,
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[42..50]))) / 1024,
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[50..58]))) / 1024,
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[58..66]))) / 1024,
-    );
+    const src = rect.Rectangle{
+        .x = @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[34..42]))) / 1024,
+        .y = @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[42..50]))) / 1024,
+        .w = @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[50..58]))) / 1024,
+        .h = @as(f32, @floatFromInt(std.mem.bytesToValue(u64, data[58..66]))) / 1024,
+    };
 
     for (windows_ptr.*.items, 0..) |_, idx| {
         const item = &windows_ptr.*.items[idx];
@@ -337,10 +337,10 @@ pub fn writeWinText(data: []const u8, _: ?*vm.VM) files.FileError!void {
 
     const aid = data[0];
 
-    const dst = vecs.newVec2(
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u16, data[1..3]))),
-        @as(f32, @floatFromInt(std.mem.bytesToValue(u16, data[3..5]))),
-    );
+    const dst = .{
+        .x = @as(f32, @floatFromInt(std.mem.bytesToValue(u16, data[1..3]))),
+        .y = @as(f32, @floatFromInt(std.mem.bytesToValue(u16, data[3..5]))),
+    };
 
     const text = data[5..];
 

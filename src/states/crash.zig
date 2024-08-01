@@ -24,7 +24,7 @@ pub const GSCrash = struct {
 
     pub fn setup(_: *Self) !void {
         files.write();
-        gfx.Context.instance.color = cols.newColor(0.25, 0, 0, 1);
+        gfx.Context.instance.color = .{ .r = 0.25, .g = 0, .b = 0 };
     }
 
     pub fn deinit(_: *Self) void {}
@@ -32,20 +32,20 @@ pub const GSCrash = struct {
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         batch.SpriteBatch.instance.scissor = null;
 
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sad_sprite, self.shader, vecs.newVec3(100, 100, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sad_sprite, self.shader, .{ .x = 100, .y = 100 });
 
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = "ERROR:",
-            .pos = vecs.newVec2(300, 100),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 300, .y = 100 },
+            .color = .{ .r = 1, .g = 1, .b = 1 },
             .wrap = size.x - 400,
         });
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = self.message.*,
-            .pos = vecs.newVec2(300, 100 + self.face.size),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 300, .y = 100 + self.face.size },
+            .color = .{ .r = 1, .g = 1, .b = 1 },
             .wrap = size.x - 400,
         });
 
@@ -60,16 +60,16 @@ pub const GSCrash = struct {
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = state_text,
-            .pos = vecs.newVec2(300, 100 + self.face.size * 1 + offset),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 300, .y = 100 + self.face.size * 1 + offset },
+            .color = .{ .r = 1, .g = 1, .b = 1 },
             .wrap = size.x - 400,
         });
 
         try self.face.draw(.{
             .shader = self.font_shader,
             .text = "\nIF YOU SEE THIS CRASH YOUR FILES WERE SAVED :)",
-            .pos = vecs.newVec2(300, 100 + self.face.size * 3 + offset),
-            .color = cols.newColor(1, 1, 1, 1),
+            .pos = .{ .x = 300, .y = 100 + self.face.size * 3 + offset },
+            .color = .{ .r = 1, .g = 1, .b = 1 },
             .wrap = size.x - 400,
         });
     }

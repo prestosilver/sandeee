@@ -220,8 +220,8 @@ pub fn blit() !void {
         try bios_font.draw(.{
             .text = text,
             .shader = &font_shader,
-            .pos = vecs.newVec2(0, 0),
-            .color = col.newColor(1, 1, 1, 1),
+            .pos = .{},
+            .color = .{ .r = 1, .g = 1, .b = 1 },
         });
     }
 
@@ -294,11 +294,11 @@ pub fn mouseUp(_: input_events.EventMouseUp) !void {
 }
 
 pub fn mouseMove(event: input_events.EventMouseMove) !void {
-    try game_states.getPtr(current_state).mousemove(vecs.newVec2(@as(f32, @floatCast(event.x)), @as(f32, @floatCast(event.y))));
+    try game_states.getPtr(current_state).mousemove(.{ .x = @floatCast(event.x), .y = @floatCast(event.y) });
 }
 
 pub fn mouseScroll(event: input_events.EventMouseScroll) !void {
-    try game_states.getPtr(current_state).mousescroll(vecs.newVec2(@as(f32, @floatCast(event.x)), @as(f32, @floatCast(event.y))));
+    try game_states.getPtr(current_state).mousescroll(.{ .x = @floatCast(event.x), .y = @floatCast(event.y) });
 }
 
 pub fn notification(_: window_events.EventNotification) !void {
@@ -696,8 +696,8 @@ pub fn mainErr() anyerror!void {
         .logo_sprite = .{
             .texture = "bios",
             .data = sprite.SpriteData.new(
-                rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(168, 84),
+                .{ .w = 1, .h = 1 },
+                .{ .x = 168, .y = 84 },
             ),
         },
     };
@@ -713,15 +713,15 @@ pub fn mainErr() anyerror!void {
         .logo_sprite = .{
             .texture = "logo",
             .data = sprite.SpriteData.new(
-                rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(320, 64),
+                .{ .w = 1, .h = 1 },
+                .{ .x = 320, .y = 64 },
             ),
         },
         .load_sprite = .{
             .texture = "load",
             .data = sprite.SpriteData.new(
-                rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(0, 16),
+                .{ .w = 1, .h = 1 },
+                .{ .x = 0, .y = 16 },
             ),
         },
         .shader = &shader,
@@ -739,8 +739,8 @@ pub fn mainErr() anyerror!void {
         .bar_logo_sprite = .{
             .texture = "barlogo",
             .data = sprite.SpriteData.new(
-                rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(36, 464),
+                .{ .w = 1, .h = 1 },
+                .{ .x = 36, .y = 464 },
             ),
         },
         .desk = .{
@@ -754,7 +754,7 @@ pub fn mainErr() anyerror!void {
         .cursor = .{
             .texture = "cursor",
             .data = cursor.CursorData.new(
-                rect.newRect(0, 0, 1, 1),
+                .{ .w = 1, .h = 1 },
                 6,
             ),
         },
@@ -780,8 +780,8 @@ pub fn mainErr() anyerror!void {
         .sad_sprite = .{
             .texture = "sad",
             .data = sprite.SpriteData.new(
-                rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(150, 150),
+                .{ .w = 1, .h = 1 },
+                .{ .x = 150, .y = 150 },
             ),
         },
     };
@@ -796,8 +796,8 @@ pub fn mainErr() anyerror!void {
         .load_sprite = .{
             .texture = "white",
             .data = sprite.SpriteData.new(
-                rect.newRect(0, 0, 1, 1),
-                vecs.newVec2(20, 32),
+                .{ .w = 1, .h = 1 },
+                .{ .x = 20, .y = 32 },
             ),
         },
     };

@@ -165,7 +165,7 @@ pub const SpriteBatch = struct {
                         texture_manager.TextureManager.instance.get("error") orelse
                         return error.TextureMissing
                 else
-                    &tex.Texture{ .tex = 0, .size = vecs.newVec2(0, 0), .buffer = undefined };
+                    &tex.Texture{ .tex = 0, .size = .{}, .buffer = undefined };
 
                 if (ctex != target_tex.tex)
                     c.glBindTexture(c.GL_TEXTURE_2D, target_tex.tex);

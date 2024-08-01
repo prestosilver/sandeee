@@ -128,7 +128,7 @@ pub const GSLoading = struct {
         wins.email.notif = .{
             .texture = "icons",
             .data = .{
-                .source = rect.newRect(0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+                .source = .{ .x = 0.0 / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
                 .size = undefined,
             },
         };
@@ -154,12 +154,12 @@ pub const GSLoading = struct {
         const logo_offset = size.sub(self.logo_sprite.data.size).div(2);
 
         // draw the logo
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(logo_offset.x, logo_offset.y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, .{ .x = logo_offset.x, .y = logo_offset.y });
 
         // progress bar
         self.load_sprite.data.size.x = (self.load_progress * 320 * 0.5 + self.load_sprite.data.size.x * 0.5);
         self.load_sprite.data.source.w = self.load_sprite.data.size.x / self.load_sprite.data.size.y;
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, vecs.newVec3(logo_offset.x, logo_offset.y + 100, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, .{ .x = logo_offset.x, .y = logo_offset.y + 100 });
 
         if (self.load_sprite.data.size.x > 319)
             self.done.store(true, .monotonic);

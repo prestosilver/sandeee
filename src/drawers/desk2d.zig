@@ -17,7 +17,7 @@ const allocator = @import("../util/allocator.zig");
 const window_events = @import("../events/window.zig");
 const popups = @import("popup2d.zig");
 
-const SPACING = vecs.newVec2(128, 100);
+const SPACING = vecs.Vector2{ .x = 128, .y = 100 };
 
 pub const DeskData = struct {
     const Self = @This();
@@ -26,22 +26,21 @@ pub const DeskData = struct {
     shell: shell.Shell,
 
     inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
-        var source = src;
+        const source = rect.Rectangle{
+            .x = src.x / 8 + 1.0 / 8.0 * @as(f32, @floatFromInt(sprite)),
+            .y = src.y / 8,
+            .w = src.w / 8,
+            .h = src.h / 8,
+        };
 
-        source.y /= 8;
-        source.h /= 8;
+        const color = cols.Color{ .r = 1, .g = 1, .b = 1 };
 
-        source.x /= 8;
-        source.w /= 8;
-
-        source.x += 1.0 / 8.0 * @as(f32, @floatFromInt(sprite));
-
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x, pos.y, 0), vecs.newVec2(source.x, source.y), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y }, .{ .x = source.x, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
     }
 
     pub fn updatePos(pos: *vecs.Vector2) void {
@@ -67,7 +66,7 @@ pub const DeskData = struct {
             return;
         }
 
-        var position = vecs.newVec2(0, 0);
+        var position = vecs.Vector2{};
         var idx: usize = 0;
 
         const sub_folders = try files.home.getFolders();
@@ -76,15 +75,10 @@ pub const DeskData = struct {
         for (sub_folders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
-            if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
+            if ((rect.Rectangle{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
                     const window = win.Window.new("win", win.WindowData{
-                        .source = rect.Rectangle{
-                            .x = 0.0,
-                            .y = 0.0,
-                            .w = 1.0,
-                            .h = 1.0,
-                        },
+                        .source = rect.Rectangle{ .w = 1, .h = 1 },
                         .contents = try wins.explorer.new(shader),
                         .active = true,
                     });
@@ -113,14 +107,13 @@ pub const DeskData = struct {
         for (sub_files) |file| {
             if (!checkIconSkip(file.name)) continue;
 
-            if (rect.newRect(position.x * SPACING.x, position.y * SPACING.y, SPACING.x, SPACING.y).contains(pos.?)) {
+            if ((rect.Rectangle{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
                     const index = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
 
                     const cmd = file.name[index + 1 ..];
 
                     self.shell.runBg(cmd) catch |err| {
-                        // TODO: fix leak
                         const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
                         const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
@@ -137,10 +130,8 @@ pub const DeskData = struct {
                                 .texture = "win",
                                 .data = .{
                                     .title = "File Picker",
-                                    .source = rect.newRect(0, 0, 1, 1),
-                                    .pos = rect.newRectCentered(.{
-                                        .x = 0,
-                                        .y = 0,
+                                    .source = .{ .w = 1, .h = 1 },
+                                    .pos = rect.Rectangle.initCentered(.{
                                         .w = gfx.Context.instance.size.x,
                                         .h = gfx.Context.instance.size.y,
                                     }, 350, 125),
@@ -164,13 +155,13 @@ pub const DeskData = struct {
     }
 
     pub const errorData = struct {
-        pub fn ok(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
+        pub fn ok(_: *align(@alignOf(Self)) const anyopaque) anyerror!void {}
     };
 
     pub fn getVerts(self: *const DeskData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(0);
 
-        var position = vecs.newVec2(0, 0);
+        var position = vecs.Vector2{};
         var idx: usize = 0;
 
         const sub_folders = try files.home.getFolders();
@@ -179,11 +170,11 @@ pub const DeskData = struct {
         for (sub_folders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
-            try addQuad(&result, 1, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
+            try addQuad(&result, 1, .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 }, .{ .w = 1, .h = 1 });
 
             if (self.sel) |sel| {
                 if (idx == sel)
-                    try addQuad(&result, 2, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0));
+                    try addQuad(&result, 2, .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 }, .{ .x = 7.0 / 32.0, .y = 3.0 / 32.0, .w = 3.0 / 32.0, .h = 3.0 / 32.0 });
             }
 
             idx += 1;
@@ -197,11 +188,11 @@ pub const DeskData = struct {
         for (sub_files) |file| {
             if (!checkIconSkip(file.name)) continue;
 
-            try addQuad(&result, 0, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(0, 0, 1, 1));
+            try addQuad(&result, 0, .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 }, .{ .w = 1, .h = 1 });
 
             if (self.sel) |sel|
                 if (idx == sel)
-                    try addQuad(&result, 2, rect.newRect(position.x * SPACING.x + 32, position.y * SPACING.y + 32, 64, 64), rect.newRect(7.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0, 3.0 / 32.0));
+                    try addQuad(&result, 2, .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 }, .{ .x = 7.0 / 32.0, .y = 3.0 / 32.0, .w = 3.0 / 32.0, .h = 3.0 / 32.0 });
 
             idx += 1;
 
@@ -237,7 +228,7 @@ pub const DeskData = struct {
     pub fn addText(_: *DeskData, font_shader: *shd.Shader, font: *fnt.Font) !void {
         const text_color = gfx.Context.instance.color.contrast();
 
-        var position = vecs.newVec2(0, 0);
+        var position = vecs.Vector2{};
 
         const sub_folders = try files.home.getFolders();
         defer allocator.alloc.free(sub_folders);

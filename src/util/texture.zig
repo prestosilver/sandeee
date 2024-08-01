@@ -11,7 +11,7 @@ const log = @import("../util/log.zig").log;
 pub const Texture = struct {
     tex: c.GLuint = 0,
     size: vecs.Vector2,
-    old_size: vecs.Vector2 = vecs.newVec2(0, 0),
+    old_size: vecs.Vector2 = .{},
     buffer: [][4]u8,
 
     pub fn deinit(self: *const Texture) void {

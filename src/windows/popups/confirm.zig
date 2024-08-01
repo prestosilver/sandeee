@@ -18,25 +18,25 @@ var outline_sprites = [_]spr.Sprite{
     .{
         .texture = "ui",
         .data = spr.SpriteData.new(
-            rect.newRect(
-                2.0 / 8.0,
-                0.0 / 8.0,
-                1.0 / 8.0,
-                1.0 / 8.0,
-            ),
-            vecs.newVec2(32, 32),
+            .{
+                .x = 2.0 / 8.0,
+                .y = 0.0 / 8.0,
+                .w = 1.0 / 8.0,
+                .h = 1.0 / 8.0,
+            },
+            .{ .x = 32, .y = 32 },
         ),
     },
     .{
         .texture = "ui",
         .data = spr.SpriteData.new(
-            rect.newRect(
-                3.0 / 8.0,
-                0.0 / 8.0,
-                1.0 / 8.0,
-                1.0 / 8.0,
-            ),
-            vecs.newVec2(32, 32),
+            .{
+                .x = 3.0 / 8.0,
+                .y = 0.0 / 8.0,
+                .w = 1.0 / 8.0,
+                .h = 1.0 / 8.0,
+            },
+            .{ .x = 32, .y = 32 },
         ),
     },
 };
@@ -46,7 +46,7 @@ pub const PopupConfirm = struct {
 
     pub const ConfirmButton = struct {
         text: []const u8,
-        calls: *const fn (*anyopaque) anyerror!void,
+        calls: *const fn (*const anyopaque) anyerror!void,
     };
 
     pub fn createButtonsFromStruct(comptime T: anytype) []const ConfirmButton {
@@ -93,7 +93,7 @@ pub const PopupConfirm = struct {
         return &result;
     }
 
-    data: *anyopaque,
+    data: *const anyopaque,
     message: []const u8,
     buttons: []const ConfirmButton,
     shader: *shd.Shader,
@@ -107,7 +107,7 @@ pub const PopupConfirm = struct {
             .shader = shader,
             .pos = bnds.location(),
             .text = self.message,
-            .color = cols.newColor(0, 0, 0, 1),
+            .color = .{ .r = 0, .g = 0, .b = 0 },
         });
 
         self.single_width = bnds.w / @as(f32, @floatFromInt(self.buttons.len));
@@ -128,8 +128,8 @@ pub const PopupConfirm = struct {
                 .y = font.size + 4,
             };
 
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &outline_sprites[0], self.shader, vecs.newVec3(startx - 4, midy - 4, 0.0));
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &outline_sprites[1], self.shader, vecs.newVec3(startx - 2, midy - 2, 0.0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &outline_sprites[0], self.shader, .{ .x = startx - 4, .y = midy - 4 });
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &outline_sprites[1], self.shader, .{ .x = startx - 2, .y = midy - 2 });
 
             try font.draw(.{
                 .shader = shader,
@@ -154,6 +154,7 @@ pub const PopupConfirm = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        allocator.alloc.free(self.message);
         allocator.alloc.destroy(self);
     }
 };

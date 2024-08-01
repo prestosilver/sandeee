@@ -1,8 +1,8 @@
 const vec = @import("vecs.zig");
 
 pub const Rectangle = struct {
-    x: f32,
-    y: f32,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
     w: f32,
     h: f32,
 
@@ -26,40 +26,31 @@ pub const Rectangle = struct {
     }
 
     pub inline fn location(self: Rectangle) vec.Vector2 {
-        return vec.newVec2(self.x, self.y);
+        return .{ .x = self.x, .y = self.y };
     }
 
     pub inline fn size(self: Rectangle) vec.Vector2 {
-        return vec.newVec2(self.w, self.h);
+        return .{ .x = self.w, .y = self.h };
     }
 
     pub inline fn round(self: Rectangle) Rectangle {
-        return Rectangle{
+        return .{
             .x = @round(self.x),
             .y = @round(self.y),
             .w = @round(self.w),
             .h = @round(self.h),
         };
     }
+
+    pub inline fn initCentered(parent: Rectangle, w: f32, h: f32) Rectangle {
+        return Rectangle{
+            .x = parent.x + (parent.w - w) / 2,
+            .y = parent.y + (parent.h - h) / 2,
+            .w = w,
+            .h = h,
+        };
+    }
 };
-
-pub inline fn newRectCentered(parent: Rectangle, w: f32, h: f32) Rectangle {
-    return Rectangle{
-        .x = parent.x + (parent.w - w) / 2,
-        .y = parent.y + (parent.h - h) / 2,
-        .w = w,
-        .h = h,
-    };
-}
-
-pub inline fn newRect(x: f32, y: f32, w: f32, h: f32) Rectangle {
-    return Rectangle{
-        .x = x,
-        .y = y,
-        .w = w,
-        .h = h,
-    };
-}
 
 pub const UIRectangle = struct {
     offsetXMin: f32,

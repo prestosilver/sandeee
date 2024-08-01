@@ -72,13 +72,13 @@ pub const VM = struct {
 
     allocator: std.mem.Allocator,
     stack: [STACK_MAX]vm_allocator.ObjectRef = undefined,
+    return_stack: [RET_STACK_MAX]RetStackEntry = undefined,
+
     rsp: usize = 0,
+    return_rsp: u8 = 0,
 
     functions: std.StringHashMap(VMFunc),
     inside_fn: ?[]const u8 = null,
-
-    return_stack: [RET_STACK_MAX]RetStackEntry = undefined,
-    return_rsp: u8 = 0,
 
     pc: usize = 0,
     code: ?[]const Operation = null,

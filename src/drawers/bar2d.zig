@@ -40,32 +40,34 @@ pub const BarData = struct {
 
         source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x, pos.y, 0), vecs.newVec2(source.x, source.y), cols.newColor(1, 1, 1, 1));
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), cols.newColor(1, 1, 1, 1));
+        const color = .{ .r = 1, .g = 1, .b = 1 };
+
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y }, .{ .x = source.x, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32) !void {
         const sc = @as(f32, @floatFromInt(scale));
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE));
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE));
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y, sc * r, sc * t), rect.newRect((TEX_SIZE - r) / TEX_SIZE, 0, r / TEX_SIZE, t / TEX_SIZE));
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y, .w = sc * l, .h = sc * t }, .{ .w = l / TEX_SIZE, .h = t / TEX_SIZE });
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y, .w = pos.w - sc * (l + r), .h = sc * t }, .{ .x = l / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = t / TEX_SIZE });
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y, .w = sc * r, .h = sc * t }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .w = r / TEX_SIZE, .h = t / TEX_SIZE });
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y + sc * t, sc * l, pos.h - sc * (t + b)), rect.newRect(0, t / TEX_SIZE, l / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + sc * t, pos.w - sc * (l + r), pos.h - sc * (t + b)), rect.newRect(l / TEX_SIZE, t / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + sc * t, sc * r, pos.h - sc * (t + b)), rect.newRect((TEX_SIZE - r) / TEX_SIZE, t / TEX_SIZE, r / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE));
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + sc * t, .w = sc * l, .h = pos.h - sc * (t + b) }, .{ .y = t / TEX_SIZE, .w = l / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE });
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + sc * t, .w = pos.w - sc * (l + r), .h = pos.h - sc * (t + b) }, .{ .x = l / TEX_SIZE, .y = t / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE });
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + sc * t, .w = sc * r, .h = pos.h - sc * (t + b) }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = t / TEX_SIZE, .w = r / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE });
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y + pos.h - sc * b, sc * l, sc * b), rect.newRect(0, (TEX_SIZE - b) / TEX_SIZE, l / TEX_SIZE, b / TEX_SIZE));
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + pos.h - sc * b, pos.w - sc * (l + r), sc * b), rect.newRect(l / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, b / TEX_SIZE));
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE));
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + pos.h - sc * b, .w = sc * l, .h = sc * b }, .{ .y = (TEX_SIZE - b) / TEX_SIZE, .w = l / TEX_SIZE, .h = b / TEX_SIZE });
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + pos.h - sc * b, .w = pos.w - sc * (l + r), .h = sc * b }, .{ .x = l / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = b / TEX_SIZE });
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + pos.h - sc * b, .w = sc * r, .h = sc * b }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = r / TEX_SIZE, .h = b / TEX_SIZE });
     }
 
     pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, windows: *std.ArrayList(win.Window)) !void {
-        var pos = rect.newRect(self.height, self.screendims.y - self.height + 12, self.screendims.x + self.height, self.height);
+        var pos = rect.Rectangle{ .x = self.height, .y = self.screendims.y - self.height + 12, .w = self.screendims.x + self.height, .h = self.height };
 
         try font.draw(.{
             .shader = font_shader,
@@ -83,7 +85,7 @@ pub const BarData = struct {
         defer allocator.alloc.free(clock_text);
 
         const clock_size = font.sizeText(.{ .text = clock_text });
-        const clock_pos = vecs.newVec2(self.screendims.x - clock_size.x - 10, pos.y);
+        const clock_pos = vecs.Vector2{ .x = self.screendims.x - clock_size.x - 10, .y = pos.y };
 
         try font.draw(.{
             .shader = font_shader,
@@ -94,7 +96,10 @@ pub const BarData = struct {
         self.btns = 0;
 
         for (windows.items) |window| {
-            const color = if (window.data.min) cols.newColor(0.5, 0.5, 0.5, 1.0) else cols.newColor(0, 0, 0, 1);
+            const color = if (window.data.min)
+                cols.Color{ .r = 0.5, .g = 0.5, .b = 0.5 }
+            else
+                cols.Color{ .r = 0, .g = 0, .b = 0 };
 
             pos.x = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
             try font.draw(.{
@@ -114,26 +119,26 @@ pub const BarData = struct {
         defer allocator.alloc.free(apps);
 
         if (self.btn_active) {
-            try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, vecs.newVec3(2, self.screendims.y - 464 - self.height, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, .{ .x = 2, .y = self.screendims.y - 464 - self.height });
 
             for (apps, 0..) |app, i| {
                 const icon_spr = if (app.icon) |icn|
                     spr.Sprite.new(&.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) }, spr.SpriteData.new(
-                        rect.newRect(0, 0, 1, 1),
-                        vecs.newVec2(64, 64),
+                        .{ .w = 1, .h = 1 },
+                        .{ .x = 64, .y = 64 },
                     ))
                 else
                     spr.Sprite.new("error", spr.SpriteData.new(
-                        rect.newRect(0, 0, 1, 1),
-                        vecs.newVec2(64, 64),
+                        .{ .w = 1, .h = 1 },
+                        .{ .x = 64, .y = 64 },
                     ));
                 const height = font.size * 1;
                 const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 const text = app.name;
-                const textpos = vecs.newVec2(100, y + std.math.floor((67 - height) / 2));
-                const iconpos = rect.newRect(36, y + 2, 64, 64);
+                const textpos = vecs.Vector2{ .x = 100, .y = y + std.math.floor((67 - height) / 2) };
+                const iconpos = rect.Rectangle{ .x = 36, .y = y + 2, .w = 64, .h = 64 };
 
-                try batch.SpriteBatch.instance.draw(spr.Sprite, &icon_spr, self.shader, vecs.newVec3(iconpos.x, iconpos.y, 0));
+                try batch.SpriteBatch.instance.draw(spr.Sprite, &icon_spr, self.shader, .{ .x = iconpos.x, .y = iconpos.y });
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -169,7 +174,7 @@ pub const BarData = struct {
 
     pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), shader: *shd.Shader, pos: vecs.Vector2) !bool {
         _ = shader;
-        const btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
+        const btn = rect.Rectangle{ .y = self.screendims.y - self.height, .w = 3 * self.height, .h = self.height };
 
         var added = false;
 
@@ -179,7 +184,7 @@ pub const BarData = struct {
             for (windows.items, 0..) |*window, idx| {
                 const offset = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
 
-                const button_bounds = rect.newRect(offset, self.screendims.y - self.height, 4 * self.height, self.height);
+                const button_bounds = rect.Rectangle{ .x = offset, .y = self.screendims.y - self.height, .w = 4 * self.height, .h = self.height };
 
                 if (button_bounds.contains(pos)) {
                     if (window.data.active or window.data.min) {
@@ -209,13 +214,11 @@ pub const BarData = struct {
         if (self.btn_active) {
             for (apps, 0..) |app, i| {
                 const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
-                const item = rect.newRect(36, y, 160, 67);
+                const item = rect.Rectangle{ .x = 36, .y = y, .w = 160, .h = 67 };
                 if (item.contains(pos)) {
                     added = true;
                     self.shell.root = files.root;
-                    _ = self.shell.runBg(app.launches) catch {
-                        //TODO: popup
-                    };
+                    try app.run(&self.shell, self.shader);
                 }
             }
         }
@@ -225,7 +228,7 @@ pub const BarData = struct {
             self.btn_active = false;
         }
 
-        const bnds = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
+        const bnds = rect.Rectangle{ .y = self.screendims.y - self.height, .w = self.screendims.x, .h = self.height };
 
         return bnds.contains(pos) or added;
     }
@@ -236,30 +239,30 @@ pub const BarData = struct {
 
     pub fn getVerts(self: *const BarData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(9 * 6 * 2);
-        const pos = rect.newRect(0, self.screendims.y - self.height, self.screendims.x, self.height);
+        const pos = rect.Rectangle{ .y = self.screendims.y - self.height, .w = self.screendims.x, .h = self.height };
 
         try addUiQuad(&result, 0, pos, 2, 3, 3, 3, 3);
 
-        const btn = rect.newRect(0, self.screendims.y - self.height, 3 * self.height, self.height);
+        const btn = rect.Rectangle{ .y = self.screendims.y - self.height, .w = 3 * self.height, .h = self.height };
         try addUiQuad(&result, 1, btn, 2, 6, 6, 6, 6);
 
-        var icon = btn;
+        const icon = rect.Rectangle{
+            .x = btn.x + 3,
+            .y = btn.y + 3,
+            .w = btn.h - 6,
+            .h = btn.h - 6,
+        };
 
-        icon.h -= 6;
-        icon.w = icon.h;
-        icon.x += 3;
-        icon.y += 3;
-
-        try addQuad(&result, 3, icon, rect.newRect(0, 0, 1, 1));
+        try addQuad(&result, 3, icon, .{ .w = 1, .h = 1 });
 
         if (self.btn_active) {
-            const menu = rect.newRect(0, self.screendims.y - 466 - self.height, 300, 466);
+            const menu = rect.Rectangle{ .y = self.screendims.y - 466 - self.height, .w = 300, .h = 466 };
 
             try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
         }
 
         for (0..@as(usize, @intCast(self.btns))) |i| {
-            const b = rect.newRect(self.height * @as(f32, @floatFromInt(i * 4 + 3)), self.screendims.y - self.height, 4 * self.height, self.height);
+            const b = rect.Rectangle{ .x = self.height * @as(f32, @floatFromInt(i * 4 + 3)), .y = self.screendims.y - self.height, .w = 4 * self.height, .h = self.height };
             try addUiQuad(&result, 1, b, 2, 6, 6, 6, 6);
         }
 

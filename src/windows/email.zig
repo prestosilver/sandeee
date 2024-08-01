@@ -61,7 +61,7 @@ const EmailData = struct {
         self.bnds = bnds.*;
 
         if (self.login == null) {
-            props.clear_color = col.newColorRGBA(192, 192, 192, 255);
+            props.clear_color = .{ .r = 0.75, .g = 0.75, .b = 0.75 };
             if (self.login_error) |err| {
                 try font.draw(.{
                     .shader = font_shader,
@@ -78,14 +78,14 @@ const EmailData = struct {
 
             self.login_pos = .{ .x = center - bnds.x, .y = center_y - bnds.y };
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.logo, self.shader, vecs.newVec3(center - 26 - 50, center_y - 250, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.logo, self.shader, .{ .x = center - 26 - 50, .y = center_y - 250 });
 
             self.text_box[0].data.size.x = 200;
             self.text_box[1].data.size.x = 196;
             self.button[0].data.size.x = 100;
             self.button[1].data.size.x = 96;
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(center, center_y - 102, 0));
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(center + 2, center_y - 100, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 102 });
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 100 });
 
             try font.draw(.{
                 .shader = font_shader,
@@ -110,8 +110,8 @@ const EmailData = struct {
                 });
             }
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(center, center_y - 152, 0));
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(center + 2, center_y - 150, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 152 });
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 150 });
 
             try font.draw(.{
                 .shader = font_shader,
@@ -136,8 +136,8 @@ const EmailData = struct {
                 });
             }
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[0], self.shader, vecs.newVec3(center, center_y - 52, 0));
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[1], self.shader, vecs.newVec3(center + 2, center_y - 50, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[0], self.shader, .{ .x = center, .y = center_y - 52 });
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[1], self.shader, .{ .x = center + 2, .y = center_y - 50 });
 
             const size = font.sizeText(.{
                 .text = "Login",
@@ -155,7 +155,7 @@ const EmailData = struct {
             return;
         }
 
-        props.clear_color = col.newColorRGBA(255, 255, 255, 255);
+        props.clear_color = .{ .r = 1, .g = 1, .b = 1 };
 
         if (props.scroll == null) {
             props.scroll = .{
@@ -174,7 +174,7 @@ const EmailData = struct {
 
         self.divx.data.size.y = bnds.h;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.divx, self.shader, vecs.newVec3(bnds.x + 100, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.divx, self.shader, .{ .x = bnds.x + 100, .y = bnds.y });
 
         self.dive.data.size.x = bnds.w - 102;
 
@@ -189,7 +189,7 @@ const EmailData = struct {
 
                     if (self.box != email_manager.boxes.len - 1) continue;
                 } else if (email.box != self.box) continue;
-                var color = col.newColor(0, 0, 0, 1);
+                var color = col.Color{ .r = 0, .g = 0, .b = 0 };
                 if (@import("builtin").mode == .Debug) {
                     if (!email_manager.getEmailVisible(email, self.login.?)) color.a = 0.5;
                 } else {
@@ -203,15 +203,15 @@ const EmailData = struct {
                     try font.draw(.{
                         .shader = font_shader,
                         .text = fnt.CHECK,
-                        .pos = vecs.newVec2(bnds.x + 108, y - 2),
-                        .color = col.newColor(0, 1.0, 0, 1.0),
+                        .pos = .{ .x = bnds.x + 108, .y = y - 2 },
+                        .color = .{ .r = 0, .g = 1, .b = 0 },
                     });
                 }
 
                 try font.draw(.{
                     .shader = font_shader,
                     .text = text,
-                    .pos = vecs.newVec2(bnds.x + 108 + 20, y - 2),
+                    .pos = .{ .x = bnds.x + 108 + 20, .y = y - 2 },
                     .color = color,
                     .wrap = bnds.w - 108 - 20 - 20,
                     .maxlines = 1,
@@ -221,10 +221,10 @@ const EmailData = struct {
                     self.sel.data.size.x = bnds.w - 102;
                     self.sel.data.size.y = font.size + 8 - 2;
 
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + 102, y - 4, 0));
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 102, .y = y - 4 });
                 }
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, y + font.size + 2, 0));
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = y + font.size + 2 });
 
                 y += font.size + 8;
             }
@@ -235,9 +235,9 @@ const EmailData = struct {
         } else {
             self.backbg.data.size.x = bnds.w - 102;
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.backbg, self.shader, vecs.newVec3(bnds.x + 102, bnds.y - 2, 0));
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.reply, self.shader, vecs.newVec3(bnds.x + 104, bnds.y, 0));
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back, self.shader, vecs.newVec3(bnds.x + 144, bnds.y, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.backbg, self.shader, .{ .x = bnds.x + 102, .y = bnds.y - 2 });
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.reply, self.shader, .{ .x = bnds.x + 104, .y = bnds.y });
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back, self.shader, .{ .x = bnds.x + 144, .y = bnds.y });
 
             const email = self.viewing.?;
 
@@ -246,7 +246,7 @@ const EmailData = struct {
             try font.draw(.{
                 .shader = font_shader,
                 .text = from,
-                .pos = vecs.newVec2(bnds.x + 108, bnds.y + 44),
+                .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 },
             });
 
             const text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
@@ -254,12 +254,12 @@ const EmailData = struct {
             try font.draw(.{
                 .shader = font_shader,
                 .text = text,
-                .pos = vecs.newVec2(bnds.x + 108, bnds.y + 44 + font.size),
+                .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 + font.size },
             });
 
             const y = bnds.y + 44 + font.size * 2 - props.scroll.?.value;
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, vecs.newVec3(bnds.x + 102, bnds.y + 44 + font.size * 2, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = bnds.y + 44 + font.size * 2 });
 
             const old_scissor = batch.SpriteBatch.instance.scissor;
             batch.SpriteBatch.instance.scissor.?.y = bnds.y + 48 + font.size * 2;
@@ -268,7 +268,7 @@ const EmailData = struct {
             try font.draw(.{
                 .shader = font_shader,
                 .text = email.contents,
-                .pos = vecs.newVec2(bnds.x + 108, y + 2),
+                .pos = .{ .x = bnds.x + 108, .y = y + 2 },
                 .wrap = bnds.w - 116.0 - 20,
             });
 
@@ -281,7 +281,7 @@ const EmailData = struct {
         }
 
         for (email_manager.boxes, 0..) |box, idx| {
-            const pos = vecs.newVec2(bnds.x + 2, bnds.y + font.size * @as(f32, @floatFromInt(idx)));
+            const pos = .{ .x = bnds.x + 2, .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)) };
 
             if (idx == self.box) {
                 const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], email_manager.getPc(idx) });
@@ -304,7 +304,7 @@ const EmailData = struct {
         self.sel.data.size.x = 100;
         self.sel.data.size.y = font.size;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x, bnds.y + font.size * @as(f32, @floatFromInt(self.box)), 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x, .y = bnds.y + font.size * @as(f32, @floatFromInt(self.box)) });
     }
 
     pub fn submitFile(self: *Self) !void {
@@ -320,8 +320,8 @@ const EmailData = struct {
                 .texture = "win",
                 .data = .{
                     .title = "Send Attachment",
-                    .source = rect.newRect(0, 0, 1, 1),
-                    .pos = rect.newRectCentered(self.bnds, 350, 125),
+                    .source = .{ .w = 1, .h = 1 },
+                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                     .contents = popups.PopupData.PopupContents.init(adds),
                 },
             },
@@ -381,7 +381,85 @@ const EmailData = struct {
         }
     }
 
-    // TODO: Thread
+    // TODO: reimplement old
+    pub fn submit_thread(conts: []const u8, cond: []const u8, good: *bool) !void {
+        const idx = std.mem.indexOf(u8, cond, "=") orelse cond.len - 1;
+        const name = cond[0..idx];
+        if (std.mem.eql(u8, name, "conts")) {
+            const target_text = cond[idx + 1 ..];
+            const target_conts = std.mem.trim(u8, conts, &.{'\n'});
+
+            good.* = std.ascii.eqlIgnoreCase(target_text, target_conts);
+        } // else if (std.mem.eql(u8, name, "input")) {
+        // input.clearAndFree();
+        // try input.appendSlice(cond[idx + 1 ..]);
+        // } else if (std.mem.eql(u8, name, "libfn")) {
+        //     libfn = cond[idx + 1 ..];
+        // }
+        else if (std.mem.eql(u8, name, "runs")) {
+            const target_text = cond[idx + 1 ..];
+
+            // if (libfn) |fnname| {
+            //     if (!std.mem.startsWith(u8, conts, "elib")) return;
+            //     var library_idx: usize = 7;
+            //     var start_idx: usize = 256 * @as(usize, @intCast(conts[4])) + @as(usize, @intCast(conts[5]));
+
+            //     for (0..@as(usize, @intCast(conts[6]))) |_| {
+            //         const name_len: usize = @intCast(conts[library_idx]);
+            //         library_idx += 1;
+            //         if (library_idx + name_len < conts.len and std.mem.eql(u8, fnname, conts[library_idx .. library_idx + name_len])) {
+            //             const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
+
+            //             var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
+            //             defer vm_instance.deinit();
+
+            //             vm_instance.loadString(conts[start_idx .. start_idx + fnsize]) catch {
+            //                 return;
+            //             };
+            //             vm_instance.return_stack[0] = .{
+            //                 .function = null,
+            //                 .location = vm_instance.code.?.len + 1,
+            //             };
+            //             vm_instance.return_rsp = 1;
+
+            //             vm_instance.runAll() catch {
+            //                 good = false;
+            //                 break :blk;
+            //             };
+
+            //             const result = try vm_instance.popStack();
+
+            //             good.* = result.data().* == .string and std.mem.eql(u8, result.data().string, target_text);
+
+            //             break :blk;
+            //         }
+            //         library_idx += 1 + name_len;
+            //         start_idx += @as(usize, @intCast(conts[library_idx])) * 256;
+            //         library_idx += 1;
+            //         start_idx += @intCast(conts[library_idx]);
+            //         library_idx += 1;
+            //     }
+
+            //     good.* = false;
+            //     continue;
+            // }
+
+            if (!std.mem.startsWith(u8, conts, "EEEp")) return;
+            var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
+            defer vmInstance.deinit();
+
+            // try vmInstance.input.appendSlice(input.items);
+            try vmInstance.input.append('\n');
+
+            try vmInstance.loadString(conts[4..]);
+
+            try vmInstance.runAll();
+            const trimmed = std.mem.trimLeft(u8, vmInstance.out.items, " \n");
+
+            good.* = std.ascii.endsWithIgnoreCase(trimmed, target_text);
+        }
+    }
+
     pub fn submit(file: ?*files.File, data: *anyopaque) !void {
         if (file) |target| {
             const self: *Self = @ptrCast(@alignCast(data));
@@ -396,83 +474,28 @@ const EmailData = struct {
                 var input = std.ArrayList(u8).init(allocator.alloc);
                 defer input.deinit();
 
-                var libfn: ?[]const u8 = null;
+                const total = std.mem.count(u8, selected.condition.Submit.req, ";") + 1;
+                var threads = try allocator.alloc.alloc(std.Thread, total);
+                var outputs = try allocator.alloc.alloc(bool, total);
+                defer allocator.alloc.free(threads);
+                defer allocator.alloc.free(outputs);
 
-                while (iter.next()) |cond| {
-                    const idx = std.mem.indexOf(u8, cond, "=") orelse cond.len - 1;
-                    const name = cond[0..idx];
-                    if (std.mem.eql(u8, name, "conts")) {
-                        const target_text = cond[idx + 1 ..];
-                        const target_conts = std.mem.trim(u8, conts, &.{'\n'});
+                var idx: usize = 0;
 
-                        good = good and std.ascii.eqlIgnoreCase(target_text, target_conts);
-                    } else if (std.mem.eql(u8, name, "input")) {
-                        input.clearAndFree();
-                        try input.appendSlice(cond[idx + 1 ..]);
-                    } else if (std.mem.eql(u8, name, "libfn")) {
-                        libfn = cond[idx + 1 ..];
-                    } else if (std.mem.eql(u8, name, "runs")) blk: {
-                        const target_text = cond[idx + 1 ..];
+                while (iter.next()) |cond| : (idx += 1) {
+                    threads[idx] = try std.Thread.spawn(.{}, submit_thread, .{
+                        conts,
+                        cond,
+                        &outputs[idx],
+                    });
+                }
 
-                        if (libfn) |fnname| {
-                            if (!std.mem.startsWith(u8, conts, "elib")) return;
-                            var library_idx: usize = 7;
-                            var start_idx: usize = 256 * @as(usize, @intCast(conts[4])) + @as(usize, @intCast(conts[5]));
+                for (threads) |thread| {
+                    thread.join();
+                }
 
-                            for (0..@as(usize, @intCast(conts[6]))) |_| {
-                                const name_len: usize = @intCast(conts[library_idx]);
-                                library_idx += 1;
-                                if (library_idx + name_len < conts.len and std.mem.eql(u8, fnname, conts[library_idx .. library_idx + name_len])) {
-                                    const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
-
-                                    var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
-                                    defer vm_instance.deinit();
-
-                                    vm_instance.loadString(conts[start_idx .. start_idx + fnsize]) catch {
-                                        return;
-                                    };
-                                    vm_instance.return_stack[0] = .{
-                                        .function = null,
-                                        .location = vm_instance.code.?.len + 1,
-                                    };
-                                    vm_instance.return_rsp = 1;
-
-                                    vm_instance.runAll() catch {
-                                        good = false;
-                                        break :blk;
-                                    };
-
-                                    const result = try vm_instance.popStack();
-
-                                    good = good and result.data().* == .string and std.mem.eql(u8, result.data().string, target_text);
-
-                                    break :blk;
-                                }
-                                library_idx += 1 + name_len;
-                                start_idx += @as(usize, @intCast(conts[library_idx])) * 256;
-                                library_idx += 1;
-                                start_idx += @intCast(conts[library_idx]);
-                                library_idx += 1;
-                            }
-
-                            good = false;
-                            continue;
-                        }
-
-                        if (!std.mem.startsWith(u8, conts, "EEEp")) return;
-                        var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
-                        defer vmInstance.deinit();
-
-                        try vmInstance.input.appendSlice(input.items);
-                        try vmInstance.input.append('\n');
-
-                        try vmInstance.loadString(conts[4..]);
-
-                        try vmInstance.runAll();
-                        const trimmed = std.mem.trimLeft(u8, vmInstance.out.items, " \n");
-
-                        good = good and std.ascii.endsWithIgnoreCase(trimmed, target_text);
-                    }
+                for (outputs) |o| {
+                    if (!o) good = false;
                 }
 
                 if (good) {
@@ -552,19 +575,19 @@ const EmailData = struct {
         switch (btn.?) {
             0 => {
                 if (self.viewing) |_| {
-                    const reply_bnds = rect.newRect(104, 0, 32, 32);
+                    const reply_bnds = rect.Rectangle{ .x = 104, .w = 32, .h = 32 };
                     if (reply_bnds.contains(mousepos)) {
                         try self.submitFile();
                     }
 
-                    const back_bnds = rect.newRect(144, 0, 32, 32);
+                    const back_bnds = rect.Rectangle{ .x = 144, .w = 32, .h = 32 };
                     if (back_bnds.contains(mousepos)) {
                         self.viewing = null;
                         return;
                     }
                 }
 
-                const cont_bnds = rect.newRect(102, 0, size.x - 102, size.y);
+                const cont_bnds = rect.Rectangle{ .x = 102, .w = size.x - 102, .h = size.y };
                 if (cont_bnds.contains(mousepos)) {
                     if (self.viewing != null) return;
 
@@ -579,7 +602,12 @@ const EmailData = struct {
                             if (!email_manager.getEmailVisible(email, self.login.?)) continue;
                         }
 
-                        const bnds = rect.newRect(102, @as(f32, @floatFromInt(y)), size.x - 102, self.rowsize);
+                        const bnds = rect.Rectangle{
+                            .x = 102,
+                            .y = @as(f32, @floatFromInt(y)),
+                            .w = size.x - 102,
+                            .h = self.rowsize,
+                        };
 
                         y += @intFromFloat(self.rowsize);
 
@@ -595,9 +623,9 @@ const EmailData = struct {
                         }
                     }
                 } else {
-                    const bnds = rect.newRect(0, 0, 102, size.y);
+                    const bnds = rect.Rectangle{ .w = 102, .h = size.y };
                     if (bnds.contains(mousepos)) {
-                        const id = (mousepos.y) / 24.0;
+                        const id = mousepos.y / 24.0;
 
                         self.box = @as(u8, @intCast(@as(i32, @intFromFloat(id + 0.5))));
 
@@ -655,59 +683,59 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .divx = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(2, 100),
+            .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 2 },
         )),
         .dive = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(100, 2),
+            .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .y = 2 },
         )),
         .logo = sprite.Sprite.new("email-logo", sprite.SpriteData.new(
-            rect.newRect(0, 0, 1, 1),
-            vecs.newVec2(256, 72),
+            .{ .w = 1.0, .h = 1.0 },
+            .{ .x = 256, .y = 72 },
         )),
         .sel = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(100, 6),
+            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .y = 6 },
         )),
         .reply = sprite.Sprite.new("icons", sprite.SpriteData.new(
-            rect.newRect(1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(32, 32),
+            .{ .x = 1.0 / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 32, .y = 32 },
         )),
         .back = sprite.Sprite.new("icons", sprite.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(32, 32),
+            .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 32, .y = 32 },
         )),
         .backbg = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
-            vecs.newVec2(28, 40),
+            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .{ .x = 28, .y = 40 },
         )),
         .text_box = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 32.0),
+                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2, .y = 32 },
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 28),
+                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2, .y = 28 },
             )),
         },
         .button = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 32.0),
+                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2, .y = 32 },
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 28),
+                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2, .y = 28 },
             )),
         },
         .shader = shader,
         .login_text = [2][]u8{ try allocator.alloc.alloc(u8, 0), try allocator.alloc.alloc(u8, 0) },
     };
 
-    self.button[1].data.color = col.newColorRGBA(192, 192, 192, 255);
-    self.sel.data.color = col.newColorRGBA(255, 0, 0, 255);
+    self.button[1].data.color = .{ .r = 0.75, .g = 0.75, .b = 0.75 };
+    self.sel.data.color = .{ .r = 1, .g = 0, .b = 0 };
 
-    return win.WindowContents.init(self, "email", fnt.EEE ++ "Mail", col.newColorRGBA(192, 192, 192, 255));
+    return win.WindowContents.init(self, "email", fnt.EEE ++ "Mail", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
 }

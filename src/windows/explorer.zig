@@ -21,8 +21,6 @@ const events = @import("../util/events.zig");
 const gfx = @import("../util/graphics.zig");
 const va = @import("../util/vertArray.zig");
 
-const SCROLL = 30;
-
 pub const ExplorerData = struct {
     const ExplorerIcon = struct {
         name: []const u8,
@@ -84,7 +82,7 @@ pub const ExplorerData = struct {
     }
 
     pub const ErrorData = struct {
-        pub fn ok(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
+        pub fn ok(_: *align(@alignOf(Self)) const anyopaque) anyerror!void {}
     };
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
@@ -137,23 +135,23 @@ pub const ExplorerData = struct {
                     try font.draw(.{
                         .shader = font_shader,
                         .text = icon.name,
-                        .pos = vecs.newVec2(bnds.x + x + xo - 14, bnds.y + 64 + y + 6),
-                        .color = col.newColor(0, 0, 0, 1),
+                        .pos = .{ .x = bnds.x + x + xo - 14, .y = bnds.y + 64 + y + 6 },
+                        .color = .{ .r = 0, .g = 0, .b = 0 },
                         .wrap = 100,
                         .maxlines = 1,
                     });
 
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                     if (self.selected) |selected| {
                         if (selected == idx) {
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
                         }
                     }
                 }
 
                 if (self.last_action) |last_action| {
-                    if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(last_action.pos)) {
+                    if ((rect.Rectangle{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(last_action.pos)) {
                         switch (last_action.kind) {
                             .SingleLeft => {
                                 self.selected = idx;
@@ -180,7 +178,6 @@ pub const ExplorerData = struct {
                                     continue :draw_loop;
                                 } else {
                                     _ = self.shell.runBg(icon.name) catch |err| {
-                                        // TODO: fix leak
                                         const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
                                         const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
@@ -196,8 +193,8 @@ pub const ExplorerData = struct {
                                                 .texture = "win",
                                                 .data = .{
                                                     .title = "File Picker",
-                                                    .source = rect.newRect(0, 0, 1, 1),
-                                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
+                                                    .source = .{ .w = 1, .h = 1 },
+                                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
                                                 },
                                             },
@@ -221,25 +218,28 @@ pub const ExplorerData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         self.text_box[0].data.size.x = bnds.w - 36;
         self.text_box[1].data.size.x = bnds.w - 40;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 36, bnds.y + 2, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 36, .y = bnds.y + 2 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 4 });
 
         const tmp = batch.SpriteBatch.instance.scissor;
-        batch.SpriteBatch.instance.scissor = rect.newRect(bnds.x + 42, bnds.y + 4, bnds.w - 4 - 34, 28);
+        batch.SpriteBatch.instance.scissor = .{ .x = bnds.x + 42, .y = bnds.y + 4, .w = bnds.w - 4 - 34, .h = 28 };
         try font.draw(.{
             .shader = font_shader,
             .text = self.shell.root.name,
-            .pos = vecs.newVec2(bnds.x + 42, bnds.y + 8),
-            .color = col.newColor(0, 0, 0, 1),
+            .pos = .{
+                .x = bnds.x + 42,
+                .y = bnds.y + 8,
+            },
+            .color = .{ .r = 0, .g = 0, .b = 0 },
         });
 
         batch.SpriteBatch.instance.scissor = tmp;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
     }
 
     pub fn deinit(self: *Self) void {
@@ -253,7 +253,7 @@ pub const ExplorerData = struct {
         if (btn == null) return;
 
         if (mousepos.y < 36) {
-            if (rect.newRect(0, 0, 28, 28).contains(mousepos)) {
+            if ((rect.Rectangle{ .w = 28, .h = 28 }).contains(mousepos)) {
                 self.shell.root = self.shell.root.parent;
                 try self.refresh();
                 self.selected = null;
@@ -294,8 +294,8 @@ pub const ExplorerData = struct {
     }
 
     pub const confirmData = struct {
-        pub fn yes(data: *align(@alignOf(Self)) anyopaque) anyerror!void {
-            const self = @as(*Self, @ptrCast(data));
+        pub fn yes(data: *align(@alignOf(Self)) const anyopaque) anyerror!void {
+            const self = @as(*const Self, @ptrCast(data));
 
             self.shell.root.removeFile(self.icon_data[self.selected.?].name) catch |err| {
                 switch (err) {
@@ -303,11 +303,9 @@ pub const ExplorerData = struct {
                     else => return err,
                 }
             };
-
-            self.selected = null;
         }
 
-        pub fn no(_: *align(@alignOf(Self)) anyopaque) anyerror!void {}
+        pub fn no(_: *align(@alignOf(Self)) const anyopaque) anyerror!void {}
     };
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
@@ -320,7 +318,7 @@ pub const ExplorerData = struct {
                     const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
                     adds.* = .{
                         .data = self,
-                        .message = "Are you sure you want to delete this file.",
+                        .message = try allocator.alloc.dupe(u8, "Are you sure you want to delete this file."),
                         .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(confirmData),
                         .shader = self.shader,
                     };
@@ -330,8 +328,8 @@ pub const ExplorerData = struct {
                             .texture = "win",
                             .data = .{
                                 .title = "File Picker",
-                                .source = rect.newRect(0, 0, 1, 1),
-                                .pos = rect.newRectCentered(self.bnds, 350, 125),
+                                .source = .{ .w = 1.0, .h = 1.0 },
+                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                                 .contents = popups.PopupData.PopupContents.init(adds),
                             },
                         },
@@ -353,21 +351,21 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .gray = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(72.0, 72.0),
+            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 72.0, .y = 72.0 },
         )),
         .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
-            vecs.newVec2(0.0, 40.0),
+            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .{ .y = 40.0 },
         )),
         .text_box = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 32.0),
+                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2.0, .y = 32.0 },
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 28.0),
+                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2.0, .y = 28.0 },
             )),
         },
         .icons = undefined,
@@ -383,17 +381,17 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         const i = @as(f32, @floatFromInt(idx)) - 1;
 
         self.icons[idx] = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
-            rect.newRect(i / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(64, 64),
+            .{ .x = i / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 64, .y = 64 },
         ));
     }
 
     self.icons[0] = sprite.Sprite.new("icons", sprite.SpriteData.new(
-        rect.newRect(3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-        vecs.newVec2(32.0, 32.0),
+        .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+        .{ .x = 32, .y = 32 },
     ));
 
     try self.refresh();
 
-    return win.WindowContents.init(self, "explorer", "Files", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "explorer", "Files", .{ .r = 1, .g = 1, .b = 1 });
 }

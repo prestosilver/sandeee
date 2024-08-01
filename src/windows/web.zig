@@ -170,7 +170,7 @@ pub const WebData = struct {
 
         ali: Align = .Left,
         scale: f32 = 1.0,
-        color: col.Color = col.newColor(0, 0, 0, 1),
+        color: col.Color = .{ .r = 0, .g = 0, .b = 0 },
         locked: bool = false,
         suffix: ?[]const u8 = null,
         prefix: ?[]const u8 = null,
@@ -456,13 +456,12 @@ pub const WebData = struct {
                 current_style.scale = std.fmt.parseFloat(f32, fullLine["scale: ".len..]) catch 1.0;
             }
             if (std.mem.startsWith(u8, fullLine, "color: ")) {
-                const val = std.fmt.parseInt(u32, fullLine["color: ".len..], 16) catch 0xFF0000;
-                current_style.color = col.newColorRGBA(
-                    @intCast((val >> 16) & 0xFF),
-                    @intCast((val >> 8) & 0xFF),
-                    @intCast((val >> 0) & 0xFF),
-                    0xFF,
-                );
+                const buf = fullLine["color: ".len..];
+                current_style.color = if (buf.len > 6)
+                    .{ .r = 1, .g = 0, .b = 0 }
+                else
+                    col.Color.parseColor(buf[0..6].*) catch
+                        .{ .r = 1, .g = 0, .b = 0 };
             }
         }
     }
@@ -494,7 +493,7 @@ pub const WebData = struct {
             .text = try std.mem.concat(allocator.alloc, u8, &.{ files.home.name, name }),
             .data = @as(*anyopaque, @ptrCast(output)),
             .submit = &submit,
-            .prompt = "Pick a path to save the file",
+            .prompt = try allocator.alloc.dupe(u8, "Pick a path to save the file"),
         };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
@@ -502,8 +501,8 @@ pub const WebData = struct {
                 .texture = "win",
                 .data = .{
                     .title = "Save As",
-                    .source = rect.newRect(0, 0, 1, 1),
-                    .pos = rect.newRectCentered(self.bnds, 350, 125),
+                    .source = .{ .w = 1, .h = 1 },
+                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                     .contents = popups.PopupData.PopupContents.init(adds),
                 },
             },
@@ -552,7 +551,7 @@ pub const WebData = struct {
 
             const web_width = bnds.w - 14;
 
-            var pos = vecs.newVec2(0, -props.scroll.?.value + 50);
+            var pos = vecs.Vector2{ .y = -props.scroll.?.value + 50 };
 
             if (self.conts == null) {
                 self.load_thread = try std.Thread.spawn(.{}, loadPage, .{self});
@@ -621,10 +620,10 @@ pub const WebData = struct {
                             try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
                                 .texture = &texid,
                                 .data = .{
-                                    .source = rect.newRect(0, 0, 1, 1),
+                                    .source = .{ .w = 1, .h = 1 },
                                     .size = size,
                                 },
-                            }, self.shader, vecs.newVec3(bnds.x + 6 + x, bnds.y + 6 + pos.y, 0));
+                            }, self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
                             texid[4] += 1;
                             pos.y += size.y;
                         },
@@ -632,10 +631,10 @@ pub const WebData = struct {
                             try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
                                 .texture = &texid,
                                 .data = .{
-                                    .source = rect.newRect(0, 0, 1, 1),
+                                    .source = .{ .w = 1, .h = 1 },
                                     .size = size,
                                 },
-                            }, self.shader, vecs.newVec3(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y, 0));
+                            }, self.shader, .{ .x = bnds.x + 6 + pos.x, .y = bnds.y + 6 + pos.y });
                             texid[4] += 1;
                             pos.y += size.y;
                         },
@@ -645,10 +644,10 @@ pub const WebData = struct {
                             try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
                                 .texture = &texid,
                                 .data = .{
-                                    .source = rect.newRect(0, 0, 1, 1),
+                                    .source = .{ .w = 1, .h = 1 },
                                     .size = size,
                                 },
-                            }, self.shader, vecs.newVec3(bnds.x + 6 + x, bnds.y + 6 + pos.y, 0));
+                            }, self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
                             texid[4] += 1;
                             pos.y += size.y;
                         },
@@ -661,7 +660,7 @@ pub const WebData = struct {
                 }
 
                 if (std.mem.startsWith(u8, line, "> ")) {
-                    style.color = col.newColor(0, 0, 1, 1);
+                    style.color = .{ .r = 0, .g = 0, .b = 1 };
                     const linkcont = line[2..];
                     const linkidx = std.mem.indexOf(u8, linkcont, ":") orelse 0;
 
@@ -679,7 +678,7 @@ pub const WebData = struct {
                             .Left => {
                                 const link = WebData.WebLink{
                                     .url = url,
-                                    .pos = rect.newRect(pos.x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
+                                    .pos = .{ .x = pos.x, .y = 2 + pos.y + props.scroll.?.value, .w = size.x + 4, .h = size.y + 2 },
                                 };
                                 try self.links.append(link);
                             },
@@ -688,7 +687,7 @@ pub const WebData = struct {
 
                                 const link = WebData.WebLink{
                                     .url = url,
-                                    .pos = rect.newRect(x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
+                                    .pos = .{ .x = x, .y = 2 + pos.y + props.scroll.?.value, .w = size.x + 4, .h = size.y + 2 },
                                 };
                                 try self.links.append(link);
                             },
@@ -697,7 +696,7 @@ pub const WebData = struct {
 
                                 const link = WebData.WebLink{
                                     .url = url,
-                                    .pos = rect.newRect(x, 2 + pos.y + props.scroll.?.value, size.x + 4, size.y + 2),
+                                    .pos = .{ .x = x, .y = 2 + pos.y + props.scroll.?.value, .w = size.x + 4, .h = size.y + 2 },
                                 };
                                 try self.links.append(link);
                             },
@@ -720,7 +719,7 @@ pub const WebData = struct {
                             try font.draw(.{
                                 .shader = font_shader,
                                 .text = aline,
-                                .pos = vecs.newVec2(bnds.x + 6 + pos.x, bnds.y + 6 + pos.y),
+                                .pos = .{ .x = bnds.x + 6 + pos.x, .y = bnds.y + 6 + pos.y },
                                 .color = style.color,
                                 .scale = style.scale,
                                 .wrap = web_width,
@@ -732,7 +731,7 @@ pub const WebData = struct {
                             try font.draw(.{
                                 .shader = font_shader,
                                 .text = aline,
-                                .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
+                                .pos = .{ .x = bnds.x + x, .y = bnds.y + 6 + pos.y },
                                 .color = style.color,
                                 .scale = style.scale,
                                 .wrap = web_width,
@@ -744,7 +743,7 @@ pub const WebData = struct {
                             try font.draw(.{
                                 .shader = font_shader,
                                 .text = aline,
-                                .pos = vecs.newVec2(bnds.x + x, bnds.y + 6 + pos.y),
+                                .pos = .{ .x = bnds.x + x, .y = bnds.y + 6 + pos.y },
                                 .color = style.color,
                                 .scale = style.scale,
                                 .wrap = web_width,
@@ -766,9 +765,9 @@ pub const WebData = struct {
                 self.highlight.data.size.x = hlpos.w;
                 self.highlight.data.size.y = hlpos.h;
 
-                self.highlight.data.color = col.newColor(0, 0, 1, 0.75);
+                self.highlight.data.color = .{ .r = 0, .g = 0, .b = 1, .a = 0.75 };
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.highlight, self.shader, vecs.newVec3(hlpos.x + bnds.x, hlpos.y + bnds.y - props.scroll.?.value + 4, 0));
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.highlight, self.shader, .{ .x = hlpos.x + bnds.x, .y = hlpos.y + bnds.y - props.scroll.?.value + 4 });
             }
 
             self.add_links = false;
@@ -777,31 +776,31 @@ pub const WebData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         self.text_box[0].data.size.x = bnds.w - 76;
         self.text_box[1].data.size.x = bnds.w - 80;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 72, bnds.y + 2, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 74, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
 
         const tmp = batch.SpriteBatch.instance.scissor;
-        batch.SpriteBatch.instance.scissor = rect.newRect(bnds.x + 34, bnds.y + 4, bnds.w - 8 - 32, 28);
+        batch.SpriteBatch.instance.scissor = .{ .x = bnds.x + 34, .y = bnds.y + 4, .w = bnds.w - 8 - 32, .h = 28 };
         try font.draw(.{
             .shader = font_shader,
             .text = self.path,
-            .pos = vecs.newVec2(bnds.x + 82, bnds.y + 8),
+            .pos = .{ .x = bnds.x + 82, .y = bnds.y + 8 },
             .wrap = bnds.w - 90,
             .maxlines = 1,
         });
         batch.SpriteBatch.instance.scissor = tmp;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 38, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 2 });
     }
 
     pub fn move(self: *Self, x: f32, y: f32) void {
         for (self.links.items, 0..) |link, idx| {
-            if (link.pos.contains(vecs.newVec2(x, y))) {
+            if (link.pos.contains(.{ .x = x, .y = y })) {
                 self.highlight_idx = idx + 1;
                 return;
             }
@@ -859,11 +858,11 @@ pub const WebData = struct {
         if (btn == null) return;
 
         if (pos.y < 40) {
-            if (rect.newRect(0, 0, 38, 40).contains(pos)) {
+            if ((rect.Rectangle{ .w = 38, .h = 40 }).contains(pos)) {
                 try self.back(false);
             }
 
-            if (rect.newRect(38, 0, 38, 40).contains(pos)) {
+            if ((rect.Rectangle{ .x = 38, .w = 38, .h = 40 }).contains(pos)) {
                 if (self.conts) |conts| {
                     if (!self.loading) {
                         allocator.alloc.free(conts);
@@ -965,31 +964,31 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .highlight = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(2.0, 28),
+            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 2, .y = 28 },
         )),
         .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
-            vecs.newVec2(0.0, 40.0),
+            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .{ .y = 40 },
         )),
         .text_box = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 32.0),
+                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2, .y = 32 },
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 28),
+                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2, .y = 28 },
             )),
         },
         .icons = .{
             sprite.Sprite.new("icons", sprite.SpriteData.new(
-                rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(32, 32),
+                .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 32, .y = 32 },
             )),
             sprite.Sprite.new("icons", sprite.SpriteData.new(
-                rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(32, 32),
+                .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 32, .y = 32 },
             )),
         },
         .path = try allocator.alloc.dupe(u8, conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"),
@@ -1018,5 +1017,5 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         .locked = true,
     });
 
-    return win.WindowContents.init(self, "web", "Xplorer", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "web", "Xplorer", .{ .r = 1, .g = 1, .b = 1 });
 }

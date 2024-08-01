@@ -29,7 +29,7 @@ pub const DragMode = enum {
 };
 
 // TODO: un hardcode
-const SCROLL_MUL = 30;
+pub const SCROLL_MUL = 30;
 
 pub const WindowContents = struct {
     const Self = @This();
@@ -54,7 +54,7 @@ pub const WindowContents = struct {
         scroll: ?ScrollData = null,
         info: InfoData,
         size: SizeData = .{
-            .min = vecs.newVec2(400, 300),
+            .min = .{ .x = 400, .y = 300 },
             .max = null,
         },
         close: bool = false,
@@ -104,10 +104,10 @@ pub const WindowContents = struct {
 
             scroll_sp[1].data.size.y = bnds.h - scroll_data.offset_start - (20 * 2 - 2) + 2;
 
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[0], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scroll_data.offset_start, 0));
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[1], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + scroll_data.offset_start + 20, 0));
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[2], shader, vecs.newVec3(bnds.x + bnds.w - 20, bnds.y + bnds.h - 20 + 2, 0));
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[3], shader, vecs.newVec3(bnds.x + bnds.w - 20, (bnds.h - scroll_data.offset_start - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + scroll_data.offset_start + 20 - 2, 0));
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[0], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start });
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[1], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start + 20 });
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[2], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + bnds.h - 20 + 2 });
+            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[3], shader, .{ .x = bnds.x + bnds.w - 20, .y = (bnds.h - scroll_data.offset_start - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + scroll_data.offset_start + 20 - 2 });
         }
     }
 
@@ -318,10 +318,10 @@ pub const WindowContents = struct {
 };
 
 pub const WindowData = struct {
-    source: rect.Rectangle = rect.newRect(0.0, 0.0, 1.0, 1.0),
-    pos: rect.Rectangle = rect.newRect(100, 100, 600, 400),
+    source: rect.Rectangle = .{ .w = 1.0, .h = 1.0 },
+    pos: rect.Rectangle = .{ .x = 100, .y = 100, .w = 600, .h = 400 },
 
-    oldpos: rect.Rectangle = rect.newRect(0, 0, 0, 0),
+    oldpos: rect.Rectangle = .{ .w = 0.0, .h = 0.0 },
     active: bool = false,
     full: bool = false,
     min: bool = false,
@@ -349,60 +349,72 @@ pub const WindowData = struct {
 
         source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
 
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y + pos.h, 0), vecs.newVec2(source.x + source.w, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), color);
-        try arr.append(vecs.newVec3(pos.x, pos.y + pos.h, 0), vecs.newVec2(source.x, source.y + source.h), color);
-        try arr.append(vecs.newVec3(pos.x, pos.y, 0), vecs.newVec2(source.x, source.y), color);
-        try arr.append(vecs.newVec3(pos.x + pos.w, pos.y, 0), vecs.newVec2(source.x + source.w, source.y), color);
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
+        try arr.append(.{ .x = pos.x, .y = pos.y }, .{ .x = source.x, .y = source.y }, color);
+        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
     }
 
     fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32, color: cols.Color) !void {
         const sc = @as(f32, @floatFromInt(scale));
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y, sc * l, sc * t), rect.newRect(0, 0, l / TEX_SIZE, t / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y, pos.w - sc * (l + r), sc * t), rect.newRect(l / TEX_SIZE, 0, (TEX_SIZE - l - r) / TEX_SIZE, t / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y, sc * r, sc * t), rect.newRect((TEX_SIZE - r) / TEX_SIZE, 0, r / TEX_SIZE, t / TEX_SIZE), color);
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y, .w = sc * l, .h = sc * t }, .{ .w = l / TEX_SIZE, .h = t / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y, .w = pos.w - sc * (l + r), .h = sc * t }, .{ .x = l / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = t / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y, .w = sc * r, .h = sc * t }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .w = r / TEX_SIZE, .h = t / TEX_SIZE }, color);
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y + sc * t, sc * l, pos.h - sc * (t + b)), rect.newRect(0, t / TEX_SIZE, l / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + sc * t, pos.w - sc * (l + r), pos.h - sc * (t + b)), rect.newRect(l / TEX_SIZE, t / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + sc * t, sc * r, pos.h - sc * (t + b)), rect.newRect((TEX_SIZE - r) / TEX_SIZE, t / TEX_SIZE, r / TEX_SIZE, (TEX_SIZE - t - b) / TEX_SIZE), color);
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + sc * t, .w = sc * l, .h = pos.h - sc * (t + b) }, .{ .y = t / TEX_SIZE, .w = l / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + sc * t, .w = pos.w - sc * (l + r), .h = pos.h - sc * (t + b) }, .{ .x = l / TEX_SIZE, .y = t / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + sc * t, .w = sc * r, .h = pos.h - sc * (t + b) }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = t / TEX_SIZE, .w = r / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
 
-        try addQuad(arr, sprite, rect.newRect(pos.x, pos.y + pos.h - sc * b, sc * l, sc * b), rect.newRect(0, (TEX_SIZE - b) / TEX_SIZE, l / TEX_SIZE, b / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + sc * l, pos.y + pos.h - sc * b, pos.w - sc * (l + r), sc * b), rect.newRect(l / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, (TEX_SIZE - l - r) / TEX_SIZE, b / TEX_SIZE), color);
-        try addQuad(arr, sprite, rect.newRect(pos.x + pos.w - sc * r, pos.y + pos.h - sc * b, sc * r, sc * b), rect.newRect((TEX_SIZE - r) / TEX_SIZE, (TEX_SIZE - b) / TEX_SIZE, r / TEX_SIZE, b / TEX_SIZE), color);
+        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + pos.h - sc * b, .w = sc * l, .h = sc * b }, .{ .y = (TEX_SIZE - b) / TEX_SIZE, .w = l / TEX_SIZE, .h = b / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + pos.h - sc * b, .w = pos.w - sc * (l + r), .h = sc * b }, .{ .x = l / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = b / TEX_SIZE }, color);
+        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + pos.h - sc * b, .w = sc * r, .h = sc * b }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = r / TEX_SIZE, .h = b / TEX_SIZE }, color);
     }
+
+    const PADDING = 25;
 
     pub fn getDragMode(self: *WindowData, mousepos: vecs.Vector2) DragMode {
         if (self.min) return DragMode.None;
 
-        var close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);
-        close.h = 26;
-        close.x += close.w - 26;
-        close.w = 26;
+        const close = rect.Rectangle{
+            .x = self.pos.x + self.pos.w - 64 + 64 - PADDING,
+            .y = self.pos.y,
+            .w = PADDING,
+            .h = PADDING,
+        };
         if (close.contains(mousepos)) {
             return DragMode.Close;
         }
-        var full = rect.newRect(self.pos.x + self.pos.w - 86, self.pos.y, 64, 64);
-        full.h = 26;
-        full.x += full.w - 26;
-        full.w = 26;
+        const full = rect.Rectangle{
+            .x = self.pos.x + self.pos.w - 86 + 64 - PADDING,
+            .y = self.pos.y,
+            .w = PADDING,
+            .h = PADDING,
+        };
         if (full.contains(mousepos)) {
             if (self.contents.props.size.max == null)
                 return DragMode.Full
             else
                 return DragMode.None;
         }
-        var min = rect.newRect(self.pos.x + self.pos.w - 108, self.pos.y, 64, 64);
-        min.h = 26;
-        min.x += min.w - 26;
-        min.w = 26;
+        const min = rect.Rectangle{
+            .x = self.pos.x + self.pos.w - 108 + 64 - PADDING,
+            .y = self.pos.y,
+            .w = PADDING,
+            .h = PADDING,
+        };
         if (min.contains(mousepos)) {
             return DragMode.Min;
         }
 
-        var move = self.pos;
-        move.h = 32;
+        const move = rect.Rectangle{
+            .x = self.pos.x,
+            .y = self.pos.y,
+            .w = self.pos.w,
+            .h = 32,
+        };
         if (move.contains(mousepos)) {
             return DragMode.Move;
         }
@@ -416,17 +428,21 @@ pub const WindowData = struct {
             }
         }
 
-        var bottom = self.pos;
-        bottom.y += bottom.h - RESIZE_PAD;
-        bottom.h = RESIZE_PAD * 2;
-        bottom.x -= RESIZE_PAD;
-        bottom.w += RESIZE_PAD * 2;
+        const bottom = rect.Rectangle{
+            .x = self.pos.x - RESIZE_PAD,
+            .y = self.pos.y + self.pos.h - RESIZE_PAD,
+            .w = self.pos.w + RESIZE_PAD * 2,
+            .h = RESIZE_PAD * 2,
+        };
 
         const bot = bottom.contains(mousepos);
 
-        var left = self.pos;
-        left.w = RESIZE_PAD * 2;
-        left.x -= RESIZE_PAD;
+        const left = rect.Rectangle{
+            .x = self.pos.x - RESIZE_PAD,
+            .y = self.pos.y,
+            .w = RESIZE_PAD * 2,
+            .h = self.pos.h,
+        };
         if (left.contains(mousepos)) {
             if (bot) {
                 return DragMode.ResizeLB;
@@ -435,9 +451,12 @@ pub const WindowData = struct {
             }
         }
 
-        var right = self.pos;
-        right.x += right.w - RESIZE_PAD;
-        right.w = RESIZE_PAD * 2;
+        const right = rect.Rectangle{
+            .x = self.pos.x + self.pos.w - RESIZE_PAD,
+            .y = self.pos.y,
+            .w = RESIZE_PAD * 2,
+            .h = self.pos.h,
+        };
         if (right.contains(mousepos)) {
             if (bot) {
                 return DragMode.ResizeRB;
@@ -457,14 +476,14 @@ pub const WindowData = struct {
         if (self.min) return;
 
         const color = if (self.active)
-            cols.newColorRGBA(255, 255, 255, 255)
+            cols.Color{ .r = 1, .g = 1, .b = 1 }
         else
-            cols.newColorRGBA(197, 197, 197, 255);
+            cols.Color{ .r = 0.75, .g = 0.75, .b = 0.75 };
 
         try font.draw(.{
             .shader = shader,
             .text = self.contents.props.info.name,
-            .pos = vecs.newVec2(self.pos.x + 9, self.pos.y + 8),
+            .pos = .{ .x = self.pos.x + 9, .y = self.pos.y + 8 },
             .color = color,
             .wrap = self.pos.w - 100,
             .maxlines = 1,
@@ -517,7 +536,7 @@ pub const WindowData = struct {
         bnds.h -= 36;
 
         if (bnds.contains(mousepos) or btn == null) {
-            return self.contents.click(vecs.newVec2(bnds.w, bnds.h), vecs.newVec2(mousepos.x - bnds.x, mousepos.y - bnds.y), btn);
+            return self.contents.click(bnds.size(), .{ .x = mousepos.x - bnds.x, .y = mousepos.y - bnds.y }, btn);
         }
     }
 
@@ -573,19 +592,19 @@ pub const WindowData = struct {
             sprite = 1;
         }
 
-        const close = rect.newRect(self.pos.x + self.pos.w - 64, self.pos.y, 64, 64);
-        const full = rect.newRect(self.pos.x + self.pos.w - 86, self.pos.y, 64, 64);
-        const min = rect.newRect(self.pos.x + self.pos.w - 108, self.pos.y, 64, 64);
+        const close = rect.Rectangle{ .x = self.pos.x + self.pos.w - 64, .y = self.pos.y, .w = 64, .h = 64 };
+        const full = rect.Rectangle{ .x = self.pos.x + self.pos.w - 86, .y = self.pos.y, .w = 64, .h = 64 };
+        const min = rect.Rectangle{ .x = self.pos.x + self.pos.w - 108, .y = self.pos.y, .w = 64, .h = 64 };
 
-        try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, .{ .r = 1, .g = 1, .b = 1 });
 
         const close_index: u8 = if (!self.contents.props.no_close) 3 else 6;
         const max_index: u8 = if (self.contents.props.size.max == null) 4 else 7;
         const min_index: u8 = if (!self.contents.props.no_min) 5 else 8;
 
-        try addUiQuad(&result, close_index, close, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-        try addUiQuad(&result, max_index, full, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
-        try addUiQuad(&result, min_index, min, 2, 3, 3, 17, 3, cols.newColor(1, 1, 1, 1));
+        try addUiQuad(&result, close_index, close, 2, 3, 3, 17, 3, .{ .r = 1, .g = 1, .b = 1 });
+        try addUiQuad(&result, max_index, full, 2, 3, 3, 17, 3, .{ .r = 1, .g = 1, .b = 1 });
+        try addUiQuad(&result, min_index, min, 2, 3, 3, 17, 3, .{ .r = 1, .g = 1, .b = 1 });
 
         return result;
     }

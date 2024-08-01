@@ -19,7 +19,6 @@ const eln = @import("../util/eln.zig");
 
 const log = @import("../util/log.zig").log;
 
-const SCROLL = 30;
 var g_idx: u8 = 0;
 
 pub const LauncherData = struct {
@@ -116,8 +115,8 @@ pub const LauncherData = struct {
                 try font.draw(.{
                     .shader = font_shader,
                     .text = icon.name,
-                    .pos = vecs.newVec2(bnds.x + x + xo - 14, bnds.y + 64 + y + 6),
-                    .color = col.newColor(0, 0, 0, 1),
+                    .pos = .{ .x = bnds.x + x + xo - 14, .y = bnds.y + 64 + y + 6 },
+                    .color = .{ .r = 0, .g = 0, .b = 0 },
                     .wrap = 100,
                     .maxlines = 1,
                 });
@@ -125,31 +124,30 @@ pub const LauncherData = struct {
                 const icon_spr =
                     if (icon.icon) |icn|
                     sprite.Sprite.new(&.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) }, sprite.SpriteData.new(
-                        rect.newRect(0, 0, 1, 1),
-                        vecs.newVec2(64, 64),
+                        .{ .w = 1.0, .h = 1.0 },
+                        .{ .x = 64, .y = 64 },
                     ))
                 else
                     sprite.Sprite.new("error", sprite.SpriteData.new(
-                        rect.newRect(0, 0, 1, 1),
-                        vecs.newVec2(64, 64),
+                        .{ .w = 1.0, .h = 1.0 },
+                        .{ .x = 64, .y = 64 },
                     ));
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon_spr, self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (idx + 1 == self.selected)
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
             }
 
             if (self.last_action) |last_action| {
-                if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(last_action.pos)) {
+                if ((rect.Rectangle{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(last_action.pos)) {
                     switch (last_action.kind) {
                         .SingleLeft => {
                             self.selected = idx + 1;
                         },
                         .DoubleLeft => {
-                            _ = self.shell.runBg(icon.launches) catch {
-                                //TODO: popup
-                            };
+                            try icon.run(&self.shell, self.shader);
+
                             self.last_action = null;
                         },
                     }
@@ -223,26 +221,26 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         .idx = g_idx,
 
         .gray = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(72.0, 72.0),
+            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 72, .y = 72 },
         )),
         .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
-            vecs.newVec2(0.0, 40.0),
+            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .{ .y = 40.0 },
         )),
         .text_box = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 32.0),
+                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2.0, .y = 32.0 },
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 28.0),
+                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2.0, .y = 28.0 },
             )),
         },
         .sel = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
-            rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(64.0, 64.0),
+            .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 64.0, .y = 64.0 },
         )),
         .shader = shader,
         .shell = .{
@@ -253,5 +251,5 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     g_idx += 1;
 
-    return win.WindowContents.init(self, "launcher", "Launcher", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "launcher", "Launcher", .{ .r = 1, .g = 1, .b = 1 });
 }

@@ -177,19 +177,19 @@ const SettingsData = struct {
         self.bnds = bnds.*;
 
         if (self.focused_pane) |focused| {
-            var pos = vecs.newVec2(0, 40);
+            var pos = vecs.Vector2{ .y = 40 };
 
             for (panes[focused]) |item| {
                 // draw name
                 try font.draw(.{
                     .shader = font_shader,
                     .text = item.setting,
-                    .pos = vecs.newVec2(16 + bnds.x + pos.x, bnds.y + pos.y),
+                    .pos = .{ .x = 16 + bnds.x + pos.x, .y = bnds.y + pos.y },
                 });
 
                 // check click
                 if (self.last_action) |action| {
-                    if (rect.newRect(pos.x, pos.y, bnds.w, font.size).contains(action.pos)) {
+                    if ((rect.Rectangle{ .x = pos.x, .y = pos.y, .w = bnds.w, .h = font.size }).contains(action.pos)) {
                         switch (action.kind) {
                             .SingleLeft => {
                                 switch (item.kind) {
@@ -197,7 +197,7 @@ const SettingsData = struct {
                                         self.value = conf.SettingManager.instance.get(item.key) orelse "";
                                         const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
                                         adds.* = .{
-                                            .prompt = item.setting,
+                                            .prompt = try allocator.alloc.dupe(u8, item.setting),
                                             .text = try allocator.alloc.dupe(u8, self.value),
                                             .data = self,
                                             .submit = &submit,
@@ -210,8 +210,8 @@ const SettingsData = struct {
                                                 .texture = "win",
                                                 .data = .{
                                                     .title = "Text Picker",
-                                                    .source = rect.newRect(0, 0, 1, 1),
-                                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
+                                                    .source = .{ .w = 1, .h = 1 },
+                                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
                                                 },
                                             },
@@ -234,8 +234,8 @@ const SettingsData = struct {
                                                 .texture = "win",
                                                 .data = .{
                                                     .title = "Text Picker",
-                                                    .source = rect.newRect(0, 0, 1, 1),
-                                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
+                                                    .source = .{ .w = 1.0, .h = 1.0 },
+                                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
                                                 },
                                             },
@@ -258,8 +258,8 @@ const SettingsData = struct {
                                                 .texture = "win",
                                                 .data = .{
                                                     .title = "Text Picker",
-                                                    .source = rect.newRect(0, 0, 1, 1),
-                                                    .pos = rect.newRectCentered(self.bnds, 350, 125),
+                                                    .source = .{ .w = 1.0, .h = 1.0 },
+                                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
                                                 },
                                             },
@@ -279,14 +279,14 @@ const SettingsData = struct {
                     try font.draw(.{
                         .shader = font_shader,
                         .text = val,
-                        .pos = vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y),
+                        .pos = .{ .x = 16 + bnds.x + pos.x + bnds.w / 3 * 2, .y = bnds.y + pos.y },
                     });
                 } else {
                     try font.draw(.{
                         .shader = font_shader,
                         .text = "UNDEFINED",
-                        .pos = vecs.newVec2(16 + bnds.x + pos.x + bnds.w / 3 * 2, bnds.y + pos.y),
-                        .color = col.newColor(1, 0, 0, 1),
+                        .pos = .{ .x = 16 + bnds.x + pos.x + bnds.w / 3 * 2, .y = bnds.y + pos.y },
+                        .color = .{ .r = 1, .g = 0, .b = 0 },
                     });
                 }
 
@@ -303,16 +303,16 @@ const SettingsData = struct {
                 try font.draw(.{
                     .shader = font_shader,
                     .text = panel.name,
-                    .pos = vecs.newVec2(bnds.x + x + xo - 10, bnds.y + 64 + y + 6),
+                    .pos = .{ .x = bnds.x + x + xo - 10, .y = bnds.y + 64 + y + 6 },
                 });
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (idx + 1 == self.selection)
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[4], self.shader, vecs.newVec3(bnds.x + x + 6 + 16, bnds.y + y + 6, 0));
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[4], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (self.last_action) |action| {
-                    if (rect.newRect(x + 2 + 16, y + 2, 64, 64).contains(action.pos)) {
+                    if ((rect.Rectangle{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(action.pos)) {
                         switch (action.kind) {
                             .SingleLeft => {
                                 self.selection = idx + 1;
@@ -335,12 +335,12 @@ const SettingsData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, vecs.newVec3(bnds.x, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         self.text_box[0].data.size.x = bnds.w - 46;
         self.text_box[1].data.size.x = bnds.w - 50;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, vecs.newVec3(bnds.x + 42, bnds.y + 2, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, vecs.newVec3(bnds.x + 44, bnds.y + 4, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 42, .y = bnds.y + 2 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 44, .y = bnds.y + 4 });
 
         const text = try std.mem.concat(allocator.alloc, u8, &.{
             "!SET:/",
@@ -351,12 +351,12 @@ const SettingsData = struct {
         try font.draw(.{
             .shader = font_shader,
             .text = text,
-            .pos = vecs.newVec2(bnds.x + 48, bnds.y + 8),
+            .pos = .{ .x = bnds.x + 48, .y = bnds.y + 8 },
             .wrap = bnds.w - 56,
             .maxlines = 1,
         });
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back_button, self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back_button, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
     }
 
     pub fn submit(val: []u8, data: *anyopaque) !void {
@@ -435,27 +435,27 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
     self.* = .{
         .shader = shader,
         .highlight = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 4.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(2.0, 28),
+            .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 2.0, .y = 28.0 },
         )),
         .menubar = sprite.Sprite.new("ui", sprite.SpriteData.new(
-            rect.newRect(4.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 4.0 / 8.0),
-            vecs.newVec2(0.0, 40.0),
+            .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .{ .y = 40.0 },
         )),
         .text_box = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 32.0),
+                .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2.0, .y = 32.0 },
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 28),
+                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2.0, .y = 28.0 },
             )),
         },
         .icons = undefined,
         .back_button = sprite.Sprite.new("icons", sprite.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(32, 32),
+            .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 32.0, .y = 32.0 },
         )),
         .value = "",
     };
@@ -464,10 +464,10 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         const i = @as(f32, @floatFromInt(idx));
 
         self.icons[idx] = sprite.Sprite.new("big_icons", sprite.SpriteData.new(
-            rect.newRect(i / 8.0, 1.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-            vecs.newVec2(64, 64),
+            .{ .x = i / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .{ .x = 64, .y = 64 },
         ));
     }
 
-    return win.WindowContents.init(self, "settings", "Settings", col.newColor(1, 1, 1, 1));
+    return win.WindowContents.init(self, "settings", "Settings", .{ .r = 1, .g = 1, .b = 1 });
 }

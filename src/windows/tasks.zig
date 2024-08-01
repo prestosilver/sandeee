@@ -36,10 +36,10 @@ pub const TasksData = struct {
 
         self.scroll_sprites[1].data.size.y = bnds.h - (20 * 2 - 2) + 2;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y + 20, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, bnds.y + bnds.h - 20 + 2, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, vecs.newVec3(bnds.x + bnds.w - 18, (bnds.h - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + 20 - 2, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + 20 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + bnds.h - 20 + 2 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = (bnds.h - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + 20 - 2 });
     }
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
@@ -48,8 +48,8 @@ pub const TasksData = struct {
         self.panel[1].data.size.x = 346;
         self.panel[1].data.size.y = 278;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, vecs.newVec3(bnds.x + 21, bnds.y + bnds.h - 282 - 25, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, vecs.newVec3(bnds.x + 23, bnds.y + bnds.h - 278 - 27, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + bnds.h - 282 - 25 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + bnds.h - 278 - 27 });
 
         self.scroll_maxy = -278;
 
@@ -94,18 +94,18 @@ pub const TasksData = struct {
         self.panel[0].data.size.y = 87;
         self.panel[1].data.size.y = 83;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, vecs.newVec3(bnds.x + 21, bnds.y + 25, 0));
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + 25 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         self.render_graph.data.size.x = 346;
         self.render_graph.data.size.y = 83;
 
-        try batch.SpriteBatch.instance.draw(graph.Graph, &self.render_graph, self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
+        try batch.SpriteBatch.instance.draw(graph.Graph, &self.render_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         self.vm_graph.data.size.x = 346;
         self.vm_graph.data.size.y = 83;
 
-        try batch.SpriteBatch.instance.draw(graph.Graph, &self.vm_graph, self.shader, vecs.newVec3(bnds.x + 23, bnds.y + 27, 0));
+        try batch.SpriteBatch.instance.draw(graph.Graph, &self.vm_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         // draw labels
         try font.draw(.{
@@ -132,8 +132,7 @@ pub const TasksData = struct {
     }
 
     pub fn scroll(self: *Self, _: f32, y: f32) void {
-        // TODO: un hardcode
-        self.scroll_value -= y * 30;
+        self.scroll_value -= y * win.SCROLL_MUL;
 
         if (self.scroll_value > self.scroll_maxy)
             self.scroll_value = self.scroll_maxy;
@@ -178,41 +177,41 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
     self.* = .{
         .panel = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(2.0 / 8.0, 0.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 32.0),
+                .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2.0, .y = 32.0 },
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
-                vecs.newVec2(2.0, 28),
+                .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{ .x = 2.0, .y = 28.0 },
             )),
         },
         .scroll_sprites = .{
             .{
                 .texture = "ui",
                 .data = .{
-                    .source = rect.newRect(0, 0, 2.0 / 8.0, 2.0 / 8.0),
-                    .size = vecs.newVec2(20, 20),
+                    .source = .{ .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                    .size = .{ .x = 20, .y = 20 },
                 },
             },
             .{
                 .texture = "ui",
                 .data = .{
-                    .source = rect.newRect(0, 2.0 / 8.0, 2.0 / 8.0, 1.0 / 8.0),
-                    .size = vecs.newVec2(20, 64),
+                    .source = .{ .y = 2.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
+                    .size = .{ .x = 20, .y = 64 },
                 },
             },
             .{
                 .texture = "ui",
                 .data = .{
-                    .source = rect.newRect(0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
-                    .size = vecs.newVec2(20, 20),
+                    .source = .{ .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                    .size = .{ .x = 20, .y = 20 },
                 },
             },
             .{
                 .texture = "ui",
                 .data = .{
-                    .source = rect.newRect(0, 3.0 / 8.0, 2.0 / 8.0, 3.0 / 8.0),
-                    .size = vecs.newVec2(20, 30),
+                    .source = .{ .y = 3.0 / 8.0, .w = 2.0 / 8.0, .h = 3.0 / 8.0 },
+                    .size = .{ .x = 20, .y = 30 },
                 },
             },
         },
@@ -230,15 +229,15 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
 
     allocator.alloc.free(self.render_graph.data.data);
     self.render_graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 20));
-    self.render_graph.data.color = col.newColorRGBA(128, 0, 0, 255);
+    self.render_graph.data.color = .{ .r = 0.5, .g = 0, .b = 0 };
 
     allocator.alloc.free(self.vm_graph.data.data);
     self.vm_graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 20));
-    self.vm_graph.data.color = col.newColorRGBA(255, 128, 128, 255);
+    self.vm_graph.data.color = .{ .r = 1, .g = 0.5, .b = 0.5 };
 
-    var result = try win.WindowContents.init(self, "Tasks", "SandEEE Tasks", col.newColorRGBA(192, 192, 192, 255));
-    result.props.size.min = vecs.newVec2(400, 500);
-    result.props.size.max = vecs.newVec2(400, 500);
+    var result = try win.WindowContents.init(self, "Tasks", "SandEEE Tasks", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    result.props.size.min = .{ .x = 400, .y = 500 };
+    result.props.size.max = .{ .x = 400, .y = 500 };
 
     return result;
 }

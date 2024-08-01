@@ -12,7 +12,7 @@ const c = @import("../c.zig");
 
 pub const GraphData = struct {
     size: vecs.Vector2,
-    color: cols.Color = cols.newColor(1, 1, 1, 1),
+    color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
     data: []f32,
     max: f32 = 1.0,
 
@@ -33,13 +33,13 @@ pub const GraphData = struct {
             const py = self.size.y - std.math.clamp(prev / self.max, 0, 1) * self.size.y;
             const stopy = self.size.y;
 
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(px, py, 0)), vecs.newVec2(0, 1), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(cx, cy, 0)), vecs.newVec2(1, 1), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(cx, stopy, 0)), vecs.newVec2(1, 0), self.color);
+            try result.append(vecs.Vector3.add(pos, .{ .x = px, .y = py }), .{ .y = 1 }, self.color);
+            try result.append(vecs.Vector3.add(pos, .{ .x = cx, .y = cy }), .{ .x = 1, .y = 1 }, self.color);
+            try result.append(vecs.Vector3.add(pos, .{ .x = cx, .y = stopy }), .{ .x = 1 }, self.color);
 
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(px, py, 0)), vecs.newVec2(0, 1), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(px, stopy, 0)), vecs.newVec2(0, 0), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(cx, stopy, 0)), vecs.newVec2(1, 0), self.color);
+            try result.append(vecs.Vector3.add(pos, .{ .x = px, .y = py }), .{ .y = 1 }, self.color);
+            try result.append(vecs.Vector3.add(pos, .{ .x = px, .y = stopy }), .{}, self.color);
+            try result.append(vecs.Vector3.add(pos, .{ .x = cx, .y = stopy }), .{ .x = 1 }, self.color);
         }
 
         return result;

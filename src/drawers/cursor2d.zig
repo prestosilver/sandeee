@@ -17,8 +17,8 @@ pub const CursorData = struct {
     pub fn new(source: rect.Rectangle, total: usize) CursorData {
         return CursorData{
             .source = source,
-            .size = vecs.newVec2(32, 32),
-            .color = cols.newColor(1, 1, 1, 1),
+            .size = .{ .x = 32, .y = 32 },
+            .color = .{ .r = 1, .g = 1, .b = 1 },
             .total = total,
         };
     }
@@ -44,21 +44,21 @@ pub const CursorData = struct {
         source.x += source.w * @as(f32, @floatFromInt(self.index));
 
         if (self.flip) {
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(source.x + source.w, source.y + source.h), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x, .y = source.y + source.h }, self.color);
+            try result.append(.{ .x = pos.x + x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y + source.h }, self.color);
+            try result.append(.{ .x = pos.x + x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y }, self.color);
 
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(source.x, source.y), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x, .y = source.y + source.h }, self.color);
+            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x, .y = source.y }, self.color);
+            try result.append(.{ .x = pos.x + x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y }, self.color);
         } else {
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y + self.size.y, 0)), vecs.newVec2(source.x + source.w, source.y + source.h), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+            try result.append(.{ .x = pos.x + x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x, .y = source.y + source.h }, self.color);
+            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y + source.h }, self.color);
+            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y }, self.color);
 
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y + self.size.y, 0)), vecs.newVec2(source.x, source.y + source.h), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x, y, 0)), vecs.newVec2(source.x, source.y), self.color);
-            try result.append(vecs.Vector3.add(pos, vecs.newVec3(x + self.size.x, y, 0)), vecs.newVec2(source.x + source.w, source.y), self.color);
+            try result.append(.{ .x = pos.x + x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x, .y = source.y + source.h }, self.color);
+            try result.append(.{ .x = pos.x + x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x, .y = source.y }, self.color);
+            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y }, self.color);
         }
 
         return result;

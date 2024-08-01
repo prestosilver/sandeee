@@ -17,9 +17,11 @@ const c = @import("../../c.zig");
 pub const PopupTextPick = struct {
     const Self = @This();
 
-    text: []u8,
     submit: *const fn ([]u8, *anyopaque) anyerror!void,
-    err: []const u8 = "",
+
+    err: ?[]const u8 = null,
+
+    text: []u8,
     prompt: []const u8,
     data: *anyopaque,
 
@@ -41,7 +43,7 @@ pub const PopupTextPick = struct {
         defer allocator.alloc.free(text);
 
         const text_background = spr.Sprite.new("ui", spr.SpriteData.new(
-            rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
             .{
                 .x = bnds.w - 60,
                 .y = 32,
@@ -49,15 +51,15 @@ pub const PopupTextPick = struct {
         ));
 
         const text_foreground = spr.Sprite.new("ui", spr.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
             .{
                 .x = bnds.w - 64,
                 .y = 28,
             },
         ));
 
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_background, popups.popup_shader, vecs.newVec3(bnds.x + 28, bnds.y + font.size * 2 - 4, 0));
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_foreground, popups.popup_shader, vecs.newVec3(bnds.x + 30, bnds.y + font.size * 2 - 2, 0));
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_background, popups.popup_shader, .{ .x = bnds.x + 28, .y = bnds.y + font.size * 2 - 4 });
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_foreground, popups.popup_shader, .{ .x = bnds.x + 30, .y = bnds.y + font.size * 2 - 2 });
 
         try font.draw(.{
             .shader = shader,
@@ -67,13 +69,14 @@ pub const PopupTextPick = struct {
             .maxlines = 1,
         });
 
-        try font.draw(.{
-            .shader = shader,
-            .pos = bnds.location().add(.{ .x = 0, .y = font.size * 4 }),
-            .text = self.err,
-            .wrap = bnds.w - 60,
-            .color = cols.newColor(1, 0, 0, 1),
-        });
+        if (self.err) |err|
+            try font.draw(.{
+                .shader = shader,
+                .pos = bnds.location().add(.{ .x = 0, .y = font.size * 4 }),
+                .text = err,
+                .wrap = bnds.w - 60,
+                .color = .{ .r = 1, .g = 0, .b = 0 },
+            });
     }
 
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
@@ -81,12 +84,16 @@ pub const PopupTextPick = struct {
 
         if (keycode == c.GLFW_KEY_BACKSPACE and self.text.len != 0) {
             self.text = try allocator.alloc.realloc(self.text, self.text.len - 1);
-            self.err = "";
+            if (self.err) |err|
+                allocator.alloc.free(err);
+            self.err = null;
         }
 
         if (keycode == c.GLFW_KEY_ENTER) {
             self.submit(self.text, self.data) catch |err| {
-                self.err = @errorName(err);
+                if (self.err) |err_i|
+                    allocator.alloc.free(err_i);
+                self.err = try allocator.alloc.dupe(u8, @errorName(err));
                 return;
             };
 
@@ -98,7 +105,9 @@ pub const PopupTextPick = struct {
 
     pub fn char(self: *Self, keycode: u32, _: i32) !void {
         if (keycode < 256) {
-            self.err = "";
+            if (self.err) |err|
+                allocator.alloc.free(err);
+            self.err = null;
 
             self.text = try allocator.alloc.realloc(self.text, self.text.len + 1);
             self.text[self.text.len - 1] = @as(u8, @intCast(keycode));
@@ -106,6 +115,10 @@ pub const PopupTextPick = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        if (self.err) |err|
+            allocator.alloc.free(err);
+
+        allocator.alloc.free(self.prompt);
         allocator.alloc.free(self.text);
         allocator.alloc.destroy(self);
     }

@@ -19,7 +19,7 @@ pub const PopupFilePick = struct {
 
     path: []u8,
     submit: *const fn (?*files.File, *anyopaque) anyerror!void,
-    err: []const u8 = "",
+    err: ?[]const u8 = null,
     data: *anyopaque,
 
     pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
@@ -40,7 +40,7 @@ pub const PopupFilePick = struct {
         defer allocator.alloc.free(text);
 
         const text_background = spr.Sprite.new("ui", spr.SpriteData.new(
-            rect.newRect(2.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
             .{
                 .x = bnds.w - 60,
                 .y = 32,
@@ -48,15 +48,15 @@ pub const PopupFilePick = struct {
         ));
 
         const text_foreground = spr.Sprite.new("ui", spr.SpriteData.new(
-            rect.newRect(3.0 / 8.0, 3.0 / 8.0, 1.0 / 8.0, 1.0 / 8.0),
+            .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
             .{
                 .x = bnds.w - 64,
                 .y = 28,
             },
         ));
 
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_background, popups.popup_shader, vecs.newVec3(bnds.x + 28, bnds.y + font.size * 2 - 4, 0));
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_foreground, popups.popup_shader, vecs.newVec3(bnds.x + 30, bnds.y + font.size * 2 - 2, 0));
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_background, popups.popup_shader, .{ .x = bnds.x + 28, .y = bnds.y + font.size * 2 - 4 });
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_foreground, popups.popup_shader, .{ .x = bnds.x + 30, .y = bnds.y + font.size * 2 - 2 });
 
         try font.draw(.{
             .shader = shader,
@@ -66,13 +66,14 @@ pub const PopupFilePick = struct {
             .maxlines = 1,
         });
 
-        try font.draw(.{
-            .shader = shader,
-            .pos = bnds.location().add(.{ .x = 0, .y = font.size * 4 }),
-            .text = self.err,
-            .wrap = bnds.w - 60,
-            .color = cols.newColor(1, 0, 0, 1),
-        });
+        if (self.err) |err|
+            try font.draw(.{
+                .shader = shader,
+                .pos = bnds.location().add(.{ .x = 0, .y = font.size * 4 }),
+                .text = err,
+                .wrap = bnds.w - 60,
+                .color = .{ .r = 1, .g = 0, .b = 0 },
+            });
     }
 
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
@@ -80,12 +81,16 @@ pub const PopupFilePick = struct {
 
         if (keycode == c.GLFW_KEY_BACKSPACE and self.path.len != 0) {
             self.path = try allocator.alloc.realloc(self.path, self.path.len - 1);
-            self.err = "";
+            if (self.err) |err|
+                allocator.alloc.free(err);
+            self.err = null;
         }
 
         if (keycode == c.GLFW_KEY_ENTER) {
             const file = files.root.getFile(self.path) catch {
-                self.err = "File Not Found";
+                if (self.err) |err|
+                    allocator.alloc.free(err);
+                self.err = try allocator.alloc.dupe(u8, "File Not Found");
                 return;
             };
 
@@ -98,7 +103,9 @@ pub const PopupFilePick = struct {
 
     pub fn char(self: *Self, keycode: u32, _: i32) !void {
         if (keycode < 256) {
-            self.err = "";
+            if (self.err) |err|
+                allocator.alloc.free(err);
+            self.err = null;
 
             self.path = try allocator.alloc.realloc(self.path, self.path.len + 1);
             self.path[self.path.len - 1] = @as(u8, @intCast(keycode));
@@ -106,6 +113,8 @@ pub const PopupFilePick = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        if (self.err) |err|
+            allocator.alloc.free(err);
         allocator.alloc.free(self.path);
         allocator.alloc.destroy(self);
     }

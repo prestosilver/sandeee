@@ -81,19 +81,22 @@ pub const CMDData = struct {
             try font.draw(.{
                 .shader = shader,
                 .text = prompt,
-                .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - font.size - 6 + offset),
-                .color = col.newColor(1, 1, 1, 1),
+                .pos = .{
+                    .x = bnds.x + 6,
+                    .y = bnds.y + bnds.h - font.size - 6 + offset,
+                },
+                .color = .{ .r = 1, .g = 1, .b = 1 },
             });
             try font.draw(.{
                 .shader = shader,
                 .text = "|",
-                .pos = vecs.newVec2(
-                    bnds.x + font.sizeText(.{
+                .pos = .{
+                    .x = bnds.x + font.sizeText(.{
                         .text = prompt[0 .. shell_prompt.len + self.input_idx],
                     }).x,
-                    bnds.y + bnds.h - font.size - 6 + offset,
-                ),
-                .color = col.newColor(1, 1, 1, 1),
+                    .y = bnds.y + bnds.h - font.size - 6 + offset,
+                },
+                .color = .{ .r = 1, .g = 1, .b = 1 },
             });
             idx += 1;
         } else {
@@ -127,8 +130,8 @@ pub const CMDData = struct {
             try font.draw(.{
                 .shader = shader,
                 .text = line,
-                .pos = vecs.newVec2(bnds.x + 6, y),
-                .color = col.newColor(1, 1, 1, 1),
+                .pos = .{ .x = bnds.x + 6, .y = bnds.y },
+                .color = .{ .r = 1, .g = 1, .b = 1 },
                 .wrap = bnds.w - 30,
             });
         }
@@ -317,5 +320,5 @@ pub fn new() !win.WindowContents {
         },
     };
 
-    return win.WindowContents.init(self, "cmd", "CMD", col.newColor(0, 0, 0, 1));
+    return win.WindowContents.init(self, "cmd", "CMD", .{ .r = 0, .g = 0, .b = 0 });
 }

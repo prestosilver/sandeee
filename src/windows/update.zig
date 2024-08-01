@@ -30,7 +30,7 @@ pub const UpdateData = struct {
         try font.draw(.{
             .shader = font_shader,
             .text = "There has been a Sand" ++ fnt.EEE ++ " Update",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26),
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 },
             .wrap = bnds.w - 12,
             .scale = 2,
         });
@@ -38,7 +38,7 @@ pub const UpdateData = struct {
         try font.draw(.{
             .shader = font_shader,
             .text = "Please Update your disk to ensure you have all the nessesary files",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + font.size * 5),
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + font.size * 5 },
             .wrap = bnds.w - 12,
             .scale = 1,
         });
@@ -52,7 +52,7 @@ pub const UpdateData = struct {
                 .a = 1,
             },
             .text = "Click here to update now",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + font.size * 10),
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + font.size * 10 },
             .wrap = bnds.w - 12,
             .scale = 1,
         });
@@ -96,9 +96,9 @@ pub fn new() !win.WindowContents {
 
     self.* = UpdateData{};
 
-    var result = try win.WindowContents.init(self, "Updater", "Please update your disk!", col.newColorRGBA(192, 192, 192, 255));
-    result.props.size.min = vecs.newVec2(600, 350);
-    result.props.size.max = vecs.newVec2(600, 350);
+    var result = try win.WindowContents.init(self, "Updater", "Please update your disk!", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    result.props.size.min = .{ .x = 600, .y = 350 };
+    result.props.size.max = .{ .x = 600, .y = 350 };
 
     return result;
 }

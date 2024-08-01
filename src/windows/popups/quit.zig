@@ -24,8 +24,8 @@ pub const PopupQuit = struct {
     shader: *shd.Shader,
 
     pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 55, bnds.y, 0));
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[1], self.shader, vecs.newVec3(bnds.x + 231, bnds.y, 0));
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 55, .y = bnds.y });
+        try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 231, .y = bnds.y });
 
         const single_width = bnds.w / 2;
         const sd_width = font.sizeText(.{

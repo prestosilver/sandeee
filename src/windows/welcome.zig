@@ -33,13 +33,13 @@ pub const WelcomeData = struct {
         try font.draw(.{
             .shader = font_shader,
             .text = "Welcome to Sand" ++ fnt.EEE,
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26),
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 },
             .scale = 2,
         });
         try font.draw(.{
             .shader = font_shader,
             .text = "  " ++ fnt.BULLET ++ " Open " ++ fnt.EEE ++ "Mail to get started",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 3 * font.size),
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 3 * font.size },
             .scale = 1,
         });
         try font.draw(.{
@@ -48,13 +48,13 @@ pub const WelcomeData = struct {
                 "  " ++ fnt.BULLET ++ " This demo will not save progress."
             else
                 "  " ++ fnt.BULLET ++ " You can open Xplore anytime for help",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 5 * font.size),
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 5 * font.size },
             .scale = 1,
         });
         try font.draw(.{
             .shader = font_shader,
             .text = "  " ++ fnt.BULLET ++ " Remember " ++ fnt.EEE ++ " is monitoring your activity",
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 7 * font.size),
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 7 * font.size },
             .scale = 1,
         });
 
@@ -69,7 +69,7 @@ pub const WelcomeData = struct {
             try font.draw(.{
                 .shader = font_shader,
                 .text = demo_text,
-                .pos = vecs.newVec2(bnds.x + 6, bnds.y + 26 + 10 * font.size),
+                .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 10 * font.size },
                 .scale = 2,
                 .color = col.newColor(1, 0, 0, 1),
             });
@@ -84,12 +84,12 @@ pub const WelcomeData = struct {
                 .h = 20,
             };
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.check_box[cb], self.shader, vecs.newVec3(bnds.x + 6, bnds.y + 80 + 10 * font.size, 0));
+            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.check_box[cb], self.shader, .{ .x = bnds.x + 6, .y = bnds.y + 80 + 10 * font.size });
 
             try font.draw(.{
                 .shader = font_shader,
                 .text = "Never show again.",
-                .pos = vecs.newVec2(bnds.x + 20 + 6, bnds.y + 80 + 10 * font.size),
+                .pos = .{ .x = bnds.x + 20 + 6, .y = bnds.y + 80 + 10 * font.size },
             });
         }
 
@@ -99,7 +99,7 @@ pub const WelcomeData = struct {
         try font.draw(.{
             .shader = font_shader,
             .text = version_text,
-            .pos = vecs.newVec2(bnds.x + 6, bnds.y + bnds.h - 1.5 * font.size),
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + bnds.h - 1.5 * font.size },
         });
     }
 
@@ -127,21 +127,21 @@ pub fn new(shader: *shd.Shader) !win.WindowContents {
         },
         .check_box = .{
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(4.0 / 8.0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
-                vecs.newVec2(20.0, 20.0),
+                .{ .x = 4.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                .{ .x = 20, .y = 20 },
             )),
             sprite.Sprite.new("ui", sprite.SpriteData.new(
-                rect.newRect(6.0 / 8.0, 6.0 / 8.0, 2.0 / 8.0, 2.0 / 8.0),
-                vecs.newVec2(20, 20),
+                .{ .x = 6.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                .{ .x = 20, .y = 20 },
             )),
         },
         .shader = shader,
         .timer = try std.time.Timer.start(),
     };
 
-    var result = try win.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ fnt.EEE, col.newColorRGBA(192, 192, 192, 255));
-    result.props.size.min = vecs.newVec2(600, 350);
-    result.props.size.max = vecs.newVec2(600, 350);
+    var result = try win.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ fnt.EEE, .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    result.props.size.min = .{ .x = 600, .y = 350 };
+    result.props.size.max = .{ .x = 600, .y = 350 };
 
     return result;
 }

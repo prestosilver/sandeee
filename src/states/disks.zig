@@ -19,7 +19,7 @@ pub const GSDisks = struct {
     const Self = @This();
 
     const VERSION = std.fmt.comptimePrint("Boot" ++ font.EEE ++ " V_0.2.0\nFor Sand" ++ font.EEE ++ " " ++ options.VersionText, .{options.SandEEEVersion});
-    const TEXT_COLOR = cols.newColorRGBA(192, 192, 192, 255);
+    const TEXT_COLOR = .{ .r = 0.75, .g = 0.75, .b = 0.75 };
     const TOTAL_LINES = 10;
 
     const DISK_LIST = "0123456789ABCDEF";
@@ -52,7 +52,7 @@ pub const GSDisks = struct {
     }
 
     pub fn setup(self: *Self) !void {
-        gfx.Context.instance.color = cols.newColor(0, 0, 0, 1);
+        gfx.Context.instance.color = .{ .r = 0, .g = 0, .b = 0 };
 
         self.sel = 0;
         self.auto = true;
@@ -143,11 +143,11 @@ pub const GSDisks = struct {
     }
 
     pub fn draw(self: *Self, _: vecs.Vector2) !void {
-        var pos = vecs.newVec2(100, 100);
+        var pos = vecs.Vector2{ .x = 100, .y = 100 };
 
         var line: []u8 = undefined;
 
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, vecs.newVec3(pos.x, pos.y, 0));
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, .{ .x = pos.x, .y = pos.y });
         pos.y += self.logo_sprite.data.size.y;
 
         if (self.auto) {

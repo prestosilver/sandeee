@@ -82,9 +82,9 @@ pub const Context = struct {
 
         instance = Context{
             .window = win,
-            .color = col.newColorRGBA(0, 0, 0, 255),
+            .color = .{ .r = 0, .g = 0, .b = 0 },
             .shaders = shaders,
-            .size = vecs.newVec2(@as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h))),
+            .size = .{ .x = @floatFromInt(w), .y = @floatFromInt(h) },
         };
     }
 
@@ -116,7 +116,7 @@ pub const Context = struct {
     }
 
     pub fn resize(w: i32, h: i32) !void {
-        instance.size = vecs.newVec2(@as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)));
+        instance.size = .{ .x = @floatFromInt(w), .y = @floatFromInt(h) };
 
         c.glViewport(0, 0, w, h);
 
