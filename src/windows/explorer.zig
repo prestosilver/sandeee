@@ -242,8 +242,8 @@ pub const ExplorerData = struct {
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, vecs.newVec3(bnds.x + 2, bnds.y + 2, 0));
     }
 
-    pub fn deinit(self: *Self) !void {
-        try self.shell.deinit();
+    pub fn deinit(self: *Self) void {
+        self.shell.deinit();
         allocator.alloc.free(self.icon_data);
         allocator.alloc.destroy(self);
     }

@@ -166,11 +166,11 @@ pub const LauncherData = struct {
         props.scroll.?.maxy = y + 64 + font.size + font.size + props.scroll.?.value - bnds.h;
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         // TODO: deinit textures
 
         // deinit rest
-        try self.shell.deinit();
+        self.shell.deinit();
         allocator.alloc.free(self.icon_data);
         allocator.alloc.destroy(self);
     }

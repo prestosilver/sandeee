@@ -83,7 +83,7 @@ pub const WindowContents = struct {
 
         refresh: *const fn (*anyopaque) anyerror!void,
         focus: *const fn (*anyopaque) anyerror!void,
-        deinit: *const fn (*anyopaque) anyerror!void,
+        deinit: *const fn (*anyopaque) void,
     };
 
     pub var scroll_sp: [4]spr.Sprite = undefined;
@@ -192,7 +192,7 @@ pub const WindowContents = struct {
         return self.vtable.moveResize(self.ptr, bnds);
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         allocator.alloc.free(self.props.info.name);
         return self.vtable.deinit(self.ptr);
     }
@@ -219,7 +219,7 @@ pub const WindowContents = struct {
                 return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, font_shader, bnds, font, props });
             }
 
-            fn deinitImpl(pointer: *anyopaque) !void {
+            fn deinitImpl(pointer: *anyopaque) void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});
@@ -337,8 +337,8 @@ pub const WindowData = struct {
         };
     }
 
-    pub fn deinit(self: *WindowData) !void {
-        try self.contents.deinit();
+    pub fn deinit(self: *WindowData) void {
+        self.contents.deinit();
     }
 
     inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {

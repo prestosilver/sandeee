@@ -14,7 +14,7 @@ pub const ElnData = struct {
     var texture: u8 = 0;
     var textures: std.StringHashMap(u8) = std.StringHashMap(u8).init(allocator.alloc);
 
-    pub fn reset() !void {
+    pub fn reset() void {
         textures.deinit();
 
         textures = std.StringHashMap(u8).init(allocator.alloc);

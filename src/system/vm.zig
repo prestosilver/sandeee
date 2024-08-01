@@ -248,7 +248,7 @@ pub const VM = struct {
         return result;
     }
 
-    pub fn deinit(self: *VM) !void {
+    pub fn deinit(self: *VM) void {
         if (self.code) |code| {
             for (code) |entry| {
                 if (entry.string) |str| {
@@ -268,7 +268,7 @@ pub const VM = struct {
 
         for (self.streams.items) |stream| {
             if (stream) |strm|
-                try strm.close();
+                strm.close();
         }
 
         for (self.args) |*item|
@@ -1072,5 +1072,5 @@ test "VM Compile bad returns error" {
     err = vm.stringToOps("\x00\x03");
     try std.testing.expectError(error.InvalidAsm, err);
 
-    try vm.deinit();
+    vm.deinit();
 }

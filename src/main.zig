@@ -931,7 +931,7 @@ pub fn mainErr() anyerror!void {
         if (current_state != prev) {
             prev = current_state;
 
-            try state.deinit();
+            state.deinit();
 
             // run setup
             try game_states.getPtr(current_state).setup();
@@ -954,6 +954,7 @@ pub fn mainErr() anyerror!void {
         }
     }
 
+    // free crash state bc game can no longer crash
     allocator.alloc.destroy(gs_crash);
 
     // deinit sb
@@ -963,12 +964,12 @@ pub fn mainErr() anyerror!void {
     events.EventManager.deinit();
 
     // deinit the current state
-    try game_states.getPtr(current_state).deinit();
+    game_states.getPtr(current_state).deinit();
 
-    try vm_manager.VMManager.instance.deinit();
+    vm_manager.VMManager.instance.deinit();
 
     // deinit fonts
-    try bios_font.deinit();
+    bios_font.deinit();
 
     // deinit textures
     texture_manager.TextureManager.deinit();

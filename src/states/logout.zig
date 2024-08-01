@@ -38,7 +38,7 @@ pub const GSLogout = struct {
         self.time = 3;
     }
 
-    pub fn deinit(_: *Self) !void {}
+    pub fn deinit(_: *Self) void {}
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         batch.SpriteBatch.instance.scissor = null;

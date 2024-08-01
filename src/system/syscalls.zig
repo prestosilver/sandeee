@@ -186,7 +186,7 @@ fn sysClose(self: *vm.VM) VmError!void {
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
 
     if (fs) |stream| {
-        try stream.close();
+        stream.close();
         self.streams.items[@as(usize, @intCast(idx.data().value))] = null;
     } else {
         return error.InvalidStream;
@@ -367,14 +367,14 @@ fn sysSize(self: *vm.VM) VmError!void {
     if (path.data().string[0] == '/') {
         const file = try files.root.getFile(path.data().string);
 
-        try self.pushStackI(file.size());
+        try self.pushStackI(try file.size());
 
         return;
     }
 
     const file = try self.root.getFile(path.data().string);
 
-    try self.pushStackI(file.size());
+    try self.pushStackI(try file.size());
 }
 
 fn sysRSP(self: *vm.VM) VmError!void {

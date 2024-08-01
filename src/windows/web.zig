@@ -916,7 +916,7 @@ pub const WebData = struct {
         self.resetLinks();
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         if (self.load_thread) |load_thread| {
             std.Thread.join(load_thread);
         }

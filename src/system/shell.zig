@@ -137,7 +137,7 @@ pub const Shell = struct {
 
         const id = try std.fmt.parseInt(u8, param[5..], 16);
 
-        try vm_manager.VMManager.instance.destroy(.{
+        vm_manager.VMManager.instance.destroy(.{
             .id = id,
         });
 
@@ -692,9 +692,9 @@ pub const Shell = struct {
         return self.runFile(cmd, params);
     }
 
-    pub fn deinit(self: *Shell) !void {
+    pub fn deinit(self: *Shell) void {
         if (self.vm) |vm_handle| {
-            try vm_manager.VMManager.instance.destroy(vm_handle);
+            vm_manager.VMManager.instance.destroy(vm_handle);
             self.vm = null;
         }
     }

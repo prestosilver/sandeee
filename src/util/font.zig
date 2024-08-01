@@ -98,7 +98,7 @@ pub const Font = struct {
         return initMem(try file.read(null));
     }
 
-    pub fn deinit(self: *Font) !void {
+    pub fn deinit(self: *Font) void {
         if (!self.setup) return;
 
         allocator.alloc.free(self.tex);

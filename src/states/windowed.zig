@@ -84,7 +84,7 @@ pub const GSWindowed = struct {
 
         if (idx) |remove_idx| {
             var tmp_popup = global_self.popups.orderedRemove(remove_idx);
-            try tmp_popup.data.contents.deinit();
+            tmp_popup.data.contents.deinit();
         }
     }
 
@@ -265,35 +265,37 @@ pub const GSWindowed = struct {
         }
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         // flag for stupidity
         self.init = false;
 
         // save telem data
-        try telem.Telem.save();
+        telem.Telem.save() catch |err|
+            std.log.err("telem save failed {}", .{err});
 
         // save email data
-        try self.email_manager.saveStateFile("/_priv/emails.bin");
+        self.email_manager.saveStateFile("/_priv/emails.bin") catch |err|
+            std.log.err("email save failed {}", .{err});
 
         // close all windows
         for (self.windows.items) |*window| {
-            try window.data.deinit();
+            window.data.deinit();
         }
 
         // close all popups
         for (self.popups.items) |*popup| {
-            try popup.data.contents.deinit();
+            popup.data.contents.deinit();
         }
 
         // deinit the font face
-        try self.face.deinit();
+        self.face.deinit();
 
         // deinit the eln loader
-        try eln.ElnData.reset();
+        eln.ElnData.reset();
 
         // save the disk and settings
-        try conf.SettingManager.deinit();
-        try files.write();
+        conf.SettingManager.deinit();
+        files.write();
 
         // deinit lists
         self.windows.deinit();

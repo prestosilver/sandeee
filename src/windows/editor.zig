@@ -472,7 +472,7 @@ pub const EditorData = struct {
                 }
             }
 
-            try self.clearBuffer();
+            self.clearBuffer();
 
             self.buffer = if (self.buffer) |old_buffer|
                 try allocator.alloc.realloc(old_buffer, new_buffer.items.len)
@@ -574,7 +574,7 @@ pub const EditorData = struct {
             const file_conts = try self.file.?.read(null);
             const lines = std.mem.count(u8, file_conts, "\n") + 1;
 
-            try self.clearBuffer();
+            self.clearBuffer();
 
             if (self.buffer) |buffer| {
                 self.buffer = try allocator.alloc.realloc(buffer, lines);
@@ -612,7 +612,7 @@ pub const EditorData = struct {
         }
     }
 
-    pub fn clearBuffer(self: *Self) !void {
+    pub fn clearBuffer(self: *Self) void {
         if (self.buffer) |buffer| {
             for (buffer) |*line| {
                 if (line.render) |render| {
@@ -631,7 +631,7 @@ pub const EditorData = struct {
     pub fn newFile(self: *Self) !void {
         if (self.modified) return;
 
-        try self.clearBuffer();
+        self.clearBuffer();
 
         self.buffer = try allocator.alloc.dupe(Row, &[_]Row{Row{
             .text = try allocator.alloc.alloc(u8, 0),
@@ -640,8 +640,8 @@ pub const EditorData = struct {
         self.file = null;
     }
 
-    pub fn deinit(self: *Self) !void {
-        try self.clearBuffer();
+    pub fn deinit(self: *Self) void {
+        self.clearBuffer();
         if (self.buffer) |buffer|
             allocator.alloc.free(buffer);
 

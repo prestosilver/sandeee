@@ -153,7 +153,7 @@ pub const PopupConfirm = struct {
         });
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         allocator.alloc.destroy(self);
     }
 };

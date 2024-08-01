@@ -90,7 +90,7 @@ pub const GSRecovery = struct {
         try self.disks.append("X Back");
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         for (self.disks.items[0 .. self.disks.items.len - 1]) |item| {
             allocator.alloc.free(item);
         }

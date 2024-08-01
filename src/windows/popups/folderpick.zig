@@ -102,7 +102,7 @@ pub const PopupFolderPick = struct {
         }
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         allocator.alloc.free(self.path);
         allocator.alloc.destroy(self);
     }

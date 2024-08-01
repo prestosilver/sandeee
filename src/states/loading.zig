@@ -134,7 +134,7 @@ pub const GSLoading = struct {
         };
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         self.loading_thread.join();
     }
 

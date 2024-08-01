@@ -25,7 +25,7 @@ pub const PopupData = struct {
             key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
             char: *const fn (*anyopaque, u32, i32) anyerror!void,
             click: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
-            deinit: *const fn (*anyopaque) anyerror!void,
+            deinit: *const fn (*anyopaque) void,
         };
 
         ptr: *anyopaque,
@@ -47,7 +47,7 @@ pub const PopupData = struct {
             return self.vtable.click(self.ptr, mousepos);
         }
 
-        pub fn deinit(self: *Self) !void {
+        pub fn deinit(self: *Self) void {
             return self.vtable.deinit(self.ptr);
         }
 
@@ -83,7 +83,7 @@ pub const PopupData = struct {
                     }
                 }
 
-                fn deinitImpl(pointer: *anyopaque) !void {
+                fn deinitImpl(pointer: *anyopaque) void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
                     return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});

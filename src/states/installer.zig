@@ -291,7 +291,7 @@ pub const GSInstall = struct {
         }
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         self.disk_name.deinit();
     }
 };

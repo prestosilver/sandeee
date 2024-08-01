@@ -3,6 +3,7 @@ const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
 const events = @import("../util/events.zig");
 const system_events = @import("../events/system.zig");
+const log = @import("../util/log.zig").log;
 
 pub const SettingManager = struct {
     pub var instance: SettingManager = undefined;
@@ -64,8 +65,10 @@ pub const SettingManager = struct {
         try files.root.writeFile("/conf/system.cfg", out.items, null);
     }
 
-    pub fn deinit() !void {
-        try instance.save();
+    pub fn deinit() void {
+        instance.save() catch {
+            log.err("failed to save settings", .{});
+        };
 
         var iter = instance.settings.iterator();
 

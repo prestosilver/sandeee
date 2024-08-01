@@ -49,16 +49,16 @@ pub const VMManager = struct {
         var iter = instance.vms.iterator();
 
         while (iter.next()) |entry| {
-            try entry.value_ptr.*.deinit();
+            entry.value_ptr.*.deinit();
             _ = instance.vms.remove(entry.key_ptr.*);
         }
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         var iter = instance.vms.iterator();
 
         while (iter.next()) |entry| {
-            try entry.value_ptr.*.deinit();
+            entry.value_ptr.*.deinit();
             _ = instance.vms.remove(entry.key_ptr.*);
         }
 
@@ -107,7 +107,7 @@ pub const VMManager = struct {
         var vm_instance = try vm.VM.init(allocator.alloc, root, params, false);
 
         vm_instance.loadString(code) catch |err| {
-            try vm_instance.deinit();
+            vm_instance.deinit();
 
             return err;
         };
@@ -121,9 +121,9 @@ pub const VMManager = struct {
         };
     }
 
-    pub fn destroy(self: *Self, handle: VMHandle) !void {
+    pub fn destroy(self: *Self, handle: VMHandle) void {
         if (self.vms.getPtr(handle.id)) |entry| {
-            try entry.deinit();
+            entry.deinit();
             _ = self.vms.remove(handle.id);
 
             log.debug("Destroy vm id: {}", .{handle.id});
@@ -197,7 +197,7 @@ pub const VMManager = struct {
                     .done = true,
                 };
 
-                try self.destroy(.{
+                self.destroy(.{
                     .id = vm_id,
                 });
 

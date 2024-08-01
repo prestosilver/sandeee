@@ -426,7 +426,7 @@ const EmailData = struct {
                                     const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
 
                                     var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
-                                    defer vm_instance.deinit() catch {};
+                                    defer vm_instance.deinit();
 
                                     vm_instance.loadString(conts[start_idx .. start_idx + fnsize]) catch {
                                         return;
@@ -461,7 +461,7 @@ const EmailData = struct {
 
                         if (!std.mem.startsWith(u8, conts, "EEEp")) return;
                         var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
-                        defer vmInstance.deinit() catch {};
+                        defer vmInstance.deinit();
 
                         try vmInstance.input.appendSlice(input.items);
                         try vmInstance.input.append('\n');
@@ -642,7 +642,7 @@ const EmailData = struct {
         }
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         for (self.login_text) |i|
             allocator.alloc.free(i);
 

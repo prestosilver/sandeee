@@ -90,7 +90,7 @@ pub const GSDisks = struct {
         try self.disks.append("X Quit");
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         if (self.disks.items.len > 2) {
             for (self.disks.items[0 .. self.disks.items.len - 3]) |item| {
                 allocator.alloc.free(item);
@@ -132,7 +132,7 @@ pub const GSDisks = struct {
             } else {
                 if (self.sel == 0) {
                     try events.EventManager.instance.sendEvent(system_events.EventStateChange{
-                        .targetState = .Installer,
+                        .target_state = .Installer,
                     });
                 } else {
                     c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);

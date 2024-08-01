@@ -23,11 +23,11 @@ pub const GSCrash = struct {
     sad_sprite: sp.Sprite,
 
     pub fn setup(_: *Self) !void {
-        try files.write();
+        files.write();
         gfx.Context.instance.color = cols.newColor(0.25, 0, 0, 1);
     }
 
-    pub fn deinit(_: *Self) !void {}
+    pub fn deinit(_: *Self) void {}
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
         batch.SpriteBatch.instance.scissor = null;

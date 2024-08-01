@@ -287,12 +287,12 @@ pub const CMDData = struct {
         }
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         // free backtrace
         allocator.alloc.free(self.bt);
 
         // free vm
-        try self.shell.deinit();
+        self.shell.deinit();
 
         // free history
         for (self.history.items) |item| {

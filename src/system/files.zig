@@ -794,14 +794,18 @@ pub fn toStr() !std.ArrayList(u8) {
     return try root.toStr();
 }
 
-pub fn write() !void {
+pub fn write() void {
     if (options.IsDemo) return;
 
     if (root_out) |output| {
-        const file = try std.fs.cwd().createFile(output, .{});
+        const file = std.fs.cwd().createFile(output, .{}) catch {
+            @panic("couldnt make save");
+        };
         defer file.close();
 
-        try root.write(file);
+        root.write(file) catch |err| {
+            @panic(std.fmt.allocPrint(allocator.alloc, "failed to save game {}", .{err}) catch "");
+        };
     }
 }
 

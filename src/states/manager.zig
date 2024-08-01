@@ -6,7 +6,7 @@ pub const GameState = struct {
 
     pub const Vtable = struct {
         setup: *const fn (*anyopaque) anyerror!void,
-        deinit: *const fn (*anyopaque) anyerror!void,
+        deinit: *const fn (*anyopaque) void,
         refresh: *const fn (*anyopaque) anyerror!void,
         draw: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
         update: *const fn (*anyopaque, f32) anyerror!void,
@@ -28,9 +28,9 @@ pub const GameState = struct {
         state.is_setup = true;
     }
 
-    pub fn deinit(state: *Self) anyerror!void {
+    pub fn deinit(state: *Self) void {
         if (state.is_setup)
-            try state.vtable.deinit(state.ptr);
+            state.vtable.deinit(state.ptr);
         state.is_setup = false;
     }
 
@@ -86,7 +86,7 @@ pub const GameState = struct {
                 return @call(.always_inline, ptr_info.Pointer.child.setup, .{self});
             }
 
-            fn deinitImpl(pointer: *anyopaque) anyerror!void {
+            fn deinitImpl(pointer: *anyopaque) void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
                 return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});

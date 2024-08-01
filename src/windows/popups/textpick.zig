@@ -105,7 +105,7 @@ pub const PopupTextPick = struct {
         }
     }
 
-    pub fn deinit(self: *Self) !void {
+    pub fn deinit(self: *Self) void {
         allocator.alloc.free(self.text);
         allocator.alloc.destroy(self);
     }

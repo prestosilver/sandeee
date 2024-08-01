@@ -67,8 +67,8 @@ pub const FileStream = struct {
         self.updated = false;
     }
 
-    pub fn close(self: *FileStream) StreamError!void {
-        try self.flush();
+    pub fn close(self: *FileStream) void {
+        self.flush() catch {};
         allocator.alloc.free(self.contents);
         allocator.alloc.free(self.path);
         allocator.alloc.destroy(self);
