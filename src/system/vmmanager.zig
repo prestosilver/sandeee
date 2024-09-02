@@ -176,7 +176,7 @@ pub const VMManager = struct {
 
     pub fn getOutput(self: *Self, handle: VMHandle) !VMResult {
         return if (self.results.fetchRemove(handle.id)) |item| item.value else .{
-            .data = try allocator.alloc.alloc(u8, 0),
+            .data = &.{},
             .done = !self.vms.contains(handle.id),
         };
     }

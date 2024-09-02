@@ -12,12 +12,10 @@ const shd = @import("../../util/shader.zig");
 const audio = @import("../../util/audio.zig");
 const vm = @import("../vm.zig");
 
-pub var audio_ptr: *audio.Audio = undefined;
-
 // snd play
 
 pub fn readSndPlay(_: ?*vm.VM) ![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeSndPlay(data: []const u8, _: ?*vm.VM) !void {
@@ -26,7 +24,7 @@ pub fn writeSndPlay(data: []const u8, _: ?*vm.VM) !void {
     const snd = audio.Sound.init(data);
     defer snd.deinit();
 
-    try audio_ptr.playSound(snd);
+    try audio.instance.playSound(snd);
 }
 
 // /fake/win

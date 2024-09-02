@@ -46,14 +46,14 @@ pub const ConvertStep = struct {
         return self;
     }
 
-    fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
+    fn doStep(step: *std.Build.Step, _: std.Build.Step.MakeOptions) !void {
         const self: *ConvertStep = @fieldParentPtr("step", step);
         if (std.fs.path.dirname(self.output)) |dir|
             std.fs.cwd().makeDir(dir) catch |err| {
                 if (err != error.PathAlreadyExists) return err;
             };
 
-        _ = try std.ChildProcess.run(.{
+        _ = try std.process.Child.run(.{
             .allocator = step.owner.allocator,
             .argv = &.{"sync"},
         });

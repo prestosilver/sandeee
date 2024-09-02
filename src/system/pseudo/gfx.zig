@@ -25,7 +25,7 @@ pub fn readGfxNew(_: ?*vm.VM) files.FileError![]const u8 {
         gfx.Context.makeCurrent();
         defer gfx.Context.makeNotCurrent();
 
-        try texture_manager.TextureManager.instance.put(result, try tex.newTextureSize(.{}));
+        try texture_manager.TextureManager.instance.put(result, tex.Texture.init());
     }
 
     texture_idx = texture_idx +% 1;
@@ -40,7 +40,7 @@ pub fn writeGfxNew(_: []const u8, _: ?*vm.VM) files.FileError!void {
 // /fake/gfx/destroy
 
 pub fn readGfxDestroy(_: ?*vm.VM) files.FileError![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) files.FileError!void {
@@ -63,7 +63,7 @@ pub fn writeGfxDestroy(data: []const u8, _: ?*vm.VM) files.FileError!void {
 // /fake/gfx/upload
 
 pub fn readGfxUpload(_: ?*vm.VM) files.FileError![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) files.FileError!void {
@@ -71,11 +71,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) files.FileError!void {
         const idx = data[0];
 
         const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
-
-        gfx.Context.makeCurrent();
-        defer gfx.Context.makeNotCurrent();
-
-        texture.upload();
+        try texture.upload();
 
         return;
     }
@@ -84,8 +80,10 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) files.FileError!void {
     const image = data[1..];
 
     const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
-
-    tex.uploadTextureMem(texture, image) catch {
+    texture.loadMem(image) catch {
+        return error.InvalidPsuedoData;
+    };
+    texture.upload() catch {
         return error.InvalidPsuedoData;
     };
 }
@@ -93,7 +91,7 @@ pub fn writeGfxUpload(data: []const u8, _: ?*vm.VM) files.FileError!void {
 // /fake/gfx/save
 
 pub fn readGfxSave(_: ?*vm.VM) files.FileError![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeGfxSave(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
@@ -120,7 +118,7 @@ pub fn writeGfxSave(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void
 // /fake/gfx/pixel
 
 pub fn readGfxPixel(_: ?*vm.VM) files.FileError![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeGfxPixel(data: []const u8, _: ?*vm.VM) files.FileError!void {

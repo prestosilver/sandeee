@@ -71,6 +71,10 @@ pub const Vector2 = struct {
             .y = y * magnitude,
         };
     }
+
+    pub fn toVector3(self: Vector2) Vector3 {
+        return .{ .x = self.x, .y = self.y };
+    }
 };
 
 pub const Vector3 = struct {

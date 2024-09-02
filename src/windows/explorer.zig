@@ -50,7 +50,7 @@ pub const ExplorerData = struct {
     focused: ?u64 = null,
     selected: ?usize = null,
     last_action: ?ExplorerMouseAction = null,
-    icon_data: []const ExplorerIcon,
+    icon_data: []const ExplorerIcon = &.{},
     bnds: rect.Rectangle = undefined,
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
@@ -184,7 +184,7 @@ pub const ExplorerData = struct {
                                         adds.* = .{
                                             .data = self,
                                             .message = message,
-                                            .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(ErrorData),
+                                            .buttons = popups.all.confirm.PopupConfirm.initButtonsFromStruct(ErrorData),
                                             .shader = self.shader,
                                         };
 
@@ -319,7 +319,7 @@ pub const ExplorerData = struct {
                     adds.* = .{
                         .data = self,
                         .message = try allocator.alloc.dupe(u8, "Are you sure you want to delete this file."),
-                        .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(confirmData),
+                        .buttons = popups.all.confirm.PopupConfirm.initButtonsFromStruct(confirmData),
                         .shader = self.shader,
                     };
 
@@ -386,7 +386,6 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
             .root = files.home,
             .vm = null,
         },
-        .icon_data = try allocator.alloc.alloc(ExplorerData.ExplorerIcon, 0),
     };
 
     for (self.icons, 0..) |_, idx| {

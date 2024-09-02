@@ -31,8 +31,8 @@ pub fn sandEEELogFn(
         .debug => "\x1b[90m",
     };
 
-    std.debug.getStderrMutex().lock();
-    defer std.debug.getStderrMutex().unlock();
+    std.debug.lockStdErr();
+    defer std.debug.unlockStdErr();
 
     // Print the message to stderr, silently ignoring any errors
     if (@import("builtin").mode == .Debug) {

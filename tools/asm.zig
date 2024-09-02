@@ -20,7 +20,7 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
     var buf: [1024]u8 = undefined;
 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        var no_comment = std.mem.split(u8, line, ";");
+        var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
         while (l.len != 0 and l[0] == ' ') l = l[1..];
@@ -47,7 +47,7 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
     try result.appendSlice("EEEp");
 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        var no_comment = std.mem.split(u8, line, ";");
+        var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
         while (l.len != 0 and l[0] == ' ') l = l[1..];
@@ -179,7 +179,7 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
     var buf: [1024]u8 = undefined;
 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        var no_comment = std.mem.split(u8, line, ";");
+        var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
         while (l.len != 0 and l[0] == ' ') l = l[1..];
@@ -216,7 +216,7 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
     try result.appendSlice("elib");
 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        var no_comment = std.mem.split(u8, line, ";");
+        var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
         while (l.len != 0 and l[0] == ' ') l = l[1..];

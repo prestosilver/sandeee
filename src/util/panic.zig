@@ -8,7 +8,7 @@ pub fn log() []const u8 {
     // Try to run a backtrace to get where the log message originated from
     if (builtin.mode != .Debug) return NO_INFO;
 
-    var result = allocator.alloc.alloc(u8, 0) catch return NO_INFO;
+    var result: []u8 = &.{};
     const debug_info = std.debug.getSelfDebugInfo() catch return NO_INFO;
     var address: usize = 0;
     if (builtin.os.tag == .windows) {
@@ -19,8 +19,7 @@ pub fn log() []const u8 {
         address = if (return_address == 0) return_address else return_address - 1;
         const module = debug_info.getModuleForAddress(address - 1) catch return result;
         const symbol_info = module.getSymbolAtAddress(debug_info.allocator, address) catch return result;
-        defer symbol_info.deinit(debug_info.allocator);
-        const li = symbol_info.line_info.?;
+        const li = symbol_info.source_location.?;
 
         const index = std.mem.indexOf(u8, li.file_name, "sandeee/") orelse 0;
         // Good backtrace, print with the source location of the log

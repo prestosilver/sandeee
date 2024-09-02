@@ -227,25 +227,19 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
             .texture = "white",
             .data = .{
                 .size = .{ .x = 100, .y = 100 },
-                .data = try allocator.alloc.alloc(f32, 0),
+                .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
+                .color = .{ .r = 0.5, .g = 0, .b = 0 },
             },
         },
         .vm_graph = .{
             .texture = "white",
             .data = .{
                 .size = .{ .x = 100, .y = 100 },
-                .data = try allocator.alloc.alloc(f32, 0),
+                .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
+                .color = .{ .r = 1, .g = 0.5, .b = 0.5 },
             },
         },
     };
-
-    allocator.alloc.free(self.render_graph.data.data);
-    self.render_graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 20));
-    self.render_graph.data.color = .{ .r = 0.5, .g = 0, .b = 0 };
-
-    allocator.alloc.free(self.vm_graph.data.data);
-    self.vm_graph.data.data = try allocator.alloc.dupe(f32, &(.{0} ** 20));
-    self.vm_graph.data.color = .{ .r = 1, .g = 0.5, .b = 0.5 };
 
     var result = try win.WindowContents.init(self, "Tasks", "SandEEE Tasks", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
     result.props.size.min = .{ .x = 400, .y = 500 };

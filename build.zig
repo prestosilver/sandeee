@@ -113,7 +113,7 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const exe = b.addExecutable(.{
         .name = "SandEEE",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -128,18 +128,24 @@ pub fn build(b: *std.Build) !void {
         else => if (is_demo) "D000" else "0000",
     };
 
-    std.fs.cwd().writeFile("VERSION", std.fmt.allocPrint(b.allocator, "{}", .{version}) catch return) catch return;
+    std.fs.cwd().writeFile(.{
+        .sub_path = "VERSION",
+        .data = std.fmt.allocPrint(b.allocator, "{}", .{version}) catch return,
+    }) catch return;
 
     version.build = b.fmt("{s}-{X:0>4}", .{ version_suffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
 
-    std.fs.cwd().writeFile("IVERSION", std.fmt.allocPrint(b.allocator, "{}", .{version}) catch return) catch return;
+    std.fs.cwd().writeFile(.{
+        .sub_path = "IVERSION",
+        .data = std.fmt.allocPrint(b.allocator, "{}", .{version}) catch return,
+    }) catch return;
 
     const network_module = b.addModule("network", .{
-        .root_source_file = .{ .path = "deps/zig-network/network.zig" },
+        .root_source_file = b.path("deps/zig-network/network.zig"),
     });
 
     const steam_module = b.addModule("steam", .{
-        .root_source_file = .{ .path = "steam/steam.zig" },
+        .root_source_file = b.path("steam/steam.zig"),
     });
 
     const options = b.addOptions();
@@ -230,23 +236,21 @@ pub fn build(b: *std.Build) !void {
     }
 
     // Includes
-    exe.addIncludePath(.{ .path = "deps/include" });
-    exe.addIncludePath(.{ .path = "deps/steam_sdk/public/" });
+    exe.addIncludePath(b.path("deps/include"));
+    exe.addIncludePath(b.path("deps/steam_sdk/public/"));
     if (target.result.os.tag == .windows) {
-        exe.addObjectFile(.{ .path = "content/app.res.obj" });
-        exe.addLibraryPath(.{ .path = "deps/lib" });
-        exe.addLibraryPath(.{ .path = "deps/steam_sdk/redistributable_bin/win64" });
+        exe.addObjectFile(b.path("content/app.res.obj"));
+        exe.addLibraryPath(b.path("deps/lib"));
+        exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64"));
         exe.subsystem = .Windows;
     } else {
-        exe.addLibraryPath(.{ .path = "deps/steam_sdk/redistributable_bin/linux64" });
+        exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
     }
 
     // Sources
     exe.addCSourceFile(
         .{
-            .file = .{
-                .path = "deps/src/glad.c",
-            },
+            .file = b.path("deps/src/glad.c"),
             .flags = &[_][]const u8{"-std=c99"},
         },
     );
@@ -537,9 +541,7 @@ pub fn build(b: *std.Build) !void {
 
     const exe_tests = b.addTest(.{
         .name = "main-test",
-        .root_source_file = .{
-            .path = "src/main.zig",
-        },
+        .root_source_file = b.path("src/main.zig"),
     });
 
     const platform = switch (target.result.os.tag) {

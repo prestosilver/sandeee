@@ -16,9 +16,7 @@ pub fn readInputChar(vm_instance: ?*vm.VM) ![]const u8 {
         return result;
     }
 
-    const result = try allocator.alloc.alloc(u8, 0);
-
-    return result;
+    return &.{};
 }
 
 pub fn writeInputChar(_: []const u8, _: ?*vm.VM) !void {
@@ -28,7 +26,7 @@ pub fn writeInputChar(_: []const u8, _: ?*vm.VM) !void {
 // /fake/inp/win
 
 pub fn readInputWin(vm_instance: ?*vm.VM) ![]const u8 {
-    var result = try allocator.alloc.alloc(u8, 0);
+    var result: []u8 = &.{};
     if (vm_instance == null) return result;
 
     if (vm_instance.?.misc_data.get("window")) |aid| {

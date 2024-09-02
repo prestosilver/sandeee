@@ -54,7 +54,7 @@ pub fn create(_: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
     var buffer: [1020]u8 = undefined;
 
     var idx: usize = 0;
-    var rnd = std.rand.DefaultPrng.init(@intCast(std.time.microTimestamp()));
+    var rnd = std.Random.DefaultPrng.init(@intCast(std.time.microTimestamp()));
     var stack: usize = 0;
     var cstack: usize = 0;
 

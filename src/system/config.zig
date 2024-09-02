@@ -6,13 +6,9 @@ const system_events = @import("../events/system.zig");
 const log = @import("../util/log.zig").log;
 
 pub const SettingManager = struct {
-    pub var instance: SettingManager = undefined;
+    pub var instance: SettingManager = .{};
 
-    settings: std.StringHashMap([]u8),
-
-    pub fn init() void {
-        instance.settings = std.StringHashMap([]u8).init(allocator.alloc);
-    }
+    settings: std.StringHashMap([]u8) = std.StringHashMap([]u8).init(allocator.alloc),
 
     pub fn set(self: *SettingManager, setting: []const u8, value: []const u8) !void {
         if (self.settings.fetchRemove(setting)) |val| {

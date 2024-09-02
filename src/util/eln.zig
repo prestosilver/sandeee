@@ -41,7 +41,7 @@ pub const ElnData = struct {
                 .data = self,
                 .message = message,
                 .shader = shd,
-                .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
+                .buttons = popups.all.confirm.PopupConfirm.initButtonsFromStruct(errorData),
             };
 
             try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
@@ -73,7 +73,7 @@ pub const ElnData = struct {
         };
 
         const conts = try file.read(null);
-        var split = std.mem.split(u8, conts, "\n");
+        var split = std.mem.splitScalar(u8, conts, '\n');
         while (split.next()) |entry| {
             const colon_idx = std.mem.indexOf(u8, entry, ":") orelse continue;
             const prop = std.mem.trim(u8, entry[0..colon_idx], " ");
@@ -83,14 +83,25 @@ pub const ElnData = struct {
             } else if (std.mem.eql(u8, prop, "icon")) {
                 if (textures.get(value)) |idx| {
                     result.icon = idx;
-                } else {
+                } else load_tex: {
                     const name = .{ 'e', 'l', 'n', texture };
-                    if (tex.newTextureFile(value) catch null) |tmp_tex| {
-                        try texture_manager.TextureManager.instance.put(&name, tmp_tex);
-                    } else {
-                        log.err("Failed to load image {s}", .{value});
-                    }
+                    var eln_tex = tex.Texture.init();
+
+                    eln_tex.loadFile(value) catch |err| {
+                        log.err("Failed to load image {s}: {}", .{ value, err });
+                        eln_tex.deinit();
+                        break :load_tex;
+                    };
+
+                    eln_tex.upload() catch |err| {
+                        log.err("Failed to upload image {s}: {}", .{ value, err });
+                        eln_tex.deinit();
+                        break :load_tex;
+                    };
+
+                    try texture_manager.TextureManager.instance.put(&name, eln_tex);
                     try textures.put(value, texture);
+
                     result.icon = texture;
 
                     texture += 1;

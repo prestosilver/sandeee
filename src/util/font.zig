@@ -180,7 +180,7 @@ pub const Font = struct {
         try texture_manager.TextureManager.instance.put(result.tex, .{
             .tex = texture,
             .size = atlas_size,
-            .buffer = try allocator.alloc.alloc([4]u8, 0),
+            .buffer = &.{},
         });
 
         font_id += 1;

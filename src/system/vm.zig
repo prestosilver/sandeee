@@ -99,14 +99,14 @@ pub const VM = struct {
 
     checker: bool = false,
 
-    rnd: std.rand.DefaultPrng,
+    rnd: std.Random.DefaultPrng,
 
     pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8, comptime checker: bool) VMError!VM {
-        var split_iter = std.mem.split(u8, args, " ");
-
         var tmp_args = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
 
+        var split_iter = std.mem.splitScalar(u8, args, ' ');
         var idx: usize = 0;
+
         while (split_iter.next()) |item| : (idx += 1)
             tmp_args[idx] = alloc.dupe(u8, item) catch return error.OutOfMemory;
 
@@ -117,12 +117,12 @@ pub const VM = struct {
             .misc_data = std.StringHashMap([]const u8).init(alloc),
             .out = std.ArrayList(u8).init(alloc),
             .input = std.ArrayList(u8).init(alloc),
-            .heap = alloc.alloc(HeapEntry, 0) catch return error.OutOfMemory,
+            .heap = &.{},
             .args = tmp_args,
             .root = root,
             .checker = checker,
             .name = alloc.dupe(u8, tmp_args[0]) catch return error.OutOfMemory,
-            .rnd = std.rand.DefaultPrng.init(0),
+            .rnd = std.Random.DefaultPrng.init(0),
         };
     }
 

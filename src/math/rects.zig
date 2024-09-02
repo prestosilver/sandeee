@@ -6,6 +6,22 @@ pub const Rectangle = struct {
     w: f32,
     h: f32,
 
+    pub const Corner = enum {
+        TopLeft,
+        TopRight,
+        BotLeft,
+        BotRight,
+    };
+
+    pub inline fn getCorner(self: Rectangle, corner: Corner) vec.Vector2 {
+        return switch (corner) {
+            .TopLeft => .{ .x = self.x, .y = self.y },
+            .TopRight => .{ .x = self.x + self.w, .y = self.y },
+            .BotLeft => .{ .x = self.x, .y = self.y + self.h },
+            .BotRight => .{ .x = self.x + self.w, .y = self.y + self.h },
+        };
+    }
+
     pub inline fn equal(self: Rectangle, other: Rectangle) bool {
         return self.x == other.x and
             self.y == other.y and
@@ -91,4 +107,11 @@ pub const UIRectangle = struct {
             .h = self.offsetYMax + aymax - self.offsetYMin - aymin,
         };
     }
+};
+
+pub const Border = struct {
+    l: f32 = 0,
+    r: f32 = 0,
+    t: f32 = 0,
+    b: f32 = 0,
 };

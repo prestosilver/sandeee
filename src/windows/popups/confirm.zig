@@ -39,7 +39,7 @@ pub const PopupConfirm = struct {
         calls: *const fn (*const anyopaque) anyerror!void,
     };
 
-    pub fn createButtonsFromStruct(comptime T: anytype) []const ConfirmButton {
+    pub fn initButtonsFromStruct(comptime T: anytype) []const ConfirmButton {
         const type_info = @typeInfo(T);
         if (type_info != .Struct)
             @compileError("expected struct");

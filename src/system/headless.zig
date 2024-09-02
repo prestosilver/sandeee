@@ -56,7 +56,7 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exit_fail: bool, logging: ?std.fs
         allocator.alloc.free(prompt);
 
         if (to_run) |runs| {
-            var iter = std.mem.split(u8, runs, "\n");
+            var iter = std.mem.splitScalar(u8, runs, '\n');
 
             while (iter.next()) |data| {
                 _ = try stdout.write(data);

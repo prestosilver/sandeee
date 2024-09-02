@@ -4,17 +4,9 @@ const allocator = @import("allocator.zig");
 const log = @import("../util/log.zig").log;
 
 pub const EventManager = struct {
-    pub var instance: EventManager = undefined;
+    pub var instance: EventManager = .{};
 
-    subs: std.StringHashMap([]Listener(*void)),
-
-    pub fn init() void {
-        const subs = std.StringHashMap([]Listener(*void)).init(allocator.alloc);
-
-        instance = EventManager{
-            .subs = subs,
-        };
-    }
+    subs: std.StringHashMap([]Listener(*void)) = std.StringHashMap([]Listener(*void)).init(allocator.alloc),
 
     pub fn deinit() void {
         var iter = instance.subs.iterator();

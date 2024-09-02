@@ -108,7 +108,7 @@ pub fn writeWinSize(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void
 // /fake/win/destroy
 
 pub fn readWinDestroy(_: ?*vm.VM) files.FileError![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeWinDestroy(id: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
@@ -164,9 +164,7 @@ pub fn writeWinOpen(_: []const u8, _: ?*vm.VM) files.FileError!void {
 // /fake/win/rules
 
 pub fn readWinRules(_: ?*vm.VM) files.FileError![]const u8 {
-    const result = try allocator.alloc.alloc(u8, 0);
-
-    return result;
+    return &.{};
 }
 
 pub fn writeWinRules(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
@@ -215,7 +213,7 @@ pub fn writeWinRules(data: []const u8, vm_instance: ?*vm.VM) files.FileError!voi
 // /fake/win/flip
 
 pub fn readWinFlip(_: ?*vm.VM) files.FileError![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) files.FileError!void {
@@ -240,7 +238,7 @@ pub fn writeWinFlip(id: []const u8, _: ?*vm.VM) files.FileError!void {
 // /fake/win/title
 
 pub fn readWinTitle(vm_instance: ?*vm.VM) files.FileError![]const u8 {
-    if (vm_instance == null) return allocator.alloc.alloc(u8, 0);
+    if (vm_instance == null) return &.{};
 
     if (vm_instance.?.misc_data.get("window")) |aaid| {
         for (windows_ptr.*.items, 0..) |_, idx| {
@@ -255,7 +253,7 @@ pub fn readWinTitle(vm_instance: ?*vm.VM) files.FileError![]const u8 {
         }
     }
 
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeWinTitle(id: []const u8, _: ?*vm.VM) files.FileError!void {
@@ -280,7 +278,7 @@ pub fn writeWinTitle(id: []const u8, _: ?*vm.VM) files.FileError!void {
 // /fake/win/render
 
 pub fn readWinRender(_: ?*vm.VM) files.FileError![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeWinRender(data: []const u8, _: ?*vm.VM) files.FileError!void {
@@ -327,7 +325,7 @@ pub fn writeWinRender(data: []const u8, _: ?*vm.VM) files.FileError!void {
 // /fake/win/text
 
 pub fn readWinText(_: ?*vm.VM) files.FileError![]const u8 {
-    return allocator.alloc.alloc(u8, 0);
+    return &.{};
 }
 
 pub fn writeWinText(data: []const u8, _: ?*vm.VM) files.FileError!void {

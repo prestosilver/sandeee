@@ -481,7 +481,7 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
         self.icons[idx] = .{
             .texture = "big_icons",
             .data = .{
-                .source = .{ .x = i / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .source = .{ .x = i / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
                 .size = .{ .x = 64, .y = 64 },
             },
         };

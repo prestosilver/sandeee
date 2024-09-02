@@ -20,7 +20,7 @@ pub const ButlerStep = struct {
         return self;
     }
 
-    fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
+    fn doStep(step: *std.Build.Step, _: std.Build.Step.MakeOptions) !void {
         const self: *ButlerStep = @fieldParentPtr("step", step);
 
         _ = step.owner.run(&[_][]const u8{ "butler", "push", "--userversion-file=IVERSION", self.directory, self.branch });

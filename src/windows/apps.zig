@@ -46,7 +46,7 @@ pub const LauncherData = struct {
     selected: usize = 0,
     last_action: ?LauncherMouseAction = null,
 
-    icon_data: []const eln.ElnData,
+    icon_data: []const eln.ElnData = &.{},
     idx: u8,
 
     max_sprites: u8 = 0,
@@ -220,7 +220,6 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(LauncherData);
 
     self.* = .{
-        .icon_data = try allocator.alloc.alloc(eln.ElnData, 0),
         .idx = g_idx,
 
         .gray = .{

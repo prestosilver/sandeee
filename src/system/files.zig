@@ -532,14 +532,12 @@ pub const Folder = struct {
             }
         }
 
-        const cont = try allocator.alloc.alloc(u8, 0);
-
         const adds = try allocator.alloc.create(File);
         adds.* = .{
             .name = fullname,
             .parent = folder,
             .data = .{
-                .Disk = cont,
+                .Disk = &.{},
             },
         };
         try folder.contents.append(adds);

@@ -116,7 +116,7 @@ pub const CMDData = struct {
             }
         }
 
-        var lines = std.mem.splitBackwards(u8, self.bt, "\n");
+        var lines = std.mem.splitBackwardsScalar(u8, self.bt, '\n');
 
         var y = bnds.y + bnds.h - @as(f32, @floatFromInt(idx)) * font.size - 6 + offset;
 
@@ -228,7 +228,7 @@ pub const CMDData = struct {
 
                 if (al.clear) {
                     allocator.alloc.free(self.bt);
-                    self.bt = try allocator.alloc.alloc(u8, 0);
+                    self.bt = &.{};
                 } else {
                     start = self.bt.len;
 

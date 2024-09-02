@@ -38,7 +38,7 @@ pub const ChangelogStep = struct {
         return self;
     }
 
-    fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
+    fn doStep(step: *std.Build.Step, _: std.Build.Step.MakeOptions) !void {
         const self: *ChangelogStep = @fieldParentPtr("step", step);
         const b = step.owner;
 
@@ -49,7 +49,7 @@ pub const ChangelogStep = struct {
 
         const git_log = b.run(&.{ "git", "log", "master", "--pretty=format:%h" });
 
-        var lines = std.mem.split(u8, git_log, "\n");
+        var lines = std.mem.splitScalar(u8, git_log, '\n');
 
         const current = b.run(&.{ "cat", "VERSION" });
 

@@ -451,7 +451,7 @@ pub const EditorData = struct {
 
             for (buffer[self.cursory..]) |line| {
                 var new_line = Row{
-                    .text = try allocator.alloc.alloc(u8, 0),
+                    .text = &.{},
                 };
 
                 for (line.text) |ch| {
@@ -582,7 +582,7 @@ pub const EditorData = struct {
                 self.buffer = try allocator.alloc.alloc(Row, lines);
             }
 
-            var iter = std.mem.split(u8, file_conts, "\n");
+            var iter = std.mem.splitScalar(u8, file_conts, '\n');
             var idx: usize = 0;
             while (iter.next()) |line| {
                 self.buffer.?[idx] = .{
@@ -634,7 +634,7 @@ pub const EditorData = struct {
         self.clearBuffer();
 
         self.buffer = try allocator.alloc.dupe(Row, &[_]Row{Row{
-            .text = try allocator.alloc.alloc(u8, 0),
+            .text = &.{},
         }});
 
         self.file = null;

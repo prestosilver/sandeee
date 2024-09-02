@@ -60,7 +60,7 @@ pub const Telem = packed struct {
 
             instance = std.mem.bytesToValue(Telem, conts[0..@sizeOf(Telem)]);
         } else {
-            var rnd = std.rand.DefaultPrng.init(@bitCast(std.time.timestamp()));
+            var rnd = std.Random.DefaultPrng.init(@bitCast(std.time.timestamp()));
             instance = .{
                 .random_id = rnd.random().int(u64),
             };

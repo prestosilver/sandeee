@@ -6,6 +6,8 @@ pub const AudioErrors = error{
     AudioInit,
 };
 
+pub var instance: AudioManager = undefined;
+
 pub const Sound = struct {
     buffer: c.ALuint,
 
@@ -27,7 +29,7 @@ pub const Sound = struct {
 
 const background_sound = @embedFile("../sounds/bg.era");
 
-pub const Audio = struct {
+pub const AudioManager = struct {
     pub const SOURCES = 30;
 
     sources: [SOURCES]c.ALuint,
@@ -66,8 +68,8 @@ pub const Audio = struct {
         .iDecayHFLimit = 0x1,
     };
 
-    pub fn init() !Audio {
-        var result = Audio{
+    pub fn init() !void {
+        var result = AudioManager{
             .sources = undefined,
             .device = undefined,
             .context = undefined,
@@ -114,10 +116,10 @@ pub const Audio = struct {
 
         c.alSourcePlay(result.bg);
 
-        return result;
+        instance = result;
     }
 
-    pub fn playSound(self: *Audio, snd: Sound) !void {
+    pub fn playSound(self: *AudioManager, snd: Sound) !void {
         if (self.muted) return;
 
         var source_state: c.ALint = 0;

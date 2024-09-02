@@ -23,7 +23,6 @@ const e_data = @import("../data/email.zig");
 const c = @import("../c.zig");
 
 pub var notif: sprite.Sprite = undefined;
-pub var email_manager: *mail.EmailManager = undefined;
 
 const EmailData = struct {
     const Self = @This();
@@ -181,19 +180,19 @@ const EmailData = struct {
         if (self.viewing == null) {
             var y: f32 = bnds.y + 4.0 - props.scroll.?.value;
 
-            for (email_manager.emails.items) |*email| {
+            for (mail.EmailManager.instance.emails.items) |*email| {
                 var inbox = false;
 
                 if (std.mem.eql(u8, email.from, self.login.?)) {
                     inbox = true;
 
-                    if (self.box != email_manager.boxes.len - 1) continue;
+                    if (self.box != mail.EmailManager.instance.boxes.len - 1) continue;
                 } else if (email.box != self.box) continue;
                 var color = col.Color{ .r = 0, .g = 0, .b = 0 };
                 if (@import("builtin").mode == .Debug) {
-                    if (!email_manager.getEmailVisible(email, self.login.?)) color.a = 0.5;
+                    if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) color.a = 0.5;
                 } else {
-                    if (!email_manager.getEmailVisible(email, self.login.?)) continue;
+                    if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
                 }
 
                 const text = try std.fmt.allocPrint(allocator.alloc, "{s} - {s}", .{ email.from, email.subject });
@@ -280,11 +279,11 @@ const EmailData = struct {
             }).y;
         }
 
-        for (email_manager.boxes, 0..) |box, idx| {
+        for (mail.EmailManager.instance.boxes, 0..) |box, idx| {
             const pos = .{ .x = bnds.x + 2, .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)) };
 
             if (idx == self.box) {
-                const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], email_manager.getPc(idx) });
+                const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
                 defer allocator.alloc.free(text);
 
                 try font.draw(.{
@@ -373,10 +372,12 @@ const EmailData = struct {
 
         if (keycode == c.GLFW_KEY_R) {
             if (self.viewing) |viewing| {
-                if (viewing.condition != .Submit) return;
+                for (viewing.condition) |condition| {
+                    if (condition != .SubmitContains and condition != .SubmitRuns and condition != .SubmitLib) return;
 
-                try self.submitFile();
-                return;
+                    try self.submitFile();
+                    return;
+                }
             }
         }
     }
@@ -467,40 +468,116 @@ const EmailData = struct {
             const conts = try target.read(null);
 
             if (self.viewing) |selected| {
-                if (selected.condition != .Submit) return;
-                var iter = std.mem.split(u8, selected.condition.Submit.req, ";");
-
                 var good = true;
-                var input = std.ArrayList(u8).init(allocator.alloc);
-                defer input.deinit();
 
-                const total = std.mem.count(u8, selected.condition.Submit.req, ";") + 1;
-                var threads = try allocator.alloc.alloc(std.Thread, total);
-                var outputs = try allocator.alloc.alloc(bool, total);
-                defer allocator.alloc.free(threads);
-                defer allocator.alloc.free(outputs);
+                for (selected.condition) |condition| {
+                    switch (condition) {
+                        .SubmitContains => |contains| {
+                            const target_text = contains.conts;
+                            const target_conts = std.mem.trim(u8, conts, &.{'\n'});
 
-                var idx: usize = 0;
+                            good = good and std.ascii.eqlIgnoreCase(target_text, target_conts);
+                        },
+                        .SubmitRuns => |runs| blk: {
+                            if (!std.mem.startsWith(u8, conts, "EEEp")) break :blk;
 
-                while (iter.next()) |cond| : (idx += 1) {
-                    threads[idx] = try std.Thread.spawn(.{}, submit_thread, .{
-                        conts,
-                        cond,
-                        &outputs[idx],
-                    });
-                }
+                            var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
+                            defer vm_instance.deinit();
 
-                for (threads) |thread| {
-                    thread.join();
-                }
+                            if (runs.input) |input|
+                                try vm_instance.input.appendSlice(input);
+                            try vm_instance.input.append('\n');
 
-                for (outputs) |o| {
-                    if (!o) good = false;
+                            try vm_instance.loadString(conts[4..]);
+                            try vm_instance.runAll();
+                            const trimmed = std.mem.trimLeft(u8, vm_instance.out.items, " \n");
+
+                            good = good and std.ascii.eqlIgnoreCase(trimmed, runs.conts);
+                        },
+                        .SubmitLib => |runs| blk: {
+                            if (!std.mem.startsWith(u8, conts, "elib")) break :blk;
+                            var library_idx: usize = 7;
+                            var start_idx: usize = 256 * @as(usize, @intCast(conts[4])) + @as(usize, @intCast(conts[5]));
+
+                            for (0..conts[6]) |_| {
+                                const name_len: usize = @intCast(conts[library_idx]);
+                                library_idx += 1;
+                                if (library_idx + name_len < conts.len and std.mem.eql(u8, runs.libfn, conts[library_idx .. library_idx + name_len])) {
+                                    const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
+
+                                    var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
+                                    defer vm_instance.deinit();
+
+                                    try vm_instance.loadString(conts[start_idx .. start_idx + fnsize]);
+                                    vm_instance.return_stack[0] = .{
+                                        .function = null,
+                                        .location = vm_instance.code.?.len + 1,
+                                    };
+                                    vm_instance.return_rsp = 1;
+
+                                    try vm_instance.runAll();
+
+                                    const result = try vm_instance.popStack();
+
+                                    var result_string: []const u8 = &.{};
+                                    defer allocator.alloc.free(result_string);
+                                    if (result.data().* == .value) {
+                                        allocator.alloc.free(result_string);
+                                        result_string = try std.fmt.allocPrint(allocator.alloc, "{}", .{result.data().value});
+                                    } else if (result.data().* == .string) {
+                                        allocator.alloc.free(result_string);
+                                        result_string = try allocator.alloc.dupe(u8, result.data().string);
+                                    }
+
+                                    good = good and std.ascii.eqlIgnoreCase(result_string, runs.conts);
+
+                                    break :blk;
+                                }
+
+                                library_idx += 1 + name_len;
+                                start_idx += @as(usize, @intCast(conts[library_idx])) * 256;
+                                library_idx += 1;
+                                start_idx += @intCast(conts[library_idx]);
+                                library_idx += 1;
+                            }
+                        },
+                        else => {},
+                    }
                 }
 
                 if (good) {
-                    try email_manager.setEmailComplete(selected);
+                    try mail.EmailManager.instance.setEmailComplete(selected);
                 }
+
+                // var iter = std.mem.split(u8, selected.condition.Submit.req, ";");
+
+                // var good = true;
+                // var input = std.ArrayList(u8).init(allocator.alloc);
+                // defer input.deinit();
+
+                // const total = std.mem.count(u8, selected.condition.Submit.req, ";") + 1;
+                // var threads = try allocator.alloc.alloc(std.Thread, total);
+                // var outputs = try allocator.alloc.alloc(bool, total);
+                // defer allocator.alloc.free(threads);
+                // defer allocator.alloc.free(outputs);
+
+                // var idx: usize = 0;
+
+                // while (iter.next()) |cond| : (idx += 1) {
+                //     threads[idx] = try std.Thread.spawn(.{}, submit_thread, .{
+                //         conts,
+                //         cond,
+                //         &outputs[idx],
+                //     });
+                // }
+
+                // for (threads) |thread| {
+                //     thread.join();
+                // }
+
+                // for (outputs) |o| {
+                //     if (!o) good = false;
+                // }
             }
         }
     }
@@ -593,13 +670,13 @@ const EmailData = struct {
 
                     var y: i32 = 2 - @as(i32, @intFromFloat(self.offset.*));
 
-                    for (email_manager.emails.items) |*email| {
+                    for (mail.EmailManager.instance.emails.items) |*email| {
                         if (std.mem.eql(u8, email.from, self.login.?)) {
-                            if (self.box != email_manager.boxes.len - 1) continue;
+                            if (self.box != mail.EmailManager.instance.boxes.len - 1) continue;
                         } else if (email.box != self.box) continue;
 
                         if (@import("builtin").mode != .Debug) {
-                            if (!email_manager.getEmailVisible(email, self.login.?)) continue;
+                            if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
                         }
 
                         const bnds = rect.Rectangle{
@@ -613,7 +690,7 @@ const EmailData = struct {
 
                         if (bnds.contains(mousepos)) {
                             if (self.selected != null and email == self.selected.?) {
-                                try email_manager.viewEmail(email);
+                                try mail.EmailManager.instance.viewEmail(email);
                                 self.selected = null;
                                 self.viewing = email;
                                 self.scroll_top = true;
@@ -634,8 +711,8 @@ const EmailData = struct {
 
                         if (self.box < 0) {
                             self.box = 0;
-                        } else if (self.box > email_manager.boxes.len - 1) {
-                            self.box = email_manager.boxes.len - 1;
+                        } else if (self.box > mail.EmailManager.instance.boxes.len - 1) {
+                            self.box = mail.EmailManager.instance.boxes.len - 1;
                         }
                     }
                 }
@@ -708,6 +785,7 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
             .data = .{
                 .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
                 .size = .{ .y = 6 },
+                .color = .{ .r = 1, .g = 0, .b = 0 },
             },
         },
         .reply = .{
@@ -760,15 +838,13 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
                 .data = .{
                     .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
                     .size = .{ .x = 2, .y = 28 },
+                    .color = .{ .r = 0.75, .g = 0.75, .b = 0.75 },
                 },
             },
         },
         .shader = shader,
-        .login_text = [2][]u8{ try allocator.alloc.alloc(u8, 0), try allocator.alloc.alloc(u8, 0) },
+        .login_text = [2][]u8{ &.{}, &.{} },
     };
-
-    self.button[1].data.color = .{ .r = 0.75, .g = 0.75, .b = 0.75 };
-    self.sel.data.color = .{ .r = 1, .g = 0, .b = 0 };
 
     return win.WindowContents.init(self, "email", fnt.EEE ++ "Mail", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
 }

@@ -36,7 +36,7 @@ pub const DocStep = struct {
         return self;
     }
 
-    fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
+    fn doStep(step: *std.Build.Step, _: std.Build.Step.MakeOptions) !void {
         const self: *DocStep = @fieldParentPtr("step", step);
         const b = step.owner;
 

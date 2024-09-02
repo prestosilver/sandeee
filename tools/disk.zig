@@ -23,7 +23,7 @@ pub const DiskStep = struct {
         return self;
     }
 
-    fn doStep(step: *std.Build.Step, _: *std.Progress.Node) !void {
+    fn doStep(step: *std.Build.Step, _: std.Build.Step.MakeOptions) anyerror!void {
         const self: *DiskStep = @fieldParentPtr("step", step);
 
         var root = try std.fs.cwd().openDir(self.input, .{ .access_sub_paths = true, .iterate = true });
@@ -66,6 +66,9 @@ pub const DiskStep = struct {
 
         // std.log.info("packed {} files", .{count});
 
-        try std.fs.cwd().writeFile(self.output, (try files.toStr()).items);
+        try std.fs.cwd().writeFile(.{
+            .sub_path = self.output,
+            .data = (try files.toStr()).items,
+        });
     }
 };

@@ -18,13 +18,13 @@ const gfx = @import("../util/graphics.zig");
 const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 const texture_manager = @import("../util/texmanager.zig");
+const HttpClient = @import("../util/http.zig");
 const log = @import("../util/log.zig").log;
 
 const steam = @import("steam");
 const options = @import("options");
 
 const HEADER_SIZE = 1024;
-
 var web_idx: u8 = 0;
 
 pub const WebData = struct {
@@ -89,6 +89,12 @@ pub const WebData = struct {
                 return try allocator.alloc.dupe(u8, try (try files.root.getFile(path)).read(null));
             },
             .Web => {
+                // const result = self.http.fetch() catch |err| {
+                //     return switch (err) {};
+                // };
+
+                // return try allocator.alloc.dupe(u8, result);
+
                 const idx = std.mem.indexOf(u8, path, ":") orelse {
                     return try allocator.alloc.dupe(u8, "Error: Bad Remote");
                 };
@@ -128,6 +134,7 @@ pub const WebData = struct {
                 req.send() catch |err| {
                     return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                 };
+
                 req.wait() catch |err| {
                     return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                 };
@@ -175,7 +182,7 @@ pub const WebData = struct {
         suffix: ?[]const u8 = null,
         prefix: ?[]const u8 = null,
 
-        pub fn free(self: *const Style) void {
+        pub fn deinit(self: *const Style) void {
             if (self.suffix) |suffix| {
                 allocator.alloc.free(suffix);
             }
@@ -187,6 +194,7 @@ pub const WebData = struct {
     };
 
     load_thread: ?std.Thread = null,
+    // http: HttpClient,
 
     highlight: sprite.Sprite,
     menubar: sprite.Sprite,
@@ -401,7 +409,7 @@ pub const WebData = struct {
 
         self.conts = try self.getConts(self.path);
 
-        var iter = std.mem.split(u8, self.conts.?, "\n");
+        var iter = std.mem.splitScalar(u8, self.conts.?, '\n');
 
         while (iter.next()) |fullLine| {
             if (std.mem.startsWith(u8, fullLine, "#Style ")) {
@@ -418,7 +426,8 @@ pub const WebData = struct {
 
         const texture = texture_manager.TextureManager.instance.get(target).?;
 
-        try tex.uploadTextureMem(texture, fconts);
+        try texture.loadMem(fconts);
+        try texture.upload();
 
         self.resetLinks();
     }
@@ -427,7 +436,7 @@ pub const WebData = struct {
         const fconts = try self.getConts(url);
         defer allocator.alloc.free(fconts);
 
-        var iter = std.mem.split(u8, fconts, "\n");
+        var iter = std.mem.splitScalar(u8, fconts, '\n');
         var current_style: *Style = self.styles.getPtr("") orelse unreachable;
 
         while (iter.next()) |fullLine| {
@@ -476,7 +485,7 @@ pub const WebData = struct {
             if (style.value_ptr.locked) {
                 try self.styles.put(style.key_ptr.*, style.value_ptr.*);
             } else {
-                style.value_ptr.free();
+                style.value_ptr.deinit();
                 allocator.alloc.free(style.key_ptr.*);
             }
         }
@@ -561,7 +570,7 @@ pub const WebData = struct {
 
             const cont = self.conts orelse "Error Loading Page";
 
-            var iter = std.mem.split(u8, cont, "\n");
+            var iter = std.mem.splitScalar(u8, cont, '\n');
 
             var texid = [_]u8{ 'w', 'e', 'b', '_', 0, 0 };
             texid[4] = 0;
@@ -599,9 +608,6 @@ pub const WebData = struct {
 
                 if (std.mem.startsWith(u8, line, "[") and std.mem.endsWith(u8, line, "]")) {
                     if (self.add_imgs) {
-                        gfx.Context.makeCurrent();
-                        defer gfx.Context.makeNotCurrent();
-
                         try texture_manager.TextureManager.instance.putMem(&texid, @embedFile("../images/error.eia"));
 
                         texture_manager.TextureManager.instance.get(&texid).?.size =
@@ -812,6 +818,8 @@ pub const WebData = struct {
         if (self.loading and !force) return;
 
         if (self.hist.popOrNull()) |last| {
+            allocator.alloc.free(self.path);
+
             self.path = last;
             if (self.conts) |conts| {
                 allocator.alloc.free(conts);
@@ -916,6 +924,9 @@ pub const WebData = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        // self.http.cancel();
+        // self.http.deinit();
+
         if (self.load_thread) |load_thread| {
             std.Thread.join(load_thread);
         }
@@ -924,7 +935,7 @@ pub const WebData = struct {
         var styleIter = self.styles.iterator();
         while (styleIter.next()) |style| {
             if (!style.value_ptr.locked) {
-                style.value_ptr.free();
+                style.value_ptr.deinit();
                 allocator.alloc.free(style.key_ptr.*);
             }
         }
@@ -1016,6 +1027,7 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
         .hist = std.ArrayList([]u8).init(allocator.alloc),
         .web_idx = web_idx,
         .styles = std.StringArrayHashMap(WebData.Style).init(allocator.alloc),
+        // .http = try HttpClient.init(allocator.alloc),
     };
 
     web_idx += 1;

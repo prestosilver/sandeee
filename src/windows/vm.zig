@@ -26,7 +26,7 @@ pub const VMData = struct {
     time: f32 = 0,
     fps: f32 = 0,
     debug: bool = false,
-    input: []i32,
+    input: []i32 = &.{},
     mousebtn: ?i32 = null,
     mousepos: vecs.Vector2 = .{},
 
@@ -197,7 +197,6 @@ pub fn init(idx: u8, shader: *shd.Shader) !win.WindowContents {
             std.ArrayList(VMData.VMDataEntry).init(allocator.alloc),
             std.ArrayList(VMData.VMDataEntry).init(allocator.alloc),
         },
-        .input = try allocator.alloc.alloc(i32, 0),
     };
 
     return win.WindowContents.init(self, "vm", "VM Window", .{ .r = 1, .g = 1, .b = 1 });
