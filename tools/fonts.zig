@@ -14,13 +14,13 @@ const zigimg = @import("deps/zigimg/zigimg.zig");
 
 const SPACING = 1;
 
-pub fn convert(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
-    var result = std.ArrayList(u8).init(alloc);
+    var result = std.ArrayList(u8).init(b.allocator);
 
-    var image = try zigimg.Image.fromFilePath(alloc, in);
+    var image = try zigimg.Image.fromFilePath(b.allocator, in.getPath3(b, null).sub_path);
     defer image.deinit();
 
     try result.appendSlice("efnt");
@@ -34,8 +34,8 @@ pub fn convert(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
 
     for (0..16) |x| {
         for (0..16) |y| {
-            var ch = try alloc.alloc(u8, chw * chh);
-            defer alloc.free(ch);
+            var ch = try b.allocator.alloc(u8, chw * chh);
+            defer b.allocator.free(ch);
             @memset(ch, 0);
 
             for (0..chw) |chx| {

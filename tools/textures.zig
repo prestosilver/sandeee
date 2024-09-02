@@ -2,13 +2,13 @@ const std = @import("std");
 const zigimg = @import("deps/zigimg/zigimg.zig");
 
 // converts a png to a ebi
-pub fn convert(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
-    var result = std.ArrayList(u8).init(alloc);
+    var result = std.ArrayList(u8).init(b.allocator);
 
-    var image = try zigimg.Image.fromFilePath(alloc, in);
+    var image = try zigimg.Image.fromFilePath(b.allocator, in.getPath3(b, null).sub_path);
     defer image.deinit();
 
     try result.appendSlice("eimg");

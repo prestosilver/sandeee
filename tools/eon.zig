@@ -1583,20 +1583,20 @@ pub fn parseProgram(fn_prefix: *[]const u8, tokens: []Token) !Program {
     return result;
 }
 
-pub fn compileEon(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn compileEon(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
     var fn_prefix: []const u8 = "";
 
-    allocator = alloc;
+    allocator = b.allocator;
 
-    var tokens = try lexFile(in);
+    var tokens = try lexFile(in.getPath3(b, null).sub_path);
     defer tokens.deinit();
 
     var prog = try parseProgram(&fn_prefix, tokens.items);
 
-    var result = std.ArrayList(u8).init(alloc);
+    var result = std.ArrayList(u8).init(b.allocator);
 
     const adds = try prog.toAsm(false);
     try result.appendSlice(adds);
@@ -1604,20 +1604,20 @@ pub fn compileEon(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
     return result;
 }
 
-pub fn compileEonLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn compileEonLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
     var fn_prefix: []const u8 = "";
 
-    allocator = alloc;
+    allocator = b.allocator;
 
-    var tokens = try lexFile(in);
+    var tokens = try lexFile(in.getPath3(b, null).sub_path);
     defer tokens.deinit();
 
     var prog = try parseProgram(&fn_prefix, tokens.items);
 
-    var result = std.ArrayList(u8).init(alloc);
+    var result = std.ArrayList(u8).init(b.allocator);
 
     const adds = try prog.toAsm(true);
     try result.appendSlice(adds);

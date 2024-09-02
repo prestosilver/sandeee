@@ -63,8 +63,6 @@ pub const DocStep = struct {
                     const output_file_path = try std.fmt.allocPrint(b.allocator, "{s}/{s}", .{ self.output, path.path });
                     defer b.allocator.free(output_file_path);
 
-                    std.log.info("{s} -- {s}", .{ input_file_path, output_file_path });
-
                     const input_file = try std.fs.cwd().openFile(input_file_path, .{ .mode = .read_only });
                     defer input_file.close();
                     const output_file = try std.fs.cwd().createFile(output_file_path, .{});

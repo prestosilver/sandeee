@@ -1,6 +1,8 @@
 zig-out
 zig-cache
 .zig-cache
+.tmp
+tmp$
 disk.eee
 test.eep
 test.asm

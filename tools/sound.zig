@@ -1,13 +1,13 @@
 const std = @import("std");
 
 // Converts a wav file to a era file
-pub fn convert(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
-    var result = std.ArrayList(u8).init(alloc);
+    var result = std.ArrayList(u8).init(b.allocator);
 
-    var inreader = try std.fs.cwd().openFile(in, .{});
+    var inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
     defer inreader.close();
 
     var buf_reader = std.io.bufferedReader(inreader.reader());
@@ -23,8 +23,8 @@ pub fn convert(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
     while (true) {
         if (try reader_stream.read(&name) != 4) break;
         const size = try reader_stream.readInt(u32, .little);
-        const section = try alloc.alloc(u8, size);
-        defer alloc.free(section);
+        const section = try b.allocator.alloc(u8, size);
+        defer b.allocator.free(section);
         if (size != try reader_stream.read(section)) return error.BadSection;
 
         if (std.mem.eql(u8, &name, "RIFF")) {

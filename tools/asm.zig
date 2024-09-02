@@ -1,20 +1,20 @@
 const std = @import("std");
 const vm = @import("../src/system/vm.zig");
 
-pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn compile(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
-    var inreader = try std.fs.cwd().openFile(in, .{});
+    var inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
     defer inreader.close();
     try inreader.sync();
 
-    var result = std.ArrayList(u8).init(alloc);
+    var result = std.ArrayList(u8).init(b.allocator);
 
     var buf_reader = std.io.bufferedReader(inreader.reader());
     var reader_stream = buf_reader.reader();
 
-    var consts = std.StringHashMap(u64).init(alloc);
+    var consts = std.StringHashMap(u64).init(b.allocator);
     var idx: u64 = 0;
 
     var buf: [1024]u8 = undefined;
@@ -29,7 +29,7 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
             continue;
         }
         if (l[l.len - 1] == ':') {
-            const key = try std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]});
+            const key = try std.fmt.allocPrint(b.allocator, "{s}", .{l[0 .. l.len - 1]});
 
             try consts.put(key, idx);
         } else {
@@ -38,7 +38,7 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
     }
 
     inreader.close();
-    inreader = try std.fs.cwd().openFile(in, .{});
+    inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
     try inreader.sync();
 
     buf_reader = std.io.bufferedReader(inreader.reader());
@@ -119,7 +119,7 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
                         try result.appendSlice("\x02");
                         try result.appendSlice("\x00");
                     } else {
-                        const target_tmp = try std.zig.string_literal.parseAlloc(alloc, target);
+                        const target_tmp = try std.zig.string_literal.parseAlloc(b.allocator, target);
 
                         try result.appendSlice("\x02");
                         try result.appendSlice(target_tmp);
@@ -156,23 +156,23 @@ pub fn compile(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayLi
     return result;
 }
 
-pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
+pub fn compileLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
-    var inreader = try std.fs.cwd().openFile(in, .{});
+    var inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
     defer inreader.close();
     try inreader.sync();
 
-    var result = std.ArrayList(u8).init(alloc);
-    var toc = std.ArrayList(u8).init(alloc);
-    var data = std.ArrayList(u8).init(alloc);
-    var funcs = std.ArrayList([]const u8).init(alloc);
+    var result = std.ArrayList(u8).init(b.allocator);
+    var toc = std.ArrayList(u8).init(b.allocator);
+    var data = std.ArrayList(u8).init(b.allocator);
+    var funcs = std.ArrayList([]const u8).init(b.allocator);
 
     var buf_reader = std.io.bufferedReader(inreader.reader());
     var reader_stream = buf_reader.reader();
 
-    var consts = std.StringHashMap(u64).init(alloc);
+    var consts = std.StringHashMap(u64).init(b.allocator);
     var idx: u64 = 0;
     var toc_count: u8 = 0;
 
@@ -191,11 +191,11 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
             if (l[0] == '_') {
                 idx = 0;
                 toc_count += 1;
-                const key = try std.fmt.allocPrint(alloc, "{s}", .{l[1 .. l.len - 1]});
+                const key = try std.fmt.allocPrint(b.allocator, "{s}", .{l[1 .. l.len - 1]});
                 try funcs.append(key);
             }
 
-            const key = try std.fmt.allocPrint(alloc, "{s}", .{l[0 .. l.len - 1]});
+            const key = try std.fmt.allocPrint(b.allocator, "{s}", .{l[0 .. l.len - 1]});
 
             try consts.put(key, idx);
         } else {
@@ -206,7 +206,7 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
     try toc.append(@as(u8, @intCast(toc_count)));
 
     inreader.close();
-    inreader = try std.fs.cwd().openFile(in, .{});
+    inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
     try inreader.sync();
 
     buf_reader = std.io.bufferedReader(inreader.reader());
@@ -297,7 +297,7 @@ pub fn compileLib(paths: []const []const u8, alloc: std.mem.Allocator) !std.Arra
                 while (target[0] == ' ') target = target[1..];
                 while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
                 if (target[0] == '"' and target[target.len - 1] == '"') {
-                    const target_tmp = try std.zig.string_literal.parseAlloc(alloc, target);
+                    const target_tmp = try std.zig.string_literal.parseAlloc(b.allocator, target);
 
                     try data.appendSlice("\x02");
                     try data.appendSlice(target_tmp);

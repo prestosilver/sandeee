@@ -15,26 +15,475 @@ const dwns = @import("tools/downloadpage.zig");
 const changelog = @import("tools/changelog.zig");
 const docs = @import("tools/docs.zig");
 
-// debug only
-const ASM_TEST_FILES = [_][]const u8{ "hello", "window", "texture", "fib", "arraytest", "audiotest", "tabletest" };
-const EON_TEST_FILES = [_][]const u8{ "input", "color", "bugs", "tabletest", "heaptest", "stringtest", "paren" };
-const EON_TEST_SRCS = [_][]const u8{ "eon", "pix", "fib" };
+const DiskFileInputType = enum {
+    Local,
+    Temp,
+};
 
-// demo overrides
-const MAIL_DIRS_DEMO = [_][]const u8{"inbox"};
+const DiskFileInputData = union(DiskFileInputType) {
+    Local: []const u8,
+    Temp: *const DiskFileInput,
+};
+
+const DiskFileInput = struct {
+    input: DiskFileInputData,
+
+    converter: ?*const fn (*std.Build, []const std.Build.LazyPath) anyerror!std.ArrayList(u8),
+};
+
+const DiskFile = struct {
+    input: DiskFileInputData,
+    output: []const u8,
+
+    converter: ?*const fn (*std.Build, []const std.Build.LazyPath) anyerror!std.ArrayList(u8),
+};
+
+const DEBUG_FILES = [_]DiskFile{
+    // asm tests
+    .{
+        .input = .{ .Local = "asm/tests/hello.asm" },
+        .output = "prof/tests/asm/hello.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/tests/window.asm" },
+        .output = "prof/tests/asm/window.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/tests/texture.asm" },
+        .output = "prof/tests/asm/texture.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/tests/fib.asm" },
+        .output = "prof/tests/asm/fib.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/tests/arraytest.asm" },
+        .output = "prof/tests/asm/arraytest.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/tests/audiotest.asm" },
+        .output = "prof/tests/asm/audiotest.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/tests/tabletest.asm" },
+        .output = "prof/tests/asm/tabletest.eep",
+        .converter = comp.compile,
+    },
+
+    // eon tests
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/tests/input.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "prof/tests/eon/input.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/tests/color.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "prof/tests/eon/color.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/tests/bugs.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "prof/tests/eon/bugs.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/tests/tabletest.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "prof/tests/eon/tabletest.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/tests/heaptest.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "prof/tests/eon/heaptest.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/tests/stringtest.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "prof/tests/eon/stringtest.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/tests/paren.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "prof/tests/eon/paren.eep",
+        .converter = comp.compile,
+    },
+
+    // eon sources
+    .{
+        .input = .{ .Local = "eon/exec/eon.eon" },
+        .output = "prof/tests/src/eon/eon.eon",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "eon/exec/pix.eon" },
+        .output = "prof/tests/src/eon/pix.eon",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "eon/exec/fib.eon" },
+        .output = "prof/tests/src/eon/fib.eon",
+        .converter = null,
+    },
+};
+
+// these are in non demo builds
+const NONDEMO_FILES = [_]DiskFile{
+    .{
+        .input = .{ .Local = "mail/spam/" },
+        .output = "cont/mail/spam.eme",
+        .converter = emails.emails,
+    },
+    .{
+        .input = .{ .Local = "mail/private/" },
+        .output = "cont/mail/private.eme",
+        .converter = emails.emails,
+    },
+    .{
+        .input = .{ .Local = "mail/work/" },
+        .output = "cont/mail/work.eme",
+        .converter = emails.emails,
+    },
+};
+
+// this is in all builds, including demo.
+const BASE_FILES = [_]DiskFile{
+    // emails
+    .{
+        .input = .{ .Local = "mail/inbox/" },
+        .output = "cont/mail/inbox.eme",
+        .converter = emails.emails,
+    },
+
+    // asm executables
+    .{
+        .input = .{ .Local = "asm/exec/time.asm" },
+        .output = "exec/time.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/exec/dump.asm" },
+        .output = "exec/dump.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/exec/echo.asm" },
+        .output = "exec/echo.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/exec/aplay.asm" },
+        .output = "exec/aplay.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Local = "asm/exec/libdump.asm" },
+        .output = "exec/libdump.eep",
+        .converter = comp.compile,
+    },
+
+    // asm libraries
+    .{
+        .input = .{ .Local = "asm/libs/string.asm" },
+        .output = "libs/string.ell",
+        .converter = comp.compileLib,
+    },
+    .{
+        .input = .{ .Local = "asm/libs/window.asm" },
+        .output = "libs/window.ell",
+        .converter = comp.compileLib,
+    },
+    .{
+        .input = .{ .Local = "asm/libs/texture.asm" },
+        .output = "libs/texture.ell",
+        .converter = comp.compileLib,
+    },
+    .{
+        .input = .{ .Local = "asm/libs/sound.asm" },
+        .output = "libs/sound.ell",
+        .converter = comp.compileLib,
+    },
+    .{
+        .input = .{ .Local = "asm/libs/array.asm" },
+        .output = "libs/array.ell",
+        .converter = comp.compileLib,
+    },
+
+    // eon executables
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/exec/epkman.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "exec/epkman.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/exec/eon.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "exec/eon.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/exec/stat.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "exec/stat.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/exec/player.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "exec/player.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/exec/asm.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "exec/asm.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/exec/pix.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "exec/pix.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/exec/elib.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "exec/elib.eep",
+        .converter = comp.compile,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/exec/alib.eon" },
+            .converter = eon.compileEon,
+        } },
+        .output = "exec/alib.eep",
+        .converter = comp.compile,
+    },
+
+    // eon libraries
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/libs/ui.eon" },
+            .converter = eon.compileEonLib,
+        } },
+        .output = "libs/ui.ell",
+        .converter = comp.compileLib,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/libs/heap.eon" },
+            .converter = eon.compileEonLib,
+        } },
+        .output = "libs/heap.ell",
+        .converter = comp.compileLib,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/libs/table.eon" },
+            .converter = eon.compileEonLib,
+        } },
+        .output = "libs/table.ell",
+        .converter = comp.compileLib,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/libs/asm.eon" },
+            .converter = eon.compileEonLib,
+        } },
+        .output = "libs/asm.ell",
+        .converter = comp.compileLib,
+    },
+    .{
+        .input = .{ .Temp = &.{
+            .input = .{ .Local = "eon/libs/eon.eon" },
+            .converter = eon.compileEonLib,
+        } },
+        .output = "libs/eon.ell",
+        .converter = comp.compileLib,
+    },
+
+    // sounds
+    .{
+        .input = .{ .Local = "audio/login.wav" },
+        .output = "cont/snds/login.era",
+        .converter = sound.convert,
+    },
+    .{
+        .input = .{ .Local = "audio/logout.wav" },
+        .output = "cont/snds/logout.era",
+        .converter = sound.convert,
+    },
+    .{
+        .input = .{ .Local = "audio/message.wav" },
+        .output = "cont/snds/message.era",
+        .converter = sound.convert,
+    },
+
+    // images
+    .{
+        .input = .{ .Local = "images/email-logo.png" },
+        .output = "cont/imgs/email-logo.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/icons.png" },
+        .output = "cont/imgs/icons.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/ui.png" },
+        .output = "cont/imgs/ui.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/bar.png" },
+        .output = "cont/imgs/bar.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/iconsBig.png" },
+        .output = "cont/imgs/iconsBig.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/window.png" },
+        .output = "cont/imgs/window.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/wall1.png" },
+        .output = "cont/imgs/wall1.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/wall2.png" },
+        .output = "cont/imgs/wall2.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/wall3.png" },
+        .output = "cont/imgs/wall3.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/barlogo.png" },
+        .output = "cont/imgs/barlogo.eia",
+        .converter = image.convert,
+    },
+    .{
+        .input = .{ .Local = "images/cursor.png" },
+        .output = "cont/imgs/cursor.eia",
+        .converter = image.convert,
+    },
+
+    // includes
+    .{
+        .input = .{ .Local = "eon/libs/libload.eon" },
+        .output = "libs/inc/libload.eon",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "eon/libs/sys.eon" },
+        .output = "libs/inc/sys.eon",
+        .converter = null,
+    },
+
+    // icons
+    .{
+        .input = .{ .Local = "images/icons/eeedt.png" },
+        .output = "cont/icns/eeedt.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/tasks.png" },
+        .output = "cont/icns/tasks.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/cmd.png" },
+        .output = "cont/icns/cmd.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/settings.png" },
+        .output = "cont/icns/settings.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/launch.png" },
+        .output = "cont/icns/launch.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/debug.png" },
+        .output = "cont/icns/debug.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/logout.png" },
+        .output = "cont/icns/logout.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/folder.png" },
+        .output = "cont/icns/folder.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/email.png" },
+        .output = "cont/icns/email.eia",
+        .converter = null,
+    },
+    .{
+        .input = .{ .Local = "images/icons/web.png" },
+        .output = "cont/icns/web.eia",
+        .converter = null,
+    },
+};
 
 // all builds
-const ASM_EXEC_FILES = [_][]const u8{ "time", "dump", "echo", "aplay", "libdump" };
-const EON_EXEC_FILES = [_][]const u8{ "epkman", "eon", "stat", "player", "asm", "pix", "elib", "alib" };
-const ASM_LIB_FILES = [_][]const u8{ "string", "window", "texture", "sound", "array" };
-const EON_LIB_FILES = [_][]const u8{ "ui", "heap", "table", "asm", "eon" };
-const WAV_SOUND_FILES = [_][]const u8{ "login", "logout", "message" };
-const PNG_IMAGE_FILES = [_][]const u8{ "email-logo", "icons", "ui", "bar", "iconsBig", "window", "wall1", "wall2", "wall3", "barlogo", "cursor" };
 const INTERNAL_IMAGE_FILES = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const INTERNAL_SOUND_FILES = [_][]const u8{ "bg", "bios-blip", "bios-select" };
-const INC_LIBS_FILES = [_][]const u8{ "libload", "sys" };
-const MAIL_DIRS = [_][]const u8{ "inbox", "spam", "private", "work" };
-const ICON_IMAGE_FILES = [_][]const u8{ "eeedt", "tasks", "cmd", "settings", "launch", "debug", "logout", "folder", "email", "web" };
 
 // the website
 const WWW_FILES = [_]WWWStepData{
@@ -108,6 +557,64 @@ var version: std.SemanticVersion = .{
     .build = null,
 };
 
+var temp_idx: usize = 0;
+
+pub fn get_step(
+    b: *std.Build,
+    root: *std.Build.Step,
+    temp_path: std.Build.LazyPath,
+    content_path: std.Build.LazyPath,
+    step: DiskFileInput,
+    output: std.Build.LazyPath,
+) !*std.Build.Step {
+    switch (step.input) {
+        .Local => |l| {
+            if (step.converter) |converter| {
+                const out_step = (try conv.ConvertStep.create(b, converter, content_path.path(b, l), output));
+
+                out_step.step.dependOn(root);
+
+                return &out_step.step;
+            } else {
+                const out_step = b.addSystemCommand(&.{
+                    "cp",
+                    content_path.path(b, l).getPath3(b, null).sub_path,
+                    output.getPath3(b, null).sub_path,
+                });
+
+                out_step.step.dependOn(root);
+
+                return &out_step.step;
+            }
+        },
+        .Temp => |t| {
+            const temp_file = temp_path.path(b, b.fmt("{}", .{temp_idx}));
+
+            const child_step = try get_step(b, root, temp_path, content_path, t.*, temp_file);
+
+            temp_idx += 1;
+
+            if (step.converter) |converter| {
+                var out_step = (try conv.ConvertStep.create(b, converter, temp_file, output));
+
+                out_step.step.dependOn(child_step);
+
+                return &out_step.step;
+            } else {
+                const out_step = b.addSystemCommand(&.{
+                    "cp",
+                    temp_file.getPath3(b, null).sub_path,
+                    output.getPath3(b, null).sub_path,
+                });
+
+                out_step.step.dependOn(child_step);
+
+                return &out_step.step;
+            }
+        },
+    }
+}
+
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
@@ -128,17 +635,17 @@ pub fn build(b: *std.Build) !void {
         else => if (is_demo) "D000" else "0000",
     };
 
-    std.fs.cwd().writeFile(.{
-        .sub_path = "VERSION",
-        .data = std.fmt.allocPrint(b.allocator, "{}", .{version}) catch return,
-    }) catch return;
+    const version_write = b.addWriteFile(
+        "VERSION",
+        b.fmt("{}", .{version}),
+    );
 
     version.build = b.fmt("{s}-{X:0>4}", .{ version_suffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
 
-    std.fs.cwd().writeFile(.{
-        .sub_path = "IVERSION",
-        .data = std.fmt.allocPrint(b.allocator, "{}", .{version}) catch return,
-    }) catch return;
+    const iversion_write = b.addWriteFile(
+        "IVERSION",
+        b.fmt("{}", .{version}),
+    );
 
     const network_module = b.addModule("network", .{
         .root_source_file = b.path("deps/zig-network/network.zig"),
@@ -150,7 +657,7 @@ pub fn build(b: *std.Build) !void {
 
     const options = b.addOptions();
 
-    const version_text = std.fmt.allocPrint(b.allocator, "V_{{}}", .{}) catch return;
+    const version_text = b.fmt("V_{{}}", .{});
 
     options.addOption(std.SemanticVersion, "SandEEEVersion", version);
     options.addOption([]const u8, "VersionText", version_text);
@@ -199,7 +706,6 @@ pub fn build(b: *std.Build) !void {
 
         while (try iter.next()) |path| {
             const p = try std.mem.concat(b.allocator, u8, &.{ "content/overlays/debug/", path.name });
-            defer b.allocator.free(p);
 
             const debug_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/disk" });
 
@@ -223,16 +729,6 @@ pub fn build(b: *std.Build) !void {
 
             copy_disk.dependOn(&steam_overlay.step);
         }
-    }
-
-    for (INC_LIBS_FILES) |file| {
-        const eonf = std.fmt.allocPrint(b.allocator, "content/eon/libs/{s}.eon", .{file}) catch "";
-        const libf = std.fmt.allocPrint(b.allocator, "content/disk/libs/inc/{s}.eon", .{file}) catch "";
-
-        const copy_step = b.addSystemCommand(&.{ "cp", eonf, libf });
-
-        copy_step.step.dependOn(copy_disk);
-        copy_libs.dependOn(&copy_step.step);
     }
 
     // Includes
@@ -265,105 +761,59 @@ pub fn build(b: *std.Build) !void {
 
     b.installArtifact(exe);
 
-    for (if (is_demo) &MAIL_DIRS_DEMO else &MAIL_DIRS) |folder| {
-        const input = std.fmt.allocPrint(b.allocator, "content/mail/{s}/", .{folder}) catch "";
-        const output = std.fmt.allocPrint(b.allocator, "content/disk/cont/mail/{s}.eme", .{folder}) catch "";
+    const file_data = try std.mem.concat(b.allocator, DiskFile, &.{
+        &BASE_FILES,
+        if (!is_demo) &NONDEMO_FILES else &.{},
+        if (optimize == .Debug) &DEBUG_FILES else &.{},
+    });
 
-        var step = try conv.ConvertStep.create(b, emails.emails, input, output);
+    const content_path = b.path("content");
+    const disk_path = content_path.path(b, "disk");
 
-        step.step.dependOn(copy_disk);
-        content_step.dependOn(&step.step);
-    }
+    const temp_path = content_path.path(b, ".tmp");
 
-    if (optimize == .Debug) {
-        for (ASM_TEST_FILES) |file| {
-            const asmf = std.fmt.allocPrint(b.allocator, "content/asm/tests/{s}.asm", .{file}) catch "";
-            const eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/asm/{s}.eep", .{file}) catch "";
+    for (file_data) |file| {
+        const root = if (file.converter == null) copy_disk else copy_libs;
 
-            var step = try conv.ConvertStep.create(b, comp.compile, asmf, eepf);
-            step.step.dependOn(copy_disk);
-            content_step.dependOn(&step.step);
-        }
+        const step = try get_step(
+            b,
+            root,
+            temp_path,
+            content_path,
+            .{ .converter = file.converter, .input = file.input },
+            disk_path.path(b, file.output),
+        );
 
-        for (EON_TEST_FILES) |file| {
-            const eonf = std.fmt.allocPrint(b.allocator, "content/eon/tests/{s}.eon", .{file}) catch "";
-            const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/exec/{s}.asm", .{file}) catch "";
-            const eepf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/eon/{s}.eep", .{file}) catch "";
-
-            var comp_step = try conv.ConvertStep.create(b, eon.compileEon, eonf, asmf);
-            comp_step.step.dependOn(copy_libs);
-
-            var step = try conv.ConvertStep.create(b, comp.compile, asmf, eepf);
-            step.step.dependOn(&comp_step.step);
-
-            content_step.dependOn(&step.step);
-        }
-
-        for (EON_TEST_SRCS) |file| {
-            const eonf = std.fmt.allocPrint(b.allocator, "content/eon/exec/{s}.eon", .{file}) catch "";
-            const libf = std.fmt.allocPrint(b.allocator, "content/disk/prof/tests/src/eon/{s}.eon", .{file}) catch "";
-
-            const step = b.addSystemCommand(&.{ "cp", eonf, libf });
-
-            step.step.dependOn(copy_disk);
-            copy_libs.dependOn(&step.step);
+        if (file.converter == null) {
+            copy_libs.dependOn(step);
+        } else {
+            content_step.dependOn(step);
         }
     }
 
-    for (ASM_EXEC_FILES) |file| {
-        const asmf = std.fmt.allocPrint(b.allocator, "content/asm/exec/{s}.asm", .{file}) catch "";
-        const eepf = std.fmt.allocPrint(b.allocator, "content/disk/exec/{s}.eep", .{file}) catch "";
-
-        var step = try conv.ConvertStep.create(b, comp.compile, asmf, eepf);
-
-        step.step.dependOn(copy_disk);
-        content_step.dependOn(&step.step);
-    }
-
-    for (EON_EXEC_FILES) |file| {
-        const eonf = std.fmt.allocPrint(b.allocator, "content/eon/exec/{s}.eon", .{file}) catch "";
-        const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/exec/{s}.asm", .{file}) catch "";
-        const eepf = std.fmt.allocPrint(b.allocator, "content/disk/exec/{s}.eep", .{file}) catch "";
-
-        var adds = try conv.ConvertStep.create(b, comp.compile, asmf, eepf);
-        var comp_step = try conv.ConvertStep.create(b, eon.compileEon, eonf, asmf);
-
-        comp_step.step.dependOn(copy_libs);
-
-        adds.step.dependOn(&comp_step.step);
-        content_step.dependOn(&adds.step);
-    }
-
-    var lib_load_step = try conv.ConvertStep.create(b, comp.compile, "content/asm/libs/libload.asm", "content/disk/libs/libload.eep");
+    var lib_load_step = try conv.ConvertStep.create(b, comp.compile, content_path.path(b, "asm/libs/libload.asm"), disk_path.path(b, "libs/libload.eep"));
     lib_load_step.step.dependOn(copy_disk);
     content_step.dependOn(&lib_load_step.step);
 
-    for (ASM_LIB_FILES) |file| {
-        const asmf = std.fmt.allocPrint(b.allocator, "content/asm/libs/{s}.asm", .{file}) catch "";
-        const ellf = std.fmt.allocPrint(b.allocator, "content/disk/libs/{s}.ell", .{file}) catch "";
+    const image_path = content_path.path(b, "images");
+    const internal_image_path = b.path("src/images");
 
-        var step = try conv.ConvertStep.create(b, comp.compileLib, asmf, ellf);
+    inline for (INTERNAL_IMAGE_FILES) |file| {
+        const pngf = image_path.path(b, file ++ ".png");
+        const eiaf = internal_image_path.path(b, file ++ ".eia");
+
+        var step = try conv.ConvertStep.create(b, image.convert, pngf, eiaf);
 
         step.step.dependOn(copy_disk);
         content_step.dependOn(&step.step);
     }
 
-    for (EON_LIB_FILES) |file| {
-        const eonf = std.fmt.allocPrint(b.allocator, "content/eon/libs/{s}.eon", .{file}) catch "";
-        const asmf = std.fmt.allocPrint(b.allocator, "content/asm/eon/libs/{s}.asm", .{file}) catch "";
-        const ellf = std.fmt.allocPrint(b.allocator, "content/disk/libs/{s}.ell", .{file}) catch "";
+    const audio_path = content_path.path(b, "audio");
+    const internal_audio_path = b.path("src/sounds");
 
-        var comp_step = try conv.ConvertStep.create(b, eon.compileEonLib, eonf, asmf);
-        comp_step.step.dependOn(copy_libs);
-
-        var adds = try conv.ConvertStep.create(b, comp.compileLib, asmf, ellf);
-        adds.step.dependOn(&comp_step.step);
-        content_step.dependOn(&adds.step);
-    }
-
-    for (WAV_SOUND_FILES) |file| {
-        const wavf = std.fmt.allocPrint(b.allocator, "content/audio/{s}.wav", .{file}) catch "";
-        const eraf = std.fmt.allocPrint(b.allocator, "content/disk/cont/snds/{s}.era", .{file}) catch "";
+    inline for (INTERNAL_SOUND_FILES) |file| {
+        const wavf = audio_path.path(b, file ++ ".wav");
+        const eraf = internal_audio_path.path(b, file ++ ".era");
 
         var step = try conv.ConvertStep.create(b, sound.convert, wavf, eraf);
 
@@ -371,80 +821,41 @@ pub fn build(b: *std.Build) !void {
         content_step.dependOn(&step.step);
     }
 
-    for (ICON_IMAGE_FILES) |file| {
-        const pngf = std.fmt.allocPrint(b.allocator, "content/images/icons/{s}.png", .{file}) catch "";
-        const eraf = std.fmt.allocPrint(b.allocator, "content/disk/cont/icns/{s}.eia", .{file}) catch "";
+    _ = random_tests;
+    // if (random_tests != 0) {
+    //     _ = b.run(&[_][]const u8{ "mkdir", "-p", "content/disk/prof/tests/rand" });
+    //     const filename = b.fmt("content/disk/prof/tests/rand/all.esh", .{});
+    //     const count = b.fmt("{}", .{random_tests});
 
-        var step = try conv.ConvertStep.create(b, image.convert, pngf, eraf);
+    //     var step = try conv.ConvertStep.create(b, rand.createScript, count, filename);
 
-        step.step.dependOn(copy_disk);
-        content_step.dependOn(&step.step);
-    }
+    //     step.step.dependOn(copy_disk);
+    //     content_step.dependOn(&step.step);
+    // }
 
-    for (PNG_IMAGE_FILES) |file| {
-        const pngf = std.fmt.allocPrint(b.allocator, "content/images/{s}.png", .{file}) catch "";
-        const eraf = std.fmt.allocPrint(b.allocator, "content/disk/cont/imgs/{s}.eia", .{file}) catch "";
+    // for (0..@intCast(random_tests)) |idx| {
+    //     const filename = b.fmt("content/disk/prof/tests/rand/{}.eep", .{idx});
 
-        var step = try conv.ConvertStep.create(b, image.convert, pngf, eraf);
+    //     var step = try conv.ConvertStep.create(b, rand.create, "", filename);
 
-        step.step.dependOn(copy_disk);
-        content_step.dependOn(&step.step);
-    }
+    //     step.step.dependOn(copy_disk);
+    //     content_step.dependOn(&step.step);
+    // }
 
-    for (INTERNAL_IMAGE_FILES) |file| {
-        const pngf = std.fmt.allocPrint(b.allocator, "content/images/{s}.png", .{file}) catch "";
-        const eraf = std.fmt.allocPrint(b.allocator, "src/images/{s}.eia", .{file}) catch "";
-
-        var step = try conv.ConvertStep.create(b, image.convert, pngf, eraf);
-
-        step.step.dependOn(copy_disk);
-        content_step.dependOn(&step.step);
-    }
-
-    for (INTERNAL_SOUND_FILES) |file| {
-        const wavf = std.fmt.allocPrint(b.allocator, "content/audio/{s}.wav", .{file}) catch "";
-        const eraf = std.fmt.allocPrint(b.allocator, "src/sounds/{s}.era", .{file}) catch "";
-
-        var step = try conv.ConvertStep.create(b, sound.convert, wavf, eraf);
-
-        step.step.dependOn(copy_disk);
-        content_step.dependOn(&step.step);
-    }
-
-    if (random_tests != 0) {
-        _ = b.run(&[_][]const u8{ "mkdir", "-p", "content/disk/prof/tests/rand" });
-        const filename = b.fmt("content/disk/prof/tests/rand/all.esh", .{});
-        const count = b.fmt("{}", .{random_tests});
-
-        var step = try conv.ConvertStep.create(b, rand.createScript, count, filename);
-
-        step.step.dependOn(copy_disk);
-        content_step.dependOn(&step.step);
-    }
-
-    for (0..@intCast(random_tests)) |idx| {
-        const filename = b.fmt("content/disk/prof/tests/rand/{}.eep", .{idx});
-
-        var step = try conv.ConvertStep.create(b, rand.create, "", filename);
-
-        step.step.dependOn(copy_disk);
-        content_step.dependOn(&step.step);
-    }
-
-    var font_joke_step = try conv.ConvertStep.create(b, font.convert, "content/images/SandEEEJoke.png", "content/disk/cont/fnts/SandEEEJoke.eff");
-    var font_step = try conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans.png", "content/disk/cont/fnts/SandEEESans.eff");
-    var font_2x_step = try conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans2x.png", "content/disk/cont/fnts/SandEEESans2x.eff");
-    var bios_font_step = try conv.ConvertStep.create(b, font.convert, "content/images/SandEEESans2x.png", "src/images/main.eff");
+    var font_joke_step = try conv.ConvertStep.create(b, font.convert, image_path.path(b, "SandEEEJoke.png"), disk_path.path(b, "cont/fnts/SandEEEJoke.eff"));
+    var font_step = try conv.ConvertStep.create(b, font.convert, image_path.path(b, "SandEEESans.png"), disk_path.path(b, "cont/fnts/SandEEESans.eff"));
+    var font_2x_step = try conv.ConvertStep.create(b, font.convert, image_path.path(b, "SandEEESans2x.png"), disk_path.path(b, "cont/fnts/SandEEESans2x.eff"));
+    var font_bios_step = try conv.ConvertStep.create(b, font.convert, image_path.path(b, "SandEEESans2x.png"), b.path("src/images/main.eff"));
 
     font_joke_step.step.dependOn(copy_disk);
     font_step.step.dependOn(copy_disk);
     font_2x_step.step.dependOn(copy_disk);
-    bios_font_step.step.dependOn(copy_disk);
+    font_bios_step.step.dependOn(copy_disk);
 
     content_step.dependOn(&font_step.step);
     content_step.dependOn(&font_joke_step.step);
     content_step.dependOn(&font_2x_step.step);
-    content_step.dependOn(&bios_font_step.step);
+    content_step.dependOn(&font_bios_step.step);
 
     exe.step.dependOn(&disk_step.step);
 
@@ -483,60 +894,67 @@ pub fn build(b: *std.Build) !void {
     if (steam_mode == .On and optimize == .Debug)
         b.installFile("steam_appid.txt", "bin/steam_appid.txt");
 
-    const www_step = b.step("www", "Build the website");
-    var count: usize = 0;
+    // const www_step = b.step("www", "Build the website");
+    // var count: usize = 0;
 
-    for (WWW_FILES) |file| {
-        if (file.download_label) |_|
-            count += 1;
-    }
+    // for (WWW_FILES) |file| {
+    //     if (file.download_label) |_|
+    //         count += 1;
+    // }
 
-    var input_files = try b.allocator.alloc([]const u8, count);
-    const download_step: WWWStepData = .{
-        .input_files = input_files,
+    // var input_files = try b.allocator.alloc([]const u8, count);
+    // const download_step: WWWStepData = .{
+    //     .input_files = input_files,
 
-        .output_file = "www/downloads.edf",
-        .converter = dwns.create,
+    //     .output_file = "www/downloads.edf",
+    //     .converter = dwns.create,
 
-        .download_label = null,
-    };
+    //     .download_label = null,
+    // };
 
-    var idx: usize = 0;
-    for (WWW_FILES) |file| {
-        const step = try conv.ConvertStep.createMulti(b, file.converter, file.input_files, file.output_file);
-        step.step.dependOn(&disk_step.step);
+    // var idx: usize = 0;
+    // for (WWW_FILES) |file| {
+    //     const step = try conv.ConvertStep.createMulti(b, file.converter, file.input_files, file.output_file);
+    //     step.step.dependOn(&disk_step.step);
 
-        www_step.dependOn(&step.step);
+    //     www_step.dependOn(&step.step);
 
-        if (file.download_label) |label| {
-            input_files[idx] = try std.fmt.allocPrint(b.allocator, "{s}:{s}", .{ label, file.output_file[4..] });
-            idx += 1;
-        }
-    }
+    //     if (file.download_label) |label| {
+    //         input_files[idx] = try std.fmt.allocPrint(b.allocator, "{s}:{s}", .{ label, file.output_file[4..] });
+    //         idx += 1;
+    //     }
+    // }
 
-    {
-        const file = download_step;
+    // {
+    //     const file = download_step;
 
-        const step = try conv.ConvertStep.createMulti(b, file.converter, file.input_files, file.output_file);
-        step.step.dependOn(&disk_step.step);
+    //     const step = try conv.ConvertStep.createMulti(b, file.converter, file.input_files, file.output_file);
+    //     step.step.dependOn(&disk_step.step);
 
-        www_step.dependOn(&step.step);
-    }
+    //     www_step.dependOn(&step.step);
+    // }
 
-    {
-        const step = try changelog.ChangelogStep.create(b, "www/changelog.edf");
-        www_step.dependOn(&step.step);
-    }
+    // {
+    //     const step = try changelog.ChangelogStep.create(b, "www/changelog.edf");
+    //     www_step.dependOn(&step.step);
+    // }
 
-    {
-        const docs_step = try docs.DocStep.create(b, "docs", "www/docs", "@/docs/");
-        www_step.dependOn(&docs_step.step);
-    }
+    // {
+    //     const docs_step = try docs.DocStep.create(b, "docs", "www/docs", "@/docs/");
+    //     www_step.dependOn(&docs_step.step);
+    // }
 
     const run_step = b.step("run", "Run the app");
+    run_step.dependOn(&version_write.step);
+    run_step.dependOn(&iversion_write.step);
+
     run_step.dependOn(&run_cmd.step);
 
     const headless_step = b.step("headless", "Run the app headless");
+
+    headless_step.dependOn(&version_write.step);
+    headless_step.dependOn(&iversion_write.step);
+
     headless_step.dependOn(&headless_cmd.step);
 
     const exe_tests = b.addTest(.{
@@ -560,7 +978,7 @@ pub fn build(b: *std.Build) !void {
     exe_tests.root_module.addImport("network", network_module);
     exe_tests.root_module.addImport("steam", steam_module);
 
-    const branch = std.fmt.allocPrint(b.allocator, "prestosilver/sandeee-os:{s}{s}", .{ platform, suffix }) catch "";
+    const branch = b.fmt("prestosilver/sandeee-os:{s}{s}", .{ platform, suffix });
 
     const butler_step = try butler.ButlerStep.create(b, "zig-out/bin", branch);
     butler_step.step.dependOn(&exe.step);
