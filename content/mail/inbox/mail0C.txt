@@ -3,7 +3,7 @@ deps: 10
 from: ERIC_L@eee.org
 to: rob_r@eee.org
 sub: HELLO LIBRARY
-submit: libfn=hello;runs=Hello World!
+libruns: hello:Hello World!
 
 LETS SEE IF YOU CAN MAKE A SIMPLE LIBRARY.
 YOU CAN COMPILE LIBRARIES WITH THE elib (AND alib) COMMAND

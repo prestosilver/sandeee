@@ -3,7 +3,10 @@ deps: 12
 from: spencer_r@eee.org
 to: rob_r@eee.org
 sub: Strings are insane
-submit: input=AND;runs=DNA;input=PRS;runs=SRP
+input: AND
+runs: DNA
+input: PRS
+runs: SRP
 Hello,
 
 Sorry about Eric he can get a bit annoying.

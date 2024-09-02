@@ -3,7 +3,7 @@ deps: 5
 from: jennifer_d@eee.org
 to: rob_r@eee.org
 sub: Hello World!
-submit: runs=Hello World!
+runs: Hello World!
 In the assembly language, there is a list of items called a stack, every operation modifies this list. You can add something to the end of the stack with the assembly 'push "String"', or 'push number'. You can print and remove the last item on the stack with a SystemCall 0 'sys 0'. More on SystemCalls later. Finally, in CMD, you can run 'asm fileName' to compile an asm program.
 
 Please submit the eep file that when ran prints 'Hello World!'.

@@ -11,12 +11,16 @@ const log = @import("../util/log.zig").log;
 const font = @import("../util/font.zig");
 
 pub const EmailManager = struct {
+    pub var instance: EmailManager = .{};
+
     pub const Email = struct {
         const ConditionKind = enum(u8) {
             None,
             View,
-            Submit,
-            Run,
+            SubmitContains,
+            SubmitRuns,
+            SubmitLib,
+            ShellRun,
             Logins,
             SysCall,
             Debug,
@@ -27,11 +31,20 @@ pub const EmailManager = struct {
 
             None: struct {},
             View: struct {},
-            Submit: struct {
-                req: []const u8,
+            SubmitContains: struct {
+                conts: []const u8,
             },
-            Run: struct {
-                req: []const u8,
+            SubmitRuns: struct {
+                input: ?[]const u8,
+                conts: []const u8,
+            },
+            SubmitLib: struct {
+                input: ?[]const u8,
+                libfn: []const u8,
+                conts: []const u8,
+            },
+            ShellRun: struct {
+                cmd: []const u8,
             },
             Logins: struct {
                 count: u64,
@@ -42,19 +55,45 @@ pub const EmailManager = struct {
             Debug: struct {},
 
             pub fn toString(self: *const Self) ![]const u8 {
-                return switch (self.*) {
+                const result = switch (self.*) {
                     .None, .View, .Debug => try allocator.alloc.dupe(u8, ""),
-                    .Submit => |r| try std.fmt.allocPrint(allocator.alloc, "{s}", .{r.req}),
-                    .Run => |r| try std.fmt.allocPrint(allocator.alloc, "{s}", .{r.req}),
+                    .SubmitContains => |r| try std.fmt.allocPrint(allocator.alloc, "{s}", .{r.conts}),
+                    .ShellRun => |r| try std.fmt.allocPrint(allocator.alloc, "{s}", .{r.cmd}),
+                    .SubmitRuns => |r| if (r.input) |input|
+                        try std.fmt.allocPrint(allocator.alloc, ">{s}||{s}", .{ input, r.conts })
+                    else
+                        try std.fmt.allocPrint(allocator.alloc, "{s}", .{r.conts}),
+                    .SubmitLib => |r| if (r.input) |input|
+                        try std.fmt.allocPrint(allocator.alloc, ">{s}||{s}||{s}", .{ input, r.libfn, r.conts })
+                    else
+                        try std.fmt.allocPrint(allocator.alloc, "{s}||{s}", .{ r.libfn, r.conts }),
                     .Logins => |r| try std.fmt.allocPrint(allocator.alloc, "{}", .{r.count}),
                     .SysCall => |r| try std.fmt.allocPrint(allocator.alloc, "{}", .{r.id}),
                 };
+                defer allocator.alloc.free(result);
+
+                return std.fmt.allocPrint(allocator.alloc, "{c}{s}", .{ @intFromEnum(self.*), result });
             }
 
-            pub fn free(self: *const Self) void {
+            pub fn deinit(self: *const Self) void {
                 switch (self.*) {
-                    .Submit => |r| allocator.alloc.free(r.req),
-                    .Run => |r| allocator.alloc.free(r.req),
+                    .ShellRun => |runs| {
+                        allocator.alloc.free(runs.cmd);
+                    },
+                    .SubmitContains => |contains| {
+                        allocator.alloc.free(contains.conts);
+                    },
+                    .SubmitRuns => |runs| {
+                        if (runs.input) |input|
+                            allocator.alloc.free(input);
+                        allocator.alloc.free(runs.conts);
+                    },
+                    .SubmitLib => |lib| {
+                        if (lib.input) |input|
+                            allocator.alloc.free(input);
+                        allocator.alloc.free(lib.libfn);
+                        allocator.alloc.free(lib.conts);
+                    },
                     else => {},
                 }
             }
@@ -69,7 +108,7 @@ pub const EmailManager = struct {
         viewed: bool = false,
         is_complete: bool = false,
         show: bool = true,
-        condition: Condition = .None,
+        condition: []Condition = &.{},
         box: u8 = 0,
         id: u8 = 0,
 
@@ -83,16 +122,15 @@ pub const EmailManager = struct {
                 .from = "",
                 .subject = "",
                 .contents = "",
-                .deps = try allocator.alloc.alloc(u8, 0),
-                .condition = .{
-                    .None = .{},
-                },
+                .deps = &.{},
+                .condition = &.{},
             };
 
             var buf_reader = std.io.bufferedReader(file.reader());
             const in_stream = buf_reader.reader();
             var contents = std.ArrayList(u8).init(allocator.alloc);
             defer contents.deinit();
+            var input: ?[]const u8 = null;
 
             var buf: [1024]u8 = undefined;
             while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
@@ -113,37 +151,78 @@ pub const EmailManager = struct {
                     result.deps = try allocator.alloc.realloc(result.deps, result.deps.len + 1);
                     result.deps[result.deps.len - 1] = try std.fmt.parseInt(u8, line[6..], 0);
                 } else if (std.mem.startsWith(u8, line, "submit: ")) {
-                    result.condition = .{
-                        .Submit = .{
-                            .req = try allocator.alloc.dupe(u8, line[8..]),
+                    return error.BadParse;
+                } else if (std.mem.startsWith(u8, line, "input: ")) {
+                    input = try allocator.alloc.dupe(u8, line[7..]);
+                } else if (std.mem.startsWith(u8, line, "shell: ")) {
+                    result.condition = try allocator.alloc.realloc(result.condition, result.condition.len + 1);
+
+                    result.condition[result.condition.len - 1] = .{
+                        .ShellRun = .{
+                            .cmd = try allocator.alloc.dupe(u8, line[7..]),
                         },
                     };
-                } else if (std.mem.startsWith(u8, line, "run: ")) {
-                    result.condition = .{
-                        .Run = .{
-                            .req = try allocator.alloc.dupe(u8, line[5..]),
+                } else if (std.mem.startsWith(u8, line, "runs: ")) {
+                    result.condition = try allocator.alloc.realloc(result.condition, result.condition.len + 1);
+
+                    result.condition[result.condition.len - 1] = .{
+                        .SubmitRuns = .{
+                            .input = input,
+                            .conts = try allocator.alloc.dupe(u8, line[6..]),
+                        },
+                    };
+
+                    input = null;
+                } else if (std.mem.startsWith(u8, line, "libruns: ")) {
+                    if (std.mem.indexOf(u8, line[9..], ":")) |idx| {
+                        result.condition = try allocator.alloc.realloc(result.condition, result.condition.len + 1);
+
+                        result.condition[result.condition.len - 1] = .{
+                            .SubmitLib = .{
+                                .input = input,
+                                .libfn = try allocator.alloc.dupe(u8, line[9 .. 9 + idx]),
+                                .conts = try allocator.alloc.dupe(u8, line[9 + idx + 1 ..]),
+                            },
+                        };
+                    }
+
+                    input = null;
+                } else if (std.mem.startsWith(u8, line, "contains: ")) {
+                    result.condition = try allocator.alloc.realloc(result.condition, result.condition.len + 1);
+
+                    result.condition[result.condition.len - 1] = .{
+                        .SubmitContains = .{
+                            .conts = try allocator.alloc.dupe(u8, line[10..]),
                         },
                     };
                 } else if (std.mem.startsWith(u8, line, "sys: ")) {
-                    result.condition = .{
+                    result.condition = try allocator.alloc.realloc(result.condition, result.condition.len + 1);
+
+                    result.condition[result.condition.len - 1] = .{
                         .SysCall = .{
                             .id = try std.fmt.parseInt(u8, line[5..], 10),
                         },
                     };
                 } else if (std.mem.startsWith(u8, line, "logins: ")) {
-                    result.condition = .{
+                    result.condition = try allocator.alloc.realloc(result.condition, result.condition.len + 1);
+
+                    result.condition[result.condition.len - 1] = .{
                         .Logins = .{
                             .count = try std.fmt.parseInt(u64, line[8..], 10),
                         },
                     };
                 } else if (std.mem.eql(u8, line, "view")) {
-                    result.condition = .{
+                    result.condition = try allocator.alloc.realloc(result.condition, result.condition.len + 1);
+
+                    result.condition[result.condition.len - 1] = .{
                         .View = .{},
                     };
                 } else if (std.mem.eql(u8, line, "hide")) {
                     result.show = false;
                 } else if (std.mem.eql(u8, line, "debug")) {
-                    result.condition = .Debug;
+                    result.condition = try allocator.alloc.realloc(result.condition, result.condition.len + 1);
+
+                    result.condition[result.condition.len - 1] = .Debug;
                 } else {
                     try contents.appendSlice(line);
                     try contents.appendSlice("\n");
@@ -158,12 +237,11 @@ pub const EmailManager = struct {
         }
     };
 
-    emails: std.ArrayList(Email),
-    boxes: [][]const u8,
+    emails: std.ArrayList(Email) = std.ArrayList(Email).init(allocator.alloc),
+    boxes: [][]const u8 = undefined,
 
-    pub fn init() !EmailManager {
-        return EmailManager{
-            .emails = std.ArrayList(Email).init(allocator.alloc),
+    pub fn init() !void {
+        EmailManager.instance = .{
             .boxes = try allocator.alloc.dupe([]const u8, &.{}),
         };
     }
@@ -175,7 +253,9 @@ pub const EmailManager = struct {
             allocator.alloc.free(email.from);
             allocator.alloc.free(email.subject);
             allocator.alloc.free(email.contents);
-            email.condition.free();
+            for (email.condition) |condition|
+                condition.deinit();
+            allocator.alloc.free(email.condition);
         }
 
         allocator.alloc.free(self.boxes);
@@ -244,24 +324,30 @@ pub const EmailManager = struct {
         if (!email.viewed) {
             email.viewed = true;
 
-            if (email.condition == .View) {
-                try self.setEmailComplete(email);
+            for (email.condition) |condition| {
+                if (condition == .View) {
+                    try self.setEmailComplete(email);
+                }
             }
         }
     }
 
     pub fn updateDebug(self: *EmailManager) !void {
         for (self.emails.items) |*email| {
-            if (email.condition == .Debug) {
-                try self.setEmailComplete(email);
+            for (email.condition) |condition| {
+                if (condition == .Debug) {
+                    try self.setEmailComplete(email);
+                }
             }
         }
     }
 
     pub fn updateLogins(self: *EmailManager, logins: u64) !void {
         for (self.emails.items) |*email| {
-            if (email.condition == .Logins and logins >= email.condition.Logins.count) {
-                try self.setEmailComplete(email);
+            for (email.condition) |condition| {
+                if (condition == .Logins and logins >= condition.Logins.count) {
+                    try self.setEmailComplete(email);
+                }
             }
         }
     }
@@ -343,14 +429,24 @@ pub const EmailManager = struct {
         for (self.emails.items) |email| {
             const start = result.len;
 
-            const conds = try email.condition.toString();
+            var cond_list = std.ArrayList(u8).init(allocator.alloc);
+            defer cond_list.deinit();
 
+            for (email.condition) |input| {
+                const t = try input.toString();
+                defer allocator.alloc.free(t);
+
+                try cond_list.appendSlice(t);
+                try cond_list.append(0);
+            }
+
+            // TODO: fix conds
             const id_string = std.mem.toBytes(email.id);
             const show = std.mem.toBytes(email.show);
             const to_length = std.mem.toBytes(email.to.len)[0..4];
             const from_length = std.mem.toBytes(email.from.len)[0..4];
             const deps_length = std.mem.toBytes(email.deps.len)[0..4];
-            const conds_length = std.mem.toBytes(conds.len)[0..4];
+            const conds_length = std.mem.toBytes(email.condition.len)[0..4];
             const subject_length = std.mem.toBytes(email.subject.len)[0..4];
             const content_length = std.mem.toBytes(email.contents.len)[0..4];
 
@@ -360,9 +456,8 @@ pub const EmailManager = struct {
                 &[_][]const u8{
                     &id_string,
                     &show,
-                    &.{@intFromEnum(email.condition)},
                     conds_length,
-                    conds,
+                    cond_list.items,
                     deps_length,
                     email.deps,
                     to_length,
@@ -422,88 +517,121 @@ pub const EmailManager = struct {
 
                 self.emails.items[idx].box = @as(u8, @intCast(boxid));
 
-                const cond_kind = @as(Email.ConditionKind, @enumFromInt(conts[fidx]));
+                const len_kind = *align(1) const u32;
+                const conds_length = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                fidx += 4;
 
-                fidx += 1;
+                self.emails.items[idx].condition = try allocator.alloc.alloc(Email.Condition, conds_length);
 
-                const kind = *align(1) const u32;
+                for (0..conds_length) |cond_idx| {
+                    const cond_kind: Email.ConditionKind = @enumFromInt(conts[fidx]);
+                    fidx += 1;
 
-                switch (cond_kind) {
-                    .None => {
-                        self.emails.items[idx].condition = .{ .None = .{} };
-                        fidx += 4;
-                    },
-                    .View => {
-                        self.emails.items[idx].condition = .{ .View = .{} };
-                        fidx += 4;
-                    },
-                    .Debug => {
-                        self.emails.items[idx].condition = .{ .Debug = .{} };
-                        fidx += 4;
-                    },
-                    .Submit => {
-                        const len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                        fidx += 4;
-                        const data = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
-                        self.emails.items[idx].condition = .{ .Submit = .{
-                            .req = data,
-                        } };
-                        fidx += len;
-                    },
-                    .Run => {
-                        const len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                        fidx += 4;
-                        const data = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
-                        self.emails.items[idx].condition = .{ .Run = .{
-                            .req = data,
-                        } };
-                        fidx += len;
-                    },
-                    .Logins => {
-                        const len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                        fidx += 4;
-                        const data = try std.fmt.parseInt(u64, conts[fidx .. fidx + len], 10);
-                        self.emails.items[idx].condition = .{ .Logins = .{
-                            .count = data,
-                        } };
-                        fidx += len;
-                    },
-                    .SysCall => {
-                        const len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
-                        fidx += 4;
-                        const data = try std.fmt.parseInt(u8, conts[fidx .. fidx + len], 10);
-                        self.emails.items[idx].condition = .{ .SysCall = .{
-                            .id = data,
-                        } };
-                        fidx += len;
-                    },
+                    var data = std.ArrayList(u8).init(allocator.alloc);
+                    defer data.deinit();
+
+                    while (conts[fidx] != '\x00') : (fidx += 1) {
+                        try data.append(conts[fidx]);
+                    }
+                    fidx += 1;
+
+                    self.emails.items[idx].condition[cond_idx] = switch (cond_kind) {
+                        .View => .{
+                            .View = .{},
+                        },
+                        .SubmitContains => .{
+                            .SubmitContains = .{
+                                .conts = try allocator.alloc.dupe(u8, data.items),
+                            },
+                        },
+                        .SubmitRuns => if (data.items[0] == '>') blk: {
+                            var iter = std.mem.splitSequence(u8, data.items[1..], "||");
+
+                            break :blk .{
+                                .SubmitRuns = .{
+                                    .input = try allocator.alloc.dupe(u8, iter.next() orelse ""),
+                                    .conts = try allocator.alloc.dupe(u8, iter.next() orelse ""),
+                                },
+                            };
+                        } else .{
+                            .SubmitRuns = .{
+                                .input = null,
+                                .conts = try allocator.alloc.dupe(u8, data.items),
+                            },
+                        },
+                        .SubmitLib => if (data.items[0] == '>') blk: {
+                            var iter = std.mem.splitSequence(u8, data.items[1..], "||");
+
+                            break :blk .{
+                                .SubmitLib = .{
+                                    .input = try allocator.alloc.dupe(u8, iter.next() orelse ""),
+                                    .libfn = try allocator.alloc.dupe(u8, iter.next() orelse ""),
+                                    .conts = try allocator.alloc.dupe(u8, iter.next() orelse ""),
+                                },
+                            };
+                        } else blk: {
+                            var iter = std.mem.splitSequence(u8, data.items, "||");
+
+                            break :blk .{
+                                .SubmitLib = .{
+                                    .input = null,
+                                    .libfn = try allocator.alloc.dupe(u8, iter.next() orelse ""),
+                                    .conts = try allocator.alloc.dupe(u8, iter.next() orelse ""),
+                                },
+                            };
+                        },
+                        .ShellRun => .{
+                            .ShellRun = .{
+                                .cmd = try allocator.alloc.dupe(u8, data.items),
+                            },
+                        },
+                        .Logins => .{
+                            .Logins = .{
+                                .count = try std.fmt.parseInt(u64, data.items, 0),
+                            },
+                        },
+                        .SysCall => .{
+                            .SysCall = .{
+                                .id = try std.fmt.parseInt(u8, data.items, 0),
+                            },
+                        },
+                        .Debug => .{
+                            .Debug = .{},
+                        },
+                        else => .{
+                            .None = .{},
+                        },
+                    };
+
+                    if (self.emails.items[idx].condition[cond_idx] != cond_kind)
+                        log.info("{} '{s}'", .{ cond_kind, data.items });
                 }
 
-                var len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                var len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                 fidx += 4;
 
                 self.emails.items[idx].deps = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
-                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                 fidx += 4;
 
                 self.emails.items[idx].to = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
-                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                 fidx += 4;
 
                 self.emails.items[idx].from = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
-                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                 fidx += 4;
 
                 self.emails.items[idx].subject = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
-                len = @as(kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
                 fidx += 4;
 
                 self.emails.items[idx].contents = try allocator.alloc.dupe(u8, conts[fidx .. fidx + len]);

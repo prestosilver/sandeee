@@ -3,7 +3,7 @@ deps: 0
 from: joe_m@eee.org
 to: rob_r@eee.org
 sub: Your first shell script.
-run: new helloWorld.esh
+shell: new helloWorld.esh
 Hello,
 I heard you don't know how to write ShEEEl programs, so your first challenge is to write a simple Hello World program.
 

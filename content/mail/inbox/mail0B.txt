@@ -3,7 +3,12 @@ deps: 10
 from: ERIC_L@eee.org
 to: rob_r@eee.org
 sub: FIB
-submit: input=0;runs=1;input=1;runs=1;input=6;runs=13
+input: 0
+runs: 1
+input: 1
+runs: 1
+input: 6
+runs: 13
 
 ALL I WANT IS A FIB CALCULATOR. WANNA MAKE ONE FOR ME???
 JUST SEND ME A PROGRAM THAT PROMPTS THE INDEX AND RETURNS FIB(INDEX).

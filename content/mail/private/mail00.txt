@@ -2,7 +2,7 @@ id: 0
 from: EEE
 to: joe_m@eee.org
 sub: EEE sees you.
-submit: conts=I know the truth.
+contains: I know the truth.
 Dsen teh lfei dna we liwl cperdoe.
 Dsen teh lfei dna we liwl cperdoe.
 Dsen teh lfei dna we liwl cperdoe.

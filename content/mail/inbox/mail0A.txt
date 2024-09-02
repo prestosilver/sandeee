@@ -3,7 +3,7 @@ deps: 9
 from: ERIC_L@eee.org
 to: rob_r@eee.org
 sub: EEEEEEEEEEEEEON PLZ
-submit: runs=Hello World!
+runs: Hello World!
 
 SUBMIT A COMPILED EON HELLO WORLD PLZ.
 EON REQUIRES A main FUNCTION.
