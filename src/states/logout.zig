@@ -28,12 +28,11 @@ pub const GSLogout = struct {
     font_shader: *shd.Shader,
     wallpaper: *wall.Wallpaper,
     logout_sound: *audio.Sound,
-    audio_man: *audio.Audio,
 
     time: f32 = 0,
 
     pub fn setup(self: *Self) !void {
-        try self.audio_man.playSound(self.logout_sound.*);
+        try audio.instance.playSound(self.logout_sound.*);
         try vm_manager.VMManager.logout();
         self.time = 3;
     }

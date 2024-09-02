@@ -55,14 +55,12 @@ pub const GSLoading = struct {
 
     loading: *const fn (*Self) void,
 
-    email_manager: *mail.EmailManager,
     face: *font.Font,
 
     logo_sprite: sp.Sprite,
     load_sprite: sp.Sprite,
     shader: *shd.Shader,
     disk: *?[]u8,
-    audio_man: *audio.Audio,
 
     loading_thread: std.Thread = undefined,
 
@@ -107,7 +105,7 @@ pub const GSLoading = struct {
         try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
 
         // mail
-        try self.loader.enqueue(*const []const u8, *mail.EmailManager, &mailpath, self.email_manager, worker.mail.loadMail);
+        try self.loader.enqueue(*const []const u8, *const u8, &mailpath, &zero, worker.mail.loadMail);
 
         // delay
         try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
@@ -121,10 +119,8 @@ pub const GSLoading = struct {
         try self.loader.run(&self.load_progress);
 
         // setup some pointers
-        pseudo.snd.audio_ptr = self.audio_man;
         pseudo.win.shader = self.shader;
 
-        wins.email.email_manager = self.email_manager;
         wins.email.notif = .{
             .texture = "icons",
             .data = .{
@@ -144,7 +140,7 @@ pub const GSLoading = struct {
         });
 
         // play login sound
-        try self.audio_man.playSound(self.login_snd);
+        try audio.instance.playSound(self.login_snd);
     }
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {

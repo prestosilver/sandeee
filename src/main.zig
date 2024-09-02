@@ -154,11 +154,7 @@ var disk: ?[]u8 = null;
 // wallpaper stuff
 var wallpaper: wall.Wallpaper = undefined;
 
-// managers
-var email_manager: emails.EmailManager = undefined;
-
 // sounds
-var audio_manager: audio.Audio = undefined;
 var message_snd: audio.Sound = undefined;
 var logout_snd: audio.Sound = undefined;
 
@@ -302,7 +298,7 @@ pub fn mouseScroll(event: input_events.EventMouseScroll) !void {
 }
 
 pub fn notification(_: window_events.EventNotification) !void {
-    try audio_manager.playSound(message_snd);
+    try audio.instance.playSound(message_snd);
 }
 
 pub fn copy(event: system_events.EventCopy) !void {
@@ -355,13 +351,13 @@ pub fn settingSet(event: system_events.EventSetSetting) !void {
     }
 
     if (std.mem.eql(u8, event.setting, "sound_volume")) {
-        audio_manager.volume = @as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0;
+        audio.instance.volume = @as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0;
 
         return;
     }
 
     if (std.mem.eql(u8, event.setting, "sound_muted")) {
-        audio_manager.muted = std.ascii.eqlIgnoreCase("yes", event.value);
+        audio.instance.muted = std.ascii.eqlIgnoreCase("yes", event.value);
 
         return;
     }
@@ -384,25 +380,30 @@ pub fn settingSet(event: system_events.EventSetSetting) !void {
 }
 
 pub fn runCmdEvent(event: system_events.EventRunCmd) !void {
-    for (email_manager.emails.items) |*email| {
-        if (!email_manager.getEmailVisible(email, "admin@eee.org")) continue;
-        if (email.condition != .Run) continue;
+    for (emails.EmailManager.instance.emails.items) |*email| {
+        if (!emails.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
 
-        if (std.ascii.eqlIgnoreCase(email.condition.Run.req, event.cmd)) {
-            try email_manager.setEmailComplete(email);
+        for (email.condition) |condition| {
+            if (condition != .ShellRun) continue;
+
+            if (std.ascii.eqlIgnoreCase(condition.ShellRun.cmd, event.cmd)) {
+                try emails.EmailManager.instance.setEmailComplete(email);
+            }
         }
     }
 }
 
 pub fn syscall(event: system_events.EventSys) !void {
-    for (email_manager.emails.items) |*email| {
-        if (!email_manager.getEmailVisible(email, "admin@eee.org")) continue;
-        if (email.condition != .SysCall) continue;
+    for (emails.EmailManager.instance.emails.items) |*email| {
+        if (!emails.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
+        for (email.condition) |condition| {
+            if (condition != .SysCall) continue;
 
-        const num = email.condition.SysCall.id;
+            const num = condition.SysCall.id;
 
-        if (num == event.sysId) {
-            try email_manager.setEmailComplete(email);
+            if (num == event.sysId) {
+                try emails.EmailManager.instance.setEmailComplete(email);
+            }
         }
     }
 }
@@ -458,7 +459,10 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
         std.process.exit(0);
     };
 
-    std.fs.cwd().writeFile("CrashLog.txt", error_message) catch {};
+    std.fs.cwd().writeFile(.{
+        .sub_path = "CrashLog.txt",
+        .data = error_message,
+    }) catch {};
 
     // no display on headless
     if (is_headless) {
@@ -595,20 +599,20 @@ pub fn mainErr() anyerror!void {
 
     log.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
 
-    // setup the texture manager
-    texture_manager.TextureManager.init();
+    // init texture manager
+    texture_manager.TextureManager.instance = .{};
 
     // init graphics
     try gfx.Context.init("SandEEE");
 
-    audio_manager = try audio.Audio.init();
+    try audio.AudioManager.init();
 
     // setup fonts deinit
     bios_font.setup = false;
     main_font.setup = false;
 
-    var blip_sound: audio.Sound = audio.Sound.init(BLIP_SOUND_DATA);
-    var select_sound: audio.Sound = audio.Sound.init(SELECT_SOUND_DATA);
+    var blip_sound = audio.Sound.init(BLIP_SOUND_DATA);
+    var select_sound = audio.Sound.init(SELECT_SOUND_DATA);
 
     // create the loaders queue
     loader_queue = .{};
@@ -668,8 +672,11 @@ pub fn mainErr() anyerror!void {
     if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
         return error.FramebufferSetupFail;
 
-    // create the sprite batch
-    try batch.SpriteBatch.init(&gfx.Context.instance.size);
+    // give spritebatch size
+    batch.SpriteBatch.instance.size = &gfx.Context.instance.size;
+
+    // done states setup
+    gfx.Context.makeNotCurrent();
 
     // load some textures
     try texture_manager.TextureManager.instance.putMem("bios", BIOS_IMAGE);
@@ -695,7 +702,6 @@ pub fn mainErr() anyerror!void {
         .disk = &disk,
         .blip_sound = &blip_sound,
         .select_sound = &select_sound,
-        .audio_manager = &audio_manager,
         .logo_sprite = .{
             .texture = "bios",
             .data = .{
@@ -708,8 +714,6 @@ pub fn mainErr() anyerror!void {
     // loading state
     var gs_loading = loading_state.GSLoading{
         .face = &main_font,
-        .audio_man = &audio_manager,
-        .email_manager = &email_manager,
         .loading = drawLoading,
         .logout_snd = &logout_snd,
         .message_snd = &message_snd,
@@ -738,7 +742,6 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .clear_shader = &clear_shader,
         .face = &main_font,
-        .email_manager = &email_manager,
         .bar_logo_sprite = .{
             .texture = "barlogo",
             .data = .{
@@ -798,7 +801,6 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .face = &bios_font,
         .select_sound = &select_sound,
-        .audio_manager = &audio_manager,
         .load_sprite = .{
             .texture = "white",
             .data = .{
@@ -814,7 +816,6 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .face = &bios_font,
         .logout_sound = &logout_snd,
-        .audio_man = &audio_manager,
         .wallpaper = &wallpaper,
         .clear_shader = &clear_shader,
     };
@@ -826,14 +827,7 @@ pub fn mainErr() anyerror!void {
         .face = &bios_font,
         .blip_sound = &blip_sound,
         .select_sound = &select_sound,
-        .audio_manager = &audio_manager,
     };
-
-    // done states setup
-    gfx.Context.makeNotCurrent();
-
-    // setup event system
-    events.EventManager.init();
 
     // add input management event handlers
     try events.EventManager.instance.registerListener(input_events.EventWindowResize, windowResize);

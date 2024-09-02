@@ -118,38 +118,6 @@ pub const PopupData = struct {
     contents: PopupContents,
     title: []const u8,
 
-    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
-        var source = src;
-
-        source.y /= TOTAL_SPRITES;
-        source.h /= TOTAL_SPRITES;
-
-        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
-
-        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
-        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x, .y = pos.y }, .{ .x = source.x, .y = source.y }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
-    }
-
-    fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32, color: cols.Color) !void {
-        const sc = @as(f32, @floatFromInt(scale));
-
-        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y, .w = sc * l, .h = sc * t }, .{ .w = l / TEX_SIZE, .h = t / TEX_SIZE }, color);
-        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y, .w = pos.w - sc * (l + r), .h = sc * t }, .{ .x = l / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = t / TEX_SIZE }, color);
-        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y, .w = sc * r, .h = sc * t }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .w = r / TEX_SIZE, .h = t / TEX_SIZE }, color);
-
-        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + sc * t, .w = sc * l, .h = pos.h - sc * (t + b) }, .{ .y = t / TEX_SIZE, .w = l / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
-        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + sc * t, .w = pos.w - sc * (l + r), .h = pos.h - sc * (t + b) }, .{ .x = l / TEX_SIZE, .y = t / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
-        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + sc * t, .w = sc * r, .h = pos.h - sc * (t + b) }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = t / TEX_SIZE, .w = r / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE }, color);
-
-        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + pos.h - sc * b, .w = sc * l, .h = sc * b }, .{ .y = (TEX_SIZE - b) / TEX_SIZE, .w = l / TEX_SIZE, .h = b / TEX_SIZE }, color);
-        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + pos.h - sc * b, .w = pos.w - sc * (l + r), .h = sc * b }, .{ .x = l / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = b / TEX_SIZE }, color);
-        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + pos.h - sc * b, .w = sc * r, .h = sc * b }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = r / TEX_SIZE, .h = b / TEX_SIZE }, color);
-    }
-
     pub fn drawName(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
         try font.draw(.{
             .shader = shader,
@@ -183,8 +151,20 @@ pub const PopupData = struct {
             .h = 64,
         };
 
-        try addUiQuad(&result, sprite, self.pos, 2, 3, 3, 17, 3, .{ .r = 1, .g = 1, .b = 1 });
-        try addUiQuad(&result, 3, close, 2, 3, 3, 17, 3, .{ .r = 1, .g = 1, .b = 1 });
+        try result.appendUiQuad(self.pos, .{
+            .sheet_size = .{ .x = 1, .y = TOTAL_SPRITES },
+            .sprite_size = .{ .x = TEX_SIZE, .y = TEX_SIZE },
+            .sprite = .{ .y = @floatFromInt(sprite) },
+            .draw_scale = 2,
+            .borders = .{ .l = 3, .r = 3, .t = 17, .b = 3 },
+        });
+        try result.appendUiQuad(close, .{
+            .sheet_size = .{ .x = 1, .y = TOTAL_SPRITES },
+            .sprite_size = .{ .x = TEX_SIZE, .y = TEX_SIZE },
+            .sprite = .{ .y = 3 },
+            .draw_scale = 2,
+            .borders = .{ .l = 3, .r = 3, .t = 17, .b = 3 },
+        });
 
         return result;
     }

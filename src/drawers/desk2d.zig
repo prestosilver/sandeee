@@ -124,7 +124,7 @@ pub const DeskData = struct {
                             .data = self,
                             .message = message,
                             .shader = shader,
-                            .buttons = popups.all.confirm.PopupConfirm.createButtonsFromStruct(errorData),
+                            .buttons = popups.all.confirm.PopupConfirm.initButtonsFromStruct(errorData),
                         };
 
                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
@@ -173,11 +173,19 @@ pub const DeskData = struct {
         for (sub_folders) |folder| {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
-            try addQuad(&result, 1, .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 }, .{ .w = 1, .h = 1 });
+            try result.appendQuad(
+                .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 },
+                .{ .x = 1.0 / 8.0, .y = 0.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .{},
+            );
 
             if (self.sel) |sel| {
                 if (idx == sel)
-                    try addQuad(&result, 2, .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 }, .{ .x = 7.0 / 32.0, .y = 3.0 / 32.0, .w = 3.0 / 32.0, .h = 3.0 / 32.0 });
+                    try result.appendQuad(
+                        .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 },
+                        .{ .x = (7.0 / 32.0 / 8.0) + 2.0 / 8.0, .y = 3.0 / 32.0 / 8.0, .w = 3.0 / 32.0 / 8.0, .h = 3.0 / 32.0 / 8.0 },
+                        .{},
+                    );
             }
 
             idx += 1;
@@ -191,11 +199,22 @@ pub const DeskData = struct {
         for (sub_files) |file| {
             if (!checkIconSkip(file.name)) continue;
 
-            try addQuad(&result, 0, .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 }, .{ .w = 1, .h = 1 });
+            try result.appendQuad(
+                .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 },
+                .{
+                    .w = 1.0 / 8.0,
+                    .h = 1.0 / 8.0,
+                },
+                .{},
+            );
 
             if (self.sel) |sel|
                 if (idx == sel)
-                    try addQuad(&result, 2, .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 }, .{ .x = 7.0 / 32.0, .y = 3.0 / 32.0, .w = 3.0 / 32.0, .h = 3.0 / 32.0 });
+                    try result.appendQuad(
+                        .{ .x = position.x * SPACING.x + 32, .y = position.y * SPACING.y + 32, .w = 64, .h = 64 },
+                        .{ .x = (7.0 / 32.0 / 8.0) + 2.0 / 8.0, .y = 3.0 / 32.0 / 8.0, .w = 3.0 / 32.0 / 8.0, .h = 3.0 / 32.0 / 8.0 },
+                        .{},
+                    );
 
             idx += 1;
 

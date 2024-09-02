@@ -32,40 +32,6 @@ pub const BarData = struct {
     shell: shell.Shell,
     shader: *shd.Shader,
 
-    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
-        var source = src;
-
-        source.y /= TOTAL_SPRITES;
-        source.h /= TOTAL_SPRITES;
-
-        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
-
-        const color = .{ .r = 1, .g = 1, .b = 1 };
-
-        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
-        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x, .y = pos.y }, .{ .x = source.x, .y = source.y }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
-    }
-
-    fn addUiQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, scale: i32, r: f32, l: f32, t: f32, b: f32) !void {
-        const sc = @as(f32, @floatFromInt(scale));
-
-        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y, .w = sc * l, .h = sc * t }, .{ .w = l / TEX_SIZE, .h = t / TEX_SIZE });
-        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y, .w = pos.w - sc * (l + r), .h = sc * t }, .{ .x = l / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = t / TEX_SIZE });
-        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y, .w = sc * r, .h = sc * t }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .w = r / TEX_SIZE, .h = t / TEX_SIZE });
-
-        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + sc * t, .w = sc * l, .h = pos.h - sc * (t + b) }, .{ .y = t / TEX_SIZE, .w = l / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE });
-        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + sc * t, .w = pos.w - sc * (l + r), .h = pos.h - sc * (t + b) }, .{ .x = l / TEX_SIZE, .y = t / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE });
-        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + sc * t, .w = sc * r, .h = pos.h - sc * (t + b) }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = t / TEX_SIZE, .w = r / TEX_SIZE, .h = (TEX_SIZE - t - b) / TEX_SIZE });
-
-        try addQuad(arr, sprite, .{ .x = pos.x, .y = pos.y + pos.h - sc * b, .w = sc * l, .h = sc * b }, .{ .y = (TEX_SIZE - b) / TEX_SIZE, .w = l / TEX_SIZE, .h = b / TEX_SIZE });
-        try addQuad(arr, sprite, .{ .x = pos.x + sc * l, .y = pos.y + pos.h - sc * b, .w = pos.w - sc * (l + r), .h = sc * b }, .{ .x = l / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = (TEX_SIZE - l - r) / TEX_SIZE, .h = b / TEX_SIZE });
-        try addQuad(arr, sprite, .{ .x = pos.x + pos.w - sc * r, .y = pos.y + pos.h - sc * b, .w = sc * r, .h = sc * b }, .{ .x = (TEX_SIZE - r) / TEX_SIZE, .y = (TEX_SIZE - b) / TEX_SIZE, .w = r / TEX_SIZE, .h = b / TEX_SIZE });
-    }
-
     pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, windows: *std.ArrayList(win.Window)) !void {
         var pos = rect.Rectangle{ .x = self.height, .y = self.screendims.y - self.height + 12, .w = self.screendims.x + self.height, .h = self.height };
 
@@ -160,9 +126,9 @@ pub const BarData = struct {
         const apps = try files.root.getFolder("conf/apps");
         const list = try file.read(null);
 
-        var iter = std.mem.split(u8, list, "\n");
+        var iter = std.mem.splitScalar(u8, list, '\n');
 
-        var result = try allocator.alloc.alloc(eln.ElnData, 0);
+        var result: []eln.ElnData = &.{};
         errdefer allocator.alloc.free(result);
 
         while (iter.next()) |eln_name| {
@@ -247,10 +213,23 @@ pub const BarData = struct {
         var result = try va.VertArray.init(9 * 6 * 2);
         const pos = rect.Rectangle{ .y = self.screendims.y - self.height, .w = self.screendims.x, .h = self.height };
 
-        try addUiQuad(&result, 0, pos, 2, 3, 3, 3, 3);
+        try result.appendUiQuad(pos, .{
+            .sheet_size = .{ .x = 1, .y = TOTAL_SPRITES },
+            .sprite_size = .{ .x = TEX_SIZE, .y = TEX_SIZE },
+            .sprite = .{ .y = 0 },
+            .draw_scale = 2,
+            .borders = .{ .l = 3, .r = 3, .t = 3, .b = 3 },
+        });
 
         const btn = rect.Rectangle{ .y = self.screendims.y - self.height, .w = 3 * self.height, .h = self.height };
-        try addUiQuad(&result, 1, btn, 2, 6, 6, 6, 6);
+
+        try result.appendUiQuad(btn, .{
+            .sheet_size = .{ .x = 1, .y = TOTAL_SPRITES },
+            .sprite_size = .{ .x = TEX_SIZE, .y = TEX_SIZE },
+            .sprite = .{ .y = 1 },
+            .draw_scale = 2,
+            .borders = .{ .l = 6, .r = 6, .t = 6, .b = 6 },
+        });
 
         const icon = rect.Rectangle{
             .x = btn.x + 3,
@@ -259,17 +238,30 @@ pub const BarData = struct {
             .h = btn.h - 6,
         };
 
-        try addQuad(&result, 3, icon, .{ .w = 1, .h = 1 });
+        try result.appendQuad(icon, .{ .y = 3.0 / TOTAL_SPRITES, .w = 1, .h = 1.0 / TOTAL_SPRITES }, .{});
 
         if (self.btn_active) {
             const menu = rect.Rectangle{ .y = self.screendims.y - 466 - self.height, .w = 300, .h = 466 };
 
-            try addUiQuad(&result, 4, menu, 2, 3, 3, 3, 3);
+            try result.appendUiQuad(menu, .{
+                .sheet_size = .{ .x = 1, .y = TOTAL_SPRITES },
+                .sprite_size = .{ .x = TEX_SIZE, .y = TEX_SIZE },
+                .sprite = .{ .y = 4 },
+                .draw_scale = 2,
+                .borders = .{ .l = 3, .r = 3, .t = 3, .b = 3 },
+            });
         }
 
         for (0..@as(usize, @intCast(self.btns))) |i| {
             const b = rect.Rectangle{ .x = self.height * @as(f32, @floatFromInt(i * 4 + 3)), .y = self.screendims.y - self.height, .w = 4 * self.height, .h = self.height };
-            try addUiQuad(&result, 1, b, 2, 6, 6, 6, 6);
+
+            try result.appendUiQuad(b, .{
+                .sheet_size = .{ .x = 1, .y = TOTAL_SPRITES },
+                .sprite_size = .{ .x = TEX_SIZE, .y = TEX_SIZE },
+                .sprite = .{ .y = 1 },
+                .draw_scale = 2,
+                .borders = .{ .l = 6, .r = 6, .t = 6, .b = 6 },
+            });
         }
 
         return result;

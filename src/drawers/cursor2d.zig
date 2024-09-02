@@ -34,23 +34,16 @@ pub const CursorData = struct {
         source.w /= @as(f32, @floatFromInt(self.total));
         source.x += source.w * @as(f32, @floatFromInt(self.index));
 
-        if (self.flip) {
-            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x, .y = source.y + source.h }, self.color);
-            try result.append(.{ .x = pos.x + x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y + source.h }, self.color);
-            try result.append(.{ .x = pos.x + x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y }, self.color);
-
-            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x, .y = source.y + source.h }, self.color);
-            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x, .y = source.y }, self.color);
-            try result.append(.{ .x = pos.x + x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y }, self.color);
-        } else {
-            try result.append(.{ .x = pos.x + x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x, .y = source.y + source.h }, self.color);
-            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y + source.h }, self.color);
-            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y }, self.color);
-
-            try result.append(.{ .x = pos.x + x, .y = pos.y + y + self.size.y, .z = pos.z }, .{ .x = source.x, .y = source.y + source.h }, self.color);
-            try result.append(.{ .x = pos.x + x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x, .y = source.y }, self.color);
-            try result.append(.{ .x = pos.x + x + self.size.x, .y = pos.y + y, .z = pos.z }, .{ .x = source.x + source.w, .y = source.y }, self.color);
-        }
+        try result.appendQuad(
+            .{
+                .x = pos.x + x,
+                .y = pos.y + y,
+                .w = self.size.x,
+                .h = self.size.y,
+            },
+            source,
+            .{ .flip_x = self.flip },
+        );
 
         return result;
     }

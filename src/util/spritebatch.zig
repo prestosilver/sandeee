@@ -49,14 +49,14 @@ pub const QueueEntry = struct {
 };
 
 pub const SpriteBatch = struct {
-    pub var instance: SpriteBatch = undefined;
+    pub var instance: SpriteBatch = .{};
 
-    prev_queue: []QueueEntry,
-    queue: []QueueEntry,
+    prev_queue: []QueueEntry = &.{},
+    queue: []QueueEntry = &.{},
 
-    buffers: []c.GLuint,
+    buffers: []c.GLuint = &.{},
     scissor: ?rect.Rectangle = null,
-    size: *vecs.Vector2,
+    size: *vecs.Vector2 = undefined,
     queue_lock: std.Thread.Mutex = .{},
 
     pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *const T, shader: *shd.Shader, pos: vecs.Vector3) !void {
@@ -201,7 +201,7 @@ pub const SpriteBatch = struct {
 
         allocator.alloc.free(sb.prev_queue);
         sb.prev_queue = sb.queue;
-        sb.queue = try allocator.alloc.alloc(QueueEntry, 0);
+        sb.queue = &.{};
     }
 
     pub fn deinit() void {
@@ -217,18 +217,5 @@ pub const SpriteBatch = struct {
         allocator.alloc.free(instance.buffers);
         allocator.alloc.free(instance.queue);
         allocator.alloc.free(instance.prev_queue);
-    }
-
-    pub fn init(size: *vecs.Vector2) !void {
-        const buffer = try allocator.alloc.alloc(c.GLuint, 0);
-        const q = try allocator.alloc.alloc(QueueEntry, 0);
-        const pq = try allocator.alloc.alloc(QueueEntry, 0);
-
-        instance = SpriteBatch{
-            .prev_queue = pq,
-            .queue = q,
-            .buffers = buffer,
-            .size = size,
-        };
     }
 };

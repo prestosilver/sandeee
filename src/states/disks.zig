@@ -31,7 +31,6 @@ pub const GSDisks = struct {
     disk: *?[]u8,
     blip_sound: *audio.Sound,
     select_sound: *audio.Sound,
-    audio_manager: *audio.Audio,
 
     remaining: f32 = 10,
     sel: usize = 0,
@@ -104,7 +103,7 @@ pub const GSDisks = struct {
         if (self.auto) self.remaining -= dt;
 
         if (self.remaining <= 0) {
-            try self.audio_manager.playSound(self.select_sound.*);
+            try audio.instance.playSound(self.select_sound.*);
             self.disk.* = null;
 
             if (self.disks.items.len > 2) {
@@ -212,7 +211,7 @@ pub const GSDisks = struct {
                         self.start += 1;
                     }
                     self.sel += 1;
-                    try self.audio_manager.playSound(self.blip_sound.*);
+                    try audio.instance.playSound(self.blip_sound.*);
                 }
             },
             c.GLFW_KEY_UP => {
@@ -223,7 +222,7 @@ pub const GSDisks = struct {
                     }
 
                     self.sel -= 1;
-                    try self.audio_manager.playSound(self.blip_sound.*);
+                    try audio.instance.playSound(self.blip_sound.*);
                 }
             },
             else => {

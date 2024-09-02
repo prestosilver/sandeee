@@ -9,7 +9,7 @@ const shd = @import("../util/shader.zig");
 const wins = @import("window2d.zig");
 const gfx = @import("../util/graphics.zig");
 
-const TOTAL_SPRITES = 1;
+const TOTAL_SPRITES: f32 = 1;
 const TEX_SIZE: f32 = 32;
 
 pub const NotificationData = struct {
@@ -19,22 +19,6 @@ pub const NotificationData = struct {
     text: []const u8,
     source: rect.Rectangle = .{ .w = 1, .h = 1 },
     color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
-
-    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle, color: cols.Color) !void {
-        var source = src;
-
-        source.y /= TOTAL_SPRITES;
-        source.h /= TOTAL_SPRITES;
-
-        source.y += 1.0 / TOTAL_SPRITES * @as(f32, @floatFromInt(sprite));
-
-        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
-        try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
-        try arr.append(.{ .x = pos.x, .y = pos.y }, .{ .x = source.x, .y = source.y }, color);
-        try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
-    }
 
     pub fn update(self: *NotificationData, dt: f32) !void {
         self.time = @max(@as(f32, 0), self.time - dt);
@@ -47,8 +31,19 @@ pub const NotificationData = struct {
 
         const targetpos = vecs.Vector3{ .x = target2d.x, .y = target2d.y };
 
-        try addQuad(&result, 0, .{ .x = targetpos.x, .y = targetpos.y, .w = 250, .h = 70 }, .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 }, .{ .r = 1, .g = 1, .b = 1 });
-        try addQuad(&result, 0, .{ .x = targetpos.x + 2, .y = targetpos.y + 2, .w = 250 - 4, .h = 70 - 4 }, .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 }, .{ .r = 1, .g = 1, .b = 1 });
+        try result.appendQuad(.{ .x = targetpos.x, .y = targetpos.y, .w = 250, .h = 70 }, .{
+            .x = 2.0 / 8.0,
+            .y = 0.0,
+            .w = 1.0 / 8.0,
+            .h = 1.0 / 8.0 / TOTAL_SPRITES,
+        }, .{});
+
+        try result.appendQuad(.{ .x = targetpos.x + 2, .y = targetpos.y + 2, .w = 250 - 4, .h = 70 - 4 }, .{
+            .x = 3.0 / 8.0,
+            .y = 0.0,
+            .w = 1.0 / 8.0,
+            .h = 1.0 / 8.0 / TOTAL_SPRITES,
+        }, .{});
 
         return result;
     }
@@ -62,7 +57,7 @@ pub const NotificationData = struct {
 
             const pos = desk_size.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
 
-            try batch.SpriteBatch.instance.draw(spr.Sprite, icon, shader, .{ .x = pos.y, .y = pos.y });
+            try batch.SpriteBatch.instance.draw(spr.Sprite, icon, shader, .{ .x = pos.x, .y = pos.y });
         }
 
         try font.draw(.{

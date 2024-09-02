@@ -5,15 +5,9 @@ const allocator = @import("allocator.zig");
 const log = @import("log.zig").log;
 
 pub const TextureManager = struct {
-    pub var instance: TextureManager = undefined;
+    pub var instance: TextureManager = .{};
 
-    textures: std.StringHashMap(*tex.Texture),
-
-    pub fn init() void {
-        instance = .{
-            .textures = std.StringHashMap(*tex.Texture).init(allocator.alloc),
-        };
-    }
+    textures: std.StringHashMap(*tex.Texture) = std.StringHashMap(*tex.Texture).init(allocator.alloc),
 
     pub fn deinit() void {
         var iter = instance.textures.iterator();
@@ -54,7 +48,10 @@ pub const TextureManager = struct {
 
         const new = try allocator.alloc.dupe(u8, name);
         const adds = try allocator.alloc.create(tex.Texture);
-        adds.* = try tex.newTextureMem(texture);
+        adds.* = tex.Texture.init();
+
+        try adds.*.loadMem(texture);
+        try adds.*.upload();
 
         try self.textures.put(new, adds);
     }

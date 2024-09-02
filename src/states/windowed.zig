@@ -56,7 +56,6 @@ pub const GSWindowed = struct {
     font_shader: *shd.Shader,
     clear_shader: *shd.Shader,
     face: *font.Font,
-    email_manager: *emails.EmailManager,
     bar_logo_sprite: sp.Sprite,
     cursor: cursor.Cursor,
     init: bool = false,
@@ -71,7 +70,7 @@ pub const GSWindowed = struct {
 
     pub var global_self: *Self = undefined;
 
-    fn createPopup(event: window_events.EventCreatePopup) !void {
+    fn spawnPopup(event: window_events.EventCreatePopup) !void {
         try global_self.popups.append(event.popup);
     }
 
@@ -88,7 +87,7 @@ pub const GSWindowed = struct {
         }
     }
 
-    fn createWindow(event: window_events.EventCreateWindow) !void {
+    fn spawnWindow(event: window_events.EventCreateWindow) !void {
         const dragging_idx = if (global_self.dragging_window) |dragging| blk: {
             for (global_self.windows.items, 0..) |*window, idx| {
                 if (window == dragging) break :blk idx;
@@ -141,7 +140,7 @@ pub const GSWindowed = struct {
         if (!global_self.init) return;
 
         global_self.debug_enabled = event.enabled;
-        try global_self.email_manager.updateDebug();
+        try emails.EmailManager.instance.updateDebug();
     }
 
     pub fn settingSet(event: system_events.EventSetSetting) !void {
@@ -161,7 +160,7 @@ pub const GSWindowed = struct {
             gfx.Context.instance.color = global_self.color;
         } else if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
             const texture = texture_manager.TextureManager.instance.get("wall") orelse return;
-            tex.uploadTextureFile(texture, event.value) catch return;
+            texture.loadFile(event.value) catch return;
         }
     }
 
@@ -217,9 +216,9 @@ pub const GSWindowed = struct {
         win.WindowContents.shader = self.shader;
         shell.shader = self.shader;
 
-        try events.EventManager.instance.registerListener(window_events.EventCreatePopup, createPopup);
+        try events.EventManager.instance.registerListener(window_events.EventCreatePopup, spawnPopup);
         try events.EventManager.instance.registerListener(window_events.EventClosePopup, closePopup);
-        try events.EventManager.instance.registerListener(window_events.EventCreateWindow, createWindow);
+        try events.EventManager.instance.registerListener(window_events.EventCreateWindow, spawnWindow);
         try events.EventManager.instance.registerListener(window_events.EventNotification, notification);
         try events.EventManager.instance.registerListener(system_events.EventSetSetting, settingSet);
         try events.EventManager.instance.registerListener(system_events.EventDebugSet, debugSet);
@@ -250,7 +249,7 @@ pub const GSWindowed = struct {
         try telem.Telem.load();
 
         telem.Telem.instance.logins += 1;
-        try self.email_manager.updateLogins(telem.Telem.instance.logins);
+        try emails.EmailManager.instance.updateLogins(telem.Telem.instance.logins);
 
         if (conf.SettingManager.instance.get("startup_file")) |startupCmd| {
             self.shell = .{ .root = files.root };
@@ -267,7 +266,7 @@ pub const GSWindowed = struct {
             std.log.err("telem save failed {}", .{err});
 
         // save email data
-        self.email_manager.saveStateFile("/_priv/emails.bin") catch |err|
+        emails.EmailManager.instance.saveStateFile("/_priv/emails.bin") catch |err|
             std.log.err("email save failed {}", .{err});
 
         // close all windows
@@ -293,8 +292,8 @@ pub const GSWindowed = struct {
         // deinit lists
         self.windows.deinit();
         self.popups.deinit();
-        self.email_manager.deinit();
         self.notifs.deinit();
+        emails.EmailManager.instance.deinit();
         files.deinit();
     }
 

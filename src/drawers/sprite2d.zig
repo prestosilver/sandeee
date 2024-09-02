@@ -12,13 +12,12 @@ pub const SpriteData = struct {
     pub fn getVerts(self: *const SpriteData, pos: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(6);
 
-        try result.append(vecs.Vector3.add(pos, .{ .y = self.size.y }), .{ .x = self.source.x, .y = self.source.y + self.source.h }, self.color);
-        try result.append(vecs.Vector3.add(pos, .{ .x = self.size.x, .y = self.size.y }), .{ .x = self.source.x + self.source.w, .y = self.source.y + self.source.h }, self.color);
-        try result.append(vecs.Vector3.add(pos, .{ .x = self.size.x }), .{ .x = self.source.x + self.source.w, .y = self.source.y }, self.color);
-
-        try result.append(vecs.Vector3.add(pos, .{ .y = self.size.y }), .{ .x = self.source.x, .y = self.source.y + self.source.h }, self.color);
-        try result.append(vecs.Vector3.add(pos, .{}), .{ .x = self.source.x, .y = self.source.y }, self.color);
-        try result.append(vecs.Vector3.add(pos, .{ .x = self.size.x }), .{ .x = self.source.x + self.source.w, .y = self.source.y }, self.color);
+        try result.appendQuad(.{
+            .x = pos.x,
+            .y = pos.y,
+            .w = self.size.x,
+            .h = self.size.y,
+        }, self.source, .{ .color = self.color });
 
         return result;
     }

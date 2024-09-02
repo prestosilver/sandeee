@@ -6,14 +6,14 @@ const c = @import("../c.zig");
 
 const log = @import("../util/log.zig").log;
 
-pub fn loadMail(self: *worker.WorkerQueueEntry(*const []const u8, *mail.EmailManager)) !bool {
+pub fn loadMail(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)) !bool {
     log.debug("load mail", .{});
 
-    self.out.* = try mail.EmailManager.init();
+    try mail.EmailManager.init();
 
-    try self.out.loadFromFolder(self.indata.*);
+    try mail.EmailManager.instance.loadFromFolder(self.indata.*);
 
-    self.out.loadStateFile("/_priv/emails.bin") catch {};
+    mail.EmailManager.instance.loadStateFile("/_priv/emails.bin") catch {};
 
     return true;
 }

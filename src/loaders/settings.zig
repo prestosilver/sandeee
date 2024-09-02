@@ -12,18 +12,18 @@ const log = @import("../util/log.zig").log;
 pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)) !bool {
     log.debug("load settings", .{});
 
-    conf.SettingManager.init();
+    conf.SettingManager.instance = .{};
 
     const file = try files.root.getFile(self.indata.*);
 
     const cont = try file.read(null);
-    var iter = std.mem.split(u8, cont, "\n");
+    var iter = std.mem.splitScalar(u8, cont, '\n');
 
     while (iter.next()) |line| {
-        var comment = std.mem.split(u8, line, "#");
+        var comment = std.mem.splitScalar(u8, line, '#');
         const aline = comment.first();
 
-        var eqls = std.mem.split(u8, aline, "=");
+        var eqls = std.mem.splitScalar(u8, aline, '=');
         const key = eqls.first();
         const value = eqls.rest();
         const tkey = std.mem.trim(u8, key, " ");

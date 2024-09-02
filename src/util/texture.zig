@@ -27,7 +27,10 @@ pub const Texture = struct {
         self.buffer[idx] = color;
     }
 
-    pub fn upload(self: *Texture) void {
+    pub fn upload(self: *Texture) !void {
+        gfx.Context.makeCurrent();
+        defer gfx.Context.makeNotCurrent();
+
         if (self.tex == 0) {
             c.glGenTextures(1, &self.tex);
 
@@ -50,6 +53,43 @@ pub const Texture = struct {
             self.old_size = self.size;
         }
     }
+
+    pub fn init() Texture {
+        return .{
+            .buffer = &.{},
+            .size = .{ .x = 0, .y = 0 },
+        };
+    }
+
+    pub fn resize(self: *Texture, size: vecs.Vector2) !void {
+        self.buffer = try allocator.alloc.realloc(self.buffer, @intFromFloat(size.x * size.y));
+        self.size = size;
+    }
+
+    pub fn loadMem(self: *Texture, mem: []const u8) !void {
+        const width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
+        const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
+
+        if (mem.len / 4 - 2 != width * height) {
+            log.err("new expected {} got {}", .{ width * height * 4 + 4, mem.len });
+
+            return error.WrongSize;
+        }
+
+        try self.resize(.{
+            .x = @floatFromInt(width),
+            .y = @floatFromInt(height),
+        });
+
+        @memcpy(std.mem.sliceAsBytes(self.buffer), mem[8..]);
+    }
+
+    pub fn loadFile(self: *Texture, file: []const u8) !void {
+        const image = try files.root.getFile(file);
+        const cont = try image.read(null);
+
+        return self.loadMem(cont);
+    }
 };
 
 pub const imageError = error{
@@ -57,77 +97,4 @@ pub const imageError = error{
     NotFound,
 };
 
-pub fn newTextureSize(size: vecs.Vector2) !Texture {
-    return Texture{
-        .buffer = try allocator.alloc.alloc([4]u8, @intFromFloat(size.x * size.y)),
-        .size = size,
-    };
-}
-
-pub fn newTextureFile(file: []const u8) !Texture {
-    gfx.Context.makeCurrent();
-    defer gfx.Context.makeNotCurrent();
-
-    const image = try files.root.getFile(file);
-    const cont = try image.read(null);
-
-    return newTextureMem(cont);
-}
-
-pub fn newTextureMem(mem: []const u8) !Texture {
-    const width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
-    const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
-
-    var result = Texture{
-        .buffer = try allocator.alloc.alloc([4]u8, @intCast(width * height)),
-        .size = vecs.Vector2{
-            .x = @floatFromInt(width),
-            .y = @floatFromInt(height),
-        },
-    };
-
-    if (mem.len / 4 - 2 != width * height) {
-        log.err("new expected {} got {}", .{ width * height * 4 + 4, mem.len });
-
-        return error.WrongSize;
-    }
-
-    @memcpy(std.mem.sliceAsBytes(result.buffer), mem[8..]);
-
-    result.upload();
-
-    return result;
-}
-
 const errorImage = @embedFile("../images/error.eia");
-
-pub fn uploadTextureFile(tex: *Texture, file: []const u8) !void {
-    const image = try files.root.getFile(file);
-
-    const cont = try image.read(null);
-
-    return uploadTextureMem(tex, cont);
-}
-
-pub fn uploadTextureMem(tex: *Texture, mem: []const u8) !void {
-    gfx.Context.makeCurrent();
-    defer gfx.Context.makeNotCurrent();
-
-    const width = @as(c_int, @intCast(mem[4])) + @as(c_int, @intCast(mem[5])) * 256;
-    const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
-
-    if (mem.len / 4 - 2 != width * height) {
-        log.err("up expected {} got {}", .{ width * height * 4 + 4, mem.len });
-
-        return error.WrongSize;
-    }
-
-    tex.buffer = try allocator.alloc.realloc(tex.buffer, @intCast(width * height));
-
-    tex.size.x = @as(f32, @floatFromInt(width));
-    tex.size.y = @as(f32, @floatFromInt(height));
-
-    @memcpy(std.mem.sliceAsBytes(tex.buffer), mem[8..]);
-
-    tex.upload();
-}

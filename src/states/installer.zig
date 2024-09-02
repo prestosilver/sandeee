@@ -40,7 +40,6 @@ pub const GSInstall = struct {
     font_shader: *shd.Shader,
     load_sprite: sp.Sprite,
     select_sound: *audio.Sound,
-    audio_manager: *audio.Audio,
 
     setting_values: [SETTINGS.len][MAX_VALUE_LEN]u8 = undefined,
     setting_lengths: [SETTINGS.len]u8 = [_]u8{0} ** SETTINGS.len,
@@ -154,7 +153,7 @@ pub const GSInstall = struct {
 
         self.load_sprite.data.size.x = (size.x - 200);
         if (self.status == .Installing) self.load_sprite.data.size.x *= 1 - self.timer;
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, .{ .x = 100 });
+        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, .{ .x = 100, .y = y });
 
         if (@intFromEnum(self.status) < @intFromEnum(Status.Done)) return;
 
@@ -260,7 +259,7 @@ pub const GSInstall = struct {
             c.GLFW_KEY_ENTER => {
                 switch (self.status) {
                     .Naming => {
-                        try self.audio_manager.playSound(self.select_sound.*);
+                        try audio.instance.playSound(self.select_sound.*);
 
                         if (self.disk_name.items.len == 0) return;
                         if (std.mem.containsAtLeast(u8, self.disk_name.items, 1, ".")) {
@@ -271,7 +270,7 @@ pub const GSInstall = struct {
                         self.status = .Settings;
                     },
                     .Settings => {
-                        try self.audio_manager.playSound(self.select_sound.*);
+                        try audio.instance.playSound(self.select_sound.*);
 
                         if (self.setting_lengths[self.setting_id] == 0) {
                             self.setting_lengths[self.setting_id] = @as(u8, @intCast(SETTINGS[self.setting_id][2].len));
