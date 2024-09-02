@@ -9,55 +9,85 @@ const VmError = vm.VM.VMError;
 const StackEntry = vm.VM.StackEntry;
 const Operation = vm.VM.Operation;
 
+const SyscallId = enum(u64) {
+    Print = 0,
+    Quit = 1,
+    Create = 2,
+    Open = 3,
+    Read = 4,
+    Write = 5,
+    Flush = 6,
+    Close = 7,
+    Arg = 8,
+    Time = 9,
+    CheckFunc = 10,
+    GetFunc = 11,
+    RegFunc = 12,
+    ClearFunc = 13,
+    ResizeHeap = 14,
+    ReadHeap = 15,
+    WriteHeap = 16,
+    Yield = 17,
+    Error = 18,
+    Size = 19,
+    RSP = 20,
+    Spawn = 21,
+    Status = 22,
+    Last = 32,
+};
+
 pub const SysCall = struct {
     const Self = @This();
 
-    const SYS_CALLS = [_]Self{
-        // System ops
-        .{ .run_fn = sysPrint },
-        .{ .run_fn = sysQuit },
+    const SYS_CALLS = std.EnumArray(SyscallId, Self).init(
+        .{
+            // System ops
+            .Print = .{ .run_fn = sysPrint },
+            .Quit = .{ .run_fn = sysQuit },
 
-        // File ops
-        .{ .run_fn = sysCreate },
-        .{ .run_fn = sysOpen },
-        .{ .run_fn = sysRead },
-        .{ .run_fn = sysWrite },
-        .{ .run_fn = sysFlush },
-        .{ .run_fn = sysClose },
+            // File ops
+            .Create = .{ .run_fn = sysCreate },
+            .Open = .{ .run_fn = sysOpen },
+            .Read = .{ .run_fn = sysRead },
+            .Write = .{ .run_fn = sysWrite },
+            .Flush = .{ .run_fn = sysFlush },
+            .Close = .{ .run_fn = sysClose },
 
-        // more system ops
-        .{ .run_fn = sysArg },
-        .{ .run_fn = sysTime },
+            // more system ops
+            .Arg = .{ .run_fn = sysArg },
+            .Time = .{ .run_fn = sysTime },
 
-        // function ops
-        .{ .run_fn = sysCheckFunc },
-        .{ .run_fn = sysGetFunc },
-        .{ .run_fn = sysRegFunc },
-        .{ .run_fn = sysClearFunc },
+            // function ops
+            .CheckFunc = .{ .run_fn = sysCheckFunc },
+            .GetFunc = .{ .run_fn = sysGetFunc },
+            .RegFunc = .{ .run_fn = sysRegFunc },
+            .ClearFunc = .{ .run_fn = sysClearFunc },
 
-        // heap ops
-        .{ .run_fn = sysResizeHeap },
-        .{ .run_fn = sysReadHeap },
-        .{ .run_fn = sysWriteHeap },
+            // heap ops
+            .ResizeHeap = .{ .run_fn = sysResizeHeap },
+            .ReadHeap = .{ .run_fn = sysReadHeap },
+            .WriteHeap = .{ .run_fn = sysWriteHeap },
 
-        // more system ops
-        .{ .run_fn = sysYield },
-        .{ .run_fn = sysError },
+            // more system ops
+            .Yield = .{ .run_fn = sysYield },
+            .Error = .{ .run_fn = sysError },
 
-        // more file ops
-        .{ .run_fn = sysSize },
+            // more file ops
+            .Size = .{ .run_fn = sysSize },
 
-        // more system ops
-        .{ .run_fn = sysRSP },
-        .{ .run_fn = sysSpawn },
-        .{ .run_fn = sysStatus },
-    };
+            // more system ops
+            .RSP = .{ .run_fn = sysRSP },
+            .Spawn = .{ .run_fn = sysSpawn },
+            .Status = .{ .run_fn = sysStatus },
+            .Last = undefined,
+        },
+    );
 
     run_fn: *const fn (*vm.VM) VmError!void,
 
     pub fn run(self: *vm.VM, index: u64) VmError!void {
-        if (index < SYS_CALLS.len) {
-            return SYS_CALLS[index].run_fn(self);
+        if (index < @intFromEnum(SyscallId.Last)) {
+            return SYS_CALLS.get(@enumFromInt(index)).run_fn(self);
         }
 
         return error.InvalidSys;
