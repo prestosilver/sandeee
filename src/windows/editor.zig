@@ -22,7 +22,7 @@ const HL_KEYWORD2 = [_][]const u8{"#include "};
 const COMMENT_START = "//";
 const STRING_START = '\"';
 const ESCAPE_CHAR = '\\';
-const STRING_ERROR = fnt.COLOR_BLACK ++ fnt.LEFT;
+const STRING_ERROR = "{s}  " ++ fnt.COLOR_RED ++ fnt.LEFT ++ " {s}";
 
 pub const EditorData = struct {
     const Self = @This();
@@ -30,27 +30,41 @@ pub const EditorData = struct {
     pub const Row = struct {
         text: []u8,
         render: ?[]const u8 = null,
+        err: ?[]const u8 = null,
 
         pub fn clearRender(self: *Row) void {
             if (self.render) |r| {
                 allocator.alloc.free(r);
                 self.render = null;
             }
+
+            if (self.err) |e| {
+                allocator.alloc.free(e);
+                self.err = null;
+            }
         }
 
-        pub fn getRender(self: *const Row, targIdx: usize) []const u8 {
+        pub fn getRender(self: *const Row, targetIdx: ?usize) ![]const u8 {
             var idx: usize = 0;
             var aidx: usize = 0;
+
             if (self.render) |render| {
-                for (render) |ch| {
+                const render_line = if (self.err) |e|
+                    try std.fmt.allocPrint(allocator.alloc, STRING_ERROR, .{ render, e })
+                else
+                    try allocator.alloc.dupe(u8, render);
+
+                for (render_line) |ch| {
                     if (ch < 0xf0) {
-                        if (idx >= targIdx) break;
+                        if (targetIdx) |tidx|
+                            if (idx >= tidx) break;
+
                         idx += 1;
                     }
                     aidx += 1;
                 }
 
-                return render[0..aidx];
+                return render_line[0..aidx];
             }
 
             return "";
@@ -78,10 +92,15 @@ pub const EditorData = struct {
     file: ?*files.File = null,
     bnds: rect.Rectangle = undefined,
 
-    pub fn hlLine(rawLine: []const u8) ![]const u8 {
-        var line = try allocator.alloc.dupe(u8, rawLine);
+    pub fn hlLine(row: *Row) !void {
+        var line = try allocator.alloc.dupe(u8, row.text);
+        var err: ?[]u8 = null;
 
-        if (line.len == 0) return line;
+        if (line.len == 0) {
+            row.render = line;
+
+            return;
+        }
 
         for (line) |*ch| {
             if (ch.* >= 0xF0) {
@@ -146,37 +165,40 @@ pub const EditorData = struct {
 
             {
                 var in_string = false;
+                var idx: usize = 0;
 
-                for (old_line, 0..) |ch, idx| {
-                    if (ch == STRING_START) {
-                        if (in_string) {
-                            if (old_line[idx - 1] == ESCAPE_CHAR)
-                                continue;
+                for (old_line) |ch| {
+                    if (ch == STRING_START and !in_string) {
+                        in_string = !in_string;
+                        count += 2;
+                        idx += 1;
+                        continue;
+                    }
+                    count += 1;
+                    idx += 1;
+                    if (ch == STRING_START and in_string) {
+                        if (idx < 2 or old_line[idx - 2] == ESCAPE_CHAR)
+                            continue;
 
-                            in_string = !in_string;
-                            count += 1;
-                        }
+                        in_string = !in_string;
+                        count += 1;
+                        idx += 1;
                     }
                 }
 
                 if (in_string) {
-                    count += STRING_ERROR.len;
+                    err = try allocator.alloc.dupe(u8, "missing \"");
                 }
 
-                line = try allocator.alloc.alloc(u8, line.len + count);
-
-                if (in_string) {
-                    @memcpy(
-                        line[line.len - STRING_ERROR.len .. line.len],
-                        STRING_ERROR,
-                    );
-                }
+                line = try allocator.alloc.alloc(u8, count);
             }
 
             var idx: usize = 0;
             var in_string = false;
+            var prev: u8 = 0;
 
             for (old_line) |ch| {
+                defer prev = ch;
                 if (ch == STRING_START and !in_string) {
                     in_string = !in_string;
                     line[idx] = fnt.COLOR_DARK_GREEN[0];
@@ -188,7 +210,7 @@ pub const EditorData = struct {
                 line[idx] = ch;
                 idx = idx + 1;
                 if (ch == STRING_START and in_string) {
-                    if (idx > 0 and old_line[idx - 1] == ESCAPE_CHAR)
+                    if (idx < 2 or prev == ESCAPE_CHAR)
                         continue;
 
                     in_string = !in_string;
@@ -198,7 +220,8 @@ pub const EditorData = struct {
             }
         }
 
-        return line;
+        row.render = line;
+        row.err = err;
     }
 
     pub fn draw(self: *Self, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
@@ -305,13 +328,15 @@ pub const EditorData = struct {
             var sel_remaining: usize = @intCast(@abs(self.cursor_len));
 
             for (buffer, 0..) |*line, lineidx| {
-                if (line.render == null) {
-                    line.render = try hlLine(line.text);
-                }
+                if (line.render == null)
+                    try hlLine(line);
+
+                const render_text = try line.getRender(null);
+                defer allocator.alloc.free(render_text);
 
                 try font.draw(.{
                     .shader = shader,
-                    .text = line.render.?,
+                    .text = render_text,
                     .pos = .{ .x = bnds.x + 82, .y = y },
                     .wrap = bnds.w - 82,
                     .maxlines = 1,
@@ -326,8 +351,11 @@ pub const EditorData = struct {
                 });
 
                 if (self.cursory == lineidx) {
+                    const cursor_render_text = try line.getRender(self.cursorx);
+                    defer allocator.alloc.free(cursor_render_text);
+
                     const posx = font.sizeText(.{
-                        .text = line.getRender(self.cursorx),
+                        .text = cursor_render_text,
                         .cursor = true,
                     }).x;
 
@@ -356,8 +384,11 @@ pub const EditorData = struct {
 
                     try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
                     if (self.cursor_len < 0 and sel_remaining == 0) {
+                        const cursor_render_text = try line.getRender(width);
+                        defer allocator.alloc.free(cursor_render_text);
+
                         const posx = font.sizeText(.{
-                            .text = line.getRender(width),
+                            .text = cursor_render_text,
                             .cursor = true,
                         }).x;
 
