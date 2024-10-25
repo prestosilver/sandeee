@@ -44,30 +44,30 @@ pub const EditorData = struct {
             }
         }
 
-        pub fn getRender(self: *const Row, targetIdx: ?usize) ![]const u8 {
+        pub fn getRenderLine(self: *const Row) ![]const u8 {
+            return if (self.render) |render|
+                if (self.err) |e|
+                    try std.fmt.allocPrint(allocator.alloc, STRING_ERROR, .{ render, e })
+                else
+                    try allocator.alloc.dupe(u8, render)
+            else
+                &.{};
+        }
+
+        pub fn getRenderLen(line: []const u8, targetIdx: usize) !usize {
             var idx: usize = 0;
             var aidx: usize = 0;
 
-            if (self.render) |render| {
-                const render_line = if (self.err) |e|
-                    try std.fmt.allocPrint(allocator.alloc, STRING_ERROR, .{ render, e })
-                else
-                    try allocator.alloc.dupe(u8, render);
+            for (line) |ch| {
+                if (ch < 0xf0) {
+                    if (idx >= targetIdx) break;
 
-                for (render_line) |ch| {
-                    if (ch < 0xf0) {
-                        if (targetIdx) |tidx|
-                            if (idx >= tidx) break;
-
-                        idx += 1;
-                    }
-                    aidx += 1;
+                    idx += 1;
                 }
-
-                return render_line[0..aidx];
+                aidx += 1;
             }
 
-            return "";
+            return aidx;
         }
     };
 
@@ -331,7 +331,7 @@ pub const EditorData = struct {
                 if (line.render == null)
                     try hlLine(line);
 
-                const render_text = try line.getRender(null);
+                const render_text = try line.getRenderLine();
                 defer allocator.alloc.free(render_text);
 
                 try font.draw(.{
@@ -351,11 +351,10 @@ pub const EditorData = struct {
                 });
 
                 if (self.cursory == lineidx) {
-                    const cursor_render_text = try line.getRender(self.cursorx);
-                    defer allocator.alloc.free(cursor_render_text);
+                    const render_len = try Row.getRenderLen(render_text, self.cursorx);
 
                     const posx = font.sizeText(.{
-                        .text = cursor_render_text,
+                        .text = render_text[0..render_len],
                         .cursor = true,
                     }).x;
 
@@ -384,11 +383,10 @@ pub const EditorData = struct {
 
                     try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
                     if (self.cursor_len < 0 and sel_remaining == 0) {
-                        const cursor_render_text = try line.getRender(width);
-                        defer allocator.alloc.free(cursor_render_text);
+                        const render_len = try Row.getRenderLen(render_text, width);
 
                         const posx = font.sizeText(.{
-                            .text = cursor_render_text,
+                            .text = render_text[0..render_len],
                             .cursor = true,
                         }).x;
 
@@ -559,7 +557,7 @@ pub const EditorData = struct {
 
                 _ = buff.pop();
 
-                try file.write(try allocator.alloc.dupe(u8, buff.items), null);
+                try file.write(buff.items, null);
                 self.modified = false;
             } else {
                 const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
