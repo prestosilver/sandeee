@@ -41,15 +41,15 @@ pub const PopupConfirm = struct {
 
     pub fn initButtonsFromStruct(comptime T: anytype) []const ConfirmButton {
         const type_info = @typeInfo(T);
-        if (type_info != .Struct)
+        if (type_info != .@"struct")
             @compileError("expected struct");
 
         const len: usize = comptime blk: {
             var len: usize = 0;
 
-            for (type_info.Struct.decls) |decl| {
+            for (type_info.@"struct".decls) |decl| {
                 const info = @typeInfo(@TypeOf(@field(T, decl.name)));
-                if (info != .Fn) {
+                if (info != .@"fn") {
                     continue;
                 }
 
@@ -63,9 +63,9 @@ pub const PopupConfirm = struct {
 
             var idx = 0;
 
-            for (type_info.Struct.decls) |decl| {
+            for (type_info.@"struct".decls) |decl| {
                 const info = @typeInfo(@TypeOf(@field(T, decl.name)));
-                if (info != .Fn)
+                if (info != .@"fn")
                     continue;
 
                 const text = std.fmt.comptimePrint("{c}{s}", .{ std.ascii.toUpper(decl.name[0]), decl.name[1..] });

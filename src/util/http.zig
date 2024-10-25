@@ -185,7 +185,7 @@ pub fn fetch(self: *HttpClient, url: []const u8) ![]const u8 {
     }
 }
 
-pub fn cancel(self: *HttpClient) !void {
+pub fn doCancel(self: *HttpClient) !void {
     self.cancel = true;
 
     while (self.running) {

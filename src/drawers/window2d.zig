@@ -201,10 +201,10 @@ pub const WindowContents = struct {
         const Ptr = @TypeOf(ptr);
         const ptr_info = @typeInfo(Ptr);
 
-        if (ptr_info != .Pointer) @compileError("ptr must be a pointer");
-        if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
+        if (ptr_info != .pointer) @compileError("ptr must be a pointer");
+        if (ptr_info.pointer.size != .One) @compileError("ptr must be a single item pointer");
 
-        const child_t = ptr_info.Pointer.child;
+        const child_t = ptr_info.pointer.child;
 
         const gen = struct {
             fn drawImpl(
@@ -216,20 +216,20 @@ pub const WindowContents = struct {
             ) anyerror!void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.draw, .{ self, font_shader, bnds, font, props });
+                return @call(.always_inline, ptr_info.pointer.child.draw, .{ self, font_shader, bnds, font, props });
             }
 
             fn deinitImpl(pointer: *anyopaque) void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.Pointer.child.deinit, .{self});
+                return @call(.always_inline, ptr_info.pointer.child.deinit, .{self});
             }
 
             fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
                 if (std.meta.hasMethod(child_t, "key")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.key, .{ self, keycode, mods, down });
+                    return @call(.always_inline, ptr_info.pointer.child.key, .{ self, keycode, mods, down });
                 }
             }
 
@@ -237,7 +237,7 @@ pub const WindowContents = struct {
                 if (std.meta.hasMethod(child_t, "char")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.char, .{ self, codepoint, mods });
+                    return @call(.always_inline, ptr_info.pointer.child.char, .{ self, codepoint, mods });
                 }
             }
 
@@ -245,7 +245,7 @@ pub const WindowContents = struct {
                 if (std.meta.hasMethod(child_t, "click")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.click, .{ self, size, pos, btn });
+                    return @call(.always_inline, ptr_info.pointer.child.click, .{ self, size, pos, btn });
                 }
             }
 
@@ -253,7 +253,7 @@ pub const WindowContents = struct {
                 if (std.meta.hasMethod(child_t, "scroll")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.scroll, .{ self, x, y });
+                    return @call(.always_inline, ptr_info.pointer.child.scroll, .{ self, x, y });
                 }
             }
 
@@ -261,7 +261,7 @@ pub const WindowContents = struct {
                 if (std.meta.hasMethod(child_t, "move")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.move, .{ self, x, y });
+                    return @call(.always_inline, ptr_info.pointer.child.move, .{ self, x, y });
                 }
             }
 
@@ -269,7 +269,7 @@ pub const WindowContents = struct {
                 if (std.meta.hasMethod(child_t, "focus")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.focus, .{self});
+                    return @call(.always_inline, ptr_info.pointer.child.focus, .{self});
                 }
             }
 
@@ -277,7 +277,7 @@ pub const WindowContents = struct {
                 if (std.meta.hasMethod(child_t, "moveResize")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.moveResize, .{ self, bnds });
+                    return @call(.always_inline, ptr_info.pointer.child.moveResize, .{ self, bnds });
                 }
             }
 
@@ -285,7 +285,7 @@ pub const WindowContents = struct {
                 if (std.meta.hasMethod(child_t, "refresh")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.Pointer.child.refresh, .{self});
+                    return @call(.always_inline, ptr_info.pointer.child.refresh, .{self});
                 }
             }
 

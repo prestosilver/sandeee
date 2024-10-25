@@ -25,7 +25,7 @@ pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
         const size = try reader_stream.readInt(u32, .little);
         const section = try b.allocator.alloc(u8, size);
         defer b.allocator.free(section);
-        if (size != try reader_stream.read(section)) return error.BadSection;
+        if (size != try reader_stream.read(section)) return result;
 
         if (std.mem.eql(u8, &name, "RIFF")) {
             continue;

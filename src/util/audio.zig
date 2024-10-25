@@ -9,21 +9,25 @@ pub const AudioErrors = error{
 pub var instance: AudioManager = undefined;
 
 pub const Sound = struct {
-    buffer: c.ALuint,
+    buffer: ?c.ALuint,
 
     pub fn init(data: []const u8) Sound {
+        if (data.len == 0) return Sound{ .buffer = null };
+
         var result = Sound{
             .buffer = 0,
         };
 
-        c.alGenBuffers(1, &result.buffer);
-        c.alBufferData(result.buffer, c.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
+        c.alGenBuffers(1, &result.buffer.?);
+        c.alBufferData(result.buffer.?, c.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
 
         return result;
     }
 
     pub fn deinit(self: *const Sound) void {
-        c.alDeleteBuffers(1, &self.buffer);
+        if (self.buffer) |buffer| {
+            c.alDeleteBuffers(1, &buffer);
+        }
     }
 };
 
@@ -112,7 +116,8 @@ pub const AudioManager = struct {
         c.alSourcei(result.bg, c.AL_LOOPING, c.AL_TRUE);
         c.alSourcef(result.bg, c.AL_GAIN, 0.5);
 
-        c.alSourcei(result.bg, c.AL_BUFFER, @intCast(background_data.buffer));
+        if (background_data.buffer) |buffer|
+            c.alSourcei(result.bg, c.AL_BUFFER, @intCast(buffer));
 
         c.alSourcePlay(result.bg);
 
@@ -121,19 +126,20 @@ pub const AudioManager = struct {
 
     pub fn playSound(self: *AudioManager, snd: Sound) !void {
         if (self.muted) return;
+        if (snd.buffer) |buffer| {
+            var source_state: c.ALint = 0;
 
-        var source_state: c.ALint = 0;
+            c.alGetSourcei(self.sources[self.next], c.AL_SOURCE_STATE, &source_state);
+            if (source_state != c.AL_PLAYING) {
+                c.alSource3i(self.sources[self.next], c.AL_AUXILIARY_SEND_FILTER, @intCast(self.slot), 0, c.AL_FILTER_NULL);
+                c.alSourcei(self.sources[self.next], c.AL_BUFFER, @as(c_int, @intCast(buffer)));
+                c.alSourcef(self.sources[self.next], c.AL_GAIN, self.volume);
 
-        c.alGetSourcei(self.sources[self.next], c.AL_SOURCE_STATE, &source_state);
-        if (source_state != c.AL_PLAYING) {
-            c.alSource3i(self.sources[self.next], c.AL_AUXILIARY_SEND_FILTER, @intCast(self.slot), 0, c.AL_FILTER_NULL);
-            c.alSourcei(self.sources[self.next], c.AL_BUFFER, @as(c_int, @intCast(snd.buffer)));
-            c.alSourcef(self.sources[self.next], c.AL_GAIN, self.volume);
+                c.alSourcePlay(self.sources[self.next]);
+            }
+            self.next += 1;
 
-            c.alSourcePlay(self.sources[self.next]);
+            if (self.next == SOURCES) self.next = 0;
         }
-        self.next += 1;
-
-        if (self.next == SOURCES) self.next = 0;
     }
 };

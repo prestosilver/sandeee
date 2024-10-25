@@ -432,52 +432,52 @@ const BASE_FILES = [_]DiskFile{
     .{
         .input = .{ .Local = "images/icons/eeedt.png" },
         .output = "cont/icns/eeedt.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/tasks.png" },
         .output = "cont/icns/tasks.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/cmd.png" },
         .output = "cont/icns/cmd.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/settings.png" },
         .output = "cont/icns/settings.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/launch.png" },
         .output = "cont/icns/launch.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/debug.png" },
         .output = "cont/icns/debug.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/logout.png" },
         .output = "cont/icns/logout.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/folder.png" },
         .output = "cont/icns/folder.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/email.png" },
         .output = "cont/icns/email.eia",
-        .converter = null,
+        .converter = image.convert,
     },
     .{
         .input = .{ .Local = "images/icons/web.png" },
         .output = "cont/icns/web.eia",
-        .converter = null,
+        .converter = image.convert,
     },
 };
 
