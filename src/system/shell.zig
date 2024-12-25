@@ -40,6 +40,7 @@ const ShellError = error{
 const TOTAL_BAR_SPRITES: f32 = 13;
 
 pub const Shell = struct {
+    headless: bool = false,
     root: *files.Folder,
     vm: ?vm_manager.VMManager.VMHandle = null,
 
@@ -197,6 +198,7 @@ pub const Shell = struct {
     }
 
     pub const ShellCommand = struct {
+        gui: bool = false,
         func: *const fn (*Shell, ParamType) anyerror!Result,
         name: []const u8,
         desc: []const u8,
@@ -223,6 +225,7 @@ pub const Shell = struct {
 
     pub const window_commands = .{
         .{ "cmd", .{
+            .gui = true,
             .name = "cmd",
             .help = "cmd [:help]",
             .desc = "Opens the command prompt",
@@ -248,6 +251,7 @@ pub const Shell = struct {
             }.cmd,
         } },
         .{ "edit", .{
+            .gui = true,
             .name = "edit",
             .help = "edit [:help] [file]",
             .desc = "Opens the text editor",
@@ -292,6 +296,7 @@ pub const Shell = struct {
             }.edit,
         } },
         .{ "web", .{
+            .gui = true,
             .name = "web",
             .help = "web [:help] [url]",
             .desc = "Opens the web browser",
@@ -316,6 +321,7 @@ pub const Shell = struct {
             }.web,
         } },
         .{ "mail", .{
+            .gui = true,
             .name = "mail",
             .help = "mail [:help]",
             .desc = "Opens the email browser",
@@ -334,6 +340,7 @@ pub const Shell = struct {
             }.mail,
         } },
         .{ "task", .{
+            .gui = true,
             .name = "task",
             .help = "task [:help]",
             .desc = "Opens the task manager",
@@ -352,6 +359,7 @@ pub const Shell = struct {
             }.task,
         } },
         .{ "set", .{
+            .gui = true,
             .name = "set",
             .help = "set [:help]",
             .desc = "Opens the setting manager",
@@ -370,6 +378,7 @@ pub const Shell = struct {
             }.settings,
         } },
         .{ "launch", .{
+            .gui = true,
             .name = "launch",
             .help = "launch [:help]",
             .desc = "Opens the application launcher",
@@ -388,6 +397,7 @@ pub const Shell = struct {
             }.launch,
         } },
         .{ "logout", .{
+            .gui = true,
             .name = "logout",
             .help = "logout [:help]",
             .desc = "Opens the logout prompt",
@@ -437,6 +447,7 @@ pub const Shell = struct {
             }.logout,
         } },
         .{ "files", .{
+            .gui = true,
             .name = "files",
             .help = "files [:help]",
             .desc = "Opens the file manager",
@@ -462,17 +473,29 @@ pub const Shell = struct {
             .desc = "Prints a help message",
             .help = "help [:help]",
             .func = struct {
-                pub fn help(_: *Shell, _: ParamType) !Result {
+                pub fn help(shell: *Shell, _: ParamType) !Result {
                     var data = std.ArrayList(u8).init(allocator.alloc);
                     defer data.deinit();
                     try data.appendSlice("Sh" ++ font.EEE ++ "ll Help:\n" ++ "=============\n");
-                    inline for (help_data) |help_group| {
-                        try data.append('\n');
-                        try data.appendSlice(help_group.name ++ "\n");
-                        try data.appendNTimes('-', help_group.name.len);
-                        try data.append('\n');
-                        inline for (help_group.cmds) |command| {
-                            try data.appendSlice(std.fmt.comptimePrint("{s} - {s}\n", .{ command.@"1".name, command.@"1".desc }));
+                    if (shell.headless) {
+                        inline for (headless_help_data) |help_group| {
+                            try data.append('\n');
+                            try data.appendSlice(help_group.name ++ "\n");
+                            try data.appendNTimes('-', help_group.name.len);
+                            try data.append('\n');
+                            inline for (help_group.cmds) |command| {
+                                try data.appendSlice(std.fmt.comptimePrint("{s} - {s}\n", .{ command.@"1".name, command.@"1".desc }));
+                            }
+                        }
+                    } else {
+                        inline for (help_data) |help_group| {
+                            try data.append('\n');
+                            try data.appendSlice(help_group.name ++ "\n");
+                            try data.appendNTimes('-', help_group.name.len);
+                            try data.append('\n');
+                            inline for (help_group.cmds) |command| {
+                                try data.appendSlice(std.fmt.comptimePrint("{s} - {s}\n", .{ command.@"1".name, command.@"1".desc }));
+                            }
                         }
                     }
                     return .{
@@ -715,6 +738,10 @@ pub const Shell = struct {
         } },
     };
 
+    pub const headless_help_data = .{
+        .{ .name = "Commands", .cmds = shell_commands },
+    };
+
     pub const help_data = .{
         .{ .name = "Commands", .cmds = shell_commands },
         .{ .name = "Applications", .cmds = window_commands },
@@ -730,15 +757,15 @@ pub const Shell = struct {
             .cmd = params,
         });
 
-        if (params.len == 0) {
+        if (params.len == 0)
             return error.MissingParameter;
-        }
 
         var iter = std.mem.splitScalar(u8, params, ' ');
         const cmd = iter.first();
 
         if (command_map.get(cmd)) |runs|
-            return runs.run(self, &iter);
+            if (!runs.gui or !self.headless)
+                return runs.run(self, &iter);
 
         return self.runFile(cmd, &iter);
     }

@@ -618,6 +618,7 @@ pub fn get_step(
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
+
     const exe = b.addExecutable(.{
         .name = "SandEEE",
         .root_source_file = b.path("src/main.zig"),
@@ -759,7 +760,22 @@ pub fn build(b: *std.Build) !void {
     }
     exe.linkLibC();
 
-    b.installArtifact(exe);
+    const vm_dependency = b.dependency("sandeee_vm", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const vm_artifact = vm_dependency.artifact("eeevm");
+    const vm_install_a = b.addInstallArtifact(vm_artifact, .{ .dest_dir = .{ .override = .{ .custom = "bin/lib" } } });
+
+    b.getInstallStep().dependOn(&vm_install_a.step);
+
+    exe.addLibraryPath(b.path("zig-out/bin/lib/"));
+    exe.linkSystemLibrary("eeevm");
+
+    const exe_inst = b.addInstallArtifact(exe, .{});
+
+    b.getInstallStep().dependOn(&exe_inst.step);
 
     const file_data = try std.mem.concat(b.allocator, DiskFile, &.{
         &BASE_FILES,

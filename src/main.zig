@@ -3,6 +3,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");
 const steam = @import("steam");
+const vm = @import("util/eeevm.zig");
 
 // states
 const states = @import("states/manager.zig");
@@ -550,6 +551,8 @@ pub fn mainErr() anyerror!void {
         _ = steam_utils;
     }
 
+    std.log.info("{s}", .{vm.hello()});
+
     // setup the headless command
     var headless_cmd: ?[]const u8 = null;
 
@@ -591,7 +594,7 @@ pub fn mainErr() anyerror!void {
 
     // switch to headless main function if nessessary
     if (is_headless) {
-        return headless.headlessMain(headless_cmd, false, null);
+        return headless.headlessMain(headless_cmd orelse &.{}, false, null);
     }
 
     log.log_file = try std.fs.cwd().createFile("SandEEE.log", .{});

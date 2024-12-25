@@ -7,6 +7,8 @@ const vm = @import("vm.zig");
 const config = @import("config.zig");
 const telem = @import("telem.zig");
 
+const log = @import("../util/log.zig").log;
+
 pub var root: *Folder = undefined;
 pub var home: *Folder = undefined;
 pub var exec: *Folder = undefined;
@@ -333,10 +335,13 @@ pub const Folder = struct {
     }
 
     pub fn setupExtr() !void {
-        const path = getExtrPath();
-        if (!std.fs.path.isAbsolute(path)) return;
+        const extr_path = getExtrPath();
+        const path = if (std.fs.path.isAbsolute(extr_path))
+            std.fs.openDirAbsolute(extr_path, .{}) catch null
+        else
+            std.fs.cwd().openDir(extr_path, .{}) catch null;
 
-        if (std.fs.openDirAbsolute(path, .{}) catch null) |extr_dir| {
+        if (path) |extr_dir| {
             const extr = try allocator.alloc.create(Folder);
             extr.* = .{
                 .ext = .{
@@ -350,6 +355,8 @@ pub const Folder = struct {
             };
 
             try root.subfolders.append(extr);
+        } else {
+            log.info("failed to load extr path: '{s}'", .{extr_path});
         }
     }
 

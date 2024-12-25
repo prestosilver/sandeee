@@ -1,5 +1,5 @@
 const std = @import("std");
-const zigimg = @import("deps/zigimg/zigimg.zig");
+const zigimg = @import("../deps/zigimg/zigimg.zig");
 
 // struct FontChar {
 //   []const []const u1: data,

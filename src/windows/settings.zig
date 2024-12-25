@@ -158,7 +158,7 @@ const SettingsData = struct {
                 .key = "startup_file",
             },
             Setting{
-                .kind = .Folder,
+                .kind = .String,
                 .setting = "Extr path",
                 .key = "extr_path",
             },

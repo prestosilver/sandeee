@@ -4,10 +4,19 @@ const files = @import("files.zig");
 const shell = @import("shell.zig");
 const allocator = @import("../util/allocator.zig");
 const vm_manager = @import("../system/vmmanager.zig");
+const font = @import("../util/font.zig");
 
 const DISK = "headless.eee";
 
-pub fn headlessMain(cmd: ?[]const u8, comptime exit_fail: bool, logging: ?std.fs.File) anyerror!void {
+pub fn toANSI(input: []const u8) ![]const u8 {
+    const buffer_len = std.mem.replacementSize(u8, input, font.E, "Ⲉ");
+    const buffer = try allocator.alloc.alloc(u8, buffer_len);
+    _ = std.mem.replace(u8, input, font.E, "Ⲉ", buffer);
+
+    return buffer;
+}
+
+pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) anyerror!void {
     const diskpath = try fm.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
 
@@ -19,32 +28,50 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exit_fail: bool, logging: ?std.fs
 
     defer files.deinit();
 
-    var main_shell = shell.Shell{ .root = files.home };
+    var main_shell = shell.Shell{ .root = files.home, .headless = true };
 
-    const stdin = std.io.getStdIn().reader();
-    const stdout = logging orelse std.io.getStdOut();
-    var buffer: [512]u8 = undefined;
+    const stdin_file = std.io.getStdIn();
+    const stdin = stdin_file.reader();
+    const stdout_file = logging orelse std.io.getStdOut();
+    const stdout = stdout_file.writer();
 
-    _ = try stdout.write("Welcome To ShEEEl\n");
+    // set terminal attribs
+    const original = try std.posix.tcgetattr(stdin_file.handle);
+    var raw = original;
 
-    var to_run = cmd;
+    raw.lflag.ECHO = false;
+    raw.lflag.ICANON = false;
 
-    while (true) {
+    raw.cc[@intFromEnum(std.posix.system.V.TIME)] = 0;
+    raw.cc[@intFromEnum(std.posix.system.V.MIN)] = 1;
+
+    try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);
+    defer std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
+
+    var input_buffer = std.ArrayList(u8).init(allocator.alloc);
+    try input_buffer.appendSlice(cmd);
+
+    _ = try stdout.write("\x1b[2J\x1b[HWelcome To ShⲈⲈⲈl\n");
+
+    var done = false;
+
+    while (!done) {
         if (main_shell.vm != null) {
             // setup vm data for update
             const result_data = try main_shell.getVMResult();
             if (result_data) |result| {
-                _ = try stdout.write(result.data);
+                const output = try toANSI(result.data);
+                defer allocator.alloc.free(output);
+
+                _ = try stdout.write(output);
+
                 allocator.alloc.free(result.data);
-            } else {
-                _ = try stdout.write("");
             }
 
             try vm_manager.VMManager.instance.update();
 
-            if (main_shell.vm == null) {
-                _ = try stdout.write("\n");
-            }
+            if (main_shell.vm == null)
+                _ = try stdout.write("\r\n");
 
             continue;
         }
@@ -55,46 +82,69 @@ pub fn headlessMain(cmd: ?[]const u8, comptime exit_fail: bool, logging: ?std.fs
 
         allocator.alloc.free(prompt);
 
-        if (to_run) |runs| {
-            var iter = std.mem.splitScalar(u8, runs, '\n');
-
-            while (iter.next()) |data| {
-                _ = try stdout.write(data);
-                _ = try stdout.write("\n");
-
-                const command = std.mem.trim(u8, data, "\r\n ");
-
-                const result = main_shell.run(command) catch |err| {
-                    const msg = @errorName(err);
-
-                    _ = try stdout.write("Error: ");
-                    _ = try stdout.write(msg);
-                    _ = try stdout.write("\n");
-
-                    if (exit_fail) {
-                        return err;
-                    }
-
-                    continue;
-                };
-
-                defer allocator.alloc.free(result.data);
-
-                if (result.exit) {
-                    break;
-                } else {
-                    if (result.data.len != 0) {
-                        _ = try stdout.write(result.data);
-                        if (result.data[result.data.len - 1] != '\n')
-                            _ = try stdout.write("\n");
-                    }
+        if (input_buffer.items.len <= 0) {
+            while (stdin.readByte() catch blk: {
+                done = true;
+                break :blk null;
+            }) |ch| {
+                switch (ch) {
+                    '\n' => {
+                        try stdout.print("\r\n", .{});
+                        break;
+                    },
+                    '\x1b' => {
+                        try stdout.print("^[", .{});
+                        try input_buffer.append(ch);
+                    },
+                    '\x7F' => {
+                        if (input_buffer.popOrNull()) |_|
+                            try stdout.print("\x1b[D \x1b[D", .{});
+                    },
+                    else => {
+                        if (std.ascii.isControl(ch)) {
+                            try stdout.print("\\x{x}", .{ch});
+                            try input_buffer.append(ch);
+                        } else {
+                            try stdout.print("{c}", .{ch});
+                            try input_buffer.append(ch);
+                        }
+                    },
                 }
             }
-
-            to_run = null;
-        } else {
-            to_run = try stdin.readUntilDelimiter(&buffer, '\n');
         }
+
+        var iter = std.mem.splitScalar(u8, input_buffer.items, '\n');
+
+        while (iter.next()) |data| {
+            const command = std.mem.trim(u8, data, "\r\n ");
+
+            const result = main_shell.run(command) catch |err| {
+                try stdout.print("Error: {s}\r\n", .{@errorName(err)});
+
+                if (exit_fail) return err;
+
+                continue;
+            };
+
+            defer allocator.alloc.free(result.data);
+
+            if (result.data.len != 0) {
+                const output = try toANSI(result.data);
+                defer allocator.alloc.free(output);
+
+                _ = try stdout.write(output);
+                if (output[output.len - 1] != '\n')
+                    _ = try stdout.write("\r\n");
+            }
+
+            if (result.clear)
+                _ = try stdout.write("\x1b[2J\x1b[H");
+
+            if (result.exit)
+                done = true;
+        }
+
+        input_buffer.clearAndFree();
     }
 
     return;

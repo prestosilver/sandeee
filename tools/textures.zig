@@ -1,5 +1,5 @@
 const std = @import("std");
-const zigimg = @import("deps/zigimg/zigimg.zig");
+const zigimg = @import("../deps/zigimg/zigimg.zig");
 
 // converts a png to a ebi
 pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
