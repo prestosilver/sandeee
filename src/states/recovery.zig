@@ -38,7 +38,7 @@ pub const GSRecovery = struct {
     confirm_sel: ?bool = null,
 
     const DISK_LIST = "0123456789ABCDEF";
-    const TEXT_COLOR = .{ .r = 1, .g = 1, .b = 1 };
+    const TEXT_COLOR = cols.Color{ .r = 1, .g = 1, .b = 1 };
 
     pub fn getDate(name: []const u8) i128 {
         const path = std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{name}) catch return 0;

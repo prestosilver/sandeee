@@ -8,7 +8,7 @@ pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
 
     var result = std.ArrayList(u8).init(b.allocator);
 
-    var image = try zigimg.Image.fromFilePath(b.allocator, in.getPath3(b, null).sub_path);
+    var image = try zigimg.Image.fromFilePath(b.allocator, in.getPath(b));
     defer image.deinit();
 
     try result.appendSlice("eimg");

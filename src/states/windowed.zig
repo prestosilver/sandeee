@@ -45,9 +45,10 @@ pub const GSWindowed = struct {
     down: bool = false,
 
     mousepos: vecs.Vector2 = .{},
-    windows: std.ArrayList(win.Window) = undefined,
+    windows: std.ArrayList(win.Window) = .init(allocator.alloc),
+    notifs: std.ArrayList(notifications.Notification) = .init(allocator.alloc),
+    popups: std.ArrayList(popups.Popup) = .init(allocator.alloc),
 
-    notifs: std.ArrayList(notifications.Notification) = undefined,
     open_window: vecs.Vector2 = .{},
 
     wallpaper: *wall.Wallpaper,
@@ -62,8 +63,7 @@ pub const GSWindowed = struct {
 
     desk: desk.Desk,
 
-    popups: std.ArrayList(popups.Popup) = undefined,
-    shell: shell.Shell = undefined,
+    shell: shell.Shell,
 
     color: cols.Color = .{ .r = 0, .g = 0, .b = 0 },
     debug_enabled: bool = false,
@@ -169,12 +169,6 @@ pub const GSWindowed = struct {
 
         popups.popup_shader = self.shader;
 
-        // create lists
-        self.windows = std.ArrayList(win.Window).init(allocator.alloc);
-        self.popups = std.ArrayList(popups.Popup).init(allocator.alloc);
-
-        self.notifs = std.ArrayList(notifications.Notification).init(allocator.alloc);
-
         gfx.Context.instance.color = self.color;
 
         pseudo.win.windows_ptr = &self.windows;
@@ -224,7 +218,7 @@ pub const GSWindowed = struct {
         try events.EventManager.instance.registerListener(system_events.EventDebugSet, debugSet);
 
         if (conf.SettingManager.instance.getBool("show_welcome")) {
-            const window = .{
+            const window = win.Window{
                 .texture = "win",
                 .data = .{
                     .source = rect.Rectangle{ .w = 1, .h = 1 },
@@ -237,7 +231,7 @@ pub const GSWindowed = struct {
             try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = true });
         }
 
-        self.desk.data.shell.root = files.home;
+        self.desk.data.shell.root = .home;
 
         if (conf.SettingManager.instance.get("wallpaper_color")) |color| {
             try settingSet(.{
@@ -252,7 +246,7 @@ pub const GSWindowed = struct {
         try emails.EmailManager.instance.updateLogins(telem.Telem.instance.logins);
 
         if (conf.SettingManager.instance.get("startup_file")) |startupCmd| {
-            self.shell = .{ .root = files.root };
+            self.shell = .{ .root = .root };
             _ = self.shell.run(startupCmd) catch return;
         }
     }
@@ -290,9 +284,9 @@ pub const GSWindowed = struct {
         files.write();
 
         // deinit lists
-        self.windows.deinit();
-        self.popups.deinit();
-        self.notifs.deinit();
+        self.windows.clearAndFree();
+        self.popups.clearAndFree();
+        self.notifs.clearAndFree();
         emails.EmailManager.instance.deinit();
         files.deinit();
     }
@@ -488,7 +482,7 @@ pub const GSWindowed = struct {
         }
 
         if (key == c.GLFW_KEY_P and mods == (c.GLFW_MOD_CONTROL | c.GLFW_MOD_SHIFT) and down) {
-            const window = .{
+            const window = win.Window{
                 .texture = "win",
                 .data = .{
                     .source = .{ .w = 1, .h = 1 },

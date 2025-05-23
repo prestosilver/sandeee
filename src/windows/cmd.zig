@@ -315,7 +315,7 @@ pub fn init() !win.WindowContents {
         .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh" ++ fnt.EEE ++ "l\nUse help to list possible commands\n", .{}),
         .history = try std.ArrayList([]const u8).initCapacity(allocator.alloc, 32),
         .shell = .{
-            .root = files.home,
+            .root = .home,
             .vm = null,
         },
     };

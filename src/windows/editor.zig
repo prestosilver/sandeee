@@ -420,9 +420,11 @@ pub const EditorData = struct {
                 0 => {
                     const open = rect.Rectangle{ .w = 36, .h = 36 };
                     if (open.contains(mousepos)) {
+                        const home = try files.FolderLink.resolve(.home);
+
                         const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
                         adds.* = .{
-                            .path = try allocator.alloc.dupe(u8, files.home.name),
+                            .path = try allocator.alloc.dupe(u8, home.name),
                             .data = self,
                             .submit = &submitOpen,
                         };
@@ -560,9 +562,11 @@ pub const EditorData = struct {
                 try file.write(buff.items, null);
                 self.modified = false;
             } else {
+                const home = try files.FolderLink.resolve(.home);
+
                 const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
                 adds.* = .{
-                    .text = try allocator.alloc.dupe(u8, files.home.name),
+                    .text = try allocator.alloc.dupe(u8, home.name),
                     .submit = &submitSave,
                     .prompt = try allocator.alloc.dupe(u8, "Enter the file path"),
                     .data = self,
@@ -584,12 +588,11 @@ pub const EditorData = struct {
     }
 
     pub fn submitSave(path: []const u8, data: *anyopaque) !void {
-        try files.root.newFile(path);
+        const root = try files.FolderLink.resolve(.root);
+        try root.newFile(path);
 
-        const file = try files.root.getFile(path);
-
+        const file = try root.getFile(path);
         const self: *Self = @ptrCast(@alignCast(data));
-
         self.file = file;
 
         try self.save();

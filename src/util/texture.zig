@@ -85,7 +85,8 @@ pub const Texture = struct {
     }
 
     pub fn loadFile(self: *Texture, file: []const u8) !void {
-        const image = try files.root.getFile(file);
+        const root = try files.FolderLink.resolve(.root);
+        const image = try root.getFile(file);
         const cont = try image.read(null);
 
         return self.loadMem(cont);

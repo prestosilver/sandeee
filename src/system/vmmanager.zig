@@ -113,12 +113,21 @@ pub const VMManager = struct {
         return results;
     }
 
-    pub fn spawn(self: *Self, root: *files.Folder, params: []const u8, code: []const u8) !VMHandle {
+    pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []const u8) !VMHandle {
         const id = self.vm_index;
 
         self.vm_index = self.vm_index +% 1;
 
-        var vm_instance = try vm.VM.init(allocator.alloc, root, params, false);
+        const count = std.mem.count(u8, params, " ");
+        const input = try allocator.alloc.alloc([]const u8, count);
+
+        var iter = std.mem.splitScalar(u8, params, ' ');
+
+        var idx: usize = 0;
+        while (iter.next()) |item| : (idx += 1)
+            input[idx] = try allocator.alloc.dupe(u8, item);
+
+        var vm_instance: vm.VM = .init(allocator.alloc, root, input, false);
 
         vm_instance.loadString(code) catch |err| {
             vm_instance.deinit();

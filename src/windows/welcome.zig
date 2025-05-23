@@ -122,7 +122,7 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
 
     self.* = WelcomeData{
         .shell = .{
-            .root = files.home,
+            .root = .home,
             .vm = null,
         },
         .check_box = .{

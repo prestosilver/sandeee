@@ -39,7 +39,7 @@ pub const PopupFilePick = struct {
             try allocator.alloc.dupe(u8, self.path);
         defer allocator.alloc.free(text);
 
-        const text_background = .{
+        const text_background = spr.Sprite{
             .texture = "ui",
             .data = .{
                 .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
@@ -47,7 +47,7 @@ pub const PopupFilePick = struct {
             },
         };
 
-        const text_foreground = .{
+        const text_foreground = spr.Sprite{
             .texture = "ui",
             .data = .{
                 .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
@@ -87,7 +87,9 @@ pub const PopupFilePick = struct {
         }
 
         if (keycode == c.GLFW_KEY_ENTER) {
-            const file = files.root.getFile(self.path) catch {
+            const root = try files.FolderLink.resolve(.root);
+
+            const file = root.getFile(self.path) catch {
                 if (self.err) |err|
                     allocator.alloc.free(err);
                 self.err = try allocator.alloc.dupe(u8, "File Not Found");

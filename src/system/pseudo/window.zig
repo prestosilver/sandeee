@@ -6,7 +6,6 @@ const winev = @import("../../events/window.zig");
 const events = @import("../../util/events.zig");
 const win = @import("../../drawers/window2d.zig");
 const tex = @import("../../util/texture.zig");
-const gfx = @import("gfx.zig");
 const rect = @import("../../math/rects.zig");
 const shd = @import("../../util/shader.zig");
 const vm = @import("../vm.zig");
@@ -29,7 +28,7 @@ pub fn readWinNew(vm_instance: ?*vm.VM) files.FileError![]const u8 {
     const result = try allocator.alloc.alloc(u8, 1);
     const window_data = try vmwin.init(vm_idx, shader);
 
-    const window = .{
+    const window = win.Window{
         .texture = "win",
         .data = .{
             .source = rect.Rectangle{ .w = 1, .h = 1 },
@@ -333,7 +332,7 @@ pub fn writeWinText(data: []const u8, _: ?*vm.VM) files.FileError!void {
 
     const aid = data[0];
 
-    const dst = .{
+    const dst = vecs.Vector2{
         .x = @as(f32, @floatFromInt(std.mem.bytesToValue(u16, data[1..3]))),
         .y = @as(f32, @floatFromInt(std.mem.bytesToValue(u16, data[3..5]))),
     };
@@ -362,7 +361,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/win/", .{}),
         .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),
         .contents = std.ArrayList(*files.File).init(allocator.alloc),
-        .parent = parent,
+        .parent = .link(parent),
         .protected = true,
     };
 
@@ -375,7 +374,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinNew,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -389,7 +388,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinOpen,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -403,7 +402,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinDestroy,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -417,7 +416,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinRender,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -431,7 +430,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinFlip,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -445,7 +444,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinTitle,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -459,7 +458,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinSize,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -473,7 +472,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinRules,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -487,7 +486,7 @@ pub fn setupFakeWin(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeWinText,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);

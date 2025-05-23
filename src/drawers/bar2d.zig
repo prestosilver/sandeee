@@ -122,8 +122,10 @@ pub const BarData = struct {
     }
 
     pub fn getApps() ![]const eln.ElnData {
-        const file = files.root.getFile("conf/bar.cfg") catch return &.{};
-        const apps = try files.root.getFolder("conf/apps");
+        const root = try files.FolderLink.resolve(.root);
+
+        const file = root.getFile("conf/bar.cfg") catch return &.{};
+        const apps = try root.getFolder("conf/apps");
         const list = try file.read(null);
 
         var iter = std.mem.splitScalar(u8, list, '\n');
@@ -189,7 +191,7 @@ pub const BarData = struct {
                 const item = rect.Rectangle{ .x = 36, .y = y, .w = 160, .h = 67 };
                 if (item.contains(pos)) {
                     added = true;
-                    self.shell.root = files.root;
+                    self.shell.root = .root;
                     try app.run(&self.shell, self.shader);
                 }
             }

@@ -103,8 +103,8 @@ pub const VMData = struct {
     }
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
-        vm.syslock.lock();
-        defer vm.syslock.unlock();
+        // vm.syslock.lock();
+        // defer vm.syslock.unlock();
 
         const rects = if (self.back) self.rects[1] else self.rects[0];
 
@@ -169,9 +169,7 @@ pub const VMData = struct {
     }
 
     pub fn move(self: *Self, x: f32, y: f32) !void {
-        const pos = .{ .x = x, .y = y };
-
-        self.mousepos = pos;
+        self.mousepos = .{ .x = x, .y = y };
     }
 
     pub fn deinit(self: *Self) void {

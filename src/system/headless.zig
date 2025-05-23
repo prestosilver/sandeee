@@ -28,7 +28,7 @@ pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.
 
     defer files.deinit();
 
-    var main_shell = shell.Shell{ .root = files.home, .headless = true };
+    var main_shell = shell.Shell{ .root = .home, .headless = true };
 
     const stdin_file = std.io.getStdIn();
     const stdin = stdin_file.reader();
@@ -97,7 +97,7 @@ pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.
                         try input_buffer.append(ch);
                     },
                     '\x7F' => {
-                        if (input_buffer.popOrNull()) |_|
+                        if (input_buffer.pop()) |_|
                             try stdout.print("\x1b[D \x1b[D", .{});
                     },
                     else => {

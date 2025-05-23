@@ -141,14 +141,14 @@ const EmailData = struct {
             const size = font.sizeText(.{
                 .text = "Login",
             });
-            const pos = .{
-                .x = self.bnds.x + @floor((self.bnds.w - size.x) * 0.5),
-                .y = center_y - 50,
-            };
+
             try font.draw(.{
                 .shader = font_shader,
                 .text = "Login",
-                .pos = pos,
+                .pos = .{
+                    .x = self.bnds.x + @floor((self.bnds.w - size.x) * 0.5),
+                    .y = center_y - 50,
+                },
             });
 
             return;
@@ -280,8 +280,6 @@ const EmailData = struct {
         }
 
         for (mail.EmailManager.instance.boxes, 0..) |box, idx| {
-            const pos = .{ .x = bnds.x + 2, .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)) };
-
             if (idx == self.box) {
                 const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
                 defer allocator.alloc.free(text);
@@ -289,13 +287,19 @@ const EmailData = struct {
                 try font.draw(.{
                     .shader = font_shader,
                     .text = text,
-                    .pos = pos,
+                    .pos = .{
+                        .x = bnds.x + 2,
+                        .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)),
+                    },
                 });
             } else {
                 try font.draw(.{
                     .shader = font_shader,
                     .text = box,
-                    .pos = pos,
+                    .pos = .{
+                        .x = bnds.x + 2,
+                        .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)),
+                    },
                 });
             }
         }
@@ -307,9 +311,11 @@ const EmailData = struct {
     }
 
     pub fn submitFile(self: *Self) !void {
+        const home = try files.FolderLink.resolve(.home);
+
         const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
         adds.* = .{
-            .path = try allocator.alloc.dupe(u8, files.home.name),
+            .path = try allocator.alloc.dupe(u8, home.name),
             .data = self,
             .submit = &submit,
         };
@@ -481,7 +487,7 @@ const EmailData = struct {
                         .SubmitRuns => |runs| blk: {
                             if (!std.mem.startsWith(u8, conts, "EEEp")) break :blk;
 
-                            var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
+                            var vm_instance: vm.VM = .init(allocator.alloc, .home, &.{}, true);
                             defer vm_instance.deinit();
 
                             if (runs.input) |input|
@@ -505,7 +511,7 @@ const EmailData = struct {
                                 if (library_idx + name_len < conts.len and std.mem.eql(u8, runs.libfn, conts[library_idx .. library_idx + name_len])) {
                                     const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
 
-                                    var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
+                                    var vm_instance: vm.VM = .init(allocator.alloc, .home, &.{}, true);
                                     defer vm_instance.deinit();
 
                                     try vm_instance.loadString(conts[start_idx .. start_idx + fnsize]);

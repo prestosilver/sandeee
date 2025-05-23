@@ -19,7 +19,7 @@ pub const GSDisks = struct {
     const Self = @This();
 
     const VERSION = std.fmt.comptimePrint("Boot" ++ font.EEE ++ " V_0.2.0\nFor Sand" ++ font.EEE ++ " " ++ options.VersionText, .{options.SandEEEVersion});
-    const TEXT_COLOR = .{ .r = 0.75, .g = 0.75, .b = 0.75 };
+    const TEXT_COLOR = cols.Color{ .r = 0.75, .g = 0.75, .b = 0.75 };
     const TOTAL_LINES = 10;
 
     const DISK_LIST = "0123456789ABCDEF";
@@ -35,7 +35,7 @@ pub const GSDisks = struct {
     remaining: f32 = 10,
     sel: usize = 0,
     auto: bool = true,
-    disks: std.ArrayList([]const u8) = undefined,
+    disks: std.ArrayList([]const u8) = std.ArrayList([]const u8).init(allocator.alloc),
     start: usize = 0,
 
     pub fn getDate(name: []const u8) i128 {
@@ -56,14 +56,13 @@ pub const GSDisks = struct {
         self.sel = 0;
         self.auto = true;
         self.remaining = 10;
-        self.disks = std.ArrayList([]const u8).init(allocator.alloc);
+        self.disks.clearAndFree();
 
         const dir = try std.fs.cwd().openDir("disks", .{
             .iterate = true,
         });
 
         var iter = dir.iterate();
-
         while (try iter.next()) |item| {
             const entry = try allocator.alloc.dupe(u8, item.name);
 
@@ -144,7 +143,7 @@ pub const GSDisks = struct {
     pub fn draw(self: *Self, _: vecs.Vector2) !void {
         var pos = vecs.Vector2{ .x = 100, .y = 100 };
 
-        var line: []u8 = undefined;
+        var line: []u8 = &.{};
 
         try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, .{ .x = pos.x, .y = pos.y });
         pos.y += self.logo_sprite.data.size.y;

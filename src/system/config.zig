@@ -58,7 +58,8 @@ pub const SettingManager = struct {
             try out.appendSlice("\"\n");
         }
 
-        try files.root.writeFile("/conf/system.cfg", out.items, null);
+        const root = try files.FolderLink.resolve(.root);
+        try root.writeFile("/conf/system.cfg", out.items, null);
     }
 
     pub fn deinit() void {

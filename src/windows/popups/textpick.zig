@@ -42,7 +42,7 @@ pub const PopupTextPick = struct {
             try allocator.alloc.dupe(u8, self.text);
         defer allocator.alloc.free(text);
 
-        const text_background = .{
+        const text_background = spr.Sprite{
             .texture = "ui",
             .data = .{
                 .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
@@ -50,7 +50,7 @@ pub const PopupTextPick = struct {
             },
         };
 
-        const text_foreground = .{
+        const text_foreground = spr.Sprite{
             .texture = "ui",
             .data = .{ .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 }, .size = .{
                 .x = bnds.w - 64,

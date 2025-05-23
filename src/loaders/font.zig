@@ -1,5 +1,4 @@
 const std = @import("std");
-const worker = @import("worker.zig");
 const shd = @import("../util/shader.zig");
 const font = @import("../util/font.zig");
 const c = @import("../c.zig");
@@ -9,27 +8,38 @@ const conf = @import("../system/config.zig");
 
 const log = @import("../util/log.zig").log;
 
-pub fn loadFontPath(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font)) !bool {
-    const path = conf.SettingManager.instance.get(self.indata.*) orelse
-        self.indata.*;
+const Self = @This();
 
-    log.debug("load font: {s}", .{path});
+const FontType = enum {
+    path,
+    mem,
+};
 
-    gfx.Context.makeCurrent();
-    defer gfx.Context.makeNotCurrent();
+data: union(FontType) {
+    path: []const u8,
+    mem: []const u8,
+},
+output: *font.Font,
 
-    self.out.* = try font.Font.init(path);
+pub fn load(self: *const Self) anyerror!void {
+    switch (self.data) {
+        .path => |p| {
+            const path = conf.SettingManager.instance.get(p) orelse p;
 
-    return true;
-}
+            log.debug("load font: {s}", .{path});
 
-pub fn loadFont(self: *worker.WorkerQueueEntry(*const []const u8, *font.Font)) !bool {
-    log.debug("load font in mem", .{});
+            gfx.Context.makeCurrent();
+            defer gfx.Context.makeNotCurrent();
 
-    gfx.Context.makeCurrent();
-    defer gfx.Context.makeNotCurrent();
+            self.output.* = try font.Font.init(path);
+        },
+        .mem => |m| {
+            log.debug("load font in mem", .{});
 
-    self.out.* = try font.Font.initMem(self.indata.*);
+            gfx.Context.makeCurrent();
+            defer gfx.Context.makeNotCurrent();
 
-    return true;
+            self.output.* = try font.Font.initMem(m);
+        },
+    }
 }

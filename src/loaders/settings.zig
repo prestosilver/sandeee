@@ -1,5 +1,4 @@
 const std = @import("std");
-const worker = @import("worker.zig");
 const shd = @import("../util/shader.zig");
 const font = @import("../util/font.zig");
 const c = @import("../c.zig");
@@ -9,12 +8,18 @@ const allocator = @import("../util/allocator.zig");
 
 const log = @import("../util/log.zig").log;
 
-pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)) !bool {
+const Self = @This();
+
+path: []const u8,
+
+pub fn load(self: *const Self) anyerror!void {
     log.debug("load settings", .{});
 
     conf.SettingManager.instance = .{};
 
-    const file = try files.root.getFile(self.indata.*);
+    const root = try files.FolderLink.resolve(.root);
+
+    const file = try root.getFile(self.path);
 
     const cont = try file.read(null);
     var iter = std.mem.splitScalar(u8, cont, '\n');
@@ -35,6 +40,4 @@ pub fn loadSettings(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)
     }
 
     try files.Folder.setupExtr();
-
-    return true;
 }

@@ -20,11 +20,12 @@ const system_events = @import("../events/system.zig");
 const events = @import("../util/events.zig");
 const gfx = @import("../util/graphics.zig");
 const va = @import("../util/vertArray.zig");
+const opener = @import("../system/opener.zig");
 
 pub const ExplorerData = struct {
     const ExplorerIcon = struct {
         name: []const u8,
-        icon: u8,
+        icon: *const sprite.Sprite,
     };
 
     const Self = @This();
@@ -41,44 +42,45 @@ pub const ExplorerData = struct {
     };
 
     shader: *shd.Shader,
-    icons: [4]sprite.Sprite,
+    icons: [2]sprite.Sprite,
+    selected_sprite: sprite.Sprite,
+    back_sprite: sprite.Sprite,
     text_box: [2]sprite.Sprite,
     menubar: sprite.Sprite,
     gray: sprite.Sprite,
     shell: shell.Shell,
 
     focused: ?u64 = null,
+
     selected: ?usize = null,
     last_action: ?ExplorerMouseAction = null,
     icon_data: []const ExplorerIcon = &.{},
     bnds: rect.Rectangle = undefined,
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
-        const sub_folders = try self.shell.root.getFolders();
-        const sub_files = try self.shell.root.getFiles();
-        defer allocator.alloc.free(sub_folders);
-        defer allocator.alloc.free(sub_files);
+        const shell_root = try self.shell.root.resolve();
 
-        const result = try allocator.alloc.alloc(ExplorerIcon, sub_folders.len + sub_files.len);
-        var idx: usize = 0;
+        //const result = try allocator.alloc.alloc(ExplorerIcon, sub_folders.len + sub_files.len);
+        var result: std.ArrayList(ExplorerIcon) = .init(allocator.alloc);
+        defer result.deinit();
 
-        for (sub_folders) |folder| {
-            result[idx] = ExplorerIcon{
-                .name = folder.name[self.shell.root.name.len .. folder.name.len - 1],
-                .icon = 2,
-            };
-            idx += 1;
+        var sub_folder = try shell_root.getFolders();
+        while (sub_folder) |folder| : (sub_folder = folder.next_sibling) {
+            try result.append(ExplorerIcon{
+                .name = folder.name[shell_root.name.len .. folder.name.len - 1],
+                .icon = &self.icons[1],
+            });
         }
 
-        for (sub_files) |file| {
-            result[idx] = ExplorerIcon{
-                .name = file.name[self.shell.root.name.len..],
-                .icon = 1,
-            };
-            idx += 1;
+        var sub_file = try shell_root.getFiles();
+        while (sub_file) |file| : (sub_file = file.next_sibling) {
+            try result.append(ExplorerIcon{
+                .name = file.name[shell_root.name.len..],
+                .icon = &self.icons[0],
+            });
         }
 
-        return result;
+        return try allocator.alloc.dupe(ExplorerIcon, result.items);
     }
 
     pub const ErrorData = struct {
@@ -101,7 +103,9 @@ pub const ExplorerData = struct {
 
         self.bnds = bnds.*;
 
-        const title = try std.fmt.allocPrint(allocator.alloc, "{s}", .{self.shell.root.name});
+        const shell_root = try self.shell.root.resolve();
+
+        const title = try std.fmt.allocPrint(allocator.alloc, "{s}", .{shell_root.name});
         defer allocator.alloc.free(title);
         try props.setTitle(title);
 
@@ -141,11 +145,11 @@ pub const ExplorerData = struct {
                         .maxlines = 1,
                     });
 
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[icon.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, icon.icon, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                     if (self.selected) |selected| {
                         if (selected == idx) {
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[3], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.selected_sprite, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
                         }
                     }
                 }
@@ -159,9 +163,9 @@ pub const ExplorerData = struct {
                             .DoubleLeft => {
                                 self.last_action = null;
 
-                                const new_path = self.shell.root.getFolder(icon.name) catch null;
+                                const new_path = shell_root.getFolder(icon.name) catch null;
                                 if (new_path) |path| {
-                                    self.shell.root = path;
+                                    self.shell.root = .link(path);
                                     try self.refresh();
                                     self.selected = null;
 
@@ -192,7 +196,7 @@ pub const ExplorerData = struct {
                                             .popup = .{
                                                 .texture = "win",
                                                 .data = .{
-                                                    .title = "File Picker",
+                                                    .title = "Error",
                                                     .source = .{ .w = 1, .h = 1 },
                                                     .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
                                                     .contents = popups.PopupData.PopupContents.init(adds),
@@ -229,7 +233,7 @@ pub const ExplorerData = struct {
         batch.SpriteBatch.instance.scissor = .{ .x = bnds.x + 42, .y = bnds.y + 4, .w = bnds.w - 4 - 34, .h = 28 };
         try font.draw(.{
             .shader = font_shader,
-            .text = self.shell.root.name,
+            .text = shell_root.name,
             .pos = .{
                 .x = bnds.x + 42,
                 .y = bnds.y + 8,
@@ -239,7 +243,7 @@ pub const ExplorerData = struct {
 
         batch.SpriteBatch.instance.scissor = tmp;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
+        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back_sprite, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
     }
 
     pub fn deinit(self: *Self) void {
@@ -252,9 +256,11 @@ pub const ExplorerData = struct {
         if (self.shell.vm != null) return;
         if (btn == null) return;
 
+        const shell_root = try self.shell.root.resolve();
+
         if (mousepos.y < 36) {
             if ((rect.Rectangle{ .w = 28, .h = 28 }).contains(mousepos)) {
-                self.shell.root = self.shell.root.parent;
+                self.shell.root = shell_root.parent orelse .root;
                 try self.refresh();
                 self.selected = null;
             }
@@ -297,7 +303,9 @@ pub const ExplorerData = struct {
         pub fn yes(data: *align(@alignOf(Self)) const anyopaque) anyerror!void {
             const self = @as(*const Self, @ptrCast(data));
 
-            self.shell.root.removeFile(self.icon_data[self.selected.?].name) catch |err| {
+            const shell_root = try self.shell.root.resolve();
+
+            shell_root.removeFile(self.icon_data[self.selected.?].name) catch |err| {
                 switch (err) {
                     error.FileNotFound => return,
                     else => return err,
@@ -312,9 +320,11 @@ pub const ExplorerData = struct {
         if (self.shell.vm != null) return;
         if (!down) return;
 
+        const shell_root = try self.shell.root.resolve();
+
         switch (keycode) {
             c.GLFW_KEY_DELETE => {
-                if (self.selected != null and (self.shell.root.getFile(self.icon_data[self.selected.?].name) catch null) != null) {
+                if (self.selected != null and (shell_root.getFile(self.icon_data[self.selected.?].name) catch null) != null) {
                     const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
                     adds.* = .{
                         .data = self,
@@ -337,7 +347,7 @@ pub const ExplorerData = struct {
                 }
             },
             c.GLFW_KEY_BACKSPACE => {
-                self.shell.root = self.shell.root.parent;
+                self.shell.root = shell_root.parent orelse .root;
                 try self.refresh();
                 self.selected = null;
             },
@@ -381,15 +391,29 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
             },
         },
         .icons = undefined,
+        .back_sprite = .{
+            .texture = "icons",
+            .data = .{
+                .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32, .y = 32 },
+            },
+        },
+        .selected_sprite = .{
+            .texture = "big_icons",
+            .data = .{
+                .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 64, .y = 64 },
+            },
+        },
         .shader = shader,
         .shell = .{
-            .root = files.home,
+            .root = .home,
             .vm = null,
         },
     };
 
     for (self.icons, 0..) |_, idx| {
-        const i = @as(f32, @floatFromInt(idx)) - 1;
+        const i = @as(f32, @floatFromInt(idx));
 
         self.icons[idx] = .{
             .texture = "big_icons",
@@ -399,14 +423,6 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
             },
         };
     }
-
-    self.icons[0] = .{
-        .texture = "icons",
-        .data = .{
-            .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-            .size = .{ .x = 32, .y = 32 },
-        },
-    };
 
     try self.refresh();
 

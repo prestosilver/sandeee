@@ -133,9 +133,11 @@ fn sysCreate(self: *vm.VM) VmError!void {
     if (path.data().* != .string) return error.StringMissing;
 
     if (path.data().string.len > 0 and path.data().string[0] == '/') {
-        _ = try files.root.newFile(path.data().string);
+        const root = try files.FolderLink.resolve(.root);
+        try root.newFile(path.data().string);
     } else {
-        _ = try self.root.newFile(path.data().string);
+        const root = try self.root.resolve();
+        try root.newFile(path.data().string);
     }
 }
 
@@ -144,7 +146,8 @@ fn sysOpen(self: *vm.VM) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    const stream = try streams.FileStream.open(self.root, path.data().string, self);
+    const root = try self.root.resolve();
+    const stream = try streams.FileStream.open(root, path.data().string, self);
 
     try self.streams.append(stream);
     try self.pushStackI(self.streams.items.len - 1);
@@ -216,7 +219,7 @@ fn sysClose(self: *vm.VM) VmError!void {
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
 
     if (fs) |stream| {
-        stream.close();
+        try stream.close();
         self.streams.items[@as(usize, @intCast(idx.data().value))] = null;
     } else {
         return error.InvalidStream;
@@ -395,14 +398,16 @@ fn sysSize(self: *vm.VM) VmError!void {
     if (path.data().string.len == 0) return error.FileMissing;
 
     if (path.data().string[0] == '/') {
-        const file = try files.root.getFile(path.data().string);
+        const root = try files.FolderLink.resolve(.root);
+        const file = try root.getFile(path.data().string);
 
         try self.pushStackI(try file.size());
 
         return;
     }
 
-    const file = try self.root.getFile(path.data().string);
+    const root = try self.root.resolve();
+    const file = try root.getFile(path.data().string);
 
     try self.pushStackI(try file.size());
 }
@@ -423,7 +428,8 @@ fn sysSpawn(self: *vm.VM) VmError!void {
 
     if (exec.data().* != .string) return error.StringMissing;
 
-    const file = try self.root.getFile(exec.data().string);
+    const root = try self.root.resolve();
+    const file = try root.getFile(exec.data().string);
     const conts = try file.read(null);
 
     const handle = try vm_manager.VMManager.instance.spawn(self.root, exec.data().string, conts[4..]);

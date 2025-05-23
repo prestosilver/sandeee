@@ -9,6 +9,7 @@ const wins = @import("../windows/all.zig");
 const win = @import("../drawers/window2d.zig");
 const tex = @import("../util/texture.zig");
 const shd = @import("../util/shader.zig");
+const eln = @import("../util/eln.zig");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const opener = @import("opener.zig");
@@ -41,35 +42,38 @@ const TOTAL_BAR_SPRITES: f32 = 13;
 
 pub const Shell = struct {
     headless: bool = false,
-    root: *files.Folder,
     vm: ?vm_manager.VMManager.VMHandle = null,
+
+    root: files.FolderLink,
 
     const ParamType = *std.mem.SplitIterator(u8, .scalar);
 
     pub fn getPrompt(self: *Shell) []const u8 {
-        if (self.root.name.len == 0)
-            return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{self.root.name}) catch "> ";
-        return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{self.root.name[0 .. self.root.name.len - 1]}) catch "> ";
+        const root = self.root.resolve() catch return "> ";
+        if (root.name.len == 0) return "> ";
+        if (root.name.len <= 1) return "> ";
+        return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{root.name[0 .. root.name.len - 1]}) catch "> ";
     }
 
-    fn runFileInFolder(self: *Shell, folder: *files.Folder, cmd: []const u8, param: ParamType) !Result {
+    fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param: ParamType) !Result {
         var result_data = std.ArrayList(u8).init(allocator.alloc);
         defer result_data.deinit();
 
+        const folder = try root.resolve();
         const file = folder.getFile(cmd) catch |err| {
             if (std.mem.endsWith(u8, cmd, ".eep")) return err;
 
             const cmdeep = try std.fmt.allocPrint(allocator.alloc, "{s}.eep", .{cmd});
             defer allocator.alloc.free(cmdeep);
 
-            return self.runFileInFolder(folder, cmdeep, param);
+            return self.runFileInFolder(root, cmdeep, param);
         };
 
         var line = std.ArrayList(u8).init(allocator.alloc);
         defer line.deinit();
 
         if ((try file.read(null)).len > 3 and std.mem.eql(u8, (try file.read(null))[0..4], ASM_HEADER)) {
-            return try self.runAsm(folder, cmd, param);
+            return try self.runAsm(root, cmd, param);
         }
 
         if (std.mem.endsWith(u8, file.name, ".esh")) {
@@ -99,26 +103,18 @@ pub const Shell = struct {
     }
 
     fn runFile(self: *Shell, cmd: []const u8, param: ParamType) !Result {
-        return self.runFileInFolder(files.exec, cmd, param) catch |err| {
-            switch (err) {
-                error.FileNotFound, error.InvalidFileType => {
-                    return self.runFileInFolder(self.root, cmd, param) catch |subErr| {
-                        switch (subErr) {
-                            error.FileNotFound, error.InvalidFileType => {
-                                const file = try self.root.getFile(cmd);
-                                const opens = try opener.openFile(cmd);
-                                const params = try std.fmt.allocPrint(allocator.alloc, "{s} {s}", .{ opens, file.name });
-                                defer allocator.alloc.free(params);
-
-                                return self.run(params);
-                            },
-                            else => return subErr,
-                        }
-                    };
-                },
-                else => return err,
+        inline for ([_]files.FolderLink{ self.root, .exec }) |dir| {
+            if (self.runFileInFolder(dir, cmd, param)) |result| {
+                return result;
+            } else |err| {
+                switch (err) {
+                    error.FileNotFound => {},
+                    else => return err,
+                }
             }
-        };
+        }
+
+        return error.CommandNotFound;
     }
 
     fn todo(name: []const u8) std.meta.Tuple(&.{ []const u8, ShellCommand }) {
@@ -160,11 +156,13 @@ pub const Shell = struct {
         }
     }
 
-    fn runAsm(self: *Shell, folder: *files.Folder, cmd: []const u8, params: ParamType) !Result {
-        for (folder.contents.items, 0..) |_, idx| {
-            const rootlen = folder.name.len;
-            const item = folder.contents.items[idx];
+    fn runAsm(self: *Shell, root: files.FolderLink, cmd: []const u8, params: ParamType) !Result {
+        const folder = try root.resolve();
+        const rootlen = folder.name.len;
 
+        var file = folder.files;
+
+        while (file) |item| : (file = item.next_sibling) {
             if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
                 const cont = try item.read(null);
                 if (cont.len < 4 or !std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
@@ -224,14 +222,14 @@ pub const Shell = struct {
     };
 
     pub const window_commands = .{
-        .{ "cmd", .{
+        .{ "cmd", ShellCommand{
             .gui = true,
             .name = "cmd",
             .help = "cmd [:help]",
             .desc = "Opens the command prompt",
             .func = struct {
                 pub fn cmd(_: *Shell, param: ParamType) !Result {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
                         .data = .{
                             .source = rect.Rectangle{ .w = 1, .h = 1 },
@@ -250,14 +248,14 @@ pub const Shell = struct {
                 }
             }.cmd,
         } },
-        .{ "edit", .{
+        .{ "edit", ShellCommand{
             .gui = true,
             .name = "edit",
             .help = "edit [:help] [file]",
             .desc = "Opens the text editor",
             .func = struct {
                 pub fn edit(shell: *Shell, param: ParamType) !Result {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
                         .data = .{
                             .source = rect.Rectangle{ .w = 1, .h = 1 },
@@ -267,10 +265,12 @@ pub const Shell = struct {
                     };
                     if (param.next()) |file_name| {
                         const ed_self: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
-                        if (file_name[0] == '/')
-                            ed_self.file = try files.root.getFile(file_name)
+                        const root_link: files.FolderLink = if (std.mem.startsWith(u8, file_name, "/"))
+                            .root
                         else
-                            ed_self.file = try shell.root.getFile(file_name);
+                            shell.root;
+                        const root = try root_link.resolve();
+                        ed_self.file = try root.getFile(file_name);
                         if (ed_self.file) |file| {
                             const file_conts = try file.read(null);
                             const lines = std.mem.count(u8, file_conts, "\n") + 1;
@@ -295,14 +295,14 @@ pub const Shell = struct {
                 }
             }.edit,
         } },
-        .{ "web", .{
+        .{ "web", ShellCommand{
             .gui = true,
             .name = "web",
             .help = "web [:help] [url]",
             .desc = "Opens the web browser",
             .func = struct {
                 fn web(_: *Shell, param: ParamType) !Result {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
                         .data = win.WindowData{
                             .source = rect.Rectangle{ .w = 1, .h = 1 },
@@ -320,16 +320,16 @@ pub const Shell = struct {
                 }
             }.web,
         } },
-        .{ "mail", .{
+        .{ "mail", ShellCommand{
             .gui = true,
             .name = "mail",
             .help = "mail [:help]",
             .desc = "Opens the email browser",
             .func = struct {
                 fn mail(_: *Shell, _: ParamType) !Result {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
-                        .data = .{
+                        .data = win.WindowData{
                             .contents = try wins.email.init(shader),
                             .active = true,
                         },
@@ -339,14 +339,14 @@ pub const Shell = struct {
                 }
             }.mail,
         } },
-        .{ "task", .{
+        .{ "task", ShellCommand{
             .gui = true,
             .name = "task",
             .help = "task [:help]",
             .desc = "Opens the task manager",
             .func = struct {
                 fn task(_: *Shell, _: ParamType) !Result {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
                         .data = win.WindowData{
                             .contents = try wins.tasks.init(shader),
@@ -358,14 +358,14 @@ pub const Shell = struct {
                 }
             }.task,
         } },
-        .{ "set", .{
+        .{ "set", ShellCommand{
             .gui = true,
             .name = "set",
             .help = "set [:help]",
             .desc = "Opens the setting manager",
             .func = struct {
                 fn settings(_: *Shell, _: ParamType) !Result {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
                         .data = win.WindowData{
                             .contents = try wins.settings.init(shader),
@@ -377,16 +377,16 @@ pub const Shell = struct {
                 }
             }.settings,
         } },
-        .{ "launch", .{
+        .{ "launch", ShellCommand{
             .gui = true,
             .name = "launch",
             .help = "launch [:help]",
             .desc = "Opens the application launcher",
             .func = struct {
                 fn launch(_: *Shell, _: ParamType) !Result {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
-                        .data = win.WindowData{
+                        .data = .{
                             .contents = try wins.apps.init(shader),
                             .active = true,
                         },
@@ -396,7 +396,7 @@ pub const Shell = struct {
                 }
             }.launch,
         } },
-        .{ "logout", .{
+        .{ "logout", ShellCommand{
             .gui = true,
             .name = "logout",
             .help = "logout [:help]",
@@ -446,16 +446,16 @@ pub const Shell = struct {
                 }
             }.logout,
         } },
-        .{ "files", .{
+        .{ "files", ShellCommand{
             .gui = true,
             .name = "files",
             .help = "files [:help]",
             .desc = "Opens the file manager",
             .func = struct {
                 fn files(_: *Shell, _: ParamType) !Result {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
-                        .data = win.WindowData{
+                        .data = .{
                             .contents = try wins.explorer.init(shader),
                             .active = true,
                         },
@@ -468,7 +468,7 @@ pub const Shell = struct {
     };
 
     pub const shell_commands = .{
-        .{ "help", .{
+        .{ "help", ShellCommand{
             .name = "help",
             .desc = "Prints a help message",
             .help = "help [:help]",
@@ -504,26 +504,25 @@ pub const Shell = struct {
                 }
             }.help,
         } },
-        .{ "ls", .{
+        .{ "ls", ShellCommand{
             .name = "ls",
             .desc = "Lists files and folders in a directory",
             .help = "ls [:help] [path]",
             .func = struct {
                 pub fn ls(shell: *Shell, params: ParamType) !Result {
+                    const root = try shell.root.resolve();
                     if (params.next()) |path| {
-                        const folder = try shell.root.getFolder(path);
+                        const folder = try root.getFolder(path);
                         var result_data = std.ArrayList(u8).init(allocator.alloc);
                         defer result_data.deinit();
                         const rootlen = folder.name.len;
-                        const sub_folders = try folder.getFolders();
-                        defer allocator.alloc.free(sub_folders);
-                        for (sub_folders) |item| {
+                        var sub_folder = try folder.getFolders();
+                        while (sub_folder) |item| : (sub_folder = item.next_sibling) {
                             try result_data.appendSlice(item.name[rootlen..]);
                             try result_data.append(' ');
                         }
-                        const contents = try folder.getFiles();
-                        defer allocator.alloc.free(contents);
-                        for (contents) |item| {
+                        var sub_file = try folder.getFiles();
+                        while (sub_file) |item| : (sub_file = item.next_sibling) {
                             try result_data.appendSlice(item.name[rootlen..]);
                             try result_data.append(' ');
                         }
@@ -531,19 +530,17 @@ pub const Shell = struct {
                             .data = try allocator.alloc.dupe(u8, result_data.items),
                         };
                     } else {
-                        const folder = shell.root;
+                        const folder = try shell.root.resolve();
                         var result_data = std.ArrayList(u8).init(allocator.alloc);
                         defer result_data.deinit();
                         const rootlen = folder.name.len;
-                        const sub_folders = try folder.getFolders();
-                        defer allocator.alloc.free(sub_folders);
-                        for (sub_folders) |item| {
+                        var sub_folder = try folder.getFiles();
+                        while (sub_folder) |item| : (sub_folder = item.next_sibling) {
                             try result_data.appendSlice(item.name[rootlen..]);
                             try result_data.append(' ');
                         }
-                        const contents = try folder.getFiles();
-                        defer allocator.alloc.free(contents);
-                        for (contents) |item| {
+                        var sub_file = try folder.getFiles();
+                        while (sub_file) |item| : (sub_file = item.next_sibling) {
                             try result_data.appendSlice(item.name[rootlen..]);
                             try result_data.append(' ');
                         }
@@ -554,28 +551,46 @@ pub const Shell = struct {
                 }
             }.ls,
         } },
-        .{ "cd", .{
+        .{ "eln", ShellCommand{
+            .name = "eln",
+            .help = "eln [:help] file",
+            .desc = "Opens a eln file",
+            .func = struct {
+                pub fn cmd(shell: *Shell, param: ParamType) !Result {
+                    if (param.next()) |path| {
+                        const root = try shell.root.resolve();
+                        const file = try root.getFile(path);
+                        const data = try eln.ElnData.parse(file);
+                        try data.run(shell, shader);
+                        return .{};
+                    }
+                    return error.MissingParameter;
+                }
+            }.cmd,
+        } },
+        .{ "cd", ShellCommand{
             .name = "cd",
             .desc = "Changes the current directory",
             .help = "cd [:help] [path]",
             .func = struct {
                 pub fn cd(shell: *Shell, params: ParamType) !Result {
                     if (params.next()) |child| {
-                        if (child[0] == '/') {
-                            const folder = try files.root.getFolder(child[1..]);
-                            shell.root = folder;
-                            return .{};
-                        }
-                        const folder = try shell.root.getFolder(child);
-                        shell.root = folder;
+                        const root_link: files.FolderLink = if (std.mem.startsWith(u8, child, "/"))
+                            .root
+                        else
+                            shell.root;
+                        const root = try root_link.resolve();
+                        const folder = try root.getFolder(child[1..]);
+                        shell.root = .link(folder);
+                        return .{};
+                    } else {
+                        shell.root = .home;
                         return .{};
                     }
-                    shell.root = files.home;
-                    return .{};
                 }
             }.cd,
         } },
-        .{ "stop", .{
+        .{ "stop", ShellCommand{
             .name = "stop",
             .desc = "Stops a background vm process",
             .help = "stop [:help] id",
@@ -590,79 +605,93 @@ pub const Shell = struct {
                             .data = try allocator.alloc.dupe(u8, "Stopped"),
                         };
                     }
-                    return .{
-                        .data = try allocator.alloc.dupe(u8, "stop requires an id"),
-                    };
+                    return error.MissingParameter;
                 }
             }.stop,
         } },
-        .{ "new", .{
-            .name = "new",
-            .desc = "Creates a new file",
-            .help = "new [:help] path",
-            .func = struct {
-                fn new(self: *Shell, param: ParamType) !Result {
-                    if (param.next()) |path| {
-                        try self.root.newFile(path);
+        .{
+            "new", ShellCommand{
+                .name = "new",
+                .desc = "Creates a new file",
+                .help = "new [:help] path",
+                .func = struct {
+                    fn new(self: *Shell, param: ParamType) !Result {
+                        if (param.next()) |path| {
+                            // TODO: /root
+                            const root = try self.root.resolve();
+                            try root.newFile(path);
+                            return .{
+                                .data = try allocator.alloc.dupe(u8, "Created"),
+                            };
+                        }
+                        return error.MissingParameter;
+                    }
+                }.new,
+            },
+        },
+        .{
+            "dnew", ShellCommand{
+                .name = "dnew",
+                .desc = "Creates a new directory",
+                .help = "dnew [:help] path",
+                .func = struct {
+                    fn dnew(self: *Shell, param: ParamType) !Result {
+                        if (param.next()) |path| {
+                            // TODO: /root
+                            const root = try self.root.resolve();
+                            try root.newFolder(path);
+                            return .{
+                                .data = try allocator.alloc.dupe(u8, "Created"),
+                            };
+                        }
+                        return error.MissingParameter;
+                    }
+                }.dnew,
+            },
+        },
+        .{
+            "rem", ShellCommand{
+                .name = "rem",
+                .desc = "Deletes a file",
+                .help = "rem [:help] paths+",
+                .func = struct {
+                    fn rem(self: *Shell, params: ParamType) !Result {
+                        if (params.peek() == null)
+                            return error.MissingParameter;
+                        // TODO: /root
+                        const root = try self.root.resolve();
+                        while (params.next()) |path| {
+                            try root.removeFile(path);
+                        }
                         return .{
-                            .data = try allocator.alloc.dupe(u8, "Created"),
+                            .data = try allocator.alloc.dupe(u8, "Removed"),
                         };
                     }
-                    return error.MissingParameter;
-                }
-            }.new,
-        } },
-        .{ "dnew", .{
-            .name = "dnew",
-            .desc = "Creates a new directory",
-            .help = "dnew [:help] path",
-            .func = struct {
-                fn dnew(self: *Shell, param: ParamType) !Result {
-                    if (param.next()) |path| {
-                        try self.root.newFolder(path);
+                }.rem,
+            },
+        },
+        .{
+            "drem", ShellCommand{
+                .name = "drem",
+                .desc = "Deletes a directory",
+                .help = "drem [:help] paths+",
+                .func = struct {
+                    fn drem(self: *Shell, params: ParamType) !Result {
+                        if (params.peek() == null)
+                            return error.MissingParameter;
+                        // TODO: /root
+                        const root = try self.root.resolve();
+                        while (params.next()) |path| {
+                            try root.removeFolder(path);
+                        }
                         return .{
-                            .data = try allocator.alloc.dupe(u8, "Created"),
+                            .data = try allocator.alloc.dupe(u8, "Removed"),
                         };
                     }
-                    return error.MissingParameter;
-                }
-            }.dnew,
-        } },
-        .{ "rem", .{
-            .name = "rem",
-            .desc = "Deletes a file",
-            .help = "rem [:help] path",
-            .func = struct {
-                fn rem(self: *Shell, params: ParamType) !Result {
-                    if (params.peek() == null)
-                        return error.MissingParameter;
-                    while (params.next()) |path| {
-                        try self.root.removeFile(path);
-                    }
-                    return .{
-                        .data = try allocator.alloc.dupe(u8, "Removed"),
-                    };
-                }
-            }.rem,
-        } },
-        .{ "drem", .{
-            .name = "drem",
-            .desc = "Deletes a directory",
-            .help = "drem [:help] path",
-            .func = struct {
-                fn drem(self: *Shell, params: ParamType) !Result {
-                    if (params.peek() == null)
-                        return error.MissingParameter;
-                    while (params.next()) |path| {
-                        try self.root.removeFolder(path);
-                    }
-                    return .{
-                        .data = try allocator.alloc.dupe(u8, "Removed"),
-                    };
-                }
-            }.drem,
-        } },
-        .{ "cpy", .{
+                }.drem,
+            },
+        },
+        .{ "cpy", ShellCommand{
             .name = "cpy",
             .desc = "Copies a file",
             .help = "cpy [:help] src dst",
@@ -670,16 +699,18 @@ pub const Shell = struct {
                 fn cpy(self: *Shell, params: ParamType) !Result {
                     const input = params.next() orelse return error.MissingParameter;
                     const output = params.next() orelse return error.MissingParameter;
-                    const root = if (input.len != 0 and input[0] == '/')
-                        files.root
+                    const root_link: files.FolderLink = if (input.len != 0 and input[0] == '/')
+                        .root
                     else
                         self.root;
-                    const oroot = if (output.len != 0 and output[0] == '/')
-                        files.root
+                    const output_root_link: files.FolderLink = if (output.len != 0 and output[0] == '/')
+                        .root
                     else
                         self.root;
+                    const root = try root_link.resolve();
+                    const output_root = try output_root_link.resolve();
                     const file = try root.getFile(input);
-                    const targ = try oroot.getFolder(output);
+                    const targ = try output_root.getFolder(output);
                     try file.copyTo(targ);
                     return .{
                         .data = try allocator.alloc.dupe(u8, "Copied"),
@@ -688,7 +719,7 @@ pub const Shell = struct {
             }.cpy,
         } },
         todo("dcpy"),
-        .{ "bg", .{
+        .{ "bg", ShellCommand{
             .name = "bg",
             .desc = "Runs a command in the background",
             .help = "bg [:help] command",
@@ -708,7 +739,7 @@ pub const Shell = struct {
                 }
             }.bg,
         } },
-        .{ "cls", .{
+        .{ "cls", ShellCommand{
             .name = "cls",
             .desc = "Clears the console",
             .help = "cls [:help]",
@@ -722,7 +753,7 @@ pub const Shell = struct {
                 }
             }.clear,
         } },
-        .{ "exit", .{
+        .{ "exit", ShellCommand{
             .name = "exit",
             .desc = "Exits the console",
             .help = "exit [:help]",

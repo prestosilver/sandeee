@@ -93,7 +93,8 @@ pub const Font = struct {
     };
 
     pub fn init(path: []const u8) !Font {
-        const file = try files.root.getFile(path);
+        const folder = try files.FolderLink.resolve(.root);
+        const file = try folder.getFile(path);
 
         return initMem(try file.read(null));
     }
@@ -325,13 +326,11 @@ pub const Font = struct {
             origin.*.* = pos;
         }
 
-        const entry = .{
+        try batch.SpriteBatch.instance.addEntry(&.{
             .texture = self.tex,
             .verts = vert_array,
             .shader = params.shader.*,
-        };
-
-        try batch.SpriteBatch.instance.addEntry(&entry);
+        });
     }
 
     pub const sizeParams = struct {

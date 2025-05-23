@@ -765,13 +765,13 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const vm_artifact = vm_dependency.artifact("eeevm");
+    const vm_artifact = vm_dependency.artifact("eee");
     const vm_install_a = b.addInstallArtifact(vm_artifact, .{ .dest_dir = .{ .override = .{ .custom = "bin/lib" } } });
 
     b.getInstallStep().dependOn(&vm_install_a.step);
 
     exe.addLibraryPath(b.path("zig-out/bin/lib/"));
-    exe.linkSystemLibrary("eeevm");
+    exe.linkSystemLibrary("eee");
 
     const exe_inst = b.addInstallArtifact(exe, .{});
 

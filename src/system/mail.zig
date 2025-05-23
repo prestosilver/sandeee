@@ -366,8 +366,8 @@ pub const EmailManager = struct {
         }
 
         const conts = try allocator.alloc.alloc(u8, start.len + 256 * self.boxes.len);
+        defer allocator.alloc.free(conts);
         @memset(conts, 0);
-
         @memcpy(conts[0..start.len], start);
 
         for (self.emails.items) |*email| {
@@ -375,10 +375,10 @@ pub const EmailManager = struct {
             if (email.is_complete) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 1;
         }
 
-        _ = try files.root.newFile(path);
-        try files.root.writeFile(path, conts, null);
+        const root = try files.FolderLink.resolve(.root);
 
-        allocator.alloc.free(conts);
+        _ = try root.newFile(path);
+        try root.writeFile(path, conts, null);
     }
 
     pub fn loadStateFile(self: *EmailManager, path: []const u8) !void {
@@ -481,11 +481,12 @@ pub const EmailManager = struct {
 
     pub fn loadFromFolder(self: *EmailManager, path: []const u8) !void {
         const folder = try files.root.getFolder(path);
-        var file_list = std.ArrayList(*const files.File).init(allocator.alloc);
+        var file_list = std.ArrayList(*files.File).init(allocator.alloc);
         defer file_list.deinit();
+
         try folder.getFilesRec(&file_list);
 
-        self.boxes = try allocator.alloc.alloc([]u8, file_list.items.len + 1);
+        self.boxes = try allocator.alloc.alloc([]const u8, file_list.items.len + 1);
 
         self.boxes[self.boxes.len - 1] = "outbox";
 

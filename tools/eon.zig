@@ -1591,7 +1591,7 @@ pub fn compileEon(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayLi
 
     allocator = b.allocator;
 
-    var tokens = try lexFile(in.getPath3(b, null).sub_path);
+    var tokens = try lexFile(in.getPath(b));
     defer tokens.deinit();
 
     var prog = try parseProgram(&fn_prefix, tokens.items);
@@ -1612,7 +1612,7 @@ pub fn compileEonLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.Arra
 
     allocator = b.allocator;
 
-    var tokens = try lexFile(in.getPath3(b, null).sub_path);
+    var tokens = try lexFile(in.getPath(b));
     defer tokens.deinit();
 
     var prog = try parseProgram(&fn_prefix, tokens.items);

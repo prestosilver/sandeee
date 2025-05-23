@@ -28,22 +28,21 @@ pub const DiskStep = struct {
 
         var root = try std.fs.cwd().openDir(self.input, .{ .access_sub_paths = true, .iterate = true });
         var walker = try root.walk(self.alloc);
+        const files_root = try self.alloc.create(files.Folder);
 
-        files.root = try self.alloc.create(files.Folder);
-
-        files.root.* = .{
-            .parent = undefined,
+        files_root.* = .{
+            .parent = null,
             .name = files.ROOT_NAME,
-            .subfolders = std.ArrayList(*files.Folder).init(self.alloc),
-            .contents = std.ArrayList(*files.File).init(self.alloc),
         };
+
+        files.named_paths.set(.root, files_root);
 
         var count: usize = 0;
 
         while (try walker.next()) |file| {
             switch (file.kind) {
                 .directory => {
-                    try files.root.newFolder(file.path);
+                    try files_root.newFolder(file.path);
                 },
                 else => {},
             }
@@ -54,10 +53,10 @@ pub const DiskStep = struct {
         while (try walker.next()) |file| {
             switch (file.kind) {
                 .file => {
-                    try files.root.newFile(file.path);
+                    try files_root.newFile(file.path);
                     const contents = try root.readFileAlloc(self.alloc, file.path, 100000000);
 
-                    try files.root.writeFile(file.path, contents, null);
+                    try files_root.writeFile(file.path, contents, null);
                     count += 1;
                 },
                 else => {},

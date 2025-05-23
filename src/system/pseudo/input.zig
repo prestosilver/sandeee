@@ -98,7 +98,7 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/inp/", .{}),
         .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),
         .contents = std.ArrayList(*files.File).init(allocator.alloc),
-        .parent = parent,
+        .parent = .link(parent),
         .protected = true,
     };
 
@@ -111,7 +111,7 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeInputChar,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -125,7 +125,7 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeInputWin,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);
@@ -139,7 +139,7 @@ pub fn setupFakeInp(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeInputMouse,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);

@@ -5,7 +5,6 @@ const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const cols = @import("../math/colors.zig");
-const worker = @import("../loaders/worker.zig");
 const fm = @import("../util/files.zig");
 const audio = @import("../util/audio.zig");
 const conf = @import("../system/config.zig");
@@ -21,6 +20,8 @@ const system_events = @import("../events/system.zig");
 const mail = @import("../system/mail.zig");
 const allocator = @import("../util/allocator.zig");
 const builtin = @import("builtin");
+
+const Loader = @import("../loaders/loader.zig");
 
 pub const GSLoading = struct {
     const Self = @This();
@@ -48,7 +49,7 @@ pub const GSLoading = struct {
     const tdelay: u64 = if (builtin.mode == .Debug) 0 else 15;
 
     load_progress: f32 = 0,
-    login_snd: audio.Sound = undefined,
+    login_snd: audio.Sound = .{},
     logout_snd: *audio.Sound,
     message_snd: *audio.Sound,
     done: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
@@ -62,9 +63,7 @@ pub const GSLoading = struct {
     shader: *shd.Shader,
     disk: *?[]u8,
 
-    loading_thread: std.Thread = undefined,
-
-    loader: *worker.WorkerContext,
+    loading_thread: ?std.Thread = null,
 
     fn loadThread(self: *Self) void {
         self.loading(self);
@@ -74,49 +73,63 @@ pub const GSLoading = struct {
         self.done.store(false, .monotonic);
 
         self.load_sprite.data.size.x = 0;
+        self.loading_thread = null;
 
-        // delay
-        try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
+        var loader = try Loader.init(Loader.Group{});
 
         // files
-        try self.loader.enqueue(*?[]u8, *const u8, self.disk, &zero, worker.files.loadFiles);
-        defer allocator.alloc.free(self.disk.*.?);
+        var files = try Loader.init(Loader.Files{
+            .disk = self.disk.*.?,
+        });
 
         // settings
-        try self.loader.enqueue(*const []const u8, *const u8, &settingspath, &zero, worker.settings.loadSettings);
+        var settings = try Loader.init(Loader.Settings{
+            .path = settingspath,
+        });
 
-        // textures
-        for (&TEXTURE_NAMES) |*texture_entry| {
-            try self.loader.enqueue(*const []const u8, *const []const u8, &texture_entry[0], &texture_entry[1], worker.texture.loadTexture);
+        try settings.require(&files);
 
-            // delay
-            try self.loader.enqueue(*const u64, *const u8, &tdelay, &zero, worker.delay.loadDelay);
+        try loader.require(&files);
+        try loader.require(&settings);
+
+        var textures = try Loader.init(Loader.Group{});
+        var texture_loaders: [TEXTURE_NAMES.len]Loader = undefined;
+
+        for (TEXTURE_NAMES, 0..) |texture_entry, i| {
+            texture_loaders[i] = try Loader.init(Loader.Texture{
+                .path = texture_entry[0],
+                .name = texture_entry[1],
+            });
+
+            try textures.require(&texture_loaders[i]);
         }
 
-        // delay
-        try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
+        try textures.require(&settings);
+        try loader.require(&textures);
 
-        // sounds
-        try self.loader.enqueue(*const []const u8, *audio.Sound, &loginpath, &self.login_snd, worker.sound.loadSound);
-        try self.loader.enqueue(*const []const u8, *audio.Sound, &logoutpath, self.logout_snd, worker.sound.loadSound);
-        try self.loader.enqueue(*const []const u8, *audio.Sound, &messagepath, self.message_snd, worker.sound.loadSound);
+        var face = try Loader.init(Loader.Font{
+            .data = .{
+                .path = fontpath,
+            },
+            .output = self.face,
+        });
 
-        // delay
-        try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
+        try face.require(&settings);
+        try loader.require(&face);
 
-        // mail
-        try self.loader.enqueue(*const []const u8, *const u8, &mailpath, &zero, worker.mail.loadMail);
+        //// sounds
+        //try self.loader.enqueue(*const []const u8, *audio.Sound, &loginpath, &self.login_snd, worker.sound.loadSound);
+        //try self.loader.enqueue(*const []const u8, *audio.Sound, &logoutpath, self.logout_snd, worker.sound.loadSound);
+        //try self.loader.enqueue(*const []const u8, *audio.Sound, &messagepath, self.message_snd, worker.sound.loadSound);
 
-        // delay
-        try self.loader.enqueue(*const u64, *const u8, &delay, &zero, worker.delay.loadDelay);
-
-        // fonts
-        try self.loader.enqueue(*const []const u8, *font.Font, &fontpath, self.face, worker.font.loadFontPath);
+        //// mail
+        //try self.loader.enqueue(*const []const u8, *const u8, &mailpath, &zero, worker.mail.loadMail);
 
         self.load_progress = 0;
 
         self.loading_thread = try std.Thread.spawn(.{}, Self.loadThread, .{self});
-        try self.loader.run(&self.load_progress);
+
+        try loader.load(&self.load_progress, 0.0, 1.0);
 
         // setup some pointers
         pseudo.win.shader = self.shader;
@@ -125,13 +138,14 @@ pub const GSLoading = struct {
             .texture = "icons",
             .data = .{
                 .source = .{ .x = 0.0 / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = undefined,
+                .size = .{},
             },
         };
     }
 
     pub fn deinit(self: *Self) void {
-        self.loading_thread.join();
+        if (self.loading_thread) |thread|
+            thread.join();
     }
 
     pub fn update(self: *Self, _: f32) !void {

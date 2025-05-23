@@ -19,8 +19,6 @@ pub const EXIT_NAME = "_quit";
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
 
-pub var syslock = std.Thread.Mutex{};
-
 pub const VM = struct {
     pub const VMError = error{
         BadFileName,
@@ -90,9 +88,9 @@ pub const VM = struct {
 
     streams: std.ArrayList(?*streams.FileStream),
 
-    out: std.ArrayList(u8) = undefined,
+    out: std.ArrayList(u8),
     args: [][]const u8,
-    root: *files.Folder,
+    root: files.FolderLink,
     heap: []HeapEntry,
 
     name: []const u8,
@@ -101,27 +99,19 @@ pub const VM = struct {
 
     rnd: std.Random.DefaultPrng,
 
-    pub fn init(alloc: std.mem.Allocator, root: *files.Folder, args: []const u8, comptime checker: bool) VMError!VM {
-        var tmp_args = try alloc.alloc([]u8, std.mem.count(u8, args, " ") + 1);
-
-        var split_iter = std.mem.splitScalar(u8, args, ' ');
-        var idx: usize = 0;
-
-        while (split_iter.next()) |item| : (idx += 1)
-            tmp_args[idx] = alloc.dupe(u8, item) catch return error.OutOfMemory;
-
-        return VM{
+    pub fn init(alloc: std.mem.Allocator, root: files.FolderLink, args: [][]const u8, comptime checker: bool) VM {
+        return .{
             .allocator = alloc,
-            .streams = std.ArrayList(?*streams.FileStream).init(alloc),
-            .functions = std.StringHashMap(VMFunc).init(alloc),
-            .misc_data = std.StringHashMap([]const u8).init(alloc),
-            .out = std.ArrayList(u8).init(alloc),
-            .input = std.ArrayList(u8).init(alloc),
+            .streams = .init(alloc),
+            .functions = .init(alloc),
+            .misc_data = .init(alloc),
+            .out = .init(alloc),
+            .input = .init(alloc),
             .heap = &.{},
-            .args = tmp_args,
+            .args = args,
             .root = root,
             .checker = checker,
-            .name = alloc.dupe(u8, tmp_args[0]) catch return error.OutOfMemory,
+            .name = args[0],
             .rnd = std.Random.DefaultPrng.init(0),
         };
     }
@@ -268,7 +258,7 @@ pub const VM = struct {
 
         for (self.streams.items) |stream| {
             if (stream) |strm|
-                strm.close();
+                strm.deinit();
         }
 
         for (self.args) |*item|
@@ -285,7 +275,6 @@ pub const VM = struct {
         while (misc_iter.next()) |entry|
             self.allocator.free(entry.value_ptr.*);
 
-        self.allocator.free(self.name);
         self.allocator.free(self.args);
         self.allocator.free(self.heap);
         self.functions.deinit();
@@ -436,9 +425,6 @@ pub const VM = struct {
                 }
             },
             .Sys => {
-                //syslock.lock();
-                //defer syslock.unlock();
-
                 if (op.value) |index| {
                     // log.debug("syscall {}", .{op});
 

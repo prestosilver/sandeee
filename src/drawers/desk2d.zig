@@ -69,15 +69,15 @@ pub const DeskData = struct {
         var position = vecs.Vector2{};
         var idx: usize = 0;
 
-        const sub_folders = try files.home.getFolders();
-        defer allocator.alloc.free(sub_folders);
+        const home = try files.FolderLink.resolve(.home);
 
-        for (sub_folders) |folder| {
+        var sub_folder = try home.getFolders();
+        while (sub_folder) |folder| : (sub_folder = folder.next_sibling) {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             if ((rect.Rectangle{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
-                    const window = .{
+                    const window = win.Window{
                         .texture = "win",
                         .data = .{
                             .source = rect.Rectangle{ .w = 1, .h = 1 },
@@ -88,7 +88,7 @@ pub const DeskData = struct {
 
                     const explorer_self: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
 
-                    explorer_self.shell.root = folder;
+                    explorer_self.shell.root = .link(folder);
 
                     try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
 
@@ -104,10 +104,8 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        const sub_files = try files.home.getFiles();
-        defer allocator.alloc.free(sub_files);
-
-        for (sub_files) |file| {
+        var sub_file = try home.getFiles();
+        while (sub_file) |file| : (sub_file = file.next_sibling) {
             if (!checkIconSkip(file.name)) continue;
 
             if ((rect.Rectangle{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
@@ -167,10 +165,10 @@ pub const DeskData = struct {
         var position = vecs.Vector2{};
         var idx: usize = 0;
 
-        const sub_folders = try files.home.getFolders();
-        defer allocator.alloc.free(sub_folders);
+        const home = try files.FolderLink.resolve(.home);
 
-        for (sub_folders) |folder| {
+        var sub_folder = try home.getFolders();
+        while (sub_folder) |folder| : (sub_folder = folder.next_sibling) {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             try result.appendQuad(
@@ -193,10 +191,8 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        const sub_files = try files.home.getFiles();
-        defer allocator.alloc.free(sub_files);
-
-        for (sub_files) |file| {
+        var sub_file = try home.getFiles();
+        while (sub_file) |file| : (sub_file = file.next_sibling) {
             if (!checkIconSkip(file.name)) continue;
 
             try result.appendQuad(
@@ -252,10 +248,11 @@ pub const DeskData = struct {
 
         var position = vecs.Vector2{};
 
-        const sub_folders = try files.home.getFolders();
-        defer allocator.alloc.free(sub_folders);
+        const home = try files.FolderLink.resolve(.home);
 
-        for (sub_folders) |folder| {
+        var sub_folder = try home.getFolders();
+        while (sub_folder) |folder| : (sub_folder = folder.next_sibling) {
+            if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             try addIconText(position, folder.name[0 .. folder.name.len - 1], font_shader, font, text_color);
@@ -263,10 +260,8 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        const sub_files = try files.home.getFiles();
-        defer allocator.alloc.free(sub_files);
-
-        for (sub_files) |file| {
+        var sub_file = try home.getFiles();
+        while (sub_file) |file| : (sub_file = file.next_sibling) {
             if (!checkIconSkip(file.name)) continue;
 
             try addIconText(position, file.name, font_shader, font, text_color);

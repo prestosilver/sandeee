@@ -1,17 +1,20 @@
 const std = @import("std");
-const worker = @import("worker.zig");
 const font = @import("../util/font.zig");
 const mail = @import("../system/mail.zig");
 const c = @import("../c.zig");
 
 const log = @import("../util/log.zig").log;
 
-pub fn loadMail(self: *worker.WorkerQueueEntry(*const []const u8, *const u8)) !bool {
+const Self = @This();
+
+folder: []const u8,
+
+pub fn load(self: *Self) anyerror!void {
     log.debug("load mail", .{});
 
     try mail.EmailManager.init();
 
-    try mail.EmailManager.instance.loadFromFolder(self.indata.*);
+    try mail.EmailManager.instance.loadFromFolder(self.folder);
 
     mail.EmailManager.instance.loadStateFile("/_priv/emails.bin") catch {};
 

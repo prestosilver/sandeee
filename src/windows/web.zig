@@ -86,7 +86,9 @@ pub const WebData = struct {
                 }
             },
             .Local => {
-                return try allocator.alloc.dupe(u8, try (try files.root.getFile(path)).read(null));
+                const root = try files.FolderLink.resolve(.root);
+                const file = try root.getFile(path);
+                return try allocator.alloc.dupe(u8, try file.read(null));
             },
             .Web => {
                 // const result = self.http.fetch() catch |err| {
@@ -497,9 +499,11 @@ pub const WebData = struct {
         const output = try allocator.alloc.create([]const u8);
         output.* = output_data;
 
+        const home = try files.FolderLink.resolve(.home);
+
         const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
         adds.* = .{
-            .text = try std.mem.concat(allocator.alloc, u8, &.{ files.home.name, name }),
+            .text = try std.mem.concat(allocator.alloc, u8, &.{ home.name, name }),
             .data = @as(*anyopaque, @ptrCast(output)),
             .submit = &submit,
             .prompt = try allocator.alloc.dupe(u8, "Pick a path to save the file"),
@@ -521,9 +525,10 @@ pub const WebData = struct {
     pub fn submit(file: []const u8, data: *anyopaque) !void {
         const conts: *[]const u8 = @ptrCast(@alignCast(data));
 
-        _ = try files.root.newFile(file);
-        const target = try files.root.getFile(file);
+        const root = try files.FolderLink.resolve(.root);
+        try root.newFile(file);
 
+        const target = try root.getFile(file);
         try target.write(conts.*, null);
 
         allocator.alloc.free(conts.*);
@@ -817,7 +822,7 @@ pub const WebData = struct {
     pub fn back(self: *Self, force: bool) !void {
         if (self.loading and !force) return;
 
-        if (self.hist.popOrNull()) |last| {
+        if (self.hist.pop()) |last| {
             allocator.alloc.free(self.path);
 
             self.path = last;

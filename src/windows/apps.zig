@@ -52,21 +52,20 @@ pub const LauncherData = struct {
     max_sprites: u8 = 0,
 
     pub fn getIcons(self: *Self) ![]const eln.ElnData {
-        const folder = files.root.getFolder("conf/apps") catch
-            return &.{};
+        const root = try files.FolderLink.resolve(.root);
+        const folder = root.getFolder("conf/apps") catch return &.{};
 
-        const sub_files = try folder.getFiles();
-        defer allocator.alloc.free(sub_files);
+        var result: std.ArrayList(eln.ElnData) = .init(allocator.alloc);
+        defer result.deinit();
 
-        const result = try allocator.alloc.alloc(eln.ElnData, sub_files.len);
-
-        for (sub_files, 0..) |file, idx| {
-            result[idx] = try eln.ElnData.parse(file);
+        var sub_file = try folder.getFiles();
+        while (sub_file) |file| : (sub_file = file.next_sibling) {
+            try result.append(try eln.ElnData.parse(file));
         }
 
-        self.max_sprites = @max(self.max_sprites, @as(u8, @intCast(sub_files.len)));
+        self.max_sprites = @max(self.max_sprites, @as(u8, @intCast(result.items.len)));
 
-        return result;
+        return try allocator.alloc.dupe(eln.ElnData, result.items);
     }
 
     pub fn refresh(self: *Self) !void {
@@ -122,19 +121,22 @@ pub const LauncherData = struct {
                 });
 
                 const icon_spr =
-                    if (icon.icon) |icn| sprite.Sprite{
-                    .texture = &.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) },
-                    .data = .{
-                        .source = .{ .w = 1, .h = 1 },
-                        .size = .{ .x = 64, .y = 64 },
-                    },
-                } else sprite.Sprite{
-                    .texture = "error",
-                    .data = .{
-                        .source = .{ .w = 1, .h = 1 },
-                        .size = .{ .x = 64, .y = 64 },
-                    },
-                };
+                    if (icon.icon) |icn|
+                        sprite.Sprite{
+                            .texture = &.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) },
+                            .data = .{
+                                .source = .{ .w = 1, .h = 1 },
+                                .size = .{ .x = 64, .y = 64 },
+                            },
+                        }
+                    else
+                        sprite.Sprite{
+                            .texture = "error",
+                            .data = .{
+                                .source = .{ .w = 1, .h = 1 },
+                                .size = .{ .x = 64, .y = 64 },
+                            },
+                        };
 
                 try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
@@ -261,7 +263,7 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
         },
         .shader = shader,
         .shell = .{
-            .root = files.home,
+            .root = .home,
             .vm = null,
         },
     };

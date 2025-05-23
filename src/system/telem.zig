@@ -36,7 +36,7 @@ pub const Telem = packed struct {
             instance.version.minor != options.SandEEEVersion.minor or
             instance.version.patch != options.SandEEEVersion.patch)
         {
-            const update_window = .{
+            const update_window: win.Window = .{
                 .texture = "win",
                 .data = .{
                     .source = .{ .w = 1, .h = 1 },
@@ -53,7 +53,9 @@ pub const Telem = packed struct {
     pub fn load() !void {
         defer checkVersion();
 
-        if (files.root.getFile(PATH) catch null) |file| {
+        const root = try files.FolderLink.resolve(.root);
+
+        if (root.getFile(PATH) catch null) |file| {
             const conts = try file.read(null);
 
             if (conts.len != @sizeOf(Telem)) return;
@@ -74,8 +76,10 @@ pub const Telem = packed struct {
     pub fn save() !void {
         const conts = std.mem.asBytes(&instance);
 
-        _ = try files.root.newFile(PATH);
-        try files.root.writeFile(PATH, conts, null);
+        const root = try files.FolderLink.resolve(.root);
+
+        _ = try root.newFile(PATH);
+        try root.writeFile(PATH, conts, null);
     }
 
     pub fn getDebugPassword() ![]u8 {

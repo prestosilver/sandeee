@@ -41,13 +41,13 @@ pub const GSInstall = struct {
     load_sprite: sp.Sprite,
     select_sound: *audio.Sound,
 
-    setting_values: [SETTINGS.len][MAX_VALUE_LEN]u8 = undefined,
+    setting_values: [SETTINGS.len][MAX_VALUE_LEN]u8 = .{[_]u8{0} ** MAX_VALUE_LEN} ** SETTINGS.len,
     setting_lengths: [SETTINGS.len]u8 = [_]u8{0} ** SETTINGS.len,
     setting_id: usize = 0,
 
     timer: f32 = 1,
     status: Status = .Naming,
-    disk_name: std.ArrayList(u8) = undefined,
+    disk_name: std.ArrayList(u8) = .init(allocator.alloc),
     offset: f32 = 0,
 
     pub fn setup(self: *Self) !void {
@@ -59,7 +59,6 @@ pub const GSInstall = struct {
         self.offset = 0;
         self.timer = 1;
         self.status = .Naming;
-        self.disk_name = std.ArrayList(u8).init(allocator.alloc);
         self.load_sprite.data.color.b = 0;
     }
 
@@ -220,7 +219,7 @@ pub const GSInstall = struct {
     pub fn removeChar(self: *Self) !void {
         switch (self.status) {
             .Naming => {
-                _ = self.disk_name.popOrNull();
+                _ = self.disk_name.pop();
             },
             .Settings => {
                 if (self.setting_lengths[self.setting_id] > 0) {
@@ -291,6 +290,6 @@ pub const GSInstall = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        self.disk_name.deinit();
+        self.disk_name.clearAndFree();
     }
 };

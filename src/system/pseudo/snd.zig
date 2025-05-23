@@ -6,7 +6,6 @@ const winev = @import("../../events/window.zig");
 const events = @import("../../util/events.zig");
 const win = @import("../../drawers/window2d.zig");
 const tex = @import("../../util/texture.zig");
-const gfx = @import("gfx.zig");
 const rect = @import("../../math/rects.zig");
 const shd = @import("../../util/shader.zig");
 const audio = @import("../../util/audio.zig");
@@ -35,7 +34,7 @@ pub fn setupFakeSnd(parent: *files.Folder) !*files.Folder {
         .name = try std.fmt.allocPrint(allocator.alloc, "/fake/snd/", .{}),
         .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),
         .contents = std.ArrayList(*files.File).init(allocator.alloc),
-        .parent = parent,
+        .parent = .link(parent),
         .protected = true,
     };
 
@@ -48,7 +47,7 @@ pub fn setupFakeSnd(parent: *files.Folder) !*files.Folder {
                 .pseudo_write = writeSndPlay,
             },
         },
-        .parent = undefined,
+        .parent = .link(result),
     };
 
     try result.contents.append(file);

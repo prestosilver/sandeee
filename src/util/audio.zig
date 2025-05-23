@@ -9,19 +9,19 @@ pub const AudioErrors = error{
 pub var instance: AudioManager = undefined;
 
 pub const Sound = struct {
-    buffer: ?c.ALuint,
+    buffer: ?c.ALuint = null,
 
     pub fn init(data: []const u8) Sound {
         if (data.len == 0) return Sound{ .buffer = null };
 
-        var result = Sound{
-            .buffer = 0,
+        var buffer: c.ALuint = 0;
+
+        c.alGenBuffers(1, &buffer);
+        c.alBufferData(buffer, c.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
+
+        return .{
+            .buffer = buffer,
         };
-
-        c.alGenBuffers(1, &result.buffer.?);
-        c.alBufferData(result.buffer.?, c.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
-
-        return result;
     }
 
     pub fn deinit(self: *const Sound) void {

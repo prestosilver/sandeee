@@ -8,7 +8,7 @@ const conf = @import("../system/config.zig");
 
 const log = @import("../util/log.zig").log;
 
-pub fn loadSound(self: *worker.WorkerQueueEntry(*const []const u8, *audio.Sound)) !bool {
+pub fn load(self: *worker.WorkerQueueEntry(*const []const u8, *audio.Sound)) anyerror!void {
     const path = conf.SettingManager.instance.get(self.indata.*) orelse
         self.indata.*;
 

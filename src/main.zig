@@ -35,7 +35,7 @@ const window_events = @import("events/window.zig");
 const system_events = @import("events/system.zig");
 
 // loader
-const worker = @import("loaders/worker.zig");
+const Loader = @import("loaders/loader.zig");
 
 // op math
 const vecs = @import("math/vecs.zig");
@@ -135,10 +135,6 @@ var state_refresh_rate: f64 = 0.5;
 var game_states: std.EnumArray(system_events.State, states.GameState) = undefined;
 var current_state: system_events.State = .Disks;
 
-// create loader
-var loader_queue: std.DoublyLinkedList(worker.WorkerQueueEntry(*void, *void)) = undefined;
-var loader = worker.WorkerContext{ .queue = &loader_queue };
-
 // create some fonts
 var bios_font: font.Font = undefined;
 var main_font: font.Font = undefined;
@@ -222,9 +218,8 @@ pub fn blit() !void {
         });
     }
 
-    if (crt_enable) {
+    if (crt_enable)
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebuffer_name);
-    }
 
     gfx.Context.clear();
 
@@ -617,21 +612,42 @@ pub fn mainErr() anyerror!void {
     var blip_sound = audio.Sound.init(BLIP_SOUND_DATA);
     var select_sound = audio.Sound.init(SELECT_SOUND_DATA);
 
-    // create the loaders queue
-    loader_queue = .{};
+    var loader = try Loader.init(Loader.Group{});
 
-    // shaders
-    try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &SHADER_FILES, &shader, worker.shader.loadShader);
-    try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &FONT_SHADER_FILES, &font_shader, worker.shader.loadShader);
-    try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &CRT_SHADER_FILES, &crt_shader, worker.shader.loadShader);
-    try loader.enqueue(*const [2]shd.ShaderFile, *shd.Shader, &CLEAR_SHADER_FILES, &clear_shader, worker.shader.loadShader);
+    // create the loaders queue
+    var base_shader_loader = try Loader.init(Loader.Shader{
+        .files = SHADER_FILES,
+        .out = &shader,
+    });
+    var font_shader_loader = try Loader.init(Loader.Shader{
+        .files = FONT_SHADER_FILES,
+        .out = &font_shader,
+    });
+    var crt_shader_loader = try Loader.init(Loader.Shader{
+        .files = CRT_SHADER_FILES,
+        .out = &crt_shader,
+    });
+    var clear_shader_loader = try Loader.init(Loader.Shader{
+        .files = CLEAR_SHADER_FILES,
+        .out = &clear_shader,
+    });
+
+    try loader.require(&base_shader_loader);
+    try loader.require(&font_shader_loader);
+    try loader.require(&crt_shader_loader);
+    try loader.require(&clear_shader_loader);
 
     // fonts
-    try loader.enqueue(*const []const u8, *font.Font, &BIOS_FONT_DATA, &bios_font, worker.font.loadFont);
+    var font_loader = try Loader.init(Loader.Font{
+        .data = .{ .mem = BIOS_FONT_DATA },
+        .output = &bios_font,
+    });
+
+    try loader.require(&font_loader);
 
     // load bios
     var prog: f32 = 0;
-    try loader.run(&prog);
+    try loader.load(&prog, 0.0, 1.0);
 
     // start setup states
     gfx.Context.makeCurrent();
@@ -736,7 +752,6 @@ pub fn mainErr() anyerror!void {
         },
         .shader = &shader,
         .disk = &disk,
-        .loader = &loader,
     };
 
     // windowed state
@@ -745,6 +760,9 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .clear_shader = &clear_shader,
         .face = &main_font,
+        .shell = .{
+            .root = .root,
+        },
         .bar_logo_sprite = .{
             .texture = "barlogo",
             .data = .{

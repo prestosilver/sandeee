@@ -19,13 +19,17 @@ pub const FileStream = struct {
     pub fn open(root: *files.Folder, path: []const u8, vm_instance: ?*vm.VM) StreamError!*FileStream {
         if (path.len == 0) return error.FileMissing;
 
-        const folder = if (path[0] == '/') files.root else root;
+        const folder = if (std.mem.startsWith(u8, path, "/"))
+            try (files.FolderLink.resolve(.root))
+        else
+            root;
+
         const file = try folder.getFile(path);
 
         const result = try allocator.alloc.create(FileStream);
         const conts = try file.read(vm_instance);
 
-        defer if (file.data != .Disk) allocator.alloc.free(conts);
+        defer if (file.data != .disk) allocator.alloc.free(conts);
 
         result.* = .{
             .path = try allocator.alloc.dupe(u8, file.name),
@@ -62,15 +66,24 @@ pub const FileStream = struct {
     }
 
     pub fn flush(self: *FileStream) StreamError!void {
+        const root = try files.FolderLink.resolve(.root);
+
         if (self.updated)
-            try files.root.writeFile(self.path, self.contents, self.vm_instance);
+            try root.writeFile(self.path, self.contents, self.vm_instance);
         self.updated = false;
     }
 
-    pub fn close(self: *FileStream) void {
-        self.flush() catch {};
+    pub fn deinit(self: *FileStream) void {
+        if (self.updated)
+            std.log.warn("Deinit stream before flush", .{});
+
         allocator.alloc.free(self.contents);
         allocator.alloc.free(self.path);
         allocator.alloc.destroy(self);
+    }
+
+    pub fn close(self: *FileStream) !void {
+        try self.flush();
+        self.deinit();
     }
 };
