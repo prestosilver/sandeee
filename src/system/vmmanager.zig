@@ -119,7 +119,7 @@ pub const VMManager = struct {
         self.vm_index = self.vm_index +% 1;
 
         const count = std.mem.count(u8, params, " ");
-        const input = try allocator.alloc.alloc([]const u8, count);
+        const input = try allocator.alloc.alloc([]const u8, count + 1);
 
         var iter = std.mem.splitScalar(u8, params, ' ');
 

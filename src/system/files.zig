@@ -186,6 +186,9 @@ pub const File = struct {
     }
 
     pub fn deinit(self: *File) void {
+        if (self.next_sibling) |sibling|
+            sibling.deinit();
+
         allocator.alloc.free(self.name);
         switch (self.data) {
             .os => |os_file| {
@@ -273,15 +276,20 @@ pub const Folder = struct {
         inline for (items) |item| {
             switch (item.data) {
                 .folder => |subitems| {
-                    const new = try fromFolderItemArray(item.name, subitems);
+                    const fullname = try std.mem.concat(allocator.alloc, u8, &.{ name, item.name, "/" });
+                    defer allocator.alloc.free(fullname);
+
+                    const new = try fromFolderItemArray(fullname, subitems);
                     new.next_sibling = root.folders;
                     new.parent = .link(root);
                     root.folders = new;
                 },
                 .file => |subfile| {
+                    const fullname = try std.mem.concat(allocator.alloc, u8, &.{ name, item.name });
+
                     const new = try allocator.alloc.create(File);
                     new.* = .{
-                        .name = try allocator.alloc.dupe(u8, item.name),
+                        .name = fullname,
                         .next_sibling = root.files,
                         .data = subfile,
                         .parent = .link(root),
@@ -313,7 +321,12 @@ pub const Folder = struct {
             const namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
             defer allocator.alloc.free(namebuffer);
             if (try reader.read(namebuffer) != namesize) return error.EndOfStream;
-            try root.newFolder(namebuffer);
+            root.newFolder(namebuffer) catch |e| {
+                switch (e) {
+                    error.FolderExists => {},
+                    else => return e,
+                }
+            };
         }
 
         const file_count = try reader.readInt(u32, .big);
@@ -511,10 +524,9 @@ pub const Folder = struct {
 
         try writer.writeInt(u32, @intCast(files.items.len), .big);
         for (files.items) |subfile| {
-            if (subfile.data != .disk) continue;
-
             try writer.writeInt(u32, @intCast(subfile.name.len), .big);
             if (subfile.name.len != try writer.write(subfile.name)) return error.OutOfMemory;
+
             try writer.writeInt(u32, @intCast(subfile.data.disk.len), .big);
             if (subfile.data.disk.len != try writer.write(subfile.data.disk)) return error.OutOfMemory;
         }
@@ -623,8 +635,10 @@ pub const Folder = struct {
         if (self.ext != null) return;
 
         var file_node = self.files;
-        while (file_node) |file| : (file_node = file.next_sibling)
-            try files.append(file);
+        while (file_node) |file| : (file_node = file.next_sibling) {
+            if (file.data == .disk)
+                try files.append(file);
+        }
 
         if (self.folders) |folder|
             try folder.getFilesRec(files);
@@ -655,6 +669,7 @@ pub const Folder = struct {
             try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ folder.name, name[li + 1 ..] })
         else
             try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ folder.name, name });
+        defer allocator.alloc.free(fullname);
 
         var file_node = self.files;
         while (file_node) |subfile| : (file_node = subfile.next_sibling) {
@@ -664,7 +679,7 @@ pub const Folder = struct {
 
         const file = try allocator.alloc.create(File);
         file.* = .{
-            .name = fullname,
+            .name = try allocator.alloc.dupe(u8, fullname),
             .parent = .link(folder),
             .data = .{
                 .disk = &.{},
@@ -1030,5 +1045,5 @@ pub fn deinit() void {
     if (FolderLink.resolve(.root)) |root|
         root.deinit()
     else |_|
-        log.warn("root is null on deinit", .{});
+        std.log.warn("root is null on deinit", .{});
 }

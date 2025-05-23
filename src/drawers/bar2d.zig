@@ -32,7 +32,7 @@ pub const BarData = struct {
     shell: shell.Shell,
     shader: *shd.Shader,
 
-    pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, windows: *std.ArrayList(win.Window)) !void {
+    pub fn drawName(self: *BarData, font_shader: *shd.Shader, shader: *shd.Shader, logoSprite: *spr.Sprite, font: *fnt.Font, windows: *std.ArrayList(*win.Window)) !void {
         var pos = rect.Rectangle{ .x = self.height, .y = self.screendims.y - self.height + 12, .w = self.screendims.x + self.height, .h = self.height };
 
         try font.draw(.{
@@ -146,7 +146,7 @@ pub const BarData = struct {
         return result;
     }
 
-    pub fn doClick(self: *BarData, windows: *std.ArrayList(win.Window), shader: *shd.Shader, pos: vecs.Vector2) !bool {
+    pub fn doClick(self: *BarData, windows: *std.ArrayList(*win.Window), shader: *shd.Shader, pos: vecs.Vector2) !bool {
         _ = shader;
         const btn = rect.Rectangle{ .y = self.screendims.y - self.height, .w = 3 * self.height, .h = self.height };
 
@@ -155,7 +155,7 @@ pub const BarData = struct {
         if (self.screendims.y - self.height <= pos.y) {
             var new_top: ?u32 = null;
 
-            for (windows.items, 0..) |*window, idx| {
+            for (windows.items, 0..) |window, idx| {
                 const offset = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
 
                 const button_bounds = rect.Rectangle{ .x = offset, .y = self.screendims.y - self.height, .w = 4 * self.height, .h = self.height };

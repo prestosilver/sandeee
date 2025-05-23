@@ -45,9 +45,9 @@ pub const GSWindowed = struct {
     down: bool = false,
 
     mousepos: vecs.Vector2 = .{},
-    windows: std.ArrayList(win.Window) = .init(allocator.alloc),
-    notifs: std.ArrayList(notifications.Notification) = .init(allocator.alloc),
-    popups: std.ArrayList(popups.Popup) = .init(allocator.alloc),
+    windows: std.ArrayList(*win.Window) = .init(allocator.alloc),
+    notifs: std.ArrayList(*notifications.Notification) = .init(allocator.alloc),
+    popups: std.ArrayList(*popups.Popup) = .init(allocator.alloc),
 
     open_window: vecs.Vector2 = .{},
 
@@ -71,7 +71,12 @@ pub const GSWindowed = struct {
     pub var global_self: *Self = undefined;
 
     fn spawnPopup(event: window_events.EventCreatePopup) !void {
-        try global_self.popups.append(event.popup);
+        const popup = try allocator.alloc.create(popups.Popup);
+        errdefer allocator.alloc.destroy(popup);
+
+        popup.* = event.popup;
+
+        try global_self.popups.append(popup);
     }
 
     fn closePopup(event: window_events.EventClosePopup) !void {
@@ -84,12 +89,13 @@ pub const GSWindowed = struct {
         if (idx) |remove_idx| {
             var tmp_popup = global_self.popups.orderedRemove(remove_idx);
             tmp_popup.data.contents.deinit();
+            allocator.alloc.destroy(tmp_popup);
         }
     }
 
     fn spawnWindow(event: window_events.EventCreateWindow) !void {
         const dragging_idx = if (global_self.dragging_window) |dragging| blk: {
-            for (global_self.windows.items, 0..) |*window, idx| {
+            for (global_self.windows.items, 0..) |window, idx| {
                 if (window == dragging) break :blk idx;
             }
             break :blk null;
@@ -104,36 +110,43 @@ pub const GSWindowed = struct {
                 target = global_self.open_window;
         }
 
-        try global_self.windows.append(event.window);
+        const window = try allocator.alloc.create(win.Window);
+        errdefer allocator.alloc.destroy(window);
+        window.* = event.window;
+
+        try global_self.windows.append(window);
 
         if (event.center) {
             target.x = (gfx.Context.instance.size.x - event.window.data.pos.w) / 2;
             target.y = (gfx.Context.instance.size.y - event.window.data.pos.h) / 2;
         }
 
-        global_self.windows.items[global_self.windows.items.len - 1].data.pos.x = target.x;
-        global_self.windows.items[global_self.windows.items.len - 1].data.pos.y = target.y;
-        global_self.windows.items[global_self.windows.items.len - 1].data.idx = global_self.windows.items.len;
+        window.data.pos.x = target.x;
+        window.data.pos.y = target.y;
+        window.data.idx = global_self.windows.items.len;
 
         global_self.open_window.x = target.x + 25;
         global_self.open_window.y = target.y + 25;
 
-        if (dragging_idx) |idx| global_self.dragging_window = &global_self.windows.items[idx];
+        if (dragging_idx) |idx| global_self.dragging_window = global_self.windows.items[idx];
 
         try global_self.windows.items[global_self.windows.items.len - 1].data.refresh();
     }
 
     pub fn notification(event: window_events.EventNotification) !void {
-        try global_self.notifs.append(
-            .{
-                .texture = "ui",
-                .data = .{
-                    .title = event.title,
-                    .text = event.text,
-                    .icon = event.icon,
-                },
+        const notif = try allocator.alloc.create(notifications.Notification);
+        errdefer allocator.alloc.destroy(notif);
+
+        notif.* = .{
+            .texture = "ui",
+            .data = .{
+                .title = event.title,
+                .text = event.text,
+                .icon = event.icon,
             },
-        );
+        };
+
+        try global_self.notifs.append(notif);
     }
 
     pub fn debugSet(event: system_events.EventDebugSet) !void {
@@ -264,13 +277,15 @@ pub const GSWindowed = struct {
             std.log.err("email save failed {}", .{err});
 
         // close all windows
-        for (self.windows.items) |*window| {
+        for (self.windows.items) |window| {
             window.data.deinit();
+            allocator.alloc.destroy(window);
         }
 
         // close all popups
-        for (self.popups.items) |*popup| {
+        for (self.popups.items) |popup| {
             popup.data.contents.deinit();
+            allocator.alloc.destroy(popup);
         }
 
         // deinit the font face
@@ -292,7 +307,7 @@ pub const GSWindowed = struct {
     }
 
     pub fn refresh(self: *Self) !void {
-        for (self.windows.items) |*window| {
+        for (self.windows.items) |window| {
             try window.data.refresh();
         }
     }
@@ -315,7 +330,7 @@ pub const GSWindowed = struct {
         try self.desk.data.addText(self.font_shader, self.face);
         try self.desk.data.updateVm();
 
-        for (self.windows.items) |*window| {
+        for (self.windows.items) |window| {
             // update the window
             window.data.update();
 
@@ -336,7 +351,7 @@ pub const GSWindowed = struct {
         }
 
         // draw popups
-        for (self.popups.items) |*popup| {
+        for (self.popups.items) |popup| {
             try batch.SpriteBatch.instance.draw(popups.Popup, popup, self.shader, .{});
 
             try popup.data.drawName(self.font_shader, self.face);
@@ -355,7 +370,7 @@ pub const GSWindowed = struct {
         try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, &self.windows);
 
         // draw notifications
-        for (self.notifs.items, 0..) |*notif, idx| {
+        for (self.notifs.items, 0..) |notif, idx| {
             try batch.SpriteBatch.instance.draw(notifications.Notification, notif, self.shader, .{ .x = @floatFromInt(idx) });
             try notif.data.drawContents(self.shader, self.face, self.font_shader, idx);
         }
@@ -368,7 +383,7 @@ pub const GSWindowed = struct {
     }
 
     pub fn update(self: *Self, dt: f32) !void {
-        for (self.windows.items, 0..) |*window, idx| {
+        for (self.windows.items, 0..) |window, idx| {
             if (window.data.should_close) {
                 if (self.dragging_window) |drag|
                     if (window == drag) {
@@ -379,7 +394,7 @@ pub const GSWindowed = struct {
             }
         }
 
-        for (self.notifs.items, 0..) |*notif, idx| {
+        for (self.notifs.items, 0..) |notif, idx| {
             try notif.data.update(dt);
 
             if (notif.data.time == 0) {
@@ -389,12 +404,12 @@ pub const GSWindowed = struct {
         }
 
         var offset: usize = 0;
-        for (0..self.windows.items.len) |target| {
+        for (self.windows.items, 0..) |_, target| {
             var found = false;
             while (!found) {
-                for (self.windows.items) |*item| {
-                    if (item.data.idx == target + offset) {
-                        item.data.idx = target;
+                for (self.windows.items) |window| {
+                    if (window.data.idx == target + offset) {
+                        window.data.idx = target;
                         found = true;
                         break;
                     }
@@ -404,9 +419,11 @@ pub const GSWindowed = struct {
             offset -= 1;
         }
 
-        for (self.windows.items, 0..) |*window, idx| {
-            if (window.data.contents.props.close)
-                _ = self.windows.orderedRemove(idx);
+        for (self.windows.items, 0..) |window, idx| {
+            if (window.data.contents.props.close) {
+                const sub_win = self.windows.orderedRemove(idx);
+                allocator.alloc.destroy(sub_win);
+            }
         }
 
         self.cursor.data.index = 0;
@@ -459,7 +476,7 @@ pub const GSWindowed = struct {
             .h = gfx.Context.instance.size.y,
         };
 
-        for (self.windows.items) |*window| {
+        for (self.windows.items) |window| {
             if (!screen_bounds.containsSome(window.data.pos)) {
                 window.data.pos.x = 100;
                 window.data.pos.y = 100;
@@ -475,7 +492,7 @@ pub const GSWindowed = struct {
         }
 
         if (self.popups.items.len != 0) {
-            const top_popup = &self.popups.items[0];
+            const top_popup = self.popups.items[0];
             try top_popup.data.contents.key(key, mods, down);
 
             return;
@@ -497,7 +514,7 @@ pub const GSWindowed = struct {
             return;
         }
 
-        for (self.windows.items) |*window| {
+        for (self.windows.items) |window| {
             if (!window.data.active) continue;
 
             _ = try window.data.key(key, mods, down);
@@ -508,13 +525,13 @@ pub const GSWindowed = struct {
         if (self.bar.data.btn_active) return;
 
         if (self.popups.items.len != 0) {
-            const top_popup = &self.popups.items[0];
+            const top_popup = self.popups.items[0];
             try top_popup.data.contents.char(code, mods);
 
             return;
         }
 
-        for (self.windows.items) |*window| {
+        for (self.windows.items) |window| {
             if (!window.data.active) continue;
 
             return window.data.char(code, mods);
@@ -528,7 +545,7 @@ pub const GSWindowed = struct {
             switch (try self.popups.items[0].data.click(self.mousepos)) {
                 .Close => _ = self.popups.orderedRemove(0),
                 .Move => {
-                    self.dragging_popup = &self.popups.items[0];
+                    self.dragging_popup = self.popups.items[0];
                     self.dragging_mode = .Move;
 
                     const start = self.dragging_popup.?.data.pos;
@@ -603,7 +620,7 @@ pub const GSWindowed = struct {
                             try self.windows.append(swap);
                             if (!swap.data.full) {
                                 self.dragging_mode = mode;
-                                self.dragging_window = &self.windows.items[self.windows.items.len - 1];
+                                self.dragging_window = self.windows.items[self.windows.items.len - 1];
                                 const start = self.dragging_window.?.data.pos;
                                 self.dragging_start = switch (self.dragging_mode) {
                                     win.DragMode.None => .{},
@@ -625,7 +642,7 @@ pub const GSWindowed = struct {
             else => {},
         }
 
-        for (self.windows.items) |*window| {
+        for (self.windows.items) |window| {
             if (!window.data.active) continue;
 
             try self.desk.data.click(self.shader, null);
@@ -648,7 +665,7 @@ pub const GSWindowed = struct {
 
         self.down = false;
 
-        for (self.windows.items) |*window| {
+        for (self.windows.items) |window| {
             try window.data.click(self.mousepos, null);
         }
     }
@@ -725,7 +742,7 @@ pub const GSWindowed = struct {
             }
         }
         if (self.down and self.dragging_mode == .None) {
-            for (self.windows.items) |*window| {
+            for (self.windows.items) |window| {
                 if (!window.data.active) continue;
 
                 try window.data.contents.drag(.{
@@ -739,7 +756,7 @@ pub const GSWindowed = struct {
         }
 
         if (self.dragging_mode == .None) {
-            for (self.windows.items) |*window| {
+            for (self.windows.items) |window| {
                 if (!window.data.active) continue;
                 try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
             }

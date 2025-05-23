@@ -2,127 +2,24 @@ const std = @import("std");
 const files = @import("../files.zig");
 const allocator = @import("../../util/allocator.zig");
 const vm = @import("../vm.zig");
-const texture_manager = @import("../../util/texmanager.zig");
-const tex = @import("../../util/texture.zig");
-const graphics = @import("../../util/graphics.zig");
 
 pub const win = @import("window.zig");
 pub const inp = @import("input.zig");
 pub const snd = @import("snd.zig");
-
-const gfx = struct {
-    pub var texture_idx: u8 = 0;
-
-    const new = struct {
-        pub fn read(_: ?*vm.VM) files.FileError![]const u8 {
-            const result = try allocator.alloc.alloc(u8, 1);
-
-            result[0] = texture_idx;
-
-            {
-                graphics.Context.makeCurrent();
-                defer graphics.Context.makeNotCurrent();
-
-                try texture_manager.TextureManager.instance.put(result, tex.Texture.init());
-            }
-
-            texture_idx = texture_idx +% 1;
-
-            return result;
-        }
-    };
-
-    pub const pixel = struct {
-        pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
-            const idx = data[0];
-            var tmp = data[1..];
-
-            const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
-
-            while (tmp.len > 7) {
-                const x = std.mem.bytesToValue(u16, tmp[0..2]);
-                const y = std.mem.bytesToValue(u16, tmp[2..4]);
-
-                texture.setPixel(x, y, tmp[4..8].*);
-
-                if (tmp.len > 8)
-                    tmp = tmp[8..]
-                else
-                    break;
-            }
-        }
-    };
-
-    pub const destroy = struct {
-        pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
-            const idx = data[0];
-            const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
-
-            {
-                graphics.Context.makeCurrent();
-                defer graphics.Context.makeNotCurrent();
-
-                texture.deinit();
-            }
-
-            const key = texture_manager.TextureManager.instance.textures.getKeyPtr(&.{idx}) orelse return;
-            allocator.alloc.free(key.*);
-
-            _ = texture_manager.TextureManager.instance.textures.removeByPtr(key);
-        }
-    };
-
-    pub const upload = struct {
-        pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
-            if (data.len == 1) {
-                const idx = data[0];
-
-                const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
-                try texture.upload();
-
-                return;
-            }
-
-            const idx = data[0];
-            const image = data[1..];
-
-            const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
-            texture.loadMem(image) catch {
-                return error.InvalidPsuedoData;
-            };
-            texture.upload() catch {
-                return error.InvalidPsuedoData;
-            };
-        }
-    };
-
-    pub const save = struct {
-        pub fn write(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
-            const idx = data[0];
-            const image = data[1..];
-
-            const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
-
-            if (vm_instance) |vmi| {
-                const root = try vmi.root.resolve();
-                try root.newFile(image);
-
-                const conts = try std.mem.concat(allocator.alloc, u8, &.{
-                    "eimg",
-                    std.mem.asBytes(&@as(i16, @intFromFloat(texture.size.x))),
-                    std.mem.asBytes(&@as(i16, @intFromFloat(texture.size.y))),
-                    std.mem.sliceAsBytes(texture.buffer),
-                });
-                defer allocator.alloc.free(conts);
-
-                try root.writeFile(image, conts, null);
-            }
-        }
-    };
-};
+pub const gfx = @import("gfx.zig");
 
 pub const all: []const files.Folder.FolderItem = &.{
-    .folder("win", &.{}),
+    .folder("win", &.{
+        .file("new", .initFake(win.new)),
+        .file("open", .initFake(win.open)),
+        .file("destroy", .initFake(win.destroy)),
+        .file("render", .initFake(win.render)),
+        .file("flip", .initFake(win.flip)),
+        .file("title", .initFake(win.title)),
+        .file("size", .initFake(win.size)),
+        .file("rules", .initFake(win.rules)),
+        .file("text", .initFake(win.text)),
+    }),
     .folder("gfx", &.{
         .file("new", .initFake(gfx.new)),
         .file("pixel", .initFake(gfx.pixel)),
@@ -130,6 +27,12 @@ pub const all: []const files.Folder.FolderItem = &.{
         .file("upload", .initFake(gfx.upload)),
         .file("save", .initFake(gfx.save)),
     }),
-    .folder("snd", &.{}),
-    .folder("inp", &.{}),
+    .folder("snd", &.{
+        .file("play", .initFake(snd.play)),
+    }),
+    .folder("inp", &.{
+        .file("char", .initFake(inp.char)),
+        .file("win", .initFake(inp.win)),
+        .file("mouse", .initFake(inp.mouse)),
+    }),
 };

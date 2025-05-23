@@ -7,101 +7,118 @@ const events = @import("../../util/events.zig");
 const win = @import("../../drawers/window2d.zig");
 const rect = @import("../../math/rects.zig");
 const vecs = @import("../../math/vecs.zig");
-const gfx = 
 const sb = @import("../../util/spritebatch.zig");
 const cols = @import("../../math/colors.zig");
+const vm = @import("../vm.zig");
+const graphics = @import("../../util/graphics.zig");
+const texture_manager = @import("../../util/texmanager.zig");
+const tex = @import("../../util/texture.zig");
 
+pub var texture_idx: u8 = 0;
 
-// /fake/gfx/destroy
+pub const new = struct {
+    pub fn read(_: ?*vm.VM) files.FileError![]const u8 {
+        const result = try allocator.alloc.alloc(u8, 1);
 
-pub fn readGfxDestroy(_: ?*vm.VM) files.FileError![]const u8 {
-    return &.{};
-}
+        result[0] = texture_idx;
 
+        {
+            graphics.Context.makeCurrent();
+            defer graphics.Context.makeNotCurrent();
 
-// /fake/gfx/upload
+            try texture_manager.TextureManager.instance.put(result, tex.Texture.init());
+        }
 
-pub fn readGfxUpload(_: ?*vm.VM) files.FileError![]const u8 {
-    return &.{};
-}
+        texture_idx = texture_idx +% 1;
 
+        return result;
+    }
+};
 
-// /fake/gfx/save
+pub const pixel = struct {
+    pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
+        const idx = data[0];
+        var tmp = data[1..];
 
-pub fn readGfxSave(_: ?*vm.VM) files.FileError![]const u8 {
-    return &.{};
-}
+        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
 
+        while (tmp.len > 7) {
+            const x = std.mem.bytesToValue(u16, tmp[0..2]);
+            const y = std.mem.bytesToValue(u16, tmp[2..4]);
 
-// /fake/gfx
+            texture.setPixel(x, y, tmp[4..8].*);
 
-pub fn setupFakeGfx(parent: *files.Folder) !*files.Folder {
-    const result = try allocator.alloc.create(files.Folder);
-    result.* = .{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/", .{}),
-        .subfolders = std.ArrayList(*files.Folder).init(allocator.alloc),
-        .contents = std.ArrayList(*files.File).init(allocator.alloc),
-        .parent = .link(parent),
-        .protected = true,
-    };
+            if (tmp.len > 8)
+                tmp = tmp[8..]
+            else
+                break;
+        }
+    }
+};
 
-    try result.contents.append(file);
+pub const destroy = struct {
+    pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
+        const idx = data[0];
+        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
 
-    file = try allocator.alloc.create(files.File);
-    file.* = .{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/pixel", .{}),
-        .data = .{
-            .Pseudo = .{
-                .pseudo_read = readGfxPixel,
-                .pseudo_write = writeGfxPixel,
-            },
-        },
-        .parent = .link(result),
-    };
+        {
+            graphics.Context.makeCurrent();
+            defer graphics.Context.makeNotCurrent();
 
-    try result.contents.append(file);
+            texture.deinit();
+        }
 
-    file = try allocator.alloc.create(files.File);
-    file.* = .{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/destroy", .{}),
-        .data = .{
-            .Pseudo = .{
-                .pseudo_read = readGfxDestroy,
-                .pseudo_write = writeGfxDestroy,
-            },
-        },
-        .parent = .link(result),
-    };
+        const key = texture_manager.TextureManager.instance.textures.getKeyPtr(&.{idx}) orelse return;
+        allocator.alloc.free(key.*);
 
-    try result.contents.append(file);
+        _ = texture_manager.TextureManager.instance.textures.removeByPtr(key);
+    }
+};
 
-    file = try allocator.alloc.create(files.File);
-    file.* = .{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/upload", .{}),
-        .data = .{
-            .Pseudo = .{
-                .pseudo_read = readGfxUpload,
-                .pseudo_write = writeGfxUpload,
-            },
-        },
-        .parent = .link(result),
-    };
+pub const upload = struct {
+    pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
+        if (data.len == 1) {
+            const idx = data[0];
 
-    try result.contents.append(file);
+            const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
+            try texture.upload();
 
-    file = try allocator.alloc.create(files.File);
-    file.* = .{
-        .name = try std.fmt.allocPrint(allocator.alloc, "/fake/gfx/save", .{}),
-        .data = .{
-            .Pseudo = .{
-                .pseudo_read = readGfxSave,
-                .pseudo_write = writeGfxSave,
-            },
-        },
-        .parent = .link(result),
-    };
+            return;
+        }
 
-    try result.contents.append(file);
+        const idx = data[0];
+        const image = data[1..];
 
-    return result;
-}
+        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
+        texture.loadMem(image) catch {
+            return error.InvalidPsuedoData;
+        };
+        texture.upload() catch {
+            return error.InvalidPsuedoData;
+        };
+    }
+};
+
+pub const save = struct {
+    pub fn write(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
+        const idx = data[0];
+        const image = data[1..];
+
+        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
+
+        if (vm_instance) |vmi| {
+            const root = try vmi.root.resolve();
+            try root.newFile(image);
+
+            const conts = try std.mem.concat(allocator.alloc, u8, &.{
+                "eimg",
+                std.mem.asBytes(&@as(i16, @intFromFloat(texture.size.x))),
+                std.mem.asBytes(&@as(i16, @intFromFloat(texture.size.y))),
+                std.mem.sliceAsBytes(texture.buffer),
+            });
+            defer allocator.alloc.free(conts);
+
+            try root.writeFile(image, conts, null);
+        }
+    }
+};
