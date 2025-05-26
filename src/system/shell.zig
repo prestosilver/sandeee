@@ -17,6 +17,7 @@ const vm_manager = @import("../system/vmmanager.zig");
 const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const font = @import("../util/font.zig");
+const log = @import("../util/log.zig").log;
 const c = @import("../c.zig");
 
 const Result = struct {
@@ -46,16 +47,92 @@ pub const Shell = struct {
 
     root: files.FolderLink,
 
-    const ParamType = *std.mem.SplitIterator(u8, .scalar);
+    const Params = struct {
+        buffer: []const u8,
+        index: ?usize,
 
-    pub fn getPrompt(self: *Shell) []const u8 {
-        const root = self.root.resolve() catch return "> ";
-        if (root.name.len == 0) return "> ";
-        if (root.name.len <= 1) return "> ";
-        return std.fmt.allocPrint(allocator.alloc, "{s}> ", .{root.name[0 .. root.name.len - 1]}) catch "> ";
+        const Self = @This();
+
+        fn incIndex(self: *Self) !void {
+            if (self.index) |idx| {
+                if (self.buffer.len <= idx + 1) {
+                    self.index = null;
+
+                    return error.Done;
+                }
+
+                self.index = idx + 1;
+
+                return;
+            } else return error.Done;
+        }
+
+        pub fn init(data: []const u8) Self {
+            return .{
+                .buffer = data,
+                .index = if (data.len == 0) null else 0,
+            };
+        }
+
+        pub fn next(self: *Self) ?[]const u8 {
+            if (self.index == null) return null;
+
+            while (self.index != null and std.ascii.isWhitespace(self.buffer[self.index.?])) {
+                self.incIndex() catch return null;
+            }
+
+            const start = self.index.?;
+
+            while (self.index != null and !std.ascii.isWhitespace(self.buffer[self.index.?])) {
+                self.incIndex() catch return self.buffer[start..];
+            }
+
+            return self.buffer[start..self.index.?];
+        }
+
+        pub fn rest(self: *Self) []const u8 {
+            if (self.index == null) return "";
+
+            const start = self.index;
+
+            while (std.ascii.isWhitespace(self.buffer[self.index.?])) {
+                self.incIndex() catch return "";
+            }
+
+            const result = self.buffer[self.index.?..];
+
+            self.index = start;
+
+            return result;
+        }
+
+        pub fn peek(self: *Self) ?[]const u8 {
+            if (self.index == null) return null;
+
+            const start = self.index;
+            const result = self.next();
+
+            self.index = start;
+
+            return result;
+        }
+    };
+
+    pub fn getPrompt(self: *Shell) ![]const u8 {
+        const path = get: {
+            const root = self.root.resolve() catch break :get "";
+            if (root.name.len <= 1) break :get "";
+
+            break :get root.name[0 .. root.name.len - 1];
+        };
+
+        return try std.mem.concat(allocator.alloc, u8, &.{
+            path,
+            "> ",
+        });
     }
 
-    fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param: ParamType) !Result {
+    fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param: *Params) !Result {
         var result_data = std.ArrayList(u8).init(allocator.alloc);
         defer result_data.deinit();
 
@@ -99,16 +176,32 @@ pub const Shell = struct {
             };
         }
 
-        return error.InvalidFileType;
+        const open_cmd = try opener.instance.openFile(cmd);
+        const new_cmd = try std.mem.concat(allocator.alloc, u8, &.{
+            open_cmd,
+            " ",
+            cmd,
+            " ",
+            param.rest(),
+        });
+        defer allocator.alloc.free(new_cmd);
+        log.info("Run {s} instead of {s} {s}", .{ new_cmd, cmd, param.rest() });
+
+        return self.run(new_cmd);
     }
 
-    fn runFile(self: *Shell, cmd: []const u8, param: ParamType) !Result {
+    fn runFile(self: *Shell, cmd: []const u8, param: *Params) !Result {
         inline for ([_]files.FolderLink{ self.root, .exec }) |dir| {
             if (self.runFileInFolder(dir, cmd, param)) |result| {
                 return result;
             } else |err| {
                 switch (err) {
-                    error.FileNotFound => {},
+                    error.FileNotFound => {
+                        log.info("File not found {s} {s} in {}", .{ cmd, param.rest(), dir });
+                    },
+                    error.InvalidFileType => {
+                        log.info("Bad filetype {s} {s} in {}", .{ cmd, param.rest(), dir });
+                    },
                     else => return err,
                 }
             }
@@ -125,7 +218,7 @@ pub const Shell = struct {
                 .desc = "Not implemented",
                 .help = name ++ " [:help]",
                 .func = struct {
-                    fn todo(_: *Shell, _: ParamType) !Result {
+                    fn todo(_: *Shell, _: *Params) !Result {
                         return .{
                             .data = try std.mem.concat(allocator.alloc, u8, &.{ "Command `", name, "` Not yet implemented!" }),
                         };
@@ -156,7 +249,7 @@ pub const Shell = struct {
         }
     }
 
-    fn runAsm(self: *Shell, root: files.FolderLink, cmd: []const u8, params: ParamType) !Result {
+    fn runAsm(self: *Shell, root: files.FolderLink, cmd: []const u8, params: *Params) !Result {
         const folder = try root.resolve();
         const rootlen = folder.name.len;
 
@@ -197,14 +290,14 @@ pub const Shell = struct {
 
     pub const ShellCommand = struct {
         gui: bool = false,
-        func: *const fn (*Shell, ParamType) anyerror!Result,
+        func: *const fn (*Shell, *Params) anyerror!Result,
         name: []const u8,
         desc: []const u8,
         help: []const u8,
 
-        pub fn run(self: *const ShellCommand, shell: *Shell, params: ParamType) !Result {
+        pub fn run(self: *const ShellCommand, shell: *Shell, params: *Params) !Result {
             const copy = params.rest();
-            var iter = std.mem.splitScalar(u8, copy, ' ');
+            var iter = Params.init(copy);
 
             while (iter.next()) |param| {
                 if (param.len == 0) continue;
@@ -228,7 +321,7 @@ pub const Shell = struct {
             .help = "cmd [:help]",
             .desc = "Opens the command prompt",
             .func = struct {
-                pub fn cmd(_: *Shell, param: ParamType) !Result {
+                pub fn cmd(_: *Shell, param: *Params) !Result {
                     const window = win.Window{
                         .texture = "win",
                         .data = .{
@@ -254,7 +347,7 @@ pub const Shell = struct {
             .help = "edit [:help] [file]",
             .desc = "Opens the text editor",
             .func = struct {
-                pub fn edit(shell: *Shell, param: ParamType) !Result {
+                pub fn edit(shell: *Shell, param: *Params) !Result {
                     const window = win.Window{
                         .texture = "win",
                         .data = .{
@@ -298,10 +391,11 @@ pub const Shell = struct {
         .{ "web", ShellCommand{
             .gui = true,
             .name = "web",
-            .help = "web [:help] [url]",
+            .help = "web [:help] [:file] [url]",
             .desc = "Opens the web browser",
             .func = struct {
-                fn web(_: *Shell, param: ParamType) !Result {
+                fn web(shell: *Shell, param: *Params) !Result {
+                    const shell_root = try shell.root.resolve();
                     const window = win.Window{
                         .texture = "win",
                         .data = win.WindowData{
@@ -310,10 +404,31 @@ pub const Shell = struct {
                             .active = true,
                         },
                     };
-                    if (param.next()) |url| {
+                    var url_data: ?[]const u8 = null;
+                    var file = false;
+                    while (param.next()) |in_param| {
+                        if (std.mem.eql(u8, in_param, ":file")) {
+                            file = true;
+                        } else {
+                            if (url_data == null) {
+                                url_data = in_param;
+                            } else {
+                                return .{
+                                    .data = try allocator.alloc.dupe(u8, "Invalid web call with 2 urls"),
+                                };
+                            }
+                        }
+                    }
+                    if (url_data) |url| {
                         const webself: *wins.web.WebData = @ptrCast(@alignCast(window.data.contents.ptr));
-                        webself.path = try allocator.alloc.realloc(webself.path, url.len);
-                        @memcpy(webself.path, url);
+                        if (file) {
+                            const web_file = try shell_root.getFile(url);
+                            webself.path = try allocator.alloc.realloc(webself.path, web_file.name.len);
+                            @memcpy(webself.path, web_file.name);
+                        } else {
+                            webself.path = try allocator.alloc.realloc(webself.path, url.len);
+                            @memcpy(webself.path, url);
+                        }
                     }
                     try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
                     return .{};
@@ -326,7 +441,7 @@ pub const Shell = struct {
             .help = "mail [:help]",
             .desc = "Opens the email browser",
             .func = struct {
-                fn mail(_: *Shell, _: ParamType) !Result {
+                fn mail(_: *Shell, _: *Params) !Result {
                     const window = win.Window{
                         .texture = "win",
                         .data = win.WindowData{
@@ -345,7 +460,7 @@ pub const Shell = struct {
             .help = "task [:help]",
             .desc = "Opens the task manager",
             .func = struct {
-                fn task(_: *Shell, _: ParamType) !Result {
+                fn task(_: *Shell, _: *Params) !Result {
                     const window = win.Window{
                         .texture = "win",
                         .data = win.WindowData{
@@ -364,7 +479,7 @@ pub const Shell = struct {
             .help = "set [:help]",
             .desc = "Opens the setting manager",
             .func = struct {
-                fn settings(_: *Shell, _: ParamType) !Result {
+                fn settings(_: *Shell, _: *Params) !Result {
                     const window = win.Window{
                         .texture = "win",
                         .data = win.WindowData{
@@ -383,7 +498,7 @@ pub const Shell = struct {
             .help = "launch [:help]",
             .desc = "Opens the application launcher",
             .func = struct {
-                fn launch(_: *Shell, _: ParamType) !Result {
+                fn launch(_: *Shell, _: *Params) !Result {
                     const window = win.Window{
                         .texture = "win",
                         .data = .{
@@ -402,7 +517,7 @@ pub const Shell = struct {
             .help = "logout [:help]",
             .desc = "Opens the logout prompt",
             .func = struct {
-                fn logout(_: *Shell, _: ParamType) !Result {
+                fn logout(_: *Shell, _: *Params) !Result {
                     const adds = try allocator.alloc.create(popups.all.quit.PopupQuit);
                     adds.* = .{
                         .shader = shader,
@@ -452,7 +567,7 @@ pub const Shell = struct {
             .help = "files [:help]",
             .desc = "Opens the file manager",
             .func = struct {
-                fn files(_: *Shell, _: ParamType) !Result {
+                fn files(_: *Shell, _: *Params) !Result {
                     const window = win.Window{
                         .texture = "win",
                         .data = .{
@@ -473,11 +588,11 @@ pub const Shell = struct {
             .desc = "Prints a help message",
             .help = "help [:help]",
             .func = struct {
-                pub fn help(shell: *Shell, _: ParamType) !Result {
+                pub fn help(shell: *Shell, _: *Params) !Result {
                     var data = std.ArrayList(u8).init(allocator.alloc);
                     defer data.deinit();
                     try data.appendSlice("Sh" ++ font.EEE ++ "ll Help:\n" ++ "=============\n");
-                    if (shell.headless) {
+                    if (shell.headless or @import("builtin").is_test) {
                         inline for (headless_help_data) |help_group| {
                             try data.append('\n');
                             try data.appendSlice(help_group.name ++ "\n");
@@ -509,7 +624,7 @@ pub const Shell = struct {
             .desc = "Lists files and folders in a directory",
             .help = "ls [:help] [path]",
             .func = struct {
-                pub fn ls(shell: *Shell, params: ParamType) !Result {
+                pub fn ls(shell: *Shell, params: *Params) !Result {
                     const root = try shell.root.resolve();
                     if (params.next()) |path| {
                         const folder = try root.getFolder(path);
@@ -534,7 +649,7 @@ pub const Shell = struct {
                         var result_data = std.ArrayList(u8).init(allocator.alloc);
                         defer result_data.deinit();
                         const rootlen = folder.name.len;
-                        var sub_folder = try folder.getFiles();
+                        var sub_folder = try folder.getFolders();
                         while (sub_folder) |item| : (sub_folder = item.next_sibling) {
                             try result_data.appendSlice(item.name[rootlen..]);
                             try result_data.append(' ');
@@ -556,7 +671,7 @@ pub const Shell = struct {
             .help = "eln [:help] file",
             .desc = "Opens a eln file",
             .func = struct {
-                pub fn cmd(shell: *Shell, param: ParamType) !Result {
+                pub fn cmd(shell: *Shell, param: *Params) !Result {
                     if (param.next()) |path| {
                         const root = try shell.root.resolve();
                         const file = try root.getFile(path);
@@ -573,14 +688,18 @@ pub const Shell = struct {
             .desc = "Changes the current directory",
             .help = "cd [:help] [path]",
             .func = struct {
-                pub fn cd(shell: *Shell, params: ParamType) !Result {
+                pub fn cd(shell: *Shell, params: *Params) !Result {
                     if (params.next()) |child| {
+                        if (std.mem.eql(u8, child, "/")) {
+                            shell.root = .root;
+                            return .{};
+                        }
                         const root_link: files.FolderLink = if (std.mem.startsWith(u8, child, "/"))
                             .root
                         else
                             shell.root;
                         const root = try root_link.resolve();
-                        const folder = try root.getFolder(child[1..]);
+                        const folder = try root.getFolder(child);
                         shell.root = .link(folder);
                         return .{};
                     } else {
@@ -595,7 +714,7 @@ pub const Shell = struct {
             .desc = "Stops a background vm process",
             .help = "stop [:help] id",
             .func = struct {
-                pub fn stop(_: *Shell, params: ParamType) !Result {
+                pub fn stop(_: *Shell, params: *Params) !Result {
                     if (params.next()) |id_string| {
                         const id = try std.fmt.parseInt(u8, id_string, 16);
                         vm_manager.VMManager.instance.destroy(.{
@@ -615,7 +734,7 @@ pub const Shell = struct {
                 .desc = "Creates a new file",
                 .help = "new [:help] path",
                 .func = struct {
-                    fn new(self: *Shell, param: ParamType) !Result {
+                    fn new(self: *Shell, param: *Params) !Result {
                         if (param.next()) |path| {
                             // TODO: /root
                             const root = try self.root.resolve();
@@ -635,7 +754,7 @@ pub const Shell = struct {
                 .desc = "Creates a new directory",
                 .help = "dnew [:help] path",
                 .func = struct {
-                    fn dnew(self: *Shell, param: ParamType) !Result {
+                    fn dnew(self: *Shell, param: *Params) !Result {
                         if (param.next()) |path| {
                             // TODO: /root
                             const root = try self.root.resolve();
@@ -655,7 +774,7 @@ pub const Shell = struct {
                 .desc = "Deletes a file",
                 .help = "rem [:help] paths+",
                 .func = struct {
-                    fn rem(self: *Shell, params: ParamType) !Result {
+                    fn rem(self: *Shell, params: *Params) !Result {
                         if (params.peek() == null)
                             return error.MissingParameter;
                         // TODO: /root
@@ -676,7 +795,7 @@ pub const Shell = struct {
                 .desc = "Deletes a directory",
                 .help = "drem [:help] paths+",
                 .func = struct {
-                    fn drem(self: *Shell, params: ParamType) !Result {
+                    fn drem(self: *Shell, params: *Params) !Result {
                         if (params.peek() == null)
                             return error.MissingParameter;
                         // TODO: /root
@@ -696,7 +815,7 @@ pub const Shell = struct {
             .desc = "Copies a file",
             .help = "cpy [:help] src dst",
             .func = struct {
-                fn cpy(self: *Shell, params: ParamType) !Result {
+                fn cpy(self: *Shell, params: *Params) !Result {
                     const input = params.next() orelse return error.MissingParameter;
                     const output = params.next() orelse return error.MissingParameter;
                     const root_link: files.FolderLink = if (input.len != 0 and input[0] == '/')
@@ -724,7 +843,7 @@ pub const Shell = struct {
             .desc = "Runs a command in the background",
             .help = "bg [:help] command",
             .func = struct {
-                fn bg(self: *Shell, params: ParamType) !Result {
+                fn bg(self: *Shell, params: *Params) !Result {
                     if (params.peek()) |_| {
                         try self.runBg(params.rest());
                         const result: Result = Result{
@@ -744,7 +863,7 @@ pub const Shell = struct {
             .desc = "Clears the console",
             .help = "cls [:help]",
             .func = struct {
-                fn clear(_: *Shell, _: ParamType) !Result {
+                fn clear(_: *Shell, _: *Params) !Result {
                     const result: Result = Result{
                         .data = &.{},
                         .clear = true,
@@ -758,7 +877,7 @@ pub const Shell = struct {
             .desc = "Exits the console",
             .help = "exit [:help]",
             .func = struct {
-                fn exit(_: *Shell, _: ParamType) !Result {
+                fn exit(_: *Shell, _: *Params) !Result {
                     const result: Result = Result{
                         .data = &.{},
                         .exit = true,
@@ -791,11 +910,11 @@ pub const Shell = struct {
         if (params.len == 0)
             return error.MissingParameter;
 
-        var iter = std.mem.splitScalar(u8, params, ' ');
-        const cmd = iter.first();
+        var iter = Params.init(params);
+        const cmd = iter.next() orelse return .{};
 
         if (command_map.get(cmd)) |runs|
-            if (!runs.gui or !self.headless)
+            if (!runs.gui or !self.headless and !@import("builtin").is_test)
                 return runs.run(self, &iter);
 
         return self.runFile(cmd, &iter);

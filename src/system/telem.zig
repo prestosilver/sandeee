@@ -32,6 +32,8 @@ pub const Telem = packed struct {
     },
 
     pub fn checkVersion() void {
+        if (@import("builtin").is_test) return;
+
         if (instance.version.major != options.SandEEEVersion.major or
             instance.version.minor != options.SandEEEVersion.minor or
             instance.version.patch != options.SandEEEVersion.patch)

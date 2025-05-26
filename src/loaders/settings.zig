@@ -5,6 +5,7 @@ const c = @import("../c.zig");
 const conf = @import("../system/config.zig");
 const files = @import("../system/files.zig");
 const allocator = @import("../util/allocator.zig");
+const opener = @import("../system/opener.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -20,8 +21,8 @@ pub fn load(self: *const Self) anyerror!void {
     const root = try files.FolderLink.resolve(.root);
 
     const file = try root.getFile(self.path);
-
     const cont = try file.read(null);
+
     var iter = std.mem.splitScalar(u8, cont, '\n');
 
     while (iter.next()) |line| {
@@ -39,5 +40,6 @@ pub fn load(self: *const Self) anyerror!void {
         }
     }
 
+    try opener.instance.setup();
     try files.Folder.setupExtr();
 }

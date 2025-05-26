@@ -76,11 +76,13 @@ pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.
             continue;
         }
 
-        const prompt = main_shell.getPrompt();
+        // print the prompt
+        {
+            const prompt = try main_shell.getPrompt();
+            defer allocator.alloc.free(prompt);
 
-        _ = try stdout.write(prompt);
-
-        allocator.alloc.free(prompt);
+            _ = try stdout.write(prompt);
+        }
 
         if (input_buffer.items.len <= 0) {
             while (stdin.readByte() catch blk: {

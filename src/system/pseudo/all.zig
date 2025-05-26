@@ -8,7 +8,7 @@ pub const inp = @import("input.zig");
 pub const snd = @import("snd.zig");
 pub const gfx = @import("gfx.zig");
 
-pub const all: []const files.Folder.FolderItem = &.{
+pub const all: []const files.Folder.FolderItem = if (@import("builtin").is_test) &.{} else &.{
     .folder("win", &.{
         .file("new", .initFake(win.new)),
         .file("open", .initFake(win.open)),

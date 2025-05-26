@@ -162,7 +162,7 @@ fn sysRead(self: *vm.VM) VmError!void {
 
     if (idx.data().value >= self.streams.items.len) return error.InvalidStream;
 
-    // std.log.info("fdsa {}", .{idx.data()});
+    std.log.info("idx: {}, len: {}", .{ idx.data().value, len.data().value });
 
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
     if (fs) |stream| {

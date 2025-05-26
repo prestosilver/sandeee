@@ -2,6 +2,7 @@ const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const files = @import("files.zig");
 const vm = @import("vm.zig");
+const log = @import("../util/log.zig").log;
 
 pub const StreamError = error{
     OutOfMemory,
@@ -23,6 +24,8 @@ pub const FileStream = struct {
             try (files.FolderLink.resolve(.root))
         else
             root;
+
+        log.info("stream open {s} in {s}", .{ path, folder.name });
 
         const file = try folder.getFile(path);
 

@@ -10,6 +10,7 @@ pub const Shader = @import("shader.zig");
 pub const Files = @import("files.zig");
 pub const Settings = @import("settings.zig");
 pub const Texture = @import("texture.zig");
+pub const Sound = @import("sound.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -63,7 +64,7 @@ pub fn load(self: *Self, prog: *f32, start: f32, total: f32) !void {
             const item_prog = prog_step * @as(f32, @floatFromInt(i));
 
             if (!dep.loaded)
-                try dep.load(prog, item_prog, item_prog + prog_step);
+                try dep.load(prog, start + item_prog, start + item_prog + prog_step);
         }
     }
 

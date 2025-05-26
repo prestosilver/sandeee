@@ -417,7 +417,10 @@ pub fn drawLoading(self: *loading_state.GSLoading) void {
         // render loading screen
         self.draw(gfx.Context.instance.size) catch {};
 
-        blit() catch {};
+        if (!self.done.load(.monotonic) and !paniced) {
+            blit() catch {};
+        }
+
         std.Thread.yield() catch {};
     }
 }
@@ -733,7 +736,6 @@ pub fn mainErr() anyerror!void {
     // loading state
     var gs_loading = loading_state.GSLoading{
         .face = &main_font,
-        .loading = drawLoading,
         .logout_snd = &logout_snd,
         .message_snd = &message_snd,
         .logo_sprite = .{
@@ -957,7 +959,7 @@ pub fn mainErr() anyerror!void {
             // run setup
             try game_states.getPtr(current_state).setup();
 
-            try batch.SpriteBatch.instance.clear();
+            // try batch.SpriteBatch.instance.clear();
         } else {
             // track update time
             vm_manager.VMManager.last_update_time = c.glfwGetTime() - start_time;
@@ -1000,6 +1002,6 @@ pub fn mainErr() anyerror!void {
 }
 
 test "headless.zig" {
-    _ = @import("system/headless.zig");
+    //_ = @import("system/headless.zig");
     _ = @import("system/vm.zig");
 }

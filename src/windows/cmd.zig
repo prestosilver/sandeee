@@ -74,8 +74,10 @@ pub const CMDData = struct {
         const offset = if (self.bot) 0 else props.scroll.?.maxy - props.scroll.?.value;
 
         if (self.shell.vm == null) {
-            const shell_prompt = self.shell.getPrompt();
+            const shell_prompt = try self.shell.getPrompt();
+
             defer allocator.alloc.free(shell_prompt);
+
             const prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shell_prompt, self.input_buffer[0..self.input_len] });
             defer allocator.alloc.free(prompt);
             try font.draw(.{
@@ -192,8 +194,9 @@ pub const CMDData = struct {
                 if (self.input_len != 0 and (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.input_buffer[0..self.input_len])))
                     try self.history.append(try allocator.alloc.dupe(u8, self.input_buffer[0..self.input_len]));
 
-                const shell_prompt = self.shell.getPrompt();
+                const shell_prompt = try self.shell.getPrompt();
                 defer allocator.alloc.free(shell_prompt);
+
                 const prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shell_prompt, self.input_buffer[0..self.input_len] });
                 defer allocator.alloc.free(prompt);
                 var start = self.bt.len;
