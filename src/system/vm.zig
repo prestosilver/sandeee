@@ -1046,38 +1046,38 @@ pub const VM = struct {
     }
 };
 
-// test "VM Compile bad returns error" {
-//     const cmd_args = try std.testing.allocator.dupe(u8, "test");
-//     const vm_args = try std.testing.allocator.dupe([]const u8, &.{cmd_args});
-//
-//     var vm = VM.init(std.testing.allocator, .root, vm_args, false);
-//     defer vm.deinit();
-//
-//     var err: anyerror!std.ArrayList(VM.Operation) = undefined;
-//     err = vm.stringToOps("\x00");
-//     try std.testing.expectError(error.InvalidAsm, err);
-//     err = vm.stringToOps("\x00\x02\x01");
-//     try std.testing.expectError(error.InvalidAsm, err);
-//     err = vm.stringToOps("\x00\x01\x01");
-//     try std.testing.expectError(error.InvalidAsm, err);
-//     err = vm.stringToOps("\x00\x03");
-//     try std.testing.expectError(error.InvalidAsm, err);
-// }
+test "VM Compile bad returns error" {
+    const cmd_args = try std.testing.allocator.dupe(u8, "test");
+    const vm_args = try std.testing.allocator.dupe([]const u8, &.{cmd_args});
 
-test "VM fuzzing" {
-    const Context = struct {
-        fn testStringToOps(context: @This(), input: []const u8) anyerror!void {
-            _ = context;
+    var vm = VM.init(std.testing.allocator, .root, vm_args, false);
+    defer vm.deinit();
 
-            const cmd_args = try std.testing.allocator.dupe(u8, "test");
-            const vm_args = try std.testing.allocator.dupe([]const u8, &.{cmd_args});
-
-            var vm = VM.init(std.testing.allocator, .root, vm_args, false);
-            defer vm.deinit();
-
-            _ = try vm.stringToOps(input);
-        }
-    };
-
-    try std.testing.fuzz(Context{}, Context.testStringToOps, .{});
+    var err: anyerror!std.ArrayList(VM.Operation) = undefined;
+    err = vm.stringToOps("\x00");
+    try std.testing.expectError(error.InvalidAsm, err);
+    err = vm.stringToOps("\x00\x02\x01");
+    try std.testing.expectError(error.InvalidAsm, err);
+    err = vm.stringToOps("\x00\x01\x01");
+    try std.testing.expectError(error.InvalidAsm, err);
+    err = vm.stringToOps("\x00\x03");
+    try std.testing.expectError(error.InvalidAsm, err);
 }
+
+// test "VM fuzzing" {
+//     const Context = struct {
+//         fn testStringToOps(context: @This(), input: []const u8) anyerror!void {
+//             _ = context;
+//
+//             const cmd_args = try std.testing.allocator.dupe(u8, "test");
+//             const vm_args = try std.testing.allocator.dupe([]const u8, &.{cmd_args});
+//
+//             var vm = VM.init(std.testing.allocator, .root, vm_args, false);
+//             defer vm.deinit();
+//
+//             _ = try vm.stringToOps(input);
+//         }
+//     };
+//
+//     try std.testing.fuzz(Context{}, Context.testStringToOps, .{});
+// }
