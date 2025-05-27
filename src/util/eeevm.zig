@@ -1,1 +1,2 @@
-pub extern fn hello() [*:0]const u8;
+// pub extern fn hello() [*:0]const u8;
+

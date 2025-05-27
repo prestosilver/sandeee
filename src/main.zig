@@ -549,8 +549,6 @@ pub fn mainErr() anyerror!void {
         _ = steam_utils;
     }
 
-    std.log.info("{s}", .{vm.hello()});
-
     // setup the headless command
     var headless_cmd: ?[]const u8 = null;
 
