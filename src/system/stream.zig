@@ -25,7 +25,7 @@ pub const FileStream = struct {
         else
             root;
 
-        log.info("stream open {s} in {s}", .{ path, folder.name });
+        //log.info("stream open {s} in {s}", .{ path, folder.name });
 
         const file = try folder.getFile(path);
 

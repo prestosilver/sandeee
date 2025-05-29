@@ -3,7 +3,11 @@ const mail = @import("../src/system/mail.zig");
 
 var mail_lock = std.Thread.Mutex{};
 
-pub fn emails(b: *std.Build, paths: []const std.Build.LazyPath) anyerror!std.ArrayList(u8) {
+pub fn emails(
+    b: *std.Build,
+    paths: []const std.Build.LazyPath,
+    output: std.Build.LazyPath,
+) anyerror!void {
     if (paths.len != 1) return error.BadPaths;
 
     mail_lock.lock();
@@ -29,10 +33,11 @@ pub fn emails(b: *std.Build, paths: []const std.Build.LazyPath) anyerror!std.Arr
         }
     }
 
-    var result = std.ArrayList(u8).init(b.allocator);
+    const path = output.getPath(b);
+    var file = try std.fs.createFileAbsolute(path, .{});
+    defer file.close();
+
     const appends = try mail.EmailManager.instance.exportData();
 
-    try result.appendSlice(appends);
-
-    return result;
+    _ = try file.writer().write(appends);
 }

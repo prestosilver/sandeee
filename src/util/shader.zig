@@ -54,6 +54,10 @@ pub const Shader = struct {
         };
     }
 
+    pub fn deinit(self: Shader) void {
+        c.glDeleteProgram(self.id);
+    }
+
     pub fn setMat4(self: Shader, name: [*c]const u8, value: mat4.Mat4) void {
         c.glUseProgram(self.id);
 

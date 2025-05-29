@@ -20,3 +20,10 @@ pub fn load(self: *Self) anyerror!void {
 
     return true;
 }
+
+pub fn unload(_: *const Self) void {
+    // save email data
+    mail.EmailManager.instance.saveStateFile("/_priv/emails.bin") catch |err|
+        std.log.err("email save failed {}", .{err});
+    mail.EmailManager.instance.deinit();
+}

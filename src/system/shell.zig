@@ -927,3 +927,5 @@ pub const Shell = struct {
         }
     }
 };
+
+test "Shell fuzz" {}

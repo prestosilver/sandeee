@@ -18,3 +18,11 @@ pub fn load(self: *const Self) anyerror!void {
     self.out.* = try shd.Shader.init(2, self.files);
     try gfx.Context.regShader(self.out.*);
 }
+
+pub fn unload(self: *const Self) void {
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
+
+    // save email data
+    self.out.deinit();
+}

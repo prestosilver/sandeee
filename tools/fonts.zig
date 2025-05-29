@@ -14,23 +14,29 @@ const zigimg = @import("../deps/zigimg/zigimg.zig");
 
 const SPACING = 1;
 
-pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
+pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath, output: std.Build.LazyPath) !void {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
-    var result = std.ArrayList(u8).init(b.allocator);
+    const path = output.getPath(b);
+    var file = try std.fs.createFileAbsolute(path, .{});
+    defer file.close();
+
+    const writer = file.writer();
 
     var image = try zigimg.Image.fromFilePath(b.allocator, in.getPath3(b, null).sub_path);
     defer image.deinit();
 
-    try result.appendSlice("efnt");
+    try writer.writeAll("efnt");
 
     const chw = image.width / 16;
     const chh = image.height / 16 + SPACING;
 
-    try result.append(@intCast(chw));
-    try result.append(@intCast(chh));
-    try result.append(1);
+    try writer.writeAll(&.{
+        @intCast(chw),
+        @intCast(chh),
+        1,
+    });
 
     for (0..16) |x| {
         for (0..16) |y| {
@@ -49,9 +55,7 @@ pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
                 }
             }
 
-            try result.appendSlice(ch);
+            try writer.writeAll(ch);
         }
     }
-
-    return result;
 }

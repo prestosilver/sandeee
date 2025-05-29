@@ -5,6 +5,10 @@
     .dependencies = .{
         .sandeee_vm = .{ .path = "../sandeee_vm" },
         .sandeee_disk = .{ .path = "../sandeee_disk" },
+        .network = .{
+            .url = "git+https://github.com/ikskuh/zig-network#c76240d2240711a3dcbf1c0fb461d5d1f18be79a",
+            .hash = "network-0.1.0-AAAAAOwlAQAQ6zKPUrsibdpGisxld9ftUKGdMvcCSpaj",
+        },
     },
     .paths = .{
         "build.zig",

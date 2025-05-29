@@ -676,9 +676,7 @@ pub const Folder = struct {
             try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ folder.name, name });
         errdefer allocator.alloc.free(fullname);
 
-        log.debug("new file {s}", .{fullname});
-
-        var file_node = self.files;
+        var file_node = folder.files;
         while (file_node) |subfile| : (file_node = subfile.next_sibling) {
             if (std.mem.eql(u8, subfile.name, fullname))
                 return error.FileExists;
@@ -785,13 +783,13 @@ pub const Folder = struct {
         const fullname = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.name, name });
         defer allocator.alloc.free(fullname);
 
-        var subfile_node = self.folders;
-        while (subfile_node) |subfile| : (subfile_node = subfile.next_sibling) {
-            const nextfile = subfile.next_sibling orelse break;
+        var subfile_node = &self.files;
+        while (subfile_node.*) |subfile| : (subfile_node = &subfile.next_sibling) {
             if (std.mem.eql(u8, subfile.name, fullname)) {
-                subfile.next_sibling = nextfile.next_sibling;
-                nextfile.next_sibling = null;
-                nextfile.deinit();
+                subfile_node.* = subfile.next_sibling;
+
+                subfile.next_sibling = null;
+                subfile.deinit();
                 return;
             }
         }
@@ -983,14 +981,14 @@ pub const Folder = struct {
         if (self.ext) |*ext_path|
             ext_path.dir.close();
 
-        allocator.alloc.free(self.name);
-        allocator.alloc.destroy(self);
-
         if (self.parent == null)
             if (root_out) |out| {
                 allocator.alloc.free(out);
                 root_out = null;
             };
+
+        allocator.alloc.free(self.name);
+        allocator.alloc.destroy(self);
     }
 
     pub fn toStr(self: *Folder) !std.ArrayList(u8) {

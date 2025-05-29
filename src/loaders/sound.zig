@@ -20,6 +20,8 @@ pub fn load(self: *const Self) anyerror!void {
 
     const root = try files.FolderLink.resolve(.root);
     self.output.* = audio.Sound.init(try (try root.getFile(path)).read(null));
+}
 
-    return;
+pub fn unload(self: *const Self) void {
+    self.output.deinit();
 }

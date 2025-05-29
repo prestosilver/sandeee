@@ -162,8 +162,6 @@ fn sysRead(self: *vm.VM) VmError!void {
 
     if (idx.data().value >= self.streams.items.len) return error.InvalidStream;
 
-    std.log.info("idx: {}, len: {}", .{ idx.data().value, len.data().value });
-
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
     if (fs) |stream| {
         const cont = try stream.read(@as(u32, @intCast(len.data().value)));
@@ -416,7 +414,6 @@ fn sysRSP(self: *vm.VM) VmError!void {
     const num = try self.popStack();
 
     if (num.data().* != .value) return error.ValueMissing;
-    log.info("rsp {}", .{num.data()});
 
     if (self.rsp < num.data().value) return error.InvalidSys;
 

@@ -223,6 +223,7 @@ pub const WebData = struct {
     styles: std.StringArrayHashMap(Style),
 
     link_lock: std.Thread.Mutex = .{},
+    image_lock: std.Thread.Mutex = .{},
 
     pub fn resetLinks(self: *Self) void {
         self.link_lock.lock();
@@ -421,6 +422,9 @@ pub const WebData = struct {
     }
 
     pub fn loadimage(self: *Self, path: []const u8, target: []const u8) !void {
+        self.image_lock.lock();
+        defer self.image_lock.unlock();
+
         defer allocator.alloc.free(target);
         defer allocator.alloc.free(path);
         const fconts = try self.getConts(path);
@@ -929,6 +933,11 @@ pub const WebData = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        {
+            self.image_lock.lock();
+            defer self.image_lock.unlock();
+        }
+
         // self.http.cancel();
         // self.http.deinit();
 

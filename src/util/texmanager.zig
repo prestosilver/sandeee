@@ -7,7 +7,7 @@ const log = @import("log.zig").log;
 pub const TextureManager = struct {
     pub var instance: TextureManager = .{};
 
-    textures: std.StringHashMap(*tex.Texture) = std.StringHashMap(*tex.Texture).init(allocator.alloc),
+    textures: std.StringHashMap(*tex.Texture) = .init(allocator.alloc),
 
     pub fn deinit() void {
         var iter = instance.textures.iterator();
@@ -21,6 +21,14 @@ pub const TextureManager = struct {
         }
 
         instance.textures.deinit();
+    }
+
+    pub fn remove(self: *TextureManager, name: []const u8) void {
+        if (self.textures.fetchRemove(name)) |val| {
+            allocator.alloc.free(val.key);
+            val.value.deinit();
+            allocator.alloc.destroy(val.value);
+        }
     }
 
     pub fn put(self: *TextureManager, name: []const u8, texture: tex.Texture) !void {

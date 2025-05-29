@@ -58,20 +58,11 @@ pub const pixel = struct {
 
 pub const destroy = struct {
     pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
+        graphics.Context.makeCurrent();
+        defer graphics.Context.makeNotCurrent();
+
         const idx = data[0];
-        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
-
-        {
-            graphics.Context.makeCurrent();
-            defer graphics.Context.makeNotCurrent();
-
-            texture.deinit();
-        }
-
-        const key = texture_manager.TextureManager.instance.textures.getKeyPtr(&.{idx}) orelse return;
-        allocator.alloc.free(key.*);
-
-        _ = texture_manager.TextureManager.instance.textures.removeByPtr(key);
+        texture_manager.TextureManager.instance.remove(&.{idx});
     }
 };
 

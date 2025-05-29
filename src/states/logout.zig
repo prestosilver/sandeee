@@ -15,6 +15,7 @@ const wall = @import("../drawers/wall2d.zig");
 const audio = @import("../util/audio.zig");
 const c = @import("../c.zig");
 const vm_manager = @import("../system/vmmanager.zig");
+const loader = @import("../loaders/loader.zig");
 
 pub var target: enum { Quit, Bios, Update } = .Quit;
 pub var target_file: []const u8 = "";
@@ -31,10 +32,17 @@ pub const GSLogout = struct {
 
     time: f32 = 0,
 
+    pub var unloader: ?loader.Unloader = null;
+
     pub fn setup(self: *Self) !void {
         try audio.instance.playSound(self.logout_sound.*);
         try vm_manager.VMManager.logout();
         self.time = 3;
+
+        if (unloader) |*ul|
+            ul.run();
+
+        unloader = null;
     }
 
     pub fn deinit(_: *Self) void {}

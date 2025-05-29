@@ -28,3 +28,10 @@ pub fn load(self: *const Self) anyerror!void {
         log.err("Could not load image {s}, {s}", .{ path, @errorName(err) });
     }
 }
+
+pub fn unload(self: *const Self) void {
+    gfx.Context.makeCurrent();
+    defer gfx.Context.makeNotCurrent();
+
+    texture_manager.TextureManager.instance.remove(self.name);
+}

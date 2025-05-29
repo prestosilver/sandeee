@@ -1,7 +1,11 @@
 const std = @import("std");
 const vm = @import("../src/system/vm.zig");
 
-pub fn compile(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
+pub fn compile(
+    b: *std.Build,
+    paths: []const std.Build.LazyPath,
+    output: std.Build.LazyPath,
+) anyerror!void {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
@@ -9,7 +13,11 @@ pub fn compile(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
     defer inreader.close();
     try inreader.sync();
 
-    var result = std.ArrayList(u8).init(b.allocator);
+    const path = output.getPath(b);
+    var file = try std.fs.createFileAbsolute(path, .{});
+    defer file.close();
+
+    const writer = file.writer();
 
     var buf_reader = std.io.bufferedReader(inreader.reader());
     var reader_stream = buf_reader.reader();
@@ -44,7 +52,7 @@ pub fn compile(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
     buf_reader = std.io.bufferedReader(inreader.reader());
     reader_stream = buf_reader.reader();
 
-    try result.appendSlice("EEEp");
+    try writer.writeAll("EEEp");
 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         var no_comment = std.mem.splitScalar(u8, line, ';');
@@ -105,10 +113,10 @@ pub fn compile(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
             std.log.info("{s}", .{op});
             return error.UnknownOp;
         }
-        try result.append(@as(u8, @intFromEnum(code)));
+        try writer.writeAll(&.{@as(u8, @intFromEnum(code))});
 
         if (std.mem.eql(u8, op, l)) {
-            try result.appendSlice("\x00");
+            try writer.writeAll("\x00");
         } else {
             const int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
                 var target = l[op.len + 1 ..];
@@ -116,14 +124,14 @@ pub fn compile(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
                 while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
                 if (target[0] == '"' and target[target.len - 1] == '"') {
                     if (target.len <= 2) {
-                        try result.appendSlice("\x02");
-                        try result.appendSlice("\x00");
+                        try writer.writeAll("\x02");
+                        try writer.writeAll("\x00");
                     } else {
                         const target_tmp = try std.zig.string_literal.parseAlloc(b.allocator, target);
 
-                        try result.appendSlice("\x02");
-                        try result.appendSlice(target_tmp);
-                        try result.appendSlice("\x00");
+                        try writer.writeAll("\x02");
+                        try writer.writeAll(target_tmp);
+                        try writer.writeAll("\x00");
                     }
                 } else {
                     if (!consts.contains(target)) {
@@ -132,11 +140,11 @@ pub fn compile(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
                     } else {
                         const value = consts.get(target).?;
                         if (value > 255) {
-                            try result.appendSlice("\x01");
-                            try result.appendSlice(&std.mem.toBytes(value));
+                            try writer.writeAll("\x01");
+                            try writer.writeAll(&std.mem.toBytes(value));
                         } else {
-                            try result.appendSlice("\x03");
-                            try result.appendSlice(&std.mem.toBytes(@as(u8, @intCast(value))));
+                            try writer.writeAll("\x03");
+                            try writer.writeAll(&std.mem.toBytes(@as(u8, @intCast(value))));
                         }
                     }
                 }
@@ -144,19 +152,21 @@ pub fn compile(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(
                 continue;
             };
             if (int > 255) {
-                try result.appendSlice("\x01");
-                try result.appendSlice(&std.mem.toBytes(int));
+                try writer.writeAll("\x01");
+                try writer.writeAll(&std.mem.toBytes(int));
             } else {
-                try result.appendSlice("\x03");
-                try result.appendSlice(&std.mem.toBytes(@as(u8, @intCast(int))));
+                try writer.writeAll("\x03");
+                try writer.writeAll(&std.mem.toBytes(@as(u8, @intCast(int))));
             }
         }
     }
-
-    return result;
 }
 
-pub fn compileLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
+pub fn compileLib(
+    b: *std.Build,
+    paths: []const std.Build.LazyPath,
+    output: std.Build.LazyPath,
+) !void {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
@@ -164,7 +174,12 @@ pub fn compileLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayLi
     defer inreader.close();
     try inreader.sync();
 
-    var result = std.ArrayList(u8).init(b.allocator);
+    const path = output.getPath(b);
+    var file = try std.fs.createFileAbsolute(path, .{});
+    defer file.close();
+
+    const writer = file.writer();
+
     var toc = std.ArrayList(u8).init(b.allocator);
     var data = std.ArrayList(u8).init(b.allocator);
     var funcs = std.ArrayList([]const u8).init(b.allocator);
@@ -213,7 +228,7 @@ pub fn compileLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayLi
     reader_stream = buf_reader.reader();
     var prev_toc: usize = 0;
 
-    try result.appendSlice("elib");
+    try writer.writeAll("elib");
 
     while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         var no_comment = std.mem.splitScalar(u8, line, ';');
@@ -345,10 +360,10 @@ pub fn compileLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayLi
     try toc.append(@as(u8, @intCast(len / 256)));
     try toc.append(@as(u8, @intCast(len % 256)));
 
-    try result.append(@as(u8, @intCast((toc.items.len + 6) / 256)));
-    try result.append(@as(u8, @intCast((toc.items.len + 6) % 256)));
-    try result.appendSlice(toc.items);
-    try result.appendSlice(data.items);
-
-    return result;
+    try writer.writeAll(&.{
+        @as(u8, @intCast((toc.items.len + 6) / 256)),
+        @as(u8, @intCast((toc.items.len + 6) % 256)),
+    });
+    try writer.writeAll(toc.items);
+    try writer.writeAll(data.items);
 }

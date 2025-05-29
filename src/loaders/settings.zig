@@ -43,3 +43,8 @@ pub fn load(self: *const Self) anyerror!void {
     try opener.instance.setup();
     try files.Folder.setupExtr();
 }
+
+pub fn unload(_: *const Self) void {
+    conf.SettingManager.deinit();
+    opener.instance.deinit();
+}

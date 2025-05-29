@@ -43,3 +43,8 @@ pub fn load(self: *const Self) anyerror!void {
         },
     }
 }
+
+pub fn unload(self: *const Self) void {
+    // deinit font
+    self.output.deinit();
+}

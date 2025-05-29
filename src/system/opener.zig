@@ -18,6 +18,7 @@ const OpenerEntry = struct {
 };
 
 types: std.StringHashMap(OpenerEntry) = .init(allocator.alloc),
+cont: []const u8 = undefined,
 
 pub fn setup(self: *Self) !void {
     const root = try files.FolderLink.resolve(.root);
@@ -36,6 +37,8 @@ pub fn setup(self: *Self) !void {
             .icon = null,
         });
     }
+
+    self.cont = cont;
 }
 
 pub fn openFile(self: *Self, path: []const u8) ![]const u8 {
@@ -59,4 +62,8 @@ pub fn getIcon(self: *Self, path: []const u8) ?[]const u8 {
         runs.icon
     else
         null;
+}
+
+pub fn deinit(self: *Self) void {
+    self.types.deinit();
 }

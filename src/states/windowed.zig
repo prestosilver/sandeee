@@ -32,6 +32,7 @@ const c = @import("../c.zig");
 const vm_manager = @import("../system/vmmanager.zig");
 const texture_manager = @import("../util/texmanager.zig");
 const eln = @import("../util/eln.zig");
+const loader = @import("../loaders/loader.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -112,6 +113,7 @@ pub const GSWindowed = struct {
 
         const window = try allocator.alloc.create(win.Window);
         errdefer allocator.alloc.destroy(window);
+
         window.* = event.window;
 
         try global_self.windows.append(window);
@@ -272,10 +274,6 @@ pub const GSWindowed = struct {
         telem.Telem.save() catch |err|
             std.log.err("telem save failed {}", .{err});
 
-        // save email data
-        emails.EmailManager.instance.saveStateFile("/_priv/emails.bin") catch |err|
-            std.log.err("email save failed {}", .{err});
-
         // close all windows
         for (self.windows.items) |window| {
             window.data.deinit();
@@ -288,22 +286,13 @@ pub const GSWindowed = struct {
             allocator.alloc.destroy(popup);
         }
 
-        // deinit the font face
-        self.face.deinit();
-
         // deinit the eln loader
         eln.ElnData.reset();
-
-        // save the disk and settings
-        conf.SettingManager.deinit();
-        files.write();
 
         // deinit lists
         self.windows.clearAndFree();
         self.popups.clearAndFree();
         self.notifs.clearAndFree();
-        emails.EmailManager.instance.deinit();
-        files.deinit();
     }
 
     pub fn refresh(self: *Self) !void {
@@ -389,7 +378,12 @@ pub const GSWindowed = struct {
                     if (window == drag) {
                         self.dragging_window = null;
                     };
-                _ = self.windows.orderedRemove(idx);
+
+                const free_win = self.windows.swapRemove(idx);
+                free_win.data.deinit();
+
+                allocator.alloc.destroy(free_win);
+
                 break;
             }
         }
@@ -421,8 +415,12 @@ pub const GSWindowed = struct {
 
         for (self.windows.items, 0..) |window, idx| {
             if (window.data.contents.props.close) {
-                const sub_win = self.windows.orderedRemove(idx);
-                allocator.alloc.destroy(sub_win);
+                const free_win = self.windows.swapRemove(idx);
+                free_win.data.deinit();
+
+                allocator.alloc.destroy(free_win);
+
+                break;
             }
         }
 
@@ -582,7 +580,7 @@ pub const GSWindowed = struct {
                 }
 
                 if (new_top) |top| {
-                    var swap = self.windows.orderedRemove(@as(usize, @intCast(top)));
+                    var swap = self.windows.swapRemove(@as(usize, @intCast(top)));
 
                     if (!swap.data.active) {
                         swap.data.active = true;
@@ -594,8 +592,13 @@ pub const GSWindowed = struct {
                         .Close => {
                             if (swap.data.contents.props.no_close)
                                 try self.windows.append(swap)
-                            else
-                                return swap.data.deinit();
+                            else {
+                                swap.data.deinit();
+
+                                allocator.alloc.destroy(swap);
+
+                                return;
+                            }
                         },
                         .Full => {
                             if (swap.data.full) {

@@ -160,7 +160,7 @@ var error_message: []const u8 = "Error: Unknown Error";
 var error_state: u8 = 0;
 var paniced = false;
 
-// for shader rect
+// for Shader rect
 var framebuffer_name: c.GLuint = 0;
 var quad_vertex_array_id: c.GLuint = 0;
 var rendered_texture: c.GLuint = 0;
@@ -598,11 +598,8 @@ pub fn mainErr() anyerror!void {
 
     log.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
 
-    // init texture manager
-    texture_manager.TextureManager.instance = .{};
-
     // init graphics
-    try gfx.Context.init("SandEEE");
+    var gfx_loader = try Loader.init(Loader.Graphics{});
 
     try audio.AudioManager.init();
 
@@ -613,42 +610,52 @@ pub fn mainErr() anyerror!void {
     var blip_sound = audio.Sound.init(BLIP_SOUND_DATA);
     var select_sound = audio.Sound.init(SELECT_SOUND_DATA);
 
-    var loader = try Loader.init(Loader.Group{});
-
     // create the loaders queue
     var base_shader_loader = try Loader.init(Loader.Shader{
         .files = SHADER_FILES,
         .out = &shader,
     });
+    try base_shader_loader.require(&gfx_loader);
+
     var font_shader_loader = try Loader.init(Loader.Shader{
         .files = FONT_SHADER_FILES,
         .out = &font_shader,
     });
+    try font_shader_loader.require(&gfx_loader);
+
     var crt_shader_loader = try Loader.init(Loader.Shader{
         .files = CRT_SHADER_FILES,
         .out = &crt_shader,
     });
+    try crt_shader_loader.require(&gfx_loader);
+
     var clear_shader_loader = try Loader.init(Loader.Shader{
         .files = CLEAR_SHADER_FILES,
         .out = &clear_shader,
     });
+    try clear_shader_loader.require(&gfx_loader);
 
-    try loader.require(&base_shader_loader);
-    try loader.require(&font_shader_loader);
-    try loader.require(&crt_shader_loader);
-    try loader.require(&clear_shader_loader);
+    var texture_loader = try Loader.init(Loader.Group{});
+    try texture_loader.require(&base_shader_loader);
+    try texture_loader.require(&font_shader_loader);
+    try texture_loader.require(&crt_shader_loader);
+    try texture_loader.require(&clear_shader_loader);
 
     // fonts
     var font_loader = try Loader.init(Loader.Font{
         .data = .{ .mem = BIOS_FONT_DATA },
         .output = &bios_font,
     });
+    try font_loader.require(&gfx_loader);
 
+    var loader = try Loader.init(Loader.Group{});
+    try loader.require(&texture_loader);
     try loader.require(&font_loader);
 
     // load bios
     var prog: f32 = 0;
-    try loader.load(&prog, 0.0, 1.0);
+    var unloader = try loader.load(&prog, 0.0, 1.0);
+    defer unloader.run();
 
     // start setup states
     gfx.Context.makeCurrent();
@@ -975,6 +982,17 @@ pub fn mainErr() anyerror!void {
         }
     }
 
+    // deinit vm manager
+    vm_manager.VMManager.instance.deinit();
+
+    // deinit the current state
+    game_states.getPtr(current_state).deinit();
+
+    if (logout_state.GSLogout.unloader) |*ul|
+        ul.run();
+
+    logout_state.GSLogout.unloader = null;
+
     // free crash state bc game can no longer crash
     allocator.alloc.destroy(gs_crash);
 
@@ -984,22 +1002,12 @@ pub fn mainErr() anyerror!void {
     // deinit events
     events.EventManager.deinit();
 
-    // deinit the current state
-    game_states.getPtr(current_state).deinit();
-
-    vm_manager.VMManager.instance.deinit();
-
-    // deinit fonts
-    bios_font.deinit();
-
     // deinit textures
     texture_manager.TextureManager.deinit();
-
-    // close window
-    gfx.Context.deinit();
 }
 
 test "headless.zig" {
     //_ = @import("system/headless.zig");
+    _ = @import("system/shell.zig");
     _ = @import("system/vm.zig");
 }

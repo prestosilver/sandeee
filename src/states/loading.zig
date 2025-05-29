@@ -21,6 +21,7 @@ const mail = @import("../system/mail.zig");
 const allocator = @import("../util/allocator.zig");
 const builtin = @import("builtin");
 const log = @import("../util/log.zig").log;
+const logout_state = @import("logout.zig");
 
 const Loader = @import("../loaders/loader.zig");
 
@@ -86,8 +87,8 @@ pub const GSLoading = struct {
                 try loader.require(&settings);
 
                 var textures = try Loader.init(Loader.Group{});
-                var texture_loaders: [TEXTURE_NAMES.len]Loader = undefined;
 
+                var texture_loaders: [TEXTURE_NAMES.len]Loader = undefined;
                 for (TEXTURE_NAMES, 0..) |texture_entry, i| {
                     texture_loaders[i] = try Loader.init(Loader.Texture{
                         .path = texture_entry[0],
@@ -141,7 +142,7 @@ pub const GSLoading = struct {
                 //// mail
                 //try self.loader.enqueue(*const []const u8, *const u8, &mailpath, &zero, worker.mail.loadMail);
 
-                try loader.load(&self.load_progress, 0.0, 1.0);
+                logout_state.GSLogout.unloader = try loader.load(&self.load_progress, 0.0, 1.0);
             }
         }.load(in_self) catch |err| {
             log.info("{?}", .{@errorReturnTrace()});

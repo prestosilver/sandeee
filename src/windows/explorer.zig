@@ -66,16 +66,20 @@ pub const ExplorerData = struct {
 
         var sub_folder = try shell_root.getFolders();
         while (sub_folder) |folder| : (sub_folder = folder.next_sibling) {
+            const name = folder.name[shell_root.name.len .. folder.name.len - 1];
+
             try result.append(ExplorerIcon{
-                .name = folder.name[shell_root.name.len .. folder.name.len - 1],
+                .name = try allocator.alloc.dupe(u8, name),
                 .icon = &self.icons[1],
             });
         }
 
         var sub_file = try shell_root.getFiles();
         while (sub_file) |file| : (sub_file = file.next_sibling) {
+            const name = file.name[shell_root.name.len..];
+
             try result.append(ExplorerIcon{
-                .name = file.name[shell_root.name.len..],
+                .name = try allocator.alloc.dupe(u8, name),
                 .icon = &self.icons[0],
             });
         }
@@ -248,6 +252,8 @@ pub const ExplorerData = struct {
 
     pub fn deinit(self: *Self) void {
         self.shell.deinit();
+        for (self.icon_data) |icon|
+            allocator.alloc.free(icon.name);
         allocator.alloc.free(self.icon_data);
         allocator.alloc.destroy(self);
     }
@@ -295,6 +301,8 @@ pub const ExplorerData = struct {
     }
 
     pub fn refresh(self: *Self) !void {
+        for (self.icon_data) |icon|
+            allocator.alloc.free(icon.name);
         allocator.alloc.free(self.icon_data);
         self.icon_data = try self.getIcons();
     }

@@ -193,8 +193,11 @@ pub const WindowContents = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        self.vtable.deinit(self.ptr);
+
         allocator.alloc.free(self.props.info.name);
-        return self.vtable.deinit(self.ptr);
+
+        return;
     }
 
     pub fn init(ptr: anytype, kind: []const u8, name: []const u8, clear_color: cols.Color) !Self {

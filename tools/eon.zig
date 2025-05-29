@@ -775,8 +775,8 @@ const VarMap = struct {
     vars: []Var,
 };
 
-pub fn lexFile(in: []const u8) !std.ArrayList(Token) {
-    var f = try std.fs.cwd().openFile(in, .{});
+pub fn lexFile(b: *std.Build, in: []const u8) !std.ArrayList(Token) {
+    var f = try std.fs.openFileAbsolute(in, .{});
     defer f.close();
     var reader = f.reader();
 
@@ -809,9 +809,9 @@ pub fn lexFile(in: []const u8) !std.ArrayList(Token) {
             var stmt = (try reader.readUntilDelimiterOrEof(&stmt_buff, '\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
-                const target = try std.mem.concat(allocator, u8, &.{ "content/disk", stmt[9 .. stmt.len - 1] });
+                const target = b.path("content").path(b, stmt[10 .. stmt.len - 1]);
 
-                var toks = try lexFile(target);
+                var toks = try lexFile(b, target.getPath(b));
                 defer toks.deinit();
 
                 _ = toks.pop();
@@ -1583,7 +1583,11 @@ pub fn parseProgram(fn_prefix: *[]const u8, tokens: []Token) !Program {
     return result;
 }
 
-pub fn compileEon(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
+pub fn compileEon(
+    b: *std.Build,
+    paths: []const std.Build.LazyPath,
+    output: std.Build.LazyPath,
+) !void {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
@@ -1591,20 +1595,27 @@ pub fn compileEon(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayLi
 
     allocator = b.allocator;
 
-    var tokens = try lexFile(in.getPath(b));
+    var tokens = try lexFile(b, in.getPath(b));
     defer tokens.deinit();
 
     var prog = try parseProgram(&fn_prefix, tokens.items);
 
-    var result = std.ArrayList(u8).init(b.allocator);
+    const path = output.getPath(b);
+
+    var file = try std.fs.createFileAbsolute(path, .{});
+    defer file.close();
+
+    const writer = file.writer();
 
     const adds = try prog.toAsm(false);
-    try result.appendSlice(adds);
-
-    return result;
+    try writer.writeAll(adds);
 }
 
-pub fn compileEonLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.ArrayList(u8) {
+pub fn compileEonLib(
+    b: *std.Build,
+    paths: []const std.Build.LazyPath,
+    output: std.Build.LazyPath,
+) !void {
     if (paths.len != 1) return error.BadPaths;
     const in = paths[0];
 
@@ -1612,15 +1623,18 @@ pub fn compileEonLib(b: *std.Build, paths: []const std.Build.LazyPath) !std.Arra
 
     allocator = b.allocator;
 
-    var tokens = try lexFile(in.getPath(b));
+    var tokens = try lexFile(b, in.getPath(b));
     defer tokens.deinit();
 
     var prog = try parseProgram(&fn_prefix, tokens.items);
 
-    var result = std.ArrayList(u8).init(b.allocator);
+    const path = output.getPath(b);
+
+    var file = try std.fs.createFileAbsolute(path, .{});
+    defer file.close();
+
+    const writer = file.writer();
 
     const adds = try prog.toAsm(true);
-    try result.appendSlice(adds);
-
-    return result;
+    try writer.writeAll(adds);
 }

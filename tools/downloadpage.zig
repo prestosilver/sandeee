@@ -1,44 +1,51 @@
 const std = @import("std");
+const www = @import("www.zig");
 
-pub fn create(paths: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
-    var result = std.ArrayList(u8).init(alloc);
+pub const DownloadPageStep = struct {
+    step: std.Build.Step,
+    output: std.Build.LazyPath,
+    sections: []const www.WWWSection,
+    alloc: std.mem.Allocator,
 
-    try result.appendSlice("#Style @/style.eds\n\n");
-    try result.appendSlice(":logo: [@/logo.eia]\n\n");
-    try result.appendSlice(":center: -- Downloads --\n\n");
+    pub fn create(b: *std.Build, data: []const www.WWWSection, output: std.Build.LazyPath) !*DownloadPageStep {
+        const self = try b.allocator.create(DownloadPageStep);
+        self.* = .{
+            .step = std.Build.Step.init(.{
+                .id = .run,
+                .name = try std.fmt.allocPrint(b.allocator, "DownloadPage {s}", .{output.getDisplayName()}),
+                .makeFn = DownloadPageStep.doStep,
+                .owner = b,
+            }),
+            .sections = data,
+            .output = output,
+            .alloc = b.allocator,
+        };
 
-    var path_tab = std.StringHashMap(std.ArrayList([]const u8)).init(alloc);
-
-    for (paths) |path| {
-        const colon = std.mem.indexOf(u8, path, ":") orelse 0;
-        const head = path[0..colon];
-        const file = path[colon + 1 .. path.len];
-        if (path_tab.getPtr(head)) |entry| {
-            try entry.append(file);
-        } else {
-            var adds = std.ArrayList([]const u8).init(alloc);
-            try adds.append(file);
-
-            try path_tab.put(head, adds);
-        }
+        return self;
     }
 
-    var iter = path_tab.iterator();
+    pub fn doStep(step: *std.Build.Step, _: std.Build.Step.MakeOptions) !void {
+        const self: *DownloadPageStep = @fieldParentPtr("step", step);
+        const b = step.owner;
 
-    while (iter.next()) |entry| {
-        try result.appendSlice(try std.fmt.allocPrint(alloc, ":hs: {s}\n\n", .{entry.key_ptr.*}));
-        for (entry.value_ptr.items) |file| {
-            const slash = std.mem.lastIndexOf(u8, file, "/") orelse 0;
-            const dot = std.mem.lastIndexOf(u8, file, ".") orelse 0;
-            var name = try alloc.dupe(u8, file[slash + 1 .. dot]);
-            defer alloc.free(name);
-            name[0] = std.ascii.toUpper(name[0]);
-            try result.appendSlice(try std.fmt.allocPrint(alloc, ":biglink: > {s}: @{s}\n", .{ name, file }));
+        const tmp_path = self.output.getPath(b);
+        var out_file = try std.fs.createFileAbsolute(tmp_path, .{});
+        defer out_file.close();
+
+        const writer = out_file.writer();
+
+        try writer.writeAll("#Style @/style.eds\n\n");
+        try writer.writeAll(":logo: [@/logo.eia]\n\n");
+        try writer.writeAll(":center: -- Downloads --\n\n");
+
+        for (self.sections) |section| {
+            try writer.writeAll(b.fmt(":hs: {s}\n\n", .{section.label}));
+            for (section.files) |file| {
+                try writer.writeAll(b.fmt(":biglink: > {s}: @/downloads/{s}/{s}\n", .{ file.label, section.folder, file.file }));
+            }
+            try writer.writeAll("\n");
         }
-        try result.appendSlice("\n");
+
+        try writer.writeAll(":center: --- EEE Sees all ---");
     }
-
-    try result.appendSlice(":center: --- EEE Sees all ---");
-
-    return result;
-}
+};
