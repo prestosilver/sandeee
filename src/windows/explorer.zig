@@ -21,11 +21,15 @@ const events = @import("../util/events.zig");
 const gfx = @import("../util/graphics.zig");
 const va = @import("../util/vertArray.zig");
 const opener = @import("../system/opener.zig");
+const eln = @import("../util/eln.zig");
 
 pub const ExplorerData = struct {
     const ExplorerIcon = struct {
         name: []const u8,
-        icon: *const sprite.Sprite,
+        launches: []const u8,
+
+        is_app: bool,
+        icon: u8,
     };
 
     const Self = @This();
@@ -70,17 +74,25 @@ pub const ExplorerData = struct {
 
             try result.append(ExplorerIcon{
                 .name = try allocator.alloc.dupe(u8, name),
-                .icon = &self.icons[1],
+                .launches = try allocator.alloc.dupe(u8, name),
+                .is_app = false,
+                .icon = 1,
             });
         }
 
         var sub_file = try shell_root.getFiles();
         while (sub_file) |file| : (sub_file = file.next_sibling) {
-            const name = file.name[shell_root.name.len..];
+            const parsed = try eln.ElnData.parse(file);
+
+            const icon_spr = parsed.icon orelse 0;
+
+            const folder_idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
 
             try result.append(ExplorerIcon{
-                .name = try allocator.alloc.dupe(u8, name),
-                .icon = &self.icons[0],
+                .name = try allocator.alloc.dupe(u8, file.name[(folder_idx + 1)..]),
+                .launches = try allocator.alloc.dupe(u8, parsed.launches),
+                .is_app = parsed.icon != null,
+                .icon = icon_spr,
             });
         }
 
@@ -149,7 +161,13 @@ pub const ExplorerData = struct {
                         .maxlines = 1,
                     });
 
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, icon.icon, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, if (icon.is_app) &.{
+                        .texture = &.{ 'e', 'l', 'n', @as(u8, @intCast(icon.icon)) },
+                        .data = .{
+                            .source = .{ .w = 1, .h = 1 },
+                            .size = .{ .x = 64, .y = 64 },
+                        },
+                    } else &self.icons[@intCast(icon.icon)], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                     if (self.selected) |selected| {
                         if (selected == idx) {
@@ -185,7 +203,7 @@ pub const ExplorerData = struct {
                                     done = false;
                                     continue :draw_loop;
                                 } else {
-                                    _ = self.shell.runBg(icon.name) catch |err| {
+                                    _ = self.shell.runBg(icon.launches) catch |err| {
                                         const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
                                         const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
@@ -252,8 +270,10 @@ pub const ExplorerData = struct {
 
     pub fn deinit(self: *Self) void {
         self.shell.deinit();
-        for (self.icon_data) |icon|
+        for (self.icon_data) |icon| {
             allocator.alloc.free(icon.name);
+            allocator.alloc.free(icon.launches);
+        }
         allocator.alloc.free(self.icon_data);
         allocator.alloc.destroy(self);
     }
@@ -301,8 +321,10 @@ pub const ExplorerData = struct {
     }
 
     pub fn refresh(self: *Self) !void {
-        for (self.icon_data) |icon|
+        for (self.icon_data) |icon| {
             allocator.alloc.free(icon.name);
+            allocator.alloc.free(icon.launches);
+        }
         allocator.alloc.free(self.icon_data);
         self.icon_data = try self.getIcons();
     }
