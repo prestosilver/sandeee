@@ -585,9 +585,6 @@ pub fn mainErr() anyerror!void {
     // free the argument iterator
     args.deinit();
 
-    // setup vm manager
-    vm_manager.VMManager.init();
-
     // switch to headless main function if nessessary
     if (is_headless) {
         return headless.headlessMain(headless_cmd orelse &.{}, false, null);

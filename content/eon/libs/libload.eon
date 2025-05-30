@@ -2,7 +2,8 @@ fn setupLibLoad() {
     asm "push \"/libs/libload.eep\"";
     asm "sys 3";
     asm "copy 0";
-    asm "push 100000";
+    asm "push \"/libs/libload.eep\"";
+    asm "sys 19";
     asm "sys 4";
     asm "push 4";
     asm "add";

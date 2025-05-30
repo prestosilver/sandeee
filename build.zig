@@ -863,36 +863,32 @@ pub fn build(b: *std.Build) !void {
     exe_mod.addImport("steam", steam_module);
     exe_mod.addImport("network", network_module);
 
-    const clean_step = b.step("clean", "cleans the build env");
-    const content_step = b.step("content", "builds the content folder");
-
-    // cleanup
-    {
-        const rm_disk_step = b.addSystemCommand(&.{ "rm", "-rf", "content/disk", "content/asm/eon" });
-        clean_step.dependOn(&rm_disk_step.step);
-    }
-
-    var disk_step = try disk.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
-    const copy_disk = &b.addSystemCommand(&.{"sync"}).step;
+    const clean_disk_step = b.addSystemCommand(&.{ "rm", "-rf", "content/disk" });
 
     const setup_out = b.addSystemCommand(&.{ "mkdir", "-p", "zig-out/bin/content", "zig-out/bin/disks" });
-    const setup_eon = b.addSystemCommand(&.{ "mkdir", "-p", "content/asm/eon/exec", "content/asm/eon/libs" });
+    setup_out.step.dependOn(&clean_disk_step.step);
 
-    setup_eon.step.dependOn(clean_step);
+    const skel_step = b.addSystemCommand(&.{ "cp", "-r", "content/rawdisk", "content/disk" });
+    skel_step.step.dependOn(&setup_out.step);
 
-    disk_step.step.dependOn(content_step);
+    const copy_libs_step = b.step("libraries", "Copies the eon libraries");
+    copy_libs_step.dependOn(&skel_step.step);
 
-    content_step.dependOn(copy_disk);
-    content_step.dependOn(&setup_out.step);
+    const content_step = b.step("content", "builds the content folder");
+    content_step.dependOn(copy_libs_step);
 
-    const skel = b.addSystemCommand(&.{ "cp", "-r", "content/rawdisk", "content/disk" });
-    skel.step.dependOn(clean_step);
-    copy_disk.dependOn(&setup_eon.step);
-    copy_disk.dependOn(&skel.step);
+    var disk_image_step = try disk.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
+    disk_image_step.step.dependOn(content_step);
 
-    const copy_libs = &b.addSystemCommand(&.{"sync"}).step;
-    copy_libs.dependOn(&setup_eon.step);
-    copy_libs.dependOn(&skel.step);
+    const disk_step = b.step("disk", "Builds the disk image");
+    disk_step.dependOn(&disk_image_step.step);
+
+    // cleanup temp files
+    const clean_tmp = b.addSystemCommand(&.{ "rm", "-rf", "content/.tmp", ".zig-cache", "zig-out" });
+
+    const clean_step = b.step("clean", "cleans the build env");
+    clean_step.dependOn(&clean_tmp.step);
+    clean_step.dependOn(&clean_disk_step.step);
 
     if (optimize == .Debug) {
         var dir = try std.fs.cwd().openDir("content/overlays/debug/", .{ .iterate = true });
@@ -903,9 +899,9 @@ pub fn build(b: *std.Build) !void {
 
             const debug_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/disk" });
 
-            debug_overlay.step.dependOn(&skel.step);
+            debug_overlay.step.dependOn(&skel_step.step);
 
-            copy_disk.dependOn(&debug_overlay.step);
+            content_step.dependOn(&debug_overlay.step);
         }
     }
 
@@ -919,9 +915,9 @@ pub fn build(b: *std.Build) !void {
 
             const steam_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/disk" });
 
-            steam_overlay.step.dependOn(&skel.step);
+            steam_overlay.step.dependOn(&skel_step.step);
 
-            copy_disk.dependOn(&steam_overlay.step);
+            content_step.dependOn(&steam_overlay.step);
         }
     }
 
@@ -981,21 +977,24 @@ pub fn build(b: *std.Build) !void {
     const disk_path = content_path.path(b, "disk");
 
     for (file_data) |file| {
-        const root = if (file.file.converter == conv.copy) copy_disk else copy_libs;
+        const root = if (file.file.converter == conv.copy)
+            &skel_step.step
+        else
+            copy_libs_step;
 
         var step = try file.getStep(b, content_path, disk_path);
 
         step.dependOn(root);
 
         if (file.file.converter == conv.copy) {
-            copy_libs.dependOn(step);
+            copy_libs_step.dependOn(step);
         } else {
             content_step.dependOn(step);
         }
     }
 
     var lib_load_step = try conv.ConvertStep.create(b, comp.compile, &.{content_path.path(b, "asm/libs/libload.asm")}, disk_path.path(b, "libs/libload.eep"));
-    lib_load_step.step.dependOn(copy_disk);
+    lib_load_step.step.dependOn(&skel_step.step);
     content_step.dependOn(&lib_load_step.step);
 
     const image_path = content_path.path(b, "images");
@@ -1007,7 +1006,6 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, image.convert, &.{pngf}, eiaf);
 
-        step.step.dependOn(copy_disk);
         content_step.dependOn(&step.step);
     }
 
@@ -1020,7 +1018,6 @@ pub fn build(b: *std.Build) !void {
 
         var step = try conv.ConvertStep.create(b, sound.convert, &.{wavf}, eraf);
 
-        step.step.dependOn(copy_disk);
         content_step.dependOn(&step.step);
     }
 
@@ -1032,7 +1029,7 @@ pub fn build(b: *std.Build) !void {
 
     //     var step = try conv.ConvertStep.create(b, rand.createScript, count, filename);
 
-    //     step.step.dependOn(copy_disk);
+    //     step.step.dependOn(skel_step);
     //     content_step.dependOn(&step.step);
     // }
 
@@ -1041,7 +1038,7 @@ pub fn build(b: *std.Build) !void {
 
     //     var step = try conv.ConvertStep.create(b, rand.create, "", filename);
 
-    //     step.step.dependOn(copy_disk);
+    //     step.step.dependOn(skel_step);
     //     content_step.dependOn(&step.step);
     // }
 
@@ -1070,17 +1067,17 @@ pub fn build(b: *std.Build) !void {
         b.path("src/images/main.eff"),
     );
 
-    font_joke_step.step.dependOn(copy_disk);
-    font_step.step.dependOn(copy_disk);
-    font_2x_step.step.dependOn(copy_disk);
-    font_bios_step.step.dependOn(copy_disk);
+    font_joke_step.step.dependOn(&skel_step.step);
+    font_step.step.dependOn(&skel_step.step);
+    font_2x_step.step.dependOn(&skel_step.step);
+    font_bios_step.step.dependOn(&skel_step.step);
 
     content_step.dependOn(&font_step.step);
     content_step.dependOn(&font_joke_step.step);
     content_step.dependOn(&font_2x_step.step);
     content_step.dependOn(&font_bios_step.step);
 
-    exe.step.dependOn(&disk_step.step);
+    exe.step.dependOn(disk_step);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());

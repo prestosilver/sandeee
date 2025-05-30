@@ -10,8 +10,8 @@ const log = @import("../util/log.zig").log;
 pub const VMManager = struct {
     const Self = @This();
 
-    pub var vm_time: f64 = 0.5;
-    pub var instance: Self = undefined;
+    pub var vm_time: f64 = 0.9;
+    pub var instance: Self = .{};
 
     // fps tracking
     pub var last_frame_time: f64 = 0;
@@ -19,9 +19,9 @@ pub const VMManager = struct {
     pub var last_update_time: f64 = 0;
     pub var last_render_time: f64 = 0;
 
-    threads: std.ArrayList(std.Thread),
-    vms: std.AutoHashMap(usize, vm.VM),
-    results: std.AutoHashMap(usize, VMResult),
+    threads: std.ArrayList(std.Thread) = .init(allocator.alloc),
+    vms: std.AutoHashMap(usize, vm.VM) = .init(allocator.alloc),
+    results: std.AutoHashMap(usize, VMResult) = .init(allocator.alloc),
     vm_index: usize = 0,
 
     pub const VMResult = struct {
@@ -36,14 +36,6 @@ pub const VMManager = struct {
     pub const VMHandle = struct {
         id: usize,
     };
-
-    pub fn init() void {
-        instance = .{
-            .vms = std.AutoHashMap(usize, vm.VM).init(allocator.alloc),
-            .results = std.AutoHashMap(usize, VMResult).init(allocator.alloc),
-            .threads = std.ArrayList(std.Thread).init(allocator.alloc),
-        };
-    }
 
     pub fn logout() !void {
         var iter = instance.vms.iterator();
