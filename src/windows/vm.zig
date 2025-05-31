@@ -11,8 +11,12 @@ const shd = @import("../util/shader.zig");
 const fnt = @import("../util/font.zig");
 const spr = @import("../drawers/sprite2d.zig");
 const allocator = @import("../util/allocator.zig");
+const gfx = @import("../util/graphics.zig");
 const vm = @import("../system/vm.zig");
 const c = @import("../c.zig");
+const va = @import("../util/vertArray.zig");
+
+const TextureManager = @import("../util/texmanager.zig").TextureManager;
 
 pub const VMData = struct {
     const Self = @This();

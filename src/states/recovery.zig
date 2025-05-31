@@ -32,7 +32,7 @@ pub const GSRecovery = struct {
     select_sound: *audio.Sound,
 
     sel: usize = 0,
-    disks: std.ArrayList([]const u8) = undefined,
+    disks: std.ArrayList([]const u8) = .init(allocator.alloc),
     status: []const u8 = "",
     sub_sel: ?RecoveryMenuEntry = null,
     confirm_sel: ?bool = null,
@@ -48,14 +48,12 @@ pub const GSRecovery = struct {
         return (file.metadata() catch return 0).modified();
     }
 
-    pub fn sortDisksLt(_: u8, a: []const u8, b: []const u8) bool {
+    pub fn sortDisksLt(_: void, a: []const u8, b: []const u8) bool {
         return getDate(a) < getDate(b);
     }
 
     pub fn setup(self: *Self) !void {
         gfx.Context.instance.color = .{ .r = 0, .g = 0, .b = 0.3333 };
-
-        self.disks = std.ArrayList([]const u8).init(allocator.alloc);
 
         self.sel = 0;
         self.sub_sel = null;
@@ -73,9 +71,7 @@ pub const GSRecovery = struct {
             try self.disks.append(entry);
         }
 
-        const und: u8 = undefined;
-
-        std.sort.insertion([]const u8, self.disks.items, und, sortDisksLt);
+        std.sort.insertion([]const u8, self.disks.items, {}, sortDisksLt);
 
         for (self.disks.items, 0..) |_, idx| {
             const copy = self.disks.items[idx];
@@ -94,7 +90,7 @@ pub const GSRecovery = struct {
             allocator.alloc.free(item);
         }
 
-        self.disks.deinit();
+        self.disks.clearAndFree();
     }
 
     const UPDATE_MODES = [_][*:0]const u8{

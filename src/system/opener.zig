@@ -18,7 +18,7 @@ const OpenerEntry = struct {
 };
 
 types: std.StringHashMap(OpenerEntry) = .init(allocator.alloc),
-cont: []const u8 = undefined,
+cont: []const u8 = &.{},
 
 pub fn setup(self: *Self) !void {
     const root = try files.FolderLink.resolve(.root);

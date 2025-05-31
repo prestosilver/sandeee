@@ -47,7 +47,7 @@ const EmailData = struct {
     selected: ?*mail.EmailManager.Email = null,
     offset: *f32 = undefined,
     rowsize: f32 = 0,
-    bnds: rect.Rectangle = undefined,
+    bnds: rect.Rectangle = .{ .w = 0, .h = 0 },
 
     login_pos: vecs.Vector2 = .{ .x = 0, .y = 0 },
 
@@ -321,15 +321,12 @@ const EmailData = struct {
         };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-            .popup = .{
-                .texture = "win",
-                .data = .{
-                    .title = "Send Attachment",
-                    .source = .{ .w = 1, .h = 1 },
-                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                    .contents = popups.PopupData.PopupContents.init(adds),
-                },
-            },
+            .popup = .atlas("win", .{
+                .title = "Send Attachment",
+                .source = .{ .w = 1, .h = 1 },
+                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                .contents = popups.PopupData.PopupContents.init(adds),
+            }),
         });
     }
 
@@ -765,88 +762,55 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(EmailData);
 
     self.* = .{
-        .divx = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 2 },
-            },
-        },
-        .dive = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .y = 2 },
-            },
-        },
-        .logo = .{
-            .texture = "email-logo",
-            .data = .{
-                .source = .{ .w = 1, .h = 1 },
-                .size = .{ .x = 256, .y = 72 },
-            },
-        },
-        .sel = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .y = 6 },
-                .color = .{ .r = 1, .g = 0, .b = 0 },
-            },
-        },
-        .reply = .{
-            .texture = "icons",
-            .data = .{
-                .source = .{ .x = 1.0 / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 32, .y = 32 },
-            },
-        },
-        .back = .{
-            .texture = "icons",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 32, .y = 32 },
-            },
-        },
-        .backbg = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-                .size = .{ .x = 28, .y = 40 },
-            },
-        },
+        .divx = .atlas("ui", .{
+            .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 2 },
+        }),
+        .dive = .atlas("ui", .{
+            .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .y = 2 },
+        }),
+        .logo = .atlas("email-logo", .{
+            .source = .{ .w = 1, .h = 1 },
+            .size = .{ .x = 256, .y = 72 },
+        }),
+        .sel = .atlas("ui", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .y = 6 },
+            .color = .{ .r = 1, .g = 0, .b = 0 },
+        }),
+        .reply = .atlas("icons", .{
+            .source = .{ .x = 1.0 / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 32, .y = 32 },
+        }),
+        .back = .atlas("icons", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 32, .y = 32 },
+        }),
+        .backbg = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .size = .{ .x = 28, .y = 40 },
+        }),
         .text_box = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2, .y = 32 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2, .y = 28 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 32 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 28 },
+            }),
         },
         .button = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2, .y = 32 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2, .y = 28 },
-                    .color = .{ .r = 0.75, .g = 0.75, .b = 0.75 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 32 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 28 },
+                .color = .{ .r = 0.75, .g = 0.75, .b = 0.75 },
+            }),
         },
         .shader = shader,
         .login_text = [2][]u8{ &.{}, &.{} },

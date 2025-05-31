@@ -22,50 +22,56 @@ pub const WallData = struct {
 
     pub fn getVerts(self: *const WallData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(6);
-        var pos: rect.Rectangle = undefined;
-        var source = rect.Rectangle{ .w = 1, .h = 1 };
 
         const par: *const sb.Drawer(WallData) = @fieldParentPtr("data", self);
-        const size = (texture_manager.TextureManager.instance.textures.get(par.texture) orelse return result).size;
+        const size = (texture_manager.TextureManager.instance.textures.get(par.texture.atlas) orelse return result).size;
 
         switch (self.mode) {
-            .Color => {
-                return result;
-            },
+            .Color => {},
             .Fill => {
                 const x_ratio: f32 = self.dims.x / size.x;
                 const y_ratio: f32 = self.dims.y / size.y;
                 const max_ratio: f32 = @max(x_ratio, y_ratio);
 
-                pos.w = max_ratio * size.x;
-                pos.h = max_ratio * size.y;
-                pos.x = (self.dims.x - pos.w) / 2;
-                pos.y = (self.dims.y - pos.h) / 2;
+                const w = max_ratio * size.x;
+                const h = max_ratio * size.y;
+
+                try result.appendQuad(.{
+                    .w = w,
+                    .h = h,
+                    .x = (self.dims.x - w) / 2,
+                    .y = (self.dims.y - h) / 2,
+                }, .{ .w = 1, .h = 1 }, .{});
             },
             .Tile => {
-                pos.w = self.dims.x;
-                pos.h = self.dims.y;
-                pos.x = 0;
-                pos.y = 0;
-                source.w = self.dims.x / size.x;
-                source.h = self.dims.y / size.y;
+                try result.appendQuad(.{
+                    .w = self.dims.x,
+                    .h = self.dims.y,
+                    .x = 0,
+                    .y = 0,
+                }, .{
+                    .w = self.dims.x / size.x,
+                    .h = self.dims.y / size.y,
+                }, .{});
             },
             .Center => {
-                pos.w = size.x;
-                pos.h = size.y;
-                pos.x = (self.dims.x - pos.w) / 2;
-                pos.y = (self.dims.y - pos.h) / 2;
+                try result.appendQuad(.{
+                    .w = size.x,
+                    .h = size.y,
+                    .x = (self.dims.x - size.x) / 2,
+                    .y = (self.dims.y - size.y) / 2,
+                }, .{ .w = 1, .h = 1 }, .{});
             },
             .Stretch => {
-                pos.w = self.dims.x;
-                pos.h = self.dims.y;
-                pos.x = 0;
-                pos.y = 0;
+                try result.appendQuad(.{
+                    .w = self.dims.x,
+                    .h = self.dims.y,
+                    .x = 0,
+                    .y = 0,
+                }, .{ .w = 1, .h = 1 }, .{});
             },
-            else => return result,
+            else => {},
         }
-
-        try result.appendQuad(pos, source, .{});
 
         return result;
     }

@@ -176,69 +176,45 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(TasksData);
     self.* = .{
         .panel = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2.0, .y = 32.0 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2.0, .y = 28.0 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 32.0 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 28.0 },
+            }),
         },
         .scroll_sprites = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                    .size = .{ .x = 20, .y = 20 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .y = 2.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 20, .y = 64 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                    .size = .{ .x = 20, .y = 20 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .y = 3.0 / 8.0, .w = 2.0 / 8.0, .h = 3.0 / 8.0 },
-                    .size = .{ .x = 20, .y = 30 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                .size = .{ .x = 20, .y = 20 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .y = 2.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 20, .y = 64 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                .size = .{ .x = 20, .y = 20 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .y = 3.0 / 8.0, .w = 2.0 / 8.0, .h = 3.0 / 8.0 },
+                .size = .{ .x = 20, .y = 30 },
+            }),
         },
         .shader = shader,
         .stats = try vm_manager.VMManager.instance.getStats(),
-        .render_graph = .{
-            .texture = "white",
-            .data = .{
-                .size = .{ .x = 100, .y = 100 },
-                .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
-                .color = .{ .r = 0.5, .g = 0, .b = 0 },
-            },
-        },
-        .vm_graph = .{
-            .texture = "white",
-            .data = .{
-                .size = .{ .x = 100, .y = 100 },
-                .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
-                .color = .{ .r = 1, .g = 0.5, .b = 0.5 },
-            },
-        },
+        .render_graph = .atlas("white", .{
+            .size = .{ .x = 100, .y = 100 },
+            .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
+            .color = .{ .r = 0.5, .g = 0, .b = 0 },
+        }),
+        .vm_graph = .atlas("white", .{
+            .size = .{ .x = 100, .y = 100 },
+            .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
+            .color = .{ .r = 1, .g = 0.5, .b = 0.5 },
+        }),
     };
 
     var result = try win.WindowContents.init(self, "Tasks", "SandEEE Tasks", .{ .r = 0.75, .g = 0.75, .b = 0.75 });

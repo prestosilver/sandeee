@@ -932,32 +932,32 @@ pub const VM = struct {
     }
 
     pub fn getOp(self: *VM) ![]u8 {
-        var oper: Operation = undefined;
         const bt = try self.backtrace(self.return_rsp);
-
         defer self.allocator.free(bt);
 
-        if (self.inside_fn) |inside| {
-            if (self.functions.getPtr(inside)) |func| {
-                oper = func.*.ops[self.pc - 1];
-            } else {
-                if (@intFromEnum(oper.code) < @intFromEnum(Operation.Code.Last)) {
-                    return try std.fmt.allocPrint(self.allocator, "In function '{s}?' @ {}:\n  Operation: {}\n\n{s}", .{ self.inside_fn orelse MAIN_NAME, self.pc, oper, bt });
-                } else {
-                    return try std.fmt.allocPrint(self.allocator, "In function '{s}?' @ {}:\n  Operation: ?\n\n{s}", .{ self.inside_fn orelse MAIN_NAME, self.pc, bt });
-                }
+        const oper = if (self.inside_fn) |inside|
+            if (self.functions.getPtr(inside)) |func|
+                func.*.ops[self.pc - 1]
+            else {
+                return try std.fmt.allocPrint(
+                    self.allocator,
+                    "In function '{s}?' @ {}:\n  Operation: ?\n\n{s}",
+                    .{ self.inside_fn orelse MAIN_NAME, self.pc, bt },
+                );
             }
-        } else {
-            oper = if (self.code) |code|
-                if (self.pc == 0)
-                    .{ .code = .Nop }
-                else
-                    code[self.pc - 1]
+        else if (self.code) |code|
+            if (self.pc != 0)
+                code[self.pc - 1]
             else
-                .{ .code = .Nop };
-        }
+                Operation{ .code = .Nop }
+        else
+            Operation{ .code = .Nop };
 
-        return try std.fmt.allocPrint(self.allocator, "In function '{s}' @ {}:\n  Operation: {}\n{s}", .{ self.inside_fn orelse MAIN_NAME, self.pc, oper, bt });
+        return try std.fmt.allocPrint(
+            self.allocator,
+            "In function '{s}' @ {}:\n  Operation: {}\n{s}",
+            .{ self.inside_fn orelse MAIN_NAME, self.pc, oper, bt },
+        );
     }
 
     pub fn getOper(self: *VM) !?Operation {

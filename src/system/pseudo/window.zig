@@ -19,23 +19,20 @@ const log = @import("../../util/log.zig").log;
 
 pub var wintex: *tex.Texture = undefined;
 pub var shader: *shd.Shader = undefined;
+pub var windows_ptr: *std.ArrayList(*win.Window) = undefined;
 
 pub var vm_idx: u8 = 0;
-pub var windows_ptr: *std.ArrayList(*win.Window) = undefined;
 
 pub const new = struct {
     pub fn read(vm_instance: ?*vm.VM) files.FileError![]const u8 {
         const result = try allocator.alloc.alloc(u8, 1);
         const window_data = try vmwin.init(vm_idx, shader);
 
-        const window = win.Window{
-            .texture = "win",
-            .data = .{
-                .source = rect.Rectangle{ .w = 1, .h = 1 },
-                .contents = window_data,
-                .active = true,
-            },
-        };
+        const window: win.Window = .atlas("win", .{
+            .source = rect.Rectangle{ .w = 1, .h = 1 },
+            .contents = window_data,
+            .active = true,
+        });
 
         events.EventManager.instance.sendEvent(winev.EventCreateWindow{ .window = window }) catch {
             return error.InvalidPsuedoData;
@@ -159,6 +156,27 @@ pub const flip = struct {
     }
 };
 
+pub const clear = struct {
+    pub fn write(id: []const u8, _: ?*vm.VM) files.FileError!void {
+        if (id.len != 1) return;
+        const aid = id[0];
+
+        for (windows_ptr.*.items) |item| {
+            if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
+                const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
+
+                if (self.idx == aid) {
+                    self.clear();
+
+                    return;
+                }
+            }
+        }
+
+        return;
+    }
+};
+
 pub const title = struct {
     pub fn read(vm_instance: ?*vm.VM) files.FileError![]const u8 {
         if (vm_instance == null) return &.{};
@@ -214,6 +232,11 @@ pub const size = struct {
                         const y = std.mem.asBytes(&@as(u16, @intFromFloat(item.data.pos.h)));
                         @memcpy(result[0..2], x);
                         @memcpy(result[2..4], y);
+
+                        item.data.contents.moveResize(item.data.pos) catch {
+                            return error.OutOfMemory;
+                        };
+
                         return result;
                     }
                 }

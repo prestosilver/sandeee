@@ -38,15 +38,12 @@ pub const Telem = packed struct {
             instance.version.minor != options.SandEEEVersion.minor or
             instance.version.patch != options.SandEEEVersion.patch)
         {
-            const update_window: win.Window = .{
-                .texture = "win",
-                .data = .{
-                    .source = .{ .w = 1, .h = 1 },
-                    .pos = .{ .w = 600, .h = 350 },
-                    .contents = wins.update.init() catch return,
-                    .active = true,
-                },
-            };
+            const update_window: win.Window = .atlas("win", .{
+                .source = .{ .w = 1, .h = 1 },
+                .pos = .{ .w = 600, .h = 350 },
+                .contents = wins.update.init() catch return,
+                .active = true,
+            });
 
             events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = update_window, .center = true }) catch return;
         }
@@ -93,8 +90,8 @@ pub const Telem = packed struct {
 
         const enc = std.base64.standard_no_pad.Encoder;
 
-        var ap: [enc.calcSize(4)]u8 = undefined;
-        var bp: [enc.calcSize(4)]u8 = undefined;
+        var ap = std.mem.zeroes([enc.calcSize(4)]u8);
+        var bp = std.mem.zeroes([enc.calcSize(4)]u8);
 
         const aenc = enc.encode(&ap, a_bytes);
         const benc = enc.encode(&bp, b_bytes);

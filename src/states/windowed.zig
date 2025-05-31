@@ -139,14 +139,11 @@ pub const GSWindowed = struct {
         const notif = try allocator.alloc.create(notifications.Notification);
         errdefer allocator.alloc.destroy(notif);
 
-        notif.* = .{
-            .texture = "ui",
-            .data = .{
-                .title = event.title,
-                .text = event.text,
-                .icon = event.icon,
-            },
-        };
+        notif.* = .atlas("ui", .{
+            .title = event.title,
+            .text = event.text,
+            .icon = event.icon,
+        });
 
         try global_self.notifs.append(notif);
     }
@@ -190,37 +187,25 @@ pub const GSWindowed = struct {
 
         global_self = self;
 
-        win.WindowContents.scroll_sp[0] = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                .size = .{ .x = 20, .y = 20 },
-            },
-        };
+        win.WindowContents.scroll_sp[0] = .atlas("ui", .{
+            .source = .{ .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+            .size = .{ .x = 20, .y = 20 },
+        });
 
-        win.WindowContents.scroll_sp[1] = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .y = 2.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 20, .y = 64 },
-            },
-        };
+        win.WindowContents.scroll_sp[1] = .atlas("ui", .{
+            .source = .{ .y = 2.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 20, .y = 64 },
+        });
 
-        win.WindowContents.scroll_sp[2] = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                .size = .{ .x = 20, .y = 20 },
-            },
-        };
+        win.WindowContents.scroll_sp[2] = .atlas("ui", .{
+            .source = .{ .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+            .size = .{ .x = 20, .y = 20 },
+        });
 
-        win.WindowContents.scroll_sp[3] = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .y = 3.0 / 8.0, .w = 2.0 / 8.0, .h = 3.0 / 8.0 },
-                .size = .{ .x = 20, .y = 30 },
-            },
-        };
+        win.WindowContents.scroll_sp[3] = .atlas("ui", .{
+            .source = .{ .y = 3.0 / 8.0, .w = 2.0 / 8.0, .h = 3.0 / 8.0 },
+            .size = .{ .x = 20, .y = 30 },
+        });
 
         win.WindowContents.shader = self.shader;
         shell.shader = self.shader;
@@ -233,15 +218,12 @@ pub const GSWindowed = struct {
         try events.EventManager.instance.registerListener(system_events.EventDebugSet, debugSet);
 
         if (conf.SettingManager.instance.getBool("show_welcome")) {
-            const window = win.Window{
-                .texture = "win",
-                .data = .{
-                    .source = rect.Rectangle{ .w = 1, .h = 1 },
-                    .pos = .{ .w = 600, .h = 350 },
-                    .contents = try wins.welcome.init(self.shader),
-                    .active = true,
-                },
-            };
+            const window: win.Window = .atlas("win", .{
+                .source = rect.Rectangle{ .w = 1, .h = 1 },
+                .pos = .{ .w = 600, .h = 350 },
+                .contents = try wins.welcome.init(self.shader),
+                .active = true,
+            });
 
             try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = true });
         }
@@ -497,15 +479,12 @@ pub const GSWindowed = struct {
         }
 
         if (key == c.GLFW_KEY_P and mods == (c.GLFW_MOD_CONTROL | c.GLFW_MOD_SHIFT) and down) {
-            const window = win.Window{
-                .texture = "win",
-                .data = .{
-                    .source = .{ .w = 1, .h = 1 },
-                    .pos = .{ .w = 400, .h = 500 },
-                    .contents = try wins.tasks.init(self.shader),
-                    .active = true,
-                },
-            };
+            const window: win.Window = .atlas("win", .{
+                .source = .{ .w = 1, .h = 1 },
+                .pos = .{ .w = 400, .h = 500 },
+                .contents = try wins.tasks.init(self.shader),
+                .active = true,
+            });
 
             try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = false });
 
@@ -621,15 +600,15 @@ pub const GSWindowed = struct {
                         },
                         else => {
                             try self.windows.append(swap);
-                            if (!swap.data.full) {
+                            if (!swap.data.full) drag: {
                                 self.dragging_mode = mode;
                                 self.dragging_window = self.windows.items[self.windows.items.len - 1];
                                 const start = self.dragging_window.?.data.pos;
                                 self.dragging_start = switch (self.dragging_mode) {
-                                    win.DragMode.None => .{},
-                                    win.DragMode.Close => .{},
+                                    win.DragMode.None => break :drag,
+                                    win.DragMode.Close => break :drag,
                                     win.DragMode.Full => .{},
-                                    win.DragMode.Min => .{},
+                                    win.DragMode.Min => break :drag,
                                     win.DragMode.Move => .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y },
                                     win.DragMode.ResizeR => .{ .x = start.w - self.mousepos.x },
                                     win.DragMode.ResizeB => .{ .y = start.h - self.mousepos.y },
@@ -637,6 +616,8 @@ pub const GSWindowed = struct {
                                     win.DragMode.ResizeRB => .{ .x = start.w - self.mousepos.x, .y = start.h - self.mousepos.y },
                                     win.DragMode.ResizeLB => .{ .x = start.w + start.x, .y = start.h - self.mousepos.y },
                                 };
+
+                                try swap.data.contents.moveResize(swap.data.pos);
                             }
                         },
                     }

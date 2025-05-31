@@ -88,22 +88,16 @@ pub const BarData = struct {
             try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, .{ .x = 2, .y = self.screendims.y - 464 - self.height });
 
             for (apps, 0..) |app, i| {
-                const icon_spr = if (app.icon) |icn|
-                    spr.Sprite{
-                        .texture = &.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) },
-                        .data = .{
-                            .source = .{ .w = 1, .h = 1 },
-                            .size = .{ .x = 64, .y = 64 },
-                        },
-                    }
+                const icon_spr: spr.Sprite = if (app.icon) |icn|
+                    .override(icn, .{
+                        .source = .{ .w = 1, .h = 1 },
+                        .size = .{ .x = 64, .y = 64 },
+                    })
                 else
-                    spr.Sprite{
-                        .texture = "error",
-                        .data = .{
-                            .source = .{ .w = 1, .h = 1 },
-                            .size = .{ .x = 64, .y = 64 },
-                        },
-                    };
+                    .atlas("error", .{
+                        .source = .{ .w = 1, .h = 1 },
+                        .size = .{ .x = 64, .y = 64 },
+                    });
                 const height = font.size * 1;
                 const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
                 const text = app.name;

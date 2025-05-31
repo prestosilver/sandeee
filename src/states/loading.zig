@@ -165,13 +165,10 @@ pub const GSLoading = struct {
         // setup some pointers
         pseudo.win.shader = self.shader;
 
-        wins.email.notif = .{
-            .texture = "icons",
-            .data = .{
-                .source = .{ .x = 0.0 / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{},
-            },
-        };
+        wins.email.notif = .atlas("icons", .{
+            .source = .{ .x = 0.0 / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{},
+        });
     }
 
     pub fn deinit(self: *Self) void {

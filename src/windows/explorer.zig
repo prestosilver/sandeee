@@ -27,9 +27,7 @@ pub const ExplorerData = struct {
     const ExplorerIcon = struct {
         name: []const u8,
         launches: []const u8,
-
-        is_app: bool,
-        icon: u8,
+        icon: sprite.Sprite,
     };
 
     const Self = @This();
@@ -59,7 +57,7 @@ pub const ExplorerData = struct {
     selected: ?usize = null,
     last_action: ?ExplorerMouseAction = null,
     icon_data: []const ExplorerIcon = &.{},
-    bnds: rect.Rectangle = undefined,
+    bnds: rect.Rectangle = .{ .w = 0, .h = 0 },
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
         const shell_root = try self.shell.root.resolve();
@@ -75,8 +73,7 @@ pub const ExplorerData = struct {
             try result.append(ExplorerIcon{
                 .name = try allocator.alloc.dupe(u8, name),
                 .launches = try allocator.alloc.dupe(u8, name),
-                .is_app = false,
-                .icon = 1,
+                .icon = self.icons[1],
             });
         }
 
@@ -84,14 +81,16 @@ pub const ExplorerData = struct {
         while (sub_file) |file| : (sub_file = file.next_sibling) {
             const parsed = try eln.ElnData.parse(file);
 
-            const icon_spr = parsed.icon orelse 0;
+            const icon_spr: sprite.Sprite = if (parsed.icon) |icon| .override(icon, .{
+                .source = .{ .w = 1, .h = 1 },
+                .size = .{ .x = 64, .y = 64 },
+            }) else self.icons[0];
 
             const folder_idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
 
             try result.append(ExplorerIcon{
                 .name = try allocator.alloc.dupe(u8, file.name[(folder_idx + 1)..]),
                 .launches = try allocator.alloc.dupe(u8, parsed.launches),
-                .is_app = parsed.icon != null,
                 .icon = icon_spr,
             });
         }
@@ -161,13 +160,7 @@ pub const ExplorerData = struct {
                         .maxlines = 1,
                     });
 
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, if (icon.is_app) &.{
-                        .texture = &.{ 'e', 'l', 'n', @as(u8, @intCast(icon.icon)) },
-                        .data = .{
-                            .source = .{ .w = 1, .h = 1 },
-                            .size = .{ .x = 64, .y = 64 },
-                        },
-                    } else &self.icons[@intCast(icon.icon)], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon.icon, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                     if (self.selected) |selected| {
                         if (selected == idx) {
@@ -194,7 +187,7 @@ pub const ExplorerData = struct {
                                     // the active folder changed !!!
                                     // clear and redraw
                                     try batch.SpriteBatch.instance.addEntry(&.{
-                                        .texture = "",
+                                        .texture = .none,
                                         .verts = try va.VertArray.init(0),
                                         .shader = self.shader.*,
                                         .clear = props.clear_color,
@@ -215,15 +208,12 @@ pub const ExplorerData = struct {
                                         };
 
                                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                                            .popup = .{
-                                                .texture = "win",
-                                                .data = .{
-                                                    .title = "Error",
-                                                    .source = .{ .w = 1, .h = 1 },
-                                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                                    .contents = popups.PopupData.PopupContents.init(adds),
-                                                },
-                                            },
+                                            .popup = .atlas("win", .{
+                                                .title = "Error",
+                                                .source = .{ .w = 1, .h = 1 },
+                                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                                                .contents = popups.PopupData.PopupContents.init(adds),
+                                            }),
                                         });
                                     };
                                 }
@@ -364,15 +354,12 @@ pub const ExplorerData = struct {
                     };
 
                     try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                        .popup = .{
-                            .texture = "win",
-                            .data = .{
-                                .title = "File Picker",
-                                .source = .{ .w = 1.0, .h = 1.0 },
-                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                .contents = popups.PopupData.PopupContents.init(adds),
-                            },
-                        },
+                        .popup = .atlas("win", .{
+                            .title = "File Picker",
+                            .source = .{ .w = 1.0, .h = 1.0 },
+                            .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                            .contents = popups.PopupData.PopupContents.init(adds),
+                        }),
                     });
                 }
             },
@@ -390,51 +377,33 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(ExplorerData);
 
     self.* = .{
-        .gray = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 72.0, .y = 72.0 },
-            },
-        },
-        .menubar = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-                .size = .{ .y = 40.0 },
-            },
-        },
+        .gray = .atlas("ui", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 72.0, .y = 72.0 },
+        }),
+        .menubar = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .size = .{ .y = 40.0 },
+        }),
         .text_box = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2.0, .y = 32.0 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2.0, .y = 28.0 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 32.0 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 28.0 },
+            }),
         },
         .icons = undefined,
-        .back_sprite = .{
-            .texture = "icons",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 32, .y = 32 },
-            },
-        },
-        .selected_sprite = .{
-            .texture = "big_icons",
-            .data = .{
-                .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 64, .y = 64 },
-            },
-        },
+        .back_sprite = .atlas("icons", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 32, .y = 32 },
+        }),
+        .selected_sprite = .atlas("big_icons", .{
+            .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 64, .y = 64 },
+        }),
         .shader = shader,
         .shell = .{
             .root = .home,
@@ -445,13 +414,10 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
     for (self.icons, 0..) |_, idx| {
         const i = @as(f32, @floatFromInt(idx));
 
-        self.icons[idx] = .{
-            .texture = "big_icons",
-            .data = .{
-                .source = .{ .x = i / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 64, .y = 64 },
-            },
-        };
+        self.icons[idx] = .atlas("big_icons", .{
+            .source = .{ .x = i / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 64, .y = 64 },
+        });
     }
 
     try self.refresh();

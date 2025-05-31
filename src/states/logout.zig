@@ -52,13 +52,10 @@ pub const GSLogout = struct {
 
         try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, .{});
 
-        const clear_sprite = sp.Sprite{
-            .texture = "none",
-            .data = .{
-                .size = size,
-                .source = .{ .w = size.x, .h = size.y },
-            },
-        };
+        const clear_sprite: sp.Sprite = .atlas("none", .{
+            .size = size,
+            .source = .{ .w = size.x, .h = size.y },
+        });
 
         try batch.SpriteBatch.instance.draw(sp.Sprite, &clear_sprite, self.clear_shader, .{});
 

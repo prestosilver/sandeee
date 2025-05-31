@@ -77,14 +77,11 @@ pub const DeskData = struct {
 
             if ((rect.Rectangle{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = .{
-                            .source = rect.Rectangle{ .w = 1, .h = 1 },
-                            .contents = try wins.explorer.init(shader),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .source = rect.Rectangle{ .w = 1, .h = 1 },
+                        .contents = try wins.explorer.init(shader),
+                        .active = true,
+                    });
 
                     const explorer_self: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
 
@@ -127,18 +124,15 @@ pub const DeskData = struct {
 
                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                             .global = true,
-                            .popup = .{
-                                .texture = "win",
-                                .data = .{
-                                    .title = "File Picker",
-                                    .source = .{ .w = 1, .h = 1 },
-                                    .pos = rect.Rectangle.initCentered(.{
-                                        .w = gfx.Context.instance.size.x,
-                                        .h = gfx.Context.instance.size.y,
-                                    }, 350, 125),
-                                    .contents = popups.PopupData.PopupContents.init(adds),
-                                },
-                            },
+                            .popup = .atlas("win", .{
+                                .title = "File Picker",
+                                .source = .{ .w = 1, .h = 1 },
+                                .pos = rect.Rectangle.initCentered(.{
+                                    .w = gfx.Context.instance.size.x,
+                                    .h = gfx.Context.instance.size.y,
+                                }, 350, 125),
+                                .contents = popups.PopupData.PopupContents.init(adds),
+                            }),
                         });
                     };
 

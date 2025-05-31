@@ -108,19 +108,19 @@ pub const Context = struct {
     pub fn regShader(s: shd.Shader) !void {
         try instance.shaders.append(s);
 
-        const proj = try mat4.Mat4.ortho(0, instance.size.x, instance.size.y, 0, 100, -1);
+        const proj: mat4.Mat4 = .ortho(0, instance.size.x, instance.size.y, 0, 100, -1);
 
         s.setMat4("projection", proj);
         s.setFloat("screen_width", instance.size.x);
         s.setFloat("screen_height", instance.size.y);
     }
 
-    pub fn resize(w: i32, h: i32) !void {
+    pub fn resize(w: i32, h: i32) void {
         instance.size = .{ .x = @floatFromInt(w), .y = @floatFromInt(h) };
 
         c.glViewport(0, 0, w, h);
 
-        const proj = try mat4.Mat4.ortho(0, @as(f32, @floatFromInt(w)), @as(f32, @floatFromInt(h)), 0, 100, -1);
+        const proj: mat4.Mat4 = .ortho(0, @floatFromInt(w), @floatFromInt(h), 0, 100, -1);
 
         for (instance.shaders.items) |shader| {
             shader.setMat4("projection", proj);

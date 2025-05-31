@@ -11,8 +11,6 @@ const tex = @import("texture.zig");
 const files = @import("../system/files.zig");
 const c = @import("../c.zig");
 
-var font_id: u8 = 0;
-
 const FONT_COLORS = [16]col.Color{
     .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1 },
     .{ .r = 0.5, .g = 0.5, .b = 0.5, .a = 1 },
@@ -75,7 +73,7 @@ pub const COLOR_MAGENTA = "\xFF";
 pub const EEE = E ** 3;
 
 pub const Font = struct {
-    tex: []const u8,
+    tex: tex.Texture,
     size: f32,
     chars: [256]Char,
 
@@ -102,12 +100,10 @@ pub const Font = struct {
     pub fn deinit(self: *Font) void {
         if (!self.setup) return;
 
-        allocator.alloc.free(self.tex);
+        self.tex.deinit();
     }
 
     pub fn initMem(data: []const u8) !Font {
-        if (font_id == 255) @panic("Max Fonts Reached");
-
         if (!std.mem.eql(u8, data[0..4], "efnt")) return error.BadFile;
 
         const char_width = @as(c_uint, @intCast(data[4]));
@@ -115,8 +111,8 @@ pub const Font = struct {
 
         const atlas_size = vec.Vector2{ .x = 128 * @as(f32, @floatFromInt(char_width)), .y = 2 * @as(f32, @floatFromInt(char_height)) };
 
-        var result: Font = undefined;
-        var texture: c.GLuint = undefined;
+        var chars: [256]Char = std.mem.zeroes([256]Char);
+        var texture: c.GLuint = 0;
 
         c.glGenTextures(1, &texture);
         c.glBindTexture(c.GL_TEXTURE_2D, texture);
@@ -135,7 +131,7 @@ pub const Font = struct {
 
             c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), 0, @as(c_int, @intCast(char_width)), @as(c_int, @intCast(char_height)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[char_start]);
 
-            result.chars[i + 128] = Char{
+            chars[i + 128] = Char{
                 .size = .{
                     .x = @as(f32, @floatFromInt(char_width)) * 2,
                     .y = @as(f32, @floatFromInt(char_height)) * 2,
@@ -155,7 +151,7 @@ pub const Font = struct {
 
             c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), @as(c_int, @intCast(char_height)), @as(c_int, @intCast(char_width)), @as(c_int, @intCast(char_height)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[char_start]);
 
-            result.chars[i] = Char{
+            chars[i] = Char{
                 .size = .{
                     .x = @as(f32, @floatFromInt(char_width)) * 2,
                     .y = @as(f32, @floatFromInt(char_height)) * 2,
@@ -174,21 +170,16 @@ pub const Font = struct {
             x += char_width;
         }
 
-        result.size = @as(f32, @floatFromInt(char_height * 2));
-
-        result.tex = try std.fmt.allocPrint(allocator.alloc, "font{}", .{font_id});
-
-        try texture_manager.TextureManager.instance.put(result.tex, .{
-            .tex = texture,
-            .size = atlas_size,
-            .buffer = &.{},
-        });
-
-        font_id += 1;
-
-        result.setup = true;
-
-        return result;
+        return .{
+            .chars = chars,
+            .tex = .{
+                .tex = texture,
+                .size = atlas_size,
+                .buffer = &.{},
+            },
+            .setup = true,
+            .size = @as(f32, @floatFromInt(char_height * 2)),
+        };
     }
 
     pub const drawParams = struct {
@@ -327,7 +318,7 @@ pub const Font = struct {
         }
 
         try batch.SpriteBatch.instance.addEntry(&.{
-            .texture = self.tex,
+            .texture = .{ .texture = self.tex },
             .verts = vert_array,
             .shader = params.shader.*,
         });

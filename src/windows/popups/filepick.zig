@@ -39,21 +39,15 @@ pub const PopupFilePick = struct {
             try allocator.alloc.dupe(u8, self.path);
         defer allocator.alloc.free(text);
 
-        const text_background = spr.Sprite{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = bnds.w - 60, .y = 32 },
-            },
-        };
+        const text_background: spr.Sprite = .atlas("ui", .{
+            .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = bnds.w - 60, .y = 32 },
+        });
 
-        const text_foreground = spr.Sprite{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = bnds.w - 64, .y = 28 },
-            },
-        };
+        const text_foreground: spr.Sprite = .atlas("ui", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = bnds.w - 64, .y = 28 },
+        });
 
         try batch.SpriteBatch.instance.draw(spr.Sprite, &text_background, popups.popup_shader, .{ .x = bnds.x + 28, .y = bnds.y + font.size * 2 - 4 });
         try batch.SpriteBatch.instance.draw(spr.Sprite, &text_foreground, popups.popup_shader, .{ .x = bnds.x + 30, .y = bnds.y + font.size * 2 - 2 });

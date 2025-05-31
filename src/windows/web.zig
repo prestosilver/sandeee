@@ -218,7 +218,7 @@ pub const WebData = struct {
     add_links: bool = false,
     web_idx: u8,
 
-    bnds: rect.Rectangle = undefined,
+    bnds: rect.Rectangle = .{ .w = 1, .h = 1 },
 
     styles: std.StringArrayHashMap(Style),
 
@@ -328,9 +328,9 @@ pub const WebData = struct {
         const ugc = steam.getSteamUGC();
         const BUFFER_SIZE = 256;
 
-        var size: u64 = undefined;
-        var folder = [_]u8{0} ** (BUFFER_SIZE + 1);
-        var timestamp: u32 = undefined;
+        var size: u64 = 0;
+        var timestamp: u32 = 0;
+        var folder = std.mem.zeros([BUFFER_SIZE + 1]u8);
 
         if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
             if (!ugc.downloadItem(id, true)) {
@@ -514,15 +514,12 @@ pub const WebData = struct {
         };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-            .popup = .{
-                .texture = "win",
-                .data = .{
-                    .title = "Save As",
-                    .source = .{ .w = 1, .h = 1 },
-                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                    .contents = popups.PopupData.PopupContents.init(adds),
-                },
-            },
+            .popup = .atlas("win", .{
+                .title = "Save As",
+                .source = .{ .w = 1, .h = 1 },
+                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                .contents = popups.PopupData.PopupContents.init(adds),
+            }),
         });
     }
 
@@ -632,37 +629,28 @@ pub const WebData = struct {
                         .Center => {
                             const x = (web_width - size.x) / 2;
 
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
-                                .texture = &texid,
-                                .data = .{
-                                    .source = .{ .w = 1, .h = 1 },
-                                    .size = size,
-                                },
-                            }, self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.atlas(&texid, .{
+                                .source = .{ .w = 1, .h = 1 },
+                                .size = size,
+                            }), self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
                             texid[4] += 1;
                             pos.y += size.y;
                         },
                         .Left => {
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
-                                .texture = &texid,
-                                .data = .{
-                                    .source = .{ .w = 1, .h = 1 },
-                                    .size = size,
-                                },
-                            }, self.shader, .{ .x = bnds.x + 6 + pos.x, .y = bnds.y + 6 + pos.y });
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.atlas(&texid, .{
+                                .source = .{ .w = 1, .h = 1 },
+                                .size = size,
+                            }), self.shader, .{ .x = bnds.x + 6 + pos.x, .y = bnds.y + 6 + pos.y });
                             texid[4] += 1;
                             pos.y += size.y;
                         },
                         .Right => {
                             const x = web_width - size.x;
 
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.{
-                                .texture = &texid,
-                                .data = .{
-                                    .source = .{ .w = 1, .h = 1 },
-                                    .size = size,
-                                },
-                            }, self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
+                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.atlas(&texid, .{
+                                .source = .{ .w = 1, .h = 1 },
+                                .size = size,
+                            }), self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
                             texid[4] += 1;
                             pos.y += size.y;
                         },
@@ -846,6 +834,8 @@ pub const WebData = struct {
 
     // TODO: BUG possible leak
     pub fn followLink(self: *Self) !void {
+        if (self.add_links) return;
+
         if (self.highlight_idx == 0) return;
 
         var last_host: []const u8 = "";
@@ -988,51 +978,33 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
     log.info("{s}", .{conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
 
     self.* = .{
-        .highlight = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 2, .y = 28 },
-            },
-        },
-        .menubar = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-                .size = .{ .y = 40 },
-            },
-        },
+        .highlight = .atlas("ui", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 2, .y = 28 },
+        }),
+        .menubar = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .size = .{ .y = 40 },
+        }),
         .text_box = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2, .y = 32 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2, .y = 28 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 32 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 28 },
+            }),
         },
         .icons = .{
-            .{
-                .texture = "icons",
-                .data = .{
-                    .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 32, .y = 32 },
-                },
-            },
-            .{
-                .texture = "icons",
-                .data = .{
-                    .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 32, .y = 32 },
-                },
-            },
+            .atlas("icons", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32, .y = 32 },
+            }),
+            .atlas("icons", .{
+                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32, .y = 32 },
+            }),
         },
         .path = try allocator.alloc.dupe(u8, conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"),
         .conts = null,

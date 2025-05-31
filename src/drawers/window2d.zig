@@ -472,7 +472,7 @@ pub const WindowData = struct {
         bnds.h -= 40;
 
         try batch.SpriteBatch.instance.addEntry(&.{
-            .texture = "",
+            .texture = .none,
             .verts = try va.VertArray.init(0),
             .shader = shader.*,
             .clear = self.contents.props.clear_color,

@@ -10,22 +10,25 @@ const events = @import("../util/events.zig");
 const window_events = @import("../events/window.zig");
 const rect = @import("../math/rects.zig");
 const gfx = @import("../util/graphics.zig");
+const file_utils = @import("../util/files.zig");
 
 const log = @import("log.zig").log;
 
 pub const ElnData = struct {
     name: []const u8,
-    icon: ?u8 = null,
+    icon: ?tex.Texture = null,
     launches: []const u8,
 
-    var texture: u8 = 0;
-    var textures: std.StringHashMap(u8) = std.StringHashMap(u8).init(allocator.alloc);
+    var textures: std.StringHashMap(tex.Texture) = .init(allocator.alloc);
 
     pub fn reset() void {
-        textures.deinit();
+        var iter = textures.iterator();
 
-        textures = std.StringHashMap(u8).init(allocator.alloc);
-        texture = 0;
+        while (iter.next()) |entry| {
+            entry.value_ptr.deinit();
+        }
+
+        textures.clearAndFree();
     }
 
     pub const errorData = struct {
@@ -46,96 +49,87 @@ pub const ElnData = struct {
 
             try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                 .global = true,
-                .popup = .{
-                    .texture = "win",
-                    .data = .{
-                        .title = "Error",
-                        .source = .{ .w = 1, .h = 1 },
-                        .pos = rect.Rectangle.initCentered(.{
-                            .w = gfx.Context.instance.size.x,
-                            .h = gfx.Context.instance.size.y,
-                        }, 350, 125),
-                        .contents = popups.PopupData.PopupContents.init(adds),
-                    },
-                },
+                .popup = .atlas("win", .{
+                    .title = "Error",
+                    .source = .{ .w = 1, .h = 1 },
+                    .pos = rect.Rectangle.initCentered(.{
+                        .w = gfx.Context.instance.size.x,
+                        .h = gfx.Context.instance.size.y,
+                    }, 350, 125),
+                    .contents = popups.PopupData.PopupContents.init(adds),
+                }),
             });
         };
     }
 
     pub fn parse(file: *files.File) !ElnData {
-        const ext_idx = std.mem.lastIndexOf(u8, file.name, ".") orelse file.name.len;
-        const folder_idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
+        const parts = file_utils.splitPath(file.name);
+
+        if (parts.file == null)
+            return error.NotAFile;
 
         var result = ElnData{
-            .name = file.name[(folder_idx + 1)..],
-            .launches = file.name[(folder_idx + 1)..],
+            .name = parts.file.?,
+            .launches = parts.file.?,
             .icon = null,
         };
 
-        if (std.mem.eql(u8, file.name[(ext_idx + 1)..], "eln")) {
-            const conts = try file.read(null);
-            var split = std.mem.splitScalar(u8, conts, '\n');
-            while (split.next()) |entry| {
-                const colon_idx = std.mem.indexOf(u8, entry, ":") orelse continue;
-                const prop = std.mem.trim(u8, entry[0..colon_idx], " ");
-                const value = std.mem.trim(u8, entry[colon_idx + 1 ..], " ");
-                if (std.mem.eql(u8, prop, "name")) {
-                    result.name = value;
-                } else if (std.mem.eql(u8, prop, "icon")) {
-                    if (textures.get(value)) |idx| {
-                        result.icon = idx;
-                    } else load_tex: {
-                        const name = .{ 'e', 'l', 'n', texture };
-                        var eln_tex = tex.Texture.init();
+        if (parts.ext) |ext| {
+            if (std.mem.eql(u8, ext, "eln")) {
+                const conts = try file.read(null);
+                var split = std.mem.splitScalar(u8, conts, '\n');
+                while (split.next()) |entry| {
+                    const colon_idx = std.mem.indexOf(u8, entry, ":") orelse continue;
+                    const prop = std.mem.trim(u8, entry[0..colon_idx], " ");
+                    const value = std.mem.trim(u8, entry[colon_idx + 1 ..], " ");
+                    if (std.mem.eql(u8, prop, "name")) {
+                        result.name = value;
+                    } else if (std.mem.eql(u8, prop, "icon")) {
+                        if (textures.get(value)) |texture| {
+                            result.icon = texture;
+                        } else load_tex: {
+                            var texture = tex.Texture.init();
 
-                        eln_tex.loadFile(value) catch |err| {
-                            log.err("Failed to load image {s}: {}", .{ value, err });
-                            eln_tex.deinit();
-                            break :load_tex;
-                        };
+                            texture.loadFile(value) catch |err| {
+                                log.err("Failed to load image {s}: {}", .{ value, err });
+                                texture.deinit();
+                                break :load_tex;
+                            };
 
-                        eln_tex.upload() catch |err| {
-                            log.err("Failed to upload image {s}: {}", .{ value, err });
-                            eln_tex.deinit();
-                            break :load_tex;
-                        };
+                            texture.upload() catch |err| {
+                                log.err("Failed to upload image {s}: {}", .{ value, err });
+                                texture.deinit();
+                                break :load_tex;
+                            };
 
-                        try texture_manager.TextureManager.instance.put(&name, eln_tex);
-                        try textures.put(value, texture);
+                            try textures.put(value, texture);
 
-                        result.icon = texture;
-
-                        texture += 1;
+                            result.icon = texture;
+                        }
+                    } else if (std.mem.eql(u8, prop, "runs")) {
+                        result.launches = value;
                     }
-                } else if (std.mem.eql(u8, prop, "runs")) {
-                    result.launches = value;
                 }
-            }
-        } else if (std.mem.eql(u8, file.name[(ext_idx + 1)..], "eia")) {
-            if (textures.get(file.name)) |idx| {
-                result.icon = idx;
-            } else load_tex: {
-                const name = .{ 'e', 'l', 'n', texture };
-                var eln_tex = tex.Texture.init();
+            } else if (std.mem.eql(u8, ext, "eia")) {
+                if (textures.get(file.name)) |texture| {
+                    result.icon = texture;
+                } else load_tex: {
+                    var texture = tex.Texture.init();
 
-                eln_tex.loadFile(file.name) catch |err| {
-                    log.err("Failed to load image {s}: {}", .{ file.name, err });
-                    eln_tex.deinit();
-                    break :load_tex;
-                };
+                    texture.loadFile(file.name) catch |err| {
+                        log.err("Failed to load image {s}: {}", .{ file.name, err });
+                        texture.deinit();
+                        break :load_tex;
+                    };
 
-                eln_tex.upload() catch |err| {
-                    log.err("Failed to upload image {s}: {}", .{ file.name, err });
-                    eln_tex.deinit();
-                    break :load_tex;
-                };
+                    texture.upload() catch |err| {
+                        log.err("Failed to upload image {s}: {}", .{ file.name, err });
+                        texture.deinit();
+                        break :load_tex;
+                    };
 
-                try texture_manager.TextureManager.instance.put(&name, eln_tex);
-                try textures.put(file.name, texture);
-
-                result.icon = texture;
-
-                texture += 1;
+                    try textures.put(file.name, texture);
+                }
             }
         }
 

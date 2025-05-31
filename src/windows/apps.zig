@@ -120,23 +120,16 @@ pub const LauncherData = struct {
                     .maxlines = 1,
                 });
 
-                const icon_spr =
-                    if (icon.icon) |icn|
-                        sprite.Sprite{
-                            .texture = &.{ 'e', 'l', 'n', @as(u8, @intCast(icn)) },
-                            .data = .{
-                                .source = .{ .w = 1, .h = 1 },
-                                .size = .{ .x = 64, .y = 64 },
-                            },
-                        }
-                    else
-                        sprite.Sprite{
-                            .texture = "error",
-                            .data = .{
-                                .source = .{ .w = 1, .h = 1 },
-                                .size = .{ .x = 64, .y = 64 },
-                            },
-                        };
+                const icon_spr: sprite.Sprite = if (icon.icon) |icn|
+                    .override(icn, .{
+                        .source = .{ .w = 1, .h = 1 },
+                        .size = .{ .x = 64, .y = 64 },
+                    })
+                else
+                    .atlas("error", .{
+                        .source = .{ .w = 1, .h = 1 },
+                        .size = .{ .x = 64, .y = 64 },
+                    });
 
                 try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
@@ -224,43 +217,28 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
     self.* = .{
         .idx = g_idx,
 
-        .gray = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 72, .y = 72 },
-            },
-        },
-        .menubar = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-                .size = .{ .y = 40.0 },
-            },
-        },
+        .gray = .atlas("ui", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 72, .y = 72 },
+        }),
+        .menubar = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .size = .{ .y = 40.0 },
+        }),
         .text_box = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2.0, .y = 32.0 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2.0, .y = 28.0 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 32.0 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 28.0 },
+            }),
         },
-        .sel = .{
-            .texture = "big_icons",
-            .data = .{
-                .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 64.0, .y = 64.0 },
-            },
-        },
+        .sel = .atlas("big_icons", .{
+            .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 64.0, .y = 64.0 },
+        }),
         .shader = shader,
         .shell = .{
             .root = .home,

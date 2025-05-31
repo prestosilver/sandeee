@@ -7,7 +7,7 @@ pub const AudioErrors = error{
     AudioInit,
 };
 
-pub var instance: AudioManager = undefined;
+pub var instance: AudioManager = .{};
 
 pub const Sound = struct {
     buffer: ?c.ALuint = null,
@@ -39,15 +39,15 @@ const background_sound = @embedFile("../sounds/bg.era");
 pub const AudioManager = struct {
     pub const SOURCES = 30;
 
-    sources: [SOURCES]c.ALuint,
+    sources: [SOURCES]c.ALuint = std.mem.zeroes([SOURCES]c.ALuint),
     next: usize = 0,
-    device: ?*c.ALCdevice,
-    context: ?*c.ALCcontext,
+    device: ?*c.ALCdevice = null,
+    context: ?*c.ALCcontext = null,
     volume: f32 = 1.0,
     muted: bool = false,
-    effect: c.ALuint,
-    slot: c.ALuint,
-    bg: c.ALuint,
+    effect: c.ALuint = 0,
+    slot: c.ALuint = 0,
+    bg: c.ALuint = 0,
 
     const eff = c.EFXEAXREVERBPROPERTIES{
         .flDensity = 0.4287,
@@ -76,22 +76,13 @@ pub const AudioManager = struct {
     };
 
     pub fn init() !void {
-        var result = AudioManager{
-            .sources = undefined,
-            .device = undefined,
-            .context = undefined,
-            .effect = undefined,
-            .slot = 0,
-            .bg = undefined,
-        };
-
         const device_name = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
 
-        result.device = c.alcOpenDevice(device_name);
+        const device = c.alcOpenDevice(device_name);
 
-        result.context = c.alcCreateContext(result.device, null);
+        const context = c.alcCreateContext(device, null);
 
-        if (c.alcMakeContextCurrent(result.context) == 0) return error.AudioInit;
+        if (c.alcMakeContextCurrent(context) == 0) return error.AudioInit;
 
         c.alGenEffects = @ptrCast(@alignCast(c.alGetProcAddress("alGenEffects")));
         c.alEffecti = @ptrCast(@alignCast(c.alGetProcAddress("alEffecti")));
@@ -100,31 +91,44 @@ pub const AudioManager = struct {
         c.alGenAuxiliaryEffectSlots = @ptrCast(@alignCast(c.alGetProcAddress("alGenAuxiliaryEffectSlots")));
         c.alAuxiliaryEffectSloti = @ptrCast(@alignCast(c.alGetProcAddress("alAuxiliaryEffectSloti")));
 
-        result.effect = c.LoadEffect(&eff);
+        const effect = c.LoadEffect(&eff);
 
-        c.alGenAuxiliaryEffectSlots.?(1, &result.slot);
-        c.alAuxiliaryEffectSloti.?(result.slot, c.AL_EFFECTSLOT_AUXILIARY_SEND_AUTO, c.AL_TRUE);
-        c.alAuxiliaryEffectSloti.?(result.slot, c.AL_EFFECTSLOT_EFFECT, @intCast(result.effect));
+        var slot: c.ALuint = 0;
+
+        c.alGenAuxiliaryEffectSlots.?(1, &slot);
+        c.alAuxiliaryEffectSloti.?(slot, c.AL_EFFECTSLOT_AUXILIARY_SEND_AUTO, c.AL_TRUE);
+        c.alAuxiliaryEffectSloti.?(slot, c.AL_EFFECTSLOT_EFFECT, @intCast(effect));
 
         const background_data = Sound.init(background_sound);
 
+        var sources = std.mem.zeroes([SOURCES]c.ALuint);
+
         // generate sources for sfx
-        c.alGenSources(SOURCES, &result.sources);
+        c.alGenSources(SOURCES, &sources);
+
+        var bg: c.ALuint = 0;
 
         // generate bg sound
-        c.alGenSources(1, &result.bg);
+        c.alGenSources(1, &bg);
 
         // set bg properties
-        c.alSource3i(result.bg, c.AL_AUXILIARY_SEND_FILTER, @intCast(result.slot), 0, c.AL_FILTER_NULL);
-        c.alSourcei(result.bg, c.AL_LOOPING, c.AL_TRUE);
-        c.alSourcef(result.bg, c.AL_GAIN, 0.5);
+        c.alSource3i(bg, c.AL_AUXILIARY_SEND_FILTER, @intCast(slot), 0, c.AL_FILTER_NULL);
+        c.alSourcei(bg, c.AL_LOOPING, c.AL_TRUE);
+        c.alSourcef(bg, c.AL_GAIN, 0.5);
 
         if (background_data.buffer) |buffer|
-            c.alSourcei(result.bg, c.AL_BUFFER, @intCast(buffer));
+            c.alSourcei(bg, c.AL_BUFFER, @intCast(buffer));
 
-        c.alSourcePlay(result.bg);
+        c.alSourcePlay(bg);
 
-        instance = result;
+        instance = .{
+            .device = device,
+            .context = context,
+            .effect = effect,
+            .slot = slot,
+            .bg = bg,
+            .sources = sources,
+        };
     }
 
     pub fn playSound(self: *AudioManager, snd: Sound) !void {

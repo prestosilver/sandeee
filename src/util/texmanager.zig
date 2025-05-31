@@ -65,6 +65,9 @@ pub const TextureManager = struct {
     }
 
     pub fn get(self: *TextureManager, name: []const u8) ?*tex.Texture {
+        if (std.mem.eql(u8, name, ""))
+            return null;
+
         return self.textures.get(name);
     }
 };

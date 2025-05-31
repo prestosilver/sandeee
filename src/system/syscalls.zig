@@ -79,7 +79,7 @@ pub const SysCall = struct {
             .RSP = .{ .run_fn = sysRSP },
             .Spawn = .{ .run_fn = sysSpawn },
             .Status = .{ .run_fn = sysStatus },
-            .Last = undefined,
+            .Last = .{ .run_fn = lastErr },
         },
     );
 
@@ -90,6 +90,10 @@ pub const SysCall = struct {
             return SYS_CALLS.get(@enumFromInt(index)).run_fn(self);
         }
 
+        return error.InvalidSys;
+    }
+
+    fn lastErr(_: *vm.VM) VmError!void {
         return error.InvalidSys;
     }
 };

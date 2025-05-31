@@ -238,7 +238,7 @@ pub const EmailManager = struct {
     };
 
     emails: std.ArrayList(Email) = std.ArrayList(Email).init(allocator.alloc),
-    boxes: [][]const u8 = undefined,
+    boxes: [][]const u8 = &.{},
 
     pub fn init() !void {
         EmailManager.instance = .{

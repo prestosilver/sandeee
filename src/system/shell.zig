@@ -322,14 +322,11 @@ pub const Shell = struct {
             .desc = "Opens the command prompt",
             .func = struct {
                 pub fn cmd(_: *Shell, param: *Params) !Result {
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = .{
-                            .source = rect.Rectangle{ .w = 1, .h = 1 },
-                            .contents = try wins.cmd.init(),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .source = rect.Rectangle{ .w = 1, .h = 1 },
+                        .contents = try wins.cmd.init(),
+                        .active = true,
+                    });
                     if (param.next()) |command| {
                         const cmd_self: *wins.cmd.CMDData = @ptrCast(@alignCast(window.data.contents.ptr));
                         @memcpy(cmd_self.input_buffer[0..command.len], command);
@@ -348,14 +345,11 @@ pub const Shell = struct {
             .desc = "Opens the text editor",
             .func = struct {
                 pub fn edit(shell: *Shell, param: *Params) !Result {
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = .{
-                            .source = rect.Rectangle{ .w = 1, .h = 1 },
-                            .contents = try wins.editor.init(shader),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .source = rect.Rectangle{ .w = 1, .h = 1 },
+                        .contents = try wins.editor.init(shader),
+                        .active = true,
+                    });
                     if (param.next()) |file_name| {
                         const ed_self: *wins.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
                         const root_link: files.FolderLink = if (std.mem.startsWith(u8, file_name, "/"))
@@ -396,14 +390,11 @@ pub const Shell = struct {
             .func = struct {
                 fn web(shell: *Shell, param: *Params) !Result {
                     const shell_root = try shell.root.resolve();
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = win.WindowData{
-                            .source = rect.Rectangle{ .w = 1, .h = 1 },
-                            .contents = try wins.web.init(shader),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .source = .{ .w = 1, .h = 1 },
+                        .contents = try wins.web.init(shader),
+                        .active = true,
+                    });
                     var url_data: ?[]const u8 = null;
                     var file = false;
                     while (param.next()) |in_param| {
@@ -442,13 +433,10 @@ pub const Shell = struct {
             .desc = "Opens the email browser",
             .func = struct {
                 fn mail(_: *Shell, _: *Params) !Result {
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = win.WindowData{
-                            .contents = try wins.email.init(shader),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .contents = try wins.email.init(shader),
+                        .active = true,
+                    });
                     try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
                     return .{};
                 }
@@ -461,13 +449,10 @@ pub const Shell = struct {
             .desc = "Opens the task manager",
             .func = struct {
                 fn task(_: *Shell, _: *Params) !Result {
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = win.WindowData{
-                            .contents = try wins.tasks.init(shader),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .contents = try wins.tasks.init(shader),
+                        .active = true,
+                    });
                     try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
                     return .{};
                 }
@@ -480,13 +465,10 @@ pub const Shell = struct {
             .desc = "Opens the setting manager",
             .func = struct {
                 fn settings(_: *Shell, _: *Params) !Result {
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = win.WindowData{
-                            .contents = try wins.settings.init(shader),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .contents = try wins.settings.init(shader),
+                        .active = true,
+                    });
                     try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
                     return .{};
                 }
@@ -499,13 +481,10 @@ pub const Shell = struct {
             .desc = "Opens the application launcher",
             .func = struct {
                 fn launch(_: *Shell, _: *Params) !Result {
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = .{
-                            .contents = try wins.apps.init(shader),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .contents = try wins.apps.init(shader),
+                        .active = true,
+                    });
                     try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
                     return .{};
                 }
@@ -522,38 +501,29 @@ pub const Shell = struct {
                     adds.* = .{
                         .shader = shader,
                         .icons = .{
-                            .{
-                                .texture = "bar",
-                                .data = .{
-                                    .source = .{ .y = 11.0 / TOTAL_BAR_SPRITES, .w = 1.0, .h = 1.0 / TOTAL_BAR_SPRITES },
-                                    .size = .{ .x = 64, .y = 64 },
-                                },
-                            },
-                            .{
-                                .texture = "bar",
-                                .data = .{
-                                    .source = .{ .y = 12.0 / TOTAL_BAR_SPRITES, .w = 1.0, .h = 1.0 / TOTAL_BAR_SPRITES },
-                                    .size = .{ .x = 64, .y = 64 },
-                                },
-                            },
+                            .atlas("bar", .{
+                                .source = .{ .y = 11.0 / TOTAL_BAR_SPRITES, .w = 1.0, .h = 1.0 / TOTAL_BAR_SPRITES },
+                                .size = .{ .x = 64, .y = 64 },
+                            }),
+                            .atlas("bar", .{
+                                .source = .{ .y = 12.0 / TOTAL_BAR_SPRITES, .w = 1.0, .h = 1.0 / TOTAL_BAR_SPRITES },
+                                .size = .{ .x = 64, .y = 64 },
+                            }),
                         },
                     };
                     try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
                         .global = true,
-                        .popup = .{
-                            .texture = "win",
-                            .data = .{
-                                .title = "Quit SandEEE",
-                                .source = .{ .w = 0, .h = 0 },
-                                .pos = rect.Rectangle.initCentered(.{
-                                    .x = 0,
-                                    .y = 0,
-                                    .w = gfx.Context.instance.size.x,
-                                    .h = gfx.Context.instance.size.y,
-                                }, 350, 125),
-                                .contents = popups.PopupData.PopupContents.init(adds),
-                            },
-                        },
+                        .popup = .atlas("win", .{
+                            .title = "Quit SandEEE",
+                            .source = .{ .w = 0, .h = 0 },
+                            .pos = rect.Rectangle.initCentered(.{
+                                .x = 0,
+                                .y = 0,
+                                .w = gfx.Context.instance.size.x,
+                                .h = gfx.Context.instance.size.y,
+                            }, 350, 125),
+                            .contents = popups.PopupData.PopupContents.init(adds),
+                        }),
                     });
                     return .{
                         .data = try allocator.alloc.dupe(u8, "Launched"),
@@ -568,13 +538,10 @@ pub const Shell = struct {
             .desc = "Opens the file manager",
             .func = struct {
                 fn files(_: *Shell, _: *Params) !Result {
-                    const window = win.Window{
-                        .texture = "win",
-                        .data = .{
-                            .contents = try wins.explorer.init(shader),
-                            .active = true,
-                        },
-                    };
+                    const window: win.Window = .atlas("win", .{
+                        .contents = try wins.explorer.init(shader),
+                        .active = true,
+                    });
                     try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
                     return .{};
                 }

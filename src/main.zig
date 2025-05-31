@@ -132,7 +132,7 @@ const FULL_QUAD = [_]c.GLfloat{
 var state_refresh_rate: f64 = 0.5;
 
 // misc state data
-var game_states: std.EnumArray(system_events.State, states.GameState) = undefined;
+var game_states: std.EnumArray(system_events.State, states.GameState) = .initUndefined();
 var current_state: system_events.State = .Disks;
 
 // create some fonts
@@ -429,7 +429,7 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
     gfx.Context.makeCurrent();
     defer gfx.Context.makeNotCurrent();
 
-    try gfx.Context.resize(event.w, event.h);
+    gfx.Context.resize(event.w, event.h);
 
     // clear the window
     c.glBindTexture(c.GL_TEXTURE_2D, rendered_texture);
@@ -710,13 +710,10 @@ pub fn mainErr() anyerror!void {
     try texture_manager.TextureManager.instance.putMem("error", ERROR_IMAGE);
     try texture_manager.TextureManager.instance.putMem("white", &WHITE_IMAGE);
 
-    wallpaper = .{
-        .texture = "wall",
-        .data = .{
-            .dims = &gfx.Context.instance.size,
-            .mode = .Center,
-        },
-    };
+    wallpaper = .atlas("wall", .{
+        .dims = &gfx.Context.instance.size,
+        .mode = .Center,
+    });
 
     // disks state
     var gs_disks = disk_state.GSDisks{
@@ -726,13 +723,10 @@ pub fn mainErr() anyerror!void {
         .disk = &disk,
         .blip_sound = &blip_sound,
         .select_sound = &select_sound,
-        .logo_sprite = .{
-            .texture = "bios",
-            .data = .{
-                .source = .{ .w = 1, .h = 1 },
-                .size = .{ .x = 168, .y = 84 },
-            },
-        },
+        .logo_sprite = .atlas("bios", .{
+            .source = .{ .w = 1, .h = 1 },
+            .size = .{ .x = 168, .y = 84 },
+        }),
     };
 
     // loading state
@@ -740,20 +734,14 @@ pub fn mainErr() anyerror!void {
         .face = &main_font,
         .logout_snd = &logout_snd,
         .message_snd = &message_snd,
-        .logo_sprite = .{
-            .texture = "logo",
-            .data = .{
-                .source = .{ .w = 1, .h = 1 },
-                .size = .{ .x = 320, .y = 64 },
-            },
-        },
-        .load_sprite = .{
-            .texture = "load",
-            .data = .{
-                .source = .{ .w = 1, .h = 1 },
-                .size = .{ .x = 0, .y = 16 },
-            },
-        },
+        .logo_sprite = .atlas("logo", .{
+            .source = .{ .w = 1, .h = 1 },
+            .size = .{ .x = 320, .y = 64 },
+        }),
+        .load_sprite = .atlas("load", .{
+            .source = .{ .w = 1, .h = 1 },
+            .size = .{ .x = 0, .y = 16 },
+        }),
         .shader = &shader,
         .disk = &disk,
     };
@@ -767,40 +755,28 @@ pub fn mainErr() anyerror!void {
         .shell = .{
             .root = .root,
         },
-        .bar_logo_sprite = .{
-            .texture = "barlogo",
-            .data = .{
-                .source = .{ .w = 1, .h = 1 },
-                .size = .{ .x = 36, .y = 464 },
+        .bar_logo_sprite = .atlas("barlogo", .{
+            .source = .{ .w = 1, .h = 1 },
+            .size = .{ .x = 36, .y = 464 },
+        }),
+        .desk = .atlas("big_icons", .{
+            .shell = .{
+                .root = .home,
             },
-        },
-        .desk = .{
-            .texture = "big_icons",
-            .data = .{
-                .shell = .{
-                    .root = undefined,
-                },
-            },
-        },
-        .cursor = .{
-            .texture = "cursor",
-            .data = .{
-                .source = .{ .w = 1, .h = 1 },
-                .total = 6,
-            },
-        },
+        }),
+        .cursor = .atlas("cursor", .{
+            .source = .{ .w = 1, .h = 1 },
+            .total = 6,
+        }),
         .wallpaper = &wallpaper,
-        .bar = .{
-            .texture = "bar",
-            .data = .{
-                .height = 38,
-                .screendims = &gfx.Context.instance.size,
-                .shell = .{
-                    .root = undefined,
-                },
-                .shader = &shader,
+        .bar = .atlas("bar", .{
+            .height = 38,
+            .screendims = &gfx.Context.instance.size,
+            .shell = .{
+                .root = .home,
             },
-        },
+            .shader = &shader,
+        }),
     };
 
     // crashed state
@@ -811,13 +787,10 @@ pub fn mainErr() anyerror!void {
         .face = &bios_font,
         .message = &error_message,
         .prev_state = &error_state,
-        .sad_sprite = .{
-            .texture = "sad",
-            .data = .{
-                .source = .{ .w = 1, .h = 1 },
-                .size = .{ .x = 150, .y = 150 },
-            },
-        },
+        .sad_sprite = .atlas("sad", .{
+            .source = .{ .w = 1, .h = 1 },
+            .size = .{ .x = 150, .y = 150 },
+        }),
     };
 
     // install state
@@ -826,13 +799,10 @@ pub fn mainErr() anyerror!void {
         .font_shader = &font_shader,
         .face = &bios_font,
         .select_sound = &select_sound,
-        .load_sprite = .{
-            .texture = "white",
-            .data = .{
-                .source = .{ .w = 1, .h = 1 },
-                .size = .{ .x = 20, .y = 32 },
-            },
-        },
+        .load_sprite = .atlas("white", .{
+            .source = .{ .w = 1, .h = 1 },
+            .size = .{ .x = 20, .y = 32 },
+        }),
     };
 
     // logout state
@@ -1005,6 +975,7 @@ pub fn mainErr() anyerror!void {
 
 test "headless.zig" {
     //_ = @import("system/headless.zig");
-    _ = @import("system/shell.zig");
-    _ = @import("system/vm.zig");
+    _ = @import("util/files.zig");
+    //_ = @import("system/shell.zig");
+    //_ = @import("system/vm.zig");
 }

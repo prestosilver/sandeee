@@ -20,7 +20,7 @@ pub const Mat4 = struct {
         };
     }
 
-    pub fn perspective(fovy: f32, aspect: f32, n: f32, f: f32) !Mat4 {
+    pub fn perspective(fovy: f32, aspect: f32, n: f32, f: f32) Mat4 {
         const th_fov = @tan(fovy / 2);
 
         return .{
@@ -33,7 +33,7 @@ pub const Mat4 = struct {
         };
     }
 
-    pub fn ortho(l: f32, r: f32, b: f32, t: f32, n: f32, f: f32) !Mat4 {
+    pub fn ortho(l: f32, r: f32, b: f32, t: f32, n: f32, f: f32) Mat4 {
         return .{
             .data = .{
                 2 / (r - l),        0,                  0,                  0,
@@ -45,7 +45,7 @@ pub const Mat4 = struct {
     }
 
     pub fn mul(a: Mat4, b: Mat4) Mat4 {
-        var result: Mat4 = undefined;
+        var result: Mat4 = a;
 
         for (0..4) |i| {
             for (0..4) |j| {

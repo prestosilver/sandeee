@@ -10,12 +10,71 @@ const va = @import("../util/vertArray.zig");
 const allocator = @import("allocator.zig");
 const c = @import("../c.zig");
 
+const DrawerTextureKind = enum {
+    none,
+    atlas,
+    texture,
+};
+
+const DrawerTexture = union(DrawerTextureKind) {
+    none,
+    atlas: []const u8,
+    texture: tex.Texture,
+
+    pub fn equals(self: *DrawerTexture, other: DrawerTexture) bool {
+        if (@as(DrawerTextureKind, self.*) != other) return false;
+
+        return switch (self.*) {
+            .none => true,
+            .atlas => std.mem.eql(u8, self.atlas, other.atlas),
+            .texture => self.texture.tex == other.texture.tex,
+        };
+    }
+
+    pub fn dupe(self: *const DrawerTexture) !DrawerTexture {
+        return switch (self.*) {
+            .none => .none,
+            .atlas => .{ .atlas = try allocator.alloc.dupe(u8, self.atlas) },
+            .texture => .{ .texture = self.texture },
+        };
+    }
+
+    pub fn deinit(self: *const DrawerTexture) void {
+        return switch (self.*) {
+            .atlas => allocator.alloc.free(self.atlas),
+            .texture => {},
+            .none => {},
+        };
+    }
+};
+
 pub fn Drawer(comptime T: type) type {
     return struct {
         const Self = @This();
 
-        texture: []const u8,
+        texture: DrawerTexture,
         data: T,
+
+        pub inline fn blank(data: T) Self {
+            return .{
+                .texture = .none,
+                .data = data,
+            };
+        }
+
+        pub inline fn override(texture: tex.Texture, data: T) Self {
+            return .{
+                .texture = .{ .texture = texture },
+                .data = data,
+            };
+        }
+
+        pub inline fn atlas(texture: []const u8, data: T) Self {
+            return .{
+                .texture = .{ .atlas = texture },
+                .data = data,
+            };
+        }
 
         pub inline fn getVerts(self: *const Self, pos: vecs.Vector3) !va.VertArray {
             return self.data.getVerts(pos);
@@ -25,7 +84,7 @@ pub fn Drawer(comptime T: type) type {
 
 pub const QueueEntry = struct {
     shader: shd.Shader,
-    texture: []const u8,
+    texture: DrawerTexture,
     verts: va.VertArray,
     scissor: ?rect.Rectangle = null,
     clear: ?col.Color = null,
@@ -77,7 +136,7 @@ pub const SpriteBatch = struct {
         sb.queue_lock.lock();
         defer sb.queue_lock.unlock();
 
-        if (sb.queue.len != 0 and std.mem.eql(u8, sb.queue[sb.queue.len - 1].texture, entry.texture) and
+        if (sb.queue.len != 0 and sb.queue[sb.queue.len - 1].texture.equals(entry.texture) and
             sb.queue[sb.queue.len - 1].shader.id == new_entry.shader.id and
             new_entry.scissor == null and sb.queue[sb.queue.len - 1].scissor == null and
             new_entry.clear == null and sb.queue[sb.queue.len - 1].clear == null)
@@ -89,7 +148,7 @@ pub const SpriteBatch = struct {
             return;
         }
 
-        new_entry.texture = try allocator.alloc.dupe(u8, entry.texture);
+        new_entry.texture = try entry.texture.dupe();
         sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
         sb.queue[sb.queue.len - 1] = new_entry;
     }
@@ -153,12 +212,13 @@ pub const SpriteBatch = struct {
 
                 if (entry.verts.items().len == 0) continue;
 
-                const target_tex = if (!std.mem.eql(u8, entry.texture, ""))
-                    texture_manager.TextureManager.instance.get(entry.texture) orelse
+                const target_tex = switch (entry.texture) {
+                    .none => &tex.Texture{ .tex = 0, .size = .{}, .buffer = &.{} },
+                    .atlas => |a| texture_manager.TextureManager.instance.get(a) orelse
                         texture_manager.TextureManager.instance.get("error") orelse
-                        return error.TextureMissing
-                else
-                    &tex.Texture{ .tex = 0, .size = .{}, .buffer = undefined };
+                        return error.TextureMissing,
+                    .texture => |t| &t,
+                };
 
                 if (ctex != target_tex.tex)
                     c.glBindTexture(c.GL_TEXTURE_2D, target_tex.tex);
@@ -196,7 +256,7 @@ pub const SpriteBatch = struct {
 
         for (sb.prev_queue) |*e| {
             e.verts.deinit();
-            allocator.alloc.free(e.texture);
+            e.texture.deinit();
         }
 
         allocator.alloc.free(sb.prev_queue);
@@ -207,11 +267,11 @@ pub const SpriteBatch = struct {
     pub fn deinit() void {
         for (instance.prev_queue) |*e| {
             e.verts.deinit();
-            allocator.alloc.free(e.texture);
+            e.texture.deinit();
         }
         for (instance.queue) |*e| {
             e.verts.deinit();
-            allocator.alloc.free(e.texture);
+            e.texture.deinit();
         }
 
         allocator.alloc.free(instance.buffers);

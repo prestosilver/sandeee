@@ -48,7 +48,7 @@ const SettingsData = struct {
     last_action: ?SettingsMouseAction = null,
     focused_pane: ?usize = null,
     editing: ?usize = null,
-    bnds: rect.Rectangle = undefined,
+    bnds: rect.Rectangle = .{ .w = 0, .h = 0 },
 
     value: []const u8,
 
@@ -206,15 +206,12 @@ const SettingsData = struct {
                                         self.value = item.key;
 
                                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                                            .popup = .{
-                                                .texture = "win",
-                                                .data = .{
-                                                    .title = "Text Picker",
-                                                    .source = .{ .w = 1, .h = 1 },
-                                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                                    .contents = popups.PopupData.PopupContents.init(adds),
-                                                },
-                                            },
+                                            .popup = .atlas("win", .{
+                                                .title = "Text Picker",
+                                                .source = .{ .w = 1, .h = 1 },
+                                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                                                .contents = popups.PopupData.PopupContents.init(adds),
+                                            }),
                                         });
                                         self.last_action = null;
                                     },
@@ -230,15 +227,12 @@ const SettingsData = struct {
                                         self.value = item.key;
 
                                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                                            .popup = .{
-                                                .texture = "win",
-                                                .data = .{
-                                                    .title = "Text Picker",
-                                                    .source = .{ .w = 1.0, .h = 1.0 },
-                                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                                    .contents = popups.PopupData.PopupContents.init(adds),
-                                                },
-                                            },
+                                            .popup = .atlas("win", .{
+                                                .title = "Text Picker",
+                                                .source = .{ .w = 1.0, .h = 1.0 },
+                                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                                                .contents = popups.PopupData.PopupContents.init(adds),
+                                            }),
                                         });
                                         self.last_action = null;
                                     },
@@ -254,15 +248,12 @@ const SettingsData = struct {
                                         self.value = item.key;
 
                                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                                            .popup = .{
-                                                .texture = "win",
-                                                .data = .{
-                                                    .title = "Text Picker",
-                                                    .source = .{ .w = 1.0, .h = 1.0 },
-                                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                                    .contents = popups.PopupData.PopupContents.init(adds),
-                                                },
-                                            },
+                                            .popup = .atlas("win", .{
+                                                .title = "Text Picker",
+                                                .source = .{ .w = 1.0, .h = 1.0 },
+                                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                                                .contents = popups.PopupData.PopupContents.init(adds),
+                                            }),
                                         });
                                         self.last_action = null;
                                     },
@@ -434,57 +425,39 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
 
     self.* = .{
         .shader = shader,
-        .highlight = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 2.0, .y = 28.0 },
-            },
-        },
-        .menubar = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-                .size = .{ .y = 40.0 },
-            },
-        },
+        .highlight = .atlas("ui", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 2.0, .y = 28.0 },
+        }),
+        .menubar = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .size = .{ .y = 40.0 },
+        }),
         .text_box = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2.0, .y = 32.0 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 2.0, .y = 28.0 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 32.0 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2.0, .y = 28.0 },
+            }),
         },
         .icons = undefined,
-        .back_button = .{
-            .texture = "icons",
-            .data = .{
-                .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 32.0, .y = 32.0 },
-            },
-        },
+        .back_button = .atlas("icons", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 32.0, .y = 32.0 },
+        }),
         .value = "",
     };
 
     for (self.icons, 0..) |_, idx| {
         const i = @as(f32, @floatFromInt(idx));
 
-        self.icons[idx] = .{
-            .texture = "big_icons",
-            .data = .{
-                .source = .{ .x = i / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 64, .y = 64 },
-            },
-        };
+        self.icons[idx] = .atlas("big_icons", .{
+            .source = .{ .x = i / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 64, .y = 64 },
+        });
     }
 
     return win.WindowContents.init(self, "settings", "Settings", .{ .r = 1, .g = 1, .b = 1 });

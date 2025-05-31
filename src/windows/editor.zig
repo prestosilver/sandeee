@@ -90,7 +90,7 @@ pub const EditorData = struct {
 
     modified: bool = false,
     file: ?*files.File = null,
-    bnds: rect.Rectangle = undefined,
+    bnds: rect.Rectangle = .{ .w = 0, .h = 0 },
 
     pub fn hlLine(row: *Row) !void {
         var line = try allocator.alloc.dupe(u8, row.text);
@@ -430,15 +430,12 @@ pub const EditorData = struct {
                         };
 
                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                            .popup = .{
-                                .texture = "win",
-                                .data = .{
-                                    .title = "Open",
-                                    .source = .{ .w = 1, .h = 1 },
-                                    .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                    .contents = popups.PopupData.PopupContents.init(adds),
-                                },
-                            },
+                            .popup = .atlas("win", .{
+                                .title = "Open",
+                                .source = .{ .w = 1, .h = 1 },
+                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                                .contents = popups.PopupData.PopupContents.init(adds),
+                            }),
                         });
                     }
 
@@ -573,15 +570,12 @@ pub const EditorData = struct {
                 };
 
                 try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                    .popup = .{
-                        .texture = "win",
-                        .data = .{
-                            .title = "Save As",
-                            .source = .{ .w = 1, .h = 1 },
-                            .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                            .contents = popups.PopupData.PopupContents.init(adds),
-                        },
-                    },
+                    .popup = .atlas("win", .{
+                        .title = "Save As",
+                        .source = .{ .w = 1, .h = 1 },
+                        .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
+                        .contents = popups.PopupData.PopupContents.init(adds),
+                    }),
                 });
             }
         }
@@ -910,58 +904,37 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(EditorData);
 
     self.* = .{
-        .menubar = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
-                .size = .{ .y = 40 },
-            },
-        },
-        .num_left = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 40 },
-            },
-        },
-        .num_right = .{
-            .texture = "ui",
-            .data = .{
-                .source = .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 4.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .x = 40 },
-            },
-        },
+        .menubar = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .size = .{ .y = 40 },
+        }),
+        .num_left = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 2.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 40 },
+        }),
+        .num_right = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 4.0 / 8.0, .w = 4.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 40 },
+        }),
         .icons = .{
-            .{
-                .texture = "icons",
-                .data = .{
-                    .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 32, .y = 32 },
-                },
-            },
-            .{
-                .texture = "icons",
-                .data = .{
-                    .source = .{ .x = 0.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 32, .y = 32 },
-                },
-            },
-            .{
-                .texture = "icons",
-                .data = .{
-                    .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                    .size = .{ .x = 32, .y = 32 },
-                },
-            },
+            .atlas("icons", .{
+                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32, .y = 32 },
+            }),
+            .atlas("icons", .{
+                .source = .{ .x = 0.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32, .y = 32 },
+            }),
+            .atlas("icons", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32, .y = 32 },
+            }),
         },
-        .sel = .{
-            .texture = "ui",
-            .data = .{
-                .color = .{ .r = 1, .g = 1, .b = 1 },
-                .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
-                .size = .{ .y = 6 },
-            },
-        },
+        .sel = .atlas("ui", .{
+            .color = .{ .r = 1, .g = 1, .b = 1 },
+            .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .y = 6 },
+        }),
         .shader = shader,
     };
 

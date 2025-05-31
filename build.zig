@@ -860,8 +860,8 @@ pub fn build(b: *std.Build) !void {
     options.addOption(bool, "fakeSteam", steam_mode == .Fake);
 
     exe_mod.addImport("options", options.createModule());
-    exe_mod.addImport("steam", steam_module);
     exe_mod.addImport("network", network_module);
+    exe_mod.addImport("steam", steam_module);
 
     const clean_disk_step = b.addSystemCommand(&.{ "rm", "-rf", "content/disk" });
 
@@ -961,11 +961,9 @@ pub fn build(b: *std.Build) !void {
 
     //exe_mod.linkSystemLibrary("eee", .{});
 
-    exe_mod.addLibraryPath(b.path("zig-out/bin/lib/"));
+    //exe_mod.addLibraryPath(b.path("zig-out/bin/lib/"));
 
-    const exe_inst = b.addInstallArtifact(exe, .{});
-
-    b.getInstallStep().dependOn(&exe_inst.step);
+    b.installArtifact(exe);
 
     const file_data = try std.mem.concat(b.allocator, DiskFile, &.{
         &BASE_FILES,
@@ -1190,9 +1188,11 @@ pub fn build(b: *std.Build) !void {
     };
 
     //exe_tests.step.dependOn(&disk_step.step);
-    exe_tests.root_module.addImport("options", options.createModule());
-    exe_tests.root_module.addImport("network", network_module);
-    exe_tests.root_module.addImport("steam", steam_module);
+    //exe_tests.root_module.addImport("options", options.createModule());
+    //exe_tests.root_module.addImport("network", network_module);
+    //exe_tests.root_module.addImport("steam", steam_module);
+
+    const run_exe_tests = b.addRunArtifact(exe_tests);
 
     const branch = b.fmt("prestosilver/sandeee-os:{s}{s}", .{ platform, suffix });
 
@@ -1204,5 +1204,5 @@ pub fn build(b: *std.Build) !void {
     upload_step.dependOn(&butler_step.step);
 
     const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&b.addRunArtifact(exe_tests).step);
+    test_step.dependOn(&run_exe_tests.step);
 }
