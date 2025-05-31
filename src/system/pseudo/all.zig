@@ -15,6 +15,7 @@ pub const all: []const files.Folder.FolderItem = if (@import("builtin").is_test)
         .file("destroy", .initFake(win.destroy)),
         .file("render", .initFake(win.render)),
         .file("flip", .initFake(win.flip)),
+        .file("clear", .initFake(win.clear)),
         .file("title", .initFake(win.title)),
         .file("size", .initFake(win.size)),
         .file("rules", .initFake(win.rules)),

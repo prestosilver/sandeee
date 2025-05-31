@@ -14,6 +14,8 @@ fn processArgs() {
 }
 
 fn render(win, w, h) {
+    _WindowClear(win);
+
     var source = _MakeRect(0, 0, 1024, 1024);
     var win_w = _WindowWidth(win);
     var win_h = _WindowHeight(win);

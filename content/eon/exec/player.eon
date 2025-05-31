@@ -12,7 +12,10 @@ fn processArgs() {
 }
 
 fn render(win, tex, time) {
+    _WindowClear(win);
+
     _WindowText(win, 0, 0, "Test");
+    
     _WindowFlip(win);
 
     return 0;

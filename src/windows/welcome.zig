@@ -24,7 +24,7 @@ pub const WelcomeData = struct {
     shell: shell.Shell,
     timer: std.time.Timer,
     check_box: [2]sprite.Sprite,
-    cb_pos: rect.Rectangle = undefined,
+    cb_pos: rect.Rectangle = .{ .w = 0, .h = 0 },
     shader: *shd.Shader,
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
@@ -120,26 +120,20 @@ pub const WelcomeData = struct {
 pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(WelcomeData);
 
-    self.* = WelcomeData{
+    self.* = .{
         .shell = .{
             .root = .home,
             .vm = null,
         },
         .check_box = .{
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 4.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                    .size = .{ .x = 20, .y = 20 },
-                },
-            },
-            .{
-                .texture = "ui",
-                .data = .{
-                    .source = .{ .x = 6.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                    .size = .{ .x = 20, .y = 20 },
-                },
-            },
+            .atlas("ui", .{
+                .source = .{ .x = 4.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                .size = .{ .x = 20, .y = 20 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 6.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
+                .size = .{ .x = 20, .y = 20 },
+            }),
         },
         .shader = shader,
         .timer = try std.time.Timer.start(),

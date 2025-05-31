@@ -105,6 +105,8 @@ fn confirm(file) {
 
     while (_WindowOpen() && (done == 0)) {
         done = processClick(good);
+    
+        _WindowClear(window);
         
         _WindowText(window, 10, 10, "Install " & file);
 

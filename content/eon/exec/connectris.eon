@@ -31,6 +31,8 @@ fn renderMap(map, win, tex) {
     var id = "";
     var source = _MakeRect(256, 0, 256, 256);
     var dest = _MakeRect(0, 0, 16, 16);
+    
+    _WindowClear(win);
 
     for (y = 0; y < 24; y = y + 1) {
         for (x = 0; x < 8; x = x + 1) {

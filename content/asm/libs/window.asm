@@ -20,6 +20,17 @@ _WindowDestroy:
     push 0
     ret
 
+_WindowClear:
+    push "/fake/win/clear"      ; path
+    sys 3
+    dup 0
+    dup 2
+    sys 5
+    sys 7
+    disc 0
+    push 0
+    ret
+
 _MakeRect: ; x y w h
     push ""                     ; x y w h | res
     copy 4                      ; x y w h | res x

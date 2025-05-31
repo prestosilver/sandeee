@@ -68,6 +68,8 @@ fn render(menuTex, iconTex, ttex, imgx, imgy, imgs, w, h) {
     target_h = target_h / 1000;
 
     var dest = _MakeRect(xo, yo + 40, target_w, target_h);
+    
+    _WindowClear($window);
 
     _WindowRender($window, ttex, dest, _MakeRect(0, 0, 64 * w, 64 * h));
     
