@@ -1,0 +1,6 @@
+build.zig:1134:15: error: local constant 'step' shadows local constant from outer scope
+        const step = try file.getStep(b, content_path, b.path("www/downloads"), www_misc_step);
+              ^~~~
+build.zig:1125:11: note: previous declaration here
+    const step = try changelog.ChangelogStep.create(b, "www/changelog.edf");
+          ^~~~

@@ -976,6 +976,7 @@ pub fn mainErr() anyerror!void {
 test "headless.zig" {
     //_ = @import("system/headless.zig");
     _ = @import("util/files.zig");
+    _ = @import("util/url.zig");
     //_ = @import("system/shell.zig");
     _ = @import("system/vm.zig");
 }

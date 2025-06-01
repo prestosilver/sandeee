@@ -19,6 +19,7 @@ const gfx = @import("../util/graphics.zig");
 const font = @import("../util/font.zig");
 const log = @import("../util/log.zig").log;
 const c = @import("../c.zig");
+const Url = @import("../util/url.zig");
 
 const Result = struct {
     data: []u8 = &.{},
@@ -413,12 +414,12 @@ pub const Shell = struct {
                     if (url_data) |url| {
                         const webself: *wins.web.WebData = @ptrCast(@alignCast(window.data.contents.ptr));
                         if (file) {
+                            webself.path.deinit();
                             const web_file = try shell_root.getFile(url);
-                            webself.path = try allocator.alloc.realloc(webself.path, web_file.name.len);
-                            @memcpy(webself.path, web_file.name);
+                            webself.path = try Url.parse(web_file.name);
                         } else {
-                            webself.path = try allocator.alloc.realloc(webself.path, url.len);
-                            @memcpy(webself.path, url);
+                            webself.path.deinit();
+                            webself.path = try Url.parse(url);
                         }
                     }
                     try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });

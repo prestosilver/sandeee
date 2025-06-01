@@ -1,3 +1,7 @@
+fn DrawUi(win, ui) {
+    return 0;
+}
+
 fn DrawBarBg(win, uiTex) {
     var width = _WindowWidth(dup(win));
     

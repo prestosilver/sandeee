@@ -19,6 +19,7 @@ const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 const texture_manager = @import("../util/texmanager.zig");
 const HttpClient = @import("../util/http.zig");
+const Url = @import("../util/url.zig");
 const log = @import("../util/log.zig").log;
 
 const steam = @import("steam");
@@ -30,35 +31,14 @@ var web_idx: u8 = 0;
 pub const WebData = struct {
     const Self = @This();
 
-    const UrlKind = enum(u8) {
-        Steam = '$',
-        Web = '@',
-        Local = '/',
-        _,
-    };
+    pub fn getConts(_: *Self, url: Url) ![]const u8 {
+        log.debug("web load: {s} {s} : {s}", .{ @tagName(url.kind), url.domain, url.path });
 
-    pub fn getConts(self: *Self, in_path: []const u8) ![]const u8 {
-        var path = try allocator.alloc.dupe(u8, in_path);
-        defer allocator.alloc.free(path);
-
-        if (@as(UrlKind, @enumFromInt(in_path[0])) != .Local and std.mem.indexOf(u8, in_path, ":") == null) {
-            allocator.alloc.free(path);
-            const idx = std.mem.indexOf(u8, self.path, ":") orelse 0;
-
-            path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ self.path[0..idx], in_path[1..] });
-        }
-
-        log.debug("web load: {s}", .{path});
-
-        switch (@as(UrlKind, @enumFromInt(path[0]))) {
+        switch (url.kind) {
             .Steam => {
                 if (options.IsSteam) {
-                    const idx = std.mem.indexOf(u8, path, ":") orelse {
-                        return try allocator.alloc.dupe(u8, "Error: Bad Remote");
-                    };
-
-                    const root = path[1..idx];
-                    const sub = path[idx + 1 ..];
+                    const root = url.domain;
+                    const sub = url.path;
                     if (std.mem.eql(u8, root, "list")) {
                         const page_idx = try std.fmt.parseInt(u32, sub, 0);
                         return try steamList(page_idx);
@@ -67,7 +47,7 @@ pub const WebData = struct {
                             return try allocator.alloc.dupe(u8, "Error: Invalid item page");
                         };
 
-                        return steamItem(.{ .data = page_idx }, path, sub) catch |err|
+                        return steamItem(.{ .data = page_idx }, url) catch |err|
                             try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                     } else {
                         return try allocator.alloc.dupe(u8, "Error: Bad steam link");
@@ -78,7 +58,7 @@ pub const WebData = struct {
             },
             .Local => {
                 const root = try files.FolderLink.resolve(.root);
-                const file = try root.getFile(path);
+                const file = try root.getFile(url.path);
                 return try allocator.alloc.dupe(u8, try file.read(null));
             },
             .Web => {
@@ -88,9 +68,8 @@ pub const WebData = struct {
 
                 // return try allocator.alloc.dupe(u8, result);
 
-                const idx = std.mem.indexOf(u8, path, ":") orelse {
+                if (url.domain.len == 0)
                     return try allocator.alloc.dupe(u8, "Error: Bad Remote");
-                };
 
                 var client = std.http.Client{ .allocator = allocator.alloc };
                 defer client.deinit();
@@ -99,9 +78,9 @@ pub const WebData = struct {
                     .scheme = "http",
                     .user = null,
                     .password = null,
-                    .host = .{ .raw = path[1..idx] },
+                    .host = .{ .raw = url.domain },
                     .port = 80,
-                    .path = .{ .raw = path[idx + 1 ..] },
+                    .path = .{ .raw = url.path },
                     .query = null,
                     .fragment = null,
                 };
@@ -193,12 +172,12 @@ pub const WebData = struct {
     menubar: sprite.Sprite,
     text_box: [2]sprite.Sprite,
     icons: [2]sprite.Sprite,
-    path: []u8,
+    path: Url,
 
     shader: *shd.Shader,
     conts: ?[]const u8,
     links: std.ArrayList(WebLink),
-    hist: std.ArrayList([]u8),
+    hist: std.ArrayList(Url),
 
     scroll_top: bool = false,
     scroll_link: bool = false,
@@ -315,7 +294,7 @@ pub const WebData = struct {
         return conts;
     }
 
-    pub fn steamItem(id: steam.SteamPubFileId, parent: []const u8, path: []const u8) ![]const u8 {
+    pub fn steamItem(id: steam.SteamPubFileId, url: Url) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const BUFFER_SIZE = 256;
 
@@ -335,7 +314,7 @@ pub const WebData = struct {
 
         const folder_pointer = folder[0..std.mem.len(@as([*:0]u8, @ptrCast(&folder)))];
 
-        const file_path = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ folder_pointer, path });
+        const file_path = try std.fmt.allocPrint(allocator.alloc, "{s}/{s}", .{ folder_pointer, url.path });
         defer allocator.alloc.free(file_path);
 
         log.debug("file_path: {s}", .{file_path});
@@ -368,16 +347,16 @@ pub const WebData = struct {
         } else |_| {
             var iter = walker.iterate();
 
-            var conts = if (std.mem.eql(u8, path, ""))
+            var conts = if (std.mem.eql(u8, url.path, ""))
                 try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:/", .{id.data})
             else
-                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:{s}", .{ id.data, path });
+                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:{s}", .{ id.data, url.path });
 
             while (try iter.next()) |item| {
                 const old = conts;
                 defer allocator.alloc.free(old);
 
-                conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: {s}/{s}", .{ old, item.name, parent, item.name });
+                conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: {s}/{s}", .{ old, item.name, url.path, item.name });
             }
 
             return conts;
@@ -397,13 +376,14 @@ pub const WebData = struct {
 
         try self.resetStyles();
 
-        if (std.mem.containsAtLeast(u8, self.path, 1, ".") and !std.mem.endsWith(u8, self.path, ".edf")) {
+        if (std.mem.containsAtLeast(u8, self.path.path, 1, ".") and !std.mem.endsWith(u8, self.path.path, ".edf")) {
             const fconts = try self.getConts(self.path);
             defer allocator.alloc.free(fconts);
 
-            try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path[(std.mem.lastIndexOf(u8, self.path, "/") orelse 0) + 1 ..]);
+            try self.saveDialog(try allocator.alloc.dupe(u8, fconts), self.path.path[(std.mem.lastIndexOf(u8, self.path.path, "/") orelse 0) + 1 ..]);
 
             try self.back(true);
+
             return;
         }
 
@@ -413,18 +393,21 @@ pub const WebData = struct {
 
         while (iter.next()) |fullLine| {
             if (std.mem.startsWith(u8, fullLine, "#Style ")) {
-                try self.loadStyle(fullLine["#Style ".len..]);
+                const tmp_path = try self.path.child(fullLine["#Style ".len..]);
+                defer tmp_path.deinit();
+
+                try self.loadStyle(tmp_path);
             }
         }
     }
 
-    pub fn loadimage(self: *Self, path: []const u8, target: []const u8) !void {
+    pub fn loadimage(self: *Self, url: Url, target: []const u8) !void {
         self.image_lock.lock();
         defer self.image_lock.unlock();
 
         defer allocator.alloc.free(target);
-        defer allocator.alloc.free(path);
-        const fconts = try self.getConts(path);
+        defer url.deinit();
+        const fconts = try self.getConts(url);
         defer allocator.alloc.free(fconts);
 
         const texture = texture_manager.TextureManager.instance.get(target).?;
@@ -435,7 +418,7 @@ pub const WebData = struct {
         self.resetLinks();
     }
 
-    pub fn loadStyle(self: *Self, url: []const u8) !void {
+    pub fn loadStyle(self: *Self, url: Url) !void {
         const fconts = try self.getConts(url);
         defer allocator.alloc.free(fconts);
 
@@ -533,19 +516,6 @@ pub const WebData = struct {
         allocator.alloc.destroy(conts);
     }
 
-    pub fn expandPath(base_path: []const u8, path: []const u8) ![]u8 {
-        if (std.mem.startsWith(u8, path, "@/") and path.len != 2)
-            if (std.mem.indexOf(u8, base_path, ":")) |i| {
-                return try std.mem.concat(allocator.alloc, u8, &.{
-                    base_path[0..i],
-                    ":",
-                    path[2..],
-                });
-            };
-
-        return try allocator.alloc.dupe(u8, path);
-    }
-
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         self.bnds = bnds.*;
 
@@ -629,7 +599,7 @@ pub const WebData = struct {
                         texture_manager.TextureManager.instance.get(&texid).?.size =
                             texture_manager.TextureManager.instance.get(&texid).?.size.div(4);
 
-                        const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try expandPath(self.path, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
+                        const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try self.path.child(line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                         img_thread.detach();
                     }
 
@@ -796,11 +766,14 @@ pub const WebData = struct {
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
         try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
 
+        const text = try std.fmt.allocPrint(allocator.alloc, "{c}{s}:{s}", .{ @as(u8, @intFromEnum(self.path.kind)), self.path.domain, self.path.path });
+        defer allocator.alloc.free(text);
+
         const tmp = batch.SpriteBatch.instance.scissor;
         batch.SpriteBatch.instance.scissor = .{ .x = bnds.x + 34, .y = bnds.y + 4, .w = bnds.w - 8 - 32, .h = 28 };
         try font.draw(.{
             .shader = font_shader,
-            .text = self.path,
+            .text = text,
             .pos = .{ .x = bnds.x + 82, .y = bnds.y + 8 },
             .wrap = bnds.w - 90,
             .maxlines = 1,
@@ -825,7 +798,7 @@ pub const WebData = struct {
         if (self.loading and !force) return;
 
         if (self.hist.pop()) |last| {
-            allocator.alloc.free(self.path);
+            self.path.deinit();
 
             self.path = last;
             if (self.conts) |conts| {
@@ -848,15 +821,11 @@ pub const WebData = struct {
 
         if (self.highlight_idx == 0) return;
 
-        var last_host: []const u8 = "";
-        if (std.mem.indexOf(u8, self.path, ":")) |idx|
-            last_host = self.path[0..idx];
-
         try self.hist.append(self.path);
 
         const targ = self.links.items[self.highlight_idx - 1].url;
 
-        self.path = try expandPath(self.path, targ);
+        self.path = try self.path.child(targ);
 
         if (self.conts) |conts| {
             allocator.alloc.free(conts);
@@ -950,7 +919,7 @@ pub const WebData = struct {
             }
         }
 
-        allocator.alloc.free(self.path);
+        self.path.deinit();
 
         self.styles.deinit();
 
@@ -967,9 +936,8 @@ pub const WebData = struct {
             self.links.deinit();
         }
 
-        for (self.hist.items) |h| {
-            allocator.alloc.free(h);
-        }
+        for (self.hist.items) |h|
+            h.deinit();
 
         self.hist.deinit();
 
@@ -1012,13 +980,14 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
                 .size = .{ .x = 32, .y = 32 },
             }),
         },
-        .path = try allocator.alloc.dupe(u8, conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"),
+        .path = Url.parse(conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf") catch
+            try Url.parse("@sandeee.prestosilver.info:/index.edf"),
         .conts = null,
         .shader = shader,
-        .links = std.ArrayList(WebData.WebLink).init(allocator.alloc),
-        .hist = std.ArrayList([]u8).init(allocator.alloc),
+        .links = .init(allocator.alloc),
+        .hist = .init(allocator.alloc),
         .web_idx = web_idx,
-        .styles = std.StringArrayHashMap(WebData.Style).init(allocator.alloc),
+        .styles = .init(allocator.alloc),
         // .http = try HttpClient.init(allocator.alloc),
     };
 
@@ -1041,31 +1010,3 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
 
     return win.WindowContents.init(self, "web", "Xplorer", .{ .r = 1, .g = 1, .b = 1 });
 }
-
-// test "Url expand fuzzing" {
-//     const Context = struct {
-//         fn testSplitpath(context: @This(), input: []const u8) anyerror!void {
-//             _ = context;
-//             const split = splitPath(input);
-//             if (split.file) |file| {
-//                 try std.testing.expectFmt(input, "{s}/{s}", .{ split.path, file });
-//
-//                 if (split.name) |name| {
-//                     if (split.ext) |ext| {
-//                         try std.testing.expectFmt(file, "{s}.{s}", .{ name, ext });
-//                     } else {
-//                         try std.testing.expectEqualStrings(file, name);
-//                     }
-//                 } else {
-//                     try std.testing.expectEqual(split.ext, null);
-//                 }
-//             } else {
-//                 try std.testing.expectEqual(split.name, null);
-//                 try std.testing.expectEqual(split.ext, null);
-//                 try std.testing.expectEqualStrings(input, split.path);
-//             }
-//         }
-//     };
-//
-//     try std.testing.fuzz(Context{}, Context.testSplitpath, .{});
-// }
