@@ -21,8 +21,11 @@ const window_events = @import("../events/window.zig");
 const shell = @import("../system/shell.zig");
 const eln = @import("../util/eln.zig");
 
-const TOTAL_SPRITES: f32 = 13;
-const TEX_SIZE: f32 = 32;
+const TOTAL_SPRITES = 13.0;
+
+const TEX_SIZE = 32;
+const ICON_SIZE = 64;
+const ICON_SPACE = 3;
 
 pub const BarData = struct {
     screendims: *vecs.Vector2,
@@ -84,25 +87,27 @@ pub const BarData = struct {
         const apps = try getApps();
         defer allocator.alloc.free(apps);
 
+        const total_height: f32 = @floatFromInt(apps.len * (ICON_SIZE + ICON_SPACE));
+
         if (self.btn_active) {
-            try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, .{ .x = 2, .y = self.screendims.y - 464 - self.height });
+            try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, .{ .x = 2, .y = self.screendims.y - total_height - 2 - self.height });
 
             for (apps, 0..) |app, i| {
                 const icon_spr: spr.Sprite = if (app.icon) |icn|
                     .override(icn, .{
                         .source = .{ .w = 1, .h = 1 },
-                        .size = .{ .x = 64, .y = 64 },
+                        .size = .{ .x = ICON_SIZE, .y = ICON_SIZE },
                     })
                 else
                     .atlas("error", .{
                         .source = .{ .w = 1, .h = 1 },
-                        .size = .{ .x = 64, .y = 64 },
+                        .size = .{ .x = ICON_SIZE, .y = ICON_SIZE },
                     });
                 const height = font.size * 1;
-                const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
+                const y = self.screendims.y - total_height - self.height + (ICON_SIZE + ICON_SPACE) * @as(f32, @floatFromInt(i));
                 const text = app.name;
-                const textpos = vecs.Vector2{ .x = 100, .y = y + std.math.floor((67 - height) / 2) };
-                const iconpos = rect.Rectangle{ .x = 36, .y = y + 2, .w = 64, .h = 64 };
+                const textpos = vecs.Vector2{ .x = 36 + ICON_SIZE + ICON_SPACE * 2, .y = y + std.math.floor((ICON_SIZE + ICON_SPACE - height) / 2) };
+                const iconpos = rect.Rectangle{ .x = 36, .y = y + 2, .w = ICON_SIZE, .h = ICON_SIZE };
 
                 try batch.SpriteBatch.instance.draw(spr.Sprite, &icon_spr, self.shader, .{ .x = iconpos.x, .y = iconpos.y });
 
@@ -179,10 +184,12 @@ pub const BarData = struct {
         const apps = try getApps();
         defer allocator.alloc.free(apps);
 
+        const total_height: f32 = @floatFromInt(apps.len * (ICON_SIZE + ICON_SPACE));
+
         if (self.btn_active) {
             for (apps, 0..) |app, i| {
-                const y = self.screendims.y - 466 - self.height + 67 * @as(f32, @floatFromInt(i));
-                const item = rect.Rectangle{ .x = 36, .y = y, .w = 160, .h = 67 };
+                const y = self.screendims.y - total_height - 2 - self.height + (ICON_SIZE + ICON_SPACE) * @as(f32, @floatFromInt(i));
+                const item = rect.Rectangle{ .x = 36, .y = y, .w = 160, .h = (ICON_SIZE + ICON_SPACE) };
                 if (item.contains(pos)) {
                     added = true;
                     self.shell.root = .root;
@@ -237,7 +244,12 @@ pub const BarData = struct {
         try result.appendQuad(icon, .{ .y = 3.0 / TOTAL_SPRITES, .w = 1, .h = 1.0 / TOTAL_SPRITES }, .{});
 
         if (self.btn_active) {
-            const menu = rect.Rectangle{ .y = self.screendims.y - 466 - self.height, .w = 300, .h = 466 };
+            const apps = try getApps();
+            defer allocator.alloc.free(apps);
+
+            const total_height: f32 = @floatFromInt(apps.len * (ICON_SIZE + ICON_SPACE));
+
+            const menu = rect.Rectangle{ .y = self.screendims.y - total_height - 2 - self.height, .w = 300, .h = total_height + 2 };
 
             try result.appendUiQuad(menu, .{
                 .sheet_size = .{ .x = 1, .y = TOTAL_SPRITES },

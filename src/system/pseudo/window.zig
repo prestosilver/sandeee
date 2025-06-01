@@ -233,10 +233,6 @@ pub const size = struct {
                         @memcpy(result[0..2], x);
                         @memcpy(result[2..4], y);
 
-                        item.data.contents.moveResize(item.data.pos) catch {
-                            return error.OutOfMemory;
-                        };
-
                         return result;
                     }
                 }
@@ -257,6 +253,10 @@ pub const size = struct {
                         const y = @as(f32, @floatFromInt(@as(*const u16, @ptrCast(@alignCast(&data[2]))).*));
                         item.data.pos.w = x;
                         item.data.pos.h = y;
+
+                        item.data.contents.moveResize(item.data.pos) catch {
+                            return error.OutOfMemory;
+                        };
 
                         return;
                     }

@@ -71,7 +71,7 @@ pub const std_options = std.Options{
 pub const steam_options = struct {
     pub const fake_steam = options.fakeSteam;
     pub const use_steam = options.IsSteam;
-    pub const app_id = 480;
+    pub const app_id = 322330;
 };
 
 // embed shaders
@@ -977,5 +977,5 @@ test "headless.zig" {
     //_ = @import("system/headless.zig");
     _ = @import("util/files.zig");
     //_ = @import("system/shell.zig");
-    //_ = @import("system/vm.zig");
+    _ = @import("system/vm.zig");
 }
