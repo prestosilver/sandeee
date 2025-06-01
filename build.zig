@@ -735,7 +735,7 @@ const WWW_FILES = [_]WWWSection{
 var version: std.SemanticVersion = .{
     .major = 0,
     .minor = 4,
-    .patch = 3,
+    .patch = 4,
     .build = null,
 };
 
