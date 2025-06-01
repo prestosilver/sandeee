@@ -42,11 +42,11 @@ pub const SteamResult = enum(u32) {
     _,
 };
 
-pub const SteamAppId = struct {
+pub const SteamAppId = extern struct {
     data: u32,
 };
 
-pub const SteamPubFileId = struct {
+pub const SteamPubFileId = extern struct {
     data: u64,
 };
 
@@ -230,7 +230,7 @@ pub const SteamUGC = extern struct {
         }
     }
 
-    extern fn SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc: *const SteamUGC, queryKind: UGCQueryKind, kind: u32, creatorId: u32, consumerId: u32, page: u32) UGCQueryHandle;
+    extern fn SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc: *const SteamUGC, queryKind: UGCQueryKind, kind: u32, creatorId: SteamAppId, consumerId: SteamAppId, page: u32) UGCQueryHandle;
     pub fn createQueryRequest(
         ugc: *const SteamUGC,
         query_kind: UGCQueryKind,
@@ -320,7 +320,7 @@ pub const FakeUGCEntry = struct {
     folder: []const u8,
 };
 
-pub var steam_items = std.ArrayList(FakeUGCEntry).init(allocator);
+pub var steam_items: std.ArrayList(FakeUGCEntry) = .init(allocator);
 
 extern fn SteamAPI_Init() bool;
 pub fn init() !void {
@@ -336,7 +336,7 @@ pub fn init() !void {
         while (reader.readUntilDelimiterOrEofAlloc(allocator, '\n', 1000) catch null) |buffer| {
             defer allocator.free(buffer);
 
-            var iter = std.mem.split(u8, buffer, ",");
+            var iter = std.mem.splitScalar(u8, buffer, ',');
             const title = iter.next() orelse return error.SteamParse;
             const desc = iter.next() orelse return error.SteamParse;
             const folder = iter.next() orelse return error.SteamParse;

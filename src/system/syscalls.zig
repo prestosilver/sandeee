@@ -33,7 +33,8 @@ const SyscallId = enum(u64) {
     RSP = 20,
     Spawn = 21,
     Status = 22,
-    Last = 32,
+    DeleteFile = 23,
+    Last = 24,
 };
 
 pub const SysCall = struct {
@@ -79,6 +80,7 @@ pub const SysCall = struct {
             .RSP = .{ .run_fn = sysRSP },
             .Spawn = .{ .run_fn = sysSpawn },
             .Status = .{ .run_fn = sysStatus },
+            .DeleteFile = .{ .run_fn = sysDelete },
             .Last = .{ .run_fn = lastErr },
         },
     );
@@ -444,4 +446,13 @@ fn sysStatus(self: *vm.VM) VmError!void {
     if (handle.data().* != .value) return error.ValueMissing;
 
     return error.Todo;
+}
+
+fn sysDelete(self: *vm.VM) VmError!void {
+    const file = try self.popStack();
+
+    if (file.data().* != .string) return error.StringMissing;
+
+    const root = try self.root.resolve();
+    try root.removeFile(file.data().string);
 }

@@ -62,22 +62,13 @@ pub const WebData = struct {
                     if (std.mem.eql(u8, root, "list")) {
                         const page_idx = try std.fmt.parseInt(u32, sub, 0);
                         return try steamList(page_idx);
-                    } else if (std.mem.eql(u8, root, "item")) {
-                        const slash_idx = std.mem.indexOf(u8, sub, "/");
-
-                        var tmp_path: []const u8 = "/";
-                        var page_idx = sub;
-
-                        if (slash_idx) |slash| {
-                            page_idx = sub[0..slash];
-                            tmp_path = sub[slash + 1 ..];
-                        }
-
-                        return steamItem(.{ .data = std.fmt.parseInt(u64, page_idx, 10) catch {
-                            return try allocator.alloc.dupe(u8, "Error: Invalid list page");
-                        } }, path, tmp_path) catch |err| {
-                            return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
+                    } else if (std.mem.startsWith(u8, root, "item") and root.len != 4) {
+                        const page_idx = std.fmt.parseInt(u64, root[4..], 10) catch {
+                            return try allocator.alloc.dupe(u8, "Error: Invalid item page");
                         };
+
+                        return steamItem(.{ .data = page_idx }, path, sub) catch |err|
+                            try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                     } else {
                         return try allocator.alloc.dupe(u8, "Error: Bad steam link");
                     }
@@ -284,7 +275,7 @@ pub const WebData = struct {
                 const title_text = try std.fmt.allocPrint(allocator.alloc, "--- {s} ---", .{details.title});
                 defer allocator.alloc.free(title_text);
 
-                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ details.desc, details.file_id.data });
+                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item{}:", .{ details.desc, details.file_id.data });
                 defer allocator.alloc.free(desc_text);
 
                 conts = try std.mem.concat(allocator.alloc, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
@@ -298,7 +289,7 @@ pub const WebData = struct {
                 defer allocator.alloc.free(title_text);
 
                 const desc: [*:0]u8 = @ptrCast(&details.desc);
-                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item:{}", .{ desc[0..std.mem.len(desc)], details.file_id.data });
+                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item{}:", .{ desc[0..std.mem.len(desc)], details.file_id.data });
                 defer allocator.alloc.free(desc_text);
 
                 conts = try std.mem.concat(allocator.alloc, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
@@ -330,7 +321,7 @@ pub const WebData = struct {
 
         var size: u64 = 0;
         var timestamp: u32 = 0;
-        var folder = std.mem.zeros([BUFFER_SIZE + 1]u8);
+        var folder = std.mem.zeroes([BUFFER_SIZE + 1]u8);
 
         if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
             if (!ugc.downloadItem(id, true)) {
@@ -352,7 +343,8 @@ pub const WebData = struct {
         const walker = std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch {
             const file = try std.fs.openFileAbsolute(file_path, .{});
             defer file.close();
-            const conts = try file.reader().readAllAlloc(allocator.alloc, 100_000_000);
+            const stat = try file.stat();
+            const conts = try file.reader().readAllAlloc(allocator.alloc, stat.size);
             defer allocator.alloc.free(conts);
 
             const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
@@ -364,7 +356,9 @@ pub const WebData = struct {
         if (walker.access("index.edf", .{})) {
             const file = try walker.openFile("index.edf", .{});
             defer file.close();
-            const conts = try file.reader().readAllAlloc(allocator.alloc, 100_000_000);
+
+            const stat = try file.stat();
+            const conts = try file.reader().readAllAlloc(allocator.alloc, stat.size);
             defer allocator.alloc.free(conts);
 
             const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
@@ -374,7 +368,10 @@ pub const WebData = struct {
         } else |_| {
             var iter = walker.iterate();
 
-            var conts = try std.fmt.allocPrint(allocator.alloc, "Contents of {s}", .{path});
+            var conts = if (std.mem.eql(u8, path, ""))
+                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:/", .{id.data})
+            else
+                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:{s}", .{ id.data, path });
 
             while (try iter.next()) |item| {
                 const old = conts;
@@ -536,6 +533,19 @@ pub const WebData = struct {
         allocator.alloc.destroy(conts);
     }
 
+    pub fn expandPath(base_path: []const u8, path: []const u8) ![]u8 {
+        if (std.mem.startsWith(u8, path, "@/") and path.len != 2)
+            if (std.mem.indexOf(u8, base_path, ":")) |i| {
+                return try std.mem.concat(allocator.alloc, u8, &.{
+                    base_path[0..i],
+                    ":",
+                    path[2..],
+                });
+            };
+
+        return try allocator.alloc.dupe(u8, path);
+    }
+
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
         self.bnds = bnds.*;
 
@@ -619,7 +629,7 @@ pub const WebData = struct {
                         texture_manager.TextureManager.instance.get(&texid).?.size =
                             texture_manager.TextureManager.instance.get(&texid).?.size.div(4);
 
-                        const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try allocator.alloc.dupe(u8, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
+                        const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try expandPath(self.path, line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                         img_thread.detach();
                     }
 
@@ -846,11 +856,7 @@ pub const WebData = struct {
 
         const targ = self.links.items[self.highlight_idx - 1].url;
 
-        if (std.mem.indexOf(u8, targ, ":") == null) {
-            self.path = try std.fmt.allocPrint(allocator.alloc, "{s}:{s}", .{ last_host, targ[1..] });
-        } else {
-            self.path = try allocator.alloc.dupe(u8, targ);
-        }
+        self.path = try expandPath(self.path, targ);
 
         if (self.conts) |conts| {
             allocator.alloc.free(conts);
@@ -1035,3 +1041,31 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
 
     return win.WindowContents.init(self, "web", "Xplorer", .{ .r = 1, .g = 1, .b = 1 });
 }
+
+// test "Url expand fuzzing" {
+//     const Context = struct {
+//         fn testSplitpath(context: @This(), input: []const u8) anyerror!void {
+//             _ = context;
+//             const split = splitPath(input);
+//             if (split.file) |file| {
+//                 try std.testing.expectFmt(input, "{s}/{s}", .{ split.path, file });
+//
+//                 if (split.name) |name| {
+//                     if (split.ext) |ext| {
+//                         try std.testing.expectFmt(file, "{s}.{s}", .{ name, ext });
+//                     } else {
+//                         try std.testing.expectEqualStrings(file, name);
+//                     }
+//                 } else {
+//                     try std.testing.expectEqual(split.ext, null);
+//                 }
+//             } else {
+//                 try std.testing.expectEqual(split.name, null);
+//                 try std.testing.expectEqual(split.ext, null);
+//                 try std.testing.expectEqualStrings(input, split.path);
+//             }
+//         }
+//     };
+//
+//     try std.testing.fuzz(Context{}, Context.testSplitpath, .{});
+// }

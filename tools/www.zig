@@ -9,6 +9,24 @@ pub const DiskFileInputType = enum {
 pub const DiskFileInputData = union(DiskFileInputType) {
     Local: []const u8,
     Temp: *const DiskFileInput,
+
+    pub fn local(path: []const u8) DiskFileInputData {
+        return .{
+            .Local = path,
+        };
+    }
+
+    pub fn converter(
+        conve: *const fn (*std.Build, []const std.Build.LazyPath, std.Build.LazyPath) anyerror!void,
+        child: DiskFileInputData,
+    ) DiskFileInputData {
+        return .{
+            .Temp = &.{
+                .input = &.{child},
+                .converter = conve,
+            },
+        };
+    }
 };
 
 pub const DiskFileInput = struct {
@@ -23,6 +41,7 @@ pub const DiskFileInput = struct {
         b: *std.Build,
         content: std.Build.LazyPath,
         output: std.Build.LazyPath,
+        outer_depend: *std.Build.Step,
     ) !*std.Build.Step {
         const temp_path = content.path(b, ".tmp");
 
@@ -38,7 +57,7 @@ pub const DiskFileInput = struct {
                     const temp_file = temp_path.path(b, b.fmt("{}", .{temp_idx}));
                     file.* = temp_file;
 
-                    const child_step = try t.getStep(b, content, file.*);
+                    const child_step = try t.getStep(b, content, file.*, outer_depend);
 
                     temp_idx += 1;
 
@@ -51,6 +70,8 @@ pub const DiskFileInput = struct {
 
         for (child_steps.items) |child|
             out_step.step.dependOn(child);
+
+        out_step.step.dependOn(outer_depend);
 
         return &out_step.step;
     }
@@ -65,11 +86,13 @@ pub const DiskFile = struct {
         b: *std.Build,
         content_path: std.Build.LazyPath,
         output_root: std.Build.LazyPath,
+        outer_depend: *std.Build.Step,
     ) !*std.Build.Step {
         return self.file.getStep(
             b,
             content_path,
             output_root.path(b, self.output),
+            outer_depend,
         );
     }
 };
@@ -152,12 +175,18 @@ pub const EpkFileStep = struct {
         return self;
     }
 
-    pub fn addFile(self: *EpkFileStep, b: *std.Build, file: DiskFile) !void {
+    pub fn addFile(
+        self: *EpkFileStep,
+        b: *std.Build,
+        file: DiskFile,
+        outer_depend: *std.Build.Step,
+    ) !void {
         const tmp_file = self.tmp_path.path(b, file.output[1..]);
         try self.files.append(.{ .name = file.output, .path = tmp_file });
 
-        const step = try file.file.getStep(b, self.content_path, tmp_file);
+        const step = try file.file.getStep(b, self.content_path, tmp_file, outer_depend);
 
+        self.step.dependOn(outer_depend);
         self.step.dependOn(step);
     }
 };
@@ -176,7 +205,7 @@ pub const WWWSection = struct {
 
         data: union(WWWFileType) {
             epk: []const DiskFile,
-            file: DiskFile,
+            file: DiskFileInput,
         },
     },
 
@@ -187,6 +216,7 @@ pub const WWWSection = struct {
         b: *std.Build,
         content_path: std.Build.LazyPath,
         www_path: std.Build.LazyPath,
+        outer_depend: *std.Build.Step,
     ) !*std.Build.Step {
         const step = try b.allocator.create(std.Build.Step);
         step.* = std.Build.Step.init(.{
@@ -203,17 +233,19 @@ pub const WWWSection = struct {
                 .epk => |epk| {
                     const epk_step = try EpkFileStep.create(b, content_path, output.path(b, file.file));
                     for (epk) |p| {
-                        try epk_step.addFile(b, p);
+                        try epk_step.addFile(b, p, outer_depend);
                     }
 
                     step.dependOn(&epk_step.step);
                 },
                 .file => |f| {
-                    const file_step = try f.getStep(b, content_path, output);
+                    const file_step = try f.getStep(b, content_path, output.path(b, file.file), outer_depend);
                     step.dependOn(file_step);
                 },
             }
         }
+
+        step.dependOn(outer_depend);
 
         return step;
     }

@@ -25,49 +25,49 @@ const DEBUG_FILES = [_]DiskFile{
     // asm tests
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/tests/hello.asm" }},
+            .input = &.{.local("asm/tests/hello.asm")},
             .converter = comp.compile,
         },
         .output = "prof/tests/asm/hello.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/tests/window.asm" }},
+            .input = &.{.local("asm/tests/window.asm")},
             .converter = comp.compile,
         },
         .output = "prof/tests/asm/window.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/tests/texture.asm" }},
+            .input = &.{.local("asm/tests/texture.asm")},
             .converter = comp.compile,
         },
         .output = "prof/tests/asm/texture.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/tests/fib.asm" }},
+            .input = &.{.local("asm/tests/fib.asm")},
             .converter = comp.compile,
         },
         .output = "prof/tests/asm/fib.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/tests/arraytest.asm" }},
+            .input = &.{.local("asm/tests/arraytest.asm")},
             .converter = comp.compile,
         },
         .output = "prof/tests/asm/arraytest.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/tests/audiotest.asm" }},
+            .input = &.{.local("asm/tests/audiotest.asm")},
             .converter = comp.compile,
         },
         .output = "prof/tests/asm/audiotest.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/tests/tabletest.asm" }},
+            .input = &.{.local("asm/tests/tabletest.asm")},
             .converter = comp.compile,
         },
         .output = "prof/tests/asm/tabletest.eep",
@@ -77,10 +77,7 @@ const DEBUG_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/tests/input.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/tests/input.eon")),
             },
             .converter = comp.compile,
         },
@@ -89,10 +86,7 @@ const DEBUG_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/tests/color.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/tests/color.eon")),
             },
             .converter = comp.compile,
         },
@@ -101,10 +95,7 @@ const DEBUG_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/tests/bugs.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/tests/bugs.eon")),
             },
             .converter = comp.compile,
         },
@@ -113,10 +104,7 @@ const DEBUG_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/tests/tabletest.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/tests/tabletest.eon")),
             },
             .converter = comp.compile,
         },
@@ -125,10 +113,7 @@ const DEBUG_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/tests/heaptest.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/tests/heaptest.eon")),
             },
             .converter = comp.compile,
         },
@@ -137,10 +122,7 @@ const DEBUG_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/tests/stringtest.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/tests/stringtest.eon")),
             },
             .converter = comp.compile,
         },
@@ -149,10 +131,7 @@ const DEBUG_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/tests/paren.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/tests/paren.eon")),
             },
             .converter = comp.compile,
         },
@@ -162,21 +141,21 @@ const DEBUG_FILES = [_]DiskFile{
     // eon sources
     .{
         .file = .{
-            .input = &.{.{ .Local = "eon/exec/eon.eon" }},
+            .input = &.{.local("eon/exec/eon.eon")},
             .converter = conv.copy,
         },
         .output = "prof/tests/src/eon/eon.eon",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "eon/exec/pix.eon" }},
+            .input = &.{.local("eon/exec/pix.eon")},
             .converter = conv.copy,
         },
         .output = "prof/tests/src/eon/pix.eon",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "eon/exec/fib.eon" }},
+            .input = &.{.local("eon/exec/fib.eon")},
             .converter = conv.copy,
         },
         .output = "prof/tests/src/eon/fib.eon",
@@ -187,21 +166,21 @@ const DEBUG_FILES = [_]DiskFile{
 const NONDEMO_FILES = [_]DiskFile{
     .{
         .file = .{
-            .input = &.{.{ .Local = "mail/spam/" }},
+            .input = &.{.local("mail/spam/")},
             .converter = emails.emails,
         },
         .output = "cont/mail/spam.eme",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "mail/private/" }},
+            .input = &.{.local("mail/private/")},
             .converter = emails.emails,
         },
         .output = "cont/mail/private.eme",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "mail/work/" }},
+            .input = &.{.local("mail/work/")},
             .converter = emails.emails,
         },
         .output = "cont/mail/work.eme",
@@ -213,7 +192,7 @@ const BASE_FILES = [_]DiskFile{
     // emails
     .{
         .file = .{
-            .input = &.{.{ .Local = "mail/inbox/" }},
+            .input = &.{.local("mail/inbox/")},
             .converter = emails.emails,
         },
         .output = "cont/mail/inbox.eme",
@@ -222,35 +201,35 @@ const BASE_FILES = [_]DiskFile{
     // asm executables
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/exec/time.asm" }},
+            .input = &.{.local("asm/exec/time.asm")},
             .converter = comp.compile,
         },
         .output = "exec/time.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/exec/dump.asm" }},
+            .input = &.{.local("asm/exec/dump.asm")},
             .converter = comp.compile,
         },
         .output = "exec/dump.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/exec/echo.asm" }},
+            .input = &.{.local("asm/exec/echo.asm")},
             .converter = comp.compile,
         },
         .output = "exec/echo.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/exec/aplay.asm" }},
+            .input = &.{.local("asm/exec/aplay.asm")},
             .converter = comp.compile,
         },
         .output = "exec/aplay.eep",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/exec/libdump.asm" }},
+            .input = &.{.local("asm/exec/libdump.asm")},
             .converter = comp.compile,
         },
         .output = "exec/libdump.eep",
@@ -259,35 +238,35 @@ const BASE_FILES = [_]DiskFile{
     // asm libraries
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/libs/string.asm" }},
+            .input = &.{.local("asm/libs/string.asm")},
             .converter = comp.compileLib,
         },
         .output = "libs/string.ell",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/libs/window.asm" }},
+            .input = &.{.local("asm/libs/window.asm")},
             .converter = comp.compileLib,
         },
         .output = "libs/window.ell",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/libs/texture.asm" }},
+            .input = &.{.local("asm/libs/texture.asm")},
             .converter = comp.compileLib,
         },
         .output = "libs/texture.ell",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/libs/sound.asm" }},
+            .input = &.{.local("asm/libs/sound.asm")},
             .converter = comp.compileLib,
         },
         .output = "libs/sound.ell",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "asm/libs/array.asm" }},
+            .input = &.{.local("asm/libs/array.asm")},
             .converter = comp.compileLib,
         },
         .output = "libs/array.ell",
@@ -297,10 +276,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/exec/epkman.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/exec/epkman.eon")),
             },
             .converter = comp.compile,
         },
@@ -309,10 +285,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/exec/eon.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/exec/eon.eon")),
             },
             .converter = comp.compile,
         },
@@ -321,10 +294,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/exec/stat.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/exec/stat.eon")),
             },
             .converter = comp.compile,
         },
@@ -333,10 +303,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/exec/player.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/exec/player.eon")),
             },
             .converter = comp.compile,
         },
@@ -345,10 +312,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/exec/asm.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/exec/asm.eon")),
             },
             .converter = comp.compile,
         },
@@ -357,10 +321,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/exec/pix.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/exec/pix.eon")),
             },
             .converter = comp.compile,
         },
@@ -369,10 +330,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/exec/elib.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/exec/elib.eon")),
             },
             .converter = comp.compile,
         },
@@ -381,10 +339,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/exec/alib.eon" }},
-                    .converter = eon.compileEon,
-                } },
+                .converter(eon.compileEon, .local("eon/exec/alib.eon")),
             },
             .converter = comp.compile,
         },
@@ -395,10 +350,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/libs/ui.eon" }},
-                    .converter = eon.compileEonLib,
-                } },
+                .converter(eon.compileEonLib, .local("eon/libs/ui.eon")),
             },
             .converter = comp.compileLib,
         },
@@ -407,10 +359,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/libs/heap.eon" }},
-                    .converter = eon.compileEonLib,
-                } },
+                .converter(eon.compileEonLib, .local("eon/libs/heap.eon")),
             },
             .converter = comp.compileLib,
         },
@@ -419,10 +368,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/libs/table.eon" }},
-                    .converter = eon.compileEonLib,
-                } },
+                .converter(eon.compileEonLib, .local("eon/libs/table.eon")),
             },
             .converter = comp.compileLib,
         },
@@ -431,10 +377,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/libs/asm.eon" }},
-                    .converter = eon.compileEonLib,
-                } },
+                .converter(eon.compileEonLib, .local("eon/libs/asm.eon")),
             },
             .converter = comp.compileLib,
         },
@@ -443,10 +386,7 @@ const BASE_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
-                .{ .Temp = &.{
-                    .input = &.{.{ .Local = "eon/libs/eon.eon" }},
-                    .converter = eon.compileEonLib,
-                } },
+                .converter(eon.compileEonLib, .local("eon/libs/eon.eon")),
             },
             .converter = comp.compileLib,
         },
@@ -456,21 +396,21 @@ const BASE_FILES = [_]DiskFile{
     // sounds
     .{
         .file = .{
-            .input = &.{.{ .Local = "audio/login.wav" }},
+            .input = &.{.local("audio/login.wav")},
             .converter = sound.convert,
         },
         .output = "cont/snds/login.era",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "audio/logout.wav" }},
+            .input = &.{.local("audio/logout.wav")},
             .converter = sound.convert,
         },
         .output = "cont/snds/logout.era",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "audio/message.wav" }},
+            .input = &.{.local("audio/message.wav")},
             .converter = sound.convert,
         },
         .output = "cont/snds/message.era",
@@ -479,77 +419,77 @@ const BASE_FILES = [_]DiskFile{
     // images
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/email-logo.png" }},
+            .input = &.{.local("images/email-logo.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/email-logo.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons.png" }},
+            .input = &.{.local("images/icons.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/icons.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/ui.png" }},
+            .input = &.{.local("images/ui.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/ui.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/bar.png" }},
+            .input = &.{.local("images/bar.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/bar.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/iconsBig.png" }},
+            .input = &.{.local("images/iconsBig.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/iconsBig.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/window.png" }},
+            .input = &.{.local("images/window.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/window.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/wall1.png" }},
+            .input = &.{.local("images/wall1.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/wall1.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/wall2.png" }},
+            .input = &.{.local("images/wall2.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/wall2.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/wall3.png" }},
+            .input = &.{.local("images/wall3.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/wall3.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/barlogo.png" }},
+            .input = &.{.local("images/barlogo.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/barlogo.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/cursor.png" }},
+            .input = &.{.local("images/cursor.png")},
             .converter = image.convert,
         },
         .output = "cont/imgs/cursor.eia",
@@ -558,14 +498,14 @@ const BASE_FILES = [_]DiskFile{
     // includes
     .{
         .file = .{
-            .input = &.{.{ .Local = "eon/libs/libload.eon" }},
+            .input = &.{.local("eon/libs/libload.eon")},
             .converter = conv.copy,
         },
         .output = "libs/inc/libload.eon",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "eon/libs/sys.eon" }},
+            .input = &.{.local("eon/libs/sys.eon")},
             .converter = conv.copy,
         },
         .output = "libs/inc/sys.eon",
@@ -574,70 +514,70 @@ const BASE_FILES = [_]DiskFile{
     // icons
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/eeedt.png" }},
+            .input = &.{.local("images/icons/eeedt.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/eeedt.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/tasks.png" }},
+            .input = &.{.local("images/icons/tasks.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/tasks.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/cmd.png" }},
+            .input = &.{.local("images/icons/cmd.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/cmd.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/settings.png" }},
+            .input = &.{.local("images/icons/settings.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/settings.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/launch.png" }},
+            .input = &.{.local("images/icons/launch.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/launch.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/debug.png" }},
+            .input = &.{.local("images/icons/debug.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/debug.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/logout.png" }},
+            .input = &.{.local("images/icons/logout.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/logout.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/folder.png" }},
+            .input = &.{.local("images/icons/folder.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/folder.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/email.png" }},
+            .input = &.{.local("images/icons/email.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/email.eia",
     },
     .{
         .file = .{
-            .input = &.{.{ .Local = "images/icons/web.png" }},
+            .input = &.{.local("images/icons/web.png")},
             .converter = image.convert,
         },
         .output = "cont/icns/web.eia",
@@ -659,7 +599,7 @@ const WWW_FILES = [_]WWWSection{
                     .{
                         .file = .{
                             .input = &.{.{ .Temp = &.{
-                                .input = &.{.{ .Local = "eon/exec/pong.eon" }},
+                                .input = &.{.local("eon/exec/pong.eon")},
                                 .converter = eon.compileEon,
                             } }},
                             .converter = comp.compile,
@@ -668,28 +608,28 @@ const WWW_FILES = [_]WWWSection{
                     },
                     .{
                         .file = .{
-                            .input = &.{.{ .Local = "images/pong.png" }},
+                            .input = &.{.local("images/pong.png")},
                             .converter = image.convert,
                         },
                         .output = "/cont/imgs/pong.eia",
                     },
                     .{
                         .file = .{
-                            .input = &.{.{ .Local = "images/icons/pong.png" }},
+                            .input = &.{.local("images/icons/pong.png")},
                             .converter = image.convert,
                         },
                         .output = "/cont/icns/pong.eia",
                     },
                     .{
                         .file = .{
-                            .input = &.{.{ .Local = "audio/pong-blip.wav" }},
+                            .input = &.{.local("audio/pong-blip.wav")},
                             .converter = sound.convert,
                         },
                         .output = "/cont/snds/pong-blip.era",
                     },
                     .{
                         .file = .{
-                            .input = &.{.{ .Local = "elns/Pong.eln" }},
+                            .input = &.{.local("elns/Pong.eln")},
                             .converter = conv.copy,
                         },
                         .output = "/conf/apps/Pong.eln",
@@ -700,7 +640,7 @@ const WWW_FILES = [_]WWWSection{
                 .{
                     .file = .{
                         .input = &.{.{ .Temp = &.{
-                            .input = &.{.{ .Local = "eon/exec/connectris.eon" }},
+                            .input = &.{.local("eon/exec/connectris.eon")},
                             .converter = eon.compileEon,
                         } }},
                         .converter = comp.compile,
@@ -709,21 +649,21 @@ const WWW_FILES = [_]WWWSection{
                 },
                 .{
                     .file = .{
-                        .input = &.{.{ .Local = "images/connectris.png" }},
+                        .input = &.{.local("images/connectris.png")},
                         .converter = image.convert,
                     },
                     .output = "/cont/imgs/connectris.eia",
                 },
                 .{
                     .file = .{
-                        .input = &.{.{ .Local = "images/icons/connectris.png" }},
+                        .input = &.{.local("images/icons/connectris.png")},
                         .converter = image.convert,
                     },
                     .output = "/cont/icns/connectris.eia",
                 },
                 .{
                     .file = .{
-                        .input = &.{.{ .Local = "elns/Connectris.eln" }},
+                        .input = &.{.local("elns/Connectris.eln")},
                         .converter = conv.copy,
                     },
                     .output = "/conf/apps/Connectris.eln",
@@ -741,7 +681,7 @@ const WWW_FILES = [_]WWWSection{
                 .{
                     .file = .{
                         .input = &.{.{ .Temp = &.{
-                            .input = &.{.{ .Local = "eon/exec/paint.eon" }},
+                            .input = &.{.local("eon/exec/paint.eon")},
                             .converter = eon.compileEon,
                         } }},
                         .converter = comp.compile,
@@ -750,21 +690,21 @@ const WWW_FILES = [_]WWWSection{
                 },
                 .{
                     .file = .{
-                        .input = &.{.{ .Local = "images/transparent.png" }},
+                        .input = &.{.local("images/transparent.png")},
                         .converter = image.convert,
                     },
                     .output = "/cont/imgs/transparent.eia",
                 },
                 .{
                     .file = .{
-                        .input = &.{.{ .Local = "images/icons/paint.png" }},
+                        .input = &.{.local("images/icons/paint.png")},
                         .converter = image.convert,
                     },
                     .output = "/cont/icns/paint.eia",
                 },
                 .{
                     .file = .{
-                        .input = &.{.{ .Local = "elns/Paint.eln" }},
+                        .input = &.{.local("elns/Paint.eln")},
                         .converter = conv.copy,
                     },
                     .output = "/conf/apps/Paint.eln",
@@ -775,24 +715,22 @@ const WWW_FILES = [_]WWWSection{
     .{
         .label = "Wallpapers",
         .folder = "wallpapers",
-        .files = &.{},
+        .files = &.{
+            .{ .label = "Wood", .file = "wood.eia", .data = .{
+                .file = .{
+                    .input = &.{.local("images/wood.png")},
+                    .converter = image.convert,
+                },
+            } },
+            .{ .label = "Capy", .file = "capy.eia", .data = .{
+                .file = .{
+                    .input = &.{.local("images/capy.png")},
+                    .converter = image.convert,
+                },
+            } },
+        },
     },
 };
-// .{
-//     // wallpaper wood
-//     .input_files = &.{"content/images/wood.png"},
-//     .output_file = "www/downloads/wallpapers/wood.eia",
-//     .converter = image.convert,
-//     .download_label = "Wallpapers",
-// },
-// .{
-//     // wallpaper wood
-//     .input_files = &.{"content/images/capy.png"},
-//     .output_file = "www/downloads/wallpapers/capy.eia",
-//     .converter = image.convert,
-//     .download_label = "Wallpapers",
-// },
-//};
 
 var version: std.SemanticVersion = .{
     .major = 0,
@@ -961,7 +899,7 @@ pub fn build(b: *std.Build) !void {
 
     //exe_mod.linkSystemLibrary("eee", .{});
 
-    //exe_mod.addLibraryPath(b.path("zig-out/bin/lib/"));
+    exe_mod.addLibraryPath(b.path("zig-out/bin/lib/"));
 
     b.installArtifact(exe);
 
@@ -980,9 +918,7 @@ pub fn build(b: *std.Build) !void {
         else
             copy_libs_step;
 
-        var step = try file.getStep(b, content_path, disk_path);
-
-        step.dependOn(root);
+        const step = try file.getStep(b, content_path, disk_path, root);
 
         if (file.file.converter == conv.copy) {
             copy_libs_step.dependOn(step);
@@ -1112,7 +1048,6 @@ pub fn build(b: *std.Build) !void {
     if (steam_mode == .On and optimize == .Debug)
         b.installFile("steam_appid.txt", "bin/steam_appid.txt");
 
-    const www_step = b.step("www", "Build the website");
     var count: usize = 0;
 
     for (WWW_FILES) |file| {
@@ -1120,44 +1055,29 @@ pub fn build(b: *std.Build) !void {
             count += 1;
     }
 
+    const www_misc_step = b.step("www_misc", "Build www misc");
+
     const download_step = try dwns.DownloadPageStep.create(b, &WWW_FILES, b.path("www/downloads.edf"));
+    www_misc_step.dependOn(&download_step.step);
 
-    //var input_files = try b.allocator.alloc(DiskFileInputData, count);
-    // const download_step: DiskFile = .{
-    //     .file = .{
-    //         .input = input_files,
-    //         .converter = dwns.create,
-    //     },
+    const changelog_step = try changelog.ChangelogStep.create(b, "www/changelog.edf");
+    www_misc_step.dependOn(&changelog_step.step);
 
-    //     .output_file = "www/downloads.edf",
-    // };
+    const docs_step = try docs.DocStep.create(b, "docs", "www/docs", "@/docs/");
+    www_misc_step.dependOn(&docs_step.step);
+
+    const www_files_step = b.step("www_files", "Build www files");
+    www_files_step.dependOn(www_misc_step);
 
     for (WWW_FILES) |file| {
-        const step = try file.getStep(b, content_path, b.path("www/downloads"));
+        const step = try file.getStep(b, content_path, b.path("www/downloads"), www_misc_step);
 
-        www_step.dependOn(step);
+        www_files_step.dependOn(step);
     }
 
-    www_step.dependOn(&download_step.step);
-
-    // {
-    //     const file = download_step;
-
-    //     const step = try conv.ConvertStep.createMulti(b, file.converter, file.input_files, file.output_file);
-    //     step.step.dependOn(&disk_step.step);
-
-    //     www_step.dependOn(&step.step);
-    // }
-
-    {
-        const step = try changelog.ChangelogStep.create(b, "www/changelog.edf");
-        www_step.dependOn(&step.step);
-    }
-
-    {
-        const docs_step = try docs.DocStep.create(b, "docs", "www/docs", "@/docs/");
-        www_step.dependOn(&docs_step.step);
-    }
+    const www_step = b.step("www", "Build the website");
+    www_step.dependOn(www_misc_step);
+    www_step.dependOn(www_files_step);
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&version_write.step);
@@ -1166,7 +1086,6 @@ pub fn build(b: *std.Build) !void {
     run_step.dependOn(&run_cmd.step);
 
     const headless_step = b.step("headless", "Run the app headless");
-
     headless_step.dependOn(&version_write.step);
     headless_step.dependOn(&iversion_write.step);
 
@@ -1186,11 +1105,6 @@ pub fn build(b: *std.Build) !void {
         .Debug => if (is_demo) "-dbg-new-demo" else "-dbg",
         else => if (is_demo) "-new-demo" else "",
     };
-
-    //exe_tests.step.dependOn(&disk_step.step);
-    //exe_tests.root_module.addImport("options", options.createModule());
-    //exe_tests.root_module.addImport("network", network_module);
-    //exe_tests.root_module.addImport("steam", steam_module);
 
     const run_exe_tests = b.addRunArtifact(exe_tests);
 

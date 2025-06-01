@@ -51,6 +51,9 @@ pub var root_out: ?[]const u8 = null;
 pub const ROOT_NAME = "/";
 
 pub inline fn getExtrPath() []const u8 {
+    if (@import("builtin").mode != .Debug)
+        return "";
+
     return config.SettingManager.instance.get("extr_path") orelse "";
 }
 
