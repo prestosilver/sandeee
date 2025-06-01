@@ -19,6 +19,22 @@ _TextureCreate:
     disc 1                      ; file handle
     ret
 
+_TextureExportOver:             ; tex path
+    dup 0                       ; tex path path
+    sys 23                      ; tex path
+    push "/fake/gfx/save"       ; tex path file
+    sys 3                       ; tex path handle
+    dup 0                       ; tex path handle handle
+    dup 3                       ; tex path handle handle tex
+    dup 3                       ; tex path handle handle tex path
+    cat                         ; tex path handle handle data
+    sys 5                       ; tex path handle
+    sys 7                       ; tex path
+    disc 0                      ; tex
+    disc 0                      ;
+    push 0                      ; result
+    ret
+
 _TextureExport:                 ; tex path
     push "/fake/gfx/save"       ; tex path file
     sys 3                       ; tex path handle

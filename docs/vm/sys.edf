@@ -38,3 +38,7 @@ Stops execution until the next frame.
 Generates an error with message on the top of the stack and stops execution.
 -- 0x010313 File Size --
 Pushes the size of the file on the top of the stack.
+-- 0x010314 RSP --
+Sets the current RSP value
+-- 0x010315 Spawn --
+Spawns a process.

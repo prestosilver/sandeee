@@ -634,7 +634,7 @@ fn parseExpression(buff, idx, stack, varTable, isLib, heapTable) {
         } else if (word == "+=") {
             term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
-            result &= "copy 1\n"; // a b a b
+            result &= "copy 1\n"; // a b a
             result &= "copy 1\n"; // a b a b
             result &= "add\n";    // a b a+b
             result &= "disc 1\n"; // a a+b
@@ -643,7 +643,7 @@ fn parseExpression(buff, idx, stack, varTable, isLib, heapTable) {
         } else if (word == "&=") {
             term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term; // b a
-            result &= "copy 1\n"; // a b a b
+            result &= "copy 1\n"; // a b a
             result &= "copy 1\n"; // a b a b
             result &= "cat\n";    // a b a&b
             result &= "disc 1\n"; // a a&b
@@ -652,7 +652,7 @@ fn parseExpression(buff, idx, stack, varTable, isLib, heapTable) {
         } else if (word == "-=") {
             term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
-            result &= "copy 1\n"; // a b a b
+            result &= "copy 1\n"; // a b a
             result &= "copy 1\n"; // a b a b
             result &= "sub\n";    // a b a-b
             result &= "disc 1\n"; // a a-b
