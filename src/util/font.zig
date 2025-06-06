@@ -1,15 +1,17 @@
 const std = @import("std");
+const c = @import("../c.zig");
+
 const vec = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const allocator = @import("allocator.zig");
-const batch = @import("spritebatch.zig");
-const texture_manager = @import("texmanager.zig");
 const shd = @import("shader.zig");
 const va = @import("vertArray.zig");
 const tex = @import("texture.zig");
 const files = @import("../system/files.zig");
-const c = @import("../c.zig");
+
+const TextureManager = @import("texmanager.zig");
+const SpriteBatch = @import("spritebatch.zig");
 
 const FONT_COLORS = [16]col.Color{
     .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1 },
@@ -186,6 +188,7 @@ pub const Font = struct {
         shader: *shd.Shader,
         pos: vec.Vector2,
         text: []const u8,
+        batch: ?*SpriteBatch = null,
         origin: ?*vec.Vector2 = null,
         scale: f32 = 1,
         color: col.Color = .{ .r = 0, .g = 0, .b = 0 },
@@ -195,6 +198,8 @@ pub const Font = struct {
     };
 
     pub fn draw(self: *Font, params: drawParams) !void {
+        const batch = params.batch orelse &SpriteBatch.global;
+
         var pos = if (params.origin) |orig| orig.* else params.pos;
         var srect = rect.Rectangle{ .w = 1, .h = 1 };
         var color = params.color;
@@ -206,10 +211,10 @@ pub const Font = struct {
         start.x = @round(start.x);
         start.y = @round(start.y);
 
-        const startscissor = batch.SpriteBatch.instance.scissor;
-        defer batch.SpriteBatch.instance.scissor = startscissor;
+        const startscissor = batch.scissor;
+        defer batch.scissor = startscissor;
 
-        if (batch.SpriteBatch.instance.scissor) |*scissor| {
+        if (batch.scissor) |*scissor| {
             if (params.wrap) |wrap|
                 scissor.w =
                     @max(@as(f32, 0), @min(scissor.w, params.pos.x + wrap - scissor.x));
@@ -317,7 +322,7 @@ pub const Font = struct {
             origin.*.* = pos;
         }
 
-        try batch.SpriteBatch.instance.addEntry(&.{
+        try batch.addEntry(&.{
             .texture = .{ .texture = self.tex },
             .verts = vert_array,
             .shader = params.shader.*,

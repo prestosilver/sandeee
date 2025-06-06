@@ -1,6 +1,6 @@
 const std = @import("std");
+
 const shd = @import("../util/shader.zig");
-const batch = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
@@ -9,7 +9,6 @@ const fm = @import("../util/files.zig");
 const audio = @import("../util/audio.zig");
 const conf = @import("../system/config.zig");
 const tex = @import("../util/texture.zig");
-const texture_manager = @import("../util/texmanager.zig");
 const font = @import("../util/font.zig");
 const gfx = @import("../util/graphics.zig");
 const wins = @import("../windows/all.zig");
@@ -20,9 +19,10 @@ const system_events = @import("../events/system.zig");
 const mail = @import("../system/mail.zig");
 const allocator = @import("../util/allocator.zig");
 const builtin = @import("builtin");
-const log = @import("../util/log.zig").log;
 const logout_state = @import("logout.zig");
+const log = @import("../util/log.zig").log;
 
+const SpriteBatch = @import("../util/spritebatch.zig");
 const Loader = @import("../loaders/loader.zig");
 
 pub const GSLoading = struct {
@@ -201,13 +201,13 @@ pub const GSLoading = struct {
 
         // draw the logo
         self.logo_sprite.data.color.a = fade;
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, .{ .x = logo_offset.x, .y = logo_offset.y });
+        try SpriteBatch.global.draw(sp.Sprite, &self.logo_sprite, self.shader, .{ .x = logo_offset.x, .y = logo_offset.y });
 
         // progress bar
         self.load_sprite.data.color.a = fade;
         self.load_sprite.data.size.x = (self.load_progress * 320 * 0.5 + self.load_sprite.data.size.x * 0.5);
         self.load_sprite.data.source.w = self.load_sprite.data.size.x / self.load_sprite.data.size.y;
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, .{ .x = logo_offset.x, .y = logo_offset.y + 100 });
+        try SpriteBatch.global.draw(sp.Sprite, &self.load_sprite, self.shader, .{ .x = logo_offset.x, .y = logo_offset.y + 100 });
 
         if (self.load_sprite.data.size.x > 319)
             self.done.store(true, .monotonic);

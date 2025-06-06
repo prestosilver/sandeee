@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -5,9 +7,8 @@ const va = @import("../util/vertArray.zig");
 const win2d = @import("window2d.zig");
 const fnt = @import("../util/font.zig");
 const shd = @import("../util/shader.zig");
-const batch = @import("../util/spritebatch.zig");
 
-const std = @import("std");
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 pub const all = @import("../windows/popups/all.zig");
 
@@ -130,7 +131,7 @@ pub const PopupData = struct {
     }
 
     pub fn drawContents(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
-        try batch.SpriteBatch.instance.addEntry(&.{
+        try SpriteBatch.global.addEntry(&.{
             .texture = .none,
             .verts = try va.VertArray.init(0),
             .shader = shader.*,
@@ -210,4 +211,4 @@ pub const PopupData = struct {
     }
 };
 
-pub const Popup = batch.Drawer(PopupData);
+pub const Popup = SpriteBatch.Drawer(PopupData);

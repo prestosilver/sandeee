@@ -1,8 +1,9 @@
-const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
 const va = @import("../util/vertArray.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 pub const SpriteData = struct {
     source: rect.Rectangle,
@@ -23,4 +24,4 @@ pub const SpriteData = struct {
     }
 };
 
-pub const Sprite = sb.Drawer(SpriteData);
+pub const Sprite = SpriteBatch.Drawer(SpriteData);

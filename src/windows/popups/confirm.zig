@@ -1,7 +1,7 @@
 const std = @import("std");
+const c = @import("../../c.zig");
 
 const allocator = @import("../../util/allocator.zig");
-const batch = @import("../../util/spritebatch.zig");
 const spr = @import("../../drawers/sprite2d.zig");
 const shd = @import("../../util/shader.zig");
 const rect = @import("../../math/rects.zig");
@@ -12,7 +12,8 @@ const fnt = @import("../../util/font.zig");
 const events = @import("../../util/events.zig");
 const window_events = @import("../../events/window.zig");
 const popups = @import("../../drawers/popup2d.zig");
-const c = @import("../../c.zig");
+
+const SpriteBatch = @import("../../util/spritebatch.zig");
 
 var outline_sprites = [_]spr.Sprite{
     .atlas("ui", .{
@@ -112,8 +113,8 @@ pub const PopupConfirm = struct {
                 .y = font.size + 4,
             };
 
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &outline_sprites[0], self.shader, .{ .x = startx - 4, .y = midy - 4 });
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &outline_sprites[1], self.shader, .{ .x = startx - 2, .y = midy - 2 });
+            try SpriteBatch.global.draw(spr.Sprite, &outline_sprites[0], self.shader, .{ .x = startx - 4, .y = midy - 4 });
+            try SpriteBatch.global.draw(spr.Sprite, &outline_sprites[1], self.shader, .{ .x = startx - 2, .y = midy - 2 });
 
             try font.draw(.{
                 .shader = shader,

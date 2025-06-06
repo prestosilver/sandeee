@@ -1,11 +1,12 @@
-const sb = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
 const fnt = @import("../util/font.zig");
 const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
-const texture_manager = @import("../util/texmanager.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
+const TextureManager = @import("../util/texmanager.zig");
 
 pub const WallData = struct {
     pub const Mode = enum {
@@ -23,8 +24,8 @@ pub const WallData = struct {
     pub fn getVerts(self: *const WallData, _: vecs.Vector3) !va.VertArray {
         var result = try va.VertArray.init(6);
 
-        const par: *const sb.Drawer(WallData) = @fieldParentPtr("data", self);
-        const size = (texture_manager.TextureManager.instance.textures.get(par.texture.atlas) orelse return result).size;
+        const par: *const SpriteBatch.Drawer(WallData) = @fieldParentPtr("data", self);
+        const size = (TextureManager.instance.textures.get(par.texture.atlas) orelse return result).size;
 
         switch (self.mode) {
             .Color => {},
@@ -77,4 +78,4 @@ pub const WallData = struct {
     }
 };
 
-pub const Wallpaper = sb.Drawer(WallData);
+pub const Wallpaper = SpriteBatch.Drawer(WallData);

@@ -5,7 +5,6 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
@@ -16,6 +15,8 @@ const window_events = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const files = @import("../system/files.zig");
 const c = @import("../c.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 const SettingPanel = struct {
     name: []const u8,
@@ -297,10 +298,10 @@ const SettingsData = struct {
                     .pos = .{ .x = bnds.x + x + xo - 10, .y = bnds.y + 64 + y + 6 },
                 });
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                try SpriteBatch.global.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (idx + 1 == self.selection)
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[4], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                    try SpriteBatch.global.draw(sprite.Sprite, &self.icons[4], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (self.last_action) |action| {
                     if ((rect.Rectangle{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(action.pos)) {
@@ -326,12 +327,12 @@ const SettingsData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         self.text_box[0].data.size.x = bnds.w - 46;
         self.text_box[1].data.size.x = bnds.w - 50;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 42, .y = bnds.y + 2 });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 44, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 42, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 44, .y = bnds.y + 4 });
 
         const text = try std.mem.concat(allocator.alloc, u8, &.{
             "!SET:/",
@@ -347,7 +348,7 @@ const SettingsData = struct {
             .maxlines = 1,
         });
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back_button, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.back_button, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
     }
 
     pub fn submit(val: []u8, data: *anyopaque) !void {

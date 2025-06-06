@@ -21,13 +21,14 @@ const font = @import("util/font.zig");
 const audio = @import("util/audio.zig");
 const events = @import("util/events.zig");
 const allocator = @import("util/allocator.zig");
-const batch = @import("util/spritebatch.zig");
 const gfx = @import("util/graphics.zig");
 const shd = @import("util/shader.zig");
 const tex = @import("util/texture.zig");
-const texture_manager = @import("util/texmanager.zig");
 const panic_handler = @import("util/panic.zig");
 const log = @import("util/log.zig");
+
+const TextureManager = @import("util/texmanager.zig");
+const SpriteBatch = @import("util/spritebatch.zig");
 
 // events
 const input_events = @import("events/input.zig");
@@ -225,7 +226,7 @@ pub fn blit() !void {
     gfx.Context.clear();
 
     // finish render
-    try batch.SpriteBatch.instance.render();
+    try SpriteBatch.global.render();
 
     if (crt_enable) {
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
@@ -449,7 +450,7 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     paniced = true;
 
-    batch.SpriteBatch.instance.scissor = null;
+    SpriteBatch.global.scissor = null;
 
     error_state = @intFromEnum(current_state);
 
@@ -478,7 +479,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     // run setup
     game_states.getPtr(.Crash).setup() catch {};
 
-    batch.SpriteBatch.instance.clear() catch {};
+    SpriteBatch.global.clear() catch {};
 
     while (gfx.Context.poll()) {
         // get crash state
@@ -700,18 +701,18 @@ pub fn mainErr() anyerror!void {
         return error.FramebufferSetupFail;
 
     // give spritebatch size
-    batch.SpriteBatch.instance.size = &gfx.Context.instance.size;
+    SpriteBatch.global.size = &gfx.Context.instance.size;
 
     // done states setup
     gfx.Context.makeNotCurrent();
 
     // load some textures
-    try texture_manager.TextureManager.instance.putMem("bios", BIOS_IMAGE);
-    try texture_manager.TextureManager.instance.putMem("logo", LOGO_IMAGE);
-    try texture_manager.TextureManager.instance.putMem("load", LOAD_IMAGE);
-    try texture_manager.TextureManager.instance.putMem("sad", SAD_IMAGE);
-    try texture_manager.TextureManager.instance.putMem("error", ERROR_IMAGE);
-    try texture_manager.TextureManager.instance.putMem("white", &WHITE_IMAGE);
+    try TextureManager.instance.putMem("bios", BIOS_IMAGE);
+    try TextureManager.instance.putMem("logo", LOGO_IMAGE);
+    try TextureManager.instance.putMem("load", LOAD_IMAGE);
+    try TextureManager.instance.putMem("sad", SAD_IMAGE);
+    try TextureManager.instance.putMem("error", ERROR_IMAGE);
+    try TextureManager.instance.putMem("white", &WHITE_IMAGE);
 
     wallpaper = .atlas("wall", .{
         .dims = &gfx.Context.instance.size,
@@ -967,13 +968,13 @@ pub fn mainErr() anyerror!void {
     allocator.alloc.destroy(gs_crash);
 
     // deinit sb
-    batch.SpriteBatch.deinit();
+    SpriteBatch.global.deinit();
 
     // deinit events
     events.EventManager.deinit();
 
     // deinit textures
-    texture_manager.TextureManager.deinit();
+    TextureManager.instance.deinit();
 }
 
 test "headless.zig" {

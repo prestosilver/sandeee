@@ -1,21 +1,22 @@
 const std = @import("std");
+const c = @import("../c.zig");
 
 const win = @import("../drawers/window2d.zig");
 const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const batch = @import("../util/spritebatch.zig");
 const tex = @import("../util/texture.zig");
 const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
 const shd = @import("../util/shader.zig");
 const sp = @import("../drawers/sprite2d.zig");
-const c = @import("../c.zig");
 const popups = @import("../drawers/popup2d.zig");
 const window_events = @import("../events/window.zig");
 const system_events = @import("../events/system.zig");
 const events = @import("../util/events.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else ", "asm " };
 const HL_KEYWORD2 = [_][]const u8{"#include "};
@@ -253,10 +254,10 @@ pub const EditorData = struct {
         self.num_right.data.size.y = bnds.h - 40;
 
         // draw number sidebar
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.num_left, self.shader, .{ .x = bnds.x, .y = bnds.y + 40 });
+        try SpriteBatch.global.draw(sp.Sprite, &self.num_left, self.shader, .{ .x = bnds.x, .y = bnds.y + 40 });
 
         // draw number sidebar
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.num_right, self.shader, .{ .x = bnds.x + 40, .y = bnds.y + 40 });
+        try SpriteBatch.global.draw(sp.Sprite, &self.num_right, self.shader, .{ .x = bnds.x + 40, .y = bnds.y + 40 });
 
         // draw file text
         if (self.buffer) |buffer| {
@@ -365,7 +366,7 @@ pub const EditorData = struct {
 
                     sel_remaining -= width;
 
-                    try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + posx, .y = y });
+                    try SpriteBatch.global.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + posx, .y = y });
 
                     if (self.cursor_len >= 0) {
                         try font.draw(.{
@@ -381,7 +382,7 @@ pub const EditorData = struct {
 
                     sel_remaining -= width;
 
-                    try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
+                    try SpriteBatch.global.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
                     if (self.cursor_len < 0 and sel_remaining == 0) {
                         const render_len = try Row.getRenderLen(render_text, width);
 
@@ -404,12 +405,12 @@ pub const EditorData = struct {
         }
 
         // draw toolbar
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
+        try SpriteBatch.global.draw(sp.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         // draw toolbar icons
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 4 });
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 4 });
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.icons[2], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(sp.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(sp.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(sp.Sprite, &self.icons[2], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
     }
 
     pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {

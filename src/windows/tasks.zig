@@ -5,7 +5,6 @@ const options = @import("options");
 const allocator = @import("../util/allocator.zig");
 
 const win = @import("../drawers/window2d.zig");
-const batch = @import("../util/spritebatch.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const shd = @import("../util/shader.zig");
 const rect = @import("../math/rects.zig");
@@ -14,6 +13,8 @@ const fnt = @import("../util/font.zig");
 const col = @import("../math/colors.zig");
 const vm_manager = @import("../system/vmmanager.zig");
 const graph = @import("../drawers/graph2d.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 pub const TasksData = struct {
     const Self = @This();
@@ -36,10 +37,10 @@ pub const TasksData = struct {
 
         self.scroll_sprites[1].data.size.y = bnds.h - (20 * 2 - 2) + 2;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + 20 });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + bnds.h - 20 + 2 });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = (bnds.h - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + 20 - 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + 20 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + bnds.h - 20 + 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = (bnds.h - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + 20 - 2 });
     }
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
@@ -48,14 +49,14 @@ pub const TasksData = struct {
         self.panel[1].data.size.x = 346;
         self.panel[1].data.size.y = 278;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + bnds.h - 282 - 25 });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + bnds.h - 278 - 27 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + bnds.h - 282 - 25 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + bnds.h - 278 - 27 });
 
         self.scroll_maxy = -278;
 
         // draw active vms
-        const old_scissor = batch.SpriteBatch.instance.scissor;
-        batch.SpriteBatch.instance.scissor = .{
+        const old_scissor = SpriteBatch.global.scissor;
+        SpriteBatch.global.scissor = .{
             .x = bnds.x + 25,
             .y = bnds.y + bnds.h - 305,
             .w = 346,
@@ -81,7 +82,7 @@ pub const TasksData = struct {
             self.scroll_maxy += font.size;
         }
 
-        batch.SpriteBatch.instance.scissor = old_scissor;
+        SpriteBatch.global.scissor = old_scissor;
 
         try self.drawScroll(.{
             .x = bnds.x + 25,
@@ -94,18 +95,18 @@ pub const TasksData = struct {
         self.panel[0].data.size.y = 87;
         self.panel[1].data.size.y = 83;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + 25 });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + 25 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         self.render_graph.data.size.x = 346;
         self.render_graph.data.size.y = 83;
 
-        try batch.SpriteBatch.instance.draw(graph.Graph, &self.render_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
+        try SpriteBatch.global.draw(graph.Graph, &self.render_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         self.vm_graph.data.size.x = 346;
         self.vm_graph.data.size.y = 83;
 
-        try batch.SpriteBatch.instance.draw(graph.Graph, &self.vm_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
+        try SpriteBatch.global.draw(graph.Graph, &self.vm_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         // draw labels
         try font.draw(.{

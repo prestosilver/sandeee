@@ -5,7 +5,6 @@ const events = @import("../util/events.zig");
 const system_events = @import("../events/system.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const shd = @import("../util/shader.zig");
-const batch = @import("../util/spritebatch.zig");
 const files = @import("../system/files.zig");
 const font = @import("../util/font.zig");
 const allocator = @import("../util/allocator.zig");
@@ -16,6 +15,8 @@ const audio = @import("../util/audio.zig");
 const c = @import("../c.zig");
 const vm_manager = @import("../system/vmmanager.zig");
 const loader = @import("../loaders/loader.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 pub var target: enum { Quit, Bios, Update } = .Quit;
 pub var target_file: []const u8 = "";
@@ -48,16 +49,19 @@ pub const GSLogout = struct {
     pub fn deinit(_: *Self) void {}
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        batch.SpriteBatch.instance.scissor = null;
+        const old_scissor = SpriteBatch.global.scissor;
+        defer SpriteBatch.global.scissor = old_scissor;
 
-        try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, .{});
+        SpriteBatch.global.scissor = null;
+
+        try SpriteBatch.global.draw(wall.Wallpaper, self.wallpaper, self.shader, .{});
 
         const clear_sprite: sp.Sprite = .atlas("none", .{
             .size = size,
             .source = .{ .w = size.x, .h = size.y },
         });
 
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &clear_sprite, self.clear_shader, .{});
+        try SpriteBatch.global.draw(sp.Sprite, &clear_sprite, self.clear_shader, .{});
 
         const text = if (target == .Update) "Updating" else "Logging Out";
 

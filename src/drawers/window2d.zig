@@ -1,5 +1,6 @@
 const std = @import("std");
-const batch = @import("../util/spritebatch.zig");
+const c = @import("../c.zig");
+
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -9,7 +10,8 @@ const va = @import("../util/vertArray.zig");
 const allocator = @import("../util/allocator.zig");
 const spr = @import("sprite2d.zig");
 const gfx = @import("../util/graphics.zig");
-const c = @import("../c.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 const TOTAL_SPRITES: f32 = 9.0;
 const TEX_SIZE: f32 = 32;
@@ -104,10 +106,10 @@ pub const WindowContents = struct {
 
             scroll_sp[1].data.size.y = bnds.h - scroll_data.offset_start - (20 * 2 - 2) + 2;
 
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[0], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start });
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[1], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start + 20 });
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[2], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + bnds.h - 20 + 2 });
-            try batch.SpriteBatch.instance.draw(spr.Sprite, &scroll_sp[3], shader, .{ .x = bnds.x + bnds.w - 20, .y = (bnds.h - scroll_data.offset_start - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + scroll_data.offset_start + 20 - 2 });
+            try SpriteBatch.global.draw(spr.Sprite, &scroll_sp[0], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start });
+            try SpriteBatch.global.draw(spr.Sprite, &scroll_sp[1], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start + 20 });
+            try SpriteBatch.global.draw(spr.Sprite, &scroll_sp[2], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + bnds.h - 20 + 2 });
+            try SpriteBatch.global.draw(spr.Sprite, &scroll_sp[3], shader, .{ .x = bnds.x + bnds.w - 20, .y = (bnds.h - scroll_data.offset_start - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + scroll_data.offset_start + 20 - 2 });
         }
     }
 
@@ -476,7 +478,7 @@ pub const WindowData = struct {
         bnds.w -= 12;
         bnds.h -= 40;
 
-        try batch.SpriteBatch.instance.addEntry(&.{
+        try SpriteBatch.global.addEntry(&.{
             .texture = .none,
             .verts = try va.VertArray.init(0),
             .shader = shader.*,
@@ -603,4 +605,4 @@ pub const WindowData = struct {
     }
 };
 
-pub const Window = batch.Drawer(WindowData);
+pub const Window = SpriteBatch.Drawer(WindowData);

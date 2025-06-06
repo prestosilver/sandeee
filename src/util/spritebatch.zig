@@ -4,11 +4,14 @@ const vecs = @import("../math/vecs.zig");
 const rect = @import("../math/rects.zig");
 const col = @import("../math/colors.zig");
 const tex = @import("../util/texture.zig");
-const texture_manager = @import("../util/texmanager.zig");
 const shd = @import("../util/shader.zig");
 const va = @import("../util/vertArray.zig");
 const allocator = @import("allocator.zig");
 const c = @import("../c.zig");
+
+const TextureManager = @import("../util/texmanager.zig");
+
+const Self = @This();
 
 const DrawerTextureKind = enum {
     none,
@@ -50,33 +53,33 @@ const DrawerTexture = union(DrawerTextureKind) {
 
 pub fn Drawer(comptime T: type) type {
     return struct {
-        const Self = @This();
+        const DrawerSelf = @This();
 
         texture: DrawerTexture,
         data: T,
 
-        pub inline fn blank(data: T) Self {
+        pub inline fn blank(data: T) DrawerSelf {
             return .{
                 .texture = .none,
                 .data = data,
             };
         }
 
-        pub inline fn override(texture: tex.Texture, data: T) Self {
+        pub inline fn override(texture: tex.Texture, data: T) DrawerSelf {
             return .{
                 .texture = .{ .texture = texture },
                 .data = data,
             };
         }
 
-        pub inline fn atlas(texture: []const u8, data: T) Self {
+        pub inline fn atlas(texture: []const u8, data: T) DrawerSelf {
             return .{
                 .texture = .{ .atlas = texture },
                 .data = data,
             };
         }
 
-        pub inline fn getVerts(self: *const Self, pos: vecs.Vector3) !va.VertArray {
+        pub inline fn getVerts(self: *const DrawerSelf, pos: vecs.Vector3) !va.VertArray {
             return self.data.getVerts(pos);
         }
     };
@@ -107,175 +110,174 @@ pub const QueueEntry = struct {
     }
 };
 
-pub const SpriteBatch = struct {
-    pub var instance: SpriteBatch = .{};
+pub var global: Self = .{};
 
-    prev_queue: []QueueEntry = &.{},
-    queue: []QueueEntry = &.{},
+prev_queue: []QueueEntry = &.{},
+queue: []QueueEntry = &.{},
+buffers: []c.GLuint = &.{},
+scissor: ?rect.Rectangle = null,
+queue_lock: std.Thread.Mutex = .{},
 
-    buffers: []c.GLuint = &.{},
-    scissor: ?rect.Rectangle = null,
-    size: *vecs.Vector2 = undefined,
-    queue_lock: std.Thread.Mutex = .{},
+size: *vecs.Vector2 = undefined,
 
-    pub fn draw(sb: *SpriteBatch, comptime T: type, drawer: *const T, shader: *shd.Shader, pos: vecs.Vector3) !void {
-        const entry = QueueEntry{
-            .texture = drawer.texture,
-            .verts = try drawer.getVerts(pos),
-            .shader = shader.*,
-        };
+pub fn draw(sb: *Self, comptime T: type, drawer: *const T, shader: *shd.Shader, pos: vecs.Vector3) !void {
+    const entry: QueueEntry = .{
+        .texture = drawer.texture,
+        .verts = try drawer.getVerts(pos),
+        .shader = shader.*,
+    };
 
-        try sb.addEntry(&entry);
+    try sb.addEntry(&entry);
+}
+
+pub fn addEntry(sb: *Self, entry: *const QueueEntry) !void {
+    var new_entry = entry.*;
+
+    new_entry.scissor = sb.scissor;
+
+    sb.queue_lock.lock();
+    defer sb.queue_lock.unlock();
+
+    if (sb.queue.len != 0 and sb.queue[sb.queue.len - 1].texture.equals(entry.texture) and
+        sb.queue[sb.queue.len - 1].shader.id == new_entry.shader.id and
+        new_entry.scissor == null and sb.queue[sb.queue.len - 1].scissor == null and
+        new_entry.clear == null and sb.queue[sb.queue.len - 1].clear == null)
+    {
+        try sb.queue[sb.queue.len - 1].verts.array.appendSlice(new_entry.verts.items());
+
+        new_entry.verts.deinit();
+
+        return;
     }
 
-    pub fn addEntry(sb: *SpriteBatch, entry: *const QueueEntry) !void {
-        var new_entry = entry.*;
+    new_entry.texture = try entry.texture.dupe();
+    sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
+    sb.queue[sb.queue.len - 1] = new_entry;
+}
 
-        new_entry.scissor = sb.scissor;
+pub fn render(sb: *Self) !void {
+    c.glEnable(c.GL_BLEND);
+    c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
+    {
         sb.queue_lock.lock();
         defer sb.queue_lock.unlock();
 
-        if (sb.queue.len != 0 and sb.queue[sb.queue.len - 1].texture.equals(entry.texture) and
-            sb.queue[sb.queue.len - 1].shader.id == new_entry.shader.id and
-            new_entry.scissor == null and sb.queue[sb.queue.len - 1].scissor == null and
-            new_entry.clear == null and sb.queue[sb.queue.len - 1].clear == null)
-        {
-            try sb.queue[sb.queue.len - 1].verts.array.appendSlice(new_entry.verts.items());
+        if (sb.buffers.len != sb.queue.len) {
+            const target = sb.queue.len;
 
-            new_entry.verts.deinit();
+            if (target < sb.buffers.len) {
+                c.glDeleteBuffers(@as(c.GLint, @intCast(sb.buffers.len - target)), &sb.buffers[target]);
+                sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
+            } else if (target > sb.buffers.len) {
+                const old = sb.buffers.len;
 
-            return;
+                sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
+
+                c.glGenBuffers(@as(c.GLint, @intCast(target - old)), &sb.buffers[old]);
+            }
         }
 
-        new_entry.texture = try entry.texture.dupe();
-        sb.queue = try allocator.alloc.realloc(sb.queue, sb.queue.len + 1);
-        sb.queue[sb.queue.len - 1] = new_entry;
-    }
+        var ctex: c.GLuint = 0;
+        var cshader: c.GLuint = 0;
+        var cscissor: ?rect.Rectangle = null;
 
-    pub fn render(sb: *SpriteBatch) !void {
-        c.glEnable(c.GL_BLEND);
-        c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
+        for (sb.queue, 0..) |entry, idx| {
+            var uscissor = false;
 
-        {
-            sb.queue_lock.lock();
-            defer sb.queue_lock.unlock();
+            if (((cscissor != null) != (entry.scissor != null))) {
+                uscissor = true;
+            } else if ((cscissor != null) and (entry.scissor != null)) {
+                uscissor = !rect.Rectangle.equal(cscissor.?, entry.scissor.?);
+            }
 
-            if (sb.buffers.len != sb.queue.len) {
-                const target = sb.queue.len;
-
-                if (target < sb.buffers.len) {
-                    c.glDeleteBuffers(@as(c.GLint, @intCast(sb.buffers.len - target)), &sb.buffers[target]);
-                    sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
-                } else if (target > sb.buffers.len) {
-                    const old = sb.buffers.len;
-
-                    sb.buffers = try allocator.alloc.realloc(sb.buffers, target);
-
-                    c.glGenBuffers(@as(c.GLint, @intCast(target - old)), &sb.buffers[old]);
+            if (uscissor) {
+                if (entry.scissor) |scissor| {
+                    c.glEnable(c.GL_SCISSOR_TEST);
+                    c.glScissor(
+                        @as(c_int, @intFromFloat(@round(scissor.x))),
+                        @as(c_int, @intFromFloat(@round(sb.size.y - scissor.y - scissor.h))),
+                        @as(c_int, @intFromFloat(@round(scissor.w))),
+                        @as(c_int, @intFromFloat(@round(scissor.h))),
+                    );
+                } else {
+                    c.glDisable(c.GL_SCISSOR_TEST);
                 }
             }
 
-            var ctex: c.GLuint = 0;
-            var cshader: c.GLuint = 0;
-            var cscissor: ?rect.Rectangle = null;
+            cscissor = entry.scissor;
 
-            for (sb.queue, 0..) |entry, idx| {
-                var uscissor = false;
-
-                if (((cscissor != null) != (entry.scissor != null))) {
-                    uscissor = true;
-                } else if ((cscissor != null) and (entry.scissor != null)) {
-                    uscissor = !rect.Rectangle.equal(cscissor.?, entry.scissor.?);
-                }
-
-                if (uscissor) {
-                    if (entry.scissor) |scissor| {
-                        c.glEnable(c.GL_SCISSOR_TEST);
-                        c.glScissor(
-                            @as(c_int, @intFromFloat(@round(scissor.x))),
-                            @as(c_int, @intFromFloat(@round(sb.size.y - scissor.y - scissor.h))),
-                            @as(c_int, @intFromFloat(@round(scissor.w))),
-                            @as(c_int, @intFromFloat(@round(scissor.h))),
-                        );
-                    } else {
-                        c.glDisable(c.GL_SCISSOR_TEST);
-                    }
-                }
-
-                cscissor = entry.scissor;
-
-                if (entry.clear) |clearColor| {
-                    c.glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0);
-                    c.glClear(c.GL_COLOR_BUFFER_BIT);
-                }
-
-                if (entry.verts.items().len == 0) continue;
-
-                const target_tex = switch (entry.texture) {
-                    .none => &tex.Texture{ .tex = 0, .size = .{}, .buffer = &.{} },
-                    .atlas => |a| texture_manager.TextureManager.instance.get(a) orelse
-                        texture_manager.TextureManager.instance.get("error") orelse
-                        return error.TextureMissing,
-                    .texture => |t| &t,
-                };
-
-                if (ctex != target_tex.tex)
-                    c.glBindTexture(c.GL_TEXTURE_2D, target_tex.tex);
-
-                if (cshader != entry.shader.id)
-                    c.glUseProgram(entry.shader.id);
-
-                c.glBindBuffer(c.GL_ARRAY_BUFFER, sb.buffers[idx]);
-
-                ctex = target_tex.tex;
-                cshader = entry.shader.id;
-
-                c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(entry.verts.items().len * @sizeOf(va.Vert))), entry.verts.items().ptr, c.GL_STREAM_DRAW);
-
-                c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
-                c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(3 * @sizeOf(f32)));
-                c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(5 * @sizeOf(f32)));
-                c.glEnableVertexAttribArray(0);
-                c.glEnableVertexAttribArray(1);
-                c.glEnableVertexAttribArray(2);
-
-                c.glDrawArrays(c.GL_TRIANGLES, 0, @as(c.GLsizei, @intCast(entry.verts.items().len)));
+            if (entry.clear) |clearColor| {
+                c.glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0);
+                c.glClear(c.GL_COLOR_BUFFER_BIT);
             }
 
-            if (cscissor != null)
-                c.glDisable(c.GL_SCISSOR_TEST);
+            if (entry.verts.items().len == 0) continue;
+
+            const target_tex = switch (entry.texture) {
+                .none => &tex.Texture{ .tex = 0, .size = .{}, .buffer = &.{} },
+                .atlas => |a| TextureManager.instance.get(a) orelse
+                    TextureManager.instance.get("error") orelse
+                    return error.TextureMissing,
+                .texture => |t| &t,
+            };
+
+            if (ctex != target_tex.tex)
+                c.glBindTexture(c.GL_TEXTURE_2D, target_tex.tex);
+
+            if (cshader != entry.shader.id)
+                c.glUseProgram(entry.shader.id);
+
+            c.glBindBuffer(c.GL_ARRAY_BUFFER, sb.buffers[idx]);
+
+            ctex = target_tex.tex;
+            cshader = entry.shader.id;
+
+            c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(entry.verts.items().len * @sizeOf(va.Vert))), entry.verts.items().ptr, c.GL_STREAM_DRAW);
+
+            c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
+            c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(3 * @sizeOf(f32)));
+            c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(5 * @sizeOf(f32)));
+            c.glEnableVertexAttribArray(0);
+            c.glEnableVertexAttribArray(1);
+            c.glEnableVertexAttribArray(2);
+
+            c.glDrawArrays(c.GL_TRIANGLES, 0, @as(c.GLsizei, @intCast(entry.verts.items().len)));
         }
 
-        try sb.clear();
+        if (cscissor != null)
+            c.glDisable(c.GL_SCISSOR_TEST);
     }
 
-    pub fn clear(sb: *SpriteBatch) !void {
-        sb.queue_lock.lock();
-        defer sb.queue_lock.unlock();
+    try sb.clear();
+}
 
-        for (sb.prev_queue) |*e| {
-            e.verts.deinit();
-            e.texture.deinit();
-        }
+pub fn clear(sb: *Self) !void {
+    sb.queue_lock.lock();
+    defer sb.queue_lock.unlock();
 
-        allocator.alloc.free(sb.prev_queue);
-        sb.prev_queue = sb.queue;
-        sb.queue = &.{};
+    for (sb.prev_queue) |*e| {
+        e.verts.deinit();
+        e.texture.deinit();
     }
 
-    pub fn deinit() void {
-        for (instance.prev_queue) |*e| {
-            e.verts.deinit();
-            e.texture.deinit();
-        }
-        for (instance.queue) |*e| {
-            e.verts.deinit();
-            e.texture.deinit();
-        }
+    allocator.alloc.free(sb.prev_queue);
+    sb.prev_queue = sb.queue;
+    sb.queue = &.{};
+}
 
-        allocator.alloc.free(instance.buffers);
-        allocator.alloc.free(instance.queue);
-        allocator.alloc.free(instance.prev_queue);
+pub fn deinit(self: *const Self) void {
+    for (self.prev_queue) |*e| {
+        e.verts.deinit();
+        e.texture.deinit();
     }
-};
+
+    for (self.queue) |*e| {
+        e.verts.deinit();
+        e.texture.deinit();
+    }
+
+    allocator.alloc.free(self.buffers);
+    allocator.alloc.free(self.queue);
+    allocator.alloc.free(self.prev_queue);
+}

@@ -5,7 +5,6 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
@@ -17,10 +16,12 @@ const popups = @import("../drawers/popup2d.zig");
 const gfx = @import("../util/graphics.zig");
 const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
-const texture_manager = @import("../util/texmanager.zig");
+const log = @import("../util/log.zig").log;
+
+const TextureManager = @import("../util/texmanager.zig");
+const SpriteBatch = @import("../util/spritebatch.zig");
 const HttpClient = @import("../util/http.zig");
 const Url = @import("../util/url.zig");
-const log = @import("../util/log.zig").log;
 
 const steam = @import("steam");
 const options = @import("options");
@@ -413,7 +414,7 @@ pub const WebData = struct {
         const fconts = try self.getConts(url);
         defer allocator.alloc.free(fconts);
 
-        const texture = texture_manager.TextureManager.instance.get(target).?;
+        const texture = TextureManager.instance.get(target).?;
 
         try texture.loadMem(fconts);
         try texture.upload();
@@ -597,22 +598,22 @@ pub const WebData = struct {
 
                 if (std.mem.startsWith(u8, line, "[") and std.mem.endsWith(u8, line, "]")) {
                     if (self.add_imgs) {
-                        try texture_manager.TextureManager.instance.putMem(&texid, @embedFile("../images/error.eia"));
+                        try TextureManager.instance.putMem(&texid, @embedFile("../images/error.eia"));
 
-                        texture_manager.TextureManager.instance.get(&texid).?.size =
-                            texture_manager.TextureManager.instance.get(&texid).?.size.div(4);
+                        TextureManager.instance.get(&texid).?.size =
+                            TextureManager.instance.get(&texid).?.size.div(4);
 
                         const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try self.path.child(line[1 .. line.len - 1]), try allocator.alloc.dupe(u8, &texid) });
                         img_thread.detach();
                     }
 
-                    const size = texture_manager.TextureManager.instance.get(&texid).?.size.mul(2 * style.scale);
+                    const size = TextureManager.instance.get(&texid).?.size.mul(2 * style.scale);
 
                     switch (style.ali) {
                         .Center => {
                             const x = (web_width - size.x) / 2;
 
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.atlas(&texid, .{
+                            try SpriteBatch.global.draw(sprite.Sprite, &.atlas(&texid, .{
                                 .source = .{ .w = 1, .h = 1 },
                                 .size = size,
                             }), self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
@@ -620,7 +621,7 @@ pub const WebData = struct {
                             pos.y += size.y;
                         },
                         .Left => {
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.atlas(&texid, .{
+                            try SpriteBatch.global.draw(sprite.Sprite, &.atlas(&texid, .{
                                 .source = .{ .w = 1, .h = 1 },
                                 .size = size,
                             }), self.shader, .{ .x = bnds.x + 6 + pos.x, .y = bnds.y + 6 + pos.y });
@@ -630,7 +631,7 @@ pub const WebData = struct {
                         .Right => {
                             const x = web_width - size.x;
 
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &.atlas(&texid, .{
+                            try SpriteBatch.global.draw(sprite.Sprite, &.atlas(&texid, .{
                                 .source = .{ .w = 1, .h = 1 },
                                 .size = size,
                             }), self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
@@ -753,7 +754,7 @@ pub const WebData = struct {
 
                 self.highlight.data.color = .{ .r = 0, .g = 0, .b = 1, .a = 0.75 };
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.highlight, self.shader, .{ .x = hlpos.x + bnds.x, .y = hlpos.y + bnds.y - props.scroll.?.value + 4 });
+                try SpriteBatch.global.draw(sprite.Sprite, &self.highlight, self.shader, .{ .x = hlpos.x + bnds.x, .y = hlpos.y + bnds.y - props.scroll.?.value + 4 });
             }
 
             self.add_links = false;
@@ -762,18 +763,18 @@ pub const WebData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         self.text_box[0].data.size.x = bnds.w - 76;
         self.text_box[1].data.size.x = bnds.w - 80;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
 
         const text = try std.fmt.allocPrint(allocator.alloc, "{c}{s}:{s}", .{ @as(u8, @intFromEnum(self.path.kind)), self.path.domain, self.path.path });
         defer allocator.alloc.free(text);
 
-        const tmp = batch.SpriteBatch.instance.scissor;
-        batch.SpriteBatch.instance.scissor = .{ .x = bnds.x + 34, .y = bnds.y + 4, .w = bnds.w - 8 - 32, .h = 28 };
+        const tmp = SpriteBatch.global.scissor;
+        SpriteBatch.global.scissor = .{ .x = bnds.x + 34, .y = bnds.y + 4, .w = bnds.w - 8 - 32, .h = 28 };
         try font.draw(.{
             .shader = font_shader,
             .text = text,
@@ -781,10 +782,10 @@ pub const WebData = struct {
             .wrap = bnds.w - 90,
             .maxlines = 1,
         });
-        batch.SpriteBatch.instance.scissor = tmp;
+        SpriteBatch.global.scissor = tmp;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 2 });
     }
 
     pub fn move(self: *Self, x: f32, y: f32) void {

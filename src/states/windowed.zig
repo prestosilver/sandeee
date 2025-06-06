@@ -5,7 +5,6 @@ const rect = @import("../math/rects.zig");
 const win = @import("../drawers/window2d.zig");
 const desk = @import("../drawers/desk2d.zig");
 const allocator = @import("../util/allocator.zig");
-const batch = @import("../util/spritebatch.zig");
 const wall = @import("../drawers/wall2d.zig");
 const bar = @import("../drawers/bar2d.zig");
 const sp = @import("../drawers/sprite2d.zig");
@@ -30,9 +29,11 @@ const va = @import("../util/vertArray.zig");
 const telem = @import("../system/telem.zig");
 const c = @import("../c.zig");
 const vm_manager = @import("../system/vmmanager.zig");
-const texture_manager = @import("../util/texmanager.zig");
 const eln = @import("../util/eln.zig");
 const loader = @import("../loaders/loader.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
+const TextureManager = @import("../util/texmanager.zig");
 
 const log = @import("../util/log.zig").log;
 
@@ -171,7 +172,7 @@ pub const GSWindowed = struct {
 
             gfx.Context.instance.color = global_self.color;
         } else if (std.mem.eql(u8, event.setting, "wallpaper_path")) {
-            const texture = texture_manager.TextureManager.instance.get("wall") orelse return;
+            const texture = TextureManager.instance.get("wall") orelse return;
             texture.loadFile(event.value) catch return;
         }
     }
@@ -296,8 +297,8 @@ pub const GSWindowed = struct {
         }
 
         // draw wallpaper
-        try batch.SpriteBatch.instance.draw(wall.Wallpaper, self.wallpaper, self.shader, .{});
-        try batch.SpriteBatch.instance.draw(desk.Desk, &self.desk, self.shader, .{});
+        try SpriteBatch.global.draw(wall.Wallpaper, self.wallpaper, self.shader, .{});
+        try SpriteBatch.global.draw(desk.Desk, &self.desk, self.shader, .{});
         try self.desk.data.addText(self.font_shader, self.face);
         try self.desk.data.updateVm();
 
@@ -306,48 +307,48 @@ pub const GSWindowed = struct {
             window.data.update();
 
             // draw the window border
-            try batch.SpriteBatch.instance.draw(win.Window, window, self.shader, .{});
+            try SpriteBatch.global.draw(win.Window, window, self.shader, .{});
 
             // draw the windows name
             try window.data.drawName(self.font_shader, self.face);
 
             // update scisor region
-            batch.SpriteBatch.instance.scissor = window.data.scissor();
+            SpriteBatch.global.scissor = window.data.scissor();
 
             // draw the window contents
             try window.data.drawContents(self.font_shader, self.face);
 
             // reset scisor jic
-            batch.SpriteBatch.instance.scissor = null;
+            SpriteBatch.global.scissor = null;
         }
 
         // draw popups
         for (self.popups.items) |popup| {
-            try batch.SpriteBatch.instance.draw(popups.Popup, popup, self.shader, .{});
+            try SpriteBatch.global.draw(popups.Popup, popup, self.shader, .{});
 
             try popup.data.drawName(self.font_shader, self.face);
 
             // update scisor region
-            batch.SpriteBatch.instance.scissor = popup.data.scissor();
+            SpriteBatch.global.scissor = popup.data.scissor();
 
             try popup.data.drawContents(self.font_shader, self.face);
 
             // reset scisor jic
-            batch.SpriteBatch.instance.scissor = null;
+            SpriteBatch.global.scissor = null;
         }
 
         // draw bar
-        try batch.SpriteBatch.instance.draw(bar.Bar, &self.bar, self.shader, .{});
+        try SpriteBatch.global.draw(bar.Bar, &self.bar, self.shader, .{});
         try self.bar.data.drawName(self.font_shader, self.shader, &self.bar_logo_sprite, self.face, &self.windows);
 
         // draw notifications
         for (self.notifs.items, 0..) |notif, idx| {
-            try batch.SpriteBatch.instance.draw(notifications.Notification, notif, self.shader, .{ .x = @floatFromInt(idx) });
+            try SpriteBatch.global.draw(notifications.Notification, notif, self.shader, .{ .x = @floatFromInt(idx) });
             try notif.data.drawContents(self.shader, self.face, self.font_shader, idx);
         }
 
         // draw cursor
-        try batch.SpriteBatch.instance.draw(cursor.Cursor, &self.cursor, self.shader, .{});
+        try SpriteBatch.global.draw(cursor.Cursor, &self.cursor, self.shader, .{});
 
         // vm manager
         try vm_manager.VMManager.instance.update();

@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const allocator = @import("../../util/allocator.zig");
-const batch = @import("../../util/spritebatch.zig");
 const shd = @import("../../util/shader.zig");
 const rect = @import("../../math/rects.zig");
 const cols = @import("../../math/colors.zig");
@@ -16,6 +15,8 @@ const gfx = @import("../../util/graphics.zig");
 const spr = @import("../../drawers/sprite2d.zig");
 const c = @import("../../c.zig");
 
+const SpriteBatch = @import("../../util/spritebatch.zig");
+
 pub const PopupQuit = struct {
     const Self = @This();
 
@@ -24,8 +25,8 @@ pub const PopupQuit = struct {
     shader: *shd.Shader,
 
     pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 55, .y = bnds.y });
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 231, .y = bnds.y });
+        try SpriteBatch.global.draw(spr.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 55, .y = bnds.y });
+        try SpriteBatch.global.draw(spr.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 231, .y = bnds.y });
 
         const single_width = bnds.w / 2;
         const sd_width = font.sizeText(.{

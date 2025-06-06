@@ -1,14 +1,16 @@
 const std = @import("std");
+const c = @import("../c.zig");
+
 const vecs = @import("../math/vecs.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const shd = @import("../util/shader.zig");
-const batch = @import("../util/spritebatch.zig");
 const files = @import("../system/files.zig");
 const font = @import("../util/font.zig");
 const allocator = @import("../util/allocator.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
-const c = @import("../c.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 pub const GSCrash = struct {
     const Self = @This();
@@ -30,9 +32,9 @@ pub const GSCrash = struct {
     pub fn deinit(_: *Self) void {}
 
     pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        batch.SpriteBatch.instance.scissor = null;
+        SpriteBatch.global.scissor = null;
 
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.sad_sprite, self.shader, .{ .x = 100, .y = 100 });
+        try SpriteBatch.global.draw(sp.Sprite, &self.sad_sprite, self.shader, .{ .x = 100, .y = 100 });
 
         try self.face.draw(.{
             .shader = self.font_shader,

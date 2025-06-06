@@ -1,12 +1,13 @@
 const std = @import("std");
-const shd = @import("../util/shader.zig");
-const tex = @import("../util/texture.zig");
-const texture_manager = @import("../util/texmanager.zig");
-const gfx = @import("../util/graphics.zig");
-const conf = @import("../system/config.zig");
 const c = @import("../c.zig");
 
+const shd = @import("../util/shader.zig");
+const tex = @import("../util/texture.zig");
+const gfx = @import("../util/graphics.zig");
+const conf = @import("../system/config.zig");
 const log = @import("../util/log.zig").log;
+
+const TextureManager = @import("../util/texmanager.zig");
 
 const Self = @This();
 
@@ -23,7 +24,7 @@ pub fn load(self: *const Self) anyerror!void {
     if (loaded_tex.loadFile(path)) {
         log.debug("upload tex: {s}", .{path});
         try loaded_tex.upload();
-        try texture_manager.TextureManager.instance.put(self.name, loaded_tex);
+        try TextureManager.instance.put(self.name, loaded_tex);
     } else |err| {
         log.err("Could not load image {s}, {s}", .{ path, @errorName(err) });
     }
@@ -33,5 +34,5 @@ pub fn unload(self: *const Self) void {
     gfx.Context.makeCurrent();
     defer gfx.Context.makeNotCurrent();
 
-    texture_manager.TextureManager.instance.remove(self.name);
+    TextureManager.instance.remove(self.name);
 }

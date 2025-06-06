@@ -10,10 +10,11 @@ const rect = @import("../../math/rects.zig");
 const shd = @import("../../util/shader.zig");
 const vm = @import("../vm.zig");
 const vecs = @import("../../math/vecs.zig");
-const sb = @import("../../util/spritebatch.zig");
-const texture_manager = @import("../../util/texmanager.zig");
 const windowed_state = @import("../../states/windowed.zig");
 const colors = @import("../../math/colors.zig");
+
+const SpriteBatch = @import("../../util/spritebatch.zig");
+const TextureManager = @import("../../util/texmanager.zig");
 
 const log = @import("../../util/log.zig").log;
 
@@ -101,7 +102,7 @@ pub const render = struct {
             return;
         }
 
-        if (texture_manager.TextureManager.instance.get(data[1..2]) == null) {
+        if (TextureManager.instance.get(data[1..2]) == null) {
             log.debug("{any}", .{data[1..2]});
             return;
         }

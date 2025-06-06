@@ -1,23 +1,23 @@
 const std = @import("std");
+const c = @import("../c.zig");
 
 const win = @import("../drawers/window2d.zig");
 const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../util/texture.zig");
-const c = @import("../c.zig");
 const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
 const texture_manager = @import("../util/texmanager.zig");
 const eln = @import("../util/eln.zig");
-
 const log = @import("../util/log.zig").log;
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 var g_idx: u8 = 0;
 
@@ -131,10 +131,10 @@ pub const LauncherData = struct {
                         .size = .{ .x = 64, .y = 64 },
                     });
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                try SpriteBatch.global.draw(sprite.Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (idx + 1 == self.selected)
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                    try SpriteBatch.global.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
             }
 
             if (self.last_action) |last_action| {

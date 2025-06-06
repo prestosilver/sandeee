@@ -7,12 +7,13 @@ const events = @import("../../util/events.zig");
 const win = @import("../../drawers/window2d.zig");
 const rect = @import("../../math/rects.zig");
 const vecs = @import("../../math/vecs.zig");
-const sb = @import("../../util/spritebatch.zig");
 const cols = @import("../../math/colors.zig");
 const vm = @import("../vm.zig");
 const graphics = @import("../../util/graphics.zig");
-const texture_manager = @import("../../util/texmanager.zig");
 const tex = @import("../../util/texture.zig");
+
+const SpriteBatch = @import("../../util/spritebatch.zig");
+const TextureManager = @import("../../util/texmanager.zig");
 
 pub var texture_idx: u8 = 0;
 
@@ -26,7 +27,7 @@ pub const new = struct {
             graphics.Context.makeCurrent();
             defer graphics.Context.makeNotCurrent();
 
-            try texture_manager.TextureManager.instance.put(result, tex.Texture.init());
+            try TextureManager.instance.put(result, tex.Texture.init());
         }
 
         texture_idx = texture_idx +% 1;
@@ -40,7 +41,7 @@ pub const pixel = struct {
         const idx = data[0];
         var tmp = data[1..];
 
-        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
+        const texture = TextureManager.instance.get(&.{idx}) orelse return;
 
         while (tmp.len > 7) {
             const x = std.mem.bytesToValue(u16, tmp[0..2]);
@@ -62,7 +63,7 @@ pub const destroy = struct {
         defer graphics.Context.makeNotCurrent();
 
         const idx = data[0];
-        texture_manager.TextureManager.instance.remove(&.{idx});
+        TextureManager.instance.remove(&.{idx});
     }
 };
 
@@ -71,7 +72,7 @@ pub const upload = struct {
         if (data.len == 1) {
             const idx = data[0];
 
-            const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
+            const texture = TextureManager.instance.get(&.{idx}) orelse return;
             try texture.upload();
 
             return;
@@ -80,7 +81,7 @@ pub const upload = struct {
         const idx = data[0];
         const image = data[1..];
 
-        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
+        const texture = TextureManager.instance.get(&.{idx}) orelse return;
         texture.loadMem(image) catch {
             return error.InvalidPsuedoData;
         };
@@ -95,7 +96,7 @@ pub const save = struct {
         const idx = data[0];
         const image = data[1..];
 
-        const texture = texture_manager.TextureManager.instance.get(&.{idx}) orelse return;
+        const texture = TextureManager.instance.get(&.{idx}) orelse return;
 
         if (vm_instance) |vmi| {
             const root = try vmi.root.resolve();

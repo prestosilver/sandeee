@@ -1,17 +1,19 @@
 const std = @import("std");
+const c = @import("../c.zig");
+
 const vecs = @import("../math/vecs.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const shd = @import("../util/shader.zig");
-const batch = @import("../util/spritebatch.zig");
 const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 const font = @import("../util/font.zig");
 const allocator = @import("../util/allocator.zig");
-const c = @import("../c.zig");
 const events = @import("../util/events.zig");
 const system_events = @import("../events/system.zig");
 const files = @import("../system/files.zig");
 const audio = @import("../util/audio.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 const VERSION = "0.2.0";
 const INSTALL_TIME = 1.5;
@@ -152,7 +154,7 @@ pub const GSInstall = struct {
 
         self.load_sprite.data.size.x = (size.x - 200);
         if (self.status == .Installing) self.load_sprite.data.size.x *= 1 - self.timer;
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.load_sprite, self.shader, .{ .x = 100, .y = y });
+        try SpriteBatch.global.draw(sp.Sprite, &self.load_sprite, self.shader, .{ .x = 100, .y = y });
 
         if (@intFromEnum(self.status) < @intFromEnum(Status.Done)) return;
 

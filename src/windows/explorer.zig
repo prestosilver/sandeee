@@ -1,17 +1,16 @@
 const std = @import("std");
+const c = @import("../c.zig");
 
 const win = @import("../drawers/window2d.zig");
 const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const files = @import("../system/files.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const tex = @import("../util/texture.zig");
-const c = @import("../c.zig");
 const shell = @import("../system/shell.zig");
 const conf = @import("../system/config.zig");
 const popups = @import("../drawers/popup2d.zig");
@@ -22,6 +21,8 @@ const gfx = @import("../util/graphics.zig");
 const va = @import("../util/vertArray.zig");
 const opener = @import("../system/opener.zig");
 const eln = @import("../util/eln.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 pub const ExplorerData = struct {
     const ExplorerIcon = struct {
@@ -160,11 +161,11 @@ pub const ExplorerData = struct {
                         .maxlines = 1,
                     });
 
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &icon.icon, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                    try SpriteBatch.global.draw(sprite.Sprite, &icon.icon, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                     if (self.selected) |selected| {
                         if (selected == idx) {
-                            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.selected_sprite, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                            try SpriteBatch.global.draw(sprite.Sprite, &self.selected_sprite, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
                         }
                     }
                 }
@@ -186,7 +187,7 @@ pub const ExplorerData = struct {
 
                                     // the active folder changed !!!
                                     // clear and redraw
-                                    try batch.SpriteBatch.instance.addEntry(&.{
+                                    try SpriteBatch.global.addEntry(&.{
                                         .texture = .none,
                                         .verts = try va.VertArray.init(0),
                                         .shader = self.shader.*,
@@ -234,28 +235,30 @@ pub const ExplorerData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         self.text_box[0].data.size.x = bnds.w - 36;
         self.text_box[1].data.size.x = bnds.w - 40;
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 36, .y = bnds.y + 2 });
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 36, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 4 });
 
-        const tmp = batch.SpriteBatch.instance.scissor;
-        batch.SpriteBatch.instance.scissor = .{ .x = bnds.x + 42, .y = bnds.y + 4, .w = bnds.w - 4 - 34, .h = 28 };
-        try font.draw(.{
-            .shader = font_shader,
-            .text = shell_root.name,
-            .pos = .{
-                .x = bnds.x + 42,
-                .y = bnds.y + 8,
-            },
-            .color = .{ .r = 0, .g = 0, .b = 0 },
-        });
+        {
+            const old_scissor = SpriteBatch.global.scissor;
+            defer SpriteBatch.global.scissor = old_scissor;
 
-        batch.SpriteBatch.instance.scissor = tmp;
+            SpriteBatch.global.scissor = .{ .x = bnds.x + 42, .y = bnds.y + 4, .w = bnds.w - 4 - 34, .h = 28 };
+            try font.draw(.{
+                .shader = font_shader,
+                .text = shell_root.name,
+                .pos = .{
+                    .x = bnds.x + 42,
+                    .y = bnds.y + 8,
+                },
+                .color = .{ .r = 0, .g = 0, .b = 0 },
+            });
+        }
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back_sprite, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.back_sprite, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
     }
 
     pub fn deinit(self: *Self) void {

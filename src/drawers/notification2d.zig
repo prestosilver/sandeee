@@ -1,4 +1,3 @@
-const batch = @import("../util/spritebatch.zig");
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -8,6 +7,8 @@ const fnt = @import("../util/font.zig");
 const shd = @import("../util/shader.zig");
 const wins = @import("window2d.zig");
 const gfx = @import("../util/graphics.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 const TOTAL_SPRITES: f32 = 1;
 const TEX_SIZE: f32 = 32;
@@ -57,7 +58,7 @@ pub const NotificationData = struct {
 
             const pos = desk_size.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
 
-            try batch.SpriteBatch.instance.draw(spr.Sprite, icon, shader, .{ .x = pos.x, .y = pos.y });
+            try SpriteBatch.global.draw(spr.Sprite, icon, shader, .{ .x = pos.x, .y = pos.y });
         }
 
         try font.draw(.{
@@ -80,4 +81,4 @@ pub const NotificationData = struct {
     }
 };
 
-pub const Notification = batch.Drawer(NotificationData);
+pub const Notification = SpriteBatch.Drawer(NotificationData);

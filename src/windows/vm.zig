@@ -6,7 +6,6 @@ const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const tex = @import("../util/texture.zig");
-const batch = @import("../util/spritebatch.zig");
 const shd = @import("../util/shader.zig");
 const fnt = @import("../util/font.zig");
 const spr = @import("../drawers/sprite2d.zig");
@@ -16,7 +15,8 @@ const vm = @import("../system/vm.zig");
 const c = @import("../c.zig");
 const va = @import("../util/vertArray.zig");
 
-const TextureManager = @import("../util/texmanager.zig").TextureManager;
+const SpriteBatch = @import("../util/spritebatch.zig");
+const TextureManager = @import("../util/texmanager.zig");
 
 pub const VMData = struct {
     const Self = @This();
@@ -233,7 +233,7 @@ pub const VMData = struct {
 
         const front = if (self.back) self.textures[1] else self.textures[0];
 
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &.override(front, .{
+        try SpriteBatch.global.draw(spr.Sprite, &.override(front, .{
             .source = .{ .y = 1, .w = 1, .h = -1 },
             .size = .{ .x = bnds.w, .y = bnds.h },
         }), self.shader, .{ .x = bnds.x, .y = bnds.y, .z = 0 });

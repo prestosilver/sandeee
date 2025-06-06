@@ -1,5 +1,6 @@
 const std = @import("std");
-const batch = @import("../util/spritebatch.zig");
+const c = @import("../c.zig");
+
 const vecs = @import("../math/vecs.zig");
 const cols = @import("../math/colors.zig");
 const rect = @import("../math/rects.zig");
@@ -11,7 +12,6 @@ const win = @import("window2d.zig");
 const wins = @import("../windows/all.zig");
 const gfx = @import("../util/graphics.zig");
 const spr = @import("../drawers/sprite2d.zig");
-const c = @import("../c.zig");
 const allocator = @import("../util/allocator.zig");
 const popups = @import("popup2d.zig");
 const files = @import("../system/files.zig");
@@ -20,6 +20,8 @@ const events = @import("../util/events.zig");
 const window_events = @import("../events/window.zig");
 const shell = @import("../system/shell.zig");
 const eln = @import("../util/eln.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 const TOTAL_SPRITES = 13.0;
 
@@ -90,7 +92,7 @@ pub const BarData = struct {
         const total_height: f32 = @floatFromInt(apps.len * (ICON_SIZE + ICON_SPACE));
 
         if (self.btn_active) {
-            try batch.SpriteBatch.instance.draw(spr.Sprite, logoSprite, shader, .{ .x = 2, .y = self.screendims.y - total_height - 2 - self.height });
+            try SpriteBatch.global.draw(spr.Sprite, logoSprite, shader, .{ .x = 2, .y = self.screendims.y - total_height - 2 - self.height });
 
             for (apps, 0..) |app, i| {
                 const icon_spr: spr.Sprite = if (app.icon) |icn|
@@ -109,7 +111,7 @@ pub const BarData = struct {
                 const textpos = vecs.Vector2{ .x = 36 + ICON_SIZE + ICON_SPACE * 2, .y = y + std.math.floor((ICON_SIZE + ICON_SPACE - height) / 2) };
                 const iconpos = rect.Rectangle{ .x = 36, .y = y + 2, .w = ICON_SIZE, .h = ICON_SIZE };
 
-                try batch.SpriteBatch.instance.draw(spr.Sprite, &icon_spr, self.shader, .{ .x = iconpos.x, .y = iconpos.y });
+                try SpriteBatch.global.draw(spr.Sprite, &icon_spr, self.shader, .{ .x = iconpos.x, .y = iconpos.y });
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -276,4 +278,4 @@ pub const BarData = struct {
     }
 };
 
-pub const Bar = batch.Drawer(BarData);
+pub const Bar = SpriteBatch.Drawer(BarData);

@@ -1,11 +1,11 @@
 const std = @import("std");
+const c = @import("../c.zig");
 
 const win = @import("../drawers/window2d.zig");
 const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
 const col = @import("../math/colors.zig");
 const fnt = @import("../util/font.zig");
-const batch = @import("../util/spritebatch.zig");
 const allocator = @import("../util/allocator.zig");
 const shd = @import("../util/shader.zig");
 const sprite = @import("../drawers/sprite2d.zig");
@@ -16,11 +16,10 @@ const files = @import("../system/files.zig");
 const window_events = @import("../events/window.zig");
 const events = @import("../util/events.zig");
 const vm = @import("../system/vm.zig");
+const e_data = @import("../data/email.zig");
 const log = @import("../util/log.zig").log;
 
-const e_data = @import("../data/email.zig");
-
-const c = @import("../c.zig");
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 pub var notif: sprite.Sprite = undefined;
 
@@ -77,14 +76,14 @@ const EmailData = struct {
 
             self.login_pos = .{ .x = center - bnds.x, .y = center_y - bnds.y };
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.logo, self.shader, .{ .x = center - 26 - 50, .y = center_y - 250 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.logo, self.shader, .{ .x = center - 26 - 50, .y = center_y - 250 });
 
             self.text_box[0].data.size.x = 200;
             self.text_box[1].data.size.x = 196;
             self.button[0].data.size.x = 100;
             self.button[1].data.size.x = 96;
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 102 });
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 100 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 102 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 100 });
 
             try font.draw(.{
                 .shader = font_shader,
@@ -109,8 +108,8 @@ const EmailData = struct {
                 });
             }
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 152 });
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 150 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 152 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 150 });
 
             try font.draw(.{
                 .shader = font_shader,
@@ -135,8 +134,8 @@ const EmailData = struct {
                 });
             }
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[0], self.shader, .{ .x = center, .y = center_y - 52 });
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.button[1], self.shader, .{ .x = center + 2, .y = center_y - 50 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.button[0], self.shader, .{ .x = center, .y = center_y - 52 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.button[1], self.shader, .{ .x = center + 2, .y = center_y - 50 });
 
             const size = font.sizeText(.{
                 .text = "Login",
@@ -173,7 +172,7 @@ const EmailData = struct {
 
         self.divx.data.size.y = bnds.h;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.divx, self.shader, .{ .x = bnds.x + 100, .y = bnds.y });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.divx, self.shader, .{ .x = bnds.x + 100, .y = bnds.y });
 
         self.dive.data.size.x = bnds.w - 102;
 
@@ -220,10 +219,10 @@ const EmailData = struct {
                     self.sel.data.size.x = bnds.w - 102;
                     self.sel.data.size.y = font.size + 8 - 2;
 
-                    try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 102, .y = y - 4 });
+                    try SpriteBatch.global.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 102, .y = y - 4 });
                 }
 
-                try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = y + font.size + 2 });
+                try SpriteBatch.global.draw(sprite.Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = y + font.size + 2 });
 
                 y += font.size + 8;
             }
@@ -234,9 +233,9 @@ const EmailData = struct {
         } else {
             self.backbg.data.size.x = bnds.w - 102;
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.backbg, self.shader, .{ .x = bnds.x + 102, .y = bnds.y - 2 });
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.reply, self.shader, .{ .x = bnds.x + 104, .y = bnds.y });
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.back, self.shader, .{ .x = bnds.x + 144, .y = bnds.y });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.backbg, self.shader, .{ .x = bnds.x + 102, .y = bnds.y - 2 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.reply, self.shader, .{ .x = bnds.x + 104, .y = bnds.y });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.back, self.shader, .{ .x = bnds.x + 144, .y = bnds.y });
 
             const email = self.viewing.?;
 
@@ -258,20 +257,22 @@ const EmailData = struct {
 
             const y = bnds.y + 44 + font.size * 2 - props.scroll.?.value;
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = bnds.y + 44 + font.size * 2 });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = bnds.y + 44 + font.size * 2 });
 
-            const old_scissor = batch.SpriteBatch.instance.scissor;
-            batch.SpriteBatch.instance.scissor.?.y = bnds.y + 48 + font.size * 2;
-            batch.SpriteBatch.instance.scissor.?.h = bnds.h - 48 - font.size * 2;
+            {
+                const old_scissor = SpriteBatch.global.scissor;
+                defer SpriteBatch.global.scissor = old_scissor;
 
-            try font.draw(.{
-                .shader = font_shader,
-                .text = email.contents,
-                .pos = .{ .x = bnds.x + 108, .y = y + 2 },
-                .wrap = bnds.w - 116.0 - 20,
-            });
+                SpriteBatch.global.scissor.?.y = bnds.y + 48 + font.size * 2;
+                SpriteBatch.global.scissor.?.h = bnds.h - 48 - font.size * 2;
 
-            batch.SpriteBatch.instance.scissor = old_scissor;
+                try font.draw(.{
+                    .shader = font_shader,
+                    .text = email.contents,
+                    .pos = .{ .x = bnds.x + 108, .y = y + 2 },
+                    .wrap = bnds.w - 116.0 - 20,
+                });
+            }
 
             props.scroll.?.maxy = font.sizeText(.{
                 .text = email.contents,
@@ -307,7 +308,7 @@ const EmailData = struct {
         self.sel.data.size.x = 100;
         self.sel.data.size.y = font.size;
 
-        try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x, .y = bnds.y + font.size * @as(f32, @floatFromInt(self.box)) });
+        try SpriteBatch.global.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x, .y = bnds.y + font.size * @as(f32, @floatFromInt(self.box)) });
     }
 
     pub fn submitFile(self: *Self) !void {

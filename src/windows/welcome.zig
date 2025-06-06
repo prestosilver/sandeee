@@ -3,7 +3,6 @@ const builtin = @import("builtin");
 const options = @import("options");
 
 const win = @import("../drawers/window2d.zig");
-const batch = @import("../util/spritebatch.zig");
 const shd = @import("../util/shader.zig");
 const rect = @import("../math/rects.zig");
 const vecs = @import("../math/vecs.zig");
@@ -15,6 +14,8 @@ const col = @import("../math/colors.zig");
 const files = @import("../system/files.zig");
 const sprite = @import("../drawers/sprite2d.zig");
 const conf = @import("../system/config.zig");
+
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 const DEMO_TIME = 6e+11;
 
@@ -84,7 +85,7 @@ pub const WelcomeData = struct {
                 .h = 20,
             };
 
-            try batch.SpriteBatch.instance.draw(sprite.Sprite, &self.check_box[cb], self.shader, .{ .x = bnds.x + 6, .y = bnds.y + 80 + 10 * font.size });
+            try SpriteBatch.global.draw(sprite.Sprite, &self.check_box[cb], self.shader, .{ .x = bnds.x + 6, .y = bnds.y + 80 + 10 * font.size });
 
             try font.draw(.{
                 .shader = font_shader,

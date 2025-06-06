@@ -1,7 +1,7 @@
 const std = @import("std");
+const c = @import("../../c.zig");
 
 const allocator = @import("../../util/allocator.zig");
-const batch = @import("../../util/spritebatch.zig");
 const spr = @import("../../drawers/sprite2d.zig");
 const shd = @import("../../util/shader.zig");
 const rect = @import("../../math/rects.zig");
@@ -12,7 +12,8 @@ const fnt = @import("../../util/font.zig");
 const events = @import("../../util/events.zig");
 const window_events = @import("../../events/window.zig");
 const popups = @import("../../drawers/popup2d.zig");
-const c = @import("../../c.zig");
+
+const SpriteBatch = @import("../../util/spritebatch.zig");
 
 pub const PopupFolderPick = struct {
     const Self = @This();
@@ -47,8 +48,8 @@ pub const PopupFolderPick = struct {
             .size = .{ .x = bnds.w - 64, .y = 28 },
         });
 
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_background, popups.popup_shader, .{ .x = bnds.x + 28, .y = bnds.y + font.size * 2 - 4 });
-        try batch.SpriteBatch.instance.draw(spr.Sprite, &text_foreground, popups.popup_shader, .{ .x = bnds.x + 30, .y = bnds.y + font.size * 2 - 2 });
+        try SpriteBatch.global.draw(spr.Sprite, &text_background, popups.popup_shader, .{ .x = bnds.x + 28, .y = bnds.y + font.size * 2 - 4 });
+        try SpriteBatch.global.draw(spr.Sprite, &text_foreground, popups.popup_shader, .{ .x = bnds.x + 30, .y = bnds.y + font.size * 2 - 2 });
 
         try font.draw(.{
             .shader = shader,

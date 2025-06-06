@@ -1,7 +1,8 @@
 const std = @import("std");
+const c = @import("../c.zig");
+
 const options = @import("options");
 const shd = @import("../util/shader.zig");
-const batch = @import("../util/spritebatch.zig");
 const sp = @import("../drawers/sprite2d.zig");
 const vecs = @import("../math/vecs.zig");
 const font = @import("../util/font.zig");
@@ -13,7 +14,7 @@ const gfx = @import("../util/graphics.zig");
 const cols = @import("../math/colors.zig");
 const audio = @import("../util/audio.zig");
 
-const c = @import("../c.zig");
+const SpriteBatch = @import("../util/spritebatch.zig");
 
 pub const GSDisks = struct {
     const Self = @This();
@@ -145,7 +146,7 @@ pub const GSDisks = struct {
 
         var line: []u8 = &.{};
 
-        try batch.SpriteBatch.instance.draw(sp.Sprite, &self.logo_sprite, self.shader, .{ .x = pos.x, .y = pos.y });
+        try SpriteBatch.global.draw(sp.Sprite, &self.logo_sprite, self.shader, .{ .x = pos.x, .y = pos.y });
         pos.y += self.logo_sprite.data.size.y;
 
         if (self.auto) {
