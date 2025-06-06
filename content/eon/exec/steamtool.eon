@@ -1,0 +1,75 @@
+#include "/libs/inc/libload.eon"
+#include "/libs/inc/sys.eon"
+
+fn runSteam(data) {
+    asm "sys 24";
+    asm "ret";
+}
+
+fn toString(number) {
+    // TODO: remove from here
+    // converts a number to a string
+
+    if (number == 0) {
+        return "0";
+    }
+
+    var result = "";
+    var tmp = "";
+
+    for (0; number > 0; number = number / 10) {
+        tmp = @(48 + (number % 10));
+        result = tmp & result;
+    }
+
+    return result;
+}
+
+fn main() {
+    var cmd = getArg(1);
+    if (cmd == "create") {
+        var item = runSteam("");
+        
+        print("created item: " & toString(item));
+
+        return 0;
+    } else if (cmd == "metadata") {
+        var meta_item = getArg(2);
+        var meta_entry = getArg(3);
+
+        var i = 4;
+        var value = "";
+
+        var arg = getArg(i);
+
+        while (arg != "") {
+            if (value != 0)
+                value &= " ";
+            value &= arg;
+
+            i += 1;
+            arg = getArg(i);
+        }
+
+        var meta_result = runSteam("m" & meta_item & ":" & meta_entry & ":" & value);
+
+        if (meta_result == 0) { print("Set metadata successfully"); }
+        else { print("Failed to set metadata"); }
+
+        return meta_result;
+    } else if (cmd == "upload") {
+        var upload_item = getArg(2);
+        var upload_path = getArg(3);
+
+        var upload_result = runSteam("f" & upload_item & ":" & upload_path);
+        
+        if (upload_result == 0) { print("Uploaded files successfully"); }
+        else { print("Failed to upload files"); }
+
+        return upload_result;
+    }
+
+    print("expected command (create|upload|metadata)");
+
+    return 0;
+}
