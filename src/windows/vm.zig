@@ -18,28 +18,34 @@ const va = @import("../util/vertArray.zig");
 const SpriteBatch = @import("../util/spritebatch.zig");
 const TextureManager = @import("../util/texmanager.zig");
 
+const DEFAULT_SIZE: vecs.Vector2 = .{ .x = 600, .y = 400 };
+
 pub const VMData = struct {
     const Self = @This();
 
     //rects: [2]std.ArrayList(VMDataEntry),
-    textures: [2]tex.Texture,
+    texture: tex.Texture,
     framebuffer: c.GLuint,
     renderbuffer: c.GLuint,
     arraybuffer: c.GLuint,
 
-    back: bool = true,
+    spritebatch: SpriteBatch,
+    size: vecs.Vector2,
+
+    font_shader: ?*shd.Shader = null,
+    font: ?*fnt.Font = null,
 
     idx: u8,
     shader: *shd.Shader,
 
-    frame_counter: f32 = 0,
+    total_counter: usize = 0,
+    frame_counter: usize = 0,
     time: f32 = 0,
     fps: f32 = 0,
-    debug: bool = false,
+    debug: bool = @import("builtin").mode == .Debug,
     input: []i32 = &.{},
     mousebtn: ?i32 = null,
     mousepos: vecs.Vector2 = .{},
-    size: vecs.Vector2 = .{ .x = 600, .y = 400 },
 
     const VMDataKind = enum {
         rect,
@@ -62,217 +68,142 @@ pub const VMData = struct {
     };
 
     pub fn addRect(self: *VMData, texture: []const u8, src: rect.Rectangle, dst: rect.Rectangle) !void {
-        const fetched = TextureManager.instance.get(texture) orelse return;
-
-        var verts = try va.VertArray.init(6);
-        defer verts.deinit();
-
-        try verts.appendQuad(dst, src, .{});
-
-        {
-            gfx.Context.makeCurrent();
-            defer gfx.Context.makeNotCurrent();
-
-            const old_size = gfx.Context.instance.size;
-
-            gfx.Context.resize(@intFromFloat(self.size.x), @intFromFloat(self.size.y));
-            defer gfx.Context.resize(@intFromFloat(old_size.x), @intFromFloat(old_size.y));
-
-            var old_framebuffer: c.GLuint = 0;
-            c.glGetIntegerv(c.GL_FRAMEBUFFER_BINDING, @ptrCast(&old_framebuffer));
-            defer c.glBindFramebuffer(c.GL_FRAMEBUFFER, old_framebuffer);
-            c.glBindFramebuffer(c.GL_FRAMEBUFFER, self.framebuffer);
-
-            c.glBindTexture(c.GL_TEXTURE_2D, fetched.tex);
-            defer c.glBindTexture(c.GL_TEXTURE_2D, 0);
-
-            c.glUseProgram(self.shader.id);
-            defer c.glUseProgram(0);
-
-            c.glBindBuffer(c.GL_ARRAY_BUFFER, self.arraybuffer);
-            c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(verts.items().len * @sizeOf(va.Vert))), verts.items().ptr, c.GL_STREAM_DRAW);
-
-            c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 9 * @sizeOf(f32), null);
-            c.glVertexAttribPointer(1, 2, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(3 * @sizeOf(f32)));
-            c.glVertexAttribPointer(2, 4, c.GL_FLOAT, 0, 9 * @sizeOf(f32), @ptrFromInt(5 * @sizeOf(f32)));
-            c.glEnableVertexAttribArray(0);
-            c.glEnableVertexAttribArray(1);
-            c.glEnableVertexAttribArray(2);
-
-            c.glDrawArrays(c.GL_TRIANGLES, 0, @as(c.GLsizei, @intCast(verts.items().len)));
-        }
-
-        // const appends: VMDataEntry = .{
-        //     .rect = .{
-        //         .loc = .{ .x = dst.x, .y = dst.y },
-        //         .s = spr.Sprite{
-        //             .texture = try allocator.alloc.dupe(u8, texture),
-        //             .data = .{
-        //                 .source = src,
-        //                 .size = .{ .x = dst.w, .y = dst.h },
-        //             },
-        //         },
-        //     },
-        // };
-
-        // if (self.back) try self.rects[0].append(appends);
-        // if (!self.back) try self.rects[1].append(appends);
+        try self.spritebatch.draw(
+            spr.Sprite,
+            &.atlas(texture, .{
+                .source = src,
+                .size = .{ .x = dst.w, .y = dst.h },
+            }),
+            self.shader,
+            .{ .x = dst.x, .y = dst.y },
+        );
     }
 
     pub fn addText(self: *VMData, dst: vecs.Vector2, text: []const u8) !void {
-        _ = dst;
-        _ = text;
+        if (self.font == null or self.font_shader == null)
+            return;
 
-        gfx.Context.makeCurrent();
-        defer gfx.Context.makeNotCurrent();
-
-        var old_framebuffer: c.GLuint = 0;
-        c.glGetIntegerv(c.GL_FRAMEBUFFER_BINDING, @ptrCast(&old_framebuffer));
-        defer c.glBindFramebuffer(c.GL_FRAMEBUFFER, old_framebuffer);
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, self.framebuffer);
-
-        // const appends: VMDataEntry = .{
-        //     .text = .{
-        //         .pos = dst,
-        //         .text = try allocator.alloc.dupe(u8, text),
-        //     },
-        // };
-
-        // if (self.back) try self.rects[0].append(appends);
-        // if (!self.back) try self.rects[1].append(appends);
+        try self.font.?.draw(
+            .{
+                .batch = &self.spritebatch,
+                .shader = self.font_shader.?,
+                .pos = dst,
+                .text = text,
+            },
+        );
     }
 
-    pub fn flip(self: *VMData) void {
-        self.frame_counter += 1;
-        self.back = !self.back;
-
+    pub fn flip(self: *VMData) !void {
         {
             gfx.Context.makeCurrent();
             defer gfx.Context.makeNotCurrent();
 
-            const back = &if (self.back) self.textures[0] else self.textures[1];
+            if (self.texture.size.x != self.size.x or
+                self.texture.size.y != self.size.y)
+            {
+                var old_renderbuffer: c.GLuint = 0;
+                c.glGetIntegerv(c.GL_RENDERBUFFER_BINDING, @ptrCast(&old_renderbuffer));
+                c.glBindRenderbuffer(c.GL_RENDERBUFFER, self.renderbuffer);
+                defer c.glBindRenderbuffer(c.GL_RENDERBUFFER, old_renderbuffer);
+
+                c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH24_STENCIL8, @intFromFloat(self.size.x), @intFromFloat(self.size.y));
+
+                c.glBindTexture(c.GL_TEXTURE_2D, self.texture.tex);
+                c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @intFromFloat(self.size.x), @intFromFloat(self.size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+
+                self.texture.size = self.size;
+            }
 
             var old_framebuffer: c.GLuint = 0;
             c.glGetIntegerv(c.GL_FRAMEBUFFER_BINDING, @ptrCast(&old_framebuffer));
             defer c.glBindFramebuffer(c.GL_FRAMEBUFFER, old_framebuffer);
             c.glBindFramebuffer(c.GL_FRAMEBUFFER, self.framebuffer);
 
-            c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, back.tex, 0);
+            const old_size = gfx.Context.instance.size;
+            defer gfx.Context.resize(@intFromFloat(old_size.x), @intFromFloat(old_size.y));
 
-            if (back.size.x != self.size.x or
-                back.size.y != self.size.y)
-            {
-                c.glBindTexture(c.GL_TEXTURE_2D, back.tex);
+            gfx.Context.resize(@intFromFloat(self.size.x), @intFromFloat(self.size.y));
 
-                c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @intFromFloat(self.size.x), @intFromFloat(self.size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
-
-                back.size = self.size;
-            }
+            try self.spritebatch.render();
         }
+
+        self.frame_counter +%= 1;
+        self.total_counter +%= 1;
     }
 
-    pub fn clear(self: *VMData) void {
-        gfx.Context.makeCurrent();
-        defer gfx.Context.makeNotCurrent();
-
-        var old_framebuffer: c.GLuint = 0;
-        c.glGetIntegerv(c.GL_FRAMEBUFFER_BINDING, @ptrCast(&old_framebuffer));
-
-        defer c.glBindFramebuffer(c.GL_FRAMEBUFFER, old_framebuffer);
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, self.framebuffer);
-
-        const back = if (self.back) self.textures[0] else self.textures[1];
-        c.glBindTexture(c.GL_TEXTURE_2D, back.tex);
-
-        c.glClearColor(0, 0, 0, 0);
-        c.glClear(c.GL_COLOR_BUFFER_BIT);
-        // const rects = if (!self.back) &self.rects[1] else &self.rects[0];
-        // for (rects.items) |item| {
-        //     switch (item) {
-        //         .text => {
-        //             allocator.alloc.free(item.text.text);
-        //         },
-        //         .rect => {
-        //             allocator.alloc.free(item.rect.s.texture);
-        //         },
-        //     }
-        // }
-
-        // rects.*.clearAndFree();
-    }
-
-    pub fn moveResize(self: *Self, bnds: rect.Rectangle) void {
-        gfx.Context.makeCurrent();
-        defer gfx.Context.makeNotCurrent();
-
-        self.size = .{ .x = bnds.w, .y = bnds.h };
-
-        {
-            var old_renderbuffer: c.GLuint = 0;
-            c.glGetIntegerv(c.GL_RENDERBUFFER_BINDING, @ptrCast(&old_renderbuffer));
-            c.glBindRenderbuffer(c.GL_RENDERBUFFER, self.renderbuffer);
-            defer c.glBindRenderbuffer(c.GL_RENDERBUFFER, old_renderbuffer);
-
-            c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH24_STENCIL8, @intFromFloat(self.size.x), @intFromFloat(self.size.y));
-        }
-
-        {
-            const back = if (self.back) self.textures[0] else self.textures[1];
-
-            c.glBindTexture(c.GL_TEXTURE_2D, back.tex);
-            c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @intFromFloat(self.size.x), @intFromFloat(self.size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
-        }
+    pub fn clear(self: *VMData) !void {
+        try self.spritebatch.addEntry(&.{
+            .texture = .none,
+            .verts = .none,
+            .shader = self.shader.*,
+            .clear = std.mem.zeroes(col.Color),
+        });
     }
 
     pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
-        if (self.size.x == 0 and self.size.y == 0)
-            self.moveResize(bnds.*);
+        self.font_shader = font_shader;
+        self.font = font;
 
-        // // vm.syslock.lock();
-        // // defer vm.syslock.unlock();
-
-        const front = if (self.back) self.textures[1] else self.textures[0];
-
-        try SpriteBatch.global.draw(spr.Sprite, &.override(front, .{
+        try SpriteBatch.global.draw(spr.Sprite, &.override(self.texture, .{
             .source = .{ .y = 1, .w = 1, .h = -1 },
             .size = .{ .x = bnds.w, .y = bnds.h },
-        }), self.shader, .{ .x = bnds.x, .y = bnds.y, .z = 0 });
+        }), self.shader, .{ .x = bnds.x, .y = bnds.y });
 
-        // const rects = if (self.back) self.rects[1] else self.rects[0];
-
-        // for (rects.items, 0..) |_, idx| {
-        //     switch (rects.items[idx]) {
-        //         .rect => {
-        //             try batch.SpriteBatch.instance.draw(spr.Sprite, &rects.items[idx].rect.s, self.shader, .{ .x = bnds.x + rects.items[idx].rect.loc.x, .y = bnds.y + rects.items[idx].rect.loc.y, .z = rects.items[idx].rect.loc.z });
-        //         },
-        //         .text => {
-        //             try font.draw(
-        //                 .{
-        //                     .shader = font_shader,
-        //                     .pos = rects.items[idx].text.pos.add(bnds.location()),
-        //                     .text = rects.items[idx].text.text,
-        //                 },
-        //             );
-        //         },
-        //     }
-        // }
+        self.size = .{ .x = bnds.w, .y = bnds.h };
 
         self.time += 1.0 / 60.0;
         if (self.time > 1.0) {
-            self.fps = self.frame_counter / self.time;
+            self.fps = @as(f32, @floatFromInt(self.frame_counter)) / self.time;
             self.frame_counter = 0;
             self.time = 0;
         }
 
         if (self.debug) {
-            const val = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
-            defer allocator.alloc.free(val);
+            var y: f32 = 0;
 
-            try font.draw(.{
-                .shader = font_shader,
-                .text = val,
-                .pos = bnds.location(),
-            });
+            {
+                const val = try std.fmt.allocPrint(allocator.alloc, "BNDS: {}x{}+{}+{}", .{
+                    @as(i32, @intFromFloat(bnds.w)),
+                    @as(i32, @intFromFloat(bnds.h)),
+                    @as(i32, @intFromFloat(bnds.x)),
+                    @as(i32, @intFromFloat(bnds.y)),
+                });
+                defer allocator.alloc.free(val);
+
+                try font.draw(.{
+                    .shader = font_shader,
+                    .text = val,
+                    .pos = .{ .x = bnds.x, .y = bnds.y + y },
+                });
+
+                y += font.size;
+            }
+
+            {
+                const val = try std.fmt.allocPrint(allocator.alloc, "FRAME: {}", .{self.total_counter});
+                defer allocator.alloc.free(val);
+
+                try font.draw(.{
+                    .shader = font_shader,
+                    .text = val,
+                    .pos = .{ .x = bnds.x, .y = bnds.y + y },
+                });
+
+                y += font.size;
+            }
+
+            {
+                const val = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
+                defer allocator.alloc.free(val);
+
+                try font.draw(.{
+                    .shader = font_shader,
+                    .text = val,
+                    .pos = .{ .x = bnds.x, .y = bnds.y + y },
+                });
+
+                y += font.size;
+            }
         }
     }
 
@@ -307,6 +238,9 @@ pub const VMData = struct {
     pub fn deinit(self: *Self) void {
         allocator.alloc.free(self.input);
 
+        self.spritebatch.deinit();
+        self.texture.deinit();
+
         {
             gfx.Context.makeCurrent();
             defer gfx.Context.makeNotCurrent();
@@ -327,18 +261,16 @@ pub fn init(idx: u8, shader: *shd.Shader) !win.WindowContents {
         gfx.Context.makeCurrent();
         defer gfx.Context.makeNotCurrent();
 
-        var textures: [2]c.GLuint = .{ 0, 0 };
-        c.glGenTextures(2, &textures);
-        errdefer c.glDeleteTextures(2, &textures);
+        var texture: c.GLuint = 0;
+        c.glGenTextures(1, &texture);
+        errdefer c.glDeleteTextures(1, &texture);
 
-        inline for (textures) |texture| {
-            c.glBindTexture(c.GL_TEXTURE_2D, texture);
+        c.glBindTexture(c.GL_TEXTURE_2D, texture);
 
-            c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, 600, 400, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+        c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, DEFAULT_SIZE.x, DEFAULT_SIZE.y, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
 
-            c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-            c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
-        }
+        c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
+        c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
 
         var vab: c.GLuint = 0;
         c.glGenBuffers(1, &vab);
@@ -354,7 +286,7 @@ pub fn init(idx: u8, shader: *shd.Shader) !win.WindowContents {
             c.glBindRenderbuffer(c.GL_RENDERBUFFER, rbo);
             defer c.glBindRenderbuffer(c.GL_RENDERBUFFER, old_renderbuffer);
 
-            c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH24_STENCIL8, 600, 400);
+            c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH24_STENCIL8, DEFAULT_SIZE.x, DEFAULT_SIZE.y);
         }
 
         var fbo: c.GLuint = 0;
@@ -367,7 +299,7 @@ pub fn init(idx: u8, shader: *shd.Shader) !win.WindowContents {
             c.glBindFramebuffer(c.GL_FRAMEBUFFER, fbo);
             defer c.glBindFramebuffer(c.GL_FRAMEBUFFER, old_framebuffer);
 
-            c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, textures[0], 0);
+            c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, texture, 0);
             c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_STENCIL_ATTACHMENT, c.GL_RENDERBUFFER, rbo);
 
             if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
@@ -377,10 +309,9 @@ pub fn init(idx: u8, shader: *shd.Shader) !win.WindowContents {
         self.* = .{
             .idx = idx,
             .shader = shader,
-            .textures = .{
-                .{ .size = .{ .x = 600, .y = 400 }, .tex = textures[0], .buffer = &.{} },
-                .{ .size = .{ .x = 600, .y = 400 }, .tex = textures[1], .buffer = &.{} },
-            },
+            .size = DEFAULT_SIZE,
+            .spritebatch = .{ .size = &self.texture.size },
+            .texture = .{ .size = DEFAULT_SIZE, .tex = texture, .buffer = &.{} },
             .framebuffer = fbo,
             .renderbuffer = rbo,
             .arraybuffer = vab,

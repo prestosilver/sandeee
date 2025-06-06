@@ -229,8 +229,6 @@ _WindowHeight:
     mul
     add
     disc 1
-    push 36
-    sub
     ret
 
 _WindowWidth:
@@ -248,6 +246,4 @@ _WindowWidth:
     mul
     add
     disc 1
-    push 4
-    sub
     ret

@@ -1,4 +1,56 @@
 EON
-    filter remove_inline //.*$
+    filter call_regexp_common C++
     extension eon
     3rd_gen_scale 0.77
+EEE Document File
+    filter remove_inline #.*$
+    extension edf
+    3rd_gen_scale 1.0
+EEE Document Style
+    filter remove_inline #.*$
+    extension eds
+    extension est
+    3rd_gen_scale 1.0
+EEE Shell Script
+    filter remove_inline #.*$
+    extension esh
+    3rd_gen_scale 1.0
+CFG
+    filter remove_inline #.*$
+    extension cfg
+    3rd_gen_scale 1.0
+EEE Link File
+    filter remove_inline #.*$
+    extension eln
+    3rd_gen_scale 1.0
+EEE Email Data
+    filter remove_inline #.*$
+    extension txt
+    3rd_gen_scale 1.0
+EEE Assembly
+    filter remove_matches ^\s*#
+    filter remove_matches ^\s*;
+    filter call_regexp_common C++
+    filter remove_matches ^\s*\@
+    filter remove_matches ^\s*\|
+    filter remove_matches ^\s*!
+    filter remove_matches ^\s*--
+    filter remove_inline ;.*$
+    filter remove_inline \@.*$
+    filter remove_inline \|.*$
+    filter remove_inline !.*$
+    filter remove_inline #.*$
+    filter remove_inline --.*$
+    filter remove_matches ^\*
+    extension S
+    extension a51
+    extension asm
+    extension nasm
+    extension s
+    3rd_gen_scale 0.25
+    end_of_line_continuation \\$
+Zig
+    filter remove_matches ^\s*//
+    filter remove_inline //.*$
+    extension zig
+    3rd_gen_scale 2.50

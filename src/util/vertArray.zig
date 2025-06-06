@@ -34,9 +34,11 @@ pub const Vert = struct {
 pub const VertArray = struct {
     array: std.ArrayList(Vert),
 
+    pub const none: VertArray = .{ .array = .init(allocator.alloc) };
+
     pub inline fn init(cap: usize) !VertArray {
         return VertArray{
-            .array = try std.ArrayList(Vert).initCapacity(allocator.alloc, cap),
+            .array = try .initCapacity(allocator.alloc, cap),
         };
     }
 

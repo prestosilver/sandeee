@@ -147,7 +147,8 @@ pub const flip = struct {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aid) {
-                    self.flip();
+                    self.flip() catch
+                        return error.OutOfMemory;
                     return;
                 }
             }
@@ -167,7 +168,7 @@ pub const clear = struct {
                 const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                 if (self.idx == aid) {
-                    self.clear();
+                    self.clear() catch return error.OutOfMemory;
 
                     return;
                 }
@@ -229,8 +230,8 @@ pub const size = struct {
                     const self = @as(*vmwin.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                     if (self.idx == aid[0]) {
-                        const x = std.mem.asBytes(&@as(u16, @intFromFloat(item.data.pos.w)));
-                        const y = std.mem.asBytes(&@as(u16, @intFromFloat(item.data.pos.h)));
+                        const x = std.mem.asBytes(&@as(u16, @intFromFloat(self.size.x)));
+                        const y = std.mem.asBytes(&@as(u16, @intFromFloat(self.size.y)));
                         @memcpy(result[0..2], x);
                         @memcpy(result[2..4], y);
 

@@ -208,7 +208,7 @@ pub fn render(sb: *Self) !void {
             cscissor = entry.scissor;
 
             if (entry.clear) |clearColor| {
-                c.glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0);
+                c.glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
                 c.glClear(c.GL_COLOR_BUFFER_BIT);
             }
 

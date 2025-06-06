@@ -1,4 +1,50 @@
-fn DrawUi(win, ui) {
+fn UiButton(tex, bounds) {
+    return "B" & tex & bounds & "|";
+}
+
+fn UiBar(contents) {
+    return "b" & contents & "|";
+}
+
+fn DrawUiBar(ui, bounds, win, uiTex) {
+    var width = _WindowWidth(dup(win));
+    
+    var dest = _MakeRect(0, 0, width, 40);
+
+    var src = _MakeRect(512, 0, 128, 512);
+
+    _WindowRender(win, uiTex, dest, src);
+
+    ui += 4;
+
+    _DrawUi(ui, dest, win, uiTex);
+    
+    ui += 1;
+
+    return 0;
+}
+
+fn UiCanvas(texture) {
+    return "c" & texture & "|";
+}
+
+fn DrawUi(ui, bounds, win, uiTex) {
+    while (ui != 0) {
+        var type = @ui;
+
+        ui += 1;
+        if (type == 124) { // |
+            return 0;
+        }
+        if (type == 99) { // c
+            
+        } else if (type == 98) { // b
+            _DrawUiBar(ui, bounds, win, uiTex);
+        } else if (type == 66) { // B
+            
+        }
+    }
+
     return 0;
 }
 
