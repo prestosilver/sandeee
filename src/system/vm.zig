@@ -78,6 +78,12 @@ pub const VM = struct {
     functions: std.StringHashMap(VMFunc),
     inside_fn: ?[]const u8 = null,
 
+    yield_data: ?struct {
+        check: *const fn (yield_self: *anyopaque, vm: *VM) VMError!bool,
+        deinit: *const fn (yield_self: *anyopaque, vm: *VM) void,
+        data: *anyopaque,
+    } = null,
+
     pc: usize = 0,
     code: ?[]const Operation = null,
     stopped: bool = false,
@@ -114,6 +120,33 @@ pub const VM = struct {
             .name = args[0],
             .rnd = std.Random.DefaultPrng.init(0),
         };
+    }
+
+    pub inline fn yieldUntil(self: *VM, comptime T: type, child: T) !void {
+        const data = try self.allocator.create(T);
+        data.* = child;
+
+        const generic_yielder = struct {
+            fn checkImpl(pointer: *anyopaque, vm: *VM) VMError!bool {
+                const yield_self: *T = @ptrCast(@alignCast(pointer));
+
+                return @call(.always_inline, T.check, .{ yield_self, vm });
+            }
+
+            fn deinitImpl(pointer: *anyopaque, vm: *VM) void {
+                const yield_self: *T = @ptrCast(@alignCast(pointer));
+
+                vm.allocator.destroy(yield_self);
+            }
+        };
+
+        self.yield_data = .{
+            .check = &generic_yielder.checkImpl,
+            .deinit = &generic_yielder.deinitImpl,
+            .data = @ptrCast(data),
+        };
+
+        self.yield = true;
     }
 
     pub inline fn pushStack(self: *VM, entry: vm_allocator.ObjectRef) VMError!void {
@@ -819,6 +852,7 @@ pub const VM = struct {
                 if (start.data().* != .value) return error.ValueMissing;
 
                 const start_v: usize = @intCast(start.data().value);
+                if (op.value.? + start_v > self.rsp) return error.StackUnderflow;
 
                 const items = self.stack[self.rsp - start_v .. self.rsp];
                 self.rsp -= start_v;
@@ -1004,6 +1038,14 @@ pub const VM = struct {
         if (self.code.?.len == 0) {
             self.stopped = true;
             return true;
+        }
+
+        if (self.yield_data) |yield_data| {
+            if (try yield_data.check(yield_data.data, self)) {
+                yield_data.deinit(yield_data.data, self);
+
+                self.yield_data = null;
+            } else return self.done();
         }
 
         var timer = try std.time.Timer.start();

@@ -71,7 +71,7 @@ pub const Texture = struct {
         const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
 
         if (mem.len / 4 - 2 != width * height) {
-            log.err("new expected {} got {}", .{ width * height * 4 + 4, mem.len });
+            log.err("new expected {} got {}", .{ width * height, mem.len / 4 - 2 });
 
             return error.WrongSize;
         }

@@ -25,3 +25,5 @@ deps/steam_sdk
 IVERSION
 neovide*
 lol.txt
+fake_steam/created/*
+CrashLog.txt

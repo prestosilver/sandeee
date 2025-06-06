@@ -71,7 +71,8 @@ pub const std_options = std.Options{
 pub const steam_options = struct {
     pub const fake_steam = options.fakeSteam;
     pub const use_steam = options.IsSteam;
-    pub const app_id = 322330;
+    pub const app_id = 480;
+    pub const alloc = allocator.alloc;
 };
 
 // embed shaders
@@ -171,8 +172,8 @@ var final_fps: u32 = 60;
 var show_fps: bool = false;
 
 // steam
-var steam_user_stats: *const steam.SteamUserStats = undefined;
-var steam_utils: *const steam.SteamUtils = undefined;
+var steam_user_stats: *const steam.UserStats = undefined;
+var steam_utils: *const steam.Utils = undefined;
 
 var crt_enable = true;
 
@@ -548,6 +549,8 @@ pub fn mainErr() anyerror!void {
         _ = steam_id;
         _ = steam_utils;
     }
+    defer if (options.IsSteam)
+        steam.deinit();
 
     // setup the headless command
     var headless_cmd: ?[]const u8 = null;
@@ -878,16 +881,16 @@ pub fn mainErr() anyerror!void {
         if (c.glfwGetWindowAttrib(gfx.Context.instance.window, c.GLFW_ICONIFIED) == 0) {
 
             // steam callbacks
-            if (options.IsSteam) {
-                const cb = struct {
-                    fn callback(callbackMsg: steam.CallbackMsg) anyerror!void {
-                        _ = callbackMsg;
-                        //log.log.warn("steam callback {}", .{callbackMsg.callback});
-                    }
-                }.callback;
+            // if (options.IsSteam) {
+            //     const cb = struct {
+            //         fn callback(callbackMsg: steam.CallbackMsg) anyerror!void {
+            //             _ = callbackMsg;
+            //             //log.log.warn("steam callback {}", .{callbackMsg.callback});
+            //         }
+            //     }.callback;
 
-                try steam.manualCallback(cb);
-            }
+            //     try steam.manualCallback(cb);
+            // }
 
             // update the game state
             try state.update(@max(1 / 60, @as(f32, @floatCast(vm_manager.VMManager.last_frame_time))));

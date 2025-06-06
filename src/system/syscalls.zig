@@ -4,6 +4,8 @@ const files = @import("files.zig");
 const streams = @import("stream.zig");
 const vm_manager = @import("vmmanager.zig");
 const log = @import("../util/log.zig").log;
+const options = @import("options");
+const steam = @import("steam");
 
 const VmError = vm.VM.VMError;
 const StackEntry = vm.VM.StackEntry;
@@ -34,7 +36,8 @@ const SyscallId = enum(u64) {
     Spawn = 21,
     Status = 22,
     DeleteFile = 23,
-    Last = 24,
+    Steam = 24,
+    Last = 25,
 };
 
 pub const SysCall = struct {
@@ -81,6 +84,7 @@ pub const SysCall = struct {
             .Spawn = .{ .run_fn = sysSpawn },
             .Status = .{ .run_fn = sysStatus },
             .DeleteFile = .{ .run_fn = sysDelete },
+            .Steam = .{ .run_fn = sysSteam },
             .Last = .{ .run_fn = lastErr },
         },
     );
@@ -455,4 +459,201 @@ fn sysDelete(self: *vm.VM) VmError!void {
 
     const root = try self.root.resolve();
     try root.removeFile(file.data().string);
+}
+
+const SteamYieldCreate = struct {
+    handle: steam.APIHandle,
+
+    pub fn check(self: *SteamYieldCreate, vm_instance: *vm.VM) vm.VM.VMError!bool {
+        const utils = steam.getSteamUtils();
+
+        var failed: bool = false;
+
+        if (!utils.isCallComplete(self.handle, &failed))
+            return false;
+
+        if (failed)
+            return error.UnknownError;
+        failed = false;
+
+        var result: steam.callback.CreateItem = undefined;
+        if (!utils.getCallResult(
+            steam.callback.CreateItem,
+            self.handle,
+            &result,
+            &failed,
+        ))
+            return error.UnknownError;
+
+        log.info("{}", .{result});
+
+        try vm_instance.pushStackI(@byteSwap(result.file_id.id));
+
+        return true;
+    }
+};
+
+const SteamYieldUpdate = struct {
+    handle: steam.APIHandle,
+    folder: ?std.fs.Dir = null,
+
+    pub fn check(self: *SteamYieldUpdate, vm_instance: *vm.VM) vm.VM.VMError!bool {
+        const utils = steam.getSteamUtils();
+
+        var failed: bool = false;
+
+        if (!utils.isCallComplete(self.handle, &failed))
+            return false;
+
+        if (failed)
+            return error.UnknownError;
+        failed = false;
+
+        var result: steam.callback.UpdateItem = undefined;
+
+        if (!utils.getCallResult(
+            steam.callback.UpdateItem,
+            self.handle,
+            &result,
+            &failed,
+        ))
+            return error.UnknownError;
+
+        log.info("{}", .{result});
+
+        try vm_instance.pushStackI(0);
+
+        return true;
+    }
+};
+
+fn sysSteam(self: *vm.VM) VmError!void {
+    if (!options.IsSteam)
+        return error.InvalidSys;
+
+    const file = try self.popStack();
+
+    if (file.data().* != .string) return error.StringMissing;
+
+    const data = file.data().string;
+
+    const ugc = steam.getSteamUGC();
+
+    if (data.len == 0) {
+        const handle = ugc.createItem(steam.STEAM_APP_ID, .Community);
+
+        return self.yieldUntil(SteamYieldCreate, .{ .handle = handle });
+    } else if (data[0] == 'm' and data.len > 1) {
+        var split = std.mem.splitScalar(u8, data[1..], ':');
+
+        set_data: {
+            const item_str = split.next() orelse break :set_data;
+            const prop = split.next() orelse break :set_data;
+            const value = split.next() orelse break :set_data;
+
+            if (split.next() != null) break :set_data;
+
+            const item_id = std.fmt.parseInt(usize, item_str, 10) catch {
+                log.info("bad steam metadata id set: '{s}'", .{data[1..]});
+
+                return error.UnknownError;
+            };
+
+            if (std.mem.eql(u8, prop, "title")) {
+                const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
+
+                if (!update.setTitle(ugc, value))
+                    return error.UnknownError;
+
+                const handle = update.submit(ugc, "Update Title");
+
+                return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle });
+            }
+
+            if (std.mem.eql(u8, prop, "description")) {
+                const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
+
+                if (!update.setDescription(ugc, value))
+                    return error.UnknownError;
+
+                const handle = update.submit(ugc, "Update Desc");
+
+                return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle });
+            }
+        }
+
+        log.info("bad steam metadata set: '{s}'", .{data[1..]});
+
+        return error.UnknownError;
+    } else if (data[0] == 'f' and data.len > 1) {
+        var split = std.mem.splitScalar(u8, data[1..], ':');
+
+        upload_data: {
+            const item_str = split.next() orelse break :upload_data;
+            const path = split.next() orelse break :upload_data;
+            if (split.next() != null) break :upload_data;
+
+            std.fs.cwd().deleteTree(".steam_upload") catch {};
+
+            std.fs.cwd().makeDir(".steam_upload") catch |err|
+                if (err != error.PathAlreadyExists)
+                    return error.UnknownError;
+            const upload = std.fs.cwd().openDir(".steam_upload", .{}) catch return error.UnknownError;
+
+            const root = try self.root.resolve();
+            const folder = try root.getFolder(path);
+
+            {
+                var folder_list: std.ArrayList(*const files.Folder) = .init(self.allocator);
+                defer folder_list.deinit();
+
+                try folder.getFoldersRec(&folder_list);
+                for (folder_list.items) |item| {
+                    if (item.name.len < folder.name.len) continue;
+
+                    upload.makePath(item.name[folder.name.len..]) catch |err|
+                        if (err != error.PathAlreadyExists)
+                            return error.UnknownError;
+                }
+            }
+
+            {
+                var file_list: std.ArrayList(*files.File) = .init(self.allocator);
+                defer file_list.deinit();
+
+                try folder.getFilesRec(&file_list);
+                for (file_list.items) |item| {
+                    if (item.name.len < folder.name.len) continue;
+
+                    log.info("steamfile {s}", .{item.name[folder.name.len..]});
+
+                    upload.writeFile(.{
+                        .sub_path = item.name[folder.name.len..],
+                        .data = try item.read(self),
+                    }) catch return error.UnknownError;
+                }
+            }
+
+            const item_id = std.fmt.parseInt(usize, item_str, 10) catch {
+                log.info("bad steam upload files id: '{s}'", .{data[1..]});
+
+                return error.UnknownError;
+            };
+
+            const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
+
+            if (!update.setContent(ugc, upload))
+                return error.UnknownError;
+
+            const handle = update.submit(ugc, "Update files");
+
+            return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle, .folder = upload });
+        }
+
+        log.info("bad steam upload files: '{s}'", .{data[1..]});
+
+        return error.UnknownError;
+    }
+
+    return error.UnknownError;
 }

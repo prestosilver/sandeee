@@ -162,6 +162,19 @@ const DEBUG_FILES = [_]DiskFile{
     },
 };
 
+// steam builds only
+const STEAM_FILES = [_]DiskFile{
+    .{
+        .output = "exec/steamtool.eep",
+        .file = .{
+            .converter = comp.compile,
+            .input = &.{
+                .converter(eon.compileEon, .local("eon/exec/steamtool.eon")),
+            },
+        },
+    },
+};
+
 // these are in non demo builds
 const NONDEMO_FILES = [_]DiskFile{
     .{
@@ -764,17 +777,25 @@ pub fn build(b: *std.Build) !void {
         else => if (is_demo) "D000" else "0000",
     };
 
-    const version_write = b.addWriteFile(
-        "VERSION",
-        b.fmt("{}", .{version}),
-    );
+    const version_create_write = std.Build.Step.WriteFile.create(b);
+
+    const version_file = version_create_write.add("VERSION", b.fmt("{}", .{version}));
 
     version.build = b.fmt("{s}-{X:0>4}", .{ version_suffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
 
-    const iversion_write = b.addWriteFile(
-        "IVERSION",
-        b.fmt("{}", .{version}),
-    );
+    const iversion_file = version_create_write.add("IVERSION", b.fmt("{}", .{version}));
+
+    const version_write = b.addSystemCommand(&.{"cp"});
+    version_write.addFileArg(version_file);
+    version_write.addFileArg(b.path("VERSION"));
+
+    version_write.step.dependOn(&version_create_write.step);
+
+    const iversion_write = b.addSystemCommand(&.{"cp"});
+    iversion_write.addFileArg(iversion_file);
+    iversion_write.addFileArg(b.path("IVERSION"));
+
+    iversion_write.step.dependOn(&version_create_write.step);
 
     const network_dependency = b.dependency("network", .{
         .target = target,
@@ -790,6 +811,9 @@ pub fn build(b: *std.Build) !void {
     const options = b.addOptions();
 
     const version_text = b.fmt("V_{{}}", .{});
+
+    const content_path = b.path("content");
+    const disk_path = content_path.path(b, "disk");
 
     options.addOption(std.SemanticVersion, "SandEEEVersion", version);
     options.addOption([]const u8, "VersionText", version_text);
@@ -907,10 +931,8 @@ pub fn build(b: *std.Build) !void {
         &BASE_FILES,
         if (!is_demo) &NONDEMO_FILES else &.{},
         if (optimize == .Debug) &DEBUG_FILES else &.{},
+        if (steam_mode != .Off) &STEAM_FILES else &.{},
     });
-
-    const content_path = b.path("content");
-    const disk_path = content_path.path(b, "disk");
 
     for (file_data) |file| {
         const root = if (file.file.converter == conv.copy)
@@ -1011,6 +1033,8 @@ pub fn build(b: *std.Build) !void {
     content_step.dependOn(&font_2x_step.step);
     content_step.dependOn(&font_bios_step.step);
 
+    exe.step.dependOn(&version_write.step);
+    exe.step.dependOn(&iversion_write.step);
     exe.step.dependOn(disk_step);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -1080,9 +1104,6 @@ pub fn build(b: *std.Build) !void {
     www_step.dependOn(www_files_step);
 
     const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&version_write.step);
-    run_step.dependOn(&iversion_write.step);
-
     run_step.dependOn(&run_cmd.step);
 
     const headless_step = b.step("headless", "Run the app headless");

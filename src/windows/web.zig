@@ -47,7 +47,7 @@ pub const WebData = struct {
                             return try allocator.alloc.dupe(u8, "Error: Invalid item page");
                         };
 
-                        return steamItem(.{ .data = page_idx }, url) catch |err|
+                        return steamItem(.{ .id = page_idx }, url) catch |err|
                             try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                     } else {
                         return try allocator.alloc.dupe(u8, "Error: Bad steam link");
@@ -209,7 +209,10 @@ pub const WebData = struct {
 
     pub fn steamList(page: u32) ![]const u8 {
         const ugc = steam.getSteamUGC();
-        const query = ugc.createQueryRequest(.RankedByVote, 0, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
+        const query = if (steam.STEAM_APP_ID.id == 480)
+            ugc.createUserQueryRequest(steam.getUser().getSteamId(), .Published, 0, .CreateAsc, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1)
+        else
+            ugc.createQueryRequest(.RankedByVote, 0, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
         const handle = ugc.sendQueryRequest(query);
         const steam_utils = steam.getSteamUtils();
 
@@ -222,7 +225,7 @@ pub const WebData = struct {
             return try std.fmt.allocPrint(allocator.alloc, "{}", .{failed});
         }
 
-        const details: *steam.UGCDetails = try allocator.alloc.create(steam.UGCDetails);
+        const details = try allocator.alloc.create(steam.UGC.ItemDetails);
         defer allocator.alloc.destroy(details);
 
         const prev = try std.fmt.allocPrint(allocator.alloc, "> prev: $list:{}\n", .{if (page == 0) 0 else page - 1});
@@ -254,7 +257,7 @@ pub const WebData = struct {
                 const title_text = try std.fmt.allocPrint(allocator.alloc, "--- {s} ---", .{details.title});
                 defer allocator.alloc.free(title_text);
 
-                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item{}:", .{ details.desc, details.file_id.data });
+                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item{}:", .{ details.desc, details.file_id.id });
                 defer allocator.alloc.free(desc_text);
 
                 conts = try std.mem.concat(allocator.alloc, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
@@ -268,7 +271,7 @@ pub const WebData = struct {
                 defer allocator.alloc.free(title_text);
 
                 const desc: [*:0]u8 = @ptrCast(&details.desc);
-                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item{}:", .{ desc[0..std.mem.len(desc)], details.file_id.data });
+                const desc_text = try std.fmt.allocPrint(allocator.alloc, "{s}\n> link: $item{}:", .{ desc[0..std.mem.len(desc)], details.file_id.id });
                 defer allocator.alloc.free(desc_text);
 
                 conts = try std.mem.concat(allocator.alloc, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
@@ -294,7 +297,7 @@ pub const WebData = struct {
         return conts;
     }
 
-    pub fn steamItem(id: steam.SteamPubFileId, url: Url) ![]const u8 {
+    pub fn steamItem(id: steam.UGC.PubFileId, url: Url) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const BUFFER_SIZE = 256;
 
@@ -323,11 +326,11 @@ pub const WebData = struct {
             const file = try std.fs.openFileAbsolute(file_path, .{});
             defer file.close();
             const stat = try file.stat();
-            const conts = try file.reader().readAllAlloc(allocator.alloc, stat.size);
-            defer allocator.alloc.free(conts);
+            const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
 
-            const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
-            _ = std.mem.replace(u8, conts, "\r", "", cont);
+            //defer allocator.alloc.free(cont);
+            //const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "        } else |_|
+            //_ = std.mem.replace(u8, conts, "\r", "", cont);
 
             return cont;
         };
@@ -337,20 +340,20 @@ pub const WebData = struct {
             defer file.close();
 
             const stat = try file.stat();
-            const conts = try file.reader().readAllAlloc(allocator.alloc, stat.size);
-            defer allocator.alloc.free(conts);
+            const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
 
-            const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
-            _ = std.mem.replace(u8, conts, "\r", "", cont);
+            // defer allocator.alloc.free(cont);
+            //const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
+            //_ = std.mem.replace(u8, conts, "\r", "", cont);
 
             return cont;
         } else |_| {
             var iter = walker.iterate();
 
             var conts = if (std.mem.eql(u8, url.path, ""))
-                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:/", .{id.data})
+                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:/", .{id.id})
             else
-                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:{s}", .{ id.data, url.path });
+                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:{s}", .{ id.id, url.path });
 
             while (try iter.next()) |item| {
                 const old = conts;
