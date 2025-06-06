@@ -361,7 +361,7 @@ pub const GSWindowed = struct {
                         self.dragging_window = null;
                     };
 
-                const free_win = self.windows.swapRemove(idx);
+                const free_win = self.windows.orderedRemove(idx);
                 free_win.data.deinit();
 
                 allocator.alloc.destroy(free_win);
@@ -397,7 +397,7 @@ pub const GSWindowed = struct {
 
         for (self.windows.items, 0..) |window, idx| {
             if (window.data.contents.props.close) {
-                const free_win = self.windows.swapRemove(idx);
+                const free_win = self.windows.orderedRemove(idx);
                 free_win.data.deinit();
 
                 allocator.alloc.destroy(free_win);
@@ -559,7 +559,7 @@ pub const GSWindowed = struct {
                 }
 
                 if (new_top) |top| {
-                    var swap = self.windows.swapRemove(@as(usize, @intCast(top)));
+                    var swap = self.windows.orderedRemove(@as(usize, @intCast(top)));
 
                     if (!swap.data.active) {
                         swap.data.active = true;
