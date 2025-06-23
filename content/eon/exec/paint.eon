@@ -53,7 +53,7 @@ fn setSquare(x, y, r, color) {
     return 0;
 }
 
-fn render(menuTex, iconTex, ttex, imgx, imgy, imgs, w, h) {
+fn render(menuTex, transTex, ui, ttex, imgx, imgy, imgs, w, h) {
     var source = _MakeRect(0, 0, 1024, 1024);
     
     var xo = imgx * imgs;
@@ -72,11 +72,14 @@ fn render(menuTex, iconTex, ttex, imgx, imgy, imgs, w, h) {
     _WindowClear($window);
 
     _WindowRender($window, ttex, dest, _MakeRect(0, 0, 64 * w, 64 * h));
+
+    var ui_bounds = _MakeRect(0, 0, _WindowWidth(), _WindowHeight());
     
-    _DrawBarBg($window, menuTex);
-    _DrawBarIcon($window, iconTex, _MakeRect(128, 0, 128, 128), 0);
-    _DrawBarIcon($window, iconTex, _MakeRect(0, 0, 128, 128), 1);
-    _DrawBarIcon($window, iconTex, _MakeRect(256, 0, 128, 128), 2);
+    _DrawUi(dup(ui), ui_bounds, $window, menuTex);
+
+    // _DrawBarIcon($window, iconTex, _MakeRect(128, 0, 128, 128), 0);
+    // _DrawBarIcon($window, iconTex, _MakeRect(0, 0, 128, 128), 1);
+    // _DrawBarIcon($window, iconTex, _MakeRect(256, 0, 128, 128), 2);
 
     _WindowText($window, 124, 4, "BRUSH_SIZE: 3");
 
@@ -326,10 +329,16 @@ fn main() {
     var imgy = 0;
     var imgs = 1500;
 
+    var ui = _UiBar(
+        _UiButton(iconTex, _MakeRect(0, 0, 16, 16)) &
+        _UiButton(iconTex, _MakeRect(0, 0, 16, 16)) &
+        _UiButton(iconTex, _MakeRect(0, 0, 16, 16))
+    ) & _UiCanvas($texture);
+
     while (_WindowOpen()) {
         processClick(imgx, imgy, imgs, w, h, x, y);
 
-        render(menuTex, iconTex, transTex, imgx, imgy, imgs, w, h);
+        render(menuTex, ui, transTex, imgx, imgy, imgs, w, h);
     }
 
     _TextureDestroy(menuTex);
