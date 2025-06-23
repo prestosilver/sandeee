@@ -33,8 +33,6 @@ pub const WebData = struct {
     const Self = @This();
 
     pub fn getConts(_: *Self, url: Url) ![]const u8 {
-        log.debug("web load: {s} {s} : {s}", .{ @tagName(url.kind), url.domain, url.path });
-
         switch (url.kind) {
             .Steam => {
                 if (options.IsSteam) {
@@ -116,12 +114,52 @@ pub const WebData = struct {
                     return try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @intFromEnum(req.response.status), @tagName(req.response.status) });
                 }
 
-                const fconts = try req.reader().readAllAlloc(allocator.alloc, req.response.content_length orelse {
-                    return try std.fmt.allocPrint(allocator.alloc, "Error: cant read from stream", .{});
-                });
+                const fconts = try req.reader().readAllAlloc(allocator.alloc, std.math.maxInt(usize));
                 defer allocator.alloc.free(fconts);
 
                 return try allocator.alloc.dupe(u8, fconts);
+            },
+            .Log => {
+                const log_import = @import("../util/log.zig");
+                const debug_mode = std.mem.eql(u8, url.path, "all");
+
+                const data = log_import.getLogs();
+                var len: usize = 0;
+
+                for (data) |pool| for (pool) |log_item| {
+                    if (!debug_mode and log_item.level == .debug) continue;
+
+                    const color = switch (log_item.level) {
+                        .err => fnt.COLOR_RED,
+                        .warn => fnt.COLOR_DARK_YELLOW,
+                        .info => fnt.COLOR_BLACK,
+                        .debug => fnt.COLOR_BLACK,
+                    };
+
+                    len += color.len + log_item.data.len;
+                };
+
+                const result = try allocator.alloc.alloc(u8, len);
+
+                var idx: usize = len;
+                for (data) |pool| for (pool) |log_item| {
+                    if (!debug_mode and log_item.level == .debug) continue;
+
+                    const color = switch (log_item.level) {
+                        .err => fnt.COLOR_RED,
+                        .warn => fnt.COLOR_DARK_YELLOW,
+                        .info => fnt.COLOR_BLACK,
+                        .debug => fnt.COLOR_BLACK,
+                    };
+
+                    idx -= log_item.data.len;
+                    @memcpy(result[idx .. idx + log_item.data.len], log_item.data);
+
+                    idx -= color.len;
+                    @memcpy(result[idx .. idx + color.len], color);
+                };
+
+                return result;
             },
             _ => {
                 return try allocator.alloc.dupe(u8, "Error: Invalid Url protocol");
@@ -302,19 +340,32 @@ pub const WebData = struct {
         const ugc = steam.getSteamUGC();
         const BUFFER_SIZE = 256;
 
+        {
+            const state = ugc.getItemState(id);
+            log.debug("steam item {} state: {}", .{ id, state });
+        }
+
+        if (!ugc.downloadItem(id, true)) {
+            return try std.fmt.allocPrint(allocator.alloc, "Error: Failed to start steam download.", .{});
+        }
+
+        while (true) {
+            const state = ugc.getItemState(id);
+
+            if (!state.downloading and !state.downloadpending) {
+                log.debug("item {} state: {}", .{ id, state });
+                break;
+            }
+
+            std.time.sleep(2_000);
+        }
+
         var size: u64 = 0;
         var timestamp: u32 = 0;
         var folder = std.mem.zeroes([BUFFER_SIZE + 1]u8);
 
-        if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
-            if (!ugc.downloadItem(id, true)) {
-                return try std.fmt.allocPrint(allocator.alloc, "Error: Failed to load page {}.", .{id});
-            }
-
-            while (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp)) {
-                std.time.sleep(200_000_000);
-            }
-        }
+        if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp))
+            return error.SteamDownloadError;
 
         const folder_pointer = folder[0..std.mem.len(@as([*:0]u8, @ptrCast(&folder)))];
 
@@ -323,32 +374,22 @@ pub const WebData = struct {
 
         log.debug("file_path: {s}", .{file_path});
 
-        const walker = std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch {
-            const file = try std.fs.openFileAbsolute(file_path, .{});
-            defer file.close();
-            const stat = try file.stat();
-            const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
+        // if this is a directory give a file listing
+        if (std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch null) |walker| {
+            // if index exists open that instead
+            if (try (walker.access("index.edf", .{}) catch |err| switch (err) {
+                error.FileNotFound => null,
+                else => err,
+            })) |_| {
+                const file = try walker.openFile("index.edf", .{});
+                defer file.close();
 
-            //defer allocator.alloc.free(cont);
-            //const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "        } else |_|
-            //_ = std.mem.replace(u8, conts, "\r", "", cont);
+                const stat = try file.stat();
+                const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
 
-            return cont;
-        };
+                return cont;
+            }
 
-        if (walker.access("index.edf", .{})) {
-            const file = try walker.openFile("index.edf", .{});
-            defer file.close();
-
-            const stat = try file.stat();
-            const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
-
-            // defer allocator.alloc.free(cont);
-            //const cont = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, conts, "\r", ""));
-            //_ = std.mem.replace(u8, conts, "\r", "", cont);
-
-            return cont;
-        } else |_| {
             var iter = walker.iterate();
 
             var conts = if (std.mem.eql(u8, url.path, ""))
@@ -360,11 +401,21 @@ pub const WebData = struct {
                 const old = conts;
                 defer allocator.alloc.free(old);
 
-                conts = try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: {s}/{s}", .{ old, item.name, url.path, item.name });
+                conts = if (url.path.len > 0 and url.path[0] == '/')
+                    try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: @{s}/{s}", .{ old, item.name, url.path, item.name })
+                else
+                    try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: @/{s}", .{ old, item.name, item.name });
             }
 
             return conts;
         }
+
+        const file = try std.fs.openFileAbsolute(file_path, .{});
+        defer file.close();
+        const stat = try file.stat();
+        const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
+
+        return cont;
     }
 
     pub fn loadPage(self: *Self) !void {
@@ -829,7 +880,12 @@ pub const WebData = struct {
 
         const targ = self.links.items[self.highlight_idx - 1].url;
 
-        self.path = try self.path.child(targ);
+        if (self.path.child(targ)) |child| {
+            self.path = child;
+        } else |err| {
+            self.path = try self.path.dupe();
+            std.log.warn("{} bad sub path '{}'/'{s}'", .{ err, self.path, targ });
+        }
 
         if (self.conts) |conts| {
             allocator.alloc.free(conts);
@@ -953,7 +1009,7 @@ pub const WebData = struct {
 pub fn init(shader: *shd.Shader) !win.WindowContents {
     const self = try allocator.alloc.create(WebData);
 
-    log.info("{s}", .{conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
+    log.debug("opening web homepage {s}", .{conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
 
     self.* = .{
         .highlight = .atlas("ui", .{

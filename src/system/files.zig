@@ -227,6 +227,10 @@ pub const File = struct {
         clone.next_sibling = target.files;
         target.files = clone;
     }
+
+    pub fn copyOver(self: *File, target: *File) FileError!void {
+        try target.write(try self.read(null), null);
+    }
 };
 
 pub const Folder = struct {
@@ -810,13 +814,12 @@ pub const Folder = struct {
             return error.FolderNotFound;
         });
 
-        var subfolder = parent.folders;
-        while (subfolder) |tmpsubfolder| : (subfolder = tmpsubfolder.next_sibling) {
-            const nextfolder = tmpsubfolder.next_sibling orelse break;
-            if (std.mem.eql(u8, nextfolder.name, folder.name)) {
-                tmpsubfolder.next_sibling = nextfolder.next_sibling;
-                nextfolder.next_sibling = null;
-                nextfolder.deinit();
+        var subfolder_node = &parent.folders;
+        while (subfolder_node.*) |subfolder| : (subfolder_node = &subfolder.next_sibling) {
+            if (std.mem.eql(u8, subfolder.name, folder.name)) {
+                subfolder_node.* = subfolder.next_sibling;
+                subfolder.next_sibling = null;
+                subfolder.deinit();
                 return;
             }
         }

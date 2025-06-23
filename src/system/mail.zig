@@ -605,7 +605,7 @@ pub const EmailManager = struct {
                     };
 
                     if (self.emails.items[idx].condition[cond_idx] != cond_kind)
-                        log.info("{} '{s}'", .{ cond_kind, data.items });
+                        log.debug("email condition {} '{s}'", .{ cond_kind, data.items });
                 }
 
                 var len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;

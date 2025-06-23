@@ -186,7 +186,7 @@ pub const Shell = struct {
             param.rest(),
         });
         defer allocator.alloc.free(new_cmd);
-        log.info("Run {s} instead of {s} {s}", .{ new_cmd, cmd, param.rest() });
+        log.debug("Run {s} instead of {s} {s}", .{ new_cmd, cmd, param.rest() });
 
         return self.run(new_cmd);
     }
@@ -198,10 +198,10 @@ pub const Shell = struct {
             } else |err| {
                 switch (err) {
                     error.FileNotFound => {
-                        log.info("File not found {s} {s} in {}", .{ cmd, param.rest(), dir });
+                        log.warn("File not found {s} {s} in {}", .{ cmd, param.rest(), dir });
                     },
                     error.InvalidFileType => {
-                        log.info("Bad filetype {s} {s} in {}", .{ cmd, param.rest(), dir });
+                        log.warn("Bad filetype {s} {s} in {}", .{ cmd, param.rest(), dir });
                     },
                     else => return err,
                 }
@@ -797,8 +797,9 @@ pub const Shell = struct {
                     const root = try root_link.resolve();
                     const output_root = try output_root_link.resolve();
                     const file = try root.getFile(input);
-                    const targ = try output_root.getFolder(output);
-                    try file.copyTo(targ);
+                    try output_root.newFile(output);
+                    const targ = try output_root.getFile(output);
+                    try file.copyOver(targ);
                     return .{
                         .data = try allocator.alloc.dupe(u8, "Copied"),
                     };

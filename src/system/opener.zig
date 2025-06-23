@@ -30,7 +30,7 @@ pub fn setup(self: *Self) !void {
     while (lines.next()) |line| {
         const space_idx = std.mem.indexOf(u8, line, " ") orelse continue;
         const line_ext = line[0..space_idx];
-        std.log.info("opener {s}: {s}", .{ line_ext, line[space_idx + 1 ..] });
+        log.debug("opener {s}: {s}", .{ line_ext, line[space_idx + 1 ..] });
 
         try self.types.put(line_ext, .{
             .cmd = line[space_idx + 1 ..],

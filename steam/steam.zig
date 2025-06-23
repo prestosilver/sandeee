@@ -326,6 +326,9 @@ pub const UGC = extern struct {
                 if (self.id < 3)
                     return false;
 
+                if (self.id > steam_items.items.len)
+                    return false;
+
                 {
                     var rm_child = std.process.Child.init(
                         &.{ "rm", "-r", steam_items.items[self.id].folder },
@@ -337,7 +340,7 @@ pub const UGC = extern struct {
                 var outBuffer = std.mem.zeroes([256]u8);
                 const tmp_path = path.realpath(".", &outBuffer) catch return false;
 
-                log.info("{s}", .{tmp_path});
+                log.debug("create path for item {s}", .{tmp_path});
 
                 {
                     var cp_child = std.process.Child.init(
@@ -410,6 +413,35 @@ pub const UGC = extern struct {
         } else {
             log.debug("Start Update: {}", .{item});
             return .{ .id = item.id };
+        }
+    }
+
+    const ItemState = packed struct {
+        subscribed: bool = false,
+        legacy: bool = false,
+        installed: bool = false,
+        needsUpdate: bool = false,
+        downloading: bool = false,
+        downloadpending: bool = false,
+        padding: u26 = 0,
+
+        pub fn empty(self: *const ItemState) bool {
+            const v: *const u32 = @ptrCast(self);
+            return v.* == 0;
+        }
+    };
+
+    extern fn SteamAPI_ISteamUGC_GetItemState(ugc: *const UGC, id: PubFileId) ItemState;
+    pub fn getItemState(
+        ugc: *const UGC,
+        id: PubFileId,
+    ) ItemState {
+        if (enable_api) {
+            return SteamAPI_ISteamUGC_GetItemState(ugc, id);
+        } else {
+            return .{
+                .installed = id.id < steam_items.items.len,
+            };
         }
     }
 
@@ -489,7 +521,7 @@ pub const UGC = extern struct {
         } else {
             log.debug("Query: querykind: {}, kind: {}, creator: {}, consumer: {}, page: {}", .{ query_kind, kind, creator_id, consumer_id, page });
             return .{
-                .kind = query_kind,
+                .kind = .RankedByVote,
                 .page = page,
             };
         }
@@ -649,7 +681,6 @@ pub fn getSteamUGC() *const UGC {
     if (enable_api) {
         return SteamAPI_SteamUGC_v017();
     } else {
-        log.debug("Get UGC", .{});
         return &TEST_UGC;
     }
 }
@@ -659,8 +690,7 @@ pub fn getUser() User {
     if (enable_api) {
         return SteamAPI_SteamUser_v023();
     } else {
-        log.debug("Get User", .{});
-        return TEST_USER;
+        return .{ .data = 0 };
     }
 }
 
@@ -669,7 +699,6 @@ pub fn getSteamUtils() *const Utils {
     if (enable_api) {
         return SteamAPI_SteamUtils_v010();
     } else {
-        log.debug("Init Steam Utils", .{});
         return &TEST_UTILS;
     }
 }
@@ -679,7 +708,6 @@ pub fn getUserStats() *const UserStats {
     if (enable_api) {
         return SteamAPI_SteamUserStats_v012();
     } else {
-        log.debug("Init Steam Utils", .{});
         return &TEST_STATS;
     }
 }
@@ -689,7 +717,6 @@ pub fn runCallbacks() void {
     if (enable_api) {
         return SteamAPI_RunCallbacks();
     } else {
-        log.debug("Init Steam Utils", .{});
         return &TEST_STATS;
     }
 }

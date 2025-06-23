@@ -145,7 +145,7 @@ pub const GSLoading = struct {
                 logout_state.GSLogout.unloader = try loader.load(&self.load_progress, 0.0, 1.0);
             }
         }.load(in_self) catch |err| {
-            log.info("{?}", .{@errorReturnTrace()});
+            log.err("{?}", .{@errorReturnTrace()});
             load_error.* = @errorName(err); // ++ " while loading";
         };
     }

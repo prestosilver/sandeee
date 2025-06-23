@@ -25,8 +25,6 @@ pub const FileStream = struct {
         else
             root;
 
-        //log.info("stream open {s} in {s}", .{ path, folder.name });
-
         const file = try folder.getFile(path);
 
         const result = try allocator.alloc.create(FileStream);

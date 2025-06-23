@@ -98,12 +98,12 @@ pub const destroy = struct {
 pub const render = struct {
     pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
         if (data.len < 66) {
-            log.debug("{}", .{data.len});
+            log.warn("data for write too short {} not 66", .{data.len});
             return;
         }
 
         if (TextureManager.instance.get(data[1..2]) == null) {
-            log.debug("{any}", .{data[1..2]});
+            log.warn("texture {any} is missing", .{data[1..2]});
             return;
         }
 

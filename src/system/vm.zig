@@ -319,8 +319,6 @@ pub const VM = struct {
     pub inline fn runOp(self: *VM, op: Operation) VMError!void {
         telem.Telem.instance.instruction_calls += 1;
 
-        //log.debug("{}", .{op});
-
         self.pc += 1;
 
         switch (op.code) {
@@ -459,8 +457,6 @@ pub const VM = struct {
             },
             .Sys => {
                 if (op.value) |index| {
-                    // log.debug("syscall {}", .{op});
-
                     syscalls.SysCall.run(self, index) catch |err| {
                         switch (err) {
                             error.InvalidSys => {
@@ -508,7 +504,7 @@ pub const VM = struct {
                                             return;
                                         }
 
-                                        log.debug("password dosent match {s}", .{dbg_pass});
+                                        log.warn("password dosent match {s}", .{dbg_pass});
 
                                         return error.InvalidPassword;
                                     },
@@ -797,7 +793,10 @@ pub const VM = struct {
 
                     try self.pushStackS(appends);
                 } else if (b.data().* == .value) {
-                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.data().string, std.mem.asBytes(&b.data().value) });
+                    // IMPORTANT, as bytes being annoying
+                    const b_value = b.data();
+
+                    const appends = try std.mem.concat(self.allocator, u8, &.{ a.data().string, std.mem.asBytes(&b_value.value) });
                     defer self.allocator.free(appends);
 
                     try self.pushStackS(appends);
@@ -888,7 +887,7 @@ pub const VM = struct {
     pub fn stringToOps(self: *VM, conts: []const u8) VMError!std.ArrayList(Operation) {
         var ops = std.ArrayList(Operation).init(self.allocator);
         errdefer {
-            log.info("{any}", .{ops.items});
+            log.warn("VM ops failed at {any}", .{ops.items});
             ops.deinit();
         }
 

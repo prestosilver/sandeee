@@ -511,10 +511,17 @@ var is_headless = false;
 var is_crt = true;
 
 pub fn main() void {
-    defer if (!builtin.link_libc or !allocator.useclib) {
-        if (allocator.gpa.deinit() == .ok)
-            log.log.debug("no leaks! :)", .{});
-    };
+    defer {
+        log.stop_logs = true;
+        for (log.logs[0..(log.total_logs - 1)]) |log_item| {
+            allocator.alloc.free(log_item.data);
+        }
+
+        if (!builtin.link_libc or !allocator.useclib) {
+            if (allocator.gpa.deinit() == .ok)
+                log.log.debug("no leaks! :)", .{});
+        }
+    }
 
     mainErr() catch |err| {
         const name = switch (err) {
@@ -544,12 +551,14 @@ pub fn mainErr() anyerror!void {
         try steam.init();
 
         var user = steam.getUser();
-        const steam_id = user.getSteamId();
+        _ = user.getSteamId();
         steam_utils = steam.getSteamUtils();
         steam_user_stats = steam.getUserStats();
-        _ = steam_id;
-        _ = steam_utils;
+
+        // cleanup downloads
+        // maybe
     }
+
     defer if (options.IsSteam)
         steam.deinit();
 

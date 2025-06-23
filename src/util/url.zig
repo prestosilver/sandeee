@@ -5,6 +5,7 @@ pub const UrlKind = enum(u8) {
     Steam = '$',
     Web = '@',
     Local = '/',
+    Log = '#',
     _,
 };
 
@@ -15,7 +16,8 @@ domain: []const u8,
 path: []const u8,
 
 pub fn parse(path: []const u8) !Self {
-    if (std.mem.count(u8, path, ":") > 1) return error.InvalidUrl;
+    if (std.mem.count(u8, path, ":") > 1)
+        return error.InvalidUrl;
 
     if (std.mem.indexOf(u8, path, ":")) |colon_index| {
         if (colon_index == 0)
@@ -28,54 +30,56 @@ pub fn parse(path: []const u8) !Self {
         };
     }
 
-    if (path.len != 0 and @as(UrlKind, @enumFromInt(path[0])) == .Local) return .{
-        .kind = .Local,
-        .domain = try allocator.alloc.dupe(u8, ""),
-        .path = try allocator.alloc.dupe(u8, path),
-    };
+    if (path.len != 0 and @as(UrlKind, @enumFromInt(path[0])) == .Local)
+        return .{
+            .kind = .Local,
+            .domain = try allocator.alloc.dupe(u8, "/"),
+            .path = try allocator.alloc.dupe(u8, path[1..]),
+        };
 
     return error.InvalidUrl;
 }
 
 pub fn child(self: *const Self, path: []const u8) !Self {
-    if (std.mem.count(u8, path, ":") > 1) return error.InvalidUrl;
+    // for compat
+    if (path.len > 1 and @as(UrlKind, @enumFromInt(path[0])) == .Web)
+        return self.child(path[1..]);
 
-    if (std.mem.indexOf(u8, path, ":")) |colon_index| {
-        if (colon_index == 0)
-            return error.InvalidUrl;
-
-        return .{
-            .kind = @as(UrlKind, @enumFromInt(path[0])),
-            .domain = try allocator.alloc.dupe(u8, path[1..colon_index]),
-            .path = try allocator.alloc.dupe(u8, path[(colon_index + 1)..]),
-        };
-    }
-
-    if (self.path.len == 0) return .{
-        .kind = self.kind,
-        .domain = try allocator.alloc.dupe(u8, self.domain),
-        .path = try allocator.alloc.dupe(u8, path[1..]),
-    };
-
-    if (path.len > 1 and @as(UrlKind, @enumFromInt(path[0])) == .Web) return .{
-        .kind = self.kind,
-        .domain = try allocator.alloc.dupe(u8, self.domain),
-        .path = try allocator.alloc.dupe(u8, path[1..]),
-    };
-
-    if (std.mem.indexOf(u8, self.path, "/")) |slash_idx|
+    if (self.path.len == 0)
         return .{
             .kind = self.kind,
             .domain = try allocator.alloc.dupe(u8, self.domain),
-            .path = try std.mem.concat(allocator.alloc, u8, &.{ self.path[1..slash_idx], "/", path }),
+            .path = try allocator.alloc.dupe(u8, path),
         };
 
-    return error.InvalidUrl;
+    if (path[0] == '/')
+        return .{
+            .kind = self.kind,
+            .domain = try allocator.alloc.dupe(u8, self.domain),
+            .path = try allocator.alloc.dupe(u8, path),
+        };
+
+    if (std.mem.lastIndexOf(u8, self.path, "/")) |slash_idx|
+        return .{
+            .kind = self.kind,
+            .domain = try allocator.alloc.dupe(u8, self.domain),
+            .path = try std.mem.concat(allocator.alloc, u8, &.{ self.path[0..slash_idx], "/", path }),
+        };
+
+    return parse(path);
 }
 
 pub fn deinit(self: *const Self) void {
     allocator.alloc.free(self.domain);
     allocator.alloc.free(self.path);
+}
+
+pub fn dupe(self: *const Self) !Self {
+    return .{
+        .kind = self.kind,
+        .domain = try allocator.alloc.dupe(u8, self.domain),
+        .path = try allocator.alloc.dupe(u8, self.path),
+    };
 }
 
 test "Url parse fuzzing" {
