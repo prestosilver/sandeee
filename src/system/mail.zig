@@ -1,14 +1,26 @@
 const std = @import("std");
-const allocator = @import("../util/allocator.zig");
-const fm = @import("../util/files.zig");
-const events = @import("../util/events.zig");
-const system_events = @import("../events/system.zig");
-const window_events = @import("../events/window.zig");
-const files = @import("../system/files.zig");
-const email_window = @import("../windows/email.zig");
+const c = @import("../c.zig");
 
-const log = @import("../util/log.zig").log;
-const font = @import("../util/font.zig");
+const system = @import("mod.zig");
+
+const windows = @import("../windows/mod.zig");
+const eee_data = @import("../data/mod.zig");
+const events = @import("../events/mod.zig");
+const util = @import("../util/mod.zig");
+
+const allocator = util.allocator;
+const storage = util.files;
+const log = util.log;
+
+const files = system.files;
+
+const email_window = windows.email;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+const system_events = events.system;
+
+const strings = eee_data.strings;
 
 pub const EmailManager = struct {
     pub var instance: EmailManager = .{};
@@ -134,8 +146,8 @@ pub const EmailManager = struct {
 
             var buf: [1024]u8 = undefined;
             while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-                _ = std.mem.replace(u8, line, "EEE", font.EEE, line);
-                _ = std.mem.replace(u8, line, "Epsilon", font.E ++ "psilon", line);
+                _ = std.mem.replace(u8, line, "EEE", strings.EEE, line);
+                _ = std.mem.replace(u8, line, "Epsilon", strings.E ++ "psilon", line);
 
                 if (std.mem.startsWith(u8, line, "id: ")) {
                     result.id = try std.fmt.parseInt(u8, line[4..], 0);

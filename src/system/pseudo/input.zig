@@ -1,12 +1,44 @@
 const std = @import("std");
-const allocator = @import("../../util/allocator.zig");
-const files = @import("../files.zig");
-const vm_window = @import("../../windows/vm.zig");
-const vm = @import("../vm.zig");
-const pwindows = @import("window.zig");
+const c = @import("../../c.zig");
+
+const system = @import("../mod.zig");
+
+const drawers = @import("../../drawers/mod.zig");
+const windows = @import("../../windows/mod.zig");
+const events = @import("../../events/mod.zig");
+const states = @import("../../states/mod.zig");
+const math = @import("../../math/mod.zig");
+const util = @import("../../util/mod.zig");
+
+const files = system.files;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Color = math.Color;
+
+const VmWindow = windows.vm;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+
+const Window = drawers.Window;
+
+const TextureManager = util.TextureManager;
+const SpriteBatch = util.SpriteBatch;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const allocator = util.allocator;
+const log = util.log;
+
+const Vm = system.Vm;
+
+const Windowed = states.Windowed;
+
+const pWindows = @import("window.zig");
 
 pub const char = struct {
-    pub fn read(vm_instance: ?*vm.VM) ![]const u8 {
+    pub fn read(vm_instance: ?*Vm) ![]const u8 {
         if (vm_instance != null and vm_instance.?.input.items.len != 0) {
             const result = try allocator.alloc.alloc(u8, 1);
 
@@ -20,14 +52,14 @@ pub const char = struct {
 };
 
 pub const win = struct {
-    pub fn read(vm_instance: ?*vm.VM) ![]const u8 {
+    pub fn read(vm_instance: ?*Vm) ![]const u8 {
         var result: []u8 = &.{};
         if (vm_instance == null) return result;
 
         if (vm_instance.?.misc_data.get("window")) |aid| {
-            for (pwindows.windows_ptr.*.items) |item| {
+            for (pWindows.windows_ptr.*.items) |item| {
                 if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                    const self: *vm_window.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
+                    const self: *VmWindow.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                     if (self.idx == aid[0]) {
                         result = try allocator.alloc.realloc(result, self.input.len * 2);
@@ -46,16 +78,16 @@ pub const win = struct {
 };
 
 pub const mouse = struct {
-    pub fn read(vm_instance: ?*vm.VM) ![]const u8 {
+    pub fn read(vm_instance: ?*Vm) ![]const u8 {
         const result = try allocator.alloc.alloc(u8, 5);
         @memset(result, 0);
 
         if (vm_instance == null) return result;
 
         if (vm_instance.?.misc_data.get("window")) |aid| {
-            for (pwindows.windows_ptr.*.items) |item| {
+            for (pWindows.windows_ptr.*.items) |item| {
                 if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                    const self: *vm_window.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
+                    const self: *VmWindow.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                     if (self.idx == aid[0]) {
                         result[0] = 255;

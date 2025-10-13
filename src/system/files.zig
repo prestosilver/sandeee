@@ -1,13 +1,19 @@
-const std = @import("std");
 const options = @import("options");
-const allocator = @import("../util/allocator.zig");
-const fm = @import("../util/files.zig");
-const fake = @import("pseudo/all.zig");
-const vm = @import("vm.zig");
-const config = @import("config.zig");
-const telem = @import("telem.zig");
+const std = @import("std");
 
-const log = @import("../util/log.zig").log;
+const system = @import("mod.zig");
+
+const util = @import("../util/mod.zig");
+
+const allocator = util.allocator;
+const storage = util.storage;
+const log = util.log;
+
+const Vm = system.Vm;
+const config = system.config;
+const telem = system.telem;
+
+const fake = @import("pseudo/all.zig");
 
 pub var named_paths: std.EnumArray(NamedPath, ?*Folder) = .initFill(null);
 
@@ -94,8 +100,8 @@ pub const File = struct {
     };
 
     const PseudoData = struct {
-        pub const WriteFn = *const fn ([]const u8, ?*vm.VM) FileError!void;
-        pub const ReadFn = *const fn (?*vm.VM) FileError![]const u8;
+        pub const WriteFn = *const fn ([]const u8, ?*Vm) FileError!void;
+        pub const ReadFn = *const fn (?*Vm) FileError![]const u8;
 
         write: WriteFn,
         read: ReadFn,
@@ -107,11 +113,11 @@ pub const File = struct {
         pseudo: PseudoData,
 
         const default = struct {
-            pub fn read(_: ?*vm.VM) FileError![]const u8 {
+            pub fn read(_: ?*Vm) FileError![]const u8 {
                 return &.{};
             }
 
-            pub fn write(_: []const u8, _: ?*vm.VM) FileError!void {
+            pub fn write(_: []const u8, _: ?*Vm) FileError!void {
                 return;
             }
         };
@@ -147,7 +153,7 @@ pub const File = struct {
         }
     }
 
-    pub inline fn write(self: *File, contents: []const u8, vm_instance: ?*vm.VM) FileError!void {
+    pub inline fn write(self: *File, contents: []const u8, vm_instance: ?*Vm) FileError!void {
         self.lock.lock();
         defer self.lock.unlock();
 
@@ -165,7 +171,7 @@ pub const File = struct {
         }
     }
 
-    pub inline fn read(self: *File, vm_instance: ?*vm.VM) FileError![]const u8 {
+    pub inline fn read(self: *File, vm_instance: ?*Vm) FileError![]const u8 {
         self.lock.lock();
         defer self.lock.unlock();
 
@@ -751,7 +757,7 @@ pub const Folder = struct {
         self.folders = folder;
     }
 
-    pub fn writeFile(self: *Folder, name: []const u8, contents: []const u8, vmInstance: ?*vm.VM) !void {
+    pub fn writeFile(self: *Folder, name: []const u8, contents: []const u8, vmInstance: ?*Vm) !void {
         const file = try self.getFile(name);
 
         return file.write(contents, vmInstance);

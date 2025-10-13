@@ -1,21 +1,30 @@
 const std = @import("std");
 const c = @import("../../c.zig");
 
-const allocator = @import("../../util/allocator.zig");
-const spr = @import("../../drawers/sprite2d.zig");
-const shd = @import("../../util/shader.zig");
-const rect = @import("../../math/rects.zig");
-const cols = @import("../../math/colors.zig");
-const files = @import("../../system/files.zig");
-const vecs = @import("../../math/vecs.zig");
-const fnt = @import("../../util/font.zig");
-const events = @import("../../util/events.zig");
-const window_events = @import("../../events/window.zig");
-const popups = @import("../../drawers/popup2d.zig");
+const drawers = @import("../../drawers/mod.zig");
+const system = @import("../../system/mod.zig");
+const events = @import("../../events/mod.zig");
+const math = @import("../../math/mod.zig");
+const util = @import("../../util/mod.zig");
 
-const SpriteBatch = @import("../../util/spritebatch.zig");
+const Sprite = drawers.Sprite;
+const Popup = drawers.Popup;
 
-var outline_sprites = [_]spr.Sprite{
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const SpriteBatch = util.SpriteBatch;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+
+const files = system.files;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+
+var outline_sprites = [_]Sprite{
     .atlas("ui", .{
         .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
         .size = .{ .x = 32, .y = 32 },
@@ -81,11 +90,11 @@ pub const PopupConfirm = struct {
     data: *const anyopaque,
     message: []const u8,
     buttons: []const ConfirmButton,
-    shader: *shd.Shader,
+    shader: *Shader,
 
     single_width: f32 = 1,
 
-    pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+    pub fn draw(self: *Self, shader: *Shader, bnds: Rect, font: *Font) !void {
         const midy = bnds.y + bnds.h / 2;
 
         try font.draw(.{
@@ -104,17 +113,17 @@ pub const PopupConfirm = struct {
 
             const startx = ((self.single_width - width) / 2) + bnds.x + (self.single_width) * @as(f32, @floatFromInt(idx));
 
-            outline_sprites[0].data.size = vecs.Vector2{
+            outline_sprites[0].data.size = Vec2{
                 .x = width + 10,
                 .y = font.size + 8,
             };
-            outline_sprites[1].data.size = vecs.Vector2{
+            outline_sprites[1].data.size = Vec2{
                 .x = width + 6,
                 .y = font.size + 4,
             };
 
-            try SpriteBatch.global.draw(spr.Sprite, &outline_sprites[0], self.shader, .{ .x = startx - 4, .y = midy - 4 });
-            try SpriteBatch.global.draw(spr.Sprite, &outline_sprites[1], self.shader, .{ .x = startx - 2, .y = midy - 2 });
+            try SpriteBatch.global.draw(Sprite, &outline_sprites[0], self.shader, .{ .x = startx - 4, .y = midy - 4 });
+            try SpriteBatch.global.draw(Sprite, &outline_sprites[1], self.shader, .{ .x = startx - 2, .y = midy - 2 });
 
             try font.draw(.{
                 .shader = shader,
@@ -127,7 +136,7 @@ pub const PopupConfirm = struct {
         }
     }
 
-    pub fn click(self: *Self, pos: vecs.Vector2) !void {
+    pub fn click(self: *Self, pos: Vec2) !void {
         const idx: usize = @intFromFloat(pos.x / self.single_width);
 
         if (idx > self.buttons.len) return;

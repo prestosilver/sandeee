@@ -1,38 +1,48 @@
 const std = @import("std");
+const c = @import("../c.zig");
 
-const vecs = @import("../math/vecs.zig");
-const cols = @import("../math/colors.zig");
-const rect = @import("../math/rects.zig");
-const va = @import("../util/vertArray.zig");
-const win2d = @import("window2d.zig");
-const fnt = @import("../util/font.zig");
-const shd = @import("../util/shader.zig");
+const drawers = @import("mod.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const util = @import("../util/mod.zig");
+const math = @import("../math/mod.zig");
 
-pub const all = @import("../windows/popups/all.zig");
+const Window = drawers.Window;
 
-pub var popup_shader: *shd.Shader = undefined;
+const Color = math.Color;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Rect = math.Rect;
 
-const TOTAL_SPRITES: f32 = 9.0;
-const TEX_SIZE: f32 = 32;
+const SpriteBatch = util.SpriteBatch;
+const VertArray = util.VertArray;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const graphics = util.Graphics;
 
 pub const PopupData = struct {
+    pub usingnamespace @import("../windows/popups/all.zig");
+
+    pub var popup_shader: *Shader = undefined;
+
+    const TOTAL_SPRITES: f32 = 9.0;
+    const TEX_SIZE: f32 = 32;
+
     pub const PopupContents = struct {
         const Self = @This();
 
         const VTable = struct {
-            draw: *const fn (*anyopaque, *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) anyerror!void,
+            draw: *const fn (*anyopaque, *Shader, bnds: Rect, font: *Font) anyerror!void,
             key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
             char: *const fn (*anyopaque, u32, i32) anyerror!void,
-            click: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
+            click: *const fn (*anyopaque, Vec2) anyerror!void,
             deinit: *const fn (*anyopaque) void,
         };
 
         ptr: *anyopaque,
         vtable: *const VTable,
 
-        pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+        pub fn draw(self: *Self, shader: *Shader, bnds: Rect, font: *Font) !void {
             return self.vtable.draw(self.ptr, shader, bnds, font);
         }
 
@@ -44,7 +54,7 @@ pub const PopupData = struct {
             return self.vtable.key(self.ptr, keycode, mods, down);
         }
 
-        pub fn click(self: *Self, mousepos: vecs.Vector2) !void {
+        pub fn click(self: *Self, mousepos: Vec2) !void {
             return self.vtable.click(self.ptr, mousepos);
         }
 
@@ -62,7 +72,7 @@ pub const PopupData = struct {
             const child_t = ptr_info.pointer.child;
 
             const gen = struct {
-                fn drawImpl(pointer: *anyopaque, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
+                fn drawImpl(pointer: *anyopaque, shader: *Shader, bnds: Rect, font: *Font) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
                     return @call(.always_inline, ptr_info.pointer.child.draw, .{ self, shader, bnds, font });
@@ -90,7 +100,7 @@ pub const PopupData = struct {
                     return @call(.always_inline, ptr_info.pointer.child.deinit, .{self});
                 }
 
-                fn clickImpl(pointer: *anyopaque, mousepos: vecs.Vector2) !void {
+                fn clickImpl(pointer: *anyopaque, mousepos: Vec2) !void {
                     if (std.meta.hasMethod(child_t, "click")) {
                         const self: Ptr = @ptrCast(@alignCast(pointer));
 
@@ -114,12 +124,12 @@ pub const PopupData = struct {
         }
     };
 
-    source: rect.Rectangle,
-    pos: rect.Rectangle,
+    source: Rect,
+    pos: Rect,
     contents: PopupContents,
     title: []const u8,
 
-    pub fn drawName(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
+    pub fn drawName(self: *PopupData, shader: *Shader, font: *Font) !void {
         try font.draw(.{
             .shader = shader,
             .text = self.title,
@@ -130,10 +140,10 @@ pub const PopupData = struct {
         });
     }
 
-    pub fn drawContents(self: *PopupData, shader: *shd.Shader, font: *fnt.Font) !void {
+    pub fn drawContents(self: *PopupData, shader: *Shader, font: *Font) !void {
         try SpriteBatch.global.addEntry(&.{
             .texture = .none,
-            .verts = try va.VertArray.init(0),
+            .verts = try VertArray.init(0),
             .shader = shader.*,
             .clear = .{ .r = 0.75, .g = 0.75, .b = 0.75 },
         });
@@ -141,11 +151,11 @@ pub const PopupData = struct {
         try self.contents.draw(shader, self.scissor(), font);
     }
 
-    pub fn getVerts(self: *const PopupData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init(9 * 6 * 2);
+    pub fn getVerts(self: *const PopupData, _: Vec3) !VertArray {
+        var result = try VertArray.init(9 * 6 * 2);
         const sprite: u8 = 2;
 
-        const close = rect.Rectangle{
+        const close = Rect{
             .x = self.pos.x + self.pos.w - 64,
             .y = self.pos.y,
             .w = 64,
@@ -178,8 +188,8 @@ pub const PopupData = struct {
 
     const PADDING = 26;
 
-    pub fn click(self: *PopupData, mousepos: vecs.Vector2) !ClickKind {
-        const close = rect.Rectangle{
+    pub fn click(self: *PopupData, mousepos: Vec2) !ClickKind {
+        const close = Rect{
             .x = self.pos.x + self.pos.w - 64 + 64 - PADDING,
             .y = self.pos.y,
             .w = PADDING,
@@ -201,7 +211,7 @@ pub const PopupData = struct {
         return .None;
     }
 
-    pub inline fn scissor(self: *const PopupData) rect.Rectangle {
+    pub inline fn scissor(self: *const PopupData) Rect {
         return .{
             .x = self.pos.x + 6,
             .y = self.pos.y + 34,
@@ -211,4 +221,4 @@ pub const PopupData = struct {
     }
 };
 
-pub const Popup = SpriteBatch.Drawer(PopupData);
+pub const drawer = SpriteBatch.Drawer(PopupData);

@@ -3,65 +3,77 @@ const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");
 const steam = @import("steam");
-const vm = @import("util/eeevm.zig");
 
-// states
-const states = @import("states/manager.zig");
-const disk_state = @import("states/disks.zig");
-const loading_state = @import("states/loading.zig");
-const windowed_state = @import("states/windowed.zig");
-const crash_state = @import("states/crash.zig");
-const install_state = @import("states/installer.zig");
-const recovery_state = @import("states/recovery.zig");
-const logout_state = @import("states/logout.zig");
-
-// utilities
-const fm = @import("util/files.zig");
-const font = @import("util/font.zig");
-const audio = @import("util/audio.zig");
-const events = @import("util/events.zig");
-const allocator = @import("util/allocator.zig");
-const gfx = @import("util/graphics.zig");
-const shd = @import("util/shader.zig");
-const tex = @import("util/texture.zig");
-const panic_handler = @import("util/panic.zig");
-const log = @import("util/log.zig");
-
-const TextureManager = @import("util/texmanager.zig");
-const SpriteBatch = @import("util/spritebatch.zig");
-
-// events
-const input_events = @import("events/input.zig");
-const window_events = @import("events/window.zig");
-const system_events = @import("events/system.zig");
-
-// loader
-const Loader = @import("loaders/loader.zig");
-
-// op math
-const vecs = @import("math/vecs.zig");
-const rect = @import("math/rects.zig");
-const col = @import("math/colors.zig");
-
-// drawers
-const wall = @import("drawers/wall2d.zig");
-const sprite = @import("drawers/sprite2d.zig");
-const bar = @import("drawers/bar2d.zig");
-const win = @import("drawers/window2d.zig");
-const cursor = @import("drawers/cursor2d.zig");
-const desk = @import("drawers/desk2d.zig");
-const notifs = @import("drawers/notification2d.zig");
-
-// misc system stuff
-const conf = @import("system/config.zig");
-const files = @import("system/files.zig");
-const headless = @import("system/headless.zig");
-const emails = @import("system/mail.zig");
-const shell = @import("system/shell.zig");
-const vm_manager = @import("system/vmmanager.zig");
+const drawers = @import("drawers/mod.zig");
+const loaders = @import("loaders/mod.zig");
+const system = @import("system/mod.zig");
+const events = @import("events/mod.zig");
+const states = @import("states/mod.zig");
+const math = @import("math/mod.zig");
+const util = @import("util/mod.zig");
+const data = @import("data/mod.zig");
 
 // not-op programming lang
 const c = @import("c.zig");
+
+// states
+const GameState = states.GameState;
+const StateManager = states.Manager;
+const DiskState = states.Disks;
+const LoadingState = states.Loading;
+const WindowedState = states.Windowed;
+const CrashState = states.Crashed;
+const InstallState = states.Installer;
+const RecoveryState = states.Recovery;
+const LogoutState = states.Logout;
+
+// utilities
+const TextureManager = util.TextureManager;
+const SpriteBatch = util.SpriteBatch;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const Font = util.Font;
+const panic_handler = util.panic;
+const allocator = util.allocator;
+const graphics = util.graphics;
+const storage = util.storage;
+const audio = util.audio;
+const log = util.logger;
+
+// events
+const EventManager = events.EventManager;
+const input_events = events.input;
+const window_events = events.windows;
+const system_events = events.system;
+
+// loader
+const Loader = loaders.Loader;
+
+// op math
+const Color = math.Color;
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+
+// drawers
+const Notification = drawers.Notification;
+const Window = drawers.Window;
+const Cursor = drawers.Cursor;
+const Sprite = drawers.Sprite;
+const Wall = drawers.Wall;
+const Desk = drawers.Desk;
+const Bar = drawers.Bar;
+
+// misc system stuff
+const VmManager = system.VmManager;
+const Shell = system.Shell;
+const headless = system.headless;
+const config = system.config;
+const files = system.files;
+const mail = system.mail;
+
+// data
+const strings = data.strings;
 
 pub const std_options = std.Options{
     // Define logFn to override the std implementation
@@ -102,24 +114,24 @@ const BIOS_FONT_DATA: []const u8 = @embedFile("images/main.eff");
 const BLIP_SOUND_DATA = @embedFile("sounds/bios-blip.era");
 const SELECT_SOUND_DATA = @embedFile("sounds/bios-select.era");
 
-const SHADER_FILES = [2]shd.ShaderFile{
-    shd.ShaderFile{ .contents = FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
-    shd.ShaderFile{ .contents = VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
+const SHADER_FILES = [2]Shader.ShaderFile{
+    Shader.ShaderFile{ .contents = FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
+    Shader.ShaderFile{ .contents = VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
 };
 
-const FONT_SHADER_FILES = [2]shd.ShaderFile{
-    shd.ShaderFile{ .contents = FONT_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
-    shd.ShaderFile{ .contents = FONT_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
+const FONT_SHADER_FILES = [2]Shader.ShaderFile{
+    Shader.ShaderFile{ .contents = FONT_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
+    Shader.ShaderFile{ .contents = FONT_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
 };
 
-const CRT_SHADER_FILES = [2]shd.ShaderFile{
-    shd.ShaderFile{ .contents = CRT_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
-    shd.ShaderFile{ .contents = CRT_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
+const CRT_SHADER_FILES = [2]Shader.ShaderFile{
+    Shader.ShaderFile{ .contents = CRT_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
+    Shader.ShaderFile{ .contents = CRT_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
 };
 
-const CLEAR_SHADER_FILES = [2]shd.ShaderFile{
-    shd.ShaderFile{ .contents = CLEAR_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
-    shd.ShaderFile{ .contents = CLEAR_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
+const CLEAR_SHADER_FILES = [2]Shader.ShaderFile{
+    Shader.ShaderFile{ .contents = CLEAR_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
+    Shader.ShaderFile{ .contents = CLEAR_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
 };
 
 const FULL_QUAD = [_]c.GLfloat{
@@ -134,24 +146,24 @@ const FULL_QUAD = [_]c.GLfloat{
 var state_refresh_rate: f64 = 0.5;
 
 // misc state data
-var game_states: std.EnumArray(system_events.State, states.GameState) = .initUndefined();
+var game_states: std.EnumArray(system_events.State, GameState) = .initUndefined();
 var current_state: system_events.State = .Disks;
 
 // create some fonts
-var bios_font: font.Font = undefined;
-var main_font: font.Font = undefined;
+var bios_font: Font = undefined;
+var main_font: Font = undefined;
 
 // shaders
-var font_shader: shd.Shader = undefined;
-var crt_shader: shd.Shader = undefined;
-var clear_shader: shd.Shader = undefined;
-var shader: shd.Shader = undefined;
+var font_shader: Shader = undefined;
+var crt_shader: Shader = undefined;
+var clear_shader: Shader = undefined;
+var shader: Shader = undefined;
 
 // the selected disk
 var disk: ?[]u8 = null;
 
 // wallpaper stuff
-var wallpaper: wall.Wallpaper = undefined;
+var wallpaper: Wall = undefined;
 
 // sounds
 var message_snd: audio.Sound = undefined;
@@ -182,14 +194,14 @@ pub fn blit() !void {
     const start_time = c.glfwGetTime();
 
     // actual gl calls start here
-    gfx.Context.makeCurrent();
-    defer gfx.Context.makeNotCurrent();
+    graphics.Context.makeCurrent();
+    defer graphics.Context.makeNotCurrent();
 
-    if (c.glfwGetWindowAttrib(gfx.Context.instance.window, c.GLFW_ICONIFIED) != 0) {
+    if (c.glfwGetWindowAttrib(graphics.Context.instance.window, c.GLFW_ICONIFIED) != 0) {
         // for when minimized render nothing
-        gfx.Context.clear();
+        graphics.Context.clear();
 
-        gfx.Context.swap();
+        graphics.Context.swap();
 
         return;
     }
@@ -197,17 +209,17 @@ pub fn blit() !void {
     if (show_fps and bios_font.setup) {
         const text = try std.fmt.allocPrint(allocator.alloc, "{s}FPS: {}\n{s}VMS: {}\n{s}VMT: {}%\nSTA: {}", .{
             if (final_fps < 50)
-                font.COLOR_RED
+                strings.COLOR_RED
             else
-                font.COLOR_WHITE,
+                strings.COLOR_WHITE,
             final_fps,
-            if (vm_manager.VMManager.instance.vms.count() == 0)
-                font.COLOR_GRAY
+            if (VmManager.instance.vms.count() == 0)
+                strings.COLOR_GRAY
             else
-                font.COLOR_WHITE,
-            vm_manager.VMManager.instance.vms.count(),
-            font.COLOR_WHITE,
-            @as(u8, @intFromFloat(vm_manager.VMManager.vm_time * 100)),
+                strings.COLOR_WHITE,
+            VmManager.instance.vms.count(),
+            strings.COLOR_WHITE,
+            @as(u8, @intFromFloat(VmManager.vm_time * 100)),
             @intFromEnum(current_state),
         });
         defer allocator.alloc.free(text);
@@ -223,7 +235,7 @@ pub fn blit() !void {
     if (crt_enable)
         c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebuffer_name);
 
-    gfx.Context.clear();
+    graphics.Context.clear();
 
     // finish render
     try SpriteBatch.global.render();
@@ -247,10 +259,10 @@ pub fn blit() !void {
         c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
     }
 
-    vm_manager.VMManager.last_render_time = c.glfwGetTime() - start_time;
+    VmManager.last_render_time = c.glfwGetTime() - start_time;
 
     // swap buffer
-    gfx.Context.swap();
+    graphics.Context.swap();
 }
 
 pub fn changeState(event: system_events.EventStateChange) !void {
@@ -303,11 +315,11 @@ pub fn copy(event: system_events.EventCopy) !void {
     const to_copy = try allocator.alloc.dupeZ(u8, event.value);
     defer allocator.alloc.free(to_copy);
 
-    c.glfwSetClipboardString(gfx.Context.instance.window, to_copy);
+    c.glfwSetClipboardString(graphics.Context.instance.window, to_copy);
 }
 
 pub fn paste(_: system_events.EventPaste) !void {
-    const tmp = c.glfwGetClipboardString(gfx.Context.instance.window);
+    const tmp = c.glfwGetClipboardString(graphics.Context.instance.window);
     if (tmp == null) return;
 
     const len = std.mem.len(tmp);
@@ -364,8 +376,8 @@ pub fn settingSet(event: system_events.EventSetSetting) !void {
         const val: c_int = if (std.ascii.eqlIgnoreCase("yes", event.value)) 1 else 0;
 
         if (is_crt) {
-            gfx.Context.makeCurrent();
-            defer gfx.Context.makeNotCurrent();
+            graphics.Context.makeCurrent();
+            defer graphics.Context.makeNotCurrent();
 
             crt_shader.setInt("crt_enable", val);
             crt_shader.setInt("dither_enable", 0);
@@ -378,46 +390,46 @@ pub fn settingSet(event: system_events.EventSetSetting) !void {
 }
 
 pub fn runCmdEvent(event: system_events.EventRunCmd) !void {
-    for (emails.EmailManager.instance.emails.items) |*email| {
-        if (!emails.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
+    for (mail.EmailManager.instance.emails.items) |*email| {
+        if (!mail.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
 
         for (email.condition) |condition| {
             if (condition != .ShellRun) continue;
 
             if (std.ascii.eqlIgnoreCase(condition.ShellRun.cmd, event.cmd)) {
-                try emails.EmailManager.instance.setEmailComplete(email);
+                try mail.EmailManager.instance.setEmailComplete(email);
             }
         }
     }
 }
 
 pub fn syscall(event: system_events.EventSys) !void {
-    for (emails.EmailManager.instance.emails.items) |*email| {
-        if (!emails.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
+    for (mail.EmailManager.instance.emails.items) |*email| {
+        if (!mail.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
         for (email.condition) |condition| {
             if (condition != .SysCall) continue;
 
             const num = condition.SysCall.id;
 
             if (num == event.sysId) {
-                try emails.EmailManager.instance.setEmailComplete(email);
+                try mail.EmailManager.instance.setEmailComplete(email);
             }
         }
     }
 }
 
-pub fn drawLoading(self: *loading_state.GSLoading) void {
+pub fn drawLoading(self: *LoadingState) void {
     while (!self.done.load(.monotonic) and !paniced) {
         {
-            gfx.Context.makeCurrent();
-            defer gfx.Context.makeNotCurrent();
+            graphics.Context.makeCurrent();
+            defer graphics.Context.makeNotCurrent();
 
-            if (!gfx.Context.poll())
+            if (!graphics.Context.poll())
                 self.done.store(true, .monotonic);
         }
 
         // render loading screen
-        self.draw(gfx.Context.instance.size) catch {};
+        self.draw(graphics.Context.instance.size) catch {};
 
         if (!self.done.load(.monotonic) and !paniced) {
             blit() catch {};
@@ -428,14 +440,14 @@ pub fn drawLoading(self: *loading_state.GSLoading) void {
 }
 
 pub fn windowResize(event: input_events.EventWindowResize) !void {
-    gfx.Context.makeCurrent();
-    defer gfx.Context.makeNotCurrent();
+    graphics.Context.makeCurrent();
+    defer graphics.Context.makeNotCurrent();
 
-    gfx.Context.resize(event.w, event.h);
+    graphics.Context.resize(event.w, event.h);
 
     // clear the window
     c.glBindTexture(c.GL_TEXTURE_2D, rendered_texture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
 
     // Poor filtering. Needed !
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
@@ -444,7 +456,7 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
 
     c.glBindRenderbuffer(c.GL_RENDERBUFFER, depth_render_buffer);
-    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)));
+    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)));
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
@@ -471,7 +483,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     }
 
     // disable events on loading screen
-    input_events.setup(gfx.Context.instance.window, true);
+    input_events.setup(graphics.Context.instance.window, true);
 
     // update game state
     current_state = .Crash;
@@ -481,7 +493,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
     SpriteBatch.global.clear() catch {};
 
-    while (gfx.Context.poll()) {
+    while (graphics.Context.poll()) {
         // get crash state
         const state = game_states.getPtr(.Crash);
 
@@ -490,7 +502,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
             break;
         };
-        state.draw(gfx.Context.instance.size) catch |err| {
+        state.draw(graphics.Context.instance.size) catch |err| {
             log.log.err("crash draw failed, {!}", .{err});
 
             break;
@@ -609,7 +621,7 @@ pub fn mainErr() anyerror!void {
     log.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
 
     // init graphics
-    var gfx_loader = try Loader.init(Loader.Graphics{});
+    var graphics_loader = try Loader.init(Loader.Graphics{});
 
     try audio.AudioManager.init();
 
@@ -625,25 +637,25 @@ pub fn mainErr() anyerror!void {
         .files = SHADER_FILES,
         .out = &shader,
     });
-    try base_shader_loader.require(&gfx_loader);
+    try base_shader_loader.require(&graphics_loader);
 
     var font_shader_loader = try Loader.init(Loader.Shader{
         .files = FONT_SHADER_FILES,
         .out = &font_shader,
     });
-    try font_shader_loader.require(&gfx_loader);
+    try font_shader_loader.require(&graphics_loader);
 
     var crt_shader_loader = try Loader.init(Loader.Shader{
         .files = CRT_SHADER_FILES,
         .out = &crt_shader,
     });
-    try crt_shader_loader.require(&gfx_loader);
+    try crt_shader_loader.require(&graphics_loader);
 
     var clear_shader_loader = try Loader.init(Loader.Shader{
         .files = CLEAR_SHADER_FILES,
         .out = &clear_shader,
     });
-    try clear_shader_loader.require(&gfx_loader);
+    try clear_shader_loader.require(&graphics_loader);
 
     var texture_loader = try Loader.init(Loader.Group{});
     try texture_loader.require(&base_shader_loader);
@@ -656,7 +668,7 @@ pub fn mainErr() anyerror!void {
         .data = .{ .mem = BIOS_FONT_DATA },
         .output = &bios_font,
     });
-    try font_loader.require(&gfx_loader);
+    try font_loader.require(&graphics_loader);
 
     var loader = try Loader.init(Loader.Group{});
     try loader.require(&texture_loader);
@@ -668,7 +680,7 @@ pub fn mainErr() anyerror!void {
     defer unloader.run();
 
     // start setup states
-    gfx.Context.makeCurrent();
+    graphics.Context.makeCurrent();
 
     // enable crt by default
     crt_shader.setInt("crt_enable", if (is_crt) 1 else 0);
@@ -687,7 +699,7 @@ pub fn mainErr() anyerror!void {
 
     // clear the windo
     c.glBindTexture(c.GL_TEXTURE_2D, rendered_texture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
 
     // Poor filtering. Needed !
     c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
@@ -699,7 +711,7 @@ pub fn mainErr() anyerror!void {
     c.glGenRenderbuffers(1, &depth_render_buffer);
 
     c.glBindRenderbuffer(c.GL_RENDERBUFFER, depth_render_buffer);
-    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(gfx.Context.instance.size.x)), @as(i32, @intFromFloat(gfx.Context.instance.size.y)));
+    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)));
     c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depth_render_buffer);
 
     c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, rendered_texture, 0);
@@ -710,10 +722,10 @@ pub fn mainErr() anyerror!void {
         return error.FramebufferSetupFail;
 
     // give spritebatch size
-    SpriteBatch.global.size = &gfx.Context.instance.size;
+    SpriteBatch.global.size = &graphics.Context.instance.size;
 
     // done states setup
-    gfx.Context.makeNotCurrent();
+    graphics.Context.makeNotCurrent();
 
     // load some textures
     try TextureManager.instance.putMem("bios", BIOS_IMAGE);
@@ -724,12 +736,12 @@ pub fn mainErr() anyerror!void {
     try TextureManager.instance.putMem("white", &WHITE_IMAGE);
 
     wallpaper = .atlas("wall", .{
-        .dims = &gfx.Context.instance.size,
+        .dims = &graphics.Context.instance.size,
         .mode = .Center,
     });
 
     // disks state
-    var gs_disks = disk_state.GSDisks{
+    var gs_disks = DiskState{
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &bios_font,
@@ -743,7 +755,7 @@ pub fn mainErr() anyerror!void {
     };
 
     // loading state
-    var gs_loading = loading_state.GSLoading{
+    var gs_loading = LoadingState{
         .face = &main_font,
         .logout_snd = &logout_snd,
         .message_snd = &message_snd,
@@ -760,7 +772,7 @@ pub fn mainErr() anyerror!void {
     };
 
     // windowed state
-    var gs_windowed = windowed_state.GSWindowed{
+    var gs_windowed = WindowedState{
         .shader = &shader,
         .font_shader = &font_shader,
         .clear_shader = &clear_shader,
@@ -784,7 +796,7 @@ pub fn mainErr() anyerror!void {
         .wallpaper = &wallpaper,
         .bar = .atlas("bar", .{
             .height = 38,
-            .screendims = &gfx.Context.instance.size,
+            .screendims = &graphics.Context.instance.size,
             .shell = .{
                 .root = .home,
             },
@@ -793,7 +805,7 @@ pub fn mainErr() anyerror!void {
     };
 
     // crashed state
-    const gs_crash = try allocator.alloc.create(crash_state.GSCrash);
+    const gs_crash = try allocator.alloc.create(CrashState);
     gs_crash.* = .{
         .shader = &shader,
         .font_shader = &font_shader,
@@ -807,7 +819,7 @@ pub fn mainErr() anyerror!void {
     };
 
     // install state
-    var gs_install = install_state.GSInstall{
+    var gs_install = InstallState{
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &bios_font,
@@ -819,7 +831,7 @@ pub fn mainErr() anyerror!void {
     };
 
     // logout state
-    var gs_logout = logout_state.GSLogout{
+    var gs_logout = LogoutState{
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &bios_font,
@@ -829,7 +841,7 @@ pub fn mainErr() anyerror!void {
     };
 
     // recovery state
-    var gsRecovery = recovery_state.GSRecovery{
+    var gsRecovery = RecoveryState{
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &bios_font,
@@ -867,7 +879,7 @@ pub fn mainErr() anyerror!void {
 
     // run setup
     try game_states.getPtr(.Disks).setup();
-    input_events.setup(gfx.Context.instance.window, true);
+    input_events.setup(graphics.Context.instance.window, true);
 
     // setup state machine
     var prev = current_state;
@@ -880,7 +892,7 @@ pub fn mainErr() anyerror!void {
     c.glfwSetTime(0);
 
     // main loop
-    while (gfx.Context.poll()) {
+    while (graphics.Context.poll()) {
         // get the time & update
         const start_time = c.glfwGetTime();
 
@@ -888,7 +900,7 @@ pub fn mainErr() anyerror!void {
         const state = game_states.getPtr(prev);
 
         // pause the game on minimize
-        if (c.glfwGetWindowAttrib(gfx.Context.instance.window, c.GLFW_ICONIFIED) == 0) {
+        if (c.glfwGetWindowAttrib(graphics.Context.instance.window, c.GLFW_ICONIFIED) == 0) {
 
             // steam callbacks
             // if (options.IsSteam) {
@@ -903,10 +915,10 @@ pub fn mainErr() anyerror!void {
             // }
 
             // update the game state
-            try state.update(@max(1 / 60, @as(f32, @floatCast(vm_manager.VMManager.last_frame_time))));
+            try state.update(@max(1 / 60, @as(f32, @floatCast(VmManager.last_frame_time))));
 
             // get tris
-            try state.draw(gfx.Context.instance.size);
+            try state.draw(graphics.Context.instance.size);
         }
 
         // track fps
@@ -917,19 +929,21 @@ pub fn mainErr() anyerror!void {
 
             try state.refresh();
 
-            try vm_manager.VMManager.instance.runGc();
+            log.log.debug("Rendered in {d:.6}ms", .{VmManager.last_render_time * 1000});
+
+            try VmManager.instance.runGc();
 
             final_fps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / @as(f64, @floatFromInt(lap)) * @as(f64, @floatFromInt(std.time.ns_per_s))));
-            if (vm_manager.VMManager.instance.vms.count() != 0 and final_fps != 0) {
+            if (VmManager.instance.vms.count() != 0 and final_fps != 0) {
                 if (final_fps < 55) {
-                    vm_manager.VMManager.vm_time -= 0.01;
+                    VmManager.vm_time -= 0.01;
                 }
 
                 if (final_fps > 58) {
-                    vm_manager.VMManager.vm_time += 0.01;
+                    VmManager.vm_time += 0.01;
                 }
 
-                vm_manager.VMManager.vm_time = std.math.clamp(vm_manager.VMManager.vm_time, 0.25, 0.9);
+                VmManager.vm_time = std.math.clamp(VmManager.vm_time, 0.25, 0.9);
             }
 
             fps = 0;
@@ -947,7 +961,7 @@ pub fn mainErr() anyerror!void {
             // try batch.SpriteBatch.instance.clear();
         } else {
             // track update time
-            vm_manager.VMManager.last_update_time = c.glfwGetTime() - start_time;
+            VmManager.last_update_time = c.glfwGetTime() - start_time;
 
             // render this is in else to fix single frame bugs
             try blit();
@@ -956,22 +970,22 @@ pub fn mainErr() anyerror!void {
             // update the time
             const frame_time = c.glfwGetTime() - last_frame_end;
             if (frame_time != 0) {
-                vm_manager.VMManager.last_frame_time = frame_time;
+                VmManager.last_frame_time = frame_time;
                 last_frame_end = c.glfwGetTime();
             }
         }
     }
 
     // deinit vm manager
-    vm_manager.VMManager.instance.deinit();
+    VmManager.instance.deinit();
 
     // deinit the current state
     game_states.getPtr(current_state).deinit();
 
-    if (logout_state.GSLogout.unloader) |*ul|
+    if (LogoutState.unloader) |*ul|
         ul.run();
 
-    logout_state.GSLogout.unloader = null;
+    LogoutState.unloader = null;
 
     // free crash state bc game can no longer crash
     allocator.alloc.destroy(gs_crash);
@@ -987,9 +1001,6 @@ pub fn mainErr() anyerror!void {
 }
 
 test "headless.zig" {
-    //_ = @import("system/headless.zig");
-    _ = @import("util/files.zig");
-    _ = @import("util/url.zig");
-    //_ = @import("system/shell.zig");
-    _ = @import("system/vm.zig");
+    _ = @import("util/mod.zig");
+    _ = @import("system/mod.zig");
 }

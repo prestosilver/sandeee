@@ -1,23 +1,34 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const win = @import("../drawers/window2d.zig");
-const rect = @import("../math/rects.zig");
-const vecs = @import("../math/vecs.zig");
-const col = @import("../math/colors.zig");
-const fnt = @import("../util/font.zig");
-const allocator = @import("../util/allocator.zig");
-const files = @import("../system/files.zig");
-const shd = @import("../util/shader.zig");
-const sprite = @import("../drawers/sprite2d.zig");
-const tex = @import("../util/texture.zig");
-const shell = @import("../system/shell.zig");
-const conf = @import("../system/config.zig");
-const texture_manager = @import("../util/texmanager.zig");
-const eln = @import("../util/eln.zig");
-const log = @import("../util/log.zig").log;
+const Windows = @import("mod.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const drawers = @import("../drawers/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
+
+const Window = drawers.Window;
+const Sprite = drawers.Sprite;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const TextureManager = util.TextureManager;
+const SpriteBatch = util.SpriteBatch;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const Font = util.Font;
+const Eln = util.Eln;
+const allocator = util.allocator;
+const log = util.log;
+
+const Shell = system.Shell;
+const config = system.config;
+const files = system.files;
 
 var g_idx: u8 = 0;
 
@@ -31,41 +42,41 @@ pub const LauncherData = struct {
 
     const LauncherMouseAction = struct {
         kind: LauncherMouseActionType,
-        pos: vecs.Vector2,
+        pos: Vec2,
         time: f32,
     };
 
-    shader: *shd.Shader,
-    text_box: [2]sprite.Sprite,
-    menubar: sprite.Sprite,
-    sel: sprite.Sprite,
-    gray: sprite.Sprite,
-    shell: shell.Shell,
+    shader: *Shader,
+    text_box: [2]Sprite,
+    menubar: Sprite,
+    sel: Sprite,
+    gray: Sprite,
+    shell: Shell,
 
     focused: ?u64 = null,
     selected: usize = 0,
     last_action: ?LauncherMouseAction = null,
 
-    icon_data: []const eln.ElnData = &.{},
+    icon_data: []const Eln = &.{},
     idx: u8,
 
     max_sprites: u8 = 0,
 
-    pub fn getIcons(self: *Self) ![]const eln.ElnData {
+    pub fn getIcons(self: *Self) ![]const Eln {
         const root = try files.FolderLink.resolve(.root);
         const folder = root.getFolder("conf/apps") catch return &.{};
 
-        var result: std.ArrayList(eln.ElnData) = .init(allocator.alloc);
+        var result: std.ArrayList(Eln) = .init(allocator.alloc);
         defer result.deinit();
 
         var sub_file = try folder.getFiles();
         while (sub_file) |file| : (sub_file = file.next_sibling) {
-            try result.append(try eln.ElnData.parse(file));
+            try result.append(try Eln.parse(file));
         }
 
         self.max_sprites = @max(self.max_sprites, @as(u8, @intCast(result.items.len)));
 
-        return try allocator.alloc.dupe(eln.ElnData, result.items);
+        return try allocator.alloc.dupe(Eln, result.items);
     }
 
     pub fn refresh(self: *Self) !void {
@@ -73,7 +84,7 @@ pub const LauncherData = struct {
         self.icon_data = try self.getIcons();
     }
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
                 .offset_start = 0,
@@ -98,7 +109,7 @@ pub const LauncherData = struct {
         var x: f32 = 0;
         var y: f32 = -props.scroll.?.value + 0;
 
-        const hidden = conf.SettingManager.instance.getBool("explorer_hidden");
+        const hidden = config.SettingManager.instance.getBool("explorer_hidden");
 
         for (self.icon_data, 0..) |icon, idx| {
             if (icon.name.len == 0) continue;
@@ -120,7 +131,7 @@ pub const LauncherData = struct {
                     .maxlines = 1,
                 });
 
-                const icon_spr: sprite.Sprite = if (icon.icon) |icn|
+                const icon_spr: Sprite = if (icon.icon) |icn|
                     .override(icn, .{
                         .source = .{ .w = 1, .h = 1 },
                         .size = .{ .x = 64, .y = 64 },
@@ -131,14 +142,14 @@ pub const LauncherData = struct {
                         .size = .{ .x = 64, .y = 64 },
                     });
 
-                try SpriteBatch.global.draw(sprite.Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                try SpriteBatch.global.draw(Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (idx + 1 == self.selected)
-                    try SpriteBatch.global.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                    try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
             }
 
             if (self.last_action) |last_action| {
-                if ((rect.Rectangle{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(last_action.pos)) {
+                if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(last_action.pos)) {
                     switch (last_action.kind) {
                         .SingleLeft => {
                             self.selected = idx + 1;
@@ -171,7 +182,7 @@ pub const LauncherData = struct {
         allocator.alloc.destroy(self);
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
+    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
         if (self.shell.vm != null) return;
         if (btn == null) return;
 
@@ -211,7 +222,7 @@ pub const LauncherData = struct {
     }
 };
 
-pub fn init(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.alloc.create(LauncherData);
 
     self.* = .{
@@ -248,5 +259,5 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
 
     g_idx += 1;
 
-    return win.WindowContents.init(self, "launcher", "Launcher", .{ .r = 1, .g = 1, .b = 1 });
+    return .init(self, "launcher", "Launcher", .{ .r = 1, .g = 1, .b = 1 });
 }

@@ -1,14 +1,26 @@
 const std = @import("std");
 const options = @import("options");
-const files = @import("files.zig");
-const allocator = @import("../util/allocator.zig");
-const win = @import("../drawers/window2d.zig");
-const wins = @import("../windows/all.zig");
-const events = @import("../util/events.zig");
-const window_events = @import("../events/window.zig");
-const rect = @import("../math/rects.zig");
+const c = @import("../c.zig");
 
-const log = @import("../util/log.zig").log;
+const system = @import("mod.zig");
+
+const windows = @import("../windows/mod.zig");
+const drawers = @import("../drawers/mod.zig");
+const events = @import("../events/mod.zig");
+const util = @import("../util/mod.zig");
+const math = @import("../math/mod.zig");
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+
+const Rect = math.Rect;
+
+const files = system.files;
+
+const allocator = util.allocator;
+const log = util.log;
+
+const Window = drawers.Window;
 
 pub const Telem = packed struct {
     pub const PATH = "/_priv/telem.bin";
@@ -38,10 +50,10 @@ pub const Telem = packed struct {
             instance.version.minor != options.SandEEEVersion.minor or
             instance.version.patch != options.SandEEEVersion.patch)
         {
-            const update_window: win.Window = .atlas("win", .{
+            const update_window: Window = .atlas("win", .{
                 .source = .{ .w = 1, .h = 1 },
                 .pos = .{ .w = 600, .h = 350 },
-                .contents = wins.update.init() catch return,
+                .contents = windows.update.init() catch return,
                 .active = true,
             });
 

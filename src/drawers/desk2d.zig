@@ -1,39 +1,53 @@
-const batch = @import("../util/spritebatch.zig");
-const vecs = @import("../math/vecs.zig");
-const cols = @import("../math/colors.zig");
-const rect = @import("../math/rects.zig");
-const va = @import("../util/vertArray.zig");
-const gfx = @import("../util/graphics.zig");
-const files = @import("../system/files.zig");
-const shd = @import("../util/shader.zig");
-const fnt = @import("../util/font.zig");
-const win = @import("window2d.zig");
-const wins = @import("../windows/all.zig");
-const events = @import("../util/events.zig");
-const shell = @import("../system/shell.zig");
-const conf = @import("../system/config.zig");
 const std = @import("std");
-const allocator = @import("../util/allocator.zig");
-const window_events = @import("../events/window.zig");
-const popups = @import("popup2d.zig");
+const c = @import("../c.zig");
 
-const SPACING = vecs.Vector2{ .x = 128, .y = 100 };
+const drawers = @import("mod.zig");
+
+const windows = @import("../windows/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const util = @import("../util/mod.zig");
+const math = @import("../math/mod.zig");
+
+const Color = math.Color;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Rect = math.Rect;
+
+const SpriteBatch = util.SpriteBatch;
+const VertArray = util.VertArray;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const graphics = util.graphics;
+
+const Shell = system.Shell;
+const files = system.files;
+const config = system.config;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+
+const Window = drawers.Window;
+const Popup = drawers.Popup;
+
+const SPACING = Vec2{ .x = 128, .y = 100 };
 
 pub const DeskData = struct {
     const Self = @This();
 
     sel: ?usize = null,
-    shell: shell.Shell,
+    shell: Shell,
 
-    inline fn addQuad(arr: *va.VertArray, sprite: u8, pos: rect.Rectangle, src: rect.Rectangle) !void {
-        const source = rect.Rectangle{
+    inline fn addQuad(arr: *VertArray, sprite: u8, pos: Rect, src: Rect) !void {
+        const source = Rect{
             .x = src.x / 8 + 1.0 / 8.0 * @as(f32, @floatFromInt(sprite)),
             .y = src.y / 8,
             .w = src.w / 8,
             .h = src.h / 8,
         };
 
-        const color = cols.Color{ .r = 1, .g = 1, .b = 1 };
+        const color = Color{ .r = 1, .g = 1, .b = 1 };
 
         try arr.append(.{ .x = pos.x, .y = pos.y + pos.h }, .{ .x = source.x, .y = source.y + source.h }, color);
         try arr.append(.{ .x = pos.x + pos.w, .y = pos.y + pos.h }, .{ .x = source.x + source.w, .y = source.y + source.h }, color);
@@ -43,30 +57,30 @@ pub const DeskData = struct {
         try arr.append(.{ .x = pos.x + pos.w, .y = pos.y }, .{ .x = source.x + source.w, .y = source.y }, color);
     }
 
-    pub fn updatePos(pos: *vecs.Vector2) void {
+    pub fn updatePos(pos: *Vec2) void {
         pos.y += 1;
 
-        if (pos.y * SPACING.y > gfx.Context.instance.size.y) {
+        if (pos.y * SPACING.y > graphics.Context.instance.size.y) {
             pos.y = 0;
             pos.x += 1;
         }
     }
 
     pub fn checkIconSkip(name: []const u8) bool {
-        if (conf.SettingManager.instance.getBool("explorer_hidden")) return true;
+        if (config.SettingManager.instance.getBool("explorer_hidden")) return true;
 
         const idx = std.mem.lastIndexOf(u8, name, "/") orelse 0;
 
         return name[idx + 1] != '_';
     }
 
-    pub fn click(self: *DeskData, shader: *shd.Shader, pos: ?vecs.Vector2) !void {
+    pub fn click(self: *DeskData, shader: *Shader, pos: ?Vec2) !void {
         if (pos == null) {
             self.sel = null;
             return;
         }
 
-        var position = vecs.Vector2{};
+        var position = Vec2{};
         var idx: usize = 0;
 
         const home = try files.FolderLink.resolve(.home);
@@ -75,15 +89,15 @@ pub const DeskData = struct {
         while (sub_folder) |folder| : (sub_folder = folder.next_sibling) {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
-            if ((rect.Rectangle{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
+            if ((Rect{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
-                    const window: win.Window = .atlas("win", .{
-                        .source = rect.Rectangle{ .w = 1, .h = 1 },
-                        .contents = try wins.explorer.init(shader),
+                    const window: Window = .atlas("win", .{
+                        .source = Rect{ .w = 1, .h = 1 },
+                        .contents = try windows.explorer.init(shader),
                         .active = true,
                     });
 
-                    const explorer_self: *wins.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
+                    const explorer_self: *windows.explorer.ExplorerData = @ptrCast(@alignCast(window.data.contents.ptr));
 
                     explorer_self.shell.root = .link(folder);
 
@@ -105,7 +119,7 @@ pub const DeskData = struct {
         while (sub_file) |file| : (sub_file = file.next_sibling) {
             if (!checkIconSkip(file.name)) continue;
 
-            if ((rect.Rectangle{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
+            if ((Rect{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
                 if (self.sel != null and self.sel == idx) {
                     const index = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
 
@@ -114,12 +128,12 @@ pub const DeskData = struct {
                     self.shell.runBg(cmd) catch |err| {
                         const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
-                        const adds = try allocator.alloc.create(popups.all.confirm.PopupConfirm);
+                        const adds = try allocator.alloc.create(Popup.Data.confirm.PopupConfirm);
                         adds.* = .{
                             .data = self,
                             .message = message,
                             .shader = shader,
-                            .buttons = popups.all.confirm.PopupConfirm.initButtonsFromStruct(errorData),
+                            .buttons = Popup.Data.confirm.PopupConfirm.initButtonsFromStruct(errorData),
                         };
 
                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
@@ -127,11 +141,11 @@ pub const DeskData = struct {
                             .popup = .atlas("win", .{
                                 .title = "File Picker",
                                 .source = .{ .w = 1, .h = 1 },
-                                .pos = rect.Rectangle.initCentered(.{
-                                    .w = gfx.Context.instance.size.x,
-                                    .h = gfx.Context.instance.size.y,
+                                .pos = Rect.initCentered(.{
+                                    .w = graphics.Context.instance.size.x,
+                                    .h = graphics.Context.instance.size.y,
                                 }, 350, 125),
-                                .contents = popups.PopupData.PopupContents.init(adds),
+                                .contents = Popup.Data.PopupContents.init(adds),
                             }),
                         });
                     };
@@ -153,10 +167,10 @@ pub const DeskData = struct {
         pub fn ok(_: *align(@alignOf(Self)) const anyopaque) anyerror!void {}
     };
 
-    pub fn getVerts(self: *const DeskData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init(0);
+    pub fn getVerts(self: *const DeskData, _: Vec3) !VertArray {
+        var result = try VertArray.init(0);
 
-        var position = vecs.Vector2{};
+        var position = Vec2{};
         var idx: usize = 0;
 
         const home = try files.FolderLink.resolve(.home);
@@ -214,7 +228,7 @@ pub const DeskData = struct {
         return result;
     }
 
-    pub fn addIconText(position: vecs.Vector2, name: []const u8, font_shader: *shd.Shader, font: *fnt.Font, textColor: cols.Color) !void {
+    pub fn addIconText(position: Vec2, name: []const u8, font_shader: *Shader, font: *Font, textColor: Color) !void {
         const idx = std.mem.lastIndexOf(u8, name[0..], "/") orelse 0;
 
         const size = font.sizeText(.{
@@ -237,10 +251,10 @@ pub const DeskData = struct {
         });
     }
 
-    pub fn addText(_: *DeskData, font_shader: *shd.Shader, font: *fnt.Font) !void {
-        const text_color = gfx.Context.instance.color.contrast();
+    pub fn addText(_: *DeskData, font_shader: *Shader, font: *Font) !void {
+        const text_color = graphics.Context.instance.color.contrast();
 
-        var position = vecs.Vector2{};
+        var position = Vec2{};
 
         const home = try files.FolderLink.resolve(.home);
 
@@ -274,4 +288,4 @@ pub const DeskData = struct {
     }
 };
 
-pub const Desk = batch.Drawer(DeskData);
+pub const drawer = SpriteBatch.Drawer(DeskData);

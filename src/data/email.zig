@@ -3,7 +3,7 @@ const EmailLogin = struct {
     password: []const u8,
 };
 
-pub const EMAIL_LOGINS = [_]EmailLogin{
+pub const LOGINS = [_]EmailLogin{
     .{
         .user = "rob_r@eee.org",
         .password = "12345",

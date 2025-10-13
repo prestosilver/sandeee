@@ -1,17 +1,24 @@
-const vecs = @import("../math/vecs.zig");
-const cols = @import("../math/colors.zig");
-const rect = @import("../math/rects.zig");
-const va = @import("../util/vertArray.zig");
+const std = @import("std");
+const c = @import("../c.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const util = @import("../util/mod.zig");
+const math = @import("../math/mod.zig");
+
+const Color = math.Color;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Rect = math.Rect;
+
+const SpriteBatch = util.SpriteBatch;
+const VertArray = util.VertArray;
 
 pub const SpriteData = struct {
-    source: rect.Rectangle,
-    size: vecs.Vector2,
-    color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
+    source: Rect,
+    size: Vec2,
+    color: Color = .{ .r = 1, .g = 1, .b = 1 },
 
-    pub fn getVerts(self: *const SpriteData, pos: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init(6);
+    pub fn getVerts(self: *const SpriteData, pos: Vec3) !VertArray {
+        var result = try VertArray.init(6);
 
         try result.appendQuad(.{
             .x = pos.x,
@@ -24,4 +31,4 @@ pub const SpriteData = struct {
     }
 };
 
-pub const Sprite = SpriteBatch.Drawer(SpriteData);
+pub const drawer = SpriteBatch.Drawer(SpriteData);

@@ -1,9 +1,16 @@
 const std = @import("std");
-const files = @import("files.zig");
-const sprite = @import("../drawers/sprite2d.zig");
-const eln = @import("../util/eln.zig");
-const allocator = @import("../util/allocator.zig");
-const log = @import("../util/log.zig").log;
+
+const system = @import("mod.zig");
+const drawers = @import("../drawers/mod.zig");
+const util = @import("../util/mod.zig");
+
+const Sprite = drawers.Sprite;
+
+const Eln = util.Eln;
+const allocator = util.allocator;
+const log = util.log;
+
+const files = system.files;
 
 const OpenError = error{
     CommandNotFound,

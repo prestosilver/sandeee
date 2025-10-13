@@ -1,12 +1,21 @@
-const vecs = @import("../math/vecs.zig");
-const cols = @import("../math/colors.zig");
-const rect = @import("../math/rects.zig");
-const fnt = @import("../util/font.zig");
-const shd = @import("../util/shader.zig");
-const va = @import("../util/vertArray.zig");
+const std = @import("std");
+const c = @import("../c.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
-const TextureManager = @import("../util/texmanager.zig");
+const drawers = @import("mod.zig");
+
+const util = @import("../util/mod.zig");
+const math = @import("../math/mod.zig");
+
+const Color = math.Color;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Rect = math.Rect;
+
+const TextureManager = util.TextureManager;
+const SpriteBatch = util.SpriteBatch;
+const VertArray = util.VertArray;
+const Shader = util.Shader;
+const Font = util.font;
 
 pub const WallData = struct {
     pub const Mode = enum {
@@ -18,11 +27,11 @@ pub const WallData = struct {
         Zoom,
     };
 
-    dims: *vecs.Vector2,
+    dims: *Vec2,
     mode: Mode = .Center,
 
-    pub fn getVerts(self: *const WallData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init(6);
+    pub fn getVerts(self: *const WallData, _: Vec3) !VertArray {
+        var result = try VertArray.init(6);
 
         const par: *const SpriteBatch.Drawer(WallData) = @fieldParentPtr("data", self);
         const size = (TextureManager.instance.textures.get(par.texture.atlas) orelse return result).size;
@@ -78,4 +87,4 @@ pub const WallData = struct {
     }
 };
 
-pub const Wallpaper = SpriteBatch.Drawer(WallData);
+pub const drawer = SpriteBatch.Drawer(WallData);

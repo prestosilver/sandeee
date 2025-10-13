@@ -1,23 +1,30 @@
 const std = @import("std");
-
-const allocator = @import("../util/allocator.zig");
-
-const sb = @import("../util/spritebatch.zig");
-const vecs = @import("../math/vecs.zig");
-const cols = @import("../math/colors.zig");
-const rect = @import("../math/rects.zig");
-const gfx = @import("../util/graphics.zig");
-const va = @import("../util/vertArray.zig");
 const c = @import("../c.zig");
 
+const drawers = @import("mod.zig");
+
+const util = @import("../util/mod.zig");
+const math = @import("../math/mod.zig");
+
+const Color = math.Color;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Rect = math.Rect;
+
+const SpriteBatch = util.SpriteBatch;
+const allocator = util.allocator;
+const graphics = util.Graphics;
+
+const VertArray = util.VertArray;
+
 pub const GraphData = struct {
-    size: vecs.Vector2,
-    color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
+    size: Vec2,
+    color: Color = .{ .r = 1, .g = 1, .b = 1 },
     data: []f32,
     max: f32 = 1.0,
 
-    pub fn getVerts(self: *const GraphData, pos: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init(self.data.len * 6);
+    pub fn getVerts(self: *const GraphData, pos: Vec3) !VertArray {
+        var result = try VertArray.init(self.data.len * 6);
 
         for (self.data[1..], self.data[0 .. self.data.len - 1], 0..) |point, prev, idx| {
             const cx = (@as(f32, @floatFromInt(idx)) + 1) * (self.size.x / @as(f32, @floatFromInt(self.data.len - 1)));
@@ -26,17 +33,17 @@ pub const GraphData = struct {
             const py = self.size.y - std.math.clamp(prev / self.max, 0, 1) * self.size.y;
             const stopy = self.size.y;
 
-            try result.append(vecs.Vector3.add(pos, .{ .x = px, .y = py }), .{ .y = 1 }, self.color);
-            try result.append(vecs.Vector3.add(pos, .{ .x = cx, .y = cy }), .{ .x = 1, .y = 1 }, self.color);
-            try result.append(vecs.Vector3.add(pos, .{ .x = cx, .y = stopy }), .{ .x = 1 }, self.color);
+            try result.append(Vec3.add(pos, .{ .x = px, .y = py }), .{ .y = 1 }, self.color);
+            try result.append(Vec3.add(pos, .{ .x = cx, .y = cy }), .{ .x = 1, .y = 1 }, self.color);
+            try result.append(Vec3.add(pos, .{ .x = cx, .y = stopy }), .{ .x = 1 }, self.color);
 
-            try result.append(vecs.Vector3.add(pos, .{ .x = px, .y = py }), .{ .y = 1 }, self.color);
-            try result.append(vecs.Vector3.add(pos, .{ .x = px, .y = stopy }), .{}, self.color);
-            try result.append(vecs.Vector3.add(pos, .{ .x = cx, .y = stopy }), .{ .x = 1 }, self.color);
+            try result.append(Vec3.add(pos, .{ .x = px, .y = py }), .{ .y = 1 }, self.color);
+            try result.append(Vec3.add(pos, .{ .x = px, .y = stopy }), .{}, self.color);
+            try result.append(Vec3.add(pos, .{ .x = cx, .y = stopy }), .{ .x = 1 }, self.color);
         }
 
         return result;
     }
 };
 
-pub const Graph = sb.Drawer(GraphData);
+pub const drawer = SpriteBatch.Drawer(GraphData);

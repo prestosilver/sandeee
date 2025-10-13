@@ -1,11 +1,19 @@
 const std = @import("std");
-const rect = @import("../math/rects.zig");
-const ev = @import("../util/events.zig");
-const win = @import("../drawers/window2d.zig");
-const popups = @import("../drawers/popup2d.zig");
-const spr = @import("../drawers/sprite2d.zig");
 
-pub const EventCreateWindow = struct { window: win.Window, center: bool = false };
-pub const EventCreatePopup = struct { popup: popups.Popup, global: bool = false };
+const events = @import("mod.zig");
+
+const drawers = @import("../drawers/mod.zig");
+const math = @import("../math/mod.zig");
+
+const Window = drawers.Window;
+const Sprite = drawers.Sprite;
+const Popup = drawers.Popup;
+
+const Rect = math.Rect;
+
+const EventManager = events.EventManager;
+
+pub const EventCreateWindow = struct { window: Window, center: bool = false };
+pub const EventCreatePopup = struct { popup: Popup, global: bool = false };
 pub const EventClosePopup = struct { popup_conts: *const anyopaque };
-pub const EventNotification = struct { title: []const u8, text: []const u8 = "", icon: ?spr.Sprite = null };
+pub const EventNotification = struct { title: []const u8, text: []const u8 = "", icon: ?Sprite = null };

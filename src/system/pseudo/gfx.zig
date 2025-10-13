@@ -1,24 +1,41 @@
 const std = @import("std");
-const allocator = @import("../../util/allocator.zig");
-const files = @import("../files.zig");
-const vmwin = @import("../../windows/vm.zig");
-const winev = @import("../../events/window.zig");
-const events = @import("../../util/events.zig");
-const win = @import("../../drawers/window2d.zig");
-const rect = @import("../../math/rects.zig");
-const vecs = @import("../../math/vecs.zig");
-const cols = @import("../../math/colors.zig");
-const vm = @import("../vm.zig");
-const graphics = @import("../../util/graphics.zig");
-const tex = @import("../../util/texture.zig");
+const c = @import("../../c.zig");
 
-const SpriteBatch = @import("../../util/spritebatch.zig");
-const TextureManager = @import("../../util/texmanager.zig");
+const system = @import("../mod.zig");
+
+const drawers = @import("../../drawers/mod.zig");
+const windows = @import("../../windows/mod.zig");
+const events = @import("../../events/mod.zig");
+const states = @import("../../states/mod.zig");
+const math = @import("../../math/mod.zig");
+const util = @import("../../util/mod.zig");
+
+const Vm = system.Vm;
+const files = system.files;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Color = math.Color;
+
+const VmWindow = windows.Vm;
+
+const TextureManager = util.TextureManager;
+const SpriteBatch = util.SpriteBatch;
+const Texture = util.Texture;
+const allocator = util.allocator;
+const graphics = util.graphics;
+const log = util.log;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+
+const Window = drawers.Window;
 
 pub var texture_idx: u8 = 0;
 
 pub const new = struct {
-    pub fn read(_: ?*vm.VM) files.FileError![]const u8 {
+    pub fn read(_: ?*Vm) files.FileError![]const u8 {
         const result = try allocator.alloc.alloc(u8, 1);
 
         result[0] = texture_idx;
@@ -27,7 +44,7 @@ pub const new = struct {
             graphics.Context.makeCurrent();
             defer graphics.Context.makeNotCurrent();
 
-            try TextureManager.instance.put(result, tex.Texture.init());
+            try TextureManager.instance.put(result, Texture.init());
         }
 
         texture_idx = texture_idx +% 1;
@@ -37,7 +54,7 @@ pub const new = struct {
 };
 
 pub const pixel = struct {
-    pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
+    pub fn write(data: []const u8, _: ?*Vm) files.FileError!void {
         const idx = data[0];
         var tmp = data[1..];
 
@@ -58,7 +75,7 @@ pub const pixel = struct {
 };
 
 pub const destroy = struct {
-    pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
+    pub fn write(data: []const u8, _: ?*Vm) files.FileError!void {
         graphics.Context.makeCurrent();
         defer graphics.Context.makeNotCurrent();
 
@@ -68,7 +85,7 @@ pub const destroy = struct {
 };
 
 pub const upload = struct {
-    pub fn write(data: []const u8, _: ?*vm.VM) files.FileError!void {
+    pub fn write(data: []const u8, _: ?*Vm) files.FileError!void {
         if (data.len == 1) {
             const idx = data[0];
 
@@ -92,7 +109,7 @@ pub const upload = struct {
 };
 
 pub const save = struct {
-    pub fn write(data: []const u8, vm_instance: ?*vm.VM) files.FileError!void {
+    pub fn write(data: []const u8, vm_instance: ?*Vm) files.FileError!void {
         const idx = data[0];
         const image = data[1..];
 

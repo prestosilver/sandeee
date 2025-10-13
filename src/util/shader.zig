@@ -1,84 +1,88 @@
 const std = @import("std");
-const mat4 = @import("../math/mat4.zig");
 const c = @import("../c.zig");
 
-const log = @import("../util/log.zig").log;
+const util = @import("mod.zig");
+const math = @import("../math/mod.zig");
+
+const Mat4 = math.Mat4;
+
+const log = util.log;
 
 pub const ShaderFile = struct {
     contents: [*c]const u8,
     kind: c.GLuint,
 };
 
-pub const Shader = struct {
-    id: c.GLuint = 0,
+const Shader = @This();
 
-    pub fn init(comptime total: u32, files: [total]ShaderFile) !Shader {
-        const prog = c.glCreateProgram();
-        var success: c.GLint = 0;
+id: c.GLuint = 0,
 
-        for (files) |file| {
-            const code = [1][*c]const u8{file.contents};
+pub fn init(comptime total: u32, files: [total]ShaderFile) !Shader {
+    const prog = c.glCreateProgram();
+    var success: c.GLint = 0;
 
-            const shader = c.glCreateShader(file.kind);
-            defer c.glDeleteShader(shader);
-            c.glShaderSource(shader, 1, &code, null);
-            c.glCompileShader(shader);
+    for (files) |file| {
+        const code = [1][*c]const u8{file.contents};
 
-            c.glGetShaderiv(shader, c.GL_COMPILE_STATUS, &success);
+        const shader = c.glCreateShader(file.kind);
+        defer c.glDeleteShader(shader);
+        c.glShaderSource(shader, 1, &code, null);
+        c.glCompileShader(shader);
 
-            if (success == 0) {
-                var info_log = [_]u8{0} ** 512;
-
-                c.glGetShaderInfoLog(shader, 512, null, &info_log);
-                log.err("{s}", .{info_log});
-                return error.CompileError;
-            }
-
-            c.glAttachShader(prog, shader);
-        }
-
-        c.glLinkProgram(prog);
-
-        c.glGetProgramiv(prog, c.GL_LINK_STATUS, &success);
+        c.glGetShaderiv(shader, c.GL_COMPILE_STATUS, &success);
 
         if (success == 0) {
             var info_log = [_]u8{0} ** 512;
 
-            c.glGetProgramInfoLog(prog, 512, null, &info_log);
+            c.glGetShaderInfoLog(shader, 512, null, &info_log);
             log.err("{s}", .{info_log});
             return error.CompileError;
         }
 
-        return Shader{
-            .id = prog,
-        };
+        c.glAttachShader(prog, shader);
     }
 
-    pub fn deinit(self: Shader) void {
-        c.glDeleteProgram(self.id);
+    c.glLinkProgram(prog);
+
+    c.glGetProgramiv(prog, c.GL_LINK_STATUS, &success);
+
+    if (success == 0) {
+        var info_log = [_]u8{0} ** 512;
+
+        c.glGetProgramInfoLog(prog, 512, null, &info_log);
+        log.err("{s}", .{info_log});
+        return error.CompileError;
     }
 
-    pub fn setMat4(self: Shader, name: [*c]const u8, value: mat4.Mat4) void {
-        c.glUseProgram(self.id);
+    return Shader{
+        .id = prog,
+    };
+}
 
-        const loc = c.glGetUniformLocation(self.id, name);
+pub fn deinit(self: Shader) void {
+    c.glDeleteProgram(self.id);
+}
 
-        c.glUniformMatrix4fv(loc, 1, 0, &value.data);
-    }
+pub fn setMat4(self: Shader, name: [*c]const u8, value: Mat4) void {
+    c.glUseProgram(self.id);
 
-    pub fn setInt(self: Shader, name: [*c]const u8, value: c_int) void {
-        c.glUseProgram(self.id);
+    const loc = c.glGetUniformLocation(self.id, name);
 
-        const loc = c.glGetUniformLocation(self.id, name);
+    c.glUniformMatrix4fv(loc, 1, 0, &value.data);
+}
 
-        c.glUniform1i(loc, value);
-    }
+pub fn setInt(self: Shader, name: [*c]const u8, value: c_int) void {
+    c.glUseProgram(self.id);
 
-    pub fn setFloat(self: Shader, name: [*c]const u8, value: f32) void {
-        c.glUseProgram(self.id);
+    const loc = c.glGetUniformLocation(self.id, name);
 
-        const loc = c.glGetUniformLocation(self.id, name);
+    c.glUniform1i(loc, value);
+}
 
-        c.glUniform1f(loc, value);
-    }
-};
+pub fn setFloat(self: Shader, name: [*c]const u8, value: f32) void {
+    c.glUseProgram(self.id);
+
+    const loc = c.glGetUniformLocation(self.id, name);
+
+    c.glUniform1f(loc, value);
+}

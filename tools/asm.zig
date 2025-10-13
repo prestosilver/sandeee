@@ -1,5 +1,5 @@
 const std = @import("std");
-const vm = @import("../src/system/vm.zig");
+const Vm = @import("../src/system/vm.zig");
 
 pub fn compile(
     b: *std.Build,
@@ -68,7 +68,7 @@ pub fn compile(
         if (std.mem.indexOf(u8, l, " ") != null) {
             op = l[0..std.mem.indexOf(u8, l, " ").?];
         }
-        var code: vm.VM.Operation.Code = .Last;
+        var code: Vm.Operation.Code = .Last;
 
         if (std.mem.eql(u8, op, "nop")) code = .Nop;
         if (std.mem.eql(u8, op, "sys")) code = .Sys;
@@ -257,7 +257,7 @@ pub fn compileLib(
         if (std.mem.indexOf(u8, l, " ") != null) {
             op = l[0..std.mem.indexOf(u8, l, " ").?];
         }
-        var code: vm.VM.Operation.Code = .Last;
+        var code: Vm.Operation.Code = .Last;
 
         if (std.mem.eql(u8, op, "nop")) code = .Nop;
         if (std.mem.eql(u8, op, "sys")) code = .Sys;

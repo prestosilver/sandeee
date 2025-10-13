@@ -1,56 +1,81 @@
 const std = @import("std");
-const builtin = @import("builtin");
 const options = @import("options");
+const c = @import("../c.zig");
 
-const allocator = @import("../util/allocator.zig");
+const Windows = @import("mod.zig");
 
-const win = @import("../drawers/window2d.zig");
-const sprite = @import("../drawers/sprite2d.zig");
-const shd = @import("../util/shader.zig");
-const rect = @import("../math/rects.zig");
-const vecs = @import("../math/vecs.zig");
-const fnt = @import("../util/font.zig");
-const col = @import("../math/colors.zig");
-const vm_manager = @import("../system/vmmanager.zig");
-const graph = @import("../drawers/graph2d.zig");
+const drawers = @import("../drawers/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const Window = drawers.Window;
+const Sprite = drawers.Sprite;
+const Graph = drawers.Graph;
+const Popup = drawers.Popup;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const TextureManager = util.TextureManager;
+const SpriteBatch = util.SpriteBatch;
+const HttpClient = util.HttpClient;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const Font = util.Font;
+const Url = util.Url;
+const allocator = util.allocator;
+const graphics = util.graphics;
+const log = util.log;
+
+const VmManager = system.VmManager;
+const Shell = system.Shell;
+const config = system.config;
+const files = system.files;
+
+const strings = data.strings;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
 
 pub const TasksData = struct {
     const Self = @This();
 
-    panel: [2]sprite.Sprite,
-    shader: *shd.Shader,
-    stats: []vm_manager.VMManager.VMStats,
-    render_graph: graph.Graph,
-    vm_graph: graph.Graph,
+    panel: [2]Sprite,
+    shader: *Shader,
+    stats: []VmManager.VMStats,
+    render_graph: Graph,
+    vm_graph: Graph,
 
     scroll_value: f32 = 0,
     scroll_maxy: f32 = 0,
 
-    scroll_sprites: [4]sprite.Sprite,
+    scroll_sprites: [4]Sprite,
 
-    pub fn drawScroll(self: *Self, bnds: rect.Rectangle) !void {
+    pub fn drawScroll(self: *Self, bnds: Rect) !void {
         if (self.scroll_maxy <= 0) return;
 
         const scroll_pc = self.scroll_value / self.scroll_maxy;
 
         self.scroll_sprites[1].data.size.y = bnds.h - (20 * 2 - 2) + 2;
 
-        try SpriteBatch.global.draw(sprite.Sprite, &self.scroll_sprites[0], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y });
-        try SpriteBatch.global.draw(sprite.Sprite, &self.scroll_sprites[1], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + 20 });
-        try SpriteBatch.global.draw(sprite.Sprite, &self.scroll_sprites[2], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + bnds.h - 20 + 2 });
-        try SpriteBatch.global.draw(sprite.Sprite, &self.scroll_sprites[3], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = (bnds.h - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + 20 - 2 });
+        try SpriteBatch.global.draw(Sprite, &self.scroll_sprites[0], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y });
+        try SpriteBatch.global.draw(Sprite, &self.scroll_sprites[1], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + 20 });
+        try SpriteBatch.global.draw(Sprite, &self.scroll_sprites[2], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = bnds.y + bnds.h - 20 + 2 });
+        try SpriteBatch.global.draw(Sprite, &self.scroll_sprites[3], self.shader, .{ .x = bnds.x + bnds.w - 18, .y = (bnds.h - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + 20 - 2 });
     }
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, _: *Window.Data.WindowContents.WindowProps) !void {
         self.panel[0].data.size.x = 350;
         self.panel[0].data.size.y = 282;
         self.panel[1].data.size.x = 346;
         self.panel[1].data.size.y = 278;
 
-        try SpriteBatch.global.draw(sprite.Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + bnds.h - 282 - 25 });
-        try SpriteBatch.global.draw(sprite.Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + bnds.h - 278 - 27 });
+        try SpriteBatch.global.draw(Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + bnds.h - 282 - 25 });
+        try SpriteBatch.global.draw(Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + bnds.h - 278 - 27 });
 
         self.scroll_maxy = -278;
 
@@ -65,7 +90,7 @@ pub const TasksData = struct {
 
         for (self.stats, 0..) |s, idx| {
             const y = bnds.h - 284 - 21 + @as(f32, @floatFromInt(idx)) * font.size - self.scroll_value;
-            const text = try std.fmt.allocPrint(allocator.alloc, "{X:2}|{s:<9}|" ++ fnt.META ++ " {:<4} |" ++ fnt.FRAME ++ " {:<4}", .{ s.id, s.name, s.meta_usage, s.last_exec });
+            const text = try std.fmt.allocPrint(allocator.alloc, "{X:2}|{s:<9}|" ++ strings.META ++ " {:<4} |" ++ strings.FRAME ++ " {:<4}", .{ s.id, s.name, s.meta_usage, s.last_exec });
             defer allocator.alloc.free(text);
 
             try font.draw(.{
@@ -95,18 +120,18 @@ pub const TasksData = struct {
         self.panel[0].data.size.y = 87;
         self.panel[1].data.size.y = 83;
 
-        try SpriteBatch.global.draw(sprite.Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + 25 });
-        try SpriteBatch.global.draw(sprite.Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
+        try SpriteBatch.global.draw(Sprite, &self.panel[0], self.shader, .{ .x = bnds.x + 21, .y = bnds.y + 25 });
+        try SpriteBatch.global.draw(Sprite, &self.panel[1], self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         self.render_graph.data.size.x = 346;
         self.render_graph.data.size.y = 83;
 
-        try SpriteBatch.global.draw(graph.Graph, &self.render_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
+        try SpriteBatch.global.draw(Graph, &self.render_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         self.vm_graph.data.size.x = 346;
         self.vm_graph.data.size.y = 83;
 
-        try SpriteBatch.global.draw(graph.Graph, &self.vm_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
+        try SpriteBatch.global.draw(Graph, &self.vm_graph, self.shader, .{ .x = bnds.x + 23, .y = bnds.y + 27 });
 
         // draw labels
         try font.draw(.{
@@ -133,7 +158,7 @@ pub const TasksData = struct {
     }
 
     pub fn scroll(self: *Self, _: f32, y: f32) void {
-        self.scroll_value -= y * win.SCROLL_MUL;
+        self.scroll_value -= y * Window.Data.SCROLL_MUL;
 
         if (self.scroll_value > self.scroll_maxy)
             self.scroll_value = self.scroll_maxy;
@@ -148,14 +173,14 @@ pub const TasksData = struct {
 
         allocator.alloc.free(self.stats);
 
-        self.stats = try vm_manager.VMManager.instance.getStats();
+        self.stats = try VmManager.instance.getStats();
 
         std.mem.copyForwards(f32, self.vm_graph.data.data[0 .. self.vm_graph.data.data.len - 1], self.vm_graph.data.data[1..]);
         std.mem.copyForwards(f32, self.render_graph.data.data[0 .. self.render_graph.data.data.len - 1], self.render_graph.data.data[1..]);
 
-        var acc: f32 = @floatCast(vm_manager.VMManager.last_vm_time / vm_manager.VMManager.last_frame_time);
+        var acc: f32 = @floatCast(VmManager.last_vm_time / VmManager.last_frame_time);
         self.vm_graph.data.data[self.vm_graph.data.data.len - 1] = acc;
-        acc += @floatCast(vm_manager.VMManager.last_render_time / vm_manager.VMManager.last_frame_time);
+        acc += @floatCast(VmManager.last_render_time / VmManager.last_frame_time);
         self.render_graph.data.data[self.render_graph.data.data.len - 1] = acc;
     }
 
@@ -173,7 +198,7 @@ pub const TasksData = struct {
     }
 };
 
-pub fn init(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.alloc.create(TasksData);
     self.* = .{
         .panel = .{
@@ -205,7 +230,7 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
             }),
         },
         .shader = shader,
-        .stats = try vm_manager.VMManager.instance.getStats(),
+        .stats = try VmManager.instance.getStats(),
         .render_graph = .atlas("white", .{
             .size = .{ .x = 100, .y = 100 },
             .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
@@ -218,7 +243,7 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
         }),
     };
 
-    var result = try win.WindowContents.init(self, "Tasks", "SandEEE Tasks", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    var result: Window.Data.WindowContents = try .init(self, "Tasks", "SandEEE Tasks", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
     result.props.size.min = .{ .x = 400, .y = 500 };
     result.props.size.max = .{ .x = 400, .y = 500 };
 

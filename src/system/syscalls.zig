@@ -1,15 +1,20 @@
 const std = @import("std");
-const vm = @import("vm.zig");
-const files = @import("files.zig");
-const streams = @import("stream.zig");
-const vm_manager = @import("vmmanager.zig");
-const log = @import("../util/log.zig").log;
 const options = @import("options");
 const steam = @import("steam");
 
-const VmError = vm.VM.VMError;
-const StackEntry = vm.VM.StackEntry;
-const Operation = vm.VM.Operation;
+const system = @import("mod.zig");
+const util = @import("../util/mod.zig");
+
+const log = util.log;
+
+const VmManager = system.VmManager;
+const Stream = system.Stream;
+const Vm = system.Vm;
+const files = system.files;
+
+const VmError = Vm.VmError;
+const StackEntry = Vm.StackEntry;
+const Operation = Vm.Operation;
 
 const SyscallId = enum(u64) {
     Print = 0,
@@ -89,9 +94,9 @@ pub const SysCall = struct {
         },
     );
 
-    run_fn: *const fn (*vm.VM) VmError!void,
+    run_fn: *const fn (*Vm) VmError!void,
 
-    pub fn run(self: *vm.VM, index: u64) VmError!void {
+    pub fn run(self: *Vm, index: u64) VmError!void {
         if (index < @intFromEnum(SyscallId.Last)) {
             return SYS_CALLS.get(@enumFromInt(index)).run_fn(self);
         }
@@ -99,12 +104,12 @@ pub const SysCall = struct {
         return error.InvalidSys;
     }
 
-    fn lastErr(_: *vm.VM) VmError!void {
+    fn lastErr(_: *Vm) VmError!void {
         return error.InvalidSys;
     }
 };
 
-fn sysPrint(self: *vm.VM) VmError!void {
+fn sysPrint(self: *Vm) VmError!void {
     const a = try self.popStack();
 
     if (a.data().* == .string) {
@@ -117,10 +122,10 @@ fn sysPrint(self: *vm.VM) VmError!void {
     }
 }
 
-fn sysQuit(self: *vm.VM) VmError!void {
-    if (self.functions.contains(vm.EXIT_NAME)) {
+fn sysQuit(self: *Vm) VmError!void {
+    if (self.functions.contains(Vm.EXIT_NAME)) {
         if (self.inside_fn) |func| {
-            if (std.mem.eql(u8, func, vm.EXIT_NAME)) {
+            if (std.mem.eql(u8, func, Vm.EXIT_NAME)) {
                 self.stopped = true;
                 return;
             }
@@ -128,7 +133,7 @@ fn sysQuit(self: *vm.VM) VmError!void {
         self.return_stack[self.return_rsp].location = self.pc;
         self.return_stack[self.return_rsp].function = self.inside_fn;
         self.pc = 0;
-        self.inside_fn = vm.EXIT_NAME;
+        self.inside_fn = Vm.EXIT_NAME;
         self.return_rsp += 1;
 
         return;
@@ -137,7 +142,7 @@ fn sysQuit(self: *vm.VM) VmError!void {
     self.stopped = true;
 }
 
-fn sysCreate(self: *vm.VM) VmError!void {
+fn sysCreate(self: *Vm) VmError!void {
     const path = try self.popStack();
 
     if (path.data().* != .string) return error.StringMissing;
@@ -151,19 +156,19 @@ fn sysCreate(self: *vm.VM) VmError!void {
     }
 }
 
-fn sysOpen(self: *vm.VM) VmError!void {
+fn sysOpen(self: *Vm) VmError!void {
     const path = try self.popStack();
 
     if (path.data().* != .string) return error.StringMissing;
 
     const root = try self.root.resolve();
-    const stream = try streams.FileStream.open(root, path.data().string, self);
+    const stream = try Stream.open(root, path.data().string, self);
 
     try self.streams.append(stream);
     try self.pushStackI(self.streams.items.len - 1);
 }
 
-fn sysRead(self: *vm.VM) VmError!void {
+fn sysRead(self: *Vm) VmError!void {
     const len = try self.popStack();
     const idx = try self.popStack();
 
@@ -183,7 +188,7 @@ fn sysRead(self: *vm.VM) VmError!void {
     }
 }
 
-fn sysWrite(self: *vm.VM) VmError!void {
+fn sysWrite(self: *Vm) VmError!void {
     if (self.checker) return;
 
     const str = try self.popStack();
@@ -202,7 +207,7 @@ fn sysWrite(self: *vm.VM) VmError!void {
     }
 }
 
-fn sysFlush(self: *vm.VM) VmError!void {
+fn sysFlush(self: *Vm) VmError!void {
     if (self.checker) return;
 
     const idx = try self.popStack();
@@ -218,7 +223,7 @@ fn sysFlush(self: *vm.VM) VmError!void {
     }
 }
 
-fn sysClose(self: *vm.VM) VmError!void {
+fn sysClose(self: *Vm) VmError!void {
     const idx = try self.popStack();
 
     if (idx.data().* != .value) return error.ValueMissing;
@@ -234,7 +239,7 @@ fn sysClose(self: *vm.VM) VmError!void {
     }
 }
 
-fn sysArg(self: *vm.VM) VmError!void {
+fn sysArg(self: *Vm) VmError!void {
     const idx = try self.popStack();
 
     if (idx.data().* != .value) return error.ValueMissing;
@@ -247,11 +252,11 @@ fn sysArg(self: *vm.VM) VmError!void {
     try self.pushStackS(self.args[@as(usize, @intCast(idx.data().value))]);
 }
 
-fn sysTime(self: *vm.VM) VmError!void {
+fn sysTime(self: *Vm) VmError!void {
     try self.pushStackI(@as(u64, @intCast(std.time.milliTimestamp())));
 }
 
-fn sysCheckFunc(self: *vm.VM) VmError!void {
+fn sysCheckFunc(self: *Vm) VmError!void {
     const name = try self.popStack();
 
     if (name.data().* != .string) return error.StringMissing;
@@ -261,7 +266,7 @@ fn sysCheckFunc(self: *vm.VM) VmError!void {
     try self.pushStackI(val);
 }
 
-fn sysGetFunc(self: *vm.VM) VmError!void {
+fn sysGetFunc(self: *Vm) VmError!void {
     const name = try self.popStack();
 
     if (name.data().* != .string) return error.StringMissing;
@@ -273,7 +278,7 @@ fn sysGetFunc(self: *vm.VM) VmError!void {
     try self.pushStackS(val);
 }
 
-fn sysRegFunc(self: *vm.VM) VmError!void {
+fn sysRegFunc(self: *Vm) VmError!void {
     const name = try self.popStack();
     const func = try self.popStack();
 
@@ -300,7 +305,7 @@ fn sysRegFunc(self: *vm.VM) VmError!void {
     });
 }
 
-fn sysClearFunc(self: *vm.VM) VmError!void {
+fn sysClearFunc(self: *Vm) VmError!void {
     const name = try self.popStack();
 
     if (name.data().* != .string) return error.StringMissing;
@@ -315,7 +320,7 @@ fn sysClearFunc(self: *vm.VM) VmError!void {
     return error.FunctionMissing;
 }
 
-fn sysResizeHeap(self: *vm.VM) VmError!void {
+fn sysResizeHeap(self: *Vm) VmError!void {
     const size = try self.popStack();
 
     if (size.data().* != .value) return error.ValueMissing;
@@ -330,7 +335,7 @@ fn sysResizeHeap(self: *vm.VM) VmError!void {
     }
 }
 
-fn sysReadHeap(self: *vm.VM) VmError!void {
+fn sysReadHeap(self: *Vm) VmError!void {
     const item = try self.popStack();
 
     if (item.data().* != .value) return error.ValueMissing;
@@ -348,7 +353,7 @@ fn sysReadHeap(self: *vm.VM) VmError!void {
     }
 }
 
-fn sysWriteHeap(self: *vm.VM) VmError!void {
+fn sysWriteHeap(self: *Vm) VmError!void {
     const data = try self.popStack();
     const item = try self.popStack();
 
@@ -378,11 +383,11 @@ fn sysWriteHeap(self: *vm.VM) VmError!void {
     try self.pushStack(data);
 }
 
-fn sysYield(self: *vm.VM) VmError!void {
+fn sysYield(self: *Vm) VmError!void {
     self.yield = true;
 }
 
-fn sysError(self: *vm.VM) VmError!void {
+fn sysError(self: *Vm) VmError!void {
     const msg = try self.popStack();
 
     if (msg.data().* != .string) return error.StringMissing;
@@ -398,7 +403,7 @@ fn sysError(self: *vm.VM) VmError!void {
     self.stopped = true;
 }
 
-fn sysSize(self: *vm.VM) VmError!void {
+fn sysSize(self: *Vm) VmError!void {
     const path = try self.popStack();
 
     if (path.data().* != .string) return error.StringMissing;
@@ -420,7 +425,7 @@ fn sysSize(self: *vm.VM) VmError!void {
     try self.pushStackI(try file.size());
 }
 
-fn sysRSP(self: *vm.VM) VmError!void {
+fn sysRSP(self: *Vm) VmError!void {
     const num = try self.popStack();
 
     if (num.data().* != .value) return error.ValueMissing;
@@ -430,7 +435,7 @@ fn sysRSP(self: *vm.VM) VmError!void {
     self.rsp = num.data().value;
 }
 
-fn sysSpawn(self: *vm.VM) VmError!void {
+fn sysSpawn(self: *Vm) VmError!void {
     const exec = try self.popStack();
 
     if (exec.data().* != .string) return error.StringMissing;
@@ -439,12 +444,12 @@ fn sysSpawn(self: *vm.VM) VmError!void {
     const file = try root.getFile(exec.data().string);
     const conts = try file.read(null);
 
-    const handle = try vm_manager.VMManager.instance.spawn(self.root, exec.data().string, conts[4..]);
+    const handle = try VmManager.instance.spawn(self.root, exec.data().string, conts[4..]);
 
     try self.pushStackI(handle.id);
 }
 
-fn sysStatus(self: *vm.VM) VmError!void {
+fn sysStatus(self: *Vm) VmError!void {
     const handle = try self.popStack();
 
     if (handle.data().* != .value) return error.ValueMissing;
@@ -452,7 +457,7 @@ fn sysStatus(self: *vm.VM) VmError!void {
     return error.Todo;
 }
 
-fn sysDelete(self: *vm.VM) VmError!void {
+fn sysDelete(self: *Vm) VmError!void {
     const file = try self.popStack();
 
     if (file.data().* != .string) return error.StringMissing;
@@ -464,7 +469,7 @@ fn sysDelete(self: *vm.VM) VmError!void {
 const SteamYieldCreate = struct {
     handle: steam.APIHandle,
 
-    pub fn check(self: *SteamYieldCreate, vm_instance: *vm.VM) vm.VM.VMError!bool {
+    pub fn check(self: *SteamYieldCreate, vm_instance: *Vm) Vm.VMError!bool {
         const utils = steam.getSteamUtils();
 
         var failed: bool = false;
@@ -495,7 +500,7 @@ const SteamYieldUpdate = struct {
     handle: steam.APIHandle,
     folder: ?std.fs.Dir = null,
 
-    pub fn check(self: *SteamYieldUpdate, vm_instance: *vm.VM) vm.VM.VMError!bool {
+    pub fn check(self: *SteamYieldUpdate, vm_instance: *Vm) Vm.VMError!bool {
         const utils = steam.getSteamUtils();
 
         var failed: bool = false;
@@ -523,7 +528,7 @@ const SteamYieldUpdate = struct {
     }
 };
 
-fn sysSteam(self: *vm.VM) VmError!void {
+fn sysSteam(self: *Vm) VmError!void {
     if (!options.IsSteam)
         return error.InvalidSys;
 
@@ -593,7 +598,7 @@ fn sysSteam(self: *vm.VM) VmError!void {
 
             std.fs.cwd().makeDir(".steam_upload") catch |err|
                 if (err != error.PathAlreadyExists)
-                    return error.UnknownError;
+                return error.UnknownError;
             const upload = std.fs.cwd().openDir(".steam_upload", .{}) catch return error.UnknownError;
 
             const root = try self.root.resolve();
@@ -611,7 +616,7 @@ fn sysSteam(self: *vm.VM) VmError!void {
 
                     upload.makePath(item.name[folder.name.len..]) catch |err|
                         if (err != error.PathAlreadyExists)
-                            return error.UnknownError;
+                        return error.UnknownError;
                 }
             }
 

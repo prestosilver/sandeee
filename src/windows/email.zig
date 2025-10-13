@@ -1,44 +1,57 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const win = @import("../drawers/window2d.zig");
-const rect = @import("../math/rects.zig");
-const vecs = @import("../math/vecs.zig");
-const col = @import("../math/colors.zig");
-const fnt = @import("../util/font.zig");
-const allocator = @import("../util/allocator.zig");
-const shd = @import("../util/shader.zig");
-const sprite = @import("../drawers/sprite2d.zig");
-const tex = @import("../util/texture.zig");
-const mail = @import("../system/mail.zig");
-const popups = @import("../drawers/popup2d.zig");
-const files = @import("../system/files.zig");
-const window_events = @import("../events/window.zig");
-const events = @import("../util/events.zig");
-const vm = @import("../system/vm.zig");
-const e_data = @import("../data/email.zig");
-const log = @import("../util/log.zig").log;
+const Windows = @import("mod.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const drawers = @import("../drawers/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
 
-pub var notif: sprite.Sprite = undefined;
+const Window = drawers.Window;
+const Sprite = drawers.Sprite;
+const Popup = drawers.Popup;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const SpriteBatch = util.SpriteBatch;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const log = util.log;
+
+const Vm = system.Vm;
+const mail = system.mail;
+const files = system.files;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+
+const strings = data.strings;
+
+pub var notif: Sprite = undefined;
 
 const EmailData = struct {
     const Self = @This();
 
     const LoginInput = enum { Username, Password };
 
-    backbg: sprite.Sprite,
-    reply: sprite.Sprite,
-    divx: sprite.Sprite,
-    dive: sprite.Sprite,
-    back: sprite.Sprite,
-    logo: sprite.Sprite,
-    sel: sprite.Sprite,
-    text_box: [2]sprite.Sprite,
-    button: [2]sprite.Sprite,
+    backbg: Sprite,
+    reply: Sprite,
+    divx: Sprite,
+    dive: Sprite,
+    back: Sprite,
+    logo: Sprite,
+    sel: Sprite,
+    text_box: [2]Sprite,
+    button: [2]Sprite,
 
-    shader: *shd.Shader,
+    shader: *Shader,
 
     scroll_top: bool = false,
     box: usize = 0,
@@ -46,16 +59,16 @@ const EmailData = struct {
     selected: ?*mail.EmailManager.Email = null,
     offset: *f32 = undefined,
     rowsize: f32 = 0,
-    bnds: rect.Rectangle = .{ .w = 0, .h = 0 },
+    bnds: Rect = .{ .w = 0, .h = 0 },
 
-    login_pos: vecs.Vector2 = .{ .x = 0, .y = 0 },
+    login_pos: Vec2 = .{ .x = 0, .y = 0 },
 
     login: ?[]const u8 = null,
     login_error: ?[]const u8 = null,
     login_input: ?LoginInput = null,
     login_text: [2][]u8,
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         self.bnds = bnds.*;
 
         if (self.login == null) {
@@ -76,14 +89,14 @@ const EmailData = struct {
 
             self.login_pos = .{ .x = center - bnds.x, .y = center_y - bnds.y };
 
-            try SpriteBatch.global.draw(sprite.Sprite, &self.logo, self.shader, .{ .x = center - 26 - 50, .y = center_y - 250 });
+            try SpriteBatch.global.draw(Sprite, &self.logo, self.shader, .{ .x = center - 26 - 50, .y = center_y - 250 });
 
             self.text_box[0].data.size.x = 200;
             self.text_box[1].data.size.x = 196;
             self.button[0].data.size.x = 100;
             self.button[1].data.size.x = 96;
-            try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 102 });
-            try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 100 });
+            try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 102 });
+            try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 100 });
 
             try font.draw(.{
                 .shader = font_shader,
@@ -108,8 +121,8 @@ const EmailData = struct {
                 });
             }
 
-            try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 152 });
-            try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 150 });
+            try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 152 });
+            try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 150 });
 
             try font.draw(.{
                 .shader = font_shader,
@@ -134,8 +147,8 @@ const EmailData = struct {
                 });
             }
 
-            try SpriteBatch.global.draw(sprite.Sprite, &self.button[0], self.shader, .{ .x = center, .y = center_y - 52 });
-            try SpriteBatch.global.draw(sprite.Sprite, &self.button[1], self.shader, .{ .x = center + 2, .y = center_y - 50 });
+            try SpriteBatch.global.draw(Sprite, &self.button[0], self.shader, .{ .x = center, .y = center_y - 52 });
+            try SpriteBatch.global.draw(Sprite, &self.button[1], self.shader, .{ .x = center + 2, .y = center_y - 50 });
 
             const size = font.sizeText(.{
                 .text = "Login",
@@ -172,7 +185,7 @@ const EmailData = struct {
 
         self.divx.data.size.y = bnds.h;
 
-        try SpriteBatch.global.draw(sprite.Sprite, &self.divx, self.shader, .{ .x = bnds.x + 100, .y = bnds.y });
+        try SpriteBatch.global.draw(Sprite, &self.divx, self.shader, .{ .x = bnds.x + 100, .y = bnds.y });
 
         self.dive.data.size.x = bnds.w - 102;
 
@@ -187,7 +200,7 @@ const EmailData = struct {
 
                     if (self.box != mail.EmailManager.instance.boxes.len - 1) continue;
                 } else if (email.box != self.box) continue;
-                var color = col.Color{ .r = 0, .g = 0, .b = 0 };
+                var color = Color{ .r = 0, .g = 0, .b = 0 };
                 if (@import("builtin").mode == .Debug) {
                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) color.a = 0.5;
                 } else {
@@ -200,7 +213,7 @@ const EmailData = struct {
                 if (email.is_complete or inbox) {
                     try font.draw(.{
                         .shader = font_shader,
-                        .text = fnt.CHECK,
+                        .text = strings.CHECK,
                         .pos = .{ .x = bnds.x + 108, .y = y - 2 },
                         .color = .{ .r = 0, .g = 1, .b = 0 },
                     });
@@ -219,10 +232,10 @@ const EmailData = struct {
                     self.sel.data.size.x = bnds.w - 102;
                     self.sel.data.size.y = font.size + 8 - 2;
 
-                    try SpriteBatch.global.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 102, .y = y - 4 });
+                    try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 102, .y = y - 4 });
                 }
 
-                try SpriteBatch.global.draw(sprite.Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = y + font.size + 2 });
+                try SpriteBatch.global.draw(Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = y + font.size + 2 });
 
                 y += font.size + 8;
             }
@@ -233,9 +246,9 @@ const EmailData = struct {
         } else {
             self.backbg.data.size.x = bnds.w - 102;
 
-            try SpriteBatch.global.draw(sprite.Sprite, &self.backbg, self.shader, .{ .x = bnds.x + 102, .y = bnds.y - 2 });
-            try SpriteBatch.global.draw(sprite.Sprite, &self.reply, self.shader, .{ .x = bnds.x + 104, .y = bnds.y });
-            try SpriteBatch.global.draw(sprite.Sprite, &self.back, self.shader, .{ .x = bnds.x + 144, .y = bnds.y });
+            try SpriteBatch.global.draw(Sprite, &self.backbg, self.shader, .{ .x = bnds.x + 102, .y = bnds.y - 2 });
+            try SpriteBatch.global.draw(Sprite, &self.reply, self.shader, .{ .x = bnds.x + 104, .y = bnds.y });
+            try SpriteBatch.global.draw(Sprite, &self.back, self.shader, .{ .x = bnds.x + 144, .y = bnds.y });
 
             const email = self.viewing.?;
 
@@ -257,7 +270,7 @@ const EmailData = struct {
 
             const y = bnds.y + 44 + font.size * 2 - props.scroll.?.value;
 
-            try SpriteBatch.global.draw(sprite.Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = bnds.y + 44 + font.size * 2 });
+            try SpriteBatch.global.draw(Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = bnds.y + 44 + font.size * 2 });
 
             {
                 const old_scissor = SpriteBatch.global.scissor;
@@ -308,25 +321,25 @@ const EmailData = struct {
         self.sel.data.size.x = 100;
         self.sel.data.size.y = font.size;
 
-        try SpriteBatch.global.draw(sprite.Sprite, &self.sel, self.shader, .{ .x = bnds.x, .y = bnds.y + font.size * @as(f32, @floatFromInt(self.box)) });
+        try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x, .y = bnds.y + font.size * @as(f32, @floatFromInt(self.box)) });
     }
 
     pub fn submitFile(self: *Self) !void {
         const home = try files.FolderLink.resolve(.home);
 
-        const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+        const adds = try allocator.alloc.create(Popup.Data.filepick.PopupFilePick);
         adds.* = .{
             .path = try allocator.alloc.dupe(u8, home.name),
             .data = self,
-            .submit = &submit,
+            .submit = @ptrCast(&submit),
         };
 
         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
             .popup = .atlas("win", .{
                 .title = "Send Attachment",
                 .source = .{ .w = 1, .h = 1 },
-                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                .contents = popups.PopupData.PopupContents.init(adds),
+                .pos = .initCentered(self.bnds, 350, 125),
+                .contents = .init(adds),
             }),
         });
     }
@@ -415,7 +428,7 @@ const EmailData = struct {
             //         if (library_idx + name_len < conts.len and std.mem.eql(u8, fnname, conts[library_idx .. library_idx + name_len])) {
             //             const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
 
-            //             var vm_instance = try vm.VM.init(allocator.alloc, files.home, "", true);
+            //             var vm_instance = try Vm.init(allocator.alloc, files.home, "", true);
             //             defer vm_instance.deinit();
 
             //             vm_instance.loadString(conts[start_idx .. start_idx + fnsize]) catch {
@@ -450,7 +463,7 @@ const EmailData = struct {
             // }
 
             if (!std.mem.startsWith(u8, conts, "EEEp")) return;
-            var vmInstance = try vm.VM.init(allocator.alloc, files.home, "", true);
+            var vmInstance = try Vm.init(allocator.alloc, files.home, "", true);
             defer vmInstance.deinit();
 
             // try vmInstance.input.appendSlice(input.items);
@@ -465,10 +478,8 @@ const EmailData = struct {
         }
     }
 
-    pub fn submit(file: ?*files.File, data: *anyopaque) !void {
+    pub fn submit(file: ?*files.File, self: *Self) !void {
         if (file) |target| {
-            const self: *Self = @ptrCast(@alignCast(data));
-
             const conts = try target.read(null);
 
             if (self.viewing) |selected| {
@@ -485,7 +496,7 @@ const EmailData = struct {
                         .SubmitRuns => |runs| blk: {
                             if (!std.mem.startsWith(u8, conts, "EEEp")) break :blk;
 
-                            var vm_instance: vm.VM = .init(allocator.alloc, .home, &.{}, true);
+                            var vm_instance: Vm = .init(allocator.alloc, .home, &.{}, true);
                             defer vm_instance.deinit();
 
                             if (runs.input) |input|
@@ -509,7 +520,7 @@ const EmailData = struct {
                                 if (library_idx + name_len < conts.len and std.mem.eql(u8, runs.libfn, conts[library_idx .. library_idx + name_len])) {
                                     const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
 
-                                    var vm_instance: vm.VM = .init(allocator.alloc, .home, &.{}, true);
+                                    var vm_instance: Vm = .init(allocator.alloc, .home, &.{}, true);
                                     defer vm_instance.deinit();
 
                                     try vm_instance.loadString(conts[start_idx .. start_idx + fnsize]);
@@ -587,7 +598,7 @@ const EmailData = struct {
     }
 
     pub fn onLogin(self: *Self) void {
-        for (e_data.EMAIL_LOGINS) |login| {
+        for (data.email.LOGINS) |login| {
             if (std.mem.eql(u8, self.login_text[0], login.user)) {
                 if (std.mem.eql(u8, self.login_text[1], login.password)) {
                     self.login = login.user;
@@ -604,12 +615,12 @@ const EmailData = struct {
         }
     }
 
-    pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
+    pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: ?i32) !void {
         if (btn == null) return;
 
         if (self.login == null) {
             {
-                const box_bounds = rect.Rectangle{
+                const box_bounds = Rect{
                     .x = self.login_pos.x,
                     .y = self.login_pos.y - 102,
                     .w = 200,
@@ -623,7 +634,7 @@ const EmailData = struct {
             }
 
             {
-                const box_bounds = rect.Rectangle{
+                const box_bounds = Rect{
                     .x = self.login_pos.x,
                     .y = self.login_pos.y - 150,
                     .w = 200,
@@ -637,7 +648,7 @@ const EmailData = struct {
             }
 
             {
-                const btn_bounds = rect.Rectangle{
+                const btn_bounds = Rect{
                     .x = @floor((self.bnds.w - 100) * 0.5),
                     .y = self.login_pos.y - 50,
                     .w = 100,
@@ -656,19 +667,19 @@ const EmailData = struct {
         switch (btn.?) {
             0 => {
                 if (self.viewing) |_| {
-                    const reply_bnds = rect.Rectangle{ .x = 104, .w = 32, .h = 32 };
+                    const reply_bnds = Rect{ .x = 104, .w = 32, .h = 32 };
                     if (reply_bnds.contains(mousepos)) {
                         try self.submitFile();
                     }
 
-                    const back_bnds = rect.Rectangle{ .x = 144, .w = 32, .h = 32 };
+                    const back_bnds = Rect{ .x = 144, .w = 32, .h = 32 };
                     if (back_bnds.contains(mousepos)) {
                         self.viewing = null;
                         return;
                     }
                 }
 
-                const cont_bnds = rect.Rectangle{ .x = 102, .w = size.x - 102, .h = size.y };
+                const cont_bnds = Rect{ .x = 102, .w = size.x - 102, .h = size.y };
                 if (cont_bnds.contains(mousepos)) {
                     if (self.viewing != null) return;
 
@@ -683,7 +694,7 @@ const EmailData = struct {
                             if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
                         }
 
-                        const bnds = rect.Rectangle{
+                        const bnds = Rect{
                             .x = 102,
                             .y = @as(f32, @floatFromInt(y)),
                             .w = size.x - 102,
@@ -704,7 +715,7 @@ const EmailData = struct {
                         }
                     }
                 } else {
-                    const bnds = rect.Rectangle{ .w = 102, .h = size.y };
+                    const bnds = Rect{ .w = 102, .h = size.y };
                     if (bnds.contains(mousepos)) {
                         const id = mousepos.y / 24.0;
 
@@ -759,7 +770,7 @@ const EmailData = struct {
     }
 };
 
-pub fn init(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.alloc.create(EmailData);
 
     self.* = .{
@@ -817,5 +828,5 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
         .login_text = [2][]u8{ &.{}, &.{} },
     };
 
-    return win.WindowContents.init(self, "email", fnt.EEE ++ "Mail", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    return Window.Data.WindowContents.init(self, "email", strings.EEE ++ "Mail", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
 }

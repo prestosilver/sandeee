@@ -1,22 +1,35 @@
 const std = @import("std");
-
-const win = @import("../drawers/window2d.zig");
-const rect = @import("../math/rects.zig");
-const vecs = @import("../math/vecs.zig");
-const col = @import("../math/colors.zig");
-const fnt = @import("../util/font.zig");
-const allocator = @import("../util/allocator.zig");
-const shd = @import("../util/shader.zig");
-const sprite = @import("../drawers/sprite2d.zig");
-const tex = @import("../util/texture.zig");
-const conf = @import("../system/config.zig");
-const popups = @import("../drawers/popup2d.zig");
-const window_events = @import("../events/window.zig");
-const events = @import("../util/events.zig");
-const files = @import("../system/files.zig");
 const c = @import("../c.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const Windows = @import("mod.zig");
+
+const drawers = @import("../drawers/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
+
+const Window = drawers.Window;
+const Sprite = drawers.Sprite;
+const Popup = drawers.Popup;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const SpriteBatch = util.SpriteBatch;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const log = util.log;
+
+const config = system.config;
+const files = system.files;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
 
 const SettingPanel = struct {
     name: []const u8,
@@ -33,23 +46,23 @@ const SettingsData = struct {
 
     const SettingsMouseAction = struct {
         kind: SettingsMouseActionType,
-        pos: vecs.Vector2,
+        pos: Vec2,
         time: f32,
     };
 
-    shader: *shd.Shader,
-    highlight: sprite.Sprite,
-    menubar: sprite.Sprite,
-    icons: [6]sprite.Sprite,
-    back_button: sprite.Sprite,
-    text_box: [2]sprite.Sprite,
+    shader: *Shader,
+    highlight: Sprite,
+    menubar: Sprite,
+    icons: [6]Sprite,
+    back_button: Sprite,
+    text_box: [2]Sprite,
 
     focused: ?usize = null,
     selection: usize = 0,
     last_action: ?SettingsMouseAction = null,
     focused_pane: ?usize = null,
     editing: ?usize = null,
-    bnds: rect.Rectangle = .{ .w = 0, .h = 0 },
+    bnds: Rect = .{ .w = 0, .h = 0 },
 
     value: []const u8,
 
@@ -166,7 +179,7 @@ const SettingsData = struct {
         },
     };
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, _: *Window.Data.WindowContents.WindowProps) !void {
         if (self.last_action) |*last_action| {
             if (last_action.time <= 0) {
                 self.last_action = null;
@@ -178,7 +191,7 @@ const SettingsData = struct {
         self.bnds = bnds.*;
 
         if (self.focused_pane) |focused| {
-            var pos = vecs.Vector2{ .y = 40 };
+            var pos = Vec2{ .y = 40 };
 
             for (panes[focused]) |item| {
                 // draw name
@@ -190,13 +203,13 @@ const SettingsData = struct {
 
                 // check click
                 if (self.last_action) |action| {
-                    if ((rect.Rectangle{ .x = pos.x, .y = pos.y, .w = bnds.w, .h = font.size }).contains(action.pos)) {
+                    if ((Rect{ .x = pos.x, .y = pos.y, .w = bnds.w, .h = font.size }).contains(action.pos)) {
                         switch (action.kind) {
                             .SingleLeft => {
                                 switch (item.kind) {
                                     .String, .Dropdown => {
-                                        self.value = conf.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+                                        self.value = config.SettingManager.instance.get(item.key) orelse "";
+                                        const adds = try allocator.alloc.create(Popup.Data.textpick.PopupTextPick);
                                         adds.* = .{
                                             .prompt = try allocator.alloc.dupe(u8, item.setting),
                                             .text = try allocator.alloc.dupe(u8, self.value),
@@ -210,15 +223,15 @@ const SettingsData = struct {
                                             .popup = .atlas("win", .{
                                                 .title = "Text Picker",
                                                 .source = .{ .w = 1, .h = 1 },
-                                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                                .contents = popups.PopupData.PopupContents.init(adds),
+                                                .pos = .initCentered(self.bnds, 350, 125),
+                                                .contents = .init(adds),
                                             }),
                                         });
                                         self.last_action = null;
                                     },
                                     .File => {
-                                        self.value = conf.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+                                        self.value = config.SettingManager.instance.get(item.key) orelse "";
+                                        const adds = try allocator.alloc.create(Popup.Data.filepick.PopupFilePick);
                                         adds.* = .{
                                             .path = try allocator.alloc.dupe(u8, self.value),
                                             .data = self,
@@ -231,15 +244,15 @@ const SettingsData = struct {
                                             .popup = .atlas("win", .{
                                                 .title = "Text Picker",
                                                 .source = .{ .w = 1.0, .h = 1.0 },
-                                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                                .contents = popups.PopupData.PopupContents.init(adds),
+                                                .pos = .initCentered(self.bnds, 350, 125),
+                                                .contents = .init(adds),
                                             }),
                                         });
                                         self.last_action = null;
                                     },
                                     .Folder => {
-                                        self.value = conf.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(popups.all.folderpick.PopupFolderPick);
+                                        self.value = config.SettingManager.instance.get(item.key) orelse "";
+                                        const adds = try allocator.alloc.create(Popup.Data.folderpick.PopupFolderPick);
                                         adds.* = .{
                                             .path = try allocator.alloc.dupe(u8, self.value),
                                             .data = self,
@@ -252,8 +265,8 @@ const SettingsData = struct {
                                             .popup = .atlas("win", .{
                                                 .title = "Text Picker",
                                                 .source = .{ .w = 1.0, .h = 1.0 },
-                                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                                .contents = popups.PopupData.PopupContents.init(adds),
+                                                .pos = .initCentered(self.bnds, 350, 125),
+                                                .contents = .init(adds),
                                             }),
                                         });
                                         self.last_action = null;
@@ -266,7 +279,7 @@ const SettingsData = struct {
                 }
 
                 // draw value
-                const value = conf.SettingManager.instance.get(item.key);
+                const value = config.SettingManager.instance.get(item.key);
                 if (value) |val| {
                     try font.draw(.{
                         .shader = font_shader,
@@ -298,13 +311,13 @@ const SettingsData = struct {
                     .pos = .{ .x = bnds.x + x + xo - 10, .y = bnds.y + 64 + y + 6 },
                 });
 
-                try SpriteBatch.global.draw(sprite.Sprite, &self.icons[panel.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                try SpriteBatch.global.draw(Sprite, &self.icons[panel.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (idx + 1 == self.selection)
-                    try SpriteBatch.global.draw(sprite.Sprite, &self.icons[4], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                    try SpriteBatch.global.draw(Sprite, &self.icons[4], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
                 if (self.last_action) |action| {
-                    if ((rect.Rectangle{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(action.pos)) {
+                    if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(action.pos)) {
                         switch (action.kind) {
                             .SingleLeft => {
                                 self.selection = idx + 1;
@@ -327,12 +340,12 @@ const SettingsData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try SpriteBatch.global.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
+        try SpriteBatch.global.draw(Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         self.text_box[0].data.size.x = bnds.w - 46;
         self.text_box[1].data.size.x = bnds.w - 50;
-        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 42, .y = bnds.y + 2 });
-        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 44, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 42, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 44, .y = bnds.y + 4 });
 
         const text = try std.mem.concat(allocator.alloc, u8, &.{
             "!SET:/",
@@ -348,28 +361,28 @@ const SettingsData = struct {
             .maxlines = 1,
         });
 
-        try SpriteBatch.global.draw(sprite.Sprite, &self.back_button, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(Sprite, &self.back_button, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
     }
 
-    pub fn submit(val: []u8, data: *anyopaque) !void {
-        const self: *Self = @ptrCast(@alignCast(data));
-        try conf.SettingManager.instance.set(self.value, val);
-        try conf.SettingManager.instance.save();
+    pub fn submit(val: []u8, popup_data: *anyopaque) !void {
+        const self: *Self = @ptrCast(@alignCast(popup_data));
+        try config.SettingManager.instance.set(self.value, val);
+        try config.SettingManager.instance.save();
     }
 
-    pub fn submitFile(val: ?*files.File, data: *anyopaque) !void {
-        const self: *Self = @ptrCast(@alignCast(data));
-        try conf.SettingManager.instance.set(self.value, val.?.name);
-        try conf.SettingManager.instance.save();
+    pub fn submitFile(val: ?*files.File, popup_data: *anyopaque) !void {
+        const self: *Self = @ptrCast(@alignCast(popup_data));
+        try config.SettingManager.instance.set(self.value, val.?.name);
+        try config.SettingManager.instance.save();
     }
 
-    pub fn submitFolder(val: ?*files.Folder, data: *anyopaque) !void {
-        const self: *Self = @ptrCast(@alignCast(data));
-        try conf.SettingManager.instance.set(self.value, val.?.name);
-        try conf.SettingManager.instance.save();
+    pub fn submitFolder(val: ?*files.Folder, popup_data: *anyopaque) !void {
+        const self: *Self = @ptrCast(@alignCast(popup_data));
+        try config.SettingManager.instance.set(self.value, val.?.name);
+        try config.SettingManager.instance.save();
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
+    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
         if (btn == null) return;
 
         switch (btn.?) {
@@ -421,7 +434,7 @@ const SettingsData = struct {
     }
 };
 
-pub fn init(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.alloc.create(SettingsData);
 
     self.* = .{
@@ -461,5 +474,5 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
         });
     }
 
-    return win.WindowContents.init(self, "settings", "Settings", .{ .r = 1, .g = 1, .b = 1 });
+    return Window.Data.WindowContents.init(self, "settings", "Settings", .{ .r = 1, .g = 1, .b = 1 });
 }

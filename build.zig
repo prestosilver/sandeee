@@ -16,6 +16,8 @@ const changelog = @import("tools/changelog.zig");
 const docs = @import("tools/docs.zig");
 const www = @import("tools/www.zig");
 
+const isBuild = true;
+
 const DiskFileInputData = www.DiskFileInputData;
 const DiskFileInput = www.DiskFileInput;
 const DiskFile = www.DiskFile;

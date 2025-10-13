@@ -1,18 +1,34 @@
 const std = @import("std");
-
-const win = @import("../drawers/window2d.zig");
-const rect = @import("../math/rects.zig");
-const vecs = @import("../math/vecs.zig");
-const col = @import("../math/colors.zig");
-const fnt = @import("../util/font.zig");
-const batch = @import("../util/spritebatch.zig");
-const allocator = @import("../util/allocator.zig");
-const shd = @import("../util/shader.zig");
-const shell = @import("../system/shell.zig");
-const files = @import("../system/files.zig");
-const events = @import("../util/events.zig");
-const system_events = @import("../events/system.zig");
 const c = @import("../c.zig");
+
+const Windows = @import("mod.zig");
+
+const drawers = @import("../drawers/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
+
+const Window = drawers.Window;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const SpriteBatch = util.SpriteBatch;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const log = util.log;
+
+const Shell = system.Shell;
+const files = system.files;
+
+const EventManager = events.EventManager;
+const system_events = events.system;
+
+const strings = data.strings;
 
 const MAX_SIZE = 100000;
 
@@ -26,7 +42,7 @@ pub const CMDData = struct {
 
     history: std.ArrayList([]const u8),
     history_idx: usize = 0,
-    shell: shell.Shell,
+    shell: Shell,
     bot: bool = false,
     close: bool = false,
 
@@ -55,7 +71,7 @@ pub const CMDData = struct {
         self.bt = try allocator.alloc.realloc(self.bt, idx);
     }
 
-    pub fn draw(self: *Self, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
                 .offset_start = 0,
@@ -311,11 +327,11 @@ pub const CMDData = struct {
     }
 };
 
-pub fn init() !win.WindowContents {
+pub fn init() !Window.Data.WindowContents {
     const self = try allocator.alloc.create(CMDData);
 
     self.* = .{
-        .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh" ++ fnt.EEE ++ "l\nUse help to list possible commands\n", .{}),
+        .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh" ++ strings.EEE ++ "l\nUse help to list possible commands\n", .{}),
         .history = try std.ArrayList([]const u8).initCapacity(allocator.alloc, 32),
         .shell = .{
             .root = .home,
@@ -323,5 +339,5 @@ pub fn init() !win.WindowContents {
         },
     };
 
-    return win.WindowContents.init(self, "cmd", "CMD", .{ .r = 0, .g = 0, .b = 0 });
+    return Window.Data.WindowContents.init(self, "cmd", "CMD", .{ .r = 0, .g = 0, .b = 0 });
 }

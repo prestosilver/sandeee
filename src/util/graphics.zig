@@ -1,22 +1,27 @@
 const std = @import("std");
-const col = @import("../math/colors.zig");
-const mat4 = @import("../math/mat4.zig");
-const vecs = @import("../math/vecs.zig");
-const shd = @import("../util/shader.zig");
-const tex = @import("../util/texture.zig");
-const allocator = @import("allocator.zig");
 const c = @import("../c.zig");
 
-const log = @import("../util/log.zig").log;
+const math = @import("../math/mod.zig");
+const util = @import("mod.zig");
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Mat4 = math.Mat4;
+const Color = math.Color;
+
+const Texture = util.Texture;
+const Shader = util.Shader;
+const allocator = util.allocator;
+const log = util.log;
 
 pub const Context = struct {
     pub var instance: Context = undefined;
 
     window: ?*c.GLFWwindow,
-    color: col.Color,
-    shaders: std.ArrayList(shd.Shader),
+    color: Color,
+    shaders: std.ArrayList(Shader),
     lock: std.Thread.Mutex = .{},
-    size: vecs.Vector2,
+    size: Vec2,
 
     pub inline fn makeCurrent() void {
         instance.lock.lock();
@@ -67,7 +72,7 @@ pub const Context = struct {
             return error.GLADInitFailed;
         }
 
-        const shaders = std.ArrayList(shd.Shader).init(allocator.alloc);
+        const shaders = std.ArrayList(Shader).init(allocator.alloc);
 
         var w: c_int = 0;
         var h: c_int = 0;
@@ -105,10 +110,10 @@ pub const Context = struct {
         c.glfwSwapBuffers(instance.window);
     }
 
-    pub fn regShader(s: shd.Shader) !void {
+    pub fn regShader(s: Shader) !void {
         try instance.shaders.append(s);
 
-        const proj: mat4.Mat4 = .ortho(0, instance.size.x, instance.size.y, 0, 100, -1);
+        const proj: Mat4 = .ortho(0, instance.size.x, instance.size.y, 0, 100, -1);
 
         s.setMat4("projection", proj);
         s.setFloat("screen_width", instance.size.x);
@@ -120,7 +125,7 @@ pub const Context = struct {
 
         c.glViewport(0, 0, w, h);
 
-        const proj: mat4.Mat4 = .ortho(0, @floatFromInt(w), @floatFromInt(h), 0, 100, -1);
+        const proj: Mat4 = .ortho(0, @floatFromInt(w), @floatFromInt(h), 0, 100, -1);
 
         for (instance.shaders.items) |shader| {
             shader.setMat4("projection", proj);

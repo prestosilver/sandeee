@@ -1,9 +1,18 @@
 const std = @import("std");
-const allocator = @import("../util/allocator.zig");
-const files = @import("../system/files.zig");
-const events = @import("../util/events.zig");
-const system_events = @import("../events/system.zig");
-const log = @import("../util/log.zig").log;
+const c = @import("../c.zig");
+
+const system = @import("mod.zig");
+
+const events = @import("../events/mod.zig");
+const util = @import("../util/mod.zig");
+
+const allocator = util.allocator;
+const log = util.log;
+
+const files = system.files;
+
+const EventManager = events.EventManager;
+const system_events = events.system;
 
 pub const SettingManager = struct {
     pub var instance: SettingManager = .{};

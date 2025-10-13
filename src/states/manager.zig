@@ -1,5 +1,8 @@
 const std = @import("std");
-const vecs = @import("../math/vecs.zig");
+
+const math = @import("../math/mod.zig");
+
+const Vec2 = math.Vec2;
 
 pub const GameState = struct {
     const Self = @This();
@@ -8,14 +11,14 @@ pub const GameState = struct {
         setup: *const fn (*anyopaque) anyerror!void,
         deinit: *const fn (*anyopaque) void,
         refresh: *const fn (*anyopaque) anyerror!void,
-        draw: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
+        draw: *const fn (*anyopaque, Vec2) anyerror!void,
         update: *const fn (*anyopaque, f32) anyerror!void,
         keypress: *const fn (*anyopaque, c_int, c_int, bool) anyerror!void,
         keychar: *const fn (*anyopaque, u32, i32) anyerror!void,
         mousepress: *const fn (*anyopaque, c_int) anyerror!void,
         mouserelease: *const fn (*anyopaque) anyerror!void,
-        mousemove: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
-        mousescroll: *const fn (*anyopaque, vecs.Vector2) anyerror!void,
+        mousemove: *const fn (*anyopaque, Vec2) anyerror!void,
+        mousescroll: *const fn (*anyopaque, Vec2) anyerror!void,
     };
 
     ptr: *anyopaque,
@@ -38,7 +41,7 @@ pub const GameState = struct {
         return state.vtable.refresh(state.ptr);
     }
 
-    pub fn draw(state: *Self, size: vecs.Vector2) anyerror!void {
+    pub fn draw(state: *Self, size: Vec2) anyerror!void {
         return state.vtable.draw(state.ptr, size);
     }
 
@@ -62,11 +65,11 @@ pub const GameState = struct {
         return state.vtable.mouserelease(state.ptr);
     }
 
-    pub fn mousemove(state: *Self, pos: vecs.Vector2) anyerror!void {
+    pub fn mousemove(state: *Self, pos: Vec2) anyerror!void {
         return state.vtable.mousemove(state.ptr, pos);
     }
 
-    pub fn mousescroll(state: *Self, dir: vecs.Vector2) anyerror!void {
+    pub fn mousescroll(state: *Self, dir: Vec2) anyerror!void {
         return state.vtable.mousescroll(state.ptr, dir);
     }
 
@@ -100,7 +103,7 @@ pub const GameState = struct {
                 }
             }
 
-            fn drawImpl(pointer: *anyopaque, size: vecs.Vector2) anyerror!void {
+            fn drawImpl(pointer: *anyopaque, size: Vec2) anyerror!void {
                 if (std.meta.hasMethod(child_t, "draw")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
@@ -148,7 +151,7 @@ pub const GameState = struct {
                 }
             }
 
-            fn mousemoveImpl(pointer: *anyopaque, size: vecs.Vector2) anyerror!void {
+            fn mousemoveImpl(pointer: *anyopaque, size: Vec2) anyerror!void {
                 if (std.meta.hasMethod(child_t, "mousemove")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
@@ -156,7 +159,7 @@ pub const GameState = struct {
                 }
             }
 
-            fn mousescrollImpl(pointer: *anyopaque, dir: vecs.Vector2) anyerror!void {
+            fn mousescrollImpl(pointer: *anyopaque, dir: Vec2) anyerror!void {
                 if (std.meta.hasMethod(child_t, "mousescroll")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 

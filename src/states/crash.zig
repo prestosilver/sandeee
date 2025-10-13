@@ -1,84 +1,100 @@
+const builtin = @import("builtin");
+const options = @import("options");
 const std = @import("std");
 const c = @import("../c.zig");
 
-const vecs = @import("../math/vecs.zig");
-const sp = @import("../drawers/sprite2d.zig");
-const shd = @import("../util/shader.zig");
-const files = @import("../system/files.zig");
-const font = @import("../util/font.zig");
-const allocator = @import("../util/allocator.zig");
-const gfx = @import("../util/graphics.zig");
-const cols = @import("../math/colors.zig");
+const drawers = @import("../drawers/mod.zig");
+const windows = @import("../windows/mod.zig");
+const loaders = @import("../loaders/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const states = @import("../states/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const Color = math.Color;
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
 
-pub const GSCrash = struct {
-    const Self = @This();
+const Sprite = drawers.Sprite;
 
-    message: *[]const u8,
-    shader: *shd.Shader,
-    face: *font.Font,
-    font_shader: *shd.Shader,
+const SpriteBatch = util.SpriteBatch;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const graphics = util.graphics;
+const storage = util.storage;
+const audio = util.audio;
 
-    prev_state: *u8,
+const files = system.files;
 
-    sad_sprite: sp.Sprite,
+const GSCrash = @This();
 
-    pub fn setup(_: *Self) !void {
-        files.write();
-        gfx.Context.instance.color = .{ .r = 0.25, .g = 0, .b = 0 };
-    }
+message: *[]const u8,
+shader: *Shader,
+face: *Font,
+font_shader: *Shader,
 
-    pub fn deinit(_: *Self) void {}
+prev_state: *u8,
 
-    pub fn draw(self: *Self, size: vecs.Vector2) !void {
-        SpriteBatch.global.scissor = null;
+sad_sprite: Sprite,
 
-        try SpriteBatch.global.draw(sp.Sprite, &self.sad_sprite, self.shader, .{ .x = 100, .y = 100 });
+pub fn setup(_: *GSCrash) !void {
+    files.write();
+    graphics.Context.instance.color = .{ .r = 0.25, .g = 0, .b = 0 };
+}
 
-        try self.face.draw(.{
-            .shader = self.font_shader,
-            .text = "ERROR:",
-            .pos = .{ .x = 300, .y = 100 },
-            .color = .{ .r = 1, .g = 1, .b = 1 },
-            .wrap = size.x - 400,
-        });
-        try self.face.draw(.{
-            .shader = self.font_shader,
-            .text = self.message.*,
-            .pos = .{ .x = 300, .y = 100 + self.face.size },
-            .color = .{ .r = 1, .g = 1, .b = 1 },
-            .wrap = size.x - 400,
-        });
+pub fn deinit(_: *GSCrash) void {}
 
-        const offset = self.face.sizeText(.{
-            .text = self.message.*,
-            .wrap = size.x - 400,
-        }).y;
+pub fn draw(self: *GSCrash, size: Vec2) !void {
+    SpriteBatch.global.scissor = null;
 
-        const state_text = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prev_state.*});
-        defer allocator.alloc.free(state_text);
+    try SpriteBatch.global.draw(Sprite, &self.sad_sprite, self.shader, .{ .x = 100, .y = 100 });
 
-        try self.face.draw(.{
-            .shader = self.font_shader,
-            .text = state_text,
-            .pos = .{ .x = 300, .y = 100 + self.face.size * 1 + offset },
-            .color = .{ .r = 1, .g = 1, .b = 1 },
-            .wrap = size.x - 400,
-        });
+    try self.face.draw(.{
+        .shader = self.font_shader,
+        .text = "ERROR:",
+        .pos = .{ .x = 300, .y = 100 },
+        .color = .{ .r = 1, .g = 1, .b = 1 },
+        .wrap = size.x - 400,
+    });
+    try self.face.draw(.{
+        .shader = self.font_shader,
+        .text = self.message.*,
+        .pos = .{ .x = 300, .y = 100 + self.face.size },
+        .color = .{ .r = 1, .g = 1, .b = 1 },
+        .wrap = size.x - 400,
+    });
 
-        try self.face.draw(.{
-            .shader = self.font_shader,
-            .text = "\nIF YOU SEE THIS CRASH YOUR FILES WERE SAVED :)",
-            .pos = .{ .x = 300, .y = 100 + self.face.size * 3 + offset },
-            .color = .{ .r = 1, .g = 1, .b = 1 },
-            .wrap = size.x - 400,
-        });
-    }
+    const offset = self.face.sizeText(.{
+        .text = self.message.*,
+        .wrap = size.x - 400,
+    }).y;
 
-    pub fn keypress(_: *Self, key: c_int, _: c_int, down: bool) !void {
-        if (down and key == c.GLFW_KEY_ESCAPE)
-            c.glfwSetWindowShouldClose(gfx.Context.instance.window, 1);
-        return;
-    }
-};
+    const state_text = try std.fmt.allocPrint(allocator.alloc, "State: {}", .{self.prev_state.*});
+    defer allocator.alloc.free(state_text);
+
+    try self.face.draw(.{
+        .shader = self.font_shader,
+        .text = state_text,
+        .pos = .{ .x = 300, .y = 100 + self.face.size * 1 + offset },
+        .color = .{ .r = 1, .g = 1, .b = 1 },
+        .wrap = size.x - 400,
+    });
+
+    try self.face.draw(.{
+        .shader = self.font_shader,
+        .text = "\nIF YOU SEE THIS CRASH YOUR FILES WERE SAVED :)",
+        .pos = .{ .x = 300, .y = 100 + self.face.size * 3 + offset },
+        .color = .{ .r = 1, .g = 1, .b = 1 },
+        .wrap = size.x - 400,
+    });
+}
+
+pub fn keypress(_: *GSCrash, key: c_int, _: c_int, down: bool) !void {
+    if (down and key == c.GLFW_KEY_ESCAPE)
+        c.glfwSetWindowShouldClose(graphics.Context.instance.window, 1);
+    return;
+}

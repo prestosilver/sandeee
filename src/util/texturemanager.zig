@@ -1,14 +1,16 @@
 const std = @import("std");
-const tex = @import("texture.zig");
 const allocator = @import("allocator.zig");
 
-const log = @import("log.zig").log;
+const util = @import("mod.zig");
+
+const Texture = util.Texture;
+const log = util.log;
 
 const Self = @This();
 
 pub var instance: Self = .{};
 
-textures: std.StringHashMap(*tex.Texture) = .init(allocator.alloc),
+textures: std.StringHashMap(*Texture) = .init(allocator.alloc),
 
 pub fn deinit(self: *Self) void {
     var iter = self.textures.iterator();
@@ -32,7 +34,7 @@ pub fn remove(self: *Self, name: []const u8) void {
     }
 }
 
-pub fn put(self: *Self, name: []const u8, texture: tex.Texture) !void {
+pub fn put(self: *Self, name: []const u8, texture: Texture) !void {
     if (self.textures.fetchRemove(name)) |val| {
         allocator.alloc.free(val.key);
         val.value.deinit();
@@ -40,7 +42,7 @@ pub fn put(self: *Self, name: []const u8, texture: tex.Texture) !void {
     }
 
     const new = try allocator.alloc.dupe(u8, name);
-    const adds = try allocator.alloc.create(tex.Texture);
+    const adds = try allocator.alloc.create(Texture);
     adds.* = texture;
 
     try self.textures.put(new, adds);
@@ -56,8 +58,8 @@ pub fn putMem(self: *Self, name: []const u8, texture: []const u8) !void {
     }
 
     const new = try allocator.alloc.dupe(u8, name);
-    const adds = try allocator.alloc.create(tex.Texture);
-    adds.* = tex.Texture.init();
+    const adds = try allocator.alloc.create(Texture);
+    adds.* = Texture.init();
 
     try adds.*.loadMem(texture);
     try adds.*.upload();
@@ -65,7 +67,7 @@ pub fn putMem(self: *Self, name: []const u8, texture: []const u8) !void {
     try self.textures.put(new, adds);
 }
 
-pub fn get(self: *Self, name: []const u8) ?*tex.Texture {
+pub fn get(self: *Self, name: []const u8) ?*Texture {
     if (std.mem.eql(u8, name, ""))
         return null;
 

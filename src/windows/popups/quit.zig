@@ -1,32 +1,43 @@
 const std = @import("std");
-
-const allocator = @import("../../util/allocator.zig");
-const shd = @import("../../util/shader.zig");
-const rect = @import("../../math/rects.zig");
-const cols = @import("../../math/colors.zig");
-const files = @import("../../system/files.zig");
-const vecs = @import("../../math/vecs.zig");
-const fnt = @import("../../util/font.zig");
-const logout_state = @import("../../states/logout.zig");
-const events = @import("../../util/events.zig");
-const window_events = @import("../../events/window.zig");
-const system_events = @import("../../events/system.zig");
-const gfx = @import("../../util/graphics.zig");
-const spr = @import("../../drawers/sprite2d.zig");
 const c = @import("../../c.zig");
 
-const SpriteBatch = @import("../../util/spritebatch.zig");
+const drawers = @import("../../drawers/mod.zig");
+const system = @import("../../system/mod.zig");
+const events = @import("../../events/mod.zig");
+const states = @import("../../states/mod.zig");
+const math = @import("../../math/mod.zig");
+const util = @import("../../util/mod.zig");
+
+const Sprite = drawers.Sprite;
+const Popup = drawers.Popup;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const SpriteBatch = util.SpriteBatch;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+
+const files = system.files;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+const system_events = events.system;
+
+const LogoutState = states.Logout;
 
 pub const PopupQuit = struct {
     const Self = @This();
 
     done: ?u32 = null,
-    icons: [2]spr.Sprite,
-    shader: *shd.Shader,
+    icons: [2]Sprite,
+    shader: *Shader,
 
-    pub fn draw(self: *Self, shader: *shd.Shader, bnds: rect.Rectangle, font: *fnt.Font) !void {
-        try SpriteBatch.global.draw(spr.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 55, .y = bnds.y });
-        try SpriteBatch.global.draw(spr.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 231, .y = bnds.y });
+    pub fn draw(self: *Self, shader: *Shader, bnds: Rect, font: *Font) !void {
+        try SpriteBatch.global.draw(Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 55, .y = bnds.y });
+        try SpriteBatch.global.draw(Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 231, .y = bnds.y });
 
         const single_width = bnds.w / 2;
         const sd_width = font.sizeText(.{
@@ -41,26 +52,26 @@ pub const PopupQuit = struct {
 
         try font.draw(.{
             .shader = shader,
-            .pos = bnds.location().add(vecs.Vector2{ .x = sd_x, .y = 64 }),
+            .pos = bnds.location().add(Vec2{ .x = sd_x, .y = 64 }),
             .text = "Shutdown",
         });
 
         try font.draw(.{
             .shader = shader,
-            .pos = bnds.location().add(vecs.Vector2{ .x = rs_x, .y = 64 }),
+            .pos = bnds.location().add(Vec2{ .x = rs_x, .y = 64 }),
             .text = "Restart",
         });
 
         if (self.done) |rets| {
             switch (rets) {
                 0 => {
-                    logout_state.target = .Bios;
+                    LogoutState.target = .Bios;
                     try events.EventManager.instance.sendEvent(system_events.EventStateChange{
                         .target_state = .Logout,
                     });
                 },
                 1 => {
-                    logout_state.target = .Quit;
+                    LogoutState.target = .Quit;
                     try events.EventManager.instance.sendEvent(system_events.EventStateChange{
                         .target_state = .Logout,
                     });
@@ -70,7 +81,7 @@ pub const PopupQuit = struct {
         }
     }
 
-    pub fn click(self: *Self, mousepos: vecs.Vector2) !void {
+    pub fn click(self: *Self, mousepos: Vec2) !void {
         if (mousepos.x < 175) {
             self.done = 1;
         } else {

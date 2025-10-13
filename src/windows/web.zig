@@ -1,30 +1,43 @@
 const std = @import("std");
-
-const win = @import("../drawers/window2d.zig");
-const rect = @import("../math/rects.zig");
-const vecs = @import("../math/vecs.zig");
-const col = @import("../math/colors.zig");
-const fnt = @import("../util/font.zig");
-const allocator = @import("../util/allocator.zig");
-const shd = @import("../util/shader.zig");
-const sprite = @import("../drawers/sprite2d.zig");
-const files = @import("../system/files.zig");
-const tex = @import("../util/texture.zig");
-const window_events = @import("../events/window.zig");
-const events = @import("../util/events.zig");
-const popups = @import("../drawers/popup2d.zig");
-const gfx = @import("../util/graphics.zig");
-const conf = @import("../system/config.zig");
-const c = @import("../c.zig");
-const log = @import("../util/log.zig").log;
-
-const TextureManager = @import("../util/texmanager.zig");
-const SpriteBatch = @import("../util/spritebatch.zig");
-const HttpClient = @import("../util/http.zig");
-const Url = @import("../util/url.zig");
-
 const steam = @import("steam");
 const options = @import("options");
+const c = @import("../c.zig");
+
+const Windows = @import("mod.zig");
+
+const drawers = @import("../drawers/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
+
+const Window = drawers.Window;
+const Sprite = drawers.Sprite;
+const Popup = drawers.Popup;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const TextureManager = util.TextureManager;
+const SpriteBatch = util.SpriteBatch;
+const HttpClient = util.HttpClient;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const Font = util.Font;
+const Url = util.Url;
+const allocator = util.allocator;
+const graphics = util.graphics;
+const log = util.log;
+
+const config = system.config;
+const files = system.files;
+
+const EventManager = events.EventManager;
+const window_events = events.windows;
+
+const strings = data.strings;
 
 const HEADER_SIZE = 1024;
 var web_idx: u8 = 0;
@@ -123,17 +136,17 @@ pub const WebData = struct {
                 const log_import = @import("../util/log.zig");
                 const debug_mode = std.mem.eql(u8, url.path, "all");
 
-                const data = log_import.getLogs();
+                const log_data = log_import.getLogs();
                 var len: usize = 0;
 
-                for (data) |pool| for (pool) |log_item| {
+                for (log_data) |pool| for (pool) |log_item| {
                     if (!debug_mode and log_item.level == .debug) continue;
 
                     const color = switch (log_item.level) {
-                        .err => fnt.COLOR_RED,
-                        .warn => fnt.COLOR_DARK_YELLOW,
-                        .info => fnt.COLOR_BLACK,
-                        .debug => fnt.COLOR_BLACK,
+                        .err => strings.COLOR_RED,
+                        .warn => strings.COLOR_DARK_YELLOW,
+                        .info => strings.COLOR_BLACK,
+                        .debug => strings.COLOR_BLACK,
                     };
 
                     len += color.len + log_item.data.len;
@@ -142,14 +155,14 @@ pub const WebData = struct {
                 const result = try allocator.alloc.alloc(u8, len);
 
                 var idx: usize = len;
-                for (data) |pool| for (pool) |log_item| {
+                for (log_data) |pool| for (pool) |log_item| {
                     if (!debug_mode and log_item.level == .debug) continue;
 
                     const color = switch (log_item.level) {
-                        .err => fnt.COLOR_RED,
-                        .warn => fnt.COLOR_DARK_YELLOW,
-                        .info => fnt.COLOR_BLACK,
-                        .debug => fnt.COLOR_BLACK,
+                        .err => strings.COLOR_RED,
+                        .warn => strings.COLOR_DARK_YELLOW,
+                        .info => strings.COLOR_BLACK,
+                        .debug => strings.COLOR_BLACK,
                     };
 
                     idx -= log_item.data.len;
@@ -176,7 +189,7 @@ pub const WebData = struct {
 
     pub const WebLink = struct {
         url: []const u8,
-        pos: rect.Rectangle,
+        pos: Rect,
     };
 
     pub const Style = struct {
@@ -188,7 +201,7 @@ pub const WebData = struct {
 
         ali: Align = .Left,
         scale: f32 = 1.0,
-        color: col.Color = .{ .r = 0, .g = 0, .b = 0 },
+        color: Color = .{ .r = 0, .g = 0, .b = 0 },
         locked: bool = false,
         suffix: ?[]const u8 = null,
         prefix: ?[]const u8 = null,
@@ -207,13 +220,13 @@ pub const WebData = struct {
     load_thread: ?std.Thread = null,
     // http: HttpClient,
 
-    highlight: sprite.Sprite,
-    menubar: sprite.Sprite,
-    text_box: [2]sprite.Sprite,
-    icons: [2]sprite.Sprite,
+    highlight: Sprite,
+    menubar: Sprite,
+    text_box: [2]Sprite,
+    icons: [2]Sprite,
     path: Url,
 
-    shader: *shd.Shader,
+    shader: *Shader,
     conts: ?[]const u8,
     links: std.ArrayList(WebLink),
     hist: std.ArrayList(Url),
@@ -227,7 +240,7 @@ pub const WebData = struct {
     add_links: bool = false,
     web_idx: u8,
 
-    bnds: rect.Rectangle = .{ .w = 1, .h = 1 },
+    bnds: Rect = .{ .w = 1, .h = 1 },
 
     styles: std.StringArrayHashMap(Style),
 
@@ -510,7 +523,7 @@ pub const WebData = struct {
                 current_style.color = if (buf.len > 6)
                     .{ .r = 1, .g = 0, .b = 0 }
                 else
-                    col.Color.parseColor(buf[0..6].*) catch
+                    Color.parseColor(buf[0..6].*) catch
                         .{ .r = 1, .g = 0, .b = 0 };
             }
         }
@@ -540,7 +553,7 @@ pub const WebData = struct {
 
         const home = try files.FolderLink.resolve(.home);
 
-        const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+        const adds = try allocator.alloc.create(Popup.Data.textpick.PopupTextPick);
         adds.* = .{
             .text = try std.mem.concat(allocator.alloc, u8, &.{ home.name, name }),
             .data = @as(*anyopaque, @ptrCast(output)),
@@ -552,14 +565,14 @@ pub const WebData = struct {
             .popup = .atlas("win", .{
                 .title = "Save As",
                 .source = .{ .w = 1, .h = 1 },
-                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                .contents = popups.PopupData.PopupContents.init(adds),
+                .pos = Rect.initCentered(self.bnds, 350, 125),
+                .contents = Popup.Data.PopupContents.init(adds),
             }),
         });
     }
 
-    pub fn submit(file: []const u8, data: *anyopaque) !void {
-        const conts: *[]const u8 = @ptrCast(@alignCast(data));
+    pub fn submit(file: []const u8, submit_data: *anyopaque) !void {
+        const conts: *[]const u8 = @ptrCast(@alignCast(submit_data));
 
         const root = try files.FolderLink.resolve(.root);
         try root.newFile(file);
@@ -571,7 +584,7 @@ pub const WebData = struct {
         allocator.alloc.destroy(conts);
     }
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         self.bnds = bnds.*;
 
         if (props.scroll == null) {
@@ -601,7 +614,7 @@ pub const WebData = struct {
 
             const web_width = bnds.w - 14;
 
-            var pos = vecs.Vector2{ .y = -props.scroll.?.value + 50 };
+            var pos = Vec2{ .y = -props.scroll.?.value + 50 };
 
             if (self.conts == null) {
                 self.load_thread = try std.Thread.spawn(.{}, loadPage, .{self});
@@ -664,7 +677,7 @@ pub const WebData = struct {
                         .Center => {
                             const x = (web_width - size.x) / 2;
 
-                            try SpriteBatch.global.draw(sprite.Sprite, &.atlas(&texid, .{
+                            try SpriteBatch.global.draw(Sprite, &.atlas(&texid, .{
                                 .source = .{ .w = 1, .h = 1 },
                                 .size = size,
                             }), self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
@@ -672,7 +685,7 @@ pub const WebData = struct {
                             pos.y += size.y;
                         },
                         .Left => {
-                            try SpriteBatch.global.draw(sprite.Sprite, &.atlas(&texid, .{
+                            try SpriteBatch.global.draw(Sprite, &.atlas(&texid, .{
                                 .source = .{ .w = 1, .h = 1 },
                                 .size = size,
                             }), self.shader, .{ .x = bnds.x + 6 + pos.x, .y = bnds.y + 6 + pos.y });
@@ -682,7 +695,7 @@ pub const WebData = struct {
                         .Right => {
                             const x = web_width - size.x;
 
-                            try SpriteBatch.global.draw(sprite.Sprite, &.atlas(&texid, .{
+                            try SpriteBatch.global.draw(Sprite, &.atlas(&texid, .{
                                 .source = .{ .w = 1, .h = 1 },
                                 .size = size,
                             }), self.shader, .{ .x = bnds.x + 6 + x, .y = bnds.y + 6 + pos.y });
@@ -805,7 +818,7 @@ pub const WebData = struct {
 
                 self.highlight.data.color = .{ .r = 0, .g = 0, .b = 1, .a = 0.75 };
 
-                try SpriteBatch.global.draw(sprite.Sprite, &self.highlight, self.shader, .{ .x = hlpos.x + bnds.x, .y = hlpos.y + bnds.y - props.scroll.?.value + 4 });
+                try SpriteBatch.global.draw(Sprite, &self.highlight, self.shader, .{ .x = hlpos.x + bnds.x, .y = hlpos.y + bnds.y - props.scroll.?.value + 4 });
             }
 
             self.add_links = false;
@@ -814,12 +827,12 @@ pub const WebData = struct {
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
-        try SpriteBatch.global.draw(sprite.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
+        try SpriteBatch.global.draw(Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         self.text_box[0].data.size.x = bnds.w - 76;
         self.text_box[1].data.size.x = bnds.w - 80;
-        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
-        try SpriteBatch.global.draw(sprite.Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
 
         const text = try std.fmt.allocPrint(allocator.alloc, "{c}{s}:{s}", .{ @as(u8, @intFromEnum(self.path.kind)), self.path.domain, self.path.path });
         defer allocator.alloc.free(text);
@@ -835,8 +848,8 @@ pub const WebData = struct {
         });
         SpriteBatch.global.scissor = tmp;
 
-        try SpriteBatch.global.draw(sprite.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
-        try SpriteBatch.global.draw(sprite.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
+        try SpriteBatch.global.draw(Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 2 });
     }
 
     pub fn move(self: *Self, x: f32, y: f32) void {
@@ -896,15 +909,15 @@ pub const WebData = struct {
         self.scroll_top = true;
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, btn: ?i32) !void {
+    pub fn click(self: *Self, _: Vec2, pos: Vec2, btn: ?i32) !void {
         if (btn == null) return;
 
         if (pos.y < 40) {
-            if ((rect.Rectangle{ .w = 38, .h = 40 }).contains(pos)) {
+            if ((Rect{ .w = 38, .h = 40 }).contains(pos)) {
                 try self.back(false);
             }
 
-            if ((rect.Rectangle{ .x = 38, .w = 38, .h = 40 }).contains(pos)) {
+            if ((Rect{ .x = 38, .w = 38, .h = 40 }).contains(pos)) {
                 if (self.conts) |conts| {
                     if (!self.loading) {
                         allocator.alloc.free(conts);
@@ -951,7 +964,7 @@ pub const WebData = struct {
         }
     }
 
-    pub fn moveResize(self: *Self, _: rect.Rectangle) !void {
+    pub fn moveResize(self: *Self, _: Rect) !void {
         if (self.loading) return;
 
         self.resetLinks();
@@ -1006,10 +1019,10 @@ pub const WebData = struct {
     }
 };
 
-pub fn init(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.alloc.create(WebData);
 
-    log.debug("opening web homepage {s}", .{conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
+    log.debug("opening web homepage {s}", .{config.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
 
     self.* = .{
         .highlight = .atlas("ui", .{
@@ -1040,7 +1053,7 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
                 .size = .{ .x = 32, .y = 32 },
             }),
         },
-        .path = Url.parse(conf.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf") catch
+        .path = Url.parse(config.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf") catch
             try Url.parse("@sandeee.prestosilver.info:/index.edf"),
         .conts = null,
         .shader = shader,
@@ -1068,5 +1081,5 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
         .locked = true,
     });
 
-    return win.WindowContents.init(self, "web", "Xplorer", .{ .r = 1, .g = 1, .b = 1 });
+    return .init(self, "web", "Xplorer", .{ .r = 1, .g = 1, .b = 1 });
 }

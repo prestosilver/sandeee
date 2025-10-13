@@ -1,13 +1,19 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const shd = @import("../util/shader.zig");
-const tex = @import("../util/texture.zig");
-const gfx = @import("../util/graphics.zig");
-const conf = @import("../system/config.zig");
-const log = @import("../util/log.zig").log;
+const loaders = @import("mod.zig");
 
-const TextureManager = @import("../util/texmanager.zig");
+const util = @import("../util/mod.zig");
+const system = @import("../system/mod.zig");
+
+const config = system.config;
+
+const Texture = util.Texture;
+const Shader = util.Shader;
+
+const TextureManager = util.TextureManager;
+const graphics = util.graphics;
+const log = util.log;
 
 const Self = @This();
 
@@ -15,10 +21,10 @@ name: []const u8,
 path: []const u8,
 
 pub fn load(self: *const Self) anyerror!void {
-    const path = conf.SettingManager.instance.get(self.path) orelse
+    const path = config.SettingManager.instance.get(self.path) orelse
         self.path;
 
-    var loaded_tex = tex.Texture.init();
+    var loaded_tex = Texture.init();
 
     log.debug("load tex: {s}", .{path});
     if (loaded_tex.loadFile(path)) {
@@ -31,8 +37,8 @@ pub fn load(self: *const Self) anyerror!void {
 }
 
 pub fn unload(self: *const Self) void {
-    gfx.Context.makeCurrent();
-    defer gfx.Context.makeNotCurrent();
+    graphics.Context.makeCurrent();
+    defer graphics.Context.makeNotCurrent();
 
     TextureManager.instance.remove(self.name);
 }

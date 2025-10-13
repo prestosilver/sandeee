@@ -1,29 +1,44 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const win = @import("../drawers/window2d.zig");
-const rect = @import("../math/rects.zig");
-const vecs = @import("../math/vecs.zig");
-const col = @import("../math/colors.zig");
-const fnt = @import("../util/font.zig");
-const tex = @import("../util/texture.zig");
-const allocator = @import("../util/allocator.zig");
-const files = @import("../system/files.zig");
-const shd = @import("../util/shader.zig");
-const sp = @import("../drawers/sprite2d.zig");
-const popups = @import("../drawers/popup2d.zig");
-const window_events = @import("../events/window.zig");
-const system_events = @import("../events/system.zig");
-const events = @import("../util/events.zig");
+const windows = @import("mod.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const drawers = @import("../drawers/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
+
+const Window = drawers.Window;
+const Sprite = drawers.Sprite;
+const Popup = drawers.Popup;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Color = math.Color;
+
+const SpriteBatch = util.SpriteBatch;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const log = util.log;
+
+const files = system.files;
+
+const EventManager = events.EventManager;
+const system_events = events.system;
+const window_events = events.windows;
+
+const strings = data.strings;
 
 const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else ", "asm " };
 const HL_KEYWORD2 = [_][]const u8{"#include "};
 const COMMENT_START = "//";
 const STRING_START = '\"';
 const ESCAPE_CHAR = '\\';
-const STRING_ERROR = "{s}  " ++ fnt.COLOR_RED ++ fnt.LEFT ++ " {s}";
+const STRING_ERROR = "{s}  " ++ strings.COLOR_RED ++ strings.LEFT ++ " {s}";
 
 pub const EditorData = struct {
     const Self = @This();
@@ -73,15 +88,15 @@ pub const EditorData = struct {
     };
 
     buffer: ?[]Row = null,
-    menubar: sp.Sprite,
-    num_left: sp.Sprite,
-    num_right: sp.Sprite,
-    sel: sp.Sprite,
-    icons: [3]sp.Sprite,
-    shader: *shd.Shader,
+    menubar: Sprite,
+    num_left: Sprite,
+    num_right: Sprite,
+    sel: Sprite,
+    icons: [3]Sprite,
+    shader: *Shader,
 
-    click_pos: ?vecs.Vector2 = null,
-    click_done: ?vecs.Vector2 = null,
+    click_pos: ?Vec2 = null,
+    click_done: ?Vec2 = null,
     click_down: bool = false,
 
     cursorx: usize = 0,
@@ -91,7 +106,7 @@ pub const EditorData = struct {
 
     modified: bool = false,
     file: ?*files.File = null,
-    bnds: rect.Rectangle = .{ .w = 0, .h = 0 },
+    bnds: Rect = .{ .w = 0, .h = 0 },
 
     pub fn hlLine(row: *Row) !void {
         var line = try allocator.alloc.dupe(u8, row.text);
@@ -113,9 +128,9 @@ pub const EditorData = struct {
             const comment = std.mem.indexOf(u8, line, COMMENT_START) orelse line.len;
 
             const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                fnt.COLOR_BLUE,
+                strings.COLOR_BLUE,
                 keyword,
-                fnt.COLOR_BLACK,
+                strings.COLOR_BLACK,
             });
             defer allocator.alloc.free(replacement);
 
@@ -131,9 +146,9 @@ pub const EditorData = struct {
 
         for (HL_KEYWORD2) |keyword| {
             const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                fnt.COLOR_DARK_CYAN,
+                strings.COLOR_DARK_CYAN,
                 keyword,
-                fnt.COLOR_BLACK,
+                strings.COLOR_BLACK,
             });
             defer allocator.alloc.free(replacement);
 
@@ -146,7 +161,7 @@ pub const EditorData = struct {
 
         {
             const replacement = try std.mem.concat(allocator.alloc, u8, &.{
-                fnt.COLOR_WHITE,
+                strings.COLOR_WHITE,
                 COMMENT_START,
             });
             defer allocator.alloc.free(replacement);
@@ -202,7 +217,7 @@ pub const EditorData = struct {
                 defer prev = ch;
                 if (ch == STRING_START and !in_string) {
                     in_string = !in_string;
-                    line[idx] = fnt.COLOR_DARK_GREEN[0];
+                    line[idx] = strings.COLOR_DARK_GREEN[0];
                     idx = idx + 1;
                     line[idx] = ch;
                     idx = idx + 1;
@@ -215,7 +230,7 @@ pub const EditorData = struct {
                         continue;
 
                     in_string = !in_string;
-                    line[idx] = fnt.COLOR_BLACK[0];
+                    line[idx] = strings.COLOR_BLACK[0];
                     idx = idx + 1;
                 }
             }
@@ -225,7 +240,7 @@ pub const EditorData = struct {
         row.err = err;
     }
 
-    pub fn draw(self: *Self, shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, props: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         if (props.scroll == null) {
             props.scroll = .{
                 .offset_start = 40,
@@ -242,7 +257,7 @@ pub const EditorData = struct {
             const file_name = if (self.file) |file| file.name else "[New File]";
 
             const idx = if (std.mem.lastIndexOf(u8, file_name, "/")) |idx| idx + 1 else 0;
-            const title = try std.fmt.allocPrint(allocator.alloc, fnt.EEE ++ "DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
+            const title = try std.fmt.allocPrint(allocator.alloc, strings.EEE ++ "DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
             defer allocator.alloc.free(title);
 
             try props.setTitle(title);
@@ -254,10 +269,10 @@ pub const EditorData = struct {
         self.num_right.data.size.y = bnds.h - 40;
 
         // draw number sidebar
-        try SpriteBatch.global.draw(sp.Sprite, &self.num_left, self.shader, .{ .x = bnds.x, .y = bnds.y + 40 });
+        try SpriteBatch.global.draw(Sprite, &self.num_left, self.shader, .{ .x = bnds.x, .y = bnds.y + 40 });
 
         // draw number sidebar
-        try SpriteBatch.global.draw(sp.Sprite, &self.num_right, self.shader, .{ .x = bnds.x + 40, .y = bnds.y + 40 });
+        try SpriteBatch.global.draw(Sprite, &self.num_right, self.shader, .{ .x = bnds.x + 40, .y = bnds.y + 40 });
 
         // draw file text
         if (self.buffer) |buffer| {
@@ -366,7 +381,7 @@ pub const EditorData = struct {
 
                     sel_remaining -= width;
 
-                    try SpriteBatch.global.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + posx, .y = y });
+                    try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + posx, .y = y });
 
                     if (self.cursor_len >= 0) {
                         try font.draw(.{
@@ -382,7 +397,7 @@ pub const EditorData = struct {
 
                     sel_remaining -= width;
 
-                    try SpriteBatch.global.draw(sp.Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
+                    try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
                     if (self.cursor_len < 0 and sel_remaining == 0) {
                         const render_len = try Row.getRenderLen(render_text, width);
 
@@ -405,25 +420,25 @@ pub const EditorData = struct {
         }
 
         // draw toolbar
-        try SpriteBatch.global.draw(sp.Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
+        try SpriteBatch.global.draw(Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
         // draw toolbar icons
-        try SpriteBatch.global.draw(sp.Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 4 });
-        try SpriteBatch.global.draw(sp.Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 4 });
-        try SpriteBatch.global.draw(sp.Sprite, &self.icons[2], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 4 });
+        try SpriteBatch.global.draw(Sprite, &self.icons[2], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
+    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
         self.click_down = self.click_down and btn != null;
 
         if (btn) |button|
             switch (button) {
                 0 => {
-                    const open = rect.Rectangle{ .w = 36, .h = 36 };
+                    const open = Rect{ .w = 36, .h = 36 };
                     if (open.contains(mousepos)) {
                         const home = try files.FolderLink.resolve(.home);
 
-                        const adds = try allocator.alloc.create(popups.all.filepick.PopupFilePick);
+                        const adds = try allocator.alloc.create(Popup.Data.filepick.PopupFilePick);
                         adds.* = .{
                             .path = try allocator.alloc.dupe(u8, home.name),
                             .data = self,
@@ -434,18 +449,18 @@ pub const EditorData = struct {
                             .popup = .atlas("win", .{
                                 .title = "Open",
                                 .source = .{ .w = 1, .h = 1 },
-                                .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                                .contents = popups.PopupData.PopupContents.init(adds),
+                                .pos = .initCentered(self.bnds, 350, 125),
+                                .contents = .init(adds),
                             }),
                         });
                     }
 
-                    const save_bnds = rect.Rectangle{ .x = 36, .w = 36, .h = 36 };
+                    const save_bnds = Rect{ .x = 36, .w = 36, .h = 36 };
                     if (save_bnds.contains(mousepos)) {
                         try self.save();
                     }
 
-                    const new_bnds = rect.Rectangle{ .x = 72, .w = 36, .h = 36 };
+                    const new_bnds = Rect{ .x = 72, .w = 36, .h = 36 };
                     if (new_bnds.contains(mousepos)) {
                         try self.newFile();
                     }
@@ -562,7 +577,7 @@ pub const EditorData = struct {
             } else {
                 const home = try files.FolderLink.resolve(.home);
 
-                const adds = try allocator.alloc.create(popups.all.textpick.PopupTextPick);
+                const adds = try allocator.alloc.create(Popup.Data.textpick.PopupTextPick);
                 adds.* = .{
                     .text = try allocator.alloc.dupe(u8, home.name),
                     .submit = &submitSave,
@@ -574,28 +589,28 @@ pub const EditorData = struct {
                     .popup = .atlas("win", .{
                         .title = "Save As",
                         .source = .{ .w = 1, .h = 1 },
-                        .pos = rect.Rectangle.initCentered(self.bnds, 350, 125),
-                        .contents = popups.PopupData.PopupContents.init(adds),
+                        .pos = .initCentered(self.bnds, 350, 125),
+                        .contents = .init(adds),
                     }),
                 });
             }
         }
     }
 
-    pub fn submitSave(path: []const u8, data: *anyopaque) !void {
+    pub fn submitSave(path: []const u8, popup_data: *anyopaque) !void {
         const root = try files.FolderLink.resolve(.root);
         try root.newFile(path);
 
         const file = try root.getFile(path);
-        const self: *Self = @ptrCast(@alignCast(data));
+        const self: *Self = @ptrCast(@alignCast(popup_data));
         self.file = file;
 
         try self.save();
     }
 
-    pub fn submitOpen(file: ?*files.File, data: *anyopaque) !void {
+    pub fn submitOpen(file: ?*files.File, popup_data: *anyopaque) !void {
         if (file) |target| {
-            const self: *Self = @ptrCast(@alignCast(data));
+            const self: *Self = @ptrCast(@alignCast(popup_data));
             self.file = target;
 
             const file_conts = try self.file.?.read(null);
@@ -901,7 +916,7 @@ pub const EditorData = struct {
     }
 };
 
-pub fn init(shader: *shd.Shader) !win.WindowContents {
+pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.alloc.create(EditorData);
 
     self.* = .{
@@ -939,5 +954,5 @@ pub fn init(shader: *shd.Shader) !win.WindowContents {
         .shader = shader,
     };
 
-    return win.WindowContents.init(self, "editor", fnt.EEE ++ "DT", .{ .r = 1, .g = 1, .b = 1 });
+    return Window.Data.WindowContents.init(self, "editor", strings.EEE ++ "DT", .{ .r = 1, .g = 1, .b = 1 });
 }

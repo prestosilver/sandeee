@@ -1,42 +1,55 @@
 const std = @import("std");
 const builtin = @import("builtin");
-
-const win = @import("../drawers/window2d.zig");
-const rect = @import("../math/rects.zig");
-const vecs = @import("../math/vecs.zig");
-const col = @import("../math/colors.zig");
-const tex = @import("../util/texture.zig");
-const shd = @import("../util/shader.zig");
-const fnt = @import("../util/font.zig");
-const spr = @import("../drawers/sprite2d.zig");
-const allocator = @import("../util/allocator.zig");
-const gfx = @import("../util/graphics.zig");
-const vm = @import("../system/vm.zig");
 const c = @import("../c.zig");
-const va = @import("../util/vertArray.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
-const TextureManager = @import("../util/texmanager.zig");
+const Windows = @import("mod.zig");
 
-const DEFAULT_SIZE: vecs.Vector2 = .{ .x = 600, .y = 400 };
+const drawers = @import("../drawers/mod.zig");
+const system = @import("../system/mod.zig");
+const events = @import("../events/mod.zig");
+const math = @import("../math/mod.zig");
+const util = @import("../util/mod.zig");
+const data = @import("../data/mod.zig");
+
+const Window = drawers.Window;
+const Sprite = drawers.Sprite;
+
+const Rect = math.Rect;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Color = math.Color;
+
+const SpriteBatch = util.SpriteBatch;
+const VertArray = util.VertArray;
+const Texture = util.Texture;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const graphics = util.graphics;
+const log = util.log;
+
+const Vm = system.Vm;
+const files = system.files;
+
+const DEFAULT_SIZE: Vec2 = .{ .x = 600, .y = 400 };
 
 pub const VMData = struct {
     const Self = @This();
 
     //rects: [2]std.ArrayList(VMDataEntry),
-    texture: tex.Texture,
+    texture: Texture,
     framebuffer: c.GLuint,
     renderbuffer: c.GLuint,
     arraybuffer: c.GLuint,
 
     spritebatch: SpriteBatch,
-    size: vecs.Vector2,
+    size: Vec2,
 
-    font_shader: ?*shd.Shader = null,
-    font: ?*fnt.Font = null,
+    font_shader: ?*Shader = null,
+    font: ?*Font = null,
 
     idx: u8,
-    shader: *shd.Shader,
+    shader: *Shader,
 
     total_counter: usize = 0,
     frame_counter: usize = 0,
@@ -45,7 +58,7 @@ pub const VMData = struct {
     debug: bool = @import("builtin").mode == .Debug,
     input: []i32 = &.{},
     mousebtn: ?i32 = null,
-    mousepos: vecs.Vector2 = .{},
+    mousepos: Vec2 = .{},
 
     const VMDataKind = enum {
         rect,
@@ -53,12 +66,12 @@ pub const VMData = struct {
     };
 
     const VMDataRect = struct {
-        loc: vecs.Vector3,
-        s: spr.Sprite,
+        loc: Vec3,
+        s: Sprite,
     };
 
     const VMDataText = struct {
-        pos: vecs.Vector2,
+        pos: Vec2,
         text: []const u8,
     };
 
@@ -67,9 +80,9 @@ pub const VMData = struct {
         text: VMDataText,
     };
 
-    pub fn addRect(self: *VMData, texture: []const u8, src: rect.Rectangle, dst: rect.Rectangle) !void {
+    pub fn addRect(self: *VMData, texture: []const u8, src: Rect, dst: Rect) !void {
         try self.spritebatch.draw(
-            spr.Sprite,
+            Sprite,
             &.atlas(texture, .{
                 .source = src,
                 .size = .{ .x = dst.w, .y = dst.h },
@@ -79,7 +92,7 @@ pub const VMData = struct {
         );
     }
 
-    pub fn addText(self: *VMData, dst: vecs.Vector2, text: []const u8) !void {
+    pub fn addText(self: *VMData, dst: Vec2, text: []const u8) !void {
         if (self.font == null or self.font_shader == null)
             return;
 
@@ -95,8 +108,8 @@ pub const VMData = struct {
 
     pub fn flip(self: *VMData) !void {
         {
-            gfx.Context.makeCurrent();
-            defer gfx.Context.makeNotCurrent();
+            graphics.Context.makeCurrent();
+            defer graphics.Context.makeNotCurrent();
 
             if (self.texture.size.x != self.size.x or
                 self.texture.size.y != self.size.y)
@@ -119,10 +132,10 @@ pub const VMData = struct {
             defer c.glBindFramebuffer(c.GL_FRAMEBUFFER, old_framebuffer);
             c.glBindFramebuffer(c.GL_FRAMEBUFFER, self.framebuffer);
 
-            const old_size = gfx.Context.instance.size;
-            defer gfx.Context.resize(@intFromFloat(old_size.x), @intFromFloat(old_size.y));
+            const old_size = graphics.Context.instance.size;
+            defer graphics.Context.resize(@intFromFloat(old_size.x), @intFromFloat(old_size.y));
 
-            gfx.Context.resize(@intFromFloat(self.size.x), @intFromFloat(self.size.y));
+            graphics.Context.resize(@intFromFloat(self.size.x), @intFromFloat(self.size.y));
 
             try self.spritebatch.render();
         }
@@ -136,15 +149,15 @@ pub const VMData = struct {
             .texture = .none,
             .verts = .none,
             .shader = self.shader.*,
-            .clear = std.mem.zeroes(col.Color),
+            .clear = std.mem.zeroes(Color),
         });
     }
 
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font, _: *win.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, _: *Window.Data.WindowContents.WindowProps) !void {
         self.font_shader = font_shader;
         self.font = font;
 
-        try SpriteBatch.global.draw(spr.Sprite, &.override(self.texture, .{
+        try SpriteBatch.global.draw(Sprite, &.override(self.texture, .{
             .source = .{ .y = 1, .w = 1, .h = -1 },
             .size = .{ .x = bnds.w, .y = bnds.h },
         }), self.shader, .{ .x = bnds.x, .y = bnds.y });
@@ -226,7 +239,7 @@ pub const VMData = struct {
         }
     }
 
-    pub fn click(self: *Self, _: vecs.Vector2, pos: vecs.Vector2, btn: ?i32) !void {
+    pub fn click(self: *Self, _: Vec2, pos: Vec2, btn: ?i32) !void {
         self.mousebtn = btn;
         self.mousepos = pos;
     }
@@ -242,8 +255,8 @@ pub const VMData = struct {
         self.texture.deinit();
 
         {
-            gfx.Context.makeCurrent();
-            defer gfx.Context.makeNotCurrent();
+            graphics.Context.makeCurrent();
+            defer graphics.Context.makeNotCurrent();
 
             c.glDeleteFramebuffers(1, &self.framebuffer);
             c.glDeleteRenderbuffers(1, &self.framebuffer);
@@ -254,12 +267,12 @@ pub const VMData = struct {
     }
 };
 
-pub fn init(idx: u8, shader: *shd.Shader) !win.WindowContents {
+pub fn init(idx: u8, shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.alloc.create(VMData);
 
     {
-        gfx.Context.makeCurrent();
-        defer gfx.Context.makeNotCurrent();
+        graphics.Context.makeCurrent();
+        defer graphics.Context.makeNotCurrent();
 
         var texture: c.GLuint = 0;
         c.glGenTextures(1, &texture);
@@ -318,5 +331,5 @@ pub fn init(idx: u8, shader: *shd.Shader) !win.WindowContents {
         };
     }
 
-    return win.WindowContents.init(self, "vm", "VM Window", .{ .r = 1, .g = 1, .b = 1 });
+    return Window.Data.WindowContents.init(self, "vm", "VM Window", .{ .r = 1, .g = 1, .b = 1 });
 }

@@ -1,36 +1,47 @@
-const vecs = @import("../math/vecs.zig");
-const cols = @import("../math/colors.zig");
-const rect = @import("../math/rects.zig");
-const va = @import("../util/vertArray.zig");
-const spr = @import("sprite2d.zig");
-const fnt = @import("../util/font.zig");
-const shd = @import("../util/shader.zig");
-const wins = @import("window2d.zig");
-const gfx = @import("../util/graphics.zig");
+const std = @import("std");
+const c = @import("../c.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const drawers = @import("mod.zig");
+
+const util = @import("../util/mod.zig");
+const math = @import("../math/mod.zig");
+
+const Sprite = drawers.Sprite;
+const Window = drawers.Window;
+
+const Color = math.Color;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Rect = math.Rect;
+
+const SpriteBatch = util.SpriteBatch;
+const VertArray = util.VertArray;
+const Shader = util.Shader;
+const Font = util.Font;
+const allocator = util.allocator;
+const graphics = util.graphics;
 
 const TOTAL_SPRITES: f32 = 1;
 const TEX_SIZE: f32 = 32;
 
 pub const NotificationData = struct {
     time: f32 = 3.0,
-    icon: ?spr.Sprite,
+    icon: ?Sprite,
     title: []const u8,
     text: []const u8,
-    source: rect.Rectangle = .{ .w = 1, .h = 1 },
-    color: cols.Color = .{ .r = 1, .g = 1, .b = 1 },
+    source: Rect = .{ .w = 1, .h = 1 },
+    color: Color = .{ .r = 1, .g = 1, .b = 1 },
 
     pub fn update(self: *NotificationData, dt: f32) !void {
         self.time = @max(@as(f32, 0), self.time - dt);
     }
 
-    pub fn getVerts(_: *const NotificationData, pos: vecs.Vector3) !va.VertArray {
-        const target2d = gfx.Context.instance.size.sub(.{ .x = 260, .y = 100 + 80 * pos.x });
+    pub fn getVerts(_: *const NotificationData, pos: Vec3) !VertArray {
+        const target2d = graphics.Context.instance.size.sub(.{ .x = 260, .y = 100 + 80 * pos.x });
 
-        var result = try va.VertArray.init(9 * 6);
+        var result = try VertArray.init(9 * 6);
 
-        const targetpos = vecs.Vector3{ .x = target2d.x, .y = target2d.y };
+        const targetpos = Vec3{ .x = target2d.x, .y = target2d.y };
 
         try result.appendQuad(.{ .x = targetpos.x, .y = targetpos.y, .w = 250, .h = 70 }, .{
             .x = 2.0 / 8.0,
@@ -49,8 +60,8 @@ pub const NotificationData = struct {
         return result;
     }
 
-    pub fn drawContents(self: *NotificationData, shader: *shd.Shader, font: *fnt.Font, font_shader: *shd.Shader, idx: usize) !void {
-        const desk_size = gfx.Context.instance.size;
+    pub fn drawContents(self: *NotificationData, shader: *Shader, font: *Font, font_shader: *Shader, idx: usize) !void {
+        const desk_size = graphics.Context.instance.size;
 
         if (self.icon) |*icon| {
             icon.data.size.x = 60;
@@ -58,7 +69,7 @@ pub const NotificationData = struct {
 
             const pos = desk_size.sub(.{ .x = 255, .y = 95 + 80 * @as(f32, @floatFromInt(idx)) });
 
-            try SpriteBatch.global.draw(spr.Sprite, icon, shader, .{ .x = pos.x, .y = pos.y });
+            try SpriteBatch.global.draw(Sprite, icon, shader, .{ .x = pos.x, .y = pos.y });
         }
 
         try font.draw(.{
@@ -81,4 +92,4 @@ pub const NotificationData = struct {
     }
 };
 
-pub const Notification = SpriteBatch.Drawer(NotificationData);
+pub const drawer = SpriteBatch.Drawer(NotificationData);

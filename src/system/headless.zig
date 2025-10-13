@@ -1,23 +1,30 @@
 const std = @import("std");
-const fm = @import("../util/files.zig");
-const files = @import("files.zig");
-const shell = @import("shell.zig");
-const allocator = @import("../util/allocator.zig");
-const vm_manager = @import("../system/vmmanager.zig");
-const font = @import("../util/font.zig");
+
+const util = @import("../util/mod.zig");
+const system = @import("mod.zig");
+const sandeee_data = @import("../data/mod.zig");
+
+const storage = util.storage;
+const allocator = util.allocator;
+
+const VmManager = system.VmManager;
+const Shell = system.Shell;
+const files = system.files;
+
+const strings = sandeee_data.strings;
 
 const DISK = "headless.eee";
 
 pub fn toANSI(input: []const u8) ![]const u8 {
-    const buffer_len = std.mem.replacementSize(u8, input, font.E, "Ⲉ");
+    const buffer_len = std.mem.replacementSize(u8, input, strings.E, "Ⲉ");
     const buffer = try allocator.alloc.alloc(u8, buffer_len);
-    _ = std.mem.replace(u8, input, font.E, "Ⲉ", buffer);
+    _ = std.mem.replace(u8, input, strings.E, "Ⲉ", buffer);
 
     return buffer;
 }
 
 pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) anyerror!void {
-    const diskpath = try fm.getContentPath("disks/headless.eee");
+    const diskpath = try storage.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
 
     std.fs.cwd().access(diskpath.items, .{}) catch {
@@ -28,7 +35,7 @@ pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.
 
     defer files.deinit();
 
-    var main_shell = shell.Shell{ .root = .home, .headless = true };
+    var main_shell = Shell{ .root = .home, .headless = true };
 
     const stdin_file = std.io.getStdIn();
     const stdin = stdin_file.reader();
@@ -68,7 +75,7 @@ pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.
                 allocator.alloc.free(result.data);
             }
 
-            try vm_manager.VMManager.instance.update();
+            try VmManager.instance.update();
 
             if (main_shell.vm == null)
                 _ = try stdout.write("\r\n");
@@ -153,11 +160,11 @@ pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.
 }
 
 test "Headless scripts" {
-    vm_manager.VMManager.init();
-    defer vm_manager.VMManager.instance.deinit();
+    VmManager.init();
+    defer VmManager.instance.deinit();
 
-    vm_manager.VMManager.vm_time = 1.0;
-    vm_manager.VMManager.last_frame_time = 10.0;
+    VmManager.vm_time = 1.0;
+    VmManager.last_frame_time = 10.0;
 
     var logging = try std.fs.cwd().createFile("zig-out/test_output.md", .{});
     defer logging.close();

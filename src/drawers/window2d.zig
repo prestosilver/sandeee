@@ -1,337 +1,344 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const vecs = @import("../math/vecs.zig");
-const cols = @import("../math/colors.zig");
-const rect = @import("../math/rects.zig");
-const fnt = @import("../util/font.zig");
-const shd = @import("../util/shader.zig");
-const va = @import("../util/vertArray.zig");
-const allocator = @import("../util/allocator.zig");
-const spr = @import("sprite2d.zig");
-const gfx = @import("../util/graphics.zig");
+const drawers = @import("mod.zig");
 
-const SpriteBatch = @import("../util/spritebatch.zig");
+const util = @import("../util/mod.zig");
+const math = @import("../math/mod.zig");
 
-const TOTAL_SPRITES: f32 = 9.0;
-const TEX_SIZE: f32 = 32;
-const RESIZE_PAD: f32 = 10;
+const Sprite = drawers.Sprite;
 
-pub const DragMode = enum {
-    None,
-    Move,
-    Close,
-    Full,
-    Min,
-    ResizeL,
-    ResizeR,
-    ResizeB,
-    ResizeLB,
-    ResizeRB,
-};
+const Color = math.Color;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Rect = math.Rect;
 
-// TODO: un hardcode
-pub const SCROLL_MUL = 30;
+const VertArray = util.VertArray;
+const Shader = util.Shader;
+const Font = util.Font;
+const graphics = util.graphics;
+const allocator = util.allocator;
+const SpriteBatch = util.SpriteBatch;
 
-pub const WindowContents = struct {
-    const Self = @This();
+pub const WindowData = struct {
+    const TOTAL_SPRITES: f32 = 9.0;
+    const TEX_SIZE: f32 = 32;
+    const RESIZE_PAD: f32 = 10;
 
-    pub const WindowProps = struct {
-        const ScrollData = struct {
-            offset_start: f32 = 0,
-            value: f32 = 0,
-            maxy: f32 = 0,
+    pub const DragMode = enum {
+        None,
+        Move,
+        Close,
+        Full,
+        Min,
+        ResizeL,
+        ResizeR,
+        ResizeB,
+        ResizeLB,
+        ResizeRB,
+    };
+
+    // TODO: un hardcode
+    pub const SCROLL_MUL = 30;
+
+    pub const WindowContents = struct {
+        const Self = @This();
+
+        pub const WindowProps = struct {
+            const ScrollData = struct {
+                offset_start: f32 = 0,
+                value: f32 = 0,
+                maxy: f32 = 0,
+            };
+
+            const InfoData = struct {
+                kind: []const u8,
+                name: []const u8,
+            };
+
+            const SizeData = struct {
+                min: Vec2,
+                max: ?Vec2,
+            };
+
+            scroll: ?ScrollData = null,
+            info: InfoData,
+            size: SizeData = .{
+                .min = .{ .x = 400, .y = 300 },
+                .max = null,
+            },
+            close: bool = false,
+            clear_color: Color,
+
+            no_min: bool = false,
+            no_close: bool = false,
+
+            pub fn setTitle(self: *WindowProps, title: []const u8) !void {
+                if (!std.mem.eql(u8, self.info.name, title)) {
+                    allocator.alloc.free(self.info.name);
+                    self.info.name = try allocator.alloc.dupe(u8, title);
+                }
+            }
         };
 
-        const InfoData = struct {
-            kind: []const u8,
-            name: []const u8,
+        const Vtable = struct {
+            draw: *const fn (*anyopaque, *Shader, *Rect, *Font, *WindowProps) anyerror!void,
+            click: *const fn (*anyopaque, Vec2, Vec2, ?i32) anyerror!void,
+            key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
+            char: *const fn (*anyopaque, u32, i32) anyerror!void,
+            scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
+            move: *const fn (*anyopaque, f32, f32) anyerror!void,
+
+            moveResize: *const fn (*anyopaque, Rect) anyerror!void,
+
+            refresh: *const fn (*anyopaque) anyerror!void,
+            focus: *const fn (*anyopaque) anyerror!void,
+            deinit: *const fn (*anyopaque) void,
         };
 
-        const SizeData = struct {
-            min: vecs.Vector2,
-            max: ?vecs.Vector2,
-        };
+        pub var scroll_sp: [4]Sprite = undefined;
+        pub var shader: *Shader = undefined;
 
-        scroll: ?ScrollData = null,
-        info: InfoData,
-        size: SizeData = .{
-            .min = .{ .x = 400, .y = 300 },
-            .max = null,
-        },
-        close: bool = false,
-        clear_color: cols.Color,
+        props: WindowProps,
 
-        no_min: bool = false,
-        no_close: bool = false,
+        scrolling: bool = false,
 
-        pub fn setTitle(self: *WindowProps, title: []const u8) !void {
-            if (!std.mem.eql(u8, self.info.name, title)) {
-                allocator.alloc.free(self.info.name);
-                self.info.name = try allocator.alloc.dupe(u8, title);
+        ptr: *anyopaque,
+        vtable: *const Vtable,
+
+        pub fn drawScroll(self: *Self, bnds: *Rect) !void {
+            if (self.props.scroll) |scroll_data| {
+                if (scroll_data.maxy <= 0) return;
+
+                const scroll_pc = scroll_data.value / scroll_data.maxy;
+
+                scroll_sp[1].data.size.y = bnds.h - scroll_data.offset_start - (20 * 2 - 2) + 2;
+
+                try SpriteBatch.global.draw(Sprite, &scroll_sp[0], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start });
+                try SpriteBatch.global.draw(Sprite, &scroll_sp[1], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start + 20 });
+                try SpriteBatch.global.draw(Sprite, &scroll_sp[2], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + bnds.h - 20 + 2 });
+                try SpriteBatch.global.draw(Sprite, &scroll_sp[3], shader, .{ .x = bnds.x + bnds.w - 20, .y = (bnds.h - scroll_data.offset_start - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + scroll_data.offset_start + 20 - 2 });
             }
         }
-    };
 
-    const Vtable = struct {
-        draw: *const fn (*anyopaque, *shd.Shader, *rect.Rectangle, *fnt.Font, *WindowProps) anyerror!void,
-        click: *const fn (*anyopaque, vecs.Vector2, vecs.Vector2, ?i32) anyerror!void,
-        key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
-        char: *const fn (*anyopaque, u32, i32) anyerror!void,
-        scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
-        move: *const fn (*anyopaque, f32, f32) anyerror!void,
-
-        moveResize: *const fn (*anyopaque, rect.Rectangle) anyerror!void,
-
-        refresh: *const fn (*anyopaque) anyerror!void,
-        focus: *const fn (*anyopaque) anyerror!void,
-        deinit: *const fn (*anyopaque) void,
-    };
-
-    pub var scroll_sp: [4]spr.Sprite = undefined;
-    pub var shader: *shd.Shader = undefined;
-
-    props: WindowProps,
-
-    scrolling: bool = false,
-
-    ptr: *anyopaque,
-    vtable: *const Vtable,
-
-    pub fn drawScroll(self: *Self, bnds: *rect.Rectangle) !void {
-        if (self.props.scroll) |scroll_data| {
-            if (scroll_data.maxy <= 0) return;
-
-            const scroll_pc = scroll_data.value / scroll_data.maxy;
-
-            scroll_sp[1].data.size.y = bnds.h - scroll_data.offset_start - (20 * 2 - 2) + 2;
-
-            try SpriteBatch.global.draw(spr.Sprite, &scroll_sp[0], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start });
-            try SpriteBatch.global.draw(spr.Sprite, &scroll_sp[1], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + scroll_data.offset_start + 20 });
-            try SpriteBatch.global.draw(spr.Sprite, &scroll_sp[2], shader, .{ .x = bnds.x + bnds.w - 20, .y = bnds.y + bnds.h - 20 + 2 });
-            try SpriteBatch.global.draw(spr.Sprite, &scroll_sp[3], shader, .{ .x = bnds.x + bnds.w - 20, .y = (bnds.h - scroll_data.offset_start - (20 * 2) - 30 + 4) * scroll_pc + bnds.y + scroll_data.offset_start + 20 - 2 });
-        }
-    }
-
-    pub fn draw(self: *Self, font_shader: *shd.Shader, bnds: *rect.Rectangle, font: *fnt.Font) !void {
-        if (self.props.scroll) |*scroll_data| {
-            if (scroll_data.value > scroll_data.maxy)
-                scroll_data.value = scroll_data.maxy;
-            if (scroll_data.value < 0)
-                scroll_data.value = 0;
-        }
-
-        try self.vtable.draw(self.ptr, font_shader, bnds, font, &self.props);
-        try self.drawScroll(bnds);
-    }
-
-    pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
-        if (keycode == c.GLFW_KEY_PAGE_UP) {
-            if (self.props.scroll) |*scroll_data|
-                scroll_data.value -= 1 * SCROLL_MUL;
-        } else if (keycode == c.GLFW_KEY_PAGE_DOWN) {
-            if (self.props.scroll) |*scroll_data|
-                scroll_data.value += 1 * SCROLL_MUL;
-        } else {
-            return self.vtable.key(self.ptr, keycode, mods, down);
-        }
-    }
-
-    pub fn char(self: *Self, codepoint: u32, mods: i32) !void {
-        return self.vtable.char(self.ptr, codepoint, mods);
-    }
-
-    pub fn click(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2, btn: ?i32) !void {
-        if (btn) |_| {
+        pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font) !void {
             if (self.props.scroll) |*scroll_data| {
-                self.scrolling = false;
-                if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scroll_data.offset_start + 14) {
+                if (scroll_data.value > scroll_data.maxy)
+                    scroll_data.value = scroll_data.maxy;
+                if (scroll_data.value < 0)
+                    scroll_data.value = 0;
+            }
+
+            try self.vtable.draw(self.ptr, font_shader, bnds, font, &self.props);
+            try self.drawScroll(bnds);
+        }
+
+        pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
+            if (keycode == c.GLFW_KEY_PAGE_UP) {
+                if (self.props.scroll) |*scroll_data|
+                    scroll_data.value -= 1 * SCROLL_MUL;
+            } else if (keycode == c.GLFW_KEY_PAGE_DOWN) {
+                if (self.props.scroll) |*scroll_data|
+                    scroll_data.value += 1 * SCROLL_MUL;
+            } else {
+                return self.vtable.key(self.ptr, keycode, mods, down);
+            }
+        }
+
+        pub fn char(self: *Self, codepoint: u32, mods: i32) !void {
+            return self.vtable.char(self.ptr, codepoint, mods);
+        }
+
+        pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: ?i32) !void {
+            if (btn) |_| {
+                if (self.props.scroll) |*scroll_data| {
+                    self.scrolling = false;
+                    if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scroll_data.offset_start + 14) {
+                        const pc = (mousepos.y - 14 - scroll_data.offset_start) / (size.y - 28 - scroll_data.offset_start);
+                        scroll_data.value = std.math.round(scroll_data.maxy * pc);
+                        self.scrolling = true;
+                        return;
+                    }
+                }
+            }
+
+            return self.vtable.click(self.ptr, size, mousepos, btn);
+        }
+
+        pub fn drag(self: *Self, size: Vec2, mousepos: Vec2) !void {
+            if (self.props.scroll) |*scroll_data| {
+                if (self.scrolling) {
                     const pc = (mousepos.y - 14 - scroll_data.offset_start) / (size.y - 28 - scroll_data.offset_start);
                     scroll_data.value = std.math.round(scroll_data.maxy * pc);
-                    self.scrolling = true;
+
                     return;
                 }
             }
         }
 
-        return self.vtable.click(self.ptr, size, mousepos, btn);
-    }
-
-    pub fn drag(self: *Self, size: vecs.Vector2, mousepos: vecs.Vector2) !void {
-        if (self.props.scroll) |*scroll_data| {
-            if (self.scrolling) {
-                const pc = (mousepos.y - 14 - scroll_data.offset_start) / (size.y - 28 - scroll_data.offset_start);
-                scroll_data.value = std.math.round(scroll_data.maxy * pc);
-
-                return;
+        pub fn scroll(self: *Self, x: f32, y: f32) !void {
+            if (self.props.scroll) |*scroll_data| {
+                scroll_data.value -= y * SCROLL_MUL;
             }
-        }
-    }
 
-    pub fn scroll(self: *Self, x: f32, y: f32) !void {
-        if (self.props.scroll) |*scroll_data| {
-            scroll_data.value -= y * SCROLL_MUL;
+            return self.vtable.scroll(self.ptr, x, y);
         }
 
-        return self.vtable.scroll(self.ptr, x, y);
-    }
+        pub fn move(self: *Self, x: f32, y: f32) !void {
+            if (self.props.scroll) |*scroll_data|
+                return self.vtable.move(self.ptr, x, y + scroll_data.value);
+            return self.vtable.move(self.ptr, x, y);
+        }
 
-    pub fn move(self: *Self, x: f32, y: f32) !void {
-        if (self.props.scroll) |*scroll_data|
-            return self.vtable.move(self.ptr, x, y + scroll_data.value);
-        return self.vtable.move(self.ptr, x, y);
-    }
+        pub fn focus(self: *Self) !void {
+            return self.vtable.focus(self.ptr);
+        }
 
-    pub fn focus(self: *Self) !void {
-        return self.vtable.focus(self.ptr);
-    }
+        pub fn refresh(self: *Self) !void {
+            return self.vtable.refresh(self.ptr);
+        }
 
-    pub fn refresh(self: *Self) !void {
-        return self.vtable.refresh(self.ptr);
-    }
+        pub fn moveResize(self: *Self, bnds: Rect) !void {
+            return self.vtable.moveResize(self.ptr, bnds);
+        }
 
-    pub fn moveResize(self: *Self, bnds: rect.Rectangle) !void {
-        return self.vtable.moveResize(self.ptr, bnds);
-    }
+        pub fn deinit(self: *Self) void {
+            self.vtable.deinit(self.ptr);
 
-    pub fn deinit(self: *Self) void {
-        self.vtable.deinit(self.ptr);
+            allocator.alloc.free(self.props.info.name);
 
-        allocator.alloc.free(self.props.info.name);
+            return;
+        }
 
-        return;
-    }
+        pub fn init(ptr: anytype, kind: []const u8, name: []const u8, clear_color: Color) !Self {
+            const Ptr = @TypeOf(ptr);
+            const ptr_info = @typeInfo(Ptr);
 
-    pub fn init(ptr: anytype, kind: []const u8, name: []const u8, clear_color: cols.Color) !Self {
-        const Ptr = @TypeOf(ptr);
-        const ptr_info = @typeInfo(Ptr);
+            if (ptr_info != .pointer) @compileError("ptr must be a pointer");
+            if (ptr_info.pointer.size != .one) @compileError("ptr must be a single item pointer");
 
-        if (ptr_info != .pointer) @compileError("ptr must be a pointer");
-        if (ptr_info.pointer.size != .one) @compileError("ptr must be a single item pointer");
+            const child_t = ptr_info.pointer.child;
 
-        const child_t = ptr_info.pointer.child;
-
-        const gen = struct {
-            fn drawImpl(
-                pointer: *anyopaque,
-                font_shader: *shd.Shader,
-                bnds: *rect.Rectangle,
-                font: *fnt.Font,
-                props: *WindowProps,
-            ) anyerror!void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.pointer.child.draw, .{ self, font_shader, bnds, font, props });
-            }
-
-            fn deinitImpl(pointer: *anyopaque) void {
-                const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                return @call(.always_inline, ptr_info.pointer.child.deinit, .{self});
-            }
-
-            fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
-                if (std.meta.hasMethod(child_t, "key")) {
+            const gen = struct {
+                fn drawImpl(
+                    pointer: *anyopaque,
+                    font_shader: *Shader,
+                    bnds: *Rect,
+                    font: *Font,
+                    props: *WindowProps,
+                ) anyerror!void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.key, .{ self, keycode, mods, down });
+                    return @call(.always_inline, ptr_info.pointer.child.draw, .{ self, font_shader, bnds, font, props });
                 }
-            }
 
-            fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
-                if (std.meta.hasMethod(child_t, "char")) {
+                fn deinitImpl(pointer: *anyopaque) void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.char, .{ self, codepoint, mods });
+                    return @call(.always_inline, ptr_info.pointer.child.deinit, .{self});
                 }
-            }
 
-            fn clickImpl(pointer: *anyopaque, size: vecs.Vector2, pos: vecs.Vector2, btn: ?c_int) !void {
-                if (std.meta.hasMethod(child_t, "click")) {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                fn keyImpl(pointer: *anyopaque, keycode: i32, mods: i32, down: bool) !void {
+                    if (std.meta.hasMethod(child_t, "key")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.click, .{ self, size, pos, btn });
+                        return @call(.always_inline, ptr_info.pointer.child.key, .{ self, keycode, mods, down });
+                    }
                 }
-            }
 
-            fn scrollImpl(pointer: *anyopaque, x: f32, y: f32) !void {
-                if (std.meta.hasMethod(child_t, "scroll")) {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
+                    if (std.meta.hasMethod(child_t, "char")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.scroll, .{ self, x, y });
+                        return @call(.always_inline, ptr_info.pointer.child.char, .{ self, codepoint, mods });
+                    }
                 }
-            }
 
-            fn moveImpl(pointer: *anyopaque, x: f32, y: f32) !void {
-                if (std.meta.hasMethod(child_t, "move")) {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                fn clickImpl(pointer: *anyopaque, size: Vec2, pos: Vec2, btn: ?c_int) !void {
+                    if (std.meta.hasMethod(child_t, "click")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.move, .{ self, x, y });
+                        return @call(.always_inline, ptr_info.pointer.child.click, .{ self, size, pos, btn });
+                    }
                 }
-            }
 
-            fn focusImpl(pointer: *anyopaque) !void {
-                if (std.meta.hasMethod(child_t, "focus")) {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                fn scrollImpl(pointer: *anyopaque, x: f32, y: f32) !void {
+                    if (std.meta.hasMethod(child_t, "scroll")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.focus, .{self});
+                        return @call(.always_inline, ptr_info.pointer.child.scroll, .{ self, x, y });
+                    }
                 }
-            }
 
-            fn moveResizeImpl(pointer: *anyopaque, bnds: rect.Rectangle) !void {
-                if (std.meta.hasMethod(child_t, "moveResize")) {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                fn moveImpl(pointer: *anyopaque, x: f32, y: f32) !void {
+                    if (std.meta.hasMethod(child_t, "move")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.moveResize, .{ self, rect.Rectangle{
-                        .x = bnds.x + 6,
-                        .y = bnds.y + 34,
-                        .w = bnds.w - 12,
-                        .h = bnds.h - 40,
-                    } });
+                        return @call(.always_inline, ptr_info.pointer.child.move, .{ self, x, y });
+                    }
                 }
-            }
 
-            fn refreshImpl(pointer: *anyopaque) !void {
-                if (std.meta.hasMethod(child_t, "refresh")) {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
+                fn focusImpl(pointer: *anyopaque) !void {
+                    if (std.meta.hasMethod(child_t, "focus")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.refresh, .{self});
+                        return @call(.always_inline, ptr_info.pointer.child.focus, .{self});
+                    }
                 }
-            }
 
-            const vtable = Vtable{
-                .draw = drawImpl,
-                .key = keyImpl,
-                .char = charImpl,
-                .click = clickImpl,
-                .scroll = scrollImpl,
-                .moveResize = moveResizeImpl,
-                .move = moveImpl,
-                .focus = focusImpl,
-                .deinit = deinitImpl,
-                .refresh = refreshImpl,
+                fn moveResizeImpl(pointer: *anyopaque, bnds: Rect) !void {
+                    if (std.meta.hasMethod(child_t, "moveResize")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                        return @call(.always_inline, ptr_info.pointer.child.moveResize, .{ self, Rect{
+                            .x = bnds.x + 6,
+                            .y = bnds.y + 34,
+                            .w = bnds.w - 12,
+                            .h = bnds.h - 40,
+                        } });
+                    }
+                }
+
+                fn refreshImpl(pointer: *anyopaque) !void {
+                    if (std.meta.hasMethod(child_t, "refresh")) {
+                        const self: Ptr = @ptrCast(@alignCast(pointer));
+
+                        return @call(.always_inline, ptr_info.pointer.child.refresh, .{self});
+                    }
+                }
+
+                const vtable = Vtable{
+                    .draw = drawImpl,
+                    .key = keyImpl,
+                    .char = charImpl,
+                    .click = clickImpl,
+                    .scroll = scrollImpl,
+                    .moveResize = moveResizeImpl,
+                    .move = moveImpl,
+                    .focus = focusImpl,
+                    .deinit = deinitImpl,
+                    .refresh = refreshImpl,
+                };
             };
-        };
 
-        return Self{
-            .ptr = ptr,
-            .props = .{
-                .info = .{
-                    .kind = kind,
-                    .name = try allocator.alloc.dupe(u8, name),
+            return Self{
+                .ptr = ptr,
+                .props = .{
+                    .info = .{
+                        .kind = kind,
+                        .name = try allocator.alloc.dupe(u8, name),
+                    },
+                    .clear_color = clear_color,
                 },
-                .clear_color = clear_color,
-            },
-            .vtable = &gen.vtable,
-        };
-    }
-};
+                .vtable = &gen.vtable,
+            };
+        }
+    };
 
-pub const WindowData = struct {
-    source: rect.Rectangle = .{ .w = 1.0, .h = 1.0 },
-    pos: rect.Rectangle = .{ .x = 100, .y = 100, .w = 600, .h = 400 },
+    source: Rect = .{ .w = 1.0, .h = 1.0 },
+    pos: Rect = .{ .x = 100, .y = 100, .w = 600, .h = 400 },
 
-    oldpos: rect.Rectangle = .{ .w = 0.0, .h = 0.0 },
+    oldpos: Rect = .{ .w = 0.0, .h = 0.0 },
     active: bool = false,
     full: bool = false,
     min: bool = false,
@@ -346,10 +353,10 @@ pub const WindowData = struct {
 
     const PADDING = 25;
 
-    pub fn getDragMode(self: *WindowData, mousepos: vecs.Vector2) DragMode {
+    pub fn getDragMode(self: *WindowData, mousepos: Vec2) DragMode {
         if (self.min) return DragMode.None;
 
-        const close = rect.Rectangle{
+        const close = Rect{
             .x = self.pos.x + self.pos.w - 64 + 64 - PADDING,
             .y = self.pos.y,
             .w = PADDING,
@@ -358,7 +365,7 @@ pub const WindowData = struct {
         if (close.contains(mousepos)) {
             return DragMode.Close;
         }
-        const full = rect.Rectangle{
+        const full = Rect{
             .x = self.pos.x + self.pos.w - 86 + 64 - PADDING,
             .y = self.pos.y,
             .w = PADDING,
@@ -370,7 +377,7 @@ pub const WindowData = struct {
             else
                 return DragMode.None;
         }
-        const min = rect.Rectangle{
+        const min = Rect{
             .x = self.pos.x + self.pos.w - 108 + 64 - PADDING,
             .y = self.pos.y,
             .w = PADDING,
@@ -380,7 +387,7 @@ pub const WindowData = struct {
             return DragMode.Min;
         }
 
-        const move = rect.Rectangle{
+        const move = Rect{
             .x = self.pos.x,
             .y = self.pos.y,
             .w = self.pos.w,
@@ -399,7 +406,7 @@ pub const WindowData = struct {
             }
         }
 
-        const bottom = rect.Rectangle{
+        const bottom = Rect{
             .x = self.pos.x - RESIZE_PAD,
             .y = self.pos.y + self.pos.h - RESIZE_PAD,
             .w = self.pos.w + RESIZE_PAD * 2,
@@ -408,7 +415,7 @@ pub const WindowData = struct {
 
         const bot = bottom.contains(mousepos);
 
-        const left = rect.Rectangle{
+        const left = Rect{
             .x = self.pos.x - RESIZE_PAD,
             .y = self.pos.y,
             .w = RESIZE_PAD * 2,
@@ -422,7 +429,7 @@ pub const WindowData = struct {
             }
         }
 
-        const right = rect.Rectangle{
+        const right = Rect{
             .x = self.pos.x + self.pos.w - RESIZE_PAD,
             .y = self.pos.y,
             .w = RESIZE_PAD * 2,
@@ -443,13 +450,13 @@ pub const WindowData = struct {
         }
     }
 
-    pub fn drawName(self: *WindowData, shader: *shd.Shader, font: *fnt.Font) !void {
+    pub fn drawName(self: *WindowData, shader: *Shader, font: *Font) !void {
         if (self.min) return;
 
         const color = if (self.active)
-            cols.Color{ .r = 1, .g = 1, .b = 1 }
+            Color{ .r = 1, .g = 1, .b = 1 }
         else
-            cols.Color{ .r = 0.75, .g = 0.75, .b = 0.75 };
+            Color{ .r = 0.75, .g = 0.75, .b = 0.75 };
 
         try font.draw(.{
             .shader = shader,
@@ -461,8 +468,8 @@ pub const WindowData = struct {
         });
     }
 
-    pub fn drawContents(self: *WindowData, shader: *shd.Shader, font: *fnt.Font) !void {
-        const desk_size = gfx.Context.instance.size;
+    pub fn drawContents(self: *WindowData, shader: *Shader, font: *Font) !void {
+        const desk_size = graphics.Context.instance.size;
 
         if (self.full) {
             self.pos.w = desk_size.x;
@@ -480,7 +487,7 @@ pub const WindowData = struct {
 
         try SpriteBatch.global.addEntry(&.{
             .texture = .none,
-            .verts = try va.VertArray.init(0),
+            .verts = try VertArray.init(0),
             .shader = shader.*,
             .clear = self.contents.props.clear_color,
         });
@@ -488,7 +495,7 @@ pub const WindowData = struct {
         try self.contents.draw(shader, &bnds, font);
     }
 
-    pub fn scissor(self: *const WindowData) rect.Rectangle {
+    pub fn scissor(self: *const WindowData) Rect {
         var bnds = self.pos;
         bnds.y += 34;
         bnds.x += 6;
@@ -498,7 +505,7 @@ pub const WindowData = struct {
         return bnds;
     }
 
-    pub fn click(self: *WindowData, mousepos: vecs.Vector2, btn: ?i32) !void {
+    pub fn click(self: *WindowData, mousepos: Vec2, btn: ?i32) !void {
         if (self.min) return;
         var bnds = self.pos;
         bnds.x += 4;
@@ -554,8 +561,8 @@ pub const WindowData = struct {
         self.pos = self.pos.round();
     }
 
-    pub fn getVerts(self: *const WindowData, _: vecs.Vector3) !va.VertArray {
-        var result = try va.VertArray.init(9 * 6 * 4 + 3 * 6);
+    pub fn getVerts(self: *const WindowData, _: Vec3) !VertArray {
+        var result = try VertArray.init(9 * 6 * 4 + 3 * 6);
         var sprite: u8 = 0;
         if (self.min) return result;
 
@@ -563,9 +570,9 @@ pub const WindowData = struct {
             sprite = 1;
         }
 
-        const close = rect.Rectangle{ .x = self.pos.x + self.pos.w - 64, .y = self.pos.y, .w = 64, .h = 64 };
-        const full = rect.Rectangle{ .x = self.pos.x + self.pos.w - 86, .y = self.pos.y, .w = 64, .h = 64 };
-        const min = rect.Rectangle{ .x = self.pos.x + self.pos.w - 108, .y = self.pos.y, .w = 64, .h = 64 };
+        const close = Rect{ .x = self.pos.x + self.pos.w - 64, .y = self.pos.y, .w = 64, .h = 64 };
+        const full = Rect{ .x = self.pos.x + self.pos.w - 86, .y = self.pos.y, .w = 64, .h = 64 };
+        const min = Rect{ .x = self.pos.x + self.pos.w - 108, .y = self.pos.y, .w = 64, .h = 64 };
 
         try result.appendUiQuad(self.pos, .{
             .sheet_size = .{ .x = 1, .y = TOTAL_SPRITES },
@@ -605,4 +612,4 @@ pub const WindowData = struct {
     }
 };
 
-pub const Window = SpriteBatch.Drawer(WindowData);
+pub const drawer = SpriteBatch.Drawer(WindowData);
