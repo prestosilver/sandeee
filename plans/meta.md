@@ -35,6 +35,9 @@
     - www/docs/text/eon.edf
     - www/docs/text/edf.edf
     - www/docs/text/esf.edf
+- www/docs/programs
+    - www/docs/libraries/index.edf
+    - www/docs/libraries/eon.edf
 - www/docs/libraries
     - www/docs/libraries/index.edf
     - www/docs/libraries/eon.edf
@@ -103,11 +106,6 @@
         - Transparent: 1
 ```
 
-## Libraries
-
-- All library docs should be listed under categories labeled `libraries`, to keep things consistent that means no shortening to "libs".
-- 
-
 ## Shell Commands
 
 - Every shell command will return a properly named error on invalid input.
@@ -115,3 +113,37 @@
     - If there are no args passed then display the help
     - If args are passed print the error and some related info
 - Every shell command should require atleast one argument
+
+### Help syntax
+
+- All commands should have a help message
+- Help messages should have a line showing full usage with all possible flags
+    - Flags are unordered, other than help with is the first thing following the command.
+    - Args can be before after or inbetween flags
+- After that there should be a empty line followed by a complete sentence description of the programs purpose, followed by another newline.
+- Finally, there should be a list of every argument followed by a complete sentence usage.
+- Programs can also list bugs or quirks after the arguments with a blank line preceding them.
+- Parameter lists are formatted with a tab following the parameter ":parameter\tusage"
+    - The help paramters description is always "Displays this message"
+- Required arguments and Optional arguments should have headings with the format `- Optional Arguments -` and `- Required Arguments -` respectivly
+
+Example: 
+```md
+edit [:help] [:new] [file]
+
+- Optional Arguments -
+:help      Displays this message.
+:new       Dont load the file, just make a new one.
+file       Specify which file to load
+
+Opens a file in EEEdit.
+```
+
+If no file is provided the editor will open without a file loaded.
+
+## Libraries
+
+- All library docs should be listed under categories labeled `libraries`, to keep things consistent that means no shortening to "libs".
+- Functions should list names, eon call signature, and any errors they can throw.
+    - For errors, the library should list each error and what caused that, in a complete sentence description.
+- Errors should not include the name of the library, ex. No "TextureFileNotFound", use "FileNotFound".
