@@ -5,8 +5,8 @@
 ### Name Style Rules
 
 - The SandEEE E is character Ⲉ (U+2C88) in unicode, and a standard E (captial) in ascii.
-- SandEEE should always be spelled SandEEE with the EEECH character for the SandEEE E in place of its Es.
-- All sandeee docs are written in the .edf format, see the docs for that.
+- SandEEE should always be spelled SandEEE with the EEEch character for the SandEEE E in place of its Es.
+- All SandEEE docs are written in the .edf format, see the docs for that.
 - EEE is pronounced "tripple E"
 - EEE is always capitalized if in ascii, even in a subset of a program name
 
@@ -21,7 +21,7 @@
 
 - www/docs/index.edf
 - www/docs/encodings/
-    - www/docs/encodings/eeeCH.eia
+    - www/docs/encodings/EEEch.eia
 - www/docs/binaries
     - www/docs/binaries/index.edf
     - www/docs/binaries/eia.edf
@@ -45,7 +45,7 @@
 ## Text file extensions
 
 > Definition:
-> A text file is a file format that does not soley depend on the eeeCH format.
+> A text file is a file format that does not soley depend on the EEEch format.
 
 - All text files should be named with 3 letter lowercase extensions.
 - All text file docs should be listed under categories named `text`
@@ -60,7 +60,7 @@
 ## Binary file extensions
 
 > Definiton:
-> A binary file is a file format that does not soley depend on the eeeCH format.
+> A binary file is a file format that does not soley depend on the EEEch format.
 
 - All binary files should be named with 3 letter lowercase extensions.
 - All binary file docs should be listed under categories named `binaries`, to keep things consistent that means no shortening to "bins".
@@ -128,7 +128,7 @@
 - Required arguments and Optional arguments should have headings with the format `- Optional Arguments -` and `- Required Arguments -` respectivly
 
 Example: 
-```md
+```text
 edit [:help] [:new] [file]
 
 - Optional Arguments -
