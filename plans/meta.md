@@ -16,10 +16,30 @@
     - file extension docs are named after their extension.
     - Encoding docs are named after the encodings acronym/shortend form
     - libraries are named after their .ell file name
+- All docs should include the main style sheet with `#style @www/docs/style.eds`
+    - Code blocks can be made with the `:code:`, `:code-edge:` and `:bad-code:` styles
+        - Bad code is defined as: any line of code that if not excluded will prevent that block of code from compiling.
+        - :code: should be wrapped in the :code-edge: style for compat.
+        - :code-edge: lines have no text.
+    - nothing should be centered.
+- All docs should include the usual `:center: --- EEE Sees all ---` footer.
+- Links in docs should use only relative paths.
+
+### Examples
+
+Code
+```edf
+:code-edge:
+:code:    | This does stuff
+:code:    | More stuff
+:bad-code:| This breaks my code
+:code-edge:
+```
 
 ### Exact structure
 
 - www/docs/index.edf
+- www/docs/style.eds
 - www/docs/encodings/
     - www/docs/encodings/EEEch.eia
 - www/docs/binaries
