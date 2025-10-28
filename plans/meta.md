@@ -1,6 +1,18 @@
 # Documentation overview
 
+## Notes about this document
+
+- In this document things that *Should* happen are equivalant to things that *Shall* happen. Things that may happen are not welcome here.
+- Same with *will*, though *will* should **only** be used in a manner out of naming. Think: strings will be represented this way, vs errors shall be represented this way.
+- Anywhere where this document has made a weird/odd decision, there should be a `Reason:` tag, everything else is either intuitive or a project wide assumption.
+- This is all internal convention, as such not publicly released so users dont have to know this exists.
+    - This means this document should contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
+- This document should not describe any specific behaviours, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
+
 ## General structure & rules
+
+- All documentation should be hosted on sandeee.prestosilver.info (or a full domain once I get it).
+- All documentation should be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
 
 ### Name Style Rules
 
@@ -23,12 +35,25 @@
         - :code-edge: lines have no text.
     - nothing should be centered.
 - All docs should include the usual `:center: --- EEE Sees all ---` footer.
+- All documents should start with a `:center: -- Title --` style for the title.
+    - After this this style will never be reused, use heading 2 then 1, then restructure. `-- H2 --` -> `- H1 -` -> redesign layout to avoid over indent.
+- Normal text (unstyled), should have one empty line preceding it.
+- Code blocks should be surrounded by blank lines
+- Code blocks should always have a heading describing their use.
 - Links in docs should use only relative paths.
+- Back paths are under the title for documents.
+
+### Index pages
+
+- Index pages should exist for every folder, including the root.
+- They should have a list of all sibling files, xor subdirs, if a subdir is needed there can be no siblings.
+- Index files should never be linked to, except in backlinks.
 
 ### Examples
 
 Code
 ```edf
+Example code block
 :code-edge:
 :code:    | This does stuff
 :code:    | More stuff
@@ -36,18 +61,37 @@ Code
 :code-edge:
 ```
 
+Document structure
+```edf
+:center: -- VM Op-Codes --
+> Back: @index.edf
+
+-- 0x00 NOP --
+Does nothing
+
+-- 0x03 ADD --
+- String on top of stack -
+Shifts the beggining of a string, by an integer value.
+
+- Integer at the beggining of the stack -
+Adds the top 2 values on the stack.
+
+:center: --- EEE Sees all ---
+```
+
 ### Exact structure
 
 - www/docs/index.edf
 - www/docs/style.eds
 - www/docs/encodings/
+    - www/docs/encodings/index.edf
     - www/docs/encodings/EEEch.eia
 - www/docs/binaries
     - www/docs/binaries/index.edf
     - www/docs/binaries/eia.edf
     - www/docs/binaries/ell.edf
     - www/docs/binaries/epk.edf
-    - www/docs/binaries/eee.edf
+    - www/docs/binaries/eep.edf
     - www/docs/binaries/eme.edf
     - www/docs/binaries/era.edf
 - www/docs/text
@@ -55,12 +99,14 @@ Code
     - www/docs/text/eon.edf
     - www/docs/text/edf.edf
     - www/docs/text/esf.edf
-- www/docs/programs
-    - www/docs/libraries/index.edf
-    - www/docs/libraries/eon.edf
 - www/docs/libraries
     - www/docs/libraries/index.edf
     - www/docs/libraries/eon.edf
+    - www/docs/libraries/asm.edf
+- www/docs/errors
+    - www/docs/errors/index.edf
+    - www/docs/errors/asm.edf
+    - www/docs/errors/eon.edf
 
 ## Text file extensions
 
@@ -95,6 +141,10 @@ Code
 - Formats are ordered lists, syntax
 - Binary files should be given a proper name, ex. for eia can be called "EEE Image Array"
 - Docs should specify if a file format is builtin
+- Proper unitys for this is chars, label ch.
+    - Section repetitions can be specified by starting a line with repeat.
+    - Expressions can exist, only if they are based off previous entries.
+    - Expressions can only use multiplication and addition.
 
 ### Classic constructs
 
@@ -112,18 +162,18 @@ Code
 
 ### Example
 
-```md
-# Image files (.eia)
+```edf
+-- Image files (.eia) --
 
-- Magic: 4 = "eimg"
-- Data:
-    - Width: 4
-    - Height: 4
-    - Pixels: Repeat Width * Height
-        - Red: 1
-        - Green: 1
-        - Blue: 1
-        - Transparent: 1
+| - Magic: 4ch = "eimg"
+| - Data:
+|     - Width: 4ch
+|     - Height: 4ch
+|     - Pixels: Repeat Width * Height
+|         - Red: 1ch
+|         - Green: 1ch
+|         - Blue: 1ch
+|         - Transparent: 1ch
 ```
 
 ## Shell Commands
@@ -167,3 +217,46 @@ If no file is provided the editor will open without a file loaded.
 - Functions should list names, eon call signature, and any errors they can throw.
     - For errors, the library should list each error and what caused that, in a complete sentence description.
 - Errors should not include the name of the library, ex. No "TextureFileNotFound", use "FileNotFound".
+
+## Styles
+
+- Every format should have a style guide in this document
+
+### edf
+
+### eon
+
+- Eon programs should always `#include "/libs/incl/consts.eon"`.
+- Eon programs should `#include "/libs/incl/sys.eon"` if they need to call syscalls
+- All functions should have a documentation coment preceding them
+    - For main this is ignored
+- The main function should be at the end of a file
+- When calling a lib function the `"function"()` syntax should never be used.
+- Assembly functions should be commented after their signature line, and not use `return x;`, rather use the `asm "ret";`
+- If something returns a "void" value it should `return void;` this keyword is defined in `/libs/inc/consts.eon`, and is 0.
+- Main should always `return void`, errors are raised through `error(text)` in std.
+
+Example:
+```eon
+#include "/libs/incl/consts.eon"
+
+#import "/libs/func/heap.ell"
+
+fn test(arg1, arg2) {
+    return void;
+}
+
+fn main() {
+    return void;
+}
+```
+
+## Errors
+
+> Errors are considered unrecoverable, and critical. Anywhere in this document where the word error is used its reffering to the associated syscall.
+> If something else happens, say a recoverable error like an invalid input this should be handled by code rather than in the asm.
+
+### Conventions
+
+- All memory errors are all named `AllocatorFault`.
+    - Reason: the few cases that cause these are super rare, out of memory, double free, etc. that they can be grouped on user end
