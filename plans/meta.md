@@ -8,6 +8,7 @@
 - This is all internal convention, as such not publicly released so users dont have to know this exists.
     - This means this document should contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
 - This document should not describe any specific behaviours, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
+- Something is considered user facing if the user can see it at any time, wether thats on www, or in any recovery image.
 - Definition sections in this document are included for atipical features that already exist, but are not the same as tipical convention.
 
 ## General structure & rules
@@ -128,6 +129,7 @@ Adds the top 2 values on the stack.
 ### Example
 
 ```md
+TODO
 ```
 
 ## Binary file extensions
@@ -140,9 +142,9 @@ Adds the top 2 values on the stack.
 - A binary format is considered "Builtin" if it is parsed by SandEEE itsself rather than an `.eep` program
 - Everything has 4 char magic, capitalization will be inconsistent. Docs should mention this first, followed by format specs.
 - File extensions should be listed in the same line as what the file does
-    - Format `File use (extensions)`
+    - Format `File usecase (extensions)`
 - Format should **never** use int names, it should always be a character width.
-    - Reasoning: SandEEE was made in a world where strings are fast, so they are more used.
+    - Reasoning: SandEEE was made in a world where strings are fast, so they are more conventional.
 - All docs should be in .edf format
 - Everything after the magic should be in a `Data` secion
 - Formats are ordered lists, syntax
@@ -154,6 +156,8 @@ Adds the top 2 values on the stack.
     - Expressions can only use multiplication and addition.
 
 ### Classic constructs
+
+> Defintion: Classic constructs are common things that will be represented alot, but not a single character.
 
 - Colors
     - Alpha is never the name of a channel in docs
@@ -231,6 +235,16 @@ If no file is provided the editor will open without a file loaded.
 
 ### edf
 
+### asm
+
+- Assembly can be commented on stack states on user facing code
+- loop labels should start with `loop_`
+- procedural lablels should start with `proc_`
+- Conditional labels should start with `cond_`
+- Other labels dont have any prefix
+- Labels should be in lowerCamelCase, minus their prefix. ex. `proc_doSomething:`
+- Since labels are free, exported procs are double labeled
+
 ### eon
 
 - Eon programs should always `#include "/libs/incl/consts.eon"`.
@@ -260,7 +274,7 @@ fn main() {
 
 ## Errors
 
-> Errors are considered unrecoverable, and critical. Anywhere in this document where the word error is used its reffering to the associated syscall.
+> Definition: Errors are considered unrecoverable, and critical. Anywhere in this document where the word error is used its reffering to the associated syscall.
 > If something else happens, say a recoverable error like an invalid input this should be handled by code rather than in the asm.
 
 ### Conventions

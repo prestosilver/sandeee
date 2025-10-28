@@ -7,7 +7,6 @@ fn main() {
     loadLib("/libs/string.ell");
     loadLib("/libs/table.ell");
 
-
     print("_TableCreatae(2, 3) = ");
     var table = _TableCreate(2, 3);
     print(table);
