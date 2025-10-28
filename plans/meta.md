@@ -1,4 +1,4 @@
-# Documentation overview
+# SandEEE Internal Documentation
 
 ## Notes about this document
 
@@ -8,11 +8,18 @@
 - This is all internal convention, as such not publicly released so users dont have to know this exists.
     - This means this document should contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
 - This document should not describe any specific behaviours, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
+- Definition sections in this document are included for atipical features that already exist, but are not the same as tipical convention.
 
 ## General structure & rules
 
 - All documentation should be hosted on sandeee.prestosilver.info (or a full domain once I get it).
 - All documentation should be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
+
+### Syscalls
+
+> Definition: A syscall is any assembly instruction that falls under the sys code, the one argument is a byte/number out of 255 that indicates the operation.
+
+- A syscall is considered *hidden* if it is not documented in the general documentation
 
 ### Name Style Rules
 
@@ -259,4 +266,6 @@ fn main() {
 ### Conventions
 
 - All memory errors are all named `AllocatorFault`.
-    - Reason: the few cases that cause these are super rare, out of memory, double free, etc. that they can be grouped on user end
+    - Reason: the few cases that cause these are super rare, out of memory, double free, etc. that they can be grouped on user end.
+- Stream errors should be caught and handled, with a vaild reason & file printed to the user.
+- Programs should not crash (obviously), this includes erroneous inputs.
