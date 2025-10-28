@@ -104,7 +104,7 @@ pub const ChangelogStep = struct {
                     if (std.mem.containsAtLeast(u8, lower_line, 1, "reimpl")) ch[1] = '!';
 
                     if (std.mem.containsAtLeast(u8, lower_line, 1, "bump")) ch[1] = ' ';
-                    if (std.mem.containsAtLeast(u8, lower_line, 1, "metadocs")) ch[1] = ' ';
+                    if (std.mem.containsAtLeast(u8, lower_line, 1, "metadoc")) ch[1] = ' ';
 
                     if (ch[1] != ' ') {
                         _ = try file.write(&ch);
