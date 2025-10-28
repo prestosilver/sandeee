@@ -9,7 +9,7 @@
     - This means this document should contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
 - This document should not describe any specific behaviours, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
 - Something is considered user facing if the user can see it at any time, wether thats on www, or in any recovery image.
-- Definition sections in this document are included for atipical features that already exist, but are not the same as tipical convention.
+- Definition sections in this document are included for atipical features that already exist, but are not the same as tipical convention, or things that could be misinterpreted easily.
 
 ## General structure & rules
 
@@ -87,7 +87,7 @@ Adds the top 2 values on the stack.
 :center: --- EEE Sees all ---
 ```
 
-### Exact structure
+### Exact folder structure
 
 - www/docs/index.edf
 - www/docs/style.eds
