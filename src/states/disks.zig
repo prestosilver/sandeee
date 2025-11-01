@@ -114,7 +114,7 @@ pub fn deinit(self: *GSDisks) void {
         }
     }
 
-    self.disks.deinit();
+    self.disks.clearAndFree();
 }
 
 pub fn update(self: *GSDisks, dt: f32) !void {
