@@ -1,7 +1,5 @@
-#include "/libs/incl/libload.eon"
-#include "/libs/incl/sys.eon"
-
-#import "/libs/func/heap.ell"
+#include "/libs/inc/libload.eon"
+#include "/libs/inc/sys.eon"
 
 fn reada(addr) {
     asm "push 128";
@@ -10,6 +8,8 @@ fn reada(addr) {
 }
 
 fn main() {
+    setupLibLoad();
+    loadLib("/libs/heap.ell");
     var a = _HeapAlloc(128);
 
     print("_HeapAlloc(128) = ");
