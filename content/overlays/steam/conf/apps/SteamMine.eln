@@ -1,0 +1,3 @@
+name: My Steam Web
+icon: /cont/icns/web.eia
+runs: web $mine0:
