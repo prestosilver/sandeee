@@ -81,6 +81,8 @@ pub fn setup(self: *GSDisks) !void {
 
     var iter = dir.iterate();
     while (try iter.next()) |item| {
+        if (!std.mem.endsWith(u8, item.name, ".eee")) continue;
+
         const entry = try allocator.alloc.dupe(u8, item.name);
 
         try self.disks.append(entry);
