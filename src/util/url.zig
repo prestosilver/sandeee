@@ -45,6 +45,9 @@ pub fn child(self: *const Self, path: []const u8) !Self {
     if (path.len > 1 and @as(UrlKind, @enumFromInt(path[0])) == .Web)
         return self.child(path[1..]);
 
+    if (std.mem.indexOf(u8, path, ":")) |_|
+        return parse(path);
+
     if (self.path.len == 0)
         return .{
             .kind = self.kind,
@@ -80,6 +83,22 @@ pub fn dupe(self: *const Self) !Self {
         .domain = try allocator.alloc.dupe(u8, self.domain),
         .path = try allocator.alloc.dupe(u8, self.path),
     };
+}
+
+test "Url steam works" {
+    const url = try Self.parse("$list0:");
+    defer url.deinit();
+
+    try std.testing.expectEqual(url.kind, .Steam);
+    try std.testing.expectEqualStrings(url.domain, "list0");
+    try std.testing.expectEqualStrings(url.path, "");
+
+    const child_url = try url.child("$list1:");
+    defer child_url.deinit();
+
+    try std.testing.expectEqual(child_url.kind, .Steam);
+    try std.testing.expectEqualStrings(child_url.domain, "list1");
+    try std.testing.expectEqualStrings(child_url.path, "");
 }
 
 test "Url parse fuzzing" {

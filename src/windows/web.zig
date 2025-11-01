@@ -42,6 +42,10 @@ const strings = data.strings;
 const HEADER_SIZE = 1024;
 var web_idx: u8 = 0;
 
+const STEAM_MINE_NAME = "mine";
+const STEAM_LIST_NAME = "list";
+const STEAM_ITEM_NAME = "item";
+
 pub const WebData = struct {
     const Self = @This();
 
@@ -50,11 +54,15 @@ pub const WebData = struct {
             .Steam => {
                 if (options.IsSteam) {
                     const root = url.domain;
-                    const sub = url.path;
-                    if (std.mem.eql(u8, root, "list")) {
-                        const page_idx = try std.fmt.parseInt(u32, sub, 0);
-                        return try steamList(page_idx);
-                    } else if (std.mem.startsWith(u8, root, "item") and root.len != 4) {
+                    const sub = try allocator.alloc.dupeZ(u8, url.path);
+                    defer allocator.alloc.free(sub);
+                    if (std.mem.startsWith(u8, root, STEAM_LIST_NAME) and root.len != STEAM_LIST_NAME.len) {
+                        const page_idx = try std.fmt.parseInt(u32, root[4..], 0);
+                        return try steamList(page_idx, false, sub);
+                    } else if (std.mem.startsWith(u8, root, STEAM_MINE_NAME) and root.len != STEAM_MINE_NAME.len) {
+                        const page_idx = try std.fmt.parseInt(u32, root[4..], 0);
+                        return try steamList(page_idx, true, sub);
+                    } else if (std.mem.startsWith(u8, root, STEAM_ITEM_NAME) and root.len != STEAM_ITEM_NAME.len) {
                         const page_idx = std.fmt.parseInt(u64, root[4..], 10) catch {
                             return try allocator.alloc.dupe(u8, "Error: Invalid item page");
                         };
@@ -259,12 +267,19 @@ pub const WebData = struct {
         self.add_links = true;
     }
 
-    pub fn steamList(page: u32) ![]const u8 {
+    pub fn steamList(page: u32, mine: bool, query_text: [:0]const u8) ![]const u8 {
         const ugc = steam.getSteamUGC();
-        const query = if (steam.STEAM_APP_ID.id == 480)
+        const query = if (mine)
             ugc.createUserQueryRequest(steam.getUser().getSteamId(), .Published, 0, .CreateAsc, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1)
         else
-            ugc.createQueryRequest(.RankedByVote, 0, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
+            ugc.createQueryRequest(.RankedByVote, .Items, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
+        // const query = ugc.createUserQueryRequest(steam.getUser().getSteamId(), .Published, 0, .CreateAsc, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
+        defer query.deinit(ugc);
+
+        if (query_text.len != 0 and !mine) {
+            try query.setSearchText(ugc, query_text);
+        }
+
         const handle = ugc.sendQueryRequest(query);
         const steam_utils = steam.getSteamUtils();
 
@@ -280,8 +295,8 @@ pub const WebData = struct {
         const details = try allocator.alloc.create(steam.UGC.ItemDetails);
         defer allocator.alloc.destroy(details);
 
-        const prev = try std.fmt.allocPrint(allocator.alloc, "> prev: $list:{}\n", .{if (page == 0) 0 else page - 1});
-        const next = try std.fmt.allocPrint(allocator.alloc, "> next: $list:{}\n", .{page + 1});
+        const prev = try std.fmt.allocPrint(allocator.alloc, "> prev: $list{}:{s}\n", .{ if (page == 0) 0 else page - 1, query_text });
+        const next = try std.fmt.allocPrint(allocator.alloc, "> next: $list{}:{s}\n", .{ page + 1, query_text });
         defer allocator.alloc.free(prev);
         defer allocator.alloc.free(next);
 
@@ -298,7 +313,7 @@ pub const WebData = struct {
         var added = false;
 
         while (ugc.getQueryResult(query, idx, details)) : (idx += 1) {
-            if (details.visible != 0) continue;
+            // if (details.visible != 0) continue;
 
             added = true;
 
@@ -330,13 +345,11 @@ pub const WebData = struct {
             }
         }
 
-        _ = ugc.releaseQueryResult(query);
-
         if (!added) {
             const old = conts;
             defer allocator.alloc.free(old);
 
-            conts = try std.mem.concat(allocator.alloc, u8, &.{ old, "\n-- No Results --\n> Page 1: $list:0\n\n" });
+            conts = try std.mem.concat(allocator.alloc, u8, &.{ old, "\n-- No Results --\n> Page 1: $list0:\n\n", query_text });
         }
 
         {

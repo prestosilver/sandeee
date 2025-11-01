@@ -15,6 +15,8 @@ const strings = sandeee_data.strings;
 
 const DISK = "headless.eee";
 
+const USE_POSIX = @import("builtin").os.tag == .linux;
+
 pub fn toANSI(input: []const u8) ![]const u8 {
     const buffer_len = std.mem.replacementSize(u8, input, strings.E, "Ⲉ");
     const buffer = try allocator.alloc.alloc(u8, buffer_len);
@@ -43,17 +45,24 @@ pub fn headlessMain(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.
     const stdout = stdout_file.writer();
 
     // set terminal attribs
-    const original = try std.posix.tcgetattr(stdin_file.handle);
-    var raw = original;
+    const original = if (USE_POSIX) try std.posix.tcgetattr(stdin_file.handle) else undefined;
 
-    raw.lflag.ECHO = false;
-    raw.lflag.ICANON = false;
+    if (USE_POSIX) {
+        var raw = original;
 
-    raw.cc[@intFromEnum(std.posix.system.V.TIME)] = 0;
-    raw.cc[@intFromEnum(std.posix.system.V.MIN)] = 1;
+        if (USE_POSIX) {
+            raw.lflag.ECHO = false;
+            raw.lflag.ICANON = false;
 
-    try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);
-    defer std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
+            raw.cc[@intFromEnum(std.posix.system.V.TIME)] = 0;
+            raw.cc[@intFromEnum(std.posix.system.V.MIN)] = 1;
+        }
+
+        try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);
+    }
+
+    defer if (USE_POSIX)
+        std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
 
     var input_buffer = std.ArrayList(u8).init(allocator.alloc);
     try input_buffer.appendSlice(cmd);

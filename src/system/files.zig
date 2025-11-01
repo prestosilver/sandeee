@@ -451,7 +451,8 @@ pub const Folder = struct {
             .patch = options.SandEEEVersion.patch,
         };
 
-        try telem.Telem.save();
+        telem.Telem.save() catch |err|
+            std.log.err("telem save failed {}", .{err});
 
         const file = try std.fs.cwd().createFile(out, .{});
         defer file.close();

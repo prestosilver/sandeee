@@ -469,7 +469,7 @@ fn sysDelete(self: *Vm) VmError!void {
 const SteamYieldCreate = struct {
     handle: steam.APIHandle,
 
-    pub fn check(self: *SteamYieldCreate, vm_instance: *Vm) Vm.VMError!bool {
+    pub fn check(self: *SteamYieldCreate, vm_instance: *Vm) VmError!bool {
         const utils = steam.getSteamUtils();
 
         var failed: bool = false;
@@ -500,7 +500,7 @@ const SteamYieldUpdate = struct {
     handle: steam.APIHandle,
     folder: ?std.fs.Dir = null,
 
-    pub fn check(self: *SteamYieldUpdate, vm_instance: *Vm) Vm.VMError!bool {
+    pub fn check(self: *SteamYieldUpdate, vm_instance: *Vm) VmError!bool {
         const utils = steam.getSteamUtils();
 
         var failed: bool = false;
@@ -575,6 +575,31 @@ fn sysSteam(self: *Vm) VmError!void {
                 const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
 
                 if (!update.setDescription(ugc, value))
+                    return error.UnknownError;
+
+                const handle = update.submit(ugc, "Update Desc");
+
+                return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle });
+            }
+
+            if (std.mem.eql(u8, prop, "visibility")) {
+                const parsed: steam.WorkshopItemVisibility = if (std.mem.eql(u8, value, "public"))
+                    .Public
+                else if (std.mem.eql(u8, value, "friends"))
+                    .FriendsOnly
+                else if (std.mem.eql(u8, value, "private"))
+                    .Private
+                else if (std.mem.eql(u8, value, "unlisted"))
+                    .Unlisted
+                else {
+                    std.log.scoped(.Steam).err("Invalid steam item visibility {s}", .{value});
+
+                    return error.UnknownError;
+                };
+
+                const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
+
+                if (!update.setVisibility(ugc, parsed))
                     return error.UnknownError;
 
                 const handle = update.submit(ugc, "Update Desc");
