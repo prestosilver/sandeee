@@ -8,7 +8,7 @@ const options = if (@hasDecl(@import("root"), "steam_options")) @import("root").
 pub const fake_api = @hasDecl(options, "fake_steam") and options.fake_steam;
 const enable_api = !fake_api and (@hasDecl(options, "use_steam") and options.use_steam);
 
-pub const STEAM_APP_ID: AppId = if (@hasDecl(options, "app_id")) .{ .id = options.app_id } else .{ .id = 480 };
+pub const STEAM_APP_ID: AppId = if (@hasDecl(options, "app_id")) .{ .id = options.app_id } else .{ .id = 4124360 };
 pub const allocator = if (@hasDecl(options, "alloc")) options.alloc else std.heap.c_allocator;
 
 const TEST_USER: User.Id = .{ .id = 1000 };
@@ -38,6 +38,7 @@ pub const WorkshopFileType = enum(u32) {
     Video = 4,
     Screenshot = 5,
     Game = 6,
+    GameManagedItem = 15,
 };
 
 pub const Result = enum(u32) {
@@ -47,6 +48,13 @@ pub const Result = enum(u32) {
     InvalidPassword = 4,
     LoggedInElsewhere = 5,
     _,
+};
+
+pub const WorkshopItemVisibility = enum(u32) {
+    Public,
+    FriendsOnly,
+    Private,
+    Unlisted,
 };
 
 pub const AppId = extern struct { id: u32 };
@@ -193,8 +201,29 @@ pub const APIHandle = if (fake_api) union(APIHandleKind) {
 pub const UGCQueryHandle = if (fake_api) struct {
     kind: UGCQueryKind,
     page: u32,
+
+    pub fn deinit(self: UGCQueryHandle, ugc: *const UGC) void {
+        _ = self;
+        _ = ugc;
+    }
+
+    pub fn setSearchText(self: UGCQueryHandle, ugc: *const UGC, text: [:0]const u8) !void {
+        _ = self;
+        _ = ugc;
+        _ = text;
+    }
 } else extern struct {
     data: u64,
+    extern fn SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(ugc: *const UGC, self: UGCQueryHandle) bool;
+    pub fn deinit(self: UGCQueryHandle, ugc: *const UGC) void {
+        _ = SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(ugc, self);
+    }
+
+    extern fn SteamAPI_ISteamUGC_SetSearchText(ugc: *const UGC, handle: UGCQueryHandle, text: [*:0]const u8) bool;
+    pub fn setSearchText(self: UGCQueryHandle, ugc: *const UGC, text: [:0]const u8) !void {
+        if (!SteamAPI_ISteamUGC_SetSearchText(ugc, self, text.ptr))
+            return error.UnknownError;
+    }
 };
 
 pub const PublishedFileId = extern struct {
@@ -279,6 +308,21 @@ pub const UGC = extern struct {
                 @memcpy(steam_items.items[self.id].title, title);
 
                 updateFakeUGC() catch return false;
+
+                return true;
+            }
+        }
+
+        extern fn SteamAPI_ISteamUGC_SetItemVisibility(ugc: *const UGC, handle: UpdateHandle, vis: WorkshopItemVisibility) bool;
+        pub fn setVisibility(
+            self: UpdateHandle,
+            ugc: *const UGC,
+            vis: WorkshopItemVisibility,
+        ) bool {
+            if (enable_api) {
+                return SteamAPI_ISteamUGC_SetItemVisibility(ugc, self, vis);
+            } else {
+                log.debug("Set item vis: {}", .{self.id});
 
                 return true;
             }
@@ -500,6 +544,14 @@ pub const UGC = extern struct {
         Followed = 8,
     };
 
+    const UGCMatchingType = enum(u32) {
+        Items = 0,
+        ItemsMtx = 1,
+        ItemsReadyToUse = 2,
+        UsableInGame = 10,
+        All = 0xffff_ffff,
+    };
+
     const SortOrder = enum(u32) {
         CreateDesc = 0,
         CreateAsc = 1,
@@ -527,19 +579,19 @@ pub const UGC = extern struct {
         }
     }
 
-    extern fn SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc: *const UGC, queryKind: UGCQueryKind, kind: u32, creatorId: AppId, consumerId: AppId, page: u32) UGCQueryHandle;
+    extern fn SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc: *const UGC, queryKind: UGCQueryKind, kind: UGCMatchingType, creatorId: AppId, consumerId: AppId, page: u32) UGCQueryHandle;
     pub fn createQueryRequest(
         ugc: *const UGC,
         query_kind: UGCQueryKind,
-        kind: u32,
+        item_kind: UGCMatchingType,
         creator_id: AppId,
         consumer_id: AppId,
         page: u32,
     ) UGCQueryHandle {
         if (enable_api) {
-            return SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc, query_kind, kind, creator_id, consumer_id, page);
+            return SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(ugc, query_kind, item_kind, creator_id, consumer_id, page);
         } else {
-            log.debug("Query: querykind: {}, kind: {}, creator: {}, consumer: {}, page: {}", .{ query_kind, kind, creator_id, consumer_id, page });
+            log.debug("Query: querykind: {}, kind: {}, creator: {}, consumer: {}, page: {}", .{ query_kind, item_kind, creator_id, consumer_id, page });
             return .{
                 .kind = query_kind,
                 .page = page,

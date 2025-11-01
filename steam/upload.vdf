@@ -1,0 +1,40 @@
+"AppBuild"
+{
+	"AppID" "4124360" // your AppID
+	"Desc" "auto build script" // internal description for this build
+
+	"ContentRoot" "../zig-out/box/" // root content folder, relative to location of this file
+	"BuildOutput" "./SteamLog" // build output folder for build logs and build cache files
+    "SetLive" "alpha" // set this build live on a beta branch
+
+	"Depots"
+	{
+		"4124362" // Content depot
+		{
+			"FileMapping"
+			{
+				"LocalPath" "./content/*" // all files from contentroot folder
+				"DepotPath" "./content" // mapped into the root of the depot
+				"recursive" "1" // include all subfolders
+			}
+		}
+		"4124363" // Content depot
+		{
+			"FileMapping"
+			{
+				"LocalPath" "./linux/*" // all files from contentroot folder
+				"DepotPath" "./" // mapped into the root of the depot
+				"recursive" "1" // include all subfolders
+			}
+		}
+		"4124364" // Content depot
+		{
+			"FileMapping"
+			{
+				"LocalPath" "./windows/*" // all files from contentroot folder
+				"DepotPath" "./" // mapped into the root of the depot
+				"recursive" "1" // include all subfolders
+			}
+		}
+	}
+}

@@ -762,6 +762,7 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
 
     const exe = b.addExecutable(.{
@@ -808,6 +809,7 @@ pub fn build(b: *std.Build) !void {
 
     const steam_module = b.addModule("steam", .{
         .root_source_file = b.path("steam/steam.zig"),
+        .link_libc = true,
     });
 
     const options = b.addOptions();
@@ -891,8 +893,8 @@ pub fn build(b: *std.Build) !void {
     if (target.result.os.tag == .windows) {
         exe.addObjectFile(b.path("content/app.res.obj"));
         exe.addLibraryPath(b.path("deps/lib"));
-        exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64"));
-        exe.subsystem = .Windows;
+        exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
+        // exe.subsystem = .Windows;
     } else {
         exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
     }
@@ -909,7 +911,10 @@ pub fn build(b: *std.Build) !void {
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("OpenAL");
     if (steam_mode == .On) {
-        exe.linkSystemLibrary("steam_api");
+        if (target.result.os.tag == .windows)
+            exe.linkSystemLibrary("steam_api64")
+        else
+            exe.linkSystemLibrary("steam_api");
     }
     exe.linkLibC();
 
@@ -1054,6 +1059,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     if (target.result.os.tag == .windows) {
+        _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
         b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");
         b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
         b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");

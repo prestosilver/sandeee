@@ -10,25 +10,56 @@ pub fn log() []const u8 {
 
     var result: []u8 = &.{};
     const debug_info = std.debug.getSelfDebugInfo() catch return NO_INFO;
-    var address: usize = 0;
     if (builtin.os.tag == .windows) {
-        return NO_INFO;
-    }
-    var it = std.debug.StackIterator.init(null, null);
-    while (it.next()) |return_address| {
-        address = if (return_address == 0) return_address else return_address - 1;
-        const module = debug_info.getModuleForAddress(address - 1) catch return result;
-        const symbol_info = module.getSymbolAtAddress(debug_info.allocator, address) catch return result;
-        const li = symbol_info.source_location.?;
+        for (debug_info.modules.items) |m| {
+            std.debug.print("module: {s}\t{x:0>16}-{x:0>16}\n", .{ m.name, m.base_address, m.base_address + m.size });
+        }
 
-        const index = std.mem.indexOf(u8, li.file_name, "sandeee/") orelse 0;
-        // Good backtrace, print with the source location of the log
-        const adds = std.fmt.allocPrint(allocator.alloc, "{s}:{d}\n", .{ li.file_name[index..], li.line }) catch return result;
-        defer allocator.alloc.free(adds);
-        const start = result.len;
-        result = allocator.alloc.realloc(result, result.len + adds.len) catch return result;
-        @memcpy(result[start..], adds);
-    }
+        var context: std.debug.ThreadContext = undefined;
+        std.debug.assert(std.debug.getContext(&context));
+        var addr_buf: [1024]usize = undefined;
+        const n = std.debug.walkStackWindows(addr_buf[0..], &context);
+        const addrs = addr_buf[0..n];
+        for (addrs) |return_address| {
+            std.debug.print("trace: {x:0>16}\n", .{return_address});
+            const module = debug_info.getModuleForAddress(return_address - 1) catch |err| {
+                std.debug.print("error: {s}\n", .{@errorName(err)});
+                continue;
+            };
 
-    return result;
+            std.debug.print("good module\n", .{});
+
+            const symbol_info = module.getSymbolAtAddress(debug_info.allocator, return_address - 1) catch continue;
+            const li = symbol_info.source_location.?;
+
+            const index = std.mem.indexOf(u8, li.file_name, "sandeee/") orelse 0;
+            // Good backtrace, print with the source location of the log
+            const adds = std.fmt.allocPrint(allocator.alloc, "{s}:{d}\n", .{ li.file_name[index..], li.line }) catch return result;
+            defer allocator.alloc.free(adds);
+            const start = result.len;
+            result = allocator.alloc.realloc(result, result.len + adds.len) catch return result;
+            @memcpy(result[start..], adds);
+        }
+
+        return result;
+    } else {
+        var address: usize = 0;
+        var it = std.debug.StackIterator.init(null, null);
+        while (it.next()) |return_address| {
+            address = if (return_address == 0) return_address else return_address - 1;
+            const module = debug_info.getModuleForAddress(address - 1) catch return result;
+            const symbol_info = module.getSymbolAtAddress(debug_info.allocator, address) catch return result;
+            const li = symbol_info.source_location.?;
+
+            const index = std.mem.indexOf(u8, li.file_name, "sandeee/") orelse 0;
+            // Good backtrace, print with the source location of the log
+            const adds = std.fmt.allocPrint(allocator.alloc, "{s}:{d}\n", .{ li.file_name[index..], li.line }) catch return result;
+            defer allocator.alloc.free(adds);
+            const start = result.len;
+            result = allocator.alloc.realloc(result, result.len + adds.len) catch return result;
+            @memcpy(result[start..], adds);
+        }
+
+        return result;
+    }
 }

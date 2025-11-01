@@ -84,7 +84,7 @@ pub const std_options = std.Options{
 pub const steam_options = struct {
     pub const fake_steam = options.fakeSteam;
     pub const use_steam = options.IsSteam;
-    pub const app_id = 480;
+    pub const app_id = 4124360;
     pub const alloc = allocator.alloc;
 };
 
@@ -380,7 +380,7 @@ pub fn settingSet(event: system_events.EventSetSetting) !void {
             defer graphics.Context.makeNotCurrent();
 
             crt_shader.setInt("crt_enable", val);
-            crt_shader.setInt("dither_enable", 0);
+            crt_shader.setInt("dither_enable", val);
 
             crt_enable = val == 1;
         }
@@ -426,6 +426,9 @@ pub fn drawLoading(self: *LoadingState) void {
 
             if (!graphics.Context.poll())
                 self.done.store(true, .monotonic);
+
+            // if (paniced)
+            //     self.done.store(true, .monotonic);
         }
 
         // render loading screen
@@ -581,7 +584,8 @@ pub fn mainErr() anyerror!void {
     var args = try std.process.ArgIterator.initWithAllocator(allocator.alloc);
 
     // ignore first arg
-    _ = args.next();
+    const first = args.next();
+    var cwd_change = true;
 
     while (args.next()) |arg| {
         if (std.mem.eql(u8, arg, "--cwd")) {
@@ -589,6 +593,7 @@ pub fn mainErr() anyerror!void {
                 try std.process.changeCurDir(path)
             else
                 return error.MissingCwd;
+            cwd_change = true;
         } else if (std.mem.eql(u8, arg, "--no-crt")) {
             is_crt = false;
         } else if (std.mem.eql(u8, arg, "--headless")) {
@@ -606,6 +611,10 @@ pub fn mainErr() anyerror!void {
             } else return error.MissingScript;
         }
     }
+
+    if (!cwd_change)
+        if (std.mem.lastIndexOf(u8, first orelse "", "/")) |last_slash|
+            try std.process.changeCurDir(first.?[0..last_slash]);
 
     // free the argument iterator
     args.deinit();
@@ -929,7 +938,7 @@ pub fn mainErr() anyerror!void {
 
             try state.refresh();
 
-            log.log.debug("Rendered in {d:.6}ms", .{VmManager.last_render_time * 1000});
+            // log.log.debug("Rendered in {d:.6}ms", .{VmManager.last_render_time * 1000});
 
             try VmManager.instance.runGc();
 
@@ -1003,4 +1012,5 @@ pub fn mainErr() anyerror!void {
 test "headless.zig" {
     _ = @import("util/mod.zig");
     _ = @import("system/mod.zig");
+    _ = @import("util/url.zig");
 }
