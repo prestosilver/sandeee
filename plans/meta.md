@@ -8,11 +8,11 @@
 - Anywhere where this document has made a weird/odd decision, there will be a `Reason:` tag, everything else is either intuitive or a project wide assumption.
 - This is all internal convention, as such not publicly released so users dont have to know this exists.
     - This means this document shall contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
-- Something is considered user facing if the user can see it at any time, wether thats on www, or in any recovery image.
+- Something is considered user facing if the user can see it at any time, whether thats on www, or in any recovery image.
 - Definition sections in this document are included for atypical features that already exist, but are not the same as tipical convention, or things that could be misinterpreted easily.
-- All code in this document may have a heading or footer omitted, that will be indicated with a `...` at either the begining or end of the file respectively
+- All code in this document may have a heading or footer omitted, that will be indicated with a `...` at either the beginning or end of the file respectively
     - This will also have 1 empty line next to it, that is not part of the code so it may be ignored.
-- Code examples here have the proper language tags, even though markdown dosent highlight check the source if needed
+- Code examples here have the proper language tags, even though markdown doesn't highlight check the source if needed
 - All formats defined here are assumed to always consist of this format, versioning is completely separate of this document.
     - If you need to see old docs roll the repo back
     - this is a style guide so make sure to use the latest version when writing docs
@@ -175,7 +175,7 @@ This is documenting stuff
 ## Text file extensions
 
 > Definition:
-> A text file is a file format that does not soley depend on the EEEch format.
+> A text file is a file format that does not solely depend on the EEEch format.
 > ie. it is all readable plain text that with no binary structure.
 
 - All text files shall be named with 3 letter lowercase extensions.
@@ -351,7 +351,7 @@ The image used for ui assets.
 - Programs can also list bugs or quirks after the arguments with a blank line preceding them.
 - Parameter lists are formatted with a tab following the parameter ":parameter\tusage"
     - The help paramters description is always "Displays this message"
-- Required arguments and Optional arguments should have headings with the format `- Optional Arguments -` and `- Required Arguments -` respectivly
+- Required arguments and Optional arguments should have headings with the format `- Optional Arguments -` and `- Required Arguments -` respectively
 - Required arguments shall not include files unless no file means the program cannot run at all
     - This means all editors can run without a file loaded
     
@@ -556,8 +556,8 @@ fn main() {
 - All memory errors are all named `AllocatorFault`.
     - Reason: the few cases that cause these are super rare, out of memory, double free, etc. that they can be grouped on user end.
 - Todo errors are named `Unimplemented`
-- Errors can give more information after their name with a ` - ` as seperation.
-- Stream errors shall be caught and handled, with a vaild reason & file printed to the user.
+- Errors can give more information after their name with a ` - ` as separation.
+- Stream errors shall be caught and handled, with a valid reason & file printed to the user.
 - Programs shall not crash (obviously), this includes erroneous inputs.
 - Errors of the same type but different cause should have the same prefix, this uses camel case
 
@@ -569,7 +569,7 @@ fn main() {
 - This is followed by the state of the program, in our world there is alpha, beta, release, in SandEEE there is Seed, Sapling, Tree
 - Finally there is a # followed by the current public build, and a _ for the build number
 - On a major increment seed->sapling the number resets
-- Bug fixes dont incrememnt the version, but they do incrmement the build
+- Bug fixes dont increment the version, but they do incrmement the build
 - Build numbers never reset, but are up to the program to document what it means and how its increment
 
 Examples:
@@ -579,8 +579,9 @@ os:sapling#0_1034 → First sapling release (reset)
 os:tree#0_30545   → Initial stable release
 ```
 
-## Appendix: Design Philosophy
+## Final Notes
 
 SandEEE assumes a world where text is the fundamental data layer, not a byproduct of binary design.  
 Consistency, human-readability, and reversibility take precedence over performance when documenting internal systems.  
 When in doubt, prefer formats that degrade gracefully when opened as plain text.
+Use this as a framework for any decision made, that will keep the project online to preform its vision well.
