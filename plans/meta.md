@@ -10,6 +10,9 @@
 - This document should not describe any specific behaviours, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
 - Something is considered user facing if the user can see it at any time, wether thats on www, or in any recovery image.
 - Definition sections in this document are included for atipical features that already exist, but are not the same as tipical convention, or things that could be misinterpreted easily.
+- All code in this document may have a heading or footer omitted, that will be indicated with a `...` at either the begining or end of the file respectively
+    - This will also have 1 empty line next to it, that is not part of the code so it may be ignored.
+- Code examples here have the proper language tags, even though markdown dosent highlight check the source if needed
 
 ## General structure & rules
 
@@ -17,6 +20,7 @@
     - this will be moved to a full domain once I get it
 - All documentation should be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
 - Documentation will include no hidden files (starting with `_`)
+- No dead links obviously, this should problaby be automatically checked.
 
 ### Syscalls
 
@@ -53,6 +57,7 @@
 - Code blocks should be surrounded by blank lines
 - Code blocks should always have a heading describing their use.
 - Links in docs should use only relative paths.
+    - Important for relocation, docs should contain no reliance at all about where theyre hosted
 - Back paths are under the title for documents.
 - Examples should be wrapped with :example-start:, and :example-end:
 
@@ -66,6 +71,8 @@
 
 Code
 ```edf
+...
+
 :example-start: Example code block
 :example:       :code-edge:
 :example:       :code:    | This does stuff
@@ -73,22 +80,23 @@ Code
 :example:       :code-bad:| This breaks my code
 :example:       :code-edge:
 :example-end:
+
+...
 ```
 
 Document structure
 ```edf
+#style @/docs/style.eds
+
 :center: -- VM Op-Codes --
 > Back: @index.edf
 
--- 0x00 NOP --
-Does nothing
+-- Info and things --
+- Info -
+This is documenting info 
 
--- 0x03 ADD --
-- String on top of stack -
-Shifts the beggining of a string, by an integer value.
-
-- Integer at the beggining of the stack -
-Adds the top 2 values on the stack.
+- Stuff -
+This is documenting stuff
 
 :center: --- EEE Sees all ---
 ```
@@ -208,6 +216,8 @@ TODO
 ### Example
 
 ```edf
+...
+
 -- Image files (.eia) --
 
 | - Magic: 4ch = "eimg"
@@ -219,6 +229,8 @@ TODO
 |         - Green: 1ch
 |         - Blue: 1ch
 |         - Transparent: 1ch
+
+...
 ```
 
 ## Instruction documentation
@@ -227,25 +239,29 @@ TODO
 - Documentation for each instruction should include how it modifies the stack
     - \- Popped +Pushed
 - Instruction documentation should include every case of popped values, string or int
+- Edge cases that may be ambiguous should be explained and tagged with the `:edge:` style
+- Examples are tagged with `:example:`
 
 Example
 ```edf
--- (0x04) Add --
-- String, Number -
+#style @/docs/style.eds
+
+:center: -- (0x04) Add --
+-- String, Number --
 :mods: -2 +1
 Removes n characters from the start of a string.
 
 :example: "fdsa" 2 => "sa"
-
 :edge: There is no error when there is not enough chars: "f" 3 => ""
 
-- Number, Number -
+-- Number, Number --
 :mods: -2 +1
 Adds 2 numbers
 
 :example: 3 2 => 5
-
 :edge:  "f" 3 => ""
+
+:center: --- EEE Sees all ---
 ```
 
 ## Image files
@@ -259,11 +275,11 @@ Adds 2 numbers
     - This should be stored next to the image file, with the same name
 - Following that there should be a summary section defining how the image is used.
 - Following that there should be a more descriptive area for per sprite documentation
-- Sprite areas are 1 indexed rectanges with the format `X,Y WxH` followed by ` - Description`
+- Sprite areas are 1 indexed rectanges with the format `X,Y WxH` followed by ` | Description`
 
 Example:
 ```edf
-#style @/style.eds
+#style @/docs/style.eds
 
 :center: -- /cont/imgs/ui.eia --
 :preview-image: [@ui.eia]
@@ -322,7 +338,9 @@ The image used for ui assets.
 - Parameter lists are formatted with a tab following the parameter ":parameter\tusage"
     - The help paramters description is always "Displays this message"
 - Required arguments and Optional arguments should have headings with the format `- Optional Arguments -` and `- Required Arguments -` respectivly
-
+- Required arguments should not include files unless no file means the program cannot run at all
+    - This means all editors can run without a file loaded
+    
 Example: 
 ```text
 edit [:help] [:new] [file]
