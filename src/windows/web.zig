@@ -506,22 +506,25 @@ pub const WebData = struct {
         var iter = std.mem.splitScalar(u8, fconts, '\n');
         var current_style: *Style = self.styles.getPtr("") orelse unreachable;
 
-        while (iter.next()) |fullLine| {
-            if (std.mem.startsWith(u8, fullLine, "#")) {
-                try self.styles.put(try allocator.alloc.dupe(u8, fullLine[1..]), .{});
-                current_style = self.styles.getPtr(fullLine[1..]) orelse unreachable;
+        while (iter.next()) |full_line| {
+            if (std.mem.startsWith(u8, full_line, "#")) {
+                try self.styles.put(try allocator.alloc.dupe(u8, full_line[1..]), .{});
+                current_style = self.styles.getPtr(full_line[1..]) orelse unreachable;
 
                 continue;
             }
 
-            const colon_index = std.mem.indexOfScalar(u8, fullLine, ':') orelse {
-                log.warn("style line invalid: `{s}`", .{fullLine});
+            const comment_index = std.mem.indexOfScalar(u8, full_line, ';') orelse full_line.len;
+            const comment_line = std.mem.trim(u8, full_line[0..comment_index], std.ascii.whitespace);
+
+            const colon_index = std.mem.indexOfScalar(u8, comment_line, ':') orelse {
+                log.warn("style line invalid: `{s}`", .{comment_line});
 
                 continue;
             };
 
-            const prop_name = std.mem.trim(u8, fullLine[0..colon_index], std.ascii.whitespace);
-            const prop_value = std.mem.trim(u8, fullLine[colon_index + 1..], std.ascii.whitespace);
+            const prop_name = std.mem.trim(u8, comment_line[0..colon_index], std.ascii.whitespace);
+            const prop_value = std.mem.trim(u8, comment_line[colon_index + 1..], std.ascii.whitespace);
 
             if (std.mem.eql(u8, prop_name, "align")) {
                 if (std.ascii.eqlIgnoreCase(u8, prop_value, "center")) {
