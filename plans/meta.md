@@ -2,8 +2,8 @@
 
 ## Notes about this document
 
-- In this document things that *Should* happen are equivalant to things that *Shall* happen. Things that may happen are not welcome here.
-- Same with *will*, though *will* should **only** be used in a manner out of naming. Think: strings will be represented this way, vs errors shall be represented this way.
+- In this document things that **Should** happen are equivalant to things that **Shall** happen. Things that may happen are not welcome here.
+- Same with *will*, though will should **only** be used in a manner out of naming. Think: strings will be represented this way, vs errors shall be represented this way.
 - Anywhere where this document has made a weird/odd decision, there should be a `Reason:` tag, everything else is either intuitive or a project wide assumption.
 - This is all internal convention, as such not publicly released so users dont have to know this exists.
     - This means this document should contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.

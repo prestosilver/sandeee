@@ -72,5 +72,5 @@ pub fn getIcon(self: *Self, path: []const u8) ?[]const u8 {
 }
 
 pub fn deinit(self: *Self) void {
-    self.types.deinit();
+    self.types.clearAndFree();
 }

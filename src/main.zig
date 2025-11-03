@@ -526,17 +526,11 @@ var is_headless = false;
 var is_crt = true;
 
 pub fn main() void {
-    defer {
-        log.stop_logs = true;
-        for (log.logs[0..(log.total_logs - 1)]) |log_item| {
-            allocator.alloc.free(log_item.data);
-        }
-
-        if (!builtin.link_libc or !allocator.useclib) {
-            if (allocator.gpa.deinit() == .ok)
-                log.log.debug("no leaks! :)", .{});
-        }
-    }
+    defer log.deinit();
+    defer if (!builtin.link_libc or !allocator.useclib) {
+        if (allocator.gpa.deinit() == .ok)
+            log.log.debug("no leaks! :)", .{});
+    };
 
     mainErr() catch |err| {
         const name = switch (err) {
@@ -551,6 +545,12 @@ pub fn main() void {
         };
 
         const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
+
+        log.deinit();
+        if (!builtin.link_libc or !allocator.useclib) {
+            if (allocator.gpa.deinit() == .ok)
+                log.log.debug("no leaks! :)", .{});
+        }
 
         @panic(msg);
     };

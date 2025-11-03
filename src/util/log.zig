@@ -8,6 +8,7 @@ pub const log = std.log.scoped(.SandEEE);
 const LogData = struct {
     level: std.log.Level,
     data: []const u8,
+    valid: bool,
 };
 
 const HIST_LEN = 1000;
@@ -65,6 +66,7 @@ pub fn sandEEELogFn(
         logs[last_log] = .{
             .level = level,
             .data = std.fmt.allocPrint(allocator.alloc, prefix ++ format ++ "\n", args) catch return,
+            .valid = true,
         };
 
         last_log += 1;
@@ -75,6 +77,7 @@ pub fn sandEEELogFn(
         logs[last_log] = .{
             .level = level,
             .data = std.fmt.allocPrint(allocator.alloc, prefix ++ format ++ "\n", args) catch return,
+            .valid = true,
         };
 
         last_log += 1;
@@ -89,4 +92,12 @@ pub fn getLogs() [2][]const LogData {
     } else {
         return .{ logs[last_log..], logs[0..last_log] };
     }
+}
+
+pub fn deinit() void {
+    stop_logs = true;
+    for (&logs) |*log_item| if (log_item.valid) {
+        allocator.alloc.free(log_item.data);
+        log_item.valid = false;
+    };
 }

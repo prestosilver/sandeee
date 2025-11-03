@@ -45,8 +45,8 @@ pub const AudioManager = struct {
     context: ?*c.ALCcontext = null,
     volume: f32 = 1.0,
     muted: bool = false,
-    effect: c.ALuint = 0,
-    slot: c.ALuint = 0,
+    // effect: c.ALuint = 0,
+    // slot: c.ALuint = 0,
     bg: c.ALuint = 0,
 
     const eff = c.EFXEAXREVERBPROPERTIES{
@@ -84,20 +84,19 @@ pub const AudioManager = struct {
 
         if (c.alcMakeContextCurrent(context) == 0) return error.AudioInit;
 
-        c.alGenEffects = @ptrCast(@alignCast(c.alGetProcAddress("alGenEffects")));
-        c.alEffecti = @ptrCast(@alignCast(c.alGetProcAddress("alEffecti")));
-        c.alEffectf = @ptrCast(@alignCast(c.alGetProcAddress("alEffectf")));
-        c.alEffectfv = @ptrCast(@alignCast(c.alGetProcAddress("alEffectfv")));
-        c.alGenAuxiliaryEffectSlots = @ptrCast(@alignCast(c.alGetProcAddress("alGenAuxiliaryEffectSlots")));
-        c.alAuxiliaryEffectSloti = @ptrCast(@alignCast(c.alGetProcAddress("alAuxiliaryEffectSloti")));
+        // c.alGenEffects = @ptrCast(@alignCast(c.alGetProcAddress("alGenEffects")));
+        // c.alEffecti = @ptrCast(@alignCast(c.alGetProcAddress("alEffecti")));
+        // c.alEffectf = @ptrCast(@alignCast(c.alGetProcAddress("alEffectf")));
+        // c.alEffectfv = @ptrCast(@alignCast(c.alGetProcAddress("alEffectfv")));
+        // c.alGenAuxiliaryEffectSlots = @ptrCast(@alignCast(c.alGetProcAddress("alGenAuxiliaryEffectSlots")));
+        // c.alAuxiliaryEffectSloti = @ptrCast(@alignCast(c.alGetProcAddress("alAuxiliaryEffectSloti")));
+        // const effect = c.LoadEffect(&eff);
 
-        const effect = c.LoadEffect(&eff);
+        // var slot: c.ALuint = 0;
 
-        var slot: c.ALuint = 0;
-
-        c.alGenAuxiliaryEffectSlots.?(1, &slot);
-        c.alAuxiliaryEffectSloti.?(slot, c.AL_EFFECTSLOT_AUXILIARY_SEND_AUTO, c.AL_TRUE);
-        c.alAuxiliaryEffectSloti.?(slot, c.AL_EFFECTSLOT_EFFECT, @intCast(effect));
+        // c.alGenAuxiliaryEffectSlots.?(1, &slot);
+        // c.alAuxiliaryEffectSloti.?(slot, c.AL_EFFECTSLOT_AUXILIARY_SEND_AUTO, c.AL_TRUE);
+        // c.alAuxiliaryEffectSloti.?(slot, c.AL_EFFECTSLOT_EFFECT, @intCast(effect));
 
         const background_data = Sound.init(background_sound);
 
@@ -112,7 +111,7 @@ pub const AudioManager = struct {
         c.alGenSources(1, &bg);
 
         // set bg properties
-        c.alSource3i(bg, c.AL_AUXILIARY_SEND_FILTER, @intCast(slot), 0, c.AL_FILTER_NULL);
+        // c.alSource3i(bg, c.AL_AUXILIARY_SEND_FILTER, @intCast(slot), 0, c.AL_FILTER_NULL);
         c.alSourcei(bg, c.AL_LOOPING, c.AL_TRUE);
         c.alSourcef(bg, c.AL_GAIN, 0.5);
 
@@ -124,8 +123,8 @@ pub const AudioManager = struct {
         instance = .{
             .device = device,
             .context = context,
-            .effect = effect,
-            .slot = slot,
+            // .effect = effect,
+            // .slot = slot,
             .bg = bg,
             .sources = sources,
         };
@@ -138,7 +137,7 @@ pub const AudioManager = struct {
 
             c.alGetSourcei(self.sources[self.next], c.AL_SOURCE_STATE, &source_state);
             if (source_state != c.AL_PLAYING) {
-                c.alSource3i(self.sources[self.next], c.AL_AUXILIARY_SEND_FILTER, @intCast(self.slot), 0, c.AL_FILTER_NULL);
+                // c.alSource3i(self.sources[self.next], c.AL_AUXILIARY_SEND_FILTER, @intCast(self.slot), 0, c.AL_FILTER_NULL);
                 c.alSourcei(self.sources[self.next], c.AL_BUFFER, @as(c_int, @intCast(buffer)));
                 c.alSourcef(self.sources[self.next], c.AL_GAIN, self.volume);
 

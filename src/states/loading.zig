@@ -172,11 +172,7 @@ pub fn setup(self: *GSLoading) !void {
 
     self.wait = LOAD_WAIT;
 
-    self.loading_thread = null;
-
     self.load_progress = 0;
-    self.load_sprite.data.size.x = 0;
-
     self.loading_thread = try std.Thread.spawn(.{}, GSLoading.loadThread, .{ self, &self.load_error });
 
     // setup some pointers
@@ -191,6 +187,9 @@ pub fn setup(self: *GSLoading) !void {
 pub fn deinit(self: *GSLoading) void {
     if (self.loading_thread) |thread|
         thread.join();
+
+    self.loading_thread = null;
+    self.load_sprite.data.size.x = 0;
 }
 
 pub fn update(self: *GSLoading, dt: f32) !void {

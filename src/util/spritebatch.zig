@@ -359,6 +359,7 @@ pub fn deinit(self: *const Self) void {
         e.texture.deinit();
     }
 
+    allocator.alloc.free(self.qbuffers);
     allocator.alloc.free(self.buffers);
     allocator.alloc.free(self.queue);
     allocator.alloc.free(self.prev_queue);
