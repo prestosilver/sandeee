@@ -510,34 +510,49 @@ pub const WebData = struct {
             if (std.mem.startsWith(u8, fullLine, "#")) {
                 try self.styles.put(try allocator.alloc.dupe(u8, fullLine[1..]), .{});
                 current_style = self.styles.getPtr(fullLine[1..]) orelse unreachable;
+
+                continue;
             }
-            if (std.mem.startsWith(u8, fullLine, "align: ")) {
-                if (std.mem.eql(u8, fullLine, "align: Center")) {
+
+            const colon_index = std.mem.indexOfScalar(u8, fullLine, ':') orelse {
+                log.warn("style line invalid: `{s}`", .{fullLine});
+
+                continue;
+            };
+
+            const prop_name = std.mem.trim(u8, fullLine[0..colon_index], std.ascii.whitespace);
+            const prop_value = std.mem.trim(u8, fullLine[colon_index + 1..], std.ascii.whitespace);
+
+            if (std.mem.eql(u8, prop_name, "align")) {
+                if (std.ascii.eqlIgnoreCase(u8, prop_value, "center")) {
                     current_style.ali = .Center;
-                }
-                if (std.mem.eql(u8, fullLine, "align: Left")) {
+                } else if (std.ascii.eqlIgnoreCase(u8, prop_value, "left")) {
                     current_style.ali = .Left;
-                }
-                if (std.mem.eql(u8, fullLine, "align: Right")) {
+                } else if (std.ascii.eqlIgnoreCase(u8, prop_value, "right")) {
                     current_style.ali = .Right;
+                } else {
+                    log.warn("unknown align: `{s}`", .{prop_value});
                 }
-            }
-            if (std.mem.startsWith(u8, fullLine, "suffix: ")) {
-                current_style.suffix = try allocator.alloc.dupe(u8, fullLine[8..]);
-            }
-            if (std.mem.startsWith(u8, fullLine, "prefix: ")) {
-                current_style.prefix = try allocator.alloc.dupe(u8, fullLine[8..]);
-            }
-            if (std.mem.startsWith(u8, fullLine, "scale: ")) {
-                current_style.scale = std.fmt.parseFloat(f32, fullLine["scale: ".len..]) catch 1.0;
-            }
-            if (std.mem.startsWith(u8, fullLine, "color: ")) {
-                const buf = fullLine["color: ".len..];
-                current_style.color = if (buf.len > 6)
-                    .{ .r = 1, .g = 0, .b = 0 }
-                else
-                    Color.parseColor(buf[0..6].*) catch
-                        .{ .r = 1, .g = 0, .b = 0 };
+            } else if (std.mem.eql(u8, prop_name, "suffix")) {
+                current_style.suffix = try allocator.alloc.dupe(u8, prop_value);
+            } else if (std.mem.eql(u8, prop_name, "prefix")) {
+                current_style.prefix = try allocator.alloc.dupe(u8, prop_value);
+            } else if (std.mem.eql(u8, prop_name, "scale")) {
+                current_style.scale = std.fmt.parseFloat(f32, prop_value) catch {
+                    log.warn("cannot parse style scale: f32({s})", .{prop_value});
+                    continue;
+                };
+            } else if (std.mem.eql(u8, prop_name, "color")) {
+                if (prop_value.len == 6) {
+                    current_style.color = Color.parseColor(prop_value[0..6].*) catch {
+                        log.warn("cannot parse style color: Color({s})", .{prop_value});
+                        continue;
+                    };
+                } else {
+                    log.warn("cannot parse style color: Color({s})", .{prop_value});
+                }
+            } else {
+                log.warn("unknown style prop: `{s}`", .{prop_name});
             }
         }
     }
