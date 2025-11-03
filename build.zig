@@ -762,7 +762,6 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
     });
 
     const exe = b.addExecutable(.{
@@ -809,7 +808,6 @@ pub fn build(b: *std.Build) !void {
 
     const steam_module = b.addModule("steam", .{
         .root_source_file = b.path("steam/steam.zig"),
-        .link_libc = true,
     });
 
     const options = b.addOptions();
@@ -894,9 +892,14 @@ pub fn build(b: *std.Build) !void {
         exe.addObjectFile(b.path("content/app.res.obj"));
         exe.addLibraryPath(b.path("deps/lib"));
         exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
+        exe.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe.addObjectFile(b.path("deps/dll/libopenal.dll"));
         // exe.subsystem = .Windows;
     } else {
+        exe.addLibraryPath(b.path("deps/lib"));
         exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
+        exe.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe.addObjectFile(b.path("deps/lib/libopenal.so"));
     }
 
     // Sources
@@ -907,9 +910,6 @@ pub fn build(b: *std.Build) !void {
         },
     );
 
-    exe.linkSystemLibrary("glfw3");
-    exe.linkSystemLibrary("GL");
-    exe.linkSystemLibrary("OpenAL");
     if (steam_mode == .On) {
         if (target.result.os.tag == .windows)
             exe.linkSystemLibrary("steam_api64")
@@ -1060,10 +1060,10 @@ pub fn build(b: *std.Build) !void {
 
     if (target.result.os.tag == .windows) {
         _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
-        b.installFile("deps/dll/glfw3.dll", "bin/glfw3.dll");
+        b.installFile("deps/dll/libglfw3.dll", "bin/libglfw3.dll");
         b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
         b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
-        b.installFile("deps/dll/OpenAL32.dll", "bin/OpenAL32.dll");
+        b.installFile("deps/dll/libopenal.dll", "bin/libopenal.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
         if (steam_mode == .On)
@@ -1071,8 +1071,8 @@ pub fn build(b: *std.Build) !void {
     } else if (target.result.os.tag == .linux) {
         _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
         b.installFile("runSandEEE", "bin/runSandEEE");
-        b.installFile("deps/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
-        b.installFile("deps/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
+        // b.installFile("deps/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
+        // b.installFile("deps/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
         if (steam_mode == .On)
             b.installFile("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
