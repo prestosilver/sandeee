@@ -9,13 +9,15 @@
 - This is all internal convention, as such not publicly released so users dont have to know this exists.
     - This means this document shall contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
 - Something is considered user facing if the user can see it at any time, wether thats on www, or in any recovery image.
-- Definition sections in this document are included for atipical features that already exist, but are not the same as tipical convention, or things that could be misinterpreted easily.
+- Definition sections in this document are included for atypical features that already exist, but are not the same as tipical convention, or things that could be misinterpreted easily.
 - All code in this document may have a heading or footer omitted, that will be indicated with a `...` at either the begining or end of the file respectively
     - This will also have 1 empty line next to it, that is not part of the code so it may be ignored.
 - Code examples here have the proper language tags, even though markdown dosent highlight check the source if needed
-- All formats defined here are assumed to always consist of this format, versioning is completely seperate of this document.
+- All formats defined here are assumed to always consist of this format, versioning is completely separate of this document.
     - If you need to see old docs roll the repo back
     - this is a style guide so make sure to use the latest version when writing docs
+- user facing formats such as `.edf` and `.eds` are immutable and documented elsewhere.
+    - Reason: Documenting one thing twice can cause contradictions later, and this document is less formal than user docs.
 
 ## General structure & rules
 
@@ -23,7 +25,7 @@
     - this will be moved to a full domain once I get it
 - All documentation shall be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
 - Documentation will include no hidden files (starting with `_`)
-- No dead links obviously, this will problaby be automatically checked.
+- No dead links obviously, this will probably be automatically checked.
 
 ### Syscalls
 
@@ -33,15 +35,16 @@
 
 ### Name Style Rules
 
-- The SandEEE E is character Ⲉ (U+2C88) in unicode, and a standard E (captial) in ascii.
+- The SandEEE E is character Ⲉ (U+2C88) in unicode, and a standard E (capital) in ascii.
 - SandEEE shall always be spelled SandEEE with the EEEch character for the SandEEE E in place of its Es.
-- All SandEEE docs are written in the .edf format, see the docs for that.
+- All SandEEE docs are written in the .edf format, see the user docs for that.
 - EEE is pronounced "tripple E"
 - EEE is always capitalized if in ascii, even in a subset of a program name
 - slogan capitalization and formatting is `--- EEE Sees all ---`, centered if possible
     - Always a footer
 
 ### Style rules
+
 
 - Doc names are the same case as what they are describing
     - file extension docs are named after their extension.
@@ -162,14 +165,22 @@ This is documenting stuff
 |.eln    |✔| Shortcuts
 |.eep    |✔| Executables
 
+### EEEch Format
+
+> Definition: EEEch (ⲈⲈⲈch in game) is SandEEE's native character encoding, serving as a direct drop-in replacement for ASCII.
+
+- EEEch uses single byte specs, there is no character longer than one.
+- EEEch has color symbols, and emojis, though those should not be used in docs.
+
 ## Text file extensions
 
 > Definition:
 > A text file is a file format that does not soley depend on the EEEch format.
+> ie. it is all readable plain text that with no binary structure.
 
 - All text files shall be named with 3 letter lowercase extensions.
 - All text file docs shall be listed under categories named `text`
-- A text format is considered "Builtin" if it is parsed by SandEEE itsself rather than an `.eep` program
+- A text format is considered "Builtin" if it is parsed by SandEEE itself rather than an `.eep` program
 - Docs shall specify if a file format is builtin
 
 Example:
@@ -179,12 +190,12 @@ TODO
 
 ## Binary file extensions
 
-> Definiton:
-> A binary file is a file format that does not soley depend on the EEEch format.
+> Definition:
+> A binary file is a file format that may include EEEch encoded text, but depends on binary encodings too.
 
 - All binary files shall be named with 3 letter lowercase extensions.
 - All binary file docs shall be listed under categories named `binaries`, to keep things consistent that means no shortening to "bins".
-- A binary format is considered "Builtin" if it is parsed by SandEEE itsself rather than an `.eep` program
+- A binary format is considered "Builtin" if it is parsed by SandEEE itself rather than an `.eep` program
 - Everything has 4 char magic, capitalization will be inconsistent. Docs shall mention this first, followed by format specs.
 - File extensions shall be listed in the same line as what the file does
     - Format `File usecase (extensions)`
@@ -202,7 +213,7 @@ TODO
 
 ### Classic constructs
 
-> Defintion: Classic constructs are common things that will be represented alot, but not a single character.
+> Definition: Classic constructs are common things that will be represented alot, but not a single character.
 
 - Colors
     - Alpha is never the name of a channel in docs
@@ -269,7 +280,7 @@ Adds 2 numbers
 
 ## Image files
 
-- All non icon image files shall be documented seperately, while icons are documented in an `icons` category.
+- All non icon image files shall be documented separately, while icons are documented in an `icons` category.
 - Image file documentation shall be put inside a `images` group
 - Image file documentation shall be named identically to the image file
 - Image documentation shall contain a preview image directly after the page title
@@ -377,7 +388,7 @@ If no file is provided the editor will open without a file loaded.
 - The default style shall not be modified.
 - Wrapper styles shall be named as :wrap-start:, and :wrap-end:, or :wrap-edge: if theyre the same.
     - If the style is required per line, then also include :wrap:
-- Center shall be used sparingly in actual doc styles, if its not for empasis its not nessessary.
+- Center shall be used sparingly in actual doc styles, if its not for emphasis its not necessary.
 
 Example:
 ```eds
@@ -432,7 +443,7 @@ see [Style Rules](#style-rules)
     - The top of the stack is the end of the line
 - Assembly files should be kept eon compatible where possible
 - loop labels shall start with `loop_`
-- procedural lablels shall start with `proc_`
+- procedural labels shall start with `proc_`
 - There are no labels named functions in EEE asm
 - Conditional labels shall start with `cond_`
 - Other labels dont have any prefix
@@ -501,7 +512,7 @@ proc_test2:
 - There should be a single line of space after every function
 - Imports and Includes shall both contain no empty lines
 - Includes come first, then imports
-- Consts can be seperated by at most one line of space.
+- Consts can be separated by at most one line of space.
 - Eon files shall be indented by 4 spaces.
 - Eon files shall have a footer of `// --- EEE Sees all ---`
 
@@ -537,7 +548,7 @@ fn main() {
 
 ## Errors
 
-> Definition: Errors are considered unrecoverable, and critical. Anywhere in this document where the word error is used its reffering to the associated syscall.
+> Definition: Errors are considered unrecoverable, and critical. Anywhere in this document where the word error is used its refering to the associated syscall.
 > If something else happens, say a recoverable error like an invalid input this shall be handled by code rather than in the asm.
 
 ### Conventions
@@ -548,3 +559,28 @@ fn main() {
 - Errors can give more information after their name with a ` - ` as seperation.
 - Stream errors shall be caught and handled, with a vaild reason & file printed to the user.
 - Programs shall not crash (obviously), this includes erroneous inputs.
+- Errors of the same type but different cause should have the same prefix, this uses camel case
+
+## Versioning
+
+- EEE uses a system called EEEvolution to document versions
+- Every version starts with a codeword for the program its representing,
+- This is followed by a colon
+- This is followed by the state of the program, in our world there is alpha, beta, release, in SandEEE there is Seed, Sapling, Tree
+- Finally there is a # followed by the current public build, and a _ for the build number
+- On a major increment seed->sapling the number resets
+- Bug fixes dont incrememnt the version, but they do incrmement the build
+- Build numbers never reset, but are up to the program to document what it means and how its increment
+
+Examples:
+```text
+os:seed#3_542     → Development build 542 of third public seed branch
+os:sapling#0_1034 → First sapling release (reset)
+os:tree#0_30545   → Initial stable release
+```
+
+## Appendix: Design Philosophy
+
+SandEEE assumes a world where text is the fundamental data layer, not a byproduct of binary design.  
+Consistency, human-readability, and reversibility take precedence over performance when documenting internal systems.  
+When in doubt, prefer formats that degrade gracefully when opened as plain text.
