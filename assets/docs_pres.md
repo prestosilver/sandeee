@@ -20,7 +20,7 @@ Preston Precourt (prestosilver)
 <!--
 
 - Programing game
-- Programing game
+- High empasis on realism
 
 -->
 
@@ -84,7 +84,6 @@ Documentation for asm
 ![](docs.png)
 
 ---
-
 
 [The docs in question](../plans/meta.md)
 # This is my first Marp presentation btw

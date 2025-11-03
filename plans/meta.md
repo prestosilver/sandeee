@@ -29,6 +29,8 @@
 - All SandEEE docs are written in the .edf format, see the docs for that.
 - EEE is pronounced "tripple E"
 - EEE is always capitalized if in ascii, even in a subset of a program name
+- slogan capitalization and formatting is `--- EEE Sees all ---`, centered if possible
+    - Always a footer
 
 ### Style rules
 
@@ -37,7 +39,7 @@
     - Encoding docs are named after the encodings acronym/shortend form
     - libraries are named after their .ell file name
 - All docs should include the main style sheet with `#style @www/docs/style.eds`
-    - Code blocks can be made with the `:code:`, `:code-edge:` and `:bad-code:` styles
+    - Code blocks can be made with the `:code:`, `:code-edge:` and `:code-bad:` styles
         - Bad code is defined as: any line of code that if not excluded will prevent that block of code from compiling.
         - :code: should be wrapped in the :code-edge: style for compat.
         - :code-edge: lines have no text.
@@ -50,6 +52,7 @@
 - Code blocks should always have a heading describing their use.
 - Links in docs should use only relative paths.
 - Back paths are under the title for documents.
+- Examples should be wrapped with :example-start:, and :example-end:
 
 ### Index pages
 
@@ -61,12 +64,13 @@
 
 Code
 ```edf
-Example code block
-:code-edge:
-:code:    | This does stuff
-:code:    | More stuff
-:bad-code:| This breaks my code
-:code-edge:
+:example-start: Example code block
+:example:       :code-edge:
+:example:       :code:    | This does stuff
+:example:       :code:    | More stuff
+:example:       :code-bad:| This breaks my code
+:example:       :code-edge:
+:example-end:
 ```
 
 Document structure
@@ -106,7 +110,7 @@ Adds the top 2 values on the stack.
     - www/docs/text/index.edf
     - www/docs/text/eon.edf
     - www/docs/text/edf.edf
-    - www/docs/text/esf.edf
+    - www/docs/text/eds.edf
 - www/docs/libraries
     - www/docs/libraries/index.edf
     - www/docs/libraries/eon.edf
@@ -187,6 +191,25 @@ TODO
 |         - Transparent: 1ch
 ```
 
+## Instruction documentation
+
+- Instruction 255 is documented outside of the docs site as it is a "backdoor instruction"
+- Documentation for each instruction should include how it modifies the stack
+    - \- Popped +Pushed
+- Instruction documentation should include every case of popped values, string or int
+
+Example
+```edf
+-- (0x04) Add --
+- String, Int -
+:mods: -2 +1
+Removes n characters from the start of a string.
+
+:example: "fdsa" 2 => "sa"
+
+```
+
+
 ## Shell Commands
 
 - Every shell command will return a properly named error on invalid input.
@@ -233,17 +256,110 @@ If no file is provided the editor will open without a file loaded.
 
 - Every format should have a style guide in this document
 
+### eds
+
+- Each style should have no spacers between their name and definition.
+- Each style should have no repeated definitions.
+- The default style should not be modified.
+- Wrapper styles should be named as :wrap-start:, and :wrap-end:, or :wrap-edge: if theyre the same.
+    - If the style is required per line, then also include :wrap:
+- Center should be used sparingly in actual doc styles, if its not for empasis its not nessessary.
+
+Example:
+```eds
+#logo
+align: Center
+scale: 6.0
+
+#biglink
+align: Center
+scale: 1.5
+
+#h3
+scale: 1.5
+
+#hs
+scale: 1.5
+align: Center
+prefix: +
+suffix: +
+
+#red
+color: FF0000
+align: Center
+
+#code
+prefix: |     |
+
+#code-bad
+color: FF0000
+prefix: | BAD |
+
+#code-edge
+prefix: +-----+
+
+#example-start
+prefix: ---- Example:
+
+#example-end
+prefix: ----
+
+#example
+offset: 2
+```
+
 ### edf
 
 ### asm
 
 - Assembly can be commented on stack states on user facing code
+    - The top of the stack is the end of the line
+- Assembly files should be kept eon compatible where possible
 - loop labels should start with `loop_`
 - procedural lablels should start with `proc_`
+- There are no labels named functions in EEE asm
 - Conditional labels should start with `cond_`
 - Other labels dont have any prefix
 - Labels should be in lowerCamelCase, minus their prefix. ex. `proc_doSomething:`
 - Since labels are free, exported procs are double labeled
+- Asm files should have a footer of `; --- EEE Sees all ---`
+- All asm code files should be annotated with a header comment
+    - first line is title, 2nd is EEE and then year (5 years before the current year), and then a blank comment line (`;`)
+    - Then any info in a header, bugs first then explanation, no examples in asm code though.
+        - Reason: Top level examples are repetitive, libraries will be documented per function, and executables in the help message.
+- The main function should be labeled even if its never called by asm.
+- The main function comes first, no call/jump
+
+Example:
+```asm
+; SandEEE example Code
+; EEE 2020
+;
+; TODO: implement test2
+
+proc_main:
+    push 0
+    ret
+
+; This proc is an example function.
+; The first argument is an example parameter.
+; The second is also an example parameter
+proc_test: ; arg1 arg2
+    ; do nothing with my arguments
+    disc 2
+
+    ; Return zero
+    push 0
+    ret
+
+; This function is an example function.
+; There are no arguments
+proc_test2:
+    push "Unimplemented"
+    sys 18
+
+; --- EEE Sees all ---
+```
 
 ### eon
 
@@ -256,20 +372,51 @@ If no file is provided the editor will open without a file loaded.
 - Assembly functions should be commented after their signature line, and not use `return x;`, rather use the `asm "ret";`
 - If something returns a "void" value it should `return void;` this keyword is defined in `/libs/inc/consts.eon`, and is 0.
 - Main should always `return void`, errors are raised through `error(text)` in std.
+- All branches outside of assembly functions should end with either a `return`, or a `error()`
+- There should be no trailing code after a `return` or `error()`
+- All eon code files should be annotated with a header comment
+    - first line is title, 2nd is EEE and then year (5 years before the current year), and then a blank comment line (`//`)
+    - Then any info in a header, bugs first then explanation, no examples in eon code though.
+        - Reason: Top level examples are repetitive, libraries will be documented per function, and executables in the help message.
+- There should be a single line of whitespace after the header comment
+- There should be a single line of space after includes (if used)
+- There should be a single line of space after imports (if used)
+- There should be a single line of space after consts.
+- There should be a single line of space after every function
+- Imports and Includes should both contain no empty lines
+- Includes come first, then imports
+- Consts can be seperated by at most one line of space.
+- Eon files should be indented by 4 spaces.
+- Eon files should have a footer of `// --- EEE Sees all ---`
 
 Example:
 ```eon
+// SandEEE Example code
+// EEE 2020
+//
+// TODO: implement test2
+
 #include "/libs/incl/consts.eon"
 
 #import "/libs/func/heap.ell"
 
+// This function is an example function.
+// The first argument is an example parameter.
+// The second is also an example parameter
 fn test(arg1, arg2) {
     return void;
+}
+
+// This function is an example function.
+fn test2() {
+    error("Unimplemented");
 }
 
 fn main() {
     return void;
 }
+
+// --- EEE Sees all ---
 ```
 
 ## Errors
@@ -281,5 +428,7 @@ fn main() {
 
 - All memory errors are all named `AllocatorFault`.
     - Reason: the few cases that cause these are super rare, out of memory, double free, etc. that they can be grouped on user end.
+- Todo errors are named `Unimplemented`
+- Errors can give more information after their name with a ` - ` as seperation.
 - Stream errors should be caught and handled, with a vaild reason & file printed to the user.
 - Programs should not crash (obviously), this includes erroneous inputs.

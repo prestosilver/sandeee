@@ -1,0 +1,23 @@
+#Style @doodle.eds
+:logo: [@/logo.eia]
+
+:center: -- Test documentation --
+> Back: @index.edf
+
+-- This is a test page --
+- The test vibes are real -
+
+:example: Example code block
+    :code:
+           | ThisDoesStuff() {
+           |   More stuff also indented
+           | }
+    :.bad: | This breaks my code
+
+- Cool section -
+
+:example: Example block $
+    Do stuff and stuff happens
+    Dont do stuff and nothing happens
+
+:center: --- EEE Sees all ---
