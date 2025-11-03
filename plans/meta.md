@@ -13,8 +13,10 @@
 
 ## General structure & rules
 
-- All documentation should be hosted on sandeee.prestosilver.info (or a full domain once I get it).
+- All documentation should be hosted on sandeee.prestosilver.info
+    - this will be moved to a full domain once I get it
 - All documentation should be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
+- Documentation will include no hidden files (starting with `_`)
 
 ### Syscalls
 
@@ -43,7 +45,7 @@
         - Bad code is defined as: any line of code that if not excluded will prevent that block of code from compiling.
         - :code: should be wrapped in the :code-edge: style for compat.
         - :code-edge: lines have no text.
-    - nothing should be centered.
+    - nothing should be centered unless its the footer, header, image, or diagram.
 - All docs should include the usual `:center: --- EEE Sees all ---` footer.
 - All documents should start with a `:center: -- Title --` style for the title.
     - After this this style will never be reused, use heading 2 then 1, then restructure. `-- H2 --` -> `- H1 -` -> redesign layout to avoid over indent.
@@ -56,7 +58,7 @@
 
 ### Index pages
 
-- Index pages should exist for every folder, including the root.
+- Index pages should exist for every folder, **including** the root.
 - They should have a list of all sibling files, xor subdirs, if a subdir is needed there can be no siblings.
 - Index files should never be linked to, except in backlinks.
 
@@ -95,10 +97,15 @@ Adds the top 2 values on the stack.
 
 - www/docs/index.edf
 - www/docs/style.eds
+- www/docs/assembly/
+    - www/docs/assembly/index.edf
+    - www/docs/assembly/instructions/
+        - www/docs/assembly/instructions/index.edf
+        - www/docs/assembly/instructions/nop.edf
 - www/docs/encodings/
     - www/docs/encodings/index.edf
     - www/docs/encodings/EEEch.eia
-- www/docs/binaries
+- www/docs/binaries/
     - www/docs/binaries/index.edf
     - www/docs/binaries/eia.edf
     - www/docs/binaries/ell.edf
@@ -106,19 +113,43 @@ Adds the top 2 values on the stack.
     - www/docs/binaries/eep.edf
     - www/docs/binaries/eme.edf
     - www/docs/binaries/era.edf
-- www/docs/text
+- www/docs/text/
     - www/docs/text/index.edf
     - www/docs/text/eon.edf
     - www/docs/text/edf.edf
     - www/docs/text/eds.edf
-- www/docs/libraries
-    - www/docs/libraries/index.edf
-    - www/docs/libraries/eon.edf
-    - www/docs/libraries/asm.edf
-- www/docs/errors
+    - www/docs/text/eln.edf
+- www/docs/files/
+    - www/docs/files/index.edf
+    - www/docs/files/images/
+        - www/docs/files/images/index.edf
+        - www/docs/files/images/ui.edf
+    - www/docs/files/libraries/
+        - www/docs/files/libraries/index.edf
+        - www/docs/files/libraries/eon.edf
+        - www/docs/files/libraries/asm.edf
+- www/docs/errors/
     - www/docs/errors/index.edf
     - www/docs/errors/asm.edf
     - www/docs/errors/eon.edf
+
+## Formats and uses
+
+- Files in SandEEE will **always** use EEE file formats
+- All downloads in the documents will be `.epk` files
+- All EEE file extensions start with `.e`
+
+| Format | builtin | Used for  | Notes |
+|--------|-|-----------|---|
+|.eee    |✔| Disk images
+|.epk    |✔| Recovery scripts<br>Packages
+|.eap    |✖| Archives
+|.era    |✔| Audio files
+|.edf    |✔| Rich text documents
+|.eds    |✔| Rich text document style
+|.ell    |✖| Libraries | libload.ell is raw code
+|.eln    |✔| Shortcuts
+|.eep    |✔| Executables
 
 ## Text file extensions
 
@@ -130,8 +161,7 @@ Adds the top 2 values on the stack.
 - A text format is considered "Builtin" if it is parsed by SandEEE itsself rather than an `.eep` program
 - Docs should specify if a file format is builtin
 
-### Example
-
+Example:
 ```md
 TODO
 ```
@@ -201,14 +231,76 @@ TODO
 Example
 ```edf
 -- (0x04) Add --
-- String, Int -
+- String, Number -
 :mods: -2 +1
 Removes n characters from the start of a string.
 
 :example: "fdsa" 2 => "sa"
 
+:edge: There is no error when there is not enough chars: "f" 3 => ""
+
+- Number, Number -
+:mods: -2 +1
+Adds 2 numbers
+
+:example: 3 2 => 5
+
+:edge:  "f" 3 => ""
 ```
 
+## Image files
+
+- All non icon image files should be documented seperately, while icons are documented in an `icons` category.
+- Image file documentation should be put inside a `images` group
+- Image file documentation should be named identically to the image file
+- Image documentation should contain a preview image directly after the page title
+    - The line adding preview image should have 1 line of whitespace before and after it
+    - Use the style `:preview-image:` for the preview image
+    - This should be stored next to the image file, with the same name
+- Following that there should be a summary section defining how the image is used.
+- Following that there should be a more descriptive area for per sprite documentation
+- Sprite areas are 1 indexed rectanges with the format `X,Y WxH` followed by ` - Description`
+
+Example:
+```edf
+#style @/style.eds
+
+:center: -- /cont/imgs/ui.eia --
+:preview-image: [@ui.eia]
+
+-- Summary --
+The image used for ui assets.
+
+-- Sizes --
+8x8 sprites
+
+-- Sprites and locations --
+- Scroll Bar -
+1,1 2x2 | Top of the scroll bar
+1,3 2x1 | The scrollable area of a scroll bar
+1,4 2x1 | The top of the handle of the scroll bar
+1,5 2x1 | The middle of the handle of the scroll bar
+1,6 2x1 | The bottom of the handle of the scroll bar
+1,7 2x2 | Bottom of the scroll bar
+
+-- Containers --
+3,1 1x1 | A manually sizable frame outline
+4,1 1x1 | A manually sizable frame fill
+3,2 2x2 | A container outline, the middle third of this region is stretched
+3,2 2x2 | A container outline, the middle third of this region is stretched
+
+-- Input regions --
+3,4 1x1 | A manually sizable input outline
+4,4 1x1 | A manually sizable input fill
+4,5 1x1 | The overlay for highlighted text
+
+-- Check boxes --
+5,7 2x2 | An unchecked box
+7,7 2x2 | A checked box
+
+
+:center: --- EEE Sees all ---
+```
 
 ## Shell Commands
 
@@ -309,6 +401,8 @@ offset: 2
 ```
 
 ### edf
+
+see [Style Rules](#style-rules)
 
 ### asm
 

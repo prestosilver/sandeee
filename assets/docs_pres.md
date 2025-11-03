@@ -15,12 +15,13 @@ Preston Precourt (prestosilver)
 
 ---
 
-# What is SandEEE
+# What is SandEEE?
 
 <!--
 
 - Programing game
 - High empasis on realism
+- Project is already at an mvp
 
 -->
 
