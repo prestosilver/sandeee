@@ -2,12 +2,13 @@
 
 ## Notes about this document
 
+- This is the documentation for the documentation, no user facing docs will be repeated here.
+    - This document should not describe any specific behaviours, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
 - In this document things that **Should** happen are equivalant to things that **Shall** happen. Things that may happen are not welcome here.
 - Same with *will*, though will should **only** be used in a manner out of naming. Think: strings will be represented this way, vs errors shall be represented this way.
 - Anywhere where this document has made a weird/odd decision, there should be a `Reason:` tag, everything else is either intuitive or a project wide assumption.
 - This is all internal convention, as such not publicly released so users dont have to know this exists.
     - This means this document should contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
-- This document should not describe any specific behaviours, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
 - Something is considered user facing if the user can see it at any time, wether thats on www, or in any recovery image.
 - Definition sections in this document are included for atipical features that already exist, but are not the same as tipical convention, or things that could be misinterpreted easily.
 - All code in this document may have a heading or footer omitted, that will be indicated with a `...` at either the begining or end of the file respectively
