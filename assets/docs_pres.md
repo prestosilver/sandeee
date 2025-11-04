@@ -10,7 +10,7 @@ style: |
     }
 ---
 
-# In defence of metadocumentation
+# In Defense of Metadocumentation
 Preston Precourt (prestosilver)
 
 ---
@@ -19,15 +19,22 @@ Preston Precourt (prestosilver)
 
 <!--
 
-- Programing game
-- High empasis on realism
-- Project is already at an mvp
+- Programming game
+- High emphasis on realism
+- Project is already at an MVP
 
 -->
 
 ---
 
 # Why?
+
+<!--
+
+- Many inconsistencies
+- Worrying about missing something
+
+-->
 
 <div class="columns">
 <div>
@@ -52,7 +59,7 @@ Documentation for asm
 #Style @../../style.eds
 :logo: [@/logo.eia]
 
--- ASM --
+-- asm --
 
     ...
 
@@ -64,21 +71,34 @@ Documentation for asm
 
 ---
 
-# This is not for everyone 
+<!--
+
+- If you're not documenting your game for your userbase, I would not suggest this
+
+-->
+
+
+# This is Not for Everyone 
 
 - SandEEE by nature has user facing documentation
 - I am documenting this after I have a full working MVP
-- In SandEEE, Bad Docs => Bad Game
+- In SandEEE, Bad Docs ⇒ Bad Game
 
 ---
 
-# Didnt expect to get so much out of this
+# Didn't expect to get so much out of this
 - Solid framework for what I need
 - I know what SandEEE is now
 
 ---
 
-# Where to start
+<!--
+
+- I started binary formats just because I knew I would be able to do a lot.
+
+-->
+
+# Where to Start
 
 - Just start, anywhere works
 
@@ -87,4 +107,4 @@ Documentation for asm
 ---
 
 [The docs in question](../plans/meta.md)
-# This is my first Marp presentation btw
+# This is My First Marp Presentation, btw
