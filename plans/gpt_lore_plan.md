@@ -1,7 +1,7 @@
 # SandEEE Lore & Implementation Plan  
 *(Consolidated World Timeline + Dev Execution Overview)*  
 
-**THIS IS GPT GENERATED BTW**, I dont have the energy to consolidate ideas quite yet
+**THIS PHRASING IS GPT GENERATED BTW**, I leaded the ideas, I just dont have the energy to consolidate ideas quite yet
 
 ---
 
