@@ -45,7 +45,6 @@
 
 ### Style rules
 
-
 - Doc names are the same case as what they are describing
     - file extension docs are named after their extension.
     - Encoding docs are named after the encodings acronym/shortend form
@@ -182,10 +181,35 @@ This is documenting stuff
 - All text file docs shall be listed under categories named `text`
 - A text format is considered "Builtin" if it is parsed by SandEEE itself rather than an `.eep` program
 - Docs shall specify if a file format is builtin
+- Grammar definitions should be under a heading labeled `Grammar`
+    - Each grammar rule is started with a `:rule:` styled line
+    - This is followed by each value this rule can convert to
+    - The first rule should always be named the same as the file format, following rules are breadth first.
+    - The EOF keyword in grammer refers to the end of the file
+    - The ALPHA keyword in grammer refers to any EEEch lowercase or capital letter, this does not include the SandEEE e
+    - The NUMBER keyword in grammer refers to any number character 0-9
 
 Example:
 ```md
-TODO
+#style @/docs/style.eds
+
+:center: -- Eon --
+-- Grammar --
+:rule: Eon
+-> EOF
+-> Statement EOF
+
+:rule: Statement
+-> Expression
+-> Expression ";" Statement
+
+:rule: Expression
+-> Identifier
+
+:rule: Identifier
+-> ALPHA+
+
+:center: --- EEE Sees all ---
 ```
 
 ## Binary file extensions
@@ -574,9 +598,9 @@ fn main() {
 
 Examples:
 ```text
-os:seed#3_542     → Development build 542 of third public seed branch
-os:sapling#0_1034 → First sapling release (reset)
-os:tree#0_30545   → Initial stable release
+os:seed#3_542     -> Development build 542 of third public seed branch
+os:sapling#0_1034 -> First sapling release (reset)
+os:tree#0_30545   -> Initial stable release
 ```
 
 ## Final Notes
