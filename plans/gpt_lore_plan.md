@@ -1,6 +1,8 @@
 # SandEEE Lore & Implementation Plan  
 *(Consolidated World Timeline + Dev Execution Overview)*  
 
+**THIS IS GPT GENERATED BTW**, I dont have the energy to consolidate ideas quite yet
+
 ---
 
 ## 🧭 Lore Timeline: The Rise, Fall, and Leak of SandEEE
