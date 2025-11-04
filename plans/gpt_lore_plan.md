@@ -151,28 +151,49 @@
 
 ```mermaid
 graph TD
-    %% Player Layer
-    A["🧑‍💻 Player<br/>(Running SandEEE Leak)"] --> B["Epsilon's VM (E-VM)<br/><i>Rebuild of Lost Hardware</i>"]
+    %% --- Early Development ---
+    A[EEE Corp<br/><span style="font-size:10px;color:gray">Founded with altruistic goals; early tech nonprofit</span>]
+    B[Internal OS<br/><span style="font-size:10px;color:gray">Pre-SandEEE corporate OS; powerful but closed</span>]
+    C[SandEEE OS 2005<br/><span style="font-size:10px;color:gray">First consumer OS; built to make coding accessible</span>]
+    D[Public Release<br/><span style="font-size:10px;color:gray">Free version + $5 open-source edition</span>]
 
-    %% VM Layer
-    B --> C["💻 SandEEE OS (2005)<br/><i>First consumer desktop by EEE</i>"]
+    %% --- Success and Collapse ---
+    E[Community Growth<br/><span style="font-size:10px;color:gray">Rapid dev adoption; thousands of custom apps</span>]
+    F[Sabotage / Collapse<br/><span style="font-size:10px;color:gray">Systematic takedown by unknown megacorp</span>]
+    G[EEE Bankruptcy<br/><span style="font-size:10px;color:gray">Forced closure; reputation tarnished</span>]
 
-    %% OS Layer
-    C --> D["🏢 EEE Corporation<br/><i>Altruistic creators — “Everyone can code”</i>"]
-    
-    %% EEE Layer
-    D --> E["⚙️ Unnamed Megacorp<br/><i>Sabotaged and erased EEE’s legacy</i>"]
+    %% --- Epsilon and the Leak ---
+    H[Epsilon<br/><span style="font-size:10px;color:gray">Top SandEEE dev; loyal idealist</span>]
+    I[The Leak<br/><span style="font-size:10px;color:gray">Epsilon releases archive years later to clear EEE’s name</span>]
+    J[SandEEE Rediscovery<br/><span style="font-size:10px;color:gray">Modern players explore the leaked OS</span>]
+    K[Mystery Lives On<br/><span style="font-size:10px;color:gray">Who destroyed EEE? What was the original machine?</span>]
 
-    %% Styling and Relationships
-    style A fill:#333,stroke:#666,color:#fff
-    style B fill:#222,stroke:#555,color:#fff
-    style C fill:#111,stroke:#444,color:#fff
-    style D fill:#000,stroke:#333,color:#0f0
-    style E fill:#000,stroke:#333,color:#f55
+    %% --- Developer / Technical Timeline ---
+    subgraph Developer_Timeline["<b>Developer & Technical Evolution</b>"]
+        A1[.eep Format<br/><span style="font-size:10px;color:gray">Earliest executable format; simple stack machine</span>]
+        A2[.edf Format<br/><span style="font-size:10px;color:gray">Enhanced document format; used for GUI and rendering</span>]
+        A3[Shared Object Pool<br/><span style="font-size:10px;color:gray">VM memory unification enabling IPC and GC</span>]
+        A4[Lazy String Engine<br/><span style="font-size:10px;color:gray">Rope-based optimization for frequent concat/index ops</span>]
+        A5[SandEEE VM Leak Tools<br/><span style="font-size:10px;color:gray">Used by Epsilon to repackage OS for archival distribution</span>]
+    end
 
-    %% Extra Notes
-    B -.-> Cnote["VM quirks mirror lost EEE hardware<br/>– 'Impossible assumption' in string handling"]
-    D -.-> Enote["EEE destroyed by unnamed rival<br/>who rewrote computing history"]
-    Epsilon["🧠 Epsilon<br/><i>Leaked SandEEE to clear EEE’s name</i>"] --> B
-    style Epsilon fill:#222,stroke:#555,color:#0af
+    %% --- Connections ---
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    E --> H
+    H --> I
+    I --> J
+    J --> K
+
+    %% Developer Line Links
+    C --> A1
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A4 --> A5
+    A5 --> I
 ```
