@@ -32,6 +32,7 @@
 > Definition: A syscall is any assembly instruction that falls under the sys code, the one argument is a byte/number out of 255 that indicates the operation.
 
 - A syscall is considered *hidden* if it is not documented in the general documentation
+- Syscalls shall be documented exactly the same as instructions,
 
 ### Name Style Rules
 
