@@ -25,13 +25,13 @@
     - this will be moved to a full domain once I get it
 - All documentation shall be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
 - Documentation will include no hidden files (starting with `_`)
-- No dead links obviously, this will probably be automatically checked.
+- No dead links obviously, this shall be automatically checked.
 
 ### Syscalls
 
 > Definition: A syscall is any assembly instruction that falls under the sys code, the one argument is a byte/number out of 255 that indicates the operation.
 
-- A syscall is considered *hidden* if it is not documented in the general documentation
+- A syscall is *hidden* if it is not documented in the general documentation
 - Syscalls shall be documented exactly the same as instructions,
 
 ### Name Style Rules
@@ -39,7 +39,7 @@
 - The SandEEE E is character Ⲉ (U+2C88) in unicode, and a standard E (capital) in ascii.
 - SandEEE shall always be spelled SandEEE with the EEEch character for the SandEEE E in place of its Es.
 - All SandEEE docs are written in the .edf format, see the user docs for that.
-- EEE is pronounced "tripple E"
+- EEE shall be pronounced "tripple E"
 - EEE is always capitalized if in ascii, even in a subset of a program name
 - slogan capitalization and formatting is `--- EEE Sees all ---`, centered if possible
     - Always a footer
@@ -51,11 +51,11 @@
     - Encoding docs are named after the encodings acronym/shortend form
     - libraries are named after their .ell file name
 - All docs shall include the main style sheet with `#style @www/docs/style.eds`
-    - Code blocks can be made with the `:code:`, `:code-edge:` and `:code-bad:` styles
-        - Bad code is defined as: any line of code that if not excluded will prevent that block of code from compiling.
+    - Code blocks are made with the `:code:`, `:code-edge:` and `:code-bad:` styles
+        - Bad code is defined as: any line of code that, if left in place, will prevent that block of code from compiling.
         - :code: shall be wrapped in the :code-edge: style for compat.
         - :code-edge: lines have no text.
-    - nothing shall be centered unless its the footer, header, image, or diagram.
+    - No text shall be centered unless its the footer, header, image, or diagram.
 - All docs shall include the usual `:center: --- EEE Sees all ---` footer.
 - All documents shall start with a `:center: -- Title --` style for the title.
     - After this this style will never be reused, use heading 2 then 1, then restructure. `-- H2 --` -> `- H1 -` -> redesign layout to avoid over indent.
@@ -70,7 +70,7 @@
 ### Index pages
 
 - Index pages shall exist for every folder, **including** the root.
-- They shall have a list of all sibling files, xor subdirs, ie. if a subdir is needed there can be no siblings.
+- They shall have a list of all sibling files or subdirs, but never both ie. if a subdir is needed there can be no siblings.
 - Index files shall never be linked to, except in backlinks, or the parent directory.
 
 ### Examples
@@ -150,7 +150,7 @@ This is documenting stuff
 ## Formats and uses
 
 - Files in SandEEE will **always** use EEE file formats
-- All downloads in the documents will be `.epk` files
+- All downloads in the documents shall use `.epk` files
 - All EEE file extensions start with `.e`
 
 | Format | builtin | Used for  | Notes |
@@ -182,11 +182,11 @@ This is documenting stuff
 - All text file docs shall be listed under categories named `text`
 - A text format is considered "Builtin" if it is parsed by SandEEE itself rather than an `.eep` program
 - Docs shall specify if a file format is builtin
-- Grammar definitions should be under a heading labeled `Grammar`
+- Grammar definitions shall be under a heading labeled `Grammar`
     - Each grammar rule is started with a `:rule:` styled line
     - This is followed by each value this rule can convert to
     - The first rule should always be named the same as the file format, following rules are breadth first.
-    - The EOF keyword in grammer refers to the end of the file
+    - The EOF keyword shall always represent the end of the file
     - The ALPHA keyword in grammer refers to any EEEch lowercase or capital letter, this does not include the SandEEE e
     - The NUMBER keyword in grammer refers to any number character 0-9
 
@@ -221,7 +221,7 @@ Example:
 - All binary files shall be named with 3 letter lowercase extensions.
 - All binary file docs shall be listed under categories named `binaries`, to keep things consistent that means no shortening to "bins".
 - A binary format is considered "Builtin" if it is parsed by SandEEE itself rather than an `.eep` program
-- Everything has 4 char magic, capitalization will be inconsistent. Docs shall mention this first, followed by format specs.
+- Everything has 4 char magic, capitalization will be inconsistent. Docs shall mention this first in the format definition, followed by format specs.
 - File extensions shall be listed in the same line as what the file does
     - Format `File usecase (extensions)`
 - Format shall **never** use int names, it shall always be a character width.
@@ -232,7 +232,7 @@ Example:
 - Binary files shall be given a proper name, ex. for eia can be called "EEE Image Array"
 - Docs shall specify if a file format is builtin
 - Proper unitys for this is chars, label ch.
-    - Section repetitions can be specified by starting a line with repeat.
+    - Section repetitions are specified by starting a line with repeat.
     - Expressions can exist, only if they are based off previous entries.
     - Expressions can only use multiplication and addition.
 
@@ -278,7 +278,7 @@ Example:
 - Documentation for each instruction shall include how it modifies the stack
     - \- Popped +Pushed
 - Instruction documentation shall include every case of popped values, string or int
-- Edge cases that may be ambiguous shall be explained and tagged with the `:edge:` style
+- All potential edge cases shall be explicitly explained and tagged with the :edge: style
 - Examples are tagged with `:example:`
 
 Example
@@ -373,7 +373,7 @@ The image used for ui assets.
     - Args can be before after or inbetween flags
 - After that there shall be a empty line followed by a complete sentence description of the programs purpose, followed by another newline.
 - Finally, there shall be a list of every argument followed by a complete sentence usage.
-- Programs can also list bugs or quirks after the arguments with a blank line preceding them.
+- Programs may also list bugs or quirks after the arguments with a blank line preceding them.
 - Parameter lists are formatted with a tab following the parameter ":parameter\tusage"
     - The help paramters description is always "Displays this message"
 - Required arguments and Optional arguments should have headings with the format `- Optional Arguments -` and `- Required Arguments -` respectively
@@ -397,7 +397,7 @@ If no file is provided the editor will open without a file loaded.
 ## Libraries
 
 - All library docs shall be listed under categories labeled `libraries`, to keep things consistent that means no shortening to "libs".
-- Functions shall list names, eon call signature, and any errors they can throw.
+- Functions shall list names, eon call signature, and any errors they can raise.
     - For errors, the library shall list each error and what caused that, in a complete sentence description.
 - Errors shall not include the name of the library, ex. No "TextureFileNotFound", use "FileNotFound".
 
@@ -413,7 +413,6 @@ If no file is provided the editor will open without a file loaded.
 - The default style shall not be modified.
 - Wrapper styles shall be named as :wrap-start:, and :wrap-end:, or :wrap-edge: if theyre the same.
     - If the style is required per line, then also include :wrap:
-- Center shall be used sparingly in actual doc styles, if its not for emphasis its not necessary.
 
 Example:
 ```eds
@@ -531,10 +530,10 @@ proc_test2:
     - Then any info in a header, bugs first then explanation, no examples in eon code though.
         - Reason: Top level examples are repetitive, libraries will be documented per function, and executables in the help message.
 - There shall be a single line of whitespace after the header comment
-- There should be a single line of space after includes (if used)
-- There should be a single line of space after imports (if used)
-- There should be a single line of space after consts.
-- There should be a single line of space after every function
+- There shall be a single line of space after includes (if used)
+- There shall be a single line of space after imports (if used)
+- There shall be a single line of space after consts.
+- There shall be a single line of space after every function
 - Imports and Includes shall both contain no empty lines
 - Includes come first, then imports
 - Consts can be separated by at most one line of space.
@@ -583,7 +582,7 @@ fn main() {
 - Todo errors are named `Unimplemented`
 - Errors can give more information after their name with a ` - ` as separation.
 - Stream errors shall be caught and handled, with a valid reason & file printed to the user.
-- Programs shall not crash (obviously), this includes erroneous inputs.
+- Programs shall handle all runtime conditions gracefully and never terminate unexpectedly, this includes erroneous inputs.
 - Errors of the same type but different cause should have the same prefix, this uses camel case
 
 ## Versioning
@@ -594,7 +593,7 @@ fn main() {
 - This is followed by the state of the program, in our world there is alpha, beta, release, in SandEEE there is Seed, Sapling, Tree
 - Finally there is a # followed by the current public build, and a _ for the build number
 - On a major increment seed->sapling the number resets
-- Bug fixes dont increment the version, but they do incrmement the build
+- Bug fixes shall not increment the version, but they shall incrmement the build
 - Build numbers never reset, but are up to the program to document what it means and how its increment
 
 Examples:
@@ -606,7 +605,4 @@ os:tree#0_30545   -> Initial stable release
 
 ## Final Notes
 
-SandEEE assumes a world where text is the fundamental data layer, not a byproduct of binary design.  
-Consistency, human-readability, and reversibility take precedence over performance when documenting internal systems.  
-When in doubt, prefer formats that degrade gracefully when opened as plain text.
-Use this as a framework for any decision made, that will keep the project online to preform its vision well.
+SandEEE assumes a world where text is the fundamental data layer, not a byproduct of binary design. Consistency, human-readability, and reversibility take precedence over performance when documenting internal systems. When uncertain, programs shall prefer formats that read easily when opened as plain text. Use this as a framework for any decision made, that will keep the project online to preform its vision well.
