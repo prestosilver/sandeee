@@ -510,6 +510,7 @@ const SteamYieldUpdate = struct {
 
         if (failed)
             return error.UnknownError;
+
         failed = false;
 
         var result: steam.callback.UpdateItem = undefined;
