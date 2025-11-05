@@ -35,19 +35,10 @@ pub fn convert(
         defer b.allocator.free(section);
         if (size != try reader_stream.read(section)) return;
 
-        if (std.mem.eql(u8, &name, "RIFF")) {
-            continue;
-        }
         if (std.mem.eql(u8, &name, "fmt ")) {
             chanels = @as(u8, @intCast(section[10])); //HACK 99% of wavs have 2 chanels
             sr = @as(u8, @intCast(section[14] >> 3));
-
-            continue;
-        }
-        if (std.mem.eql(u8, &name, "LIST")) {
-            continue;
-        }
-        if (std.mem.eql(u8, &name, "data")) {
+        } else if (std.mem.eql(u8, &name, "data")) {
             if (chanels == 1) {
                 try writer.writeAll(section);
             } else {
@@ -60,9 +51,10 @@ pub fn convert(
                     }
                 }
             }
+        } else if (std.mem.eql(u8, &name, "LIST")) {
+        } else if (std.mem.eql(u8, &name, "RIFF")) {           
+        } else return error.BadSection;
 
-            continue;
-        }
-        return error.BadSection;
+        unreachable;
     }
 }
