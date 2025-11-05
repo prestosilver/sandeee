@@ -1,7 +1,6 @@
 ---
 marp: true
-theme: uncover
-class: invert
+# class: invert
 style: |
     .columns {
         display: grid;
@@ -9,6 +8,23 @@ style: |
         gap: 1;
     }
 ---
+
+<style>
+@font-face {
+    font-family: SandEEESans;
+    font-size: 32px;
+    src: url(https://sandeee.prestosilver.info/font.ttf);
+}
+
+* {
+    font-family: SandEEESans;
+}
+</style>
+
+<!-- backgroundImage: url(frame.png) -->
+<!-- backgroundSize: cover -->
+<!-- backgroundPosition: center -->
+<!-- backgroundAttachment: fixed -->
 
 # In Defense of Metadocumentation
 Preston Precourt (prestosilver)
@@ -19,11 +35,13 @@ Preston Precourt (prestosilver)
 
 <!--
 
-- Programming game
-- High emphasis on realism
+- Passion project, experimental
+- Feel so coherent it has to be real
 - Project is already at an MVP
 
 -->
+
+![bg right vertical 80%](wallpaper.png)
 
 ---
 
@@ -74,6 +92,7 @@ Documentation for asm
 <!--
 
 - If you're not documenting your game for your userbase, I would not suggest this
+- This takes a long time, and if you dont follow it its not worth it.
 
 -->
 
@@ -86,7 +105,13 @@ Documentation for asm
 
 ---
 
-# Didn't expect to get so much out of this
+<!--
+
+- I was pleasantly suprised and wanted to pitch this to people who may not know its a thing
+
+-->
+
+# I Didn't expect to get so much out of this
 - Solid framework for what I need
 - I know what SandEEE is now
 
@@ -95,6 +120,7 @@ Documentation for asm
 <!--
 
 - I started binary formats just because I knew I would be able to do a lot.
+- Really though i would suggest doing whatever you can, but take your time and really think
 
 -->
 
@@ -102,9 +128,13 @@ Documentation for asm
 
 - Just start, anywhere works
 
-![](docs.png)
+![bg left h:720](docs.png)
 
 ---
 
-[The docs in question](../plans/meta.md)
+## Any questions
 # This is My First Marp Presentation, btw
+
+[The docs in question](https://gist.github.com/prestosilver/a8b96a828b9d794878bf9f73bf88c5cb0)
+
+![bg right 60%](qr.png)
