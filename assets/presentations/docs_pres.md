@@ -12,7 +12,6 @@ style: |
 <style>
 @font-face {
     font-family: SandEEESans;
-    font-size: 32px;
     src: url(https://sandeee.prestosilver.info/font.ttf);
 }
 
@@ -42,6 +41,16 @@ Preston Precourt (prestosilver)
 -->
 
 ![bg right vertical 80%](wallpaper.png)
+
+---
+
+# Documenting documentation???
+
+<!--
+
+- Define metadocs
+
+-->
 
 ---
 
@@ -128,13 +137,13 @@ Documentation for asm
 
 - Just start, anywhere works
 
-![bg left h:720](docs.png)
+![bg left h:720](docs_frame.png)
 
 ---
 
 ## Any questions
 # This is My First Marp Presentation, btw
 
-[The docs in question](https://gist.github.com/prestosilver/a8b96a828b9d794878bf9f73bf88c5cb0)
+[The docs in question](https://gist.github.com/prestosilver/a8b96a828b9d794878bf9f73bf88c5cb)
 
-![bg right 60%](qr.png)
+![bg right 60%](docs_qr.png)
