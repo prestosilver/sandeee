@@ -515,7 +515,7 @@ pub const WebData = struct {
             }
 
             const comment_index = std.mem.indexOfScalar(u8, full_line, ';') orelse full_line.len;
-            const comment_line = std.mem.trim(u8, full_line[0..comment_index], std.ascii.whitespace);
+            const comment_line = std.mem.trim(u8, full_line[0..comment_index], &std.ascii.whitespace);
 
             const colon_index = std.mem.indexOfScalar(u8, comment_line, ':') orelse {
                 log.warn("style line invalid: `{s}`", .{comment_line});
@@ -523,15 +523,15 @@ pub const WebData = struct {
                 continue;
             };
 
-            const prop_name = std.mem.trim(u8, comment_line[0..colon_index], std.ascii.whitespace);
-            const prop_value = std.mem.trim(u8, comment_line[colon_index + 1..], std.ascii.whitespace);
+            const prop_name = std.mem.trim(u8, comment_line[0..colon_index], &std.ascii.whitespace);
+            const prop_value = std.mem.trim(u8, comment_line[colon_index + 1 ..], &std.ascii.whitespace);
 
             if (std.mem.eql(u8, prop_name, "align")) {
-                if (std.ascii.eqlIgnoreCase(u8, prop_value, "center")) {
+                if (std.ascii.eqlIgnoreCase(prop_value, "center")) {
                     current_style.ali = .Center;
-                } else if (std.ascii.eqlIgnoreCase(u8, prop_value, "left")) {
+                } else if (std.ascii.eqlIgnoreCase(prop_value, "left")) {
                     current_style.ali = .Left;
-                } else if (std.ascii.eqlIgnoreCase(u8, prop_value, "right")) {
+                } else if (std.ascii.eqlIgnoreCase(prop_value, "right")) {
                     current_style.ali = .Right;
                 } else {
                     log.warn("unknown align: `{s}`", .{prop_value});

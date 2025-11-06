@@ -51,10 +51,6 @@ pub fn convert(
                     }
                 }
             }
-        } else if (std.mem.eql(u8, &name, "LIST")) {
-        } else if (std.mem.eql(u8, &name, "RIFF")) {           
-        } else return error.BadSection;
-
-        unreachable;
+        } else if (std.mem.eql(u8, &name, "LIST")) {} else if (std.mem.eql(u8, &name, "RIFF")) {} else return error.BadSection;
     }
 }
