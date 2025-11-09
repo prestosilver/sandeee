@@ -1,5 +1,5 @@
-#include "/libs/inc/libload.eon"
-#include "/libs/inc/sys.eon"
+#include "/libs/incl/libload.eon"
+#include "/libs/incl/sys.eon"
 
 fn processArgs() {
     var file = getArg(1);
@@ -11,10 +11,16 @@ fn processArgs() {
     return file;
 }
 
-fn render(win, tex, time) {
+fn render(win, tex, input, seconds, minutes) {
     _WindowClear(win);
 
-    _WindowText(win, 0, 0, "Test");
+    _WindowText(win, 10, 10, "Playing " & input);
+
+    if (minutes > 0) {
+        _WindowText(win, 10, 30, "    At " & numString(minutes) & "m " & numString(seconds) & "s");
+    } else {
+        _WindowText(win, 10, 30, "    At " & numString(seconds) & "s");
+    }
     
     _WindowFlip(win);
 
@@ -30,9 +36,16 @@ fn main() {
 
     var input = processArgs();
     var window = _WindowCreate();
-    var texture = _TextureCreate();
-    //var content = _TextureRead("/cont/imgs/player.eia");
-    //_TextureUpload(content, texture);
+
+    _SetWindowRule("min", 300, 100);
+    _SetWindowRule("max", 300, 100);
+    _SetWindowClear("#c0c0c0");
+
+    var menuTex = _TextureCreate();
+    var iconTex = _TextureCreate();
+    var transTex = _TextureCreate();
+    _TextureUpload(_TextureRead("/cont/imgs/ui.eia"), menuTex);
+    _TextureUpload(_TextureRead("/cont/imgs/icons.eia"), iconTex);
 
     _SetWindowTitle(window, "PlayEEEr - " & input);
 
@@ -48,23 +61,31 @@ fn main() {
 
     songTime = songTime / 441;
 
-    var targTime = songTime + time();
+    var startTime = time();
+    var targTime = startTime + songTime;
     var running = 1;
     var curTime;
-
-    print(songTime);
+    var playTime = 0;
+    var seconds;
+    var minutes;
 
     for (0; _WindowOpen() && running; 1) {
-        render(window, texture, songTime);
+        seconds = playTime / 1000;
+        minutes = seconds / 60;
+
+        render(window, menuTex, input, seconds % 60, minutes);
 
         curTime = time();
 
+        playTime = curTime - startTime;
+        
         if (curTime > targTime) {
             running = 0;
         }
     }
 
-    _TextureDestroy(texture);
+    _TextureDestroy(menuTex);
+    _TextureDestroy(iconTex);
     _WindowDestroy(window);
 
     return 0;

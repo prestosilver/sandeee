@@ -88,6 +88,15 @@ const DEBUG_FILES = [_]DiskFile{
     .{
         .file = .{
             .input = &.{
+                .converter(eon.compileEon, .local("eon/tests/console.eon")),
+            },
+            .converter = comp.compile,
+        },
+        .output = "prof/tests/console.eep",
+    },
+    .{
+        .file = .{
+            .input = &.{
                 .converter(eon.compileEon, .local("eon/tests/color.eon")),
             },
             .converter = comp.compile,
@@ -161,6 +170,15 @@ const DEBUG_FILES = [_]DiskFile{
             .converter = conv.copy,
         },
         .output = "prof/tests/src/eon/fib.eon",
+    },
+
+    // audio tests
+    .{
+        .file = .{
+            .input = &.{.local("audio/redbone.wav")},
+            .converter = sound.convert,
+        },
+        .output = "cont/snds/redbone.era",
     },
 };
 
@@ -513,17 +531,17 @@ const BASE_FILES = [_]DiskFile{
     // includes
     .{
         .file = .{
-            .input = &.{.local("eon/libs/libload.eon")},
+            .input = &.{.local("eon/libs/incl/libload.eon")},
             .converter = conv.copy,
         },
-        .output = "libs/inc/libload.eon",
+        .output = "libs/incl/libload.eon",
     },
     .{
         .file = .{
-            .input = &.{.local("eon/libs/sys.eon")},
+            .input = &.{.local("eon/libs/incl/sys.eon")},
             .converter = conv.copy,
         },
-        .output = "libs/inc/sys.eon",
+        .output = "libs/incl/sys.eon",
     },
 
     // icons
@@ -762,11 +780,13 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
 
     const exe = b.addExecutable(.{
         .name = "SandEEE",
         .root_module = exe_mod,
+        .link_libc = true,
     });
 
     var commit = b.run(&.{ "git", "rev-list", "HEAD", "--count" });
@@ -815,7 +835,7 @@ pub fn build(b: *std.Build) !void {
     const version_text = b.fmt("V_{{}}", .{});
 
     const content_path = b.path("content");
-    const disk_path = content_path.path(b, "disk");
+    const disk_path = content_path.path(b, ".tmp/disk");
 
     options.addOption(std.SemanticVersion, "SandEEEVersion", version);
     options.addOption([]const u8, "VersionText", version_text);
@@ -827,13 +847,39 @@ pub fn build(b: *std.Build) !void {
     exe_mod.addImport("network", network_module);
     exe_mod.addImport("steam", steam_module);
 
-    const clean_disk_step = b.addSystemCommand(&.{ "rm", "-rf", "content/disk" });
+    const clean_disk_step = b.addSystemCommand(&.{ "rm", "-rf", "content/.tmp/disk" });
 
-    const setup_out = b.addSystemCommand(&.{ "mkdir", "-p", "zig-out/bin/content", "zig-out/bin/disks" });
-    setup_out.step.dependOn(&clean_disk_step.step);
+    const copy_step = b.addSystemCommand(&.{ "cp", "-r", "content/overlays/base/", "content/.tmp/disk" });
+    copy_step.step.dependOn(&clean_disk_step.step);
 
-    const skel_step = b.addSystemCommand(&.{ "cp", "-r", "content/rawdisk", "content/disk" });
-    skel_step.step.dependOn(&setup_out.step);
+    var skel_cmd: std.ArrayList([]const u8) = .init(b.allocator);
+    defer skel_cmd.deinit();
+
+    try skel_cmd.appendSlice(&.{ "mkdir", "-p" });
+
+    {
+        const skel_file = try std.fs.cwd().openFile("content/overlays/paths.txt", .{});
+        defer skel_file.close();
+
+        const read = try skel_file.readToEndAlloc(b.allocator, 1000000);
+        var iter = std.mem.splitScalar(u8, read, '\n');
+        while (iter.next()) |line| {
+            if (line.len == 0)
+                continue;
+
+            const first_space = std.mem.indexOf(u8, line, " ") orelse continue;
+
+            if (std.mem.eql(u8, line[0..first_space], "debug") and optimize != .Debug)
+                continue;
+            if (std.mem.eql(u8, line[0..first_space], "steam") and steam_mode == .Off)
+                continue;
+
+            try skel_cmd.append(b.fmt("content/.tmp/disk/{s}", .{line[first_space + 1 ..]}));
+        }
+    }
+
+    const skel_step = b.addSystemCommand(skel_cmd.items);
+    skel_step.step.dependOn(&copy_step.step);
 
     const copy_libs_step = b.step("libraries", "Copies the eon libraries");
     copy_libs_step.dependOn(&skel_step.step);
@@ -841,7 +887,10 @@ pub fn build(b: *std.Build) !void {
     const content_step = b.step("content", "builds the content folder");
     content_step.dependOn(copy_libs_step);
 
-    var disk_image_step = try disk.DiskStep.create(b, "content/disk", "zig-out/bin/content/recovery.eee");
+    const setup_out = b.addSystemCommand(&.{ "mkdir", "-p", "zig-out/bin/content", "zig-out/bin/disks" });
+
+    var disk_image_step = try disk.DiskStep.create(b, "content/.tmp/disk", "zig-out/bin/content/recovery.eee");
+    disk_image_step.step.dependOn(&setup_out.step);
     disk_image_step.step.dependOn(content_step);
 
     const disk_step = b.step("disk", "Builds the disk image");
@@ -856,12 +905,14 @@ pub fn build(b: *std.Build) !void {
 
     if (optimize == .Debug) {
         var dir = try std.fs.cwd().openDir("content/overlays/debug/", .{ .iterate = true });
+        defer dir.close();
+
         var iter = dir.iterate();
 
         while (try iter.next()) |path| {
             const p = try std.mem.concat(b.allocator, u8, &.{ "content/overlays/debug/", path.name });
 
-            const debug_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/disk" });
+            const debug_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/.tmp/disk" });
 
             debug_overlay.step.dependOn(&skel_step.step);
 
@@ -871,13 +922,15 @@ pub fn build(b: *std.Build) !void {
 
     if (steam_mode != .Off) {
         var dir = try std.fs.cwd().openDir("content/overlays/steam/", .{ .iterate = true });
+        defer dir.close();
+
         var iter = dir.iterate();
 
         while (try iter.next()) |path| {
             const p = try std.mem.concat(b.allocator, u8, &.{ "content/overlays/steam/", path.name });
             defer b.allocator.free(p);
 
-            const steam_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/disk" });
+            const steam_overlay = b.addSystemCommand(&.{ "cp", "-r", p, "content/.tmp/disk" });
 
             steam_overlay.step.dependOn(&skel_step.step);
 
@@ -894,7 +947,7 @@ pub fn build(b: *std.Build) !void {
         exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
         exe.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe.addObjectFile(b.path("deps/dll/libopenal.dll"));
-        // exe.subsystem = .Windows;
+        exe.subsystem = .Windows;
     } else {
         exe.addLibraryPath(b.path("deps/lib"));
         exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
@@ -1046,24 +1099,24 @@ pub fn build(b: *std.Build) !void {
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
-    run_cmd.addArgs(&[_][]const u8{ "--cwd", "./zig-out/bin" });
+    run_cmd.addArgs(&[_][]const u8{ "--cwd", b.install_path });
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
 
     const headless_cmd = b.addRunArtifact(exe);
     headless_cmd.step.dependOn(b.getInstallStep());
-    headless_cmd.addArgs(&[_][]const u8{ "--cwd", "./zig-out/bin", "--headless" });
+    headless_cmd.addArgs(&[_][]const u8{ "--cwd", b.install_path, "--headless" });
     if (b.args) |args| {
         headless_cmd.addArgs(args);
     }
 
     if (target.result.os.tag == .windows) {
         _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
-        b.installFile("deps/dll/libglfw3.dll", "bin/libglfw3.dll");
+        b.installFile("deps/dll/libglfw3.dll", "bin/glfw3.dll");
         b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
         b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
-        b.installFile("deps/dll/libopenal.dll", "bin/libopenal.dll");
+        b.installFile("deps/dll/libopenal.dll", "bin/OpenAL32.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
         if (steam_mode == .On)

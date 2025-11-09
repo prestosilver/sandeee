@@ -1,4 +1,4 @@
-#include "/libs/inc/sys.eon"
+#include "/libs/incl/sys.eon"
 
 // TODO: rewrite
 

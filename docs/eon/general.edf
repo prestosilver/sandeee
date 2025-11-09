@@ -80,7 +80,7 @@ Code can be blocked into a single statement by wrapping it in {}.
 Variables in a code block are destroyed after its execution.
 
 :code-edge:
-:code:    | #include "/libs/inc/sys.eon"
+:code:    | #include "/libs/incl/sys.eon"
 :code:    |
 :code:    | fn main() {
 :code:    |     {
@@ -117,10 +117,10 @@ An if statement has the following syntax.
 
 :h3: 4.1 Header Libraries
 
-Header Libraries can be included through the #include keyword. Header libraries are found in /libs/inc. Including a header library adds its contents directly into the current file.
+Header Libraries can be included through the #include keyword. Header libraries are found in /libs/incl. Including a header library adds its contents directly into the current file.
 
 :code-edge:
-:code:    | #include "/libs/inc/sys.eon"
+:code:    | #include "/libs/incl/sys.eon"
 :code:    |
 :code:    | fn main() {
 :code:    |     print("test\n");
@@ -133,7 +133,7 @@ Header Libraries can be included through the #include keyword. Header libraries 
 ELL Libraries can be loaded through the libload.eon header library.
 
 :code-edge:
-:code:    | #include "/libs/inc/libload.eon"
+:code:    | #include "/libs/incl/libload.eon"
 :code:    |
 :code:    | fn main() {
 :code:    |     setupLibLoad();

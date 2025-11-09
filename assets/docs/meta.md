@@ -521,7 +521,7 @@ proc_test2:
 - The main function shall be at the end of a file
 - When calling a lib function the `"function"()` syntax shall never be used.
 - Assembly functions shall be commented after their signature line, and not use `return x;`, rather use the `asm "ret";`
-- If something returns a "void" value it shall `return void;` this keyword is defined in `/libs/inc/consts.eon`, and is 0.
+- If something returns a "void" value it shall `return void;` this keyword is defined in `/libs/incl/consts.eon`, and is 0.
 - Main shall always `return void`, errors are raised through `error(text)` in std.
 - All branches outside of assembly functions shall end with either a `return`, or a `error()`
 - There shall be no trailing code after a `return` or `error()`

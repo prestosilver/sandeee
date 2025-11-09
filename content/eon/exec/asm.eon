@@ -1,4 +1,4 @@
-#include "/libs/inc/libload.eon"
+#include "/libs/incl/libload.eon"
 
 fn processArgs() {
     var file = 1;

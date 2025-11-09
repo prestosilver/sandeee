@@ -1,0 +1,42 @@
+#include "/libs/incl/sys.eon"
+
+fn main() {
+    print("\x01^CLEAR^\n\n");
+    print("FGCOLORS\n");
+    print("\xf0\x8f");
+    print("\xf1\x8f");
+    print("\xf2\x8f");
+    print("\xf3\x8f");
+    print("\xf4\x8f");
+    print("\xf5\x8f");
+    print("\xf6\x8f");
+    print("\xf7\x8f");
+    print("\xf8\x8f");
+    print("\xf9\x8f");
+    print("\xfa\x8f");
+    print("\xfb\x8f");
+    print("\xfc\x8f");
+    print("\xfd\x8f");
+    print("\xfe\x8f");
+    print("\xff\x8f");
+    print("\xf9\n\n");
+
+    print("SYMBOLS\n");
+        
+    for (var i = 32; i < 240; i += 16) {
+        for (var j = 0; j < 16; j += 1) {
+            print(@(j + i));    
+        }
+        print("\n");
+    }
+    print("---\n");
+    
+    print("\x1b\n\n");
+    
+    print("\nUNDO\n");
+    print("Itb\x08 wo\x08orks!\n");
+    print("This dosent work");
+    print("\rIt works!\n");
+    
+    return 0;
+}

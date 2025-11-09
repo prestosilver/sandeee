@@ -1,5 +1,5 @@
-#include "/libs/inc/libload.eon"
-#include "/libs/inc/sys.eon"
+#include "/libs/incl/libload.eon"
+#include "/libs/incl/sys.eon"
 
 var texture;
 var window;
@@ -341,7 +341,9 @@ fn main() {
         render(menuTex, ui, transTex, imgx, imgy, imgs, w, h);
     }
 
+    _TextureDestroy(transTex);
     _TextureDestroy(menuTex);
+    _TextureDestroy(iconTex);
     _TextureDestroy($texture);
     _WindowDestroy($window);
 

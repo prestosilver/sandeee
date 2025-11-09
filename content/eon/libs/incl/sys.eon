@@ -111,7 +111,7 @@ fn readStr(prompt) {
         if (ch == "\n") {
             done = 1;
         } else if (ch == @8) {
-            result -= 1;
+            result = result - 1;
         } else {
             print("\r" & prompt & result);
             result &= ch;
@@ -157,3 +157,19 @@ fn readInt() {
 
     return result;
 }
+
+fn numString(num) {
+    if (num == 0) {
+        return "0";
+    }
+
+    var result = "";
+    
+    while (num != 0) {
+        result = @(48 + num % 10) & result;
+        num = num / 10;
+    }
+
+    return result;
+}
+

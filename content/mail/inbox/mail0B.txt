@@ -18,4 +18,4 @@ I ALMOST FORGOT fib(0) = 1 AND fib(1) = 1.
 
 ERIC WUZ HERE!!!
 
-O ALSO YOU CAN IMPORT readInt FROM /libs/inc/sys.eon.
+O ALSO YOU CAN IMPORT readInt FROM /libs/incl/sys.eon.

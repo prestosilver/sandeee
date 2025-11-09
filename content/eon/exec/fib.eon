@@ -1,4 +1,4 @@
-#include "/libs/inc/sys.eon"
+#include "/libs/incl/sys.eon"
 
 fn fib(idx) {
     if (idx < 2) return 1;

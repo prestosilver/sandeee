@@ -34,8 +34,6 @@ pub const DiskFileInput = struct {
 
     converter: *const fn (*std.Build, []const std.Build.LazyPath, std.Build.LazyPath) anyerror!void,
 
-    var temp_idx: usize = 0;
-
     fn getStep(
         self: DiskFileInput,
         b: *std.Build,
@@ -54,12 +52,12 @@ pub const DiskFileInput = struct {
                     file.* = content.path(b, l);
                 },
                 .Temp => |t| {
-                    const temp_file = temp_path.path(b, b.fmt("{}", .{temp_idx}));
+                    const last_slash = if (std.mem.lastIndexOf(u8, output.getPath(b), "/")) |x| x + 1 else 0;
+
+                    const temp_file = temp_path.path(b, b.fmt("{s}.tmp", .{output.getPath(b)[last_slash..]}));
                     file.* = temp_file;
 
                     const child_step = try t.getStep(b, content, file.*, outer_depend);
-
-                    temp_idx += 1;
 
                     try child_steps.append(child_step);
                 },
@@ -105,8 +103,6 @@ pub const EpkFileStep = struct {
     tmp_path: std.Build.LazyPath,
     output: std.Build.LazyPath,
     alloc: std.mem.Allocator,
-
-    var tmp_index: usize = 0;
 
     fn doStep(step: *std.Build.Step, _: std.Build.Step.MakeOptions) !void {
         const self: *EpkFileStep = @fieldParentPtr("step", step);
@@ -155,6 +151,8 @@ pub const EpkFileStep = struct {
         content_path: std.Build.LazyPath,
         output: std.Build.LazyPath,
     ) !*EpkFileStep {
+        const last_slash = if (std.mem.lastIndexOf(u8, output.getPath(b), "/")) |x| x + 1 else 0;
+
         const self = try b.allocator.create(EpkFileStep);
         self.* = .{
             .step = std.Build.Step.init(.{
@@ -167,10 +165,8 @@ pub const EpkFileStep = struct {
             .content_path = content_path,
             .output = output,
             .files = .init(b.allocator),
-            .tmp_path = b.path(b.fmt("content/.tmp/epk{}", .{tmp_index})),
+            .tmp_path = b.path(b.fmt("content/.tmp/{s}.tmp", .{output.getPath(b)[last_slash..]})),
         };
-
-        tmp_index += 1;
 
         return self;
     }

@@ -809,7 +809,7 @@ pub fn lexFile(b: *std.Build, in: []const u8) !std.ArrayList(Token) {
             var stmt = (try reader.readUntilDelimiterOrEof(&stmt_buff, '\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
-                const target = b.path("content").path(b, stmt[10 .. stmt.len - 1]);
+                const target = b.path("content/eon").path(b, stmt[10 .. stmt.len - 1]);
 
                 var toks = try lexFile(b, target.getPath(b));
                 defer toks.deinit();

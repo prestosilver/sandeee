@@ -1,59 +1,4 @@
-fn print(str) {
-    asm "sys 0";
-    asm "push 0";
-    asm "ret";
-}
-
-fn open() {
-    asm "copy 0";
-    asm "sys 0";
-
-    asm "sys 3";
-    asm "ret";
-}
-
-fn fileSize() {
-    asm "sys 19";
-    asm "ret";
-}
-
-fn error() {
-    asm "sys 18";
-}
-
-fn read() {
-    asm "sys 4";
-    asm "ret";
-}
-
-fn readAll(file) {
-    var f = open(file);
-    var size = fileSize(file);
-
-    var result = read(f, size);
-    close(f);
-
-    return result;
-}
-
-fn close() {
-    asm "sys 7";
-    asm "push 0";
-    asm "ret";
-}
-
-fn createOpen() {
-    asm "dup 0";
-    asm "sys 2";
-    asm "sys 3";
-    asm "ret";
-}
-
-fn write() {
-    asm "sys 5";
-    asm "push 0";
-    asm "ret";
-}
+#include "/libs/incl/sys.eon"
 
 fn libInit() {
     _libload("/libs/string.ell");
@@ -209,24 +154,6 @@ fn nextWord(buff, idx) {
     return result;
 }
 
-fn toString(number) {
-    // converts a number to a string
-
-    if (number == 0) {
-        return "0";
-    }
-
-    var result = "";
-    var tmp = "";
-
-    for (0; number > 0; number = number / 10) {
-        tmp = @(48 + (number % 10));
-        result = tmp & result;
-    }
-
-    return result;
-}
-
 fn parseFlow(buff, idx, stack, varTable, isLib, heapTable) {
     // parses a block statment:
     // if (expr) block
@@ -235,7 +162,7 @@ fn parseFlow(buff, idx, stack, varTable, isLib, heapTable) {
 
     var lastidx = dup(idx);
     var oldstack = dup(stack);
-    var flowidx = toString(lastidx);
+    var flowidx = numString(lastidx);
     var tableCopy = dup(varTable);
     var word = nextWord(buff, idx);
     var result = "";
@@ -470,7 +397,7 @@ fn parseFactor(buff, idx, stack, varTable, isLib, heapTable) {
 
     if (variable != "") {
         index = stack - @variable;
-        index = toString(index);
+        index = numString(index);
 
         if (stack != 255) stack = stack + 1;
 
@@ -480,7 +407,7 @@ fn parseFactor(buff, idx, stack, varTable, isLib, heapTable) {
     variable = _TableGet(heapTable, newWord);
 
     if (variable != "") {
-        index = toString(@variable);
+        index = numString(@variable);
 
         if (stack != 255) stack = stack + 1;
 
@@ -934,7 +861,7 @@ fn parseFile(buff, idx, isLib) {
         }
     }
 
-    return "push " & toString(_TableLen(heapTable)) & "\nsys 14\n" & code;
+    return "push " & numString(_TableLen(heapTable)) & "\nsys 14\n" & code;
 }
 
 fn split(conts, delim) {
