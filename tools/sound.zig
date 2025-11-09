@@ -1,5 +1,23 @@
 const std = @import("std");
 
+const FormatCode = enum(u16) {
+    pcm = 1,
+    ieee_float = 3,
+    alaw = 6,
+    mulaw = 7,
+    extensible = 0xFFFE,
+    _,
+};
+
+const FormatSection = struct {
+    code: FormatCode,
+    channels: u16,
+    sample_rate: u32,
+    bytes_per_second: u32,
+    block_align: u16,
+    bits: u16,
+};
+
 // Converts a wav file to a era file
 pub fn convert(
     b: *std.Build,
@@ -18,39 +36,48 @@ pub fn convert(
     var inreader = try std.fs.openFileAbsolute(in.getPath(b), .{});
     defer inreader.close();
 
-    var buf_reader = std.io.bufferedReader(inreader.reader());
-    var reader_stream = buf_reader.reader();
+    var reader_stream = inreader.reader();
 
     var name: [4]u8 = undefined;
 
     try reader_stream.skipBytes(12, .{});
 
-    var chanels: u16 = 0;
-    var sr: u16 = 0;
+    var format: FormatSection = undefined;
 
     while (true) {
         if (try reader_stream.read(&name) != 4) break;
+
         const size = try reader_stream.readInt(u32, .little);
         const section = try b.allocator.alloc(u8, size);
         defer b.allocator.free(section);
-        if (size != try reader_stream.read(section)) return;
+        try reader_stream.readNoEof(section);
 
         if (std.mem.eql(u8, &name, "fmt ")) {
-            chanels = @as(u8, @intCast(section[10])); //HACK 99% of wavs have 2 chanels
-            sr = @as(u8, @intCast(section[14] >> 3));
+            format = @as(*align(1) FormatSection, @ptrCast(&section[0])).*;
         } else if (std.mem.eql(u8, &name, "data")) {
-            if (chanels == 1) {
-                try writer.writeAll(section);
-            } else {
-                for (0..section.len) |idx| {
-                    if ((chanels * sr) == 0 or idx % (chanels * sr) == 0) {
-                        var tmp: i16 = @as(i16, @intCast(@as(i8, @bitCast(section[idx + sr - 1]))));
-                        tmp += 128;
+            const tmp_out = try b.allocator.alloc(u8, section.len / format.channels / (format.bits / 8));
+            defer b.allocator.free(tmp_out);
 
-                        try writer.writeAll(&.{@as(u8, @intCast(tmp))});
+            for (0.., tmp_out) |idx, *sample| {
+                var in_sample: f32 = 0;
+                var max_sample: f32 = 0;
+                var min_sample: f32 = 0;
+
+                inline for (.{ i32, i24, i16, u8 }) |SampleT| {
+                    if (@bitSizeOf(SampleT) == format.bits) {
+                        in_sample = @floatFromInt(@as(*align(1) SampleT, @ptrCast(&section[idx * @sizeOf(SampleT) * format.channels])).*);
+                        max_sample = @floatFromInt(std.math.maxInt(SampleT));
+                        min_sample = @floatFromInt(std.math.minInt(SampleT));
+                        break;
                     }
-                }
+                } else return error.InvalidFormat;
+
+                const normalized_sample = @min((in_sample - min_sample) / (max_sample - min_sample), 255);
+
+                sample.* = @intFromFloat(normalized_sample * 255);
             }
+
+            try writer.writeAll(tmp_out);
         } else if (std.mem.eql(u8, &name, "LIST")) {} else if (std.mem.eql(u8, &name, "RIFF")) {} else return error.BadSection;
     }
 }
