@@ -529,20 +529,87 @@ pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noretu
 
     log.log.info("Exiting", .{});
 
-    std.process.exit(0);
+    std.process.exit(1);
 }
 
-var is_headless = false;
 var is_crt = true;
 
-pub fn main() void {
-    defer log.deinit();
-    defer if (!builtin.link_libc or !allocator.useclib) {
-        if (allocator.gpa.deinit() == .ok)
-            log.log.debug("no leaks! :)", .{});
-    };
+pub fn print_help(path: []const u8, comptime reason: []const u8, reason_params: anytype) noreturn {
+    std.debug.print(reason ++
+        \\
+        \\usage: 
+        \\ {s} [args]
+        \\
+        \\--help           Display this message and exit
+        \\--cwd            Set the current working directory of the game
+        \\--no-crt         Disable the crt shader
+        \\--no-thread      Disable threading
+        \\--headless       Headless mode
+        \\--headless-cmd   Run a command in headless mode then exit
+        \\
+    , reason_params ++ .{path});
 
-    mainErr() catch |err| {
+    std.process.exit(1);
+}
+
+pub fn main() void {
+    defer {
+        log.deinit();
+
+        if (!builtin.link_libc or !allocator.useclib) {
+            std.debug.assert(allocator.gpa.deinit() == .ok);
+        }
+    }
+
+    // setup the headless command
+    var headless_cmd: ?[]const u8 = null;
+    var cwd_change = false;
+
+    {
+        // check arguments
+        var args = std.process.ArgIterator.initWithAllocator(allocator.alloc) catch @panic("Out of memory");
+        defer args.deinit();
+
+        const cmd_path = args.next().?;
+
+        while (args.next()) |arg| {
+            if (std.mem.eql(u8, arg, "--help"))
+                print_help(cmd_path, "SandEEE help:", .{})
+            else if (std.mem.eql(u8, arg, "--cwd")) {
+                if (args.next()) |path|
+                    std.process.changeCurDir(path) catch |err|
+                        print_help(cmd_path, "Invalid cwd path '{s}' ({!}):", .{ path, err })
+                else
+                    print_help(cmd_path, "Expected cwd argument", .{});
+
+                cwd_change = true;
+            } else if (std.mem.eql(u8, arg, "--no-crt")) {
+                is_crt = false;
+            } else if (std.mem.eql(u8, arg, "--no-thread")) {
+                LoadingState.no_load_thread = true;
+            } else if (std.mem.eql(u8, arg, "--headless")) {
+                headless.is_headless = true;
+            } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
+                if (args.next()) |script| {
+                    const buff = allocator.alloc.alloc(u8, 1024) catch @panic("out of memory");
+                    const file = std.fs.cwd().openFile(script, .{}) catch |err|
+                        print_help(cmd_path, "Headless script '{s}' couldnt be read ({!})", .{ script, err });
+                    defer file.close();
+
+                    const len = file.readAll(buff) catch @panic("couldnt read file");
+                    headless_cmd = buff[0..len];
+
+                    headless.is_headless = true;
+                } else print_help(cmd_path, "Expected headless cmd argument", .{});
+            } else {
+                print_help(cmd_path, "Invalid paramter '{s}':", .{arg});
+            }
+        }
+    }
+
+    // switch to headless main function if nessessary
+    if (headless.is_headless) {
+        return headless.main(headless_cmd orelse &.{}, false, null) catch |err| {
         const name = switch (err) {
             error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",
             error.AudioInit => "Your audio hardware might not support SandEEE.",
@@ -556,17 +623,31 @@ pub fn main() void {
 
         const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
 
-        log.deinit();
-        if (!builtin.link_libc or !allocator.useclib) {
-            if (allocator.gpa.deinit() == .ok)
-                log.log.debug("no leaks! :)", .{});
-        }
+            panic(msg, @errorReturnTrace(), null);
+        };
+    }
 
-        @panic(msg);
+    runGame() catch |err| {
+        const name = switch (err) {
+            error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",
+            error.AudioInit => "Your audio hardware might not support SandEEE.",
+            error.WrongSize, error.TextureMissing => "Failed to load an internal texture.",
+            error.LoadError => "Failed to load something.",
+            error.NoProfFolder => "There is no prof folder on your disk.",
+            error.NoExecFolder => "There is no exec folder on your disk.",
+            error.BadFile => "Your disk is problaby corrupt.",
+            else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
+        };
+
+        const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
+
+        panic(msg, @errorReturnTrace(), null);
     };
+
+    std.log.info("Done", &.{});
 }
 
-pub fn mainErr() anyerror!void {
+pub fn runGame() anyerror!void {
     if (options.IsSteam) {
         if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
             log.log.err("Restarting for steam", .{});
@@ -575,8 +656,6 @@ pub fn mainErr() anyerror!void {
 
         try steam.init();
 
-        var user = steam.getUser();
-        _ = user.getSteamId();
         steam_utils = steam.getSteamUtils();
         steam_user_stats = steam.getUserStats();
 
@@ -587,52 +666,9 @@ pub fn mainErr() anyerror!void {
     defer if (options.IsSteam)
         steam.deinit();
 
-    // setup the headless command
-    var headless_cmd: ?[]const u8 = null;
-
-    // check arguments
-    var args = try std.process.ArgIterator.initWithAllocator(allocator.alloc);
-
-    // ignore first arg
-    const first = args.next();
-    var cwd_change = true;
-
-    while (args.next()) |arg| {
-        if (std.mem.eql(u8, arg, "--cwd")) {
-            if (args.next()) |path|
-                try std.process.changeCurDir(path)
-            else
-                return error.MissingCwd;
-            cwd_change = true;
-        } else if (std.mem.eql(u8, arg, "--no-crt")) {
-            is_crt = false;
-        } else if (std.mem.eql(u8, arg, "--headless")) {
-            is_headless = true;
-        } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
-            if (args.next()) |script| {
-                const buff = try allocator.alloc.alloc(u8, 1024);
-                const file = try std.fs.cwd().openFile(script, .{});
-
-                const len = try file.readAll(buff);
-                headless_cmd = buff[0..len];
-                file.close();
-
-                is_headless = true;
-            } else return error.MissingScript;
-        }
-    }
-
-    if (!cwd_change)
-        if (std.mem.lastIndexOf(u8, first orelse "", "/")) |last_slash|
-            try std.process.changeCurDir(first.?[0..last_slash]);
-
-    // free the argument iterator
-    args.deinit();
-
-    // switch to headless main function if nessessary
-    if (is_headless) {
-        return headless.headlessMain(headless_cmd orelse &.{}, false, null);
-    }
+    // if (!cwd_change)
+    // if (std.mem.lastIndexOf(u8, first orelse "", "/")) |last_slash|
+    //     try std.process.changeCurDir(first.?[0..last_slash]);
 
     log.log_file = try std.fs.cwd().createFile("SandEEE.log", .{});
     defer log.log_file.?.close();
@@ -641,6 +677,7 @@ pub fn mainErr() anyerror!void {
 
     // init graphics
     var graphics_loader = try Loader.init(Loader.Graphics{});
+    graphics_init = true;
 
     try audio.AudioManager.init();
 
