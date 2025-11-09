@@ -75,9 +75,10 @@ pub fn setup(self: *GSDisks) !void {
     self.remaining = 10;
     self.disks.clearAndFree();
 
-    const dir = try std.fs.cwd().openDir("disks", .{
+    var dir = try std.fs.cwd().openDir("disks", .{
         .iterate = true,
     });
+    defer dir.close();
 
     var iter = dir.iterate();
     while (try iter.next()) |item| {

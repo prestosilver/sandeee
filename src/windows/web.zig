@@ -413,46 +413,38 @@ pub const WebData = struct {
         // if this is a directory give a file listing
         defer walker.close();
 
-            // if index exists open that instead
-            if (try (walker.access("index.edf", .{}) catch |err| switch (err) {
-                error.FileNotFound => null,
-                else => err,
-            })) |_| {
-                const file = try walker.openFile("index.edf", .{});
-                defer file.close();
+        // if index exists open that instead
+        if (try (walker.access("index.edf", .{}) catch |err| switch (err) {
+            error.FileNotFound => null,
+            else => err,
+        })) |_| {
+            const file = try walker.openFile("index.edf", .{});
+            defer file.close();
 
-                const stat = try file.stat();
-                const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
+            const stat = try file.stat();
+            const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
 
-                return cont;
-            }
-
-            var iter = walker.iterate();
-
-            var conts = if (std.mem.eql(u8, url.path, ""))
-                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:/", .{id.id})
-            else
-                try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:{s}", .{ id.id, url.path });
-
-            while (try iter.next()) |item| {
-                const old = conts;
-                defer allocator.alloc.free(old);
-
-                conts = if (url.path.len > 0 and url.path[0] == '/')
-                    try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: @{s}/{s}", .{ old, item.name, url.path, item.name })
-                else
-                    try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: @/{s}", .{ old, item.name, item.name });
-            }
-
-            return conts;
+            return cont;
         }
 
-        const file = try std.fs.openFileAbsolute(file_path, .{});
-        defer file.close();
-        const stat = try file.stat();
-        const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
+        var iter = walker.iterate();
 
-        return cont;
+        var conts = if (std.mem.eql(u8, url.path, ""))
+            try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:/", .{id.id})
+        else
+            try std.fmt.allocPrint(allocator.alloc, "Contents of $item{}:{s}", .{ id.id, url.path });
+
+        while (try iter.next()) |item| {
+            const old = conts;
+            defer allocator.alloc.free(old);
+
+            conts = if (url.path.len > 0 and url.path[0] == '/')
+                try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: @{s}/{s}", .{ old, item.name, url.path, item.name })
+            else
+                try std.fmt.allocPrint(allocator.alloc, "{s}\n> {s}: @/{s}", .{ old, item.name, item.name });
+        }
+
+        return conts;
     }
 
     pub fn loadPage(self: *Self) !void {

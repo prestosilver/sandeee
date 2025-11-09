@@ -632,7 +632,8 @@ fn sysSteam(self: *Vm) VmError!void {
             std.fs.cwd().makeDir(".steam_upload") catch |err|
                 if (err != error.PathAlreadyExists)
                 return error.UnknownError;
-            const upload = std.fs.cwd().openDir(".steam_upload", .{}) catch return error.UnknownError;
+            var upload = std.fs.cwd().openDir(".steam_upload", .{}) catch return error.UnknownError;
+            defer upload.close();
 
             const root = try self.root.resolve();
             const folder = try root.getFolder(path);

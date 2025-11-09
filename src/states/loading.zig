@@ -64,6 +64,8 @@ const message_sound_path: []const u8 = "message_sound_path";
 const settings_path: []const u8 = "/conf/system.cfg";
 const fontpath: []const u8 = "system_font";
 
+pub var no_load_thread: bool = false;
+
 wait: f32 = LOAD_WAIT,
 load_progress: f32 = 0,
 login_snd: audio.Sound = .{},
@@ -173,7 +175,12 @@ pub fn setup(self: *GSLoading) !void {
     self.wait = LOAD_WAIT;
 
     self.load_progress = 0;
-    self.loading_thread = try std.Thread.spawn(.{}, GSLoading.loadThread, .{ self, &self.load_error });
+
+    if (no_load_thread) {
+        loadThread(self, &self.load_error);
+    } else {
+        self.loading_thread = try std.Thread.spawn(.{}, GSLoading.loadThread, .{ self, &self.load_error });
+    }
 
     // setup some pointers
     pseudo.win.shader = self.shader;

@@ -386,7 +386,6 @@ pub const Folder = struct {
         defer allocator.alloc.free(out);
 
         const file = try std.fs.cwd().createFile(out, .{});
-
         defer file.close();
 
         try root.write(file);
@@ -398,7 +397,7 @@ pub const Folder = struct {
         const out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{disk_name});
         defer allocator.alloc.free(out);
 
-        const out_file = try d.openFile(out, .{});
+        const out_file = try d.openFile(out, .{ .mode = .read_write });
         defer out_file.close();
 
         var root_disk = try loadDisk(out_file);
@@ -467,9 +466,10 @@ pub const Folder = struct {
         }
 
         if (input_disk_path) |diskPath| {
-            const d = std.fs.cwd();
+            const user_disk_out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskPath});
+            defer allocator.alloc.free(user_disk_out);
 
-            const user_disk = try (try d.openDir("disks", .{})).openFile(diskPath, .{});
+            var user_disk = try std.fs.cwd().openFile(user_disk_out, .{});
             defer user_disk.close();
 
             var root = try loadDisk(user_disk);
@@ -497,29 +497,31 @@ pub const Folder = struct {
     }
 
     pub fn setupExtr() !void {
-        const extr_path = getExtrPath();
-        const path = if (std.fs.path.isAbsolute(extr_path))
-            std.fs.openDirAbsolute(extr_path, .{}) catch null
-        else
-            std.fs.cwd().openDir(extr_path, .{}) catch null;
+        if (@import("builtin").mode == .Debug) {
+            const extr_path = getExtrPath();
+            const path = if (std.fs.path.isAbsolute(extr_path))
+                std.fs.openDirAbsolute(extr_path, .{}) catch null
+            else
+                std.fs.cwd().openDir(extr_path, .{}) catch null;
 
-        const root = try FolderLink.resolve(.root);
+            const root = try FolderLink.resolve(.root);
 
-        if (path) |extr_dir| {
-            const extr = try allocator.alloc.create(Folder);
-            extr.* = .{
-                .ext = .{
-                    .dir = extr_dir,
-                },
-                .protected = true,
-                .parent = .root,
-                .name = try allocator.alloc.dupe(u8, "/extr/"),
-            };
+            if (path) |extr_dir| {
+                const extr = try allocator.alloc.create(Folder);
+                extr.* = .{
+                    .ext = .{
+                        .dir = extr_dir,
+                    },
+                    .protected = true,
+                    .parent = .root,
+                    .name = try allocator.alloc.dupe(u8, "/extr/"),
+                };
 
-            extr.next_sibling = root.folders;
-            root.folders = extr;
-        } else {
-            log.err("failed to load extr path: '{s}'", .{extr_path});
+                extr.next_sibling = root.folders;
+                root.folders = extr;
+            } else {
+                log.err("failed to load extr path: '{s}'", .{extr_path});
+            }
         }
     }
 

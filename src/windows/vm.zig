@@ -55,7 +55,7 @@ pub const VMData = struct {
     frame_counter: usize = 0,
     time: f32 = 0,
     fps: f32 = 0,
-    debug: bool = @import("builtin").mode == .Debug,
+    debug: bool = false,
     input: []i32 = &.{},
     mousebtn: ?i32 = null,
     mousepos: Vec2 = .{},

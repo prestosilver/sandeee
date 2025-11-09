@@ -92,7 +92,7 @@ pub fn load(self: *Self, prog: *f32, start: f32, total: f32) !Unloader {
 
     prog.* = total;
 
-    self.deps.deinit();
+    self.deps.clearAndFree();
 
     return result;
 }
@@ -117,6 +117,6 @@ pub const Unloader = struct {
         while (iter.nextPtr()) |dep|
             dep.run();
 
-        self.deps.deinit();
+        self.deps.clearAndFree();
     }
 };

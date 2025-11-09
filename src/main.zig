@@ -610,18 +610,18 @@ pub fn main() void {
     // switch to headless main function if nessessary
     if (headless.is_headless) {
         return headless.main(headless_cmd orelse &.{}, false, null) catch |err| {
-        const name = switch (err) {
-            error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",
-            error.AudioInit => "Your audio hardware might not support SandEEE.",
-            error.WrongSize, error.TextureMissing => "Failed to load an internal texture.",
-            error.LoadError => "Failed to load something.",
-            error.NoProfFolder => "There is no prof folder on your disk.",
-            error.NoExecFolder => "There is no exec folder on your disk.",
-            error.BadFile => "Your disk is problaby corrupt.",
-            else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
-        };
+            const name = switch (err) {
+                error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",
+                error.AudioInit => "Your audio hardware might not support SandEEE.",
+                error.WrongSize, error.TextureMissing => "Failed to load an internal texture.",
+                error.LoadError => "Failed to load something.",
+                error.NoProfFolder => "There is no prof folder on your disk.",
+                error.NoExecFolder => "There is no exec folder on your disk.",
+                error.BadFile => "Your disk is problaby corrupt.",
+                else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
+            };
 
-        const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
+            const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
 
             panic(msg, @errorReturnTrace(), null);
         };
@@ -1032,6 +1032,8 @@ pub fn runGame() anyerror!void {
         }
     }
 
+    graphics_init = false;
+
     // deinit vm manager
     VmManager.instance.deinit();
 
@@ -1054,6 +1056,8 @@ pub fn runGame() anyerror!void {
 
     // deinit textures
     TextureManager.instance.deinit();
+
+    log.log.info("graceful deinit", .{});
 }
 
 test "headless.zig" {

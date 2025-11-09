@@ -62,6 +62,7 @@ pub fn getDate(name: []const u8) i128 {
     defer allocator.alloc.free(path);
     const file = std.fs.cwd().openFile(path, .{}) catch return 0;
     defer file.close();
+
     return (file.metadata() catch return 0).modified();
 }
 
@@ -76,13 +77,16 @@ pub fn setup(self: *GSRecovery) !void {
     self.sub_sel = null;
     self.status = "";
 
-    const dir = try std.fs.cwd().openDir("disks", .{
+    var dir = try std.fs.cwd().openDir("disks", .{
         .iterate = true,
     });
+    defer dir.close();
 
     var iter = dir.iterate();
 
     while (try iter.next()) |item| {
+        if (!std.mem.endsWith(u8, item.name, ".eee")) continue;
+
         const entry = try allocator.alloc.dupe(u8, item.name);
 
         try self.disks.append(entry);

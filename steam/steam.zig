@@ -143,6 +143,8 @@ pub const Utils = extern struct {
                         const path = std.fmt.allocPrint(allocator, "/home/john/doc/rep/github.com/sandeee/fake_steam/created/{}", .{id}) catch break :get_result;
 
                         const root = std.fs.openDirAbsolute("/", .{}) catch break :get_result;
+                        defer root.close();
+
                         root.makePath(path) catch break :get_result;
 
                         steam_items.append(.{
