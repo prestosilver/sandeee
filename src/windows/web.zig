@@ -157,7 +157,7 @@ pub const WebData = struct {
                         .debug => strings.COLOR_BLACK,
                     };
 
-                    len += color.len + log_item.data.len;
+                    len += color.len + log_item.data.?.len;
                 };
 
                 const result = try allocator.alloc.alloc(u8, len);
@@ -173,8 +173,8 @@ pub const WebData = struct {
                         .debug => strings.COLOR_BLACK,
                     };
 
-                    idx -= log_item.data.len;
-                    @memcpy(result[idx .. idx + log_item.data.len], log_item.data);
+                    idx -= log_item.data.?.len;
+                    @memcpy(result[idx .. idx + log_item.data.?.len], log_item.data.?);
 
                     idx -= color.len;
                     @memcpy(result[idx .. idx + color.len], color);
@@ -400,8 +400,19 @@ pub const WebData = struct {
 
         log.debug("file_path: {s}", .{file_path});
 
+        var walker = std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch {
+            const file = try std.fs.openFileAbsolute(file_path, .{});
+            defer file.close();
+
+            const stat = try file.stat();
+            const cont = try file.reader().readAllAlloc(allocator.alloc, stat.size);
+
+            return cont;
+        };
+
         // if this is a directory give a file listing
-        if (std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch null) |walker| {
+        defer walker.close();
+
             // if index exists open that instead
             if (try (walker.access("index.edf", .{}) catch |err| switch (err) {
                 error.FileNotFound => null,
@@ -516,6 +527,9 @@ pub const WebData = struct {
 
             const comment_index = std.mem.indexOfScalar(u8, full_line, ';') orelse full_line.len;
             const comment_line = std.mem.trim(u8, full_line[0..comment_index], &std.ascii.whitespace);
+
+            if (comment_line.len == 0)
+                continue;
 
             const colon_index = std.mem.indexOfScalar(u8, comment_line, ':') orelse {
                 log.warn("style line invalid: `{s}`", .{comment_line});

@@ -11,6 +11,7 @@ const VmManager = system.VmManager;
 const Stream = system.Stream;
 const Vm = system.Vm;
 const files = system.files;
+const headless = system.headless;
 
 const VmError = Vm.VmError;
 const StackEntry = Vm.StackEntry;
@@ -114,11 +115,17 @@ fn sysPrint(self: *Vm) VmError!void {
 
     if (a.data().* == .string) {
         try self.out.appendSlice(a.data().string);
+
+        if (headless.is_headless)
+            self.yield = true;
     } else if (a.data().* == .value) {
         const str = try std.fmt.allocPrint(self.allocator, "{}", .{a.data().value});
         defer self.allocator.free(str);
 
         try self.out.appendSlice(str);
+
+        if (headless.is_headless)
+            self.yield = true;
     }
 }
 

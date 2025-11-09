@@ -55,6 +55,13 @@ pub const CMDData = struct {
 
         for (oldbt) |ch| {
             switch (ch) {
+                '\x08' => {
+                    if (self.bt.len >= 0)
+                        idx -= 1;
+                },
+                '\x01' => {
+                    idx = 0;
+                },
                 '\r' => {
                     if (std.mem.lastIndexOf(u8, self.bt[0..idx], "\n")) |newidx|
                         idx = newidx + 1

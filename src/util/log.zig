@@ -6,13 +6,13 @@ pub var log_file: ?std.fs.File = null;
 pub const log = std.log.scoped(.SandEEE);
 
 const LogData = struct {
-    level: std.log.Level,
-    data: []const u8,
-    valid: bool,
+    level: std.log.Level = .debug,
+    data: ?[]const u8 = null,
 };
 
 const HIST_LEN = 1000;
-pub var logs: [HIST_LEN]LogData = undefined;
+
+pub var logs: [HIST_LEN]LogData = .{LogData{}} ** HIST_LEN;
 pub var last_log: usize = 0;
 pub var total_logs: usize = 0;
 
@@ -62,22 +62,21 @@ pub fn sandEEELogFn(
     if (stop_logs)
         return;
 
+    if (logs[last_log].data) |log_data|
+        allocator.alloc.free(log_data);
+
     if (total_logs < HIST_LEN) {
         logs[last_log] = .{
             .level = level,
             .data = std.fmt.allocPrint(allocator.alloc, prefix ++ format ++ "\n", args) catch return,
-            .valid = true,
         };
 
         last_log += 1;
         total_logs += 1;
     } else {
-        allocator.alloc.free(logs[last_log].data);
-
         logs[last_log] = .{
             .level = level,
             .data = std.fmt.allocPrint(allocator.alloc, prefix ++ format ++ "\n", args) catch return,
-            .valid = true,
         };
 
         last_log += 1;
@@ -95,9 +94,12 @@ pub fn getLogs() [2][]const LogData {
 }
 
 pub fn deinit() void {
+    if (stop_logs) return;
+
     stop_logs = true;
-    for (&logs) |*log_item| if (log_item.valid) {
-        allocator.alloc.free(log_item.data);
-        log_item.valid = false;
-    };
+    for (&logs) |*log_item| {
+        if (log_item.data) |data|
+            allocator.alloc.free(data);
+        log_item.data = null;
+    }
 }

@@ -462,7 +462,17 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
     c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)));
 }
 
-pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+var graphics_init = false;
+
+pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    defer {
+        log.deinit();
+
+        if (!builtin.link_libc or !allocator.useclib) {
+            std.debug.assert(allocator.gpa.deinit() == .ok);
+        }
+    }
+
     paniced = true;
 
     SpriteBatch.global.scissor = null;
@@ -470,9 +480,9 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     error_state = @intFromEnum(current_state);
 
     // panic log asap
-    const st = panic_handler.log();
+    const st = panic_handler.log(trace);
     error_message = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ msg, st }) catch {
-        std.process.exit(0);
+        std.process.exit(1);
     };
 
     std.fs.cwd().writeFile(.{
@@ -481,8 +491,8 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     }) catch {};
 
     // no display on headless
-    if (is_headless) {
-        std.process.exit(0);
+    if (!graphics_init) {
+        std.process.exit(1);
     }
 
     // disable events on loading screen

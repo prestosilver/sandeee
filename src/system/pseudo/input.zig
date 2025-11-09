@@ -31,6 +31,7 @@ const Shader = util.Shader;
 const allocator = util.allocator;
 const log = util.log;
 
+const headless = system.headless;
 const Vm = system.Vm;
 
 const Windowed = states.Windowed;
@@ -39,7 +40,24 @@ const pWindows = @import("window.zig");
 
 pub const char = struct {
     pub fn read(vm_instance: ?*Vm) ![]const u8 {
-        if (vm_instance != null and vm_instance.?.input.items.len != 0) {
+        if (vm_instance == null)
+            return &.{};
+
+        if (headless.is_headless) {
+            headless.input_mutex.lock();
+            defer headless.input_mutex.unlock();
+            const result = try allocator.alloc.alloc(u8, 1);
+
+            result[0] = headless.input_queue.readItem() orelse {
+                allocator.alloc.free(result);
+
+                return &.{};
+            };
+
+            return result;
+        }
+
+        if (vm_instance.?.input.items.len != 0) {
             const result = try allocator.alloc.alloc(u8, 1);
 
             result[0] = vm_instance.?.input.orderedRemove(0);

@@ -1,3 +1,12 @@
+const std = @import("std");
+
+const util = @import("../util/mod.zig");
+
+const allocator = util.allocator;
+
+pub const CLEAR = "\x01";
+pub const UNDO = "\x08";
+
 pub const BULLET = "\x80";
 pub const LEFT = "\x81";
 pub const E = "\x82";
@@ -6,12 +15,11 @@ pub const NOTEQUAL = "\x84";
 pub const META = "\x85";
 pub const FRAME = "\x86";
 pub const DOWN = "\x87";
-pub const BLOCK_ZERO = "\x88";
 
-pub fn BLOCK(comptime id: u8) u8 {
+pub fn BLOCK(comptime id: u8) []const u8 {
     if (id > 7) @compileError("Bad Block char");
 
-    return id + BLOCK_ZERO;
+    return &.{id + '\x88'};
 }
 
 pub const DOTS = "\x90";
@@ -39,3 +47,92 @@ pub const COLOR_BLUE = "\xFE";
 pub const COLOR_MAGENTA = "\xFF";
 
 pub const EEE = E ** 3;
+
+const CharReplacement = struct {
+    eeech: []const u8,
+    ansi: []const u8,
+};
+
+const REPLACEMENT_TABLE = [_]CharReplacement{
+    .{ .eeech = BULLET, .ansi = "•" },
+    .{ .eeech = LEFT, .ansi = "▶" },
+    .{ .eeech = E, .ansi = "Ⲉ" },
+    .{ .eeech = CHECK, .ansi = "✓" },
+    .{ .eeech = NOTEQUAL, .ansi = "≠" },
+    .{ .eeech = META, .ansi = "ϻ" },
+    .{ .eeech = FRAME, .ansi = "ℱ" },
+    .{ .eeech = DOWN, .ansi = "▼" },
+    .{ .eeech = BLOCK(0), .ansi = " " },
+    .{ .eeech = BLOCK(1), .ansi = "▁" },
+    .{ .eeech = BLOCK(2), .ansi = "▂" },
+    .{ .eeech = BLOCK(3), .ansi = "▃" },
+    .{ .eeech = BLOCK(4), .ansi = "▄" },
+    .{ .eeech = BLOCK(5), .ansi = "▅" },
+    .{ .eeech = BLOCK(6), .ansi = "▆" },
+    .{ .eeech = BLOCK(7), .ansi = "▇" },
+
+    .{ .eeech = DOTS, .ansi = "…" },
+    .{ .eeech = RIGHT, .ansi = "◀" },
+    .{ .eeech = SMILE, .ansi = "🙂" },
+    .{ .eeech = STRAIGHT, .ansi = "😐" },
+    .{ .eeech = SAD, .ansi = "🙁" },
+    .{ .eeech = UP, .ansi = "▲" },
+
+    .{ .eeech = COLOR_BLACK, .ansi = "\x1b[0;30m" },
+    .{ .eeech = COLOR_GRAY, .ansi = "\x1b[0;90m" },
+    .{ .eeech = COLOR_DARK_RED, .ansi = "\x1b[0;31m" },
+    .{ .eeech = COLOR_DARK_YELLOW, .ansi = "\x1b[0;33m" },
+    .{ .eeech = COLOR_DARK_GREEN, .ansi = "\x1b[0;32m" },
+    .{ .eeech = COLOR_DARK_CYAN, .ansi = "\x1b[0;36m" },
+    .{ .eeech = COLOR_DARK_BLUE, .ansi = "\x1b[0;34m" },
+    .{ .eeech = COLOR_DARK_MAGENTA, .ansi = "\x1b[0;35m" },
+
+    .{ .eeech = COLOR_WHITE, .ansi = "\x1b[0;37m" },
+    .{ .eeech = COLOR_RED, .ansi = "\x1b[0;91m" },
+    .{ .eeech = COLOR_YELLOW, .ansi = "\x1b[0;93m" },
+    .{ .eeech = COLOR_GREEN, .ansi = "\x1b[0;92m" },
+    .{ .eeech = COLOR_CYAN, .ansi = "\x1b[0;96m" },
+    .{ .eeech = COLOR_BLUE, .ansi = "\x1b[0;94m" },
+    .{ .eeech = COLOR_MAGENTA, .ansi = "\x1b[0;95m" },
+
+    .{ .eeech = CLEAR, .ansi = "\x1b[2J\x1b[H" },
+    .{ .eeech = UNDO, .ansi = "\x1b[D \x1b[D" },
+
+    .{ .eeech = "\xf8", .ansi = "\x1b[m" },
+
+    .{ .eeech = "\r", .ansi = "\r\x1b[0K" },
+    .{ .eeech = "\n", .ansi = "\n\r\x1b[0K" },
+
+    .{ .eeech = "\x1b", .ansi = "^[" },
+};
+
+pub fn eeeCHToANSI(input: []const u8) ![]const u8 {
+    var len: usize = 0;
+    for (input) |ch| {
+        inline for (REPLACEMENT_TABLE) |entry| {
+            if (ch == entry.eeech[0]) {
+                len += entry.ansi.len;
+
+                break;
+            }
+        } else len += 1;
+    }
+
+    var result = try allocator.alloc.alloc(u8, len);
+    var idx: usize = 0;
+    for (input) |ch| {
+        inline for (REPLACEMENT_TABLE) |entry| {
+            if (ch == entry.eeech[0]) {
+                @memcpy(result[idx .. idx + entry.ansi.len], entry.ansi);
+                idx += entry.ansi.len;
+
+                break;
+            }
+        } else {
+            result[idx] = if (ch > 0x80) ' ' else ch;
+            idx += 1;
+        }
+    }
+
+    return result;
+}
