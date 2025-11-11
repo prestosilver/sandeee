@@ -690,6 +690,21 @@ fn sysSteam(self: *Vm) VmError!void {
         log.warn("bad steam upload files: '{s}'", .{data[1..]});
 
         return error.UnknownError;
+    } else if (data[0] == 'g' and data.len > 1) {
+        var split = std.mem.splitScalar(u8, data[1..], ':');
+
+        download_data: {
+            const item_str = split.next() orelse break :download_data;
+            const path = split.next() orelse break :download_data;
+            if (split.next() != null) break :download_data;
+
+            _ = item_str;
+            _ = path;
+        }
+
+        log.warn("bad steam download files: '{s}'", .{data[1..]});
+
+        return error.UnknownError;
     }
 
     return error.UnknownError;

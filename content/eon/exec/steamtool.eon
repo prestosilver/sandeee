@@ -48,6 +48,16 @@ fn main() {
         else { print("Failed to upload files"); }
 
         return upload_result;
+    } else if (cmd == "download") {
+        var download_item = getArg(2);
+        var download_path = getArg(3);
+
+        var download_result = runSteam("d" & download_item & ":" & download_path);
+        
+        if (download_result == 0) { print("Downloaded files successfully"); }
+        else { print("Failed to download files"); }
+
+        return download_result;
     }
 
     print("expected command (create|upload|metadata)");
