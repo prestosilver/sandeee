@@ -7,14 +7,13 @@
 
 ## 🗓️ Timeline Overview
 
-🟩🟨⬜
 
 | Weekend Range        | Focus Area                          | Key Tasks                                                                                       | Status |
 |----------------------|--------------------------------------|--------------------------------------------------------------------------------------------------|:------:|
 | Nov 8–9, 2025        | 🧩 **Debugging / Threading**         | Begin reproducing Windows threading crash; log allocator and GC edge cases                      | 🟩 |
 | Nov 15–16, 2025      | ⚙️ **Threading / Safe Mode**         | Integrate safe mode into threading logic for debugging; verify stability with sample workloads   | 🟩 |
-| Nov 22–23, 2025      | 🪟 **Windows Fix & QA**              | Finalize threading fix; confirm safe mode toggles properly and works cross-platform              | 🟨 |
-| Nov 29–30, 2025      | 🧠 **Core VM Polish**                | Audit stack ops, lazy ropes, and copy/dupe semantics; start improving debug symbol infrastructure| ⬜ |
+| Nov 22–23, 2025      | 🪟 **Windows Fix & QA**              | Finalize threading fix; confirm safe mode toggles properly and works cross-platform              | 🟩 |
+| Nov 29–30, 2025      | 🧠 **Core VM Polish**                | Audit stack ops, lazy ropes, and copy/dupe semantics; start improving debug symbol infrastructure| 🟨 |
 | Dec 6–7, 2025        | 🧱 **Graphics / PBO Integration**    | Implement `/gfx/pixel` PBO system and `/fake/tex/stride`; prepare for frame streaming tests      | ⬜ |
 | Dec 13–14, 2025      | 🎧 **Audio Queue System**            | Add audio queuing and lazy streaming; test synchronization with fake file playback              | ⬜ |
 | Dec 20–21, 2025      | 🎨 **Art Sprint #1**                 | Work on hero background, logo polish, and capsule mockups                                        | ⬜ |
@@ -32,11 +31,16 @@
 | Mar 14–15, 2026      | 🔶 **Milestone: Steam Approval**     | Submit final demo for Steam Next Fest listing and confirmation                                  | ⬜ |
 | Apr–May 2026         | 🧭 **Ongoing Promo & QA**            | Continue marketing, patching, and community engagement until Next Fest launch                   | ⬜ |
 
+### Key
+- 🟩: Done
+- 🟨: Started
+- ⬜: Complete
+
 ---
 
 ### ✅ Summary of Priorities
 - Fix Windows threading crash (safe mode debugging included)
-- Build `/gfx/pixel` + `/fake/tex/stride` systems
+- Build `/fake/gfx/pixel` + `/fake/gfx/stride` systems
 - Create Teams-style in-game app for trailer
 - Record voice and screen in OBS with no post-processing
 - Produce and upload store visuals early to reduce crunch
@@ -49,9 +53,9 @@
 ## Overview Checklist
 
 ### 🧠 Core Development
-- [ ] Debug Windows threading crash (via Safe Mode)
-- [ ] Confirm GC & allocator stability under multithread
-- [ ] Integrate `/gfx/pixel` PBO and `/fake/tex/stride`
+- [X] Debug Windows threading crash (via Safe Mode)
+- [X] Confirm GC & allocator stability under multithread
+- [ ] Integrate `/fake/gfx/pixel` PBO and `/fake/gfx/stride`
 - [ ] Finalize audio queue system
 
 ### 🖼️ Art & Store
@@ -69,12 +73,12 @@
 - [ ] Maintain “all in-game” authenticity
 
 ### 🧪 Demo
-- [ ] Enable Safe Mode as default for demo build
-- [ ] Test load time lag—style it as “Booting threads…”
-- [ ] Verify .eep and .ell integrity
+- [X] Enable Safe Mode as default for demo build
+- [X] Test load time lag—style it as “Booting threads…”
+- [X] Verify .eep and .ell integrity
 - [ ] Ship Windows & Linux demo builds
 
 ### 📣 Release & Community
 - [ ] Post early store link + GIFs on social
-- [ ] Set up small Discord for testers
+- [X] Set up small Discord for testers
 - [ ] Steam Next Fest registration (May 2026)
