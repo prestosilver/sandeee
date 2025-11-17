@@ -1,7 +1,5 @@
 # SandEEE Next Fest 2026 Weekend Timeline (Markdown Table Format)
-
-> Target: Steam Next Fest June 2026  
-> Workload: Heavy focus on weekends; weekday progress as time allows
+> **THIS PHRASING IS GPT GENERATED BTW!!!!**, I leaded the ideas, I just dont have the energy to consolidate ideas quite yet
 
 ---
 
