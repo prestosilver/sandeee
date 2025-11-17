@@ -23,10 +23,11 @@ const Windowed = states.Windowed;
 
 const log = util.log;
 
+// TODOL move to data module
 pub const MAIN_NAME = "_main";
 pub const EXIT_NAME = "_quit";
 
-// TODO: move stack stuff to settings?
+// TODO: Unhardcode
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
 

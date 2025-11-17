@@ -1,3 +1,5 @@
+// TODO: split to timing manager
+
 const std = @import("std");
 
 const system = @import("mod.zig");

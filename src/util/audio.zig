@@ -37,6 +37,7 @@ pub const Sound = struct {
 const background_sound = @embedFile("../sounds/bg.era");
 
 pub const AudioManager = struct {
+    // TODO: move to data module
     pub const SOURCES = 30;
 
     sources: [SOURCES]c.ALuint = std.mem.zeroes([SOURCES]c.ALuint),

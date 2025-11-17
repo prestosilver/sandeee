@@ -1,7 +1,9 @@
+// TODO: new imports
 const std = @import("std");
 const builtin = @import("builtin");
 const allocator = @import("allocator.zig");
 
+// TODO: move to data.strings
 const NO_INFO: []const u8 = "Stacktrace Unavailable\n";
 
 pub fn log(trace: ?*std.builtin.StackTrace) []const u8 {

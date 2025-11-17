@@ -50,6 +50,7 @@ pub const Result = struct {
 
 pub var shader: *Shader = undefined;
 
+// TODO: move to data module
 pub const ASM_HEADER = "EEEp";
 
 const ShellError = error{
@@ -57,6 +58,7 @@ const ShellError = error{
     BadASMFile,
 };
 
+// TODO: move to data module
 const TOTAL_BAR_SPRITES: f32 = 13;
 
 const Shell = @This();

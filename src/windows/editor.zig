@@ -33,11 +33,13 @@ const window_events = events.windows;
 
 const strings = data.strings;
 
+// TODO: unhardcode, make into file format
 const HL_KEYWORD1 = [_][]const u8{ "return ", "var ", "fn ", "for ", "while ", "if ", "else ", "asm " };
 const HL_KEYWORD2 = [_][]const u8{"#include "};
 const COMMENT_START = "//";
 const STRING_START = '\"';
 const ESCAPE_CHAR = '\\';
+
 const STRING_ERROR = "{s}  " ++ strings.COLOR_RED ++ strings.LEFT ++ " {s}";
 
 pub const EditorData = struct {

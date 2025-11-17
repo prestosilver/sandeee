@@ -1,3 +1,4 @@
+// TODO: new imports
 const std = @import("std");
 const allocator = @import("allocator.zig");
 
@@ -5,12 +6,13 @@ pub var log_file: ?std.fs.File = null;
 
 pub const log = std.log.scoped(.SandEEE);
 
+// TODO: unhardcode
+const HIST_LEN = 1000;
+
 const LogData = struct {
     level: std.log.Level = .debug,
     data: ?[]const u8 = null,
 };
-
-const HIST_LEN = 1000;
 
 pub var logs: [HIST_LEN]LogData = .{LogData{}} ** HIST_LEN;
 pub var last_log: usize = 0;

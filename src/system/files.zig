@@ -54,6 +54,7 @@ pub const FolderLink = union(LinkKind) {
 
 pub var root_out: ?[]const u8 = null;
 
+// TODO: move to data module, and test other values
 pub const ROOT_NAME = "/";
 
 pub inline fn getExtrPath() []const u8 {

@@ -34,6 +34,7 @@ const window_events = events.windows;
 
 const strings = data.strings;
 
+// TODO: remove var
 pub var notif: Sprite = undefined;
 
 const EmailData = struct {

@@ -66,13 +66,6 @@ const SettingsData = struct {
 
     value: []const u8,
 
-    const panels = [_]SettingPanel{
-        SettingPanel{ .name = "Graphics", .icon = 2 },
-        SettingPanel{ .name = "Sounds", .icon = 1 },
-        SettingPanel{ .name = "Files", .icon = 3 },
-        SettingPanel{ .name = "System", .icon = 0 },
-    };
-
     const Setting = struct {
         const Kind = enum(u8) { String, Dropdown, File, Folder };
 
@@ -83,6 +76,13 @@ const SettingsData = struct {
         key: []const u8,
     };
 
+    // TODO: combine and move to data
+    const panels = [_]SettingPanel{
+        SettingPanel{ .name = "Graphics", .icon = 2 },
+        SettingPanel{ .name = "Sounds", .icon = 1 },
+        SettingPanel{ .name = "Files", .icon = 3 },
+        SettingPanel{ .name = "System", .icon = 0 },
+    };
     const panes = [_][]const Setting{
         &[_]Setting{
             Setting{
