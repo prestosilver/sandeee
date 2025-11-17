@@ -10,8 +10,12 @@ fn main() {
     var cmd = getArg(1);
     if (cmd == "create") {
         var item = runSteam("");
+        var ws_id = numString(item);
         
-        print("created item: " & numString(item));
+        print("Created item: " & ws_id);
+        print("Run `steamtool metadata " & ws_id & " title [Title]` to set the items title.");
+        print("And `steamtool metadata " & ws_id & " description [Desc]` to set the items description.");
+        print("Then `steamtool upload " & ws_id & "` in a folder to upload it.");
 
         return 0;
     } else if (cmd == "metadata") {
