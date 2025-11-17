@@ -53,6 +53,7 @@
 ### 🧠 Core Development
 - [X] Debug Windows threading crash (via Safe Mode)
 - [X] Confirm GC & allocator stability under multithread
+- [ ] Implement ropes
 - [ ] Integrate `/fake/gfx/pixel` PBO and `/fake/gfx/stride`
 - [ ] Finalize audio queue system
 

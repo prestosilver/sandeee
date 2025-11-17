@@ -18,6 +18,8 @@
     - this is a style guide so make sure to use the latest version when writing docs
 - user facing formats such as `.edf` and `.eds` are immutable and documented elsewhere.
     - Reason: Documenting one thing twice can cause contradictions later, and this document is less formal than user docs.
+- No user-facing docs shall be generated with assistants such as chatgpt.
+    - Reason: Since SandEEE is focused on a different yet familiar system, picked up without reading a doc. Forcing manual writing means the user will read the docs while writing them, ensuring nothing was made up/wrong.
 
 ## General structure & rules
 
