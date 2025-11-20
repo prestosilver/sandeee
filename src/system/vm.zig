@@ -21,6 +21,7 @@ const system_events = events.system;
 
 const Windowed = states.Windowed;
 
+const Rope = util.Rope;
 const log = util.log;
 
 pub const MAIN_NAME = "_main";
@@ -64,7 +65,7 @@ const StackEntryKind = enum {
 };
 
 pub const HeapEntry = union(StackEntryKind) {
-    string: []const u8,
+    string: *Rope,
     value: u64,
 };
 
@@ -174,10 +175,10 @@ pub inline fn pushStackI(self: *Vm, value: u64) VmError!void {
     self.rsp += 1;
 }
 
-pub inline fn pushStackS(self: *Vm, string: []const u8) VmError!void {
+pub inline fn pushStackS(self: *Vm, string: *Rope) VmError!void {
     if (self.rsp == STACK_MAX) return error.StackOverflow;
 
-    self.stack[self.rsp] = try VmAllocator.new(.{ .string = try self.allocator.dupe(u8, string) });
+    self.stack[self.rsp] = try VmAllocator.new(.{ .string = string });
     self.rsp += 1;
 }
 
@@ -311,7 +312,7 @@ pub fn deinit(self: *Vm) void {
 
     for (self.heap) |item|
         switch (item) {
-            .string => |v| self.allocator.free(v),
+            .string => |v| v.deinit(),
             else => {},
         };
 
@@ -337,7 +338,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
         .Nop => {},
         .Push => {
             if (op.string) |string| {
-                try self.pushStackS(string);
+                try self.pushStackS(try .init(string));
             } else if (op.value) |value| {
                 try self.pushStackI(value);
             } else {
@@ -351,11 +352,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* != .value) return error.ValueMissing;
 
             if (b.data().* == .string) {
-                if (b.data().string.len < a.data().value) {
-                    try self.pushStackS("");
-                } else {
-                    try self.pushStackS(b.data().string[@as(usize, @intCast(a.data().value))..]);
-                }
+                try self.pushStackS(try b.data().string.subString(a.data().value, null));
 
                 return;
             }
@@ -373,11 +370,13 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* != .value) return error.ValueMissing;
 
             if (b.data().* == .string) {
-                if (b.data().string.len < a.data().value) {
-                    try self.pushStackS("");
-                } else {
-                    try self.pushStackS(b.data().string[0 .. b.data().string.len - a.data().value]);
-                }
+                try self.pushStackS(try b.data().string.subString(0, a.data().value));
+                // if (b.data().string.len < a.data().value) {
+                //     try self.pushStackS("");
+                // } else {
+                //     try self.pushStackS(b.data().string[0 .. b.data().string.len - a.data().value]);
+                // }
+
                 return;
             }
 
@@ -393,7 +392,13 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* != .value) return error.ValueMissing;
             if (b.data().* != .string) return error.StringMissing;
 
-            b.data().string = try self.allocator.realloc(b.data().string, a.data().value);
+            var old = b.data().string.*;
+            defer old.deinit();
+
+            const new = try std.fmt.allocPrint(self.allocator, "{}", .{old});
+            defer self.allocator.free(new);
+
+            b.data().string = try .init(new);
 
             return;
         },
@@ -402,7 +407,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
             if (a.data().* != .string) return error.StringMissing;
 
-            try self.pushStackI(a.data().string.len);
+            try self.pushStackI(a.data().string.getLen());
 
             return;
         },
@@ -437,7 +442,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
-                if (a.data().string.len == 0) {
+                if (a.data().string.getLen() == 0) {
                     self.pc = @as(usize, @intCast(op.value.?));
                 }
                 return;
@@ -454,7 +459,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
-                if (a.data().string.len != 0) {
+                if (a.data().string.getLen() != 0) {
                     self.pc = @as(usize, @intCast(op.value.?));
                 }
                 return;
@@ -495,7 +500,10 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
                                     if (pass.data().* != .string) return error.StringMissing;
 
-                                    if (std.mem.eql(u8, pass.data().string, "Hi")) {
+                                    const input = try std.fmt.allocPrint(self.allocator, "{}", .{pass.data().string});
+                                    defer self.allocator.free(input);
+
+                                    if (std.mem.eql(u8, input, "Hi")) {
                                         try self.out.appendSlice("Hello World!\n");
 
                                         return;
@@ -504,7 +512,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
                                     const dbg_pass = try telem.Telem.getDebugPassword();
                                     defer self.allocator.free(dbg_pass);
 
-                                    if (std.mem.eql(u8, pass.data().string, dbg_pass)) {
+                                    if (std.mem.eql(u8, input, dbg_pass)) {
                                         try self.out.appendSlice("Debug Mode Enabled\n");
 
                                         events.EventManager.instance.sendEvent(system_events.EventDebugSet{
@@ -685,12 +693,12 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
             if (a.data().* == .string) {
                 if (b.data().* == .string) {
-                    const val: u64 = if (std.mem.eql(u8, a.data().string, b.data().string)) 1 else 0;
+                    const val: u64 = if (a.data().string.eql(b.data().string)) 1 else 0;
                     try self.pushStackI(val);
                 } else if (b.data().* == .value) {
                     var val: u64 = 0;
-                    if (a.data().string.len != 0 and a.data().string[0] == @as(u8, @intCast(@mod(b.data().value, 256)))) val = 1;
-                    if (a.data().string.len == 0 and b.data().value == 0) val = 1;
+                    if (!a.data().string.empty() and a.data().string.index(0) == @as(u8, @intCast(@mod(b.data().value, 256)))) val = 1;
+                    if (a.data().string.empty() and b.data().value == 0) val = 1;
                     try self.pushStackI(val);
                 }
             }
@@ -698,8 +706,8 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* == .value) {
                 if (b.data().* == .string) {
                     var val: u64 = 0;
-                    if (b.data().string.len != 0 and b.data().string[0] == @as(u8, @intCast(@mod(a.data().value, 256)))) val = 1;
-                    if (b.data().string.len == 0 and a.data().value == 0) val = 1;
+                    if (!b.data().string.empty() and b.data().string.index(0) == @as(u8, @intCast(@mod(a.data().value, 256)))) val = 1;
+                    if (b.data().string.empty() and a.data().value == 0) val = 1;
                     try self.pushStackI(val);
                 } else if (b.data().* == .value) {
                     const val: u64 = if (a.data().value == b.data().value) 1 else 0;
@@ -733,17 +741,17 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
-                if (a.data().string.len == 0) {
-                    try self.pushStackI(0);
-                } else {
-                    const val = @as(u64, @intCast(a.data().string[0]));
+                if (a.data().string.index(0)) |ch| {
+                    const val = @as(u64, @intCast(ch));
                     try self.pushStackI(val);
+                } else {
+                    try self.pushStackI(0);
                 }
                 return;
             }
 
             if (a.data().* == .value) {
-                try self.pushStackS(std.mem.asBytes(&a.data().value)[0..1]);
+                try self.pushStackS(try .init(std.mem.asBytes(&a.data().value)[0..1]));
 
                 return;
             }
@@ -785,11 +793,13 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             self.return_stack[self.return_rsp].location = self.pc;
             self.return_stack[self.return_rsp].function = self.inside_fn;
             self.pc = 0;
-            if (self.functions.getEntry(name.data().string)) |entry| {
+
+            const name_value = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+            defer self.allocator.free(name_value);
+
+            if (self.functions.getEntry(name_value)) |entry| {
                 self.inside_fn = entry.key_ptr.*;
-            } else {
-                return error.FunctionMissing;
-            }
+            } else return error.FunctionMissing;
 
             self.return_rsp += 1;
         },
@@ -800,18 +810,13 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* != .string) return error.StringMissing;
 
             if (b.data().* == .string) {
-                const appends = try std.mem.concat(self.allocator, u8, &.{ a.data().string, b.data().string });
-                defer self.allocator.free(appends);
-
-                try self.pushStackS(appends);
+                try self.pushStackS(try a.data().string.cat(b.data().string));
             } else if (b.data().* == .value) {
-                // IMPORTANT, as bytes being annoying
                 const b_value = b.data();
+                const b_item: *Rope = try .init(std.mem.asBytes(&b_value.value));
+                defer b_item.deinit();
 
-                const appends = try std.mem.concat(self.allocator, u8, &.{ a.data().string, std.mem.asBytes(&b_value.value) });
-                defer self.allocator.free(appends);
-
-                try self.pushStackS(appends);
+                try self.pushStackS(try a.data().string.cat(b_item));
             }
         },
         .Create => {
@@ -822,7 +827,9 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const adds = try self.allocator.alloc(u8, b.data().value);
             defer self.allocator.free(adds);
 
-            try self.pushStackS(adds);
+            @memset(adds, 0);
+
+            try self.pushStackS(try .init(adds));
         },
         .Random => {
             const val: u64 = self.rnd.random().int(u64);
@@ -841,7 +848,12 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
             if (b.data().* != .string) return error.ValueMissing;
 
-            @memset(b.data().string, 0);
+            const adds = try self.allocator.alloc(u8, b.data().string.getLen());
+            defer self.allocator.free(adds);
+
+            @memset(adds, 0);
+
+            try self.pushStackS(try .init(adds));
         },
         .Mem => {
             const a = try self.popStack();

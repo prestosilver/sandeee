@@ -481,7 +481,7 @@ pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noretu
 
     // panic log asap
     const st = panic_handler.log(trace);
-    error_message = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ msg, st }) catch {
+    error_message = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}\n\n{?}", .{ msg, st, trace }) catch {
         std.process.exit(1);
     };
 
@@ -1064,4 +1064,5 @@ test "headless.zig" {
     _ = @import("util/mod.zig");
     _ = @import("system/mod.zig");
     _ = @import("util/url.zig");
+    _ = @import("util/rope.zig");
 }

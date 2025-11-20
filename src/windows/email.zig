@@ -541,7 +541,7 @@ const EmailData = struct {
                                         result_string = try std.fmt.allocPrint(allocator.alloc, "{}", .{result.data().value});
                                     } else if (result.data().* == .string) {
                                         allocator.alloc.free(result_string);
-                                        result_string = try allocator.alloc.dupe(u8, result.data().string);
+                                        result_string = try std.fmt.allocPrint(allocator.alloc, "{}", .{result.data().string});
                                     }
 
                                     good = good and std.ascii.eqlIgnoreCase(result_string, runs.conts);

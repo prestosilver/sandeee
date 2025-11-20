@@ -1,6 +1,7 @@
 const std = @import("std");
 const allocator = @import("../util/allocator.zig");
 const log = @import("../util/log.zig").log;
+const Rope = @import("../util/rope.zig");
 
 pub const ObjectType = enum {
     free,
@@ -11,7 +12,7 @@ pub const ObjectType = enum {
 pub const ObjectData = union(ObjectType) {
     free: ?ObjectRef,
     value: u64,
-    string: []u8,
+    string: *Rope,
 };
 
 pub const Object = struct {
@@ -50,7 +51,7 @@ pub const ObjectRef = struct {
             .free => {},
             .value => {},
             .string => |str| {
-                allocator.alloc.free(str);
+                str.deinit();
             },
         }
 
@@ -172,7 +173,7 @@ pub fn collect() !void {
 pub fn deinit() void {
     for (objects.items) |object| {
         if (object.data == .string)
-            allocator.alloc.free(object.data.string);
+            object.data.string.deinit();
     }
 
     objects.deinit();

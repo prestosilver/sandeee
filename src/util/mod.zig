@@ -12,6 +12,7 @@ pub const SpriteBatch = @import("spritebatch.zig");
 pub const VertArray = @import("vertarray.zig");
 pub const Shader = @import("shader.zig");
 pub const Texture = @import("texture.zig");
+pub const Rope = @import("rope.zig");
 pub const Font = @import("font.zig");
 pub const Url = @import("url.zig");
 pub const Eln = @import("eln.zig");

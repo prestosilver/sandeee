@@ -17,6 +17,8 @@ const VmError = Vm.VmError;
 const StackEntry = Vm.StackEntry;
 const Operation = Vm.Operation;
 
+const Rope = util.Rope;
+
 const SyscallId = enum(u64) {
     Print = 0,
     Quit = 1,
@@ -114,7 +116,9 @@ fn sysPrint(self: *Vm) VmError!void {
     const a = try self.popStack();
 
     if (a.data().* == .string) {
-        try self.out.appendSlice(a.data().string);
+        var rope: ?*Rope = a.data().string;
+        while (rope) |node| : (rope = node.next)
+            try self.out.appendSlice(node.string);
 
         if (headless.is_headless)
             self.yield = true;
@@ -154,12 +158,15 @@ fn sysCreate(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    if (path.data().string.len > 0 and path.data().string[0] == '/') {
+    const path_str = try std.fmt.allocPrint(self.allocator, "{}", .{path.data().string});
+    defer self.allocator.free(path_str);
+
+    if (path_str.len > 0 and path_str[0] == '/') {
         const root = try files.FolderLink.resolve(.root);
-        try root.newFile(path.data().string);
+        try root.newFile(path_str);
     } else {
         const root = try self.root.resolve();
-        try root.newFile(path.data().string);
+        try root.newFile(path_str);
     }
 }
 
@@ -168,8 +175,11 @@ fn sysOpen(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
+    const path_str = try std.fmt.allocPrint(self.allocator, "{}", .{path.data().string});
+    defer self.allocator.free(path_str);
+
     const root = try self.root.resolve();
-    const stream = try Stream.open(root, path.data().string, self);
+    const stream = try Stream.open(root, path_str, self);
 
     try self.streams.append(stream);
     try self.pushStackI(self.streams.items.len - 1);
@@ -189,7 +199,7 @@ fn sysRead(self: *Vm) VmError!void {
         const cont = try stream.read(@as(u32, @intCast(len.data().value)));
         defer self.allocator.free(cont);
 
-        try self.pushStackS(cont);
+        try self.pushStackS(try .init(cont));
     } else {
         return error.InvalidStream;
     }
@@ -208,7 +218,9 @@ fn sysWrite(self: *Vm) VmError!void {
 
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
     if (fs) |stream| {
-        try stream.write(str.data().string);
+        var rope: ?*Rope = str.data().string;
+        while (rope) |node| : (rope = node.next)
+            try stream.write(node.string);
     } else {
         return error.InvalidStream;
     }
@@ -252,11 +264,11 @@ fn sysArg(self: *Vm) VmError!void {
     if (idx.data().* != .value) return error.ValueMissing;
 
     if (idx.data().value >= self.args.len) {
-        try self.pushStackS("");
+        try self.pushStackS(try .init(""));
         return;
     }
 
-    try self.pushStackS(self.args[@as(usize, @intCast(idx.data().value))]);
+    try self.pushStackS(try .init(self.args[@as(usize, @intCast(idx.data().value))]));
 }
 
 fn sysTime(self: *Vm) VmError!void {
@@ -268,7 +280,10 @@ fn sysCheckFunc(self: *Vm) VmError!void {
 
     if (name.data().* != .string) return error.StringMissing;
 
-    const val: u64 = if (self.functions.contains(name.data().string)) 1 else 0;
+    const name_str = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+    defer self.allocator.free(name_str);
+
+    const val: u64 = if (self.functions.contains(name_str)) 1 else 0;
 
     try self.pushStackI(val);
 }
@@ -280,9 +295,12 @@ fn sysGetFunc(self: *Vm) VmError!void {
 
     var val: []const u8 = "";
 
-    if (self.functions.get(name.data().string)) |newVal| val = newVal.string;
+    const name_str = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+    defer self.allocator.free(name_str);
 
-    try self.pushStackS(val);
+    if (self.functions.get(name_str)) |newVal| val = newVal.string;
+
+    try self.pushStackS(try .init(val));
 }
 
 fn sysRegFunc(self: *Vm) VmError!void {
@@ -292,13 +310,13 @@ fn sysRegFunc(self: *Vm) VmError!void {
     if (func.data().* != .string) return error.StringMissing;
     if (name.data().* != .string) return error.StringMissing;
 
-    const dup = try self.allocator.dupe(u8, func.data().string);
+    const dup = try std.fmt.allocPrint(self.allocator, "{}", .{func.data().string});
 
     const ops = try self.stringToOps(dup);
     defer ops.deinit();
 
     const final_ops = try self.allocator.dupe(Operation, ops.items);
-    const final_name = try self.allocator.dupe(u8, name.data().string);
+    const final_name = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
 
     if (self.functions.fetchRemove(final_name)) |entry| {
         self.allocator.free(entry.key);
@@ -317,7 +335,10 @@ fn sysClearFunc(self: *Vm) VmError!void {
 
     if (name.data().* != .string) return error.StringMissing;
 
-    if (self.functions.fetchRemove(name.data().string)) |entry| {
+    const name_str = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+    defer self.allocator.free(name_str);
+
+    if (self.functions.fetchRemove(name_str)) |entry| {
         self.allocator.free(entry.key);
         self.allocator.free(entry.value.ops);
         self.allocator.free(entry.value.string);
@@ -371,10 +392,10 @@ fn sysWriteHeap(self: *Vm) VmError!void {
     const idx: usize = @intCast(item.data().value);
 
     if (self.heap[idx] == .string)
-        self.allocator.free(self.heap[idx].string);
+        self.heap[idx].string.deinit();
 
     switch (data.data().*) {
-        .free => unreachable,
+        .free => return error.HeapOutOfBounds,
         .value => {
             self.heap[idx] = .{
                 .value = data.data().value,
@@ -382,7 +403,7 @@ fn sysWriteHeap(self: *Vm) VmError!void {
         },
         .string => {
             self.heap[idx] = .{
-                .string = try self.allocator.dupe(u8, data.data().string),
+                .string = try .initRef(data.data().string),
             };
         },
     }
@@ -403,7 +424,11 @@ fn sysError(self: *Vm) VmError!void {
     defer self.allocator.free(msg_string);
 
     try self.out.appendSlice("Error: ");
-    try self.out.appendSlice(msg.data().string);
+
+    var rope: ?*Rope = msg.data().string;
+    while (rope) |node| : (rope = node.next)
+        try self.out.appendSlice(node.string);
+
     try self.out.appendSlice("\n");
     try self.out.appendSlice(msg_string);
 
@@ -415,11 +440,14 @@ fn sysSize(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    if (path.data().string.len == 0) return error.FileMissing;
+    const path_str = try std.fmt.allocPrint(self.allocator, "{}", .{path.data().string});
+    defer self.allocator.free(path_str);
 
-    if (path.data().string[0] == '/') {
+    if (path_str.len == 0) return error.FileMissing;
+
+    if (path_str[0] == '/') {
         const root = try files.FolderLink.resolve(.root);
-        const file = try root.getFile(path.data().string);
+        const file = try root.getFile(path_str);
 
         try self.pushStackI(try file.size());
 
@@ -427,7 +455,7 @@ fn sysSize(self: *Vm) VmError!void {
     }
 
     const root = try self.root.resolve();
-    const file = try root.getFile(path.data().string);
+    const file = try root.getFile(path_str);
 
     try self.pushStackI(try file.size());
 }
@@ -447,11 +475,14 @@ fn sysSpawn(self: *Vm) VmError!void {
 
     if (exec.data().* != .string) return error.StringMissing;
 
+    const path = try std.fmt.allocPrint(self.allocator, "{}", .{exec.data().string});
+    defer self.allocator.free(path);
+
     const root = try self.root.resolve();
-    const file = try root.getFile(exec.data().string);
+    const file = try root.getFile(path);
     const conts = try file.read(null);
 
-    const handle = try VmManager.instance.spawn(self.root, exec.data().string, conts[4..]);
+    const handle = try VmManager.instance.spawn(self.root, path, conts[4..]);
 
     try self.pushStackI(handle.id);
 }
@@ -469,8 +500,11 @@ fn sysDelete(self: *Vm) VmError!void {
 
     if (file.data().* != .string) return error.StringMissing;
 
+    const path = try std.fmt.allocPrint(self.allocator, "{}", .{file.data().string});
+    defer self.allocator.free(path);
+
     const root = try self.root.resolve();
-    try root.removeFile(file.data().string);
+    try root.removeFile(path);
 }
 
 const SteamYieldCreate = struct {
