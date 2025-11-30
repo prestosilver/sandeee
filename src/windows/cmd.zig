@@ -30,6 +30,7 @@ const system_events = events.system;
 
 const strings = data.strings;
 
+// TODO: unhardcode, move to settings
 const MAX_SIZE = 100000;
 
 pub const CMDData = struct {

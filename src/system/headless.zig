@@ -13,6 +13,7 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
+// TODO: unhardcode
 const DISK = "headless.eee";
 
 const USE_POSIX = @import("builtin").os.tag == .linux;

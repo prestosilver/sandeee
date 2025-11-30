@@ -23,6 +23,7 @@ const log = util.log;
 const Window = drawers.Window;
 
 pub const Telem = packed struct {
+    // TODO: move to data module
     pub const PATH = "/_priv/telem.bin";
 
     pub var instance: Telem = .{

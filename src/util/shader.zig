@@ -8,6 +8,8 @@ const Mat4 = math.Mat4;
 
 const log = util.log;
 
+// TODO: make shader manager, split shaders into multiple
+
 pub const ShaderFile = struct {
     contents: [*c]const u8,
     kind: c.GLuint,

@@ -148,6 +148,7 @@ const QuadParams = struct {
 };
 
 pub inline fn appendQuad(va: *VertArray, dest: Rect, src: Rect, params: QuadParams) !void {
+    // TODO: reimplement
     // var corners = [_]Rect.Corner{
     //     .BotLeft,
     //     .BotRight,
