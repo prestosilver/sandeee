@@ -11,8 +11,8 @@
 | Nov 8–9, 2025        | 🧩 **Debugging / Threading**         | Begin reproducing Windows threading crash; log allocator and GC edge cases                       | 🟩 |
 | Nov 15–16, 2025      | ⚙️ **Threading / Safe Mode**         | Integrate safe mode into threading logic for debugging; verify stability with sample workloads   | 🟩 |
 | Nov 22–23, 2025      | 🪟 **Windows Fix & QA**              | Finalize threading fix; confirm safe mode toggles properly and works cross-platform              | 🟩 |
-| Nov 29–30, 2025      | 🧠 **Core VM Polish**                | Audit stack ops, lazy ropes, and copy/dupe semantics; start improving debug symbol infrastructure| 🟨 |
-| Dec 6–7, 2025        | 🧱 **Graphics / PBO Integration**    | Implement `/gfx/pixel` PBO system and `/fake/tex/stride`; prepare for frame streaming tests      | ⬜ |
+| Nov 29–30, 2025      | 🧠 **Core VM Polish**                | Audit stack ops, lazy ropes, and copy/dupe semantics; start improving debug symbol infrastructure| 🟩 |
+| Dec 6–7, 2025        | 🧱 **Graphics / PBO Integration**    | Implement `/gfx/pixel` PBO system and `/fake/tex/stride`; prepare for frame streaming tests      | 🟨 |
 | Dec 13–14, 2025      | 🎧 **Video file format**             | Implement the video file format for files                                                        | ⬜ |
 | Dec 20–21, 2025      | 🎨 **Art Sprint #1**                 | Work on hero background, logo polish, and capsule mockups                                        | ⬜ |
 | Dec 27–28, 2025      | 🧰 **Store Page Setup**              | Draft Steam page description, upload assets, tag features, and request early visibility          | ⬜ |
@@ -53,7 +53,7 @@
 ### 🧠 Core Development
 - [X] Debug Windows threading crash (via Safe Mode)
 - [X] Confirm GC & allocator stability under multithread
-- [ ] Implement ropes
+- [X] Implement ropes
 - [ ] Integrate `/fake/gfx/pixel` PBO and `/fake/gfx/stride`
 - [ ] Finalize audio queue system
 
