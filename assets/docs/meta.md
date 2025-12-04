@@ -26,7 +26,7 @@
 - All documentation shall be hosted on sandeee.prestosilver.info
     - this will be moved to a full domain once I get it
 - All documentation shall be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
-- Documentation will include no hidden files (starting with `_`)
+- Documentation will include no hidden files, these are files starting with an underscore(`_`).
 - No dead links obviously, this shall be automatically checked.
 
 ### Syscalls
@@ -154,6 +154,7 @@ This is documenting stuff
 - Files in SandEEE will **always** use EEE file formats
 - All downloads in the documents shall use `.epk` files
 - All EEE file extensions start with `.e`
+- All EEE file extensions are 3 lowercase alpha letters
 
 | Format | builtin | Used for  | Notes |
 |--------|-|-----------|---|
@@ -582,7 +583,7 @@ fn main() {
 - All memory errors are all named `AllocatorFault`.
     - Reason: the few cases that cause these are super rare, out of memory, double free, etc. that they can be grouped on user end.
 - Todo errors are named `Unimplemented`
-- Errors can give more information after their name with a ` - ` as separation.
+- Errors can give more information after their name with a ` - ` as separation (including the spaces).
 - Stream errors shall be caught and handled, with a valid reason & file printed to the user.
 - Programs shall handle all runtime conditions gracefully and never terminate unexpectedly, this includes erroneous inputs.
 - Errors of the same type but different cause should have the same prefix, this uses camel case
@@ -590,20 +591,32 @@ fn main() {
 ## Versioning
 
 - EEE uses a system called EEEvolution to document versions
-- Every version starts with a codeword for the program its representing,
-- This is followed by a colon
+- Every version starts with a codeword for the program its representing
+  - This is lowercase
+- This is followed by a colon(`:`)
 - This is followed by the state of the program, in our world there is alpha, beta, release, in SandEEE there is Seed, Sapling, Tree
-- Finally there is a # followed by the current public build, and a _ for the build number
+  - This is lowercase
+- Finally there is a hashtag(`#`) followed by the current public build, and a underscore(`_`) for the build number
 - On a major increment seed->sapling the number resets
 - Bug fixes shall not increment the version, but they shall incrmement the build
 - Build numbers never reset, but are up to the program to document what it means and how its increment
 
 Examples:
 ```text
-os:seed#3_542     -> Development build 542 of third public seed branch
+os:seed#3_542     -> Development build 542 of third public seed build
 os:sapling#0_1034 -> First sapling release (reset)
 os:tree#0_30545   -> Initial stable release
 ```
+
+### Programs internal ids
+|Program|name|
+|---|---|
+|SandEEE OS|os|
+|EEEdt|text|
+|EEEmail|mail|
+|Explorer|web|
+|BootEEE|boot|
+|RecoverEEE|health|
 
 ## Final Notes
 
