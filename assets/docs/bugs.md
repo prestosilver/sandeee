@@ -11,6 +11,6 @@
 
 - [ ] Control the dithering, and crt of the shader seperately
 - [ ] Error when web content type is not either "application/octet-stream" or "text/eeedocument"
-- [ ] Fixup settings up
+- [ ] Fixup settings ui
 - [ ] Unify double click
 - [ ] Switch to proper versioning everywhere
