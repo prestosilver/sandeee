@@ -34,7 +34,8 @@
 > Definition: A syscall is any assembly instruction that falls under the sys code, the one argument is a byte/number out of 255 that indicates the operation.
 
 - A syscall is *hidden* if it is not documented in the general documentation
-- Syscalls shall be documented exactly the same as instructions,
+- Syscalls shall be documented exactly the same as instructions
+- Syscalls shall remain consistent between updates post the inital steam release.
 
 ### Name Style Rules
 
@@ -174,6 +175,8 @@ This is documenting stuff
 
 - EEEch uses single byte specs, there is no character longer than one.
 - EEEch has color symbols, and emojis, though those should not be used in docs.
+
+For further notes on eeech see the userdocs, specfics are omited here to avoid documentation variances.
 
 ## Text file extensions
 
