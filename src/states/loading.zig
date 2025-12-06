@@ -54,7 +54,7 @@ const TEXTURE_NAMES = [_][2][]const u8{
     .{ "bar_logo_path", "barlogo" },
     .{ "email_logo_path", "email-logo" },
 };
-const LOAD_WAIT = if (builtin.mode == .Debug) 0.1 else 1.0;
+const LOAD_WAIT = if (builtin.mode == .Debug) 0.0 else 1.0;
 const FADE_STEPS = 23;
 
 const mailpath: []const u8 = "/cont/mail";

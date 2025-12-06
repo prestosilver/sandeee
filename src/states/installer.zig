@@ -1,4 +1,5 @@
 const options = @import("options");
+const builtin = @import("builtin");
 const std = @import("std");
 const c = @import("../c.zig");
 
@@ -31,8 +32,8 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
-const VERSION = "0.2.0";
-const INSTALL_TIME = 1.5;
+const VERSION = "0.3.0";
+const INSTALL_TIME = if (builtin.mode == .Debug) 0.0 else 1.5;
 
 const GSInstaller = @This();
 
@@ -197,7 +198,11 @@ pub fn update(self: *GSInstaller, dt: f32) !void {
     if (self.status == .Installing) {
         self.timer -= dt / INSTALL_TIME;
         if (self.timer < 0) {
-            self.timer = 3;
+            self.timer =
+                if (builtin.mode == .Debug)
+                    0
+                else
+                    3;
             self.status = .Done;
 
             const vals = try self.updateSettingsVals();
