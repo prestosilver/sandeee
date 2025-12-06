@@ -24,6 +24,7 @@ pub const all: []const files.Folder.FolderItem = if (@import("builtin").is_test)
     .folder("gfx", &.{
         .file("new", .initFake(gfx.new)),
         .file("pixel", .initFake(gfx.pixel)),
+        .file("row", .initFake(gfx.row)),
         .file("destroy", .initFake(gfx.destroy)),
         .file("upload", .initFake(gfx.upload)),
         .file("save", .initFake(gfx.save)),

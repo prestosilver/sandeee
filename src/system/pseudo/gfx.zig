@@ -53,6 +53,29 @@ pub const new = struct {
     }
 };
 
+pub const row = struct {
+    pub fn write(data: []const u8, _: ?*Vm) files.FileError!void {
+        const idx = data[0];
+        var tmp = data[1..];
+
+        const texture = TextureManager.instance.get(&.{idx}) orelse return;
+
+        while (tmp.len > 8) {
+            const len = std.mem.bytesToValue(u8, &tmp[0]);
+            const x = std.mem.bytesToValue(u16, tmp[1..3]);
+            const start_y = std.mem.bytesToValue(u16, tmp[3..5]);
+
+            for (start_y..start_y + len) |y|
+                texture.setPixel(x, @intCast(y), tmp[4..8].*);
+
+            if (tmp.len > 9)
+                tmp = tmp[9..]
+            else
+                break;
+        }
+    }
+};
+
 pub const pixel = struct {
     pub fn write(data: []const u8, _: ?*Vm) files.FileError!void {
         const idx = data[0];
