@@ -659,8 +659,7 @@ pub fn runGame() anyerror!void {
         steam_utils = steam.getSteamUtils();
         steam_user_stats = steam.getUserStats();
 
-        // cleanup downloads
-        // maybe
+        // TODO: cleanup downloads maybe?
     }
 
     defer if (options.IsSteam)

@@ -1,0 +1,22 @@
+#include "/libs/incl/libload.eon"
+#include "/libs/incl/sys.eon"
+
+fn main() {
+    // load libs
+    setupLibLoad();
+    loadLib("/libs/string.ell");
+    loadLib("/libs/texture.ell");
+
+    print("_TextureCreate() = ");
+    var texture = _TextureCreate();
+    print(texture);
+    print("\n");
+    
+    var texture = _TextureCreate();
+
+    print("_TextureSized(" & texture & ", 5, 5)");
+    _TextureSized(texture, 5, 5);
+    print("\n");
+
+    return 0;
+}

@@ -107,3 +107,41 @@ _TextureWidth:
     add
     disc 1
     ret
+
+_TextureSized:                  ; tex w h
+    push "eimg"                 ; tex w h "eimg"
+    dup 2                       ; tex w h "eimg" w
+    getb                        ; tex w h "eimg" @w
+    dup 3                       ; tex w h "eimg" @w w
+    push 256                    ; tex w h "eimg" @w w 256
+    div                         ; tex w h "eimg" @w w/256
+    getb                        ; tex w h "eimg" @w @(w/256)
+    cat                         ; tex w h "eimg" wstr
+    dup 2                       ; tex w h "eimg" wstr h
+    getb                        ; tex w h "eimg" wstr @h
+    dup 3                       ; tex w h "eimg" wstr @h h
+    push 256                    ; tex w h "eimg" wstr @h h 256
+    div                         ; tex w h "eimg" wstr @h h/256
+    getb                        ; tex w h "eimg" wstr @h @(h/256)
+    cat                         ; tex w h "eimg" wstr hstr
+    dup 4                       ; tex w h "eimg" wstr hstr w
+    dup 4                       ; tex w h "eimg" wstr hstr w h
+    mul                         ; tex w h "eimg" wstr hstr area
+    zero                        ; tex w h "eimg" wstr hstr data
+    cat
+    cat
+    cat                         ; tex w h data
+    push "/fake/gfx/upload"     ; tex w h data path
+    sys 3                       ; tex w h data handle
+    dup 0                       ; tex w h data handle handle
+    dup 2                       ; tex w h data handle handle data
+    dup 6                       ; tex w h data handle handle data tex
+    cat                         ; tex w h data handle handle writes
+    sys 5                       ; tex w h data handle
+    sys 7                       ; tex w h data
+    disc 0                      ; tex w h 
+    disc 0                      ; tex w 
+    disc 0                      ; tex 
+    disc 0                      ; 0
+    push 0
+    ret
