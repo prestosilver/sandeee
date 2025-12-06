@@ -108,6 +108,8 @@ const REPLACEMENT_TABLE = [_]CharReplacement{
     .{ .eeech = "\x1b", .ansi = "^[" },
 };
 
+// TODO: version struct
+
 pub fn eeeCHToANSI(input: []const u8) ![]const u8 {
     var len: usize = 0;
     for (input) |ch| {

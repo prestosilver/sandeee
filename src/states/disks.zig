@@ -35,7 +35,7 @@ const strings = data.strings;
 
 const GSDisks = @This();
 
-const VERSION = std.fmt.comptimePrint("Boot" ++ strings.EEE ++ " V_0.2.0\nFor Sand" ++ strings.EEE ++ " " ++ options.VersionText, .{options.SandEEEVersion});
+const VERSION = std.fmt.comptimePrint("Boot" ++ strings.EEE ++ " boot:seed#1_0\nFor Sand" ++ strings.EEE ++ " " ++ options.VersionText, .{options.SandEEEVersion});
 const TEXT_COLOR = Color{ .r = 0.75, .g = 0.75, .b = 0.75 };
 const TOTAL_LINES = 10;
 

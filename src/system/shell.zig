@@ -38,6 +38,8 @@ const system_events = events.system;
 
 const strings = sandeee_data.strings;
 
+// TODO: split this file
+
 pub const Result = struct {
     data: []u8 = &.{},
     exit: bool = false,
