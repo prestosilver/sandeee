@@ -10,4 +10,4 @@ pub const config = @import("config.zig");
 pub const telem = @import("telem.zig");
 pub const files = @import("files.zig");
 pub const mail = @import("mail.zig");
-pub const pseudo = @import("pseudo/all.zig");
+pub const pseudo = @import("pseudo/mod.zig");

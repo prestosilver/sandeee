@@ -4,6 +4,8 @@ const util = @import("../util/mod.zig");
 
 const allocator = util.allocator;
 
+pub const NO_STACKTRACE_MESSAGE: []const u8 = "Stacktrace Unavailable\n";
+
 pub const CLEAR = "\x01";
 pub const UNDO = "\x08";
 

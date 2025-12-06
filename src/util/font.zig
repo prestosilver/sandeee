@@ -5,6 +5,7 @@ const util = @import("mod.zig");
 
 const system = @import("../system/mod.zig");
 const math = @import("../math/mod.zig");
+const sandeee_data = @import("../data/mod.zig");
 
 const Color = math.Color;
 const Vec2 = math.Vec2;
@@ -20,25 +21,7 @@ const allocator = util.allocator;
 
 const files = system.files;
 
-// TODO: move to data module
-const FONT_COLORS = [16]Color{
-    .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1 },
-    .{ .r = 0.5, .g = 0.5, .b = 0.5, .a = 1 },
-    .{ .r = 0.5, .g = 0.0, .b = 0.0, .a = 1 },
-    .{ .r = 0.5, .g = 0.5, .b = 0.0, .a = 1 },
-    .{ .r = 0.0, .g = 0.5, .b = 0.0, .a = 1 },
-    .{ .r = 0.0, .g = 0.5, .b = 0.5, .a = 1 },
-    .{ .r = 0.0, .g = 0.0, .b = 0.5, .a = 1 },
-    .{ .r = 0.5, .g = 0.0, .b = 0.5, .a = 1 },
-    .{ .r = 0, .g = 0, .b = 0, .a = 1 },
-    .{ .r = 1, .g = 1, .b = 1, .a = 1 },
-    .{ .r = 1, .g = 0, .b = 0, .a = 1 },
-    .{ .r = 1, .g = 1, .b = 0, .a = 1 },
-    .{ .r = 0, .g = 1, .b = 0, .a = 1 },
-    .{ .r = 0, .g = 1, .b = 1, .a = 1 },
-    .{ .r = 0, .g = 0, .b = 1, .a = 1 },
-    .{ .r = 1, .g = 0, .b = 1, .a = 1 },
-};
+const colors = sandeee_data.colors;
 
 const Font = @This();
 
@@ -214,7 +197,7 @@ pub fn draw(self: *Font, params: drawParams) !void {
         }
 
         if (ach >= 0xF0) {
-            color = FONT_COLORS[@intCast(ach & 0x0F)];
+            color = colors.FONT_COLORS[@intCast(ach & 0x0F)];
             continue;
         }
 

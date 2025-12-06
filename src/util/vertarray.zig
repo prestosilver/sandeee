@@ -148,56 +148,22 @@ const QuadParams = struct {
 };
 
 pub inline fn appendQuad(va: *VertArray, dest: Rect, src: Rect, params: QuadParams) !void {
-    // TODO: reimplement
-    // var corners = [_]Rect.Corner{
-    //     .BotLeft,
-    //     .BotRight,
-    //     .TopLeft,
-    //     .TopRight,
-    // };
-    // if (params.flip_x) {
-    //     const tmp = .{
-    //         corners[1],
-    //         corners[0],
-    //         corners[3],
-    //         corners[2],
-    //     };
-    //     corners = tmp;
-    // }
-    // if (params.flip_y) {
-    //     const tmp = .{
-    //         corners[2],
-    //         corners[3],
-    //         corners[0],
-    //         corners[1],
-    //     };
-    //     corners = tmp;
-    // }
-
     try va.qarray.append(.{
         .sxo = src.x,
         .syo = src.y,
         .sxs = src.w - 1.0,
         .sys = src.h - 1.0,
 
-        .dxo = dest.x,
-        .dyo = dest.y,
-        .dxs = dest.w - 1.0,
-        .dys = dest.h - 1.0,
+        .dxo = if (params.flip_x) dest.x + dest.w - 1.0 else dest.x,
+        .dyo = if (params.flip_y) dest.y + dest.h - 1.0 else dest.y,
+        .dxs = if (params.flip_x) -(dest.w - 1.0) else dest.w - 1.0,
+        .dys = if (params.flip_y) -(dest.h - 1.0) else dest.h - 1.0,
 
         .r = params.color.r,
         .g = params.color.g,
         .b = params.color.b,
         .a = params.color.a,
     });
-
-    // try va.append(dest.getCorner(.BotLeft).toVector3(), src.getCorner(corners[0]), params.color);
-    // try va.append(dest.getCorner(.BotRight).toVector3(), src.getCorner(corners[1]), params.color);
-    // try va.append(dest.getCorner(.TopRight).toVector3(), src.getCorner(corners[3]), params.color);
-
-    // try va.append(dest.getCorner(.BotLeft).toVector3(), src.getCorner(corners[0]), params.color);
-    // try va.append(dest.getCorner(.TopLeft).toVector3(), src.getCorner(corners[2]), params.color);
-    // try va.append(dest.getCorner(.TopRight).toVector3(), src.getCorner(corners[3]), params.color);
 }
 
 pub inline fn append(va: *VertArray, pos: Vec3, uv: Vec2, color: Color) !void {

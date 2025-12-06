@@ -1,6 +1,8 @@
-// TODO: new imports
 const std = @import("std");
-const allocator = @import("allocator.zig");
+
+const util = @import("mod.zig");
+
+const allocator = util.allocator;
 
 pub const UrlKind = enum(u8) {
     Steam = '$',

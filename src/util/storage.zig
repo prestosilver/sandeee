@@ -1,7 +1,9 @@
-// TODO: new imports
 const std = @import("std");
 const builtin = @import("builtin");
-const allocator = @import("allocator.zig");
+
+const util = @import("mod.zig");
+
+const allocator = util.allocator;
 
 pub fn getContentPath(file: []const u8) !std.ArrayList(u8) {
     var result = std.ArrayList(u8).init(allocator.alloc);

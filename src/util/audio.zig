@@ -1,7 +1,12 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const log = @import("../util/log.zig").log;
+const util = @import("../util/mod.zig");
+const sandeee_data = @import("../data/mod.zig");
+
+const log = util.log;
+
+const sizes = sandeee_data.sizes;
 
 pub const AudioErrors = error{
     AudioInit,
@@ -37,10 +42,7 @@ pub const Sound = struct {
 const background_sound = @embedFile("../sounds/bg.era");
 
 pub const AudioManager = struct {
-    // TODO: move to data module
-    pub const SOURCES = 30;
-
-    sources: [SOURCES]c.ALuint = std.mem.zeroes([SOURCES]c.ALuint),
+    sources: [sizes.AUDIO_SOURCES]c.ALuint = std.mem.zeroes([sizes.AUDIO_SOURCES]c.ALuint),
     next: usize = 0,
     device: ?*c.ALCdevice = null,
     context: ?*c.ALCcontext = null,
@@ -101,10 +103,10 @@ pub const AudioManager = struct {
 
         const background_data = Sound.init(background_sound);
 
-        var sources = std.mem.zeroes([SOURCES]c.ALuint);
+        var sources = std.mem.zeroes([sizes.AUDIO_SOURCES]c.ALuint);
 
         // generate sources for sfx
-        c.alGenSources(SOURCES, &sources);
+        c.alGenSources(sizes.AUDIO_SOURCES, &sources);
 
         var bg: c.ALuint = 0;
 
@@ -146,7 +148,7 @@ pub const AudioManager = struct {
             }
             self.next += 1;
 
-            if (self.next == SOURCES) self.next = 0;
+            if (self.next == sizes.AUDIO_SOURCES) self.next = 0;
         }
     }
 };

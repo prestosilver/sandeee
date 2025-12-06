@@ -1,16 +1,18 @@
-// TODO: new imports
 const std = @import("std");
 const builtin = @import("builtin");
-const allocator = @import("allocator.zig");
 
-// TODO: move to data.strings
-const NO_INFO: []const u8 = "Stacktrace Unavailable\n";
+const util = @import("mod.zig");
+const sandeee_data = @import("../data/mod.zig");
+
+const allocator = util.allocator;
+
+const strings = sandeee_data.strings;
 
 pub fn log(trace: ?*std.builtin.StackTrace) []const u8 {
     // Try to run a backtrace to get where the log message originated from
-    if (builtin.strip_debug_info) return NO_INFO;
-    const stack_trace = trace orelse return NO_INFO;
-    const debug_info = std.debug.getSelfDebugInfo() catch return NO_INFO;
+    if (builtin.strip_debug_info) return strings.NO_STACKTRACE_MESSAGE;
+    const stack_trace = trace orelse return strings.NO_STACKTRACE_MESSAGE;
+    const debug_info = std.debug.getSelfDebugInfo() catch return strings.NO_STACKTRACE_MESSAGE;
 
     var result: []u8 = &.{};
     var frame_index: usize = 0;
@@ -39,7 +41,7 @@ pub fn log(trace: ?*std.builtin.StackTrace) []const u8 {
 
     return result;
     // var result: []u8 = &.{};
-    // const debug_info = std.debug.getSelfDebugInfo() catch return NO_INFO;
+    // const debug_info = std.debug.getSelfDebugInfo() catch return strings.NO_STACKTRACE_MESSAGE;
     // if (builtin.os.tag == .windows) {
     //     for (debug_info.modules.items) |m| {
     //         std.debug.print("module: {s}\t{x:0>16}-{x:0>16}\n", .{ m.name, m.base_address, m.base_address + m.size });

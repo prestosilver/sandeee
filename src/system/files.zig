@@ -13,7 +13,7 @@ const Vm = system.Vm;
 const config = system.config;
 const telem = system.telem;
 
-const fake = @import("pseudo/all.zig");
+const fake = @import("pseudo/mod.zig");
 
 pub var named_paths: std.EnumArray(NamedPath, ?*Folder) = .initFill(null);
 
