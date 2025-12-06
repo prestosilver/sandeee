@@ -25,6 +25,7 @@ const Font = util.Font;
 const allocator = util.allocator;
 const log = util.log;
 
+const config = system.config;
 const files = system.files;
 
 const EventManager = events.EventManager;
@@ -914,6 +915,20 @@ pub const EditorData = struct {
                 }
             },
             else => {},
+        }
+    }
+
+    pub fn refresh(self: *Self) !void {
+        if (config.SettingManager.instance.get("accent_color")) |accent| {
+            if (accent.len != 6) {
+                self.sel.data.color.r = 1.0;
+                self.sel.data.color.g = 1.0;
+                self.sel.data.color.b = 1.0;
+            } else {
+                self.sel.data.color.r = @as(f32, @floatFromInt(std.fmt.parseInt(u8, accent[0..2], 16) catch 0)) / 255;
+                self.sel.data.color.g = @as(f32, @floatFromInt(std.fmt.parseInt(u8, accent[2..4], 16) catch 0)) / 255;
+                self.sel.data.color.b = @as(f32, @floatFromInt(std.fmt.parseInt(u8, accent[4..6], 16) catch 0)) / 255;
+            }
         }
     }
 };
