@@ -118,7 +118,16 @@ fn sysPrint(self: *Vm) VmError!void {
     if (a.data().* == .string) {
         var rope: ?*Rope = a.data().string;
         while (rope) |node| : (rope = node.next)
-            try self.out.appendSlice(node.string);
+            switch (node.data) {
+                .string => |str| try self.out.appendSlice(str),
+                .ref => |ref| {
+                    // TODO: make actual iterator
+
+                    const tmp = try std.fmt.allocPrint(self.allocator, "{s}", .{ref});
+                    defer self.allocator.free(tmp);
+                    try self.out.appendSlice(tmp);
+                },
+            };
 
         if (headless.is_headless)
             self.yield = true;
@@ -220,7 +229,16 @@ fn sysWrite(self: *Vm) VmError!void {
     if (fs) |stream| {
         var rope: ?*Rope = str.data().string;
         while (rope) |node| : (rope = node.next)
-            try stream.write(node.string);
+            switch (node.data) {
+                .string => |string| try stream.write(string),
+                .ref => |ref| {
+                    // TODO: make actual iterator
+
+                    const tmp = try std.fmt.allocPrint(self.allocator, "{s}", .{ref});
+                    defer self.allocator.free(tmp);
+                    try stream.write(tmp);
+                },
+            };
     } else {
         return error.InvalidStream;
     }
@@ -376,6 +394,7 @@ fn sysReadHeap(self: *Vm) VmError!void {
             try self.pushStackI(adds.value);
         },
         .string => {
+            adds.string.refs += 1;
             try self.pushStackS(adds.string);
         },
     }
@@ -402,8 +421,10 @@ fn sysWriteHeap(self: *Vm) VmError!void {
             };
         },
         .string => {
+            data.data().string.refs += 1;
+
             self.heap[idx] = .{
-                .string = try .initRef(data.data().string),
+                .string = data.data().string,
             };
         },
     }
@@ -427,7 +448,16 @@ fn sysError(self: *Vm) VmError!void {
 
     var rope: ?*Rope = msg.data().string;
     while (rope) |node| : (rope = node.next)
-        try self.out.appendSlice(node.string);
+        switch (node.data) {
+            .string => |str| try self.out.appendSlice(str),
+            .ref => |ref| {
+                // TODO: make actual iterator
+
+                const tmp = try std.fmt.allocPrint(self.allocator, "{s}", .{ref});
+                defer self.allocator.free(tmp);
+                try self.out.appendSlice(tmp);
+            },
+        };
 
     try self.out.appendSlice("\n");
     try self.out.appendSlice(msg_string);
@@ -578,7 +608,8 @@ fn sysSteam(self: *Vm) VmError!void {
 
     if (file.data().* != .string) return error.StringMissing;
 
-    const data = file.data().string;
+    const data = try std.fmt.allocPrint(self.allocator, "{}", .{file.data().string});
+    defer self.allocator.free(data);
 
     const ugc = steam.getSteamUGC();
 
@@ -665,7 +696,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
             std.fs.cwd().makeDir(".steam_upload") catch |err|
                 if (err != error.PathAlreadyExists)
-                return error.UnknownError;
+                    return error.UnknownError;
             var upload = std.fs.cwd().openDir(".steam_upload", .{}) catch return error.UnknownError;
             defer upload.close();
 
@@ -684,7 +715,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
                     upload.makePath(item.name[folder.name.len..]) catch |err|
                         if (err != error.PathAlreadyExists)
-                        return error.UnknownError;
+                            return error.UnknownError;
                 }
             }
 

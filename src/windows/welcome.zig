@@ -98,7 +98,7 @@ pub const WelcomeData = struct {
             });
         } else {
             // draw checkbox
-            const cb: usize = if (config.SettingManager.instance.getBool("show_welcome")) 0 else 1;
+            const cb: usize = if (config.SettingManager.instance.getBool("show_welcome") orelse true) 0 else 1;
 
             self.cb_pos = Rect{
                 .x = 6,
@@ -129,8 +129,8 @@ pub const WelcomeData = struct {
     pub fn click(self: *Self, _: Vec2, pos: Vec2, btn: ?i32) !void {
         if (btn) |_| {
             if (self.cb_pos.contains(pos)) {
-                const new_value: bool = !config.SettingManager.instance.getBool("show_welcome");
-                try config.SettingManager.instance.setBool("show_welcome", new_value);
+                const new_value: bool = config.SettingManager.instance.getBool("show_welcome") orelse true;
+                try config.SettingManager.instance.setBool("show_welcome", !new_value);
             }
         }
     }

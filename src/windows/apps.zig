@@ -109,7 +109,7 @@ pub const LauncherData = struct {
         var x: f32 = 0;
         var y: f32 = -props.scroll.?.value + 0;
 
-        const hidden = config.SettingManager.instance.getBool("explorer_hidden");
+        const hidden = config.SettingManager.instance.getBool("explorer_hidden") orelse false;
 
         for (self.icon_data, 0..) |icon, idx| {
             if (icon.name.len == 0) continue;

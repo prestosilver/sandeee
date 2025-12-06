@@ -67,7 +67,7 @@ pub const DeskData = struct {
     }
 
     pub fn checkIconSkip(name: []const u8) bool {
-        if (config.SettingManager.instance.getBool("explorer_hidden")) return true;
+        if (config.SettingManager.instance.getBool("explorer_hidden") orelse false) return true;
 
         const idx = std.mem.lastIndexOf(u8, name, "/") orelse 0;
 

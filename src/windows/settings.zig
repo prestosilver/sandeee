@@ -31,10 +31,7 @@ const files = system.files;
 const EventManager = events.EventManager;
 const window_events = events.windows;
 
-const SettingPanel = struct {
-    name: []const u8,
-    icon: u8,
-};
+const settings = data.settings;
 
 const SettingsData = struct {
     const Self = @This();
@@ -66,119 +63,6 @@ const SettingsData = struct {
 
     value: []const u8,
 
-    const Setting = struct {
-        const Kind = enum(u8) { String, Dropdown, File, Folder };
-
-        kind: Kind,
-        kinddata: []const u8 = "",
-
-        setting: []const u8,
-        key: []const u8,
-    };
-
-    // TODO: combine and move to data
-    const panels = [_]SettingPanel{
-        SettingPanel{ .name = "Graphics", .icon = 2 },
-        SettingPanel{ .name = "Sounds", .icon = 1 },
-        SettingPanel{ .name = "Files", .icon = 3 },
-        SettingPanel{ .name = "System", .icon = 0 },
-    };
-    const panes = [_][]const Setting{
-        &[_]Setting{
-            Setting{
-                .kind = .String,
-                .setting = "Wallpaper Color",
-                .key = "wallpaper_color",
-            },
-            Setting{
-                .kind = .Dropdown,
-                .kinddata = "Color Tile Center Stretch",
-                .setting = "Wallpaper Mode",
-                .key = "wallpaper_mode",
-            },
-            Setting{
-                .kind = .File,
-                .setting = "Wallpaper",
-                .key = "wallpaper_path",
-            },
-            Setting{
-                .kind = .File,
-                .setting = "System font",
-                .key = "system_font",
-            },
-            Setting{
-                .kind = .Dropdown,
-                .kinddata = "No Yes",
-                .setting = "CRT Shader",
-                .key = "crt_shader",
-            },
-        },
-        &[_]Setting{
-            Setting{
-                .kind = .String,
-                .setting = "Sound Volume",
-                .key = "sound_volume",
-            },
-            Setting{
-                .kind = .Dropdown,
-                .kinddata = "No Yes",
-                .setting = "Sound Muted",
-                .key = "sound_muted",
-            },
-            Setting{
-                .kind = .File,
-                .setting = "Login Sound",
-                .key = "login_sound_path",
-            },
-            Setting{
-                .kind = .File,
-                .setting = "Message Sound",
-                .key = "message_sound_path",
-            },
-            Setting{
-                .kind = .File,
-                .setting = "Logout Sound",
-                .key = "logout_sound_path",
-            },
-        },
-        &[_]Setting{
-            Setting{
-                .kind = .Dropdown,
-                .kinddata = "No Yes",
-                .setting = "Show Hidden Files",
-                .key = "explorer_hidden",
-            },
-            Setting{
-                .kind = .String,
-                .setting = "Web homepage",
-                .key = "web_home",
-            },
-        },
-        &[_]Setting{
-            Setting{
-                .kind = .String,
-                .setting = "Window Update Rate",
-                .key = "refresh_rate",
-            },
-            Setting{
-                .kind = .Dropdown,
-                .kinddata = "No Yes",
-                .setting = "Show Welcome",
-                .key = "show_welcome",
-            },
-            Setting{
-                .kind = .File,
-                .setting = "Startup Script",
-                .key = "startup_file",
-            },
-            Setting{
-                .kind = .String,
-                .setting = "Extr path",
-                .key = "extr_path",
-            },
-        },
-    };
-
     pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, _: *Window.Data.WindowContents.WindowProps) !void {
         if (self.last_action) |*last_action| {
             if (last_action.time <= 0) {
@@ -193,7 +77,7 @@ const SettingsData = struct {
         if (self.focused_pane) |focused| {
             var pos = Vec2{ .y = 40 };
 
-            for (panes[focused]) |item| {
+            for (settings.SETTINGS[focused].entries) |item| {
                 // draw name
                 try font.draw(.{
                     .shader = font_shader,
@@ -207,7 +91,7 @@ const SettingsData = struct {
                         switch (action.kind) {
                             .SingleLeft => {
                                 switch (item.kind) {
-                                    .String, .Dropdown => {
+                                    .string, .dropdown, .slider => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
                                         const adds = try allocator.alloc.create(Popup.Data.textpick.PopupTextPick);
                                         adds.* = .{
@@ -229,7 +113,7 @@ const SettingsData = struct {
                                         });
                                         self.last_action = null;
                                     },
-                                    .File => {
+                                    .file => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
                                         const adds = try allocator.alloc.create(Popup.Data.filepick.PopupFilePick);
                                         adds.* = .{
@@ -250,7 +134,7 @@ const SettingsData = struct {
                                         });
                                         self.last_action = null;
                                     },
-                                    .Folder => {
+                                    .folder => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
                                         const adds = try allocator.alloc.create(Popup.Data.folderpick.PopupFolderPick);
                                         adds.* = .{
@@ -301,7 +185,7 @@ const SettingsData = struct {
             var x: f32 = 0;
             var y: f32 = 40;
 
-            for (SettingsData.panels, 0..) |panel, idx| {
+            for (settings.SETTINGS, 0..) |panel, idx| {
                 const size = font.sizeText(.{ .text = panel.name });
                 const xo = (128 - size.x) / 2;
 
@@ -349,7 +233,7 @@ const SettingsData = struct {
 
         const text = try std.mem.concat(allocator.alloc, u8, &.{
             "!SET:/",
-            if (self.focused_pane) |focused| panels[focused].name else "",
+            if (self.focused_pane) |focused| settings.SETTINGS[focused].name else "",
         });
         defer allocator.alloc.free(text);
 

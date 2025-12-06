@@ -5,6 +5,7 @@ const drawers = @import("mod.zig");
 
 const util = @import("../util/mod.zig");
 const math = @import("../math/mod.zig");
+const system = @import("../system/mod.zig");
 
 const Sprite = drawers.Sprite;
 
@@ -19,6 +20,8 @@ const Font = util.Font;
 const graphics = util.graphics;
 const allocator = util.allocator;
 const SpriteBatch = util.SpriteBatch;
+
+const config = system.config;
 
 pub const WindowData = struct {
     const TOTAL_SPRITES: f32 = 9.0;
@@ -38,8 +41,9 @@ pub const WindowData = struct {
         ResizeRB,
     };
 
-    // TODO: un hardcode
-    pub const SCROLL_MUL = 30;
+    pub inline fn scroll_mul() f32 {
+        return 30 * (config.SettingManager.instance.getFloat("scroll_speed") orelse 1.0);
+    }
 
     pub const WindowContents = struct {
         const Self = @This();
@@ -136,10 +140,10 @@ pub const WindowData = struct {
         pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
             if (keycode == c.GLFW_KEY_PAGE_UP) {
                 if (self.props.scroll) |*scroll_data|
-                    scroll_data.value -= 1 * SCROLL_MUL;
+                    scroll_data.value -= 1 * scroll_mul();
             } else if (keycode == c.GLFW_KEY_PAGE_DOWN) {
                 if (self.props.scroll) |*scroll_data|
-                    scroll_data.value += 1 * SCROLL_MUL;
+                    scroll_data.value += 1 * scroll_mul();
             } else {
                 return self.vtable.key(self.ptr, keycode, mods, down);
             }
@@ -178,7 +182,7 @@ pub const WindowData = struct {
 
         pub fn scroll(self: *Self, x: f32, y: f32) !void {
             if (self.props.scroll) |*scroll_data| {
-                scroll_data.value -= y * SCROLL_MUL;
+                scroll_data.value -= y * scroll_mul();
             }
 
             return self.vtable.scroll(self.ptr, x, y);

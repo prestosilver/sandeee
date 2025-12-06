@@ -232,7 +232,7 @@ pub fn setup(self: *GSWindowed) !void {
     try events.EventManager.instance.registerListener(system_events.EventSetSetting, settingSet);
     try events.EventManager.instance.registerListener(system_events.EventDebugSet, debugSet);
 
-    if (config.SettingManager.instance.getBool("show_welcome")) {
+    if (config.SettingManager.instance.getBool("show_welcome") orelse true) {
         const window: Window = .atlas("win", .{
             .source = Rect{ .w = 1, .h = 1 },
             .pos = .{ .w = 600, .h = 350 },

@@ -408,7 +408,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
             if (a.data().* != .string) return error.StringMissing;
 
-            try self.pushStackI(a.data().string.getLen());
+            try self.pushStackI(a.data().string.len());
 
             return;
         },
@@ -416,6 +416,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (op.value == null) return error.ValueMissing;
 
             const a = try self.findStack(op.value.?);
+
             try self.pushStack(a);
         },
         .Dup => {
@@ -424,6 +425,8 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.findStack(op.value.?);
 
             if (a.data().* == .string) {
+                a.data().string.refs += 1;
+
                 try self.pushStackS(a.data().string);
                 return;
             }
@@ -443,7 +446,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
-                if (a.data().string.getLen() == 0) {
+                if (a.data().string.empty()) {
                     self.pc = @as(usize, @intCast(op.value.?));
                 }
                 return;
@@ -460,7 +463,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
-                if (a.data().string.getLen() != 0) {
+                if (!a.data().string.empty()) {
                     self.pc = @as(usize, @intCast(op.value.?));
                 }
                 return;
@@ -808,6 +811,8 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const b = try self.popStack();
             const a = try self.popStack();
 
+            log.info("{any}", .{a});
+
             if (a.data().* != .string) return error.StringMissing;
 
             if (b.data().* == .string) {
@@ -849,7 +854,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
             if (b.data().* != .string) return error.ValueMissing;
 
-            const adds = try self.allocator.alloc(u8, b.data().string.getLen());
+            const adds = try self.allocator.alloc(u8, b.data().string.len());
             defer self.allocator.free(adds);
 
             @memset(adds, 0);

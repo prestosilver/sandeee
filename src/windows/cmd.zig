@@ -112,6 +112,7 @@ pub const CMDData = struct {
                     .y = bnds.y + bnds.h - font.size - 6 + offset,
                 },
                 .color = .{ .r = 1, .g = 1, .b = 1 },
+                .wrap = bnds.w - 30,
             });
             try font.draw(.{
                 .shader = shader,

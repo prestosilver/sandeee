@@ -39,7 +39,7 @@ const system_events = events.system;
 
 const LogoutState = states.Logout;
 
-const pseudo = @import("../system/pseudo/all.zig");
+const pseudo = @import("../system/pseudo/mod.zig");
 
 const GSLoading = @This();
 

@@ -37,22 +37,29 @@ pub const SettingManager = struct {
         return self.*.settings.get(setting);
     }
 
-    pub inline fn getBool(self: *SettingManager, setting: []const u8) bool {
-        if (self.get(setting)) |val|
-            return std.ascii.eqlIgnoreCase(val, "yes")
-        else
-            return false;
-    }
-
     pub inline fn setBool(self: *SettingManager, setting: []const u8, value: bool) !void {
         return self.set(setting, if (value) "yes" else "no");
     }
 
-    pub inline fn getInt(self: *SettingManager, setting: []const u8) i64 {
+    pub inline fn getBool(self: *SettingManager, setting: []const u8) ?bool {
         if (self.get(setting)) |val|
-            return std.fmt.parseInt(i64, val, 0) catch 0
+            return std.ascii.eqlIgnoreCase(val, "yes")
         else
-            return 0;
+            return null;
+    }
+
+    pub inline fn getFloat(self: *SettingManager, setting: []const u8) ?f32 {
+        if (self.get(setting)) |val|
+            return std.fmt.parseFloat(f32, val) catch null
+        else
+            return null;
+    }
+
+    pub inline fn getInt(self: *SettingManager, setting: []const u8) ?i64 {
+        if (self.get(setting)) |val|
+            return std.fmt.parseInt(i64, val, 0) catch null
+        else
+            return null;
     }
 
     pub fn save(self: *SettingManager) !void {

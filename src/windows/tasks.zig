@@ -158,7 +158,7 @@ pub const TasksData = struct {
     }
 
     pub fn scroll(self: *Self, _: f32, y: f32) void {
-        self.scroll_value -= y * Window.Data.SCROLL_MUL;
+        self.scroll_value -= y * Window.Data.scroll_mul();
 
         if (self.scroll_value > self.scroll_maxy)
             self.scroll_value = self.scroll_maxy;
