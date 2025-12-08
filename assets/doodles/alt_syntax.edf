@@ -7,7 +7,7 @@
 -- This is a test page --
 - The test vibes are real -
 
-:example: Example code block
+:example: Example code block $
     :code:
            | ThisDoesStuff() {
            |   More stuff also indented
