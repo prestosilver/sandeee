@@ -1,5 +1,5 @@
 const std = @import("std");
-const zigimg = @import("../deps/zigimg/zigimg.zig");
+const zigimg = @import("zigimg");
 
 // struct FontChar {
 //   []const []const u1: data,
@@ -14,17 +14,21 @@ const zigimg = @import("../deps/zigimg/zigimg.zig");
 
 const SPACING = 1;
 
-pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath, output: std.Build.LazyPath) !void {
-    if (paths.len != 1) return error.BadPaths;
-    const in = paths[0];
+pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
+pub const allocator = gpa.allocator();
 
-    const path = output.getPath(b);
-    var file = try std.fs.createFileAbsolute(path, .{});
+pub fn main() !void {
+    var args = std.process.args();
+    _ = args.next();
+    const input_file = args.next() orelse return error.MissingInputFile;
+    const output_file = args.next() orelse return error.MissingOutputFile;
+
+    var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
     const writer = file.writer();
 
-    var image = try zigimg.Image.fromFilePath(b.allocator, in.getPath3(b, null).sub_path);
+    var image = try zigimg.Image.fromFilePath(allocator, input_file);
     defer image.deinit();
 
     try writer.writeAll("efnt");
@@ -40,8 +44,8 @@ pub fn convert(b: *std.Build, paths: []const std.Build.LazyPath, output: std.Bui
 
     for (0..16) |x| {
         for (0..16) |y| {
-            var ch = try b.allocator.alloc(u8, chw * chh);
-            defer b.allocator.free(ch);
+            var ch = try allocator.alloc(u8, chw * chh);
+            defer allocator.free(ch);
             @memset(ch, 0);
 
             for (0..chw) |chx| {

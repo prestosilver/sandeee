@@ -18,22 +18,22 @@ const FormatSection = struct {
     bits: u16,
 };
 
-// Converts a wav file to a era file
-pub fn convert(
-    b: *std.Build,
-    paths: []const std.Build.LazyPath,
-    output: std.Build.LazyPath,
-) !void {
-    if (paths.len != 1) return error.BadPaths;
-    const in = paths[0];
+pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
+pub const allocator = gpa.allocator();
 
-    const path = output.getPath(b);
-    var file = try std.fs.createFileAbsolute(path, .{});
+// Converts a wav file to a era file
+pub fn main() !void {
+    var args = std.process.args();
+    _ = args.next();
+    const input_file = args.next() orelse return error.MissingInputFile;
+    const output_file = args.next() orelse return error.MissingOutputFile;
+
+    var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
     const writer = file.writer();
 
-    var inreader = try std.fs.openFileAbsolute(in.getPath(b), .{});
+    var inreader = try std.fs.openFileAbsolute(input_file, .{});
     defer inreader.close();
 
     var reader_stream = inreader.reader();
@@ -48,15 +48,15 @@ pub fn convert(
         if (try reader_stream.read(&name) != 4) break;
 
         const size = try reader_stream.readInt(u32, .little);
-        const section = try b.allocator.alloc(u8, size);
-        defer b.allocator.free(section);
+        const section = try allocator.alloc(u8, size);
+        defer allocator.free(section);
         try reader_stream.readNoEof(section);
 
         if (std.mem.eql(u8, &name, "fmt ")) {
             format = @as(*align(1) FormatSection, @ptrCast(&section[0])).*;
         } else if (std.mem.eql(u8, &name, "data")) {
-            const tmp_out = try b.allocator.alloc(u8, section.len / format.channels / (format.bits / 8));
-            defer b.allocator.free(tmp_out);
+            const tmp_out = try allocator.alloc(u8, section.len / format.channels / (format.bits / 8));
+            defer allocator.free(tmp_out);
 
             for (0.., tmp_out) |idx, *sample| {
                 var in_sample: f32 = 0;

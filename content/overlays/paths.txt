@@ -17,5 +17,6 @@ debug /prof/tests/
 debug /prof/tests/asm
 debug /prof/tests/eon
 debug /prof/tests/rand
+debug /prof/tests/src
 debug /prof/tests/src/asm
 debug /prof/tests/src/eon

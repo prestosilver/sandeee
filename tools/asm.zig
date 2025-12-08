@@ -1,20 +1,29 @@
 const std = @import("std");
-const Vm = @import("../src/system/vm.zig");
+const Vm = @import("sandeee").system.Vm;
 
-pub fn compile(
-    b: *std.Build,
-    paths: []const std.Build.LazyPath,
-    output: std.Build.LazyPath,
-) anyerror!void {
-    if (paths.len != 1) return error.BadPaths;
-    const in = paths[0];
+pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
+pub const allocator = gpa.allocator();
 
-    var inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
+pub fn main() !void {
+    var args = std.process.args();
+    _ = args.next();
+    const mode = args.next() orelse return error.MissingMode;
+    const input_file = args.next() orelse return error.MissingInputFile;
+    const output_file = args.next() orelse return error.MissingOutputFile;
+
+    if (std.mem.eql(u8, mode, "exe")) {
+        try compile_executable(input_file, output_file);
+    } else if (std.mem.eql(u8, mode, "lib")) {
+        try compile_library(input_file, output_file);
+    } else return error.BadBuildMode;
+}
+
+pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void {
+    var inreader = try std.fs.openFileAbsolute(input_file, .{});
     defer inreader.close();
     try inreader.sync();
 
-    const path = output.getPath(b);
-    var file = try std.fs.createFileAbsolute(path, .{});
+    var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
     const writer = file.writer();
@@ -22,7 +31,7 @@ pub fn compile(
     var buf_reader = std.io.bufferedReader(inreader.reader());
     var reader_stream = buf_reader.reader();
 
-    var consts = std.StringHashMap(u64).init(b.allocator);
+    var consts = std.StringHashMap(u64).init(allocator);
     var idx: u64 = 0;
 
     var buf: [1024]u8 = undefined;
@@ -37,7 +46,7 @@ pub fn compile(
             continue;
         }
         if (l[l.len - 1] == ':') {
-            const key = try std.fmt.allocPrint(b.allocator, "{s}", .{l[0 .. l.len - 1]});
+            const key = try std.fmt.allocPrint(allocator, "{s}", .{l[0 .. l.len - 1]});
 
             try consts.put(key, idx);
         } else {
@@ -46,7 +55,7 @@ pub fn compile(
     }
 
     inreader.close();
-    inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
+    inreader = try std.fs.openFileAbsolute(input_file, .{});
     try inreader.sync();
 
     buf_reader = std.io.bufferedReader(inreader.reader());
@@ -127,7 +136,7 @@ pub fn compile(
                         try writer.writeAll("\x02");
                         try writer.writeAll("\x00");
                     } else {
-                        const target_tmp = try std.zig.string_literal.parseAlloc(b.allocator, target);
+                        const target_tmp = try std.zig.string_literal.parseAlloc(allocator, target);
 
                         try writer.writeAll("\x02");
                         try writer.writeAll(target_tmp);
@@ -162,32 +171,24 @@ pub fn compile(
     }
 }
 
-pub fn compileLib(
-    b: *std.Build,
-    paths: []const std.Build.LazyPath,
-    output: std.Build.LazyPath,
-) !void {
-    if (paths.len != 1) return error.BadPaths;
-    const in = paths[0];
-
-    var inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
+pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
+    var inreader = try std.fs.openFileAbsolute(input_file, .{});
     defer inreader.close();
     try inreader.sync();
 
-    const path = output.getPath(b);
-    var file = try std.fs.createFileAbsolute(path, .{});
+    var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
     const writer = file.writer();
 
-    var toc = std.ArrayList(u8).init(b.allocator);
-    var data = std.ArrayList(u8).init(b.allocator);
-    var funcs = std.ArrayList([]const u8).init(b.allocator);
+    var toc = std.ArrayList(u8).init(allocator);
+    var data = std.ArrayList(u8).init(allocator);
+    var funcs = std.ArrayList([]const u8).init(allocator);
 
     var buf_reader = std.io.bufferedReader(inreader.reader());
     var reader_stream = buf_reader.reader();
 
-    var consts = std.StringHashMap(u64).init(b.allocator);
+    var consts = std.StringHashMap(u64).init(allocator);
     var idx: u64 = 0;
     var toc_count: u8 = 0;
 
@@ -206,11 +207,11 @@ pub fn compileLib(
             if (l[0] == '_') {
                 idx = 0;
                 toc_count += 1;
-                const key = try std.fmt.allocPrint(b.allocator, "{s}", .{l[1 .. l.len - 1]});
+                const key = try std.fmt.allocPrint(allocator, "{s}", .{l[1 .. l.len - 1]});
                 try funcs.append(key);
             }
 
-            const key = try std.fmt.allocPrint(b.allocator, "{s}", .{l[0 .. l.len - 1]});
+            const key = try std.fmt.allocPrint(allocator, "{s}", .{l[0 .. l.len - 1]});
 
             try consts.put(key, idx);
         } else {
@@ -221,7 +222,7 @@ pub fn compileLib(
     try toc.append(@as(u8, @intCast(toc_count)));
 
     inreader.close();
-    inreader = try std.fs.cwd().openFile(in.getPath3(b, null).sub_path, .{});
+    inreader = try std.fs.openFileAbsolute(input_file, .{});
     try inreader.sync();
 
     buf_reader = std.io.bufferedReader(inreader.reader());
@@ -312,7 +313,7 @@ pub fn compileLib(
                 while (target[0] == ' ') target = target[1..];
                 while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
                 if (target[0] == '"' and target[target.len - 1] == '"') {
-                    const target_tmp = try std.zig.string_literal.parseAlloc(b.allocator, target);
+                    const target_tmp = try std.zig.string_literal.parseAlloc(allocator, target);
 
                     try data.appendSlice("\x02");
                     try data.appendSlice(target_tmp);

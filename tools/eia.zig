@@ -1,22 +1,22 @@
 const std = @import("std");
-const zigimg = @import("../deps/zigimg/zigimg.zig");
+const zigimg = @import("zigimg");
 
-// converts a png to a ebi
-pub fn convert(
-    b: *std.Build,
-    paths: []const std.Build.LazyPath,
-    output: std.Build.LazyPath,
-) !void {
-    if (paths.len != 1) return error.BadPaths;
-    const in = paths[0];
+pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
+pub const allocator = gpa.allocator();
 
-    const path = output.getPath(b);
-    var file = try std.fs.createFileAbsolute(path, .{});
+// converts a png to a eia
+pub fn main() !void {
+    var args = std.process.args();
+    _ = args.next();
+    const input_file = args.next() orelse return error.MissingInputFile;
+    const output_file = args.next() orelse return error.MissingOutputFile;
+
+    var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
     const writer = file.writer();
 
-    var image = try zigimg.Image.fromFilePath(b.allocator, in.getPath(b));
+    var image = try zigimg.Image.fromFilePath(allocator, input_file);
     defer image.deinit();
 
     try writer.writeAll("eimg");

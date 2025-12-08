@@ -4,14 +4,14 @@ const builtin = @import("builtin");
 const options = @import("options");
 const steam = @import("steam");
 
-const drawers = @import("drawers/mod.zig");
-const loaders = @import("loaders/mod.zig");
-const system = @import("system/mod.zig");
-const events = @import("events/mod.zig");
-const states = @import("states/mod.zig");
-const math = @import("math/mod.zig");
-const util = @import("util/mod.zig");
-const data = @import("data/mod.zig");
+pub const drawers = @import("drawers/mod.zig");
+pub const loaders = @import("loaders/mod.zig");
+pub const system = @import("system/mod.zig");
+pub const events = @import("events/mod.zig");
+pub const states = @import("states/mod.zig");
+pub const math = @import("math/mod.zig");
+pub const util = @import("util/mod.zig");
+pub const data = @import("data/mod.zig");
 
 // not-op programming lang
 const c = @import("c.zig");

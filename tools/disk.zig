@@ -1,71 +1,51 @@
 const std = @import("std");
-const files = @import("../src/system/files.zig");
+const files = @import("sandeee").system.files;
 
-pub const DiskStep = struct {
-    step: std.Build.Step,
-    output: []const u8,
-    input: []const u8,
-    alloc: std.mem.Allocator,
+pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
+pub const allocator = gpa.allocator();
 
-    pub fn create(b: *std.Build, input: []const u8, output: []const u8) !*DiskStep {
-        const self = try b.allocator.create(DiskStep);
-        self.* = .{
-            .step = std.Build.Step.init(.{
-                .id = .run,
-                .name = try std.fmt.allocPrint(b.allocator, "BuildDisk {s} -> {s}", .{ input, output }),
-                .makeFn = DiskStep.doStep,
-                .owner = b,
-            }),
-            .input = input,
-            .output = output,
-            .alloc = b.allocator,
-        };
-        return self;
+var content: [100_000_000]u8 = undefined;
+
+pub fn main() !void {
+    var args = std.process.args();
+    _ = args.next();
+    const output_file = args.next() orelse return error.MissingOutputFile;
+
+    const files_root = try allocator.create(files.Folder);
+
+    files_root.* = .{
+        .parent = null,
+        .name = files.ROOT_NAME,
+    };
+
+    files.named_paths.set(.root, files_root);
+
+    var count: usize = 0;
+    while (args.next()) |kind| {
+        if (std.mem.eql(u8, kind, "--dir")) {
+            const folder_path = args.next() orelse return error.MissingDirectory;
+            files_root.newFolder(folder_path) catch |err| switch (err) {
+                error.FolderExists => {},
+                else => |e| return e,
+            };
+        } else if (std.mem.eql(u8, kind, "--file")) {
+            const input_path = args.next() orelse return error.MissingFile;
+            const disk_path = args.next() orelse return error.MissingPath;
+
+            try files_root.newFile(disk_path);
+
+            const file = try std.fs.openFileAbsolute(input_path, .{});
+            defer file.close();
+
+            const content_len = try file.readAll(&content);
+
+            try files_root.writeFile(disk_path, content[0..content_len], null);
+            count += 1;
+        } else return error.UnknownArg;
     }
 
-    fn doStep(step: *std.Build.Step, _: std.Build.Step.MakeOptions) anyerror!void {
-        const self: *DiskStep = @fieldParentPtr("step", step);
-
-        var root = try std.fs.cwd().openDir(self.input, .{ .access_sub_paths = true, .iterate = true });
-        var walker = try root.walk(self.alloc);
-        const files_root = try self.alloc.create(files.Folder);
-
-        files_root.* = .{
-            .parent = null,
-            .name = files.ROOT_NAME,
-        };
-
-        files.named_paths.set(.root, files_root);
-
-        var count: usize = 0;
-
-        while (try walker.next()) |file| {
-            switch (file.kind) {
-                .directory => {
-                    try files_root.newFolder(file.path);
-                },
-                else => {},
-            }
-        }
-
-        walker = try root.walk(self.alloc);
-
-        while (try walker.next()) |file| {
-            switch (file.kind) {
-                .file => {
-                    try files_root.newFile(file.path);
-                    const contents = try root.readFileAlloc(self.alloc, file.path, 100000000);
-
-                    try files_root.writeFile(file.path, contents, null);
-                    count += 1;
-                },
-                else => {},
-            }
-        }
-
-        try std.fs.cwd().writeFile(.{
-            .sub_path = self.output,
-            .data = (try files.toStr()).items,
-        });
-    }
-};
+    try std.fs.cwd().writeFile(.{
+        .sub_path = output_file,
+        .data = (try files.toStr()).items,
+    });
+}
