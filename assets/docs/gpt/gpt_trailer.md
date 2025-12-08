@@ -13,8 +13,8 @@
 | Nov 22–23, 2025      | 🪟 **Windows Fix & QA**              | Finalize threading fix; confirm safe mode toggles properly and works cross-platform              | 🟩 |
 | Nov 29–30, 2025      | 🧠 **Core VM Polish**                | Audit stack ops, lazy ropes, and copy/dupe semantics; start improving debug symbol infrastructure| 🟩 |
 | Dec 6–7, 2025        | 🧱 **Graphics / PBO Integration**    | Implement `/gfx/pixel` PBO system and `/fake/tex/stride`; prepare for frame streaming tests      | 🟨 |
-| Dec 13–14, 2025      | 🎧 **Video file format**             | Implement the video file format for files                                                        | ⬜ |
-| Dec 20–21, 2025      | 🎨 **Art Sprint #1**                 | Work on hero background, logo polish, and capsule mockups                                        | ⬜ |
+| Dec 13–14, 2025      | 🎨 **Art Sprint #1**                 | Work on hero background, logo polish, and capsule mockups                                        | ⬜ |
+| Dec 20–21, 2025      | 🎧 **Video file format**             | Implement the video file format for files                                                        | ⬜ |
 | Dec 27–28, 2025      | 🧰 **Store Page Setup**              | Draft Steam page description, upload assets, tag features, and request early visibility          | ⬜ |
 | Jan 3–4, 2026        | 🎬 **Trailer Prep / Script**         | Write and lock script for the 3 Preston meeting video, finalize shot list and pacing             | ⬜ |
 | Jan 10–11, 2026      | 🎙️ **Voice Recording**               | Record all Preston voices and clipped audio for trailer                                          | ⬜ |
@@ -37,14 +37,14 @@
 ---
 
 ### ✅ Summary of Priorities
-- Fix Windows threading crash (safe mode debugging included)
-- Build `/fake/gfx/pixel` + `/fake/gfx/stride` systems
-- Create Teams-style in-game app for trailer
-- Record voice and screen in OBS with no post-processing
-- Produce and upload store visuals early to reduce crunch
-- Lock Steam store page by **December 2025**
-- Finalize demo and trailer by **March 2026**
-- Target **Steam Next Fest June 2026**
+- [X] Fix Windows threading crash (safe mode debugging included)
+- [ ] Build `/fake/gfx/pixel` + `/fake/gfx/stride` systems
+- [ ] Create Teams-style in-game app for trailer
+- [ ] Record voice and screen in OBS with no post-processing
+- [ ] Produce and upload store visuals early to reduce crunch
+- [ ] Lock Steam store page by **December 2025**
+- [ ] Finalize demo and trailer by **March 2026**
+- [ ] Target **Steam Next Fest June 2026**
 
 ---
 
@@ -54,8 +54,9 @@
 - [X] Debug Windows threading crash (via Safe Mode)
 - [X] Confirm GC & allocator stability under multithread
 - [X] Implement ropes
-- [ ] Integrate `/fake/gfx/pixel` PBO and `/fake/gfx/stride`
-- [ ] Finalize audio queue system
+- [X] Implement `/fake/gfx/stride`
+- [ ] Integrate `/fake/gfx/` PBO
+- [ ] Write audio queue system
 
 ### 🖼️ Art & Store
 - [ ] Write final Steam description (with lore + tagline)
