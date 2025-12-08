@@ -29,3 +29,4 @@ SandEEE assumes a world where text is the fundamental data layer, not a byproduc
 - [Lore sheet & reference](assets/docs/lore.md)
 - [Trailer plans (GPT Generated)](assets/docs/gpt/gpt_trailer.md)
 - [Rolling Bug List](assets/docs/bugs.md)
+- [Important asset listing](assets/docs/asset_listing.md)
