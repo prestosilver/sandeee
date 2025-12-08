@@ -31,3 +31,4 @@ SandEEE assumes a world where text is the fundamental data layer, not a byproduc
 - [Rolling Bug List](assets/docs/bugs.md)
 - [Various **low pri** optimization ideas](assets/docs/opt_ideas.md)
 - [Important asset listing](assets/docs/asset_listing.md)
+- [Content asset listing](assets/docs/content_index.md)
