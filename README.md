@@ -2,7 +2,7 @@
 
 ## What is sandeee
 
-SandEEE is a game! 😮
+SandEEE is a game! :open_mouth:
 
 Actually though, sandeee is a programming game ment to be as emersive as possible. Pulling no punches when it comes to design and planning.
 

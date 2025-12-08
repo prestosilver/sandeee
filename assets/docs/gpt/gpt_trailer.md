@@ -6,28 +6,28 @@
 ## 🗓️ Timeline Overview
 
 
-| Weekend Range        | Focus Area                           | Key Tasks                                                                                        | Status |
-|----------------------|--------------------------------------|--------------------------------------------------------------------------------------------------|:------:|
-| Nov 8–9, 2025        | 🧩 **Debugging / Threading**         | Begin reproducing Windows threading crash; log allocator and GC edge cases                       | 🟩 |
-| Nov 15–16, 2025      | ⚙️ **Threading / Safe Mode**         | Integrate safe mode into threading logic for debugging; verify stability with sample workloads   | 🟩 |
-| Nov 22–23, 2025      | 🪟 **Windows Fix & QA**              | Finalize threading fix; confirm safe mode toggles properly and works cross-platform              | 🟩 |
-| Nov 29–30, 2025      | 🧠 **Core VM Polish**                | Audit stack ops, lazy ropes, and copy/dupe semantics; start improving debug symbol infrastructure| 🟩 |
-| Dec 6–7, 2025        | 🧱 **Graphics / PBO Integration**    | Implement `/gfx/pixel` PBO system and `/fake/tex/stride`; prepare for frame streaming tests      | 🟨 |
-| Dec 13–14, 2025      | 🎨 **Art Sprint #1**                 | Work on hero background, logo polish, and capsule mockups                                        | ⬜ |
-| Dec 20–21, 2025      | 🎧 **Video file format**             | Implement the video file format for files                                                        | ⬜ |
-| Dec 27–28, 2025      | 🧰 **Store Page Setup**              | Draft Steam page description, upload assets, tag features, and request early visibility          | ⬜ |
-| Jan 3–4, 2026        | 🎬 **Trailer Prep / Script**         | Write and lock script for the 3 Preston meeting video, finalize shot list and pacing             | ⬜ |
-| Jan 10–11, 2026      | 🎙️ **Voice Recording**               | Record all Preston voices and clipped audio for trailer                                          | ⬜ |
-| Jan 17–18, 2026      | 🎥 **In-Game Capture Setup**         | Build Teams-style app in SandEEE; stage meeting window and camera layout                         | ⬜ |
-| Jan 24–25, 2026      | 🎞️ **Trailer Filming (OBS)**         | Record final trailer sequence in-game, capture audio playback                                    | ⬜ |
-| Jan 31–Feb 1, 2026   | 🖼️ **Art Sprint #2**                 | Produce additional Steam artwork and thumbnails                                                  | ⬜ |
-| Feb 7–8, 2026        | 🧪 **Demo QA (Safe Mode)**           | Test single-thread mode performance and tune load lag handling                                   | ⬜ |
-| Feb 14–15, 2026      | 🔧 **Linux Validation**              | Verify compatibility with Linux build, fix path case issues and timing bugs                      | ⬜ |
-| Feb 21–22, 2026      | 🧾 **Behind-the-Scenes Writeup**     | Write behind-the-scenes article explaining VM internals and fake file system                     | ⬜ |
-| Feb 28–Mar 1, 2026   | 📣 **Community Seeding**             | Share teaser clips, post updates on Discords and socials, open tester signups                    | ⬜ |
-| Mar 7–8, 2026        | 🚀 **Demo Finalization**             | Lock demo build, finalize store materials, verify Steam upload and playtest                      | ⬜ |
-| Mar 14–15, 2026      | 🔶 **Milestone: Steam Approval**     | Submit final demo for Steam Next Fest listing and confirmation                                   | ⬜ |
-| Apr–May 2026         | 🧭 **Ongoing Promo & QA**            | Continue marketing, patching, and community engagement until Next Fest launch                    | ⬜ |
+| Weekend Range        | Focus Area                        | Key Tasks                                                                                        | Status |
+|----------------------|-----------------------------------|--------------------------------------------------------------------------------------------------|:------:|
+| Nov 8–9, 2025        | **Debugging / Threading**         | Begin reproducing Windows threading crash; log allocator and GC edge cases                       | 🟩
+| Nov 15–16, 2025      | **Threading / Safe Mode**         | Integrate safe mode into threading logic for debugging; verify stability with sample workloads   | 🟩
+| Nov 22–23, 2025      | **Windows Fix & QA**              | Finalize threading fix; confirm safe mode toggles properly and works cross-platform              | 🟩
+| Nov 29–30, 2025      | **Core VM Polish**                | Audit stack ops, lazy ropes, and copy/dupe semantics; start improving debug symbol infrastructure| 🟩
+| Dec 6–7, 2025        | **Graphics / PBO Integration**    | Implement `/gfx/pixel` PBO system and `/fake/tex/stride`; prepare for frame streaming tests      | 🟨
+| Dec 13–14, 2025      | **Art Sprint #1**                 | Work on hero background, logo polish, and capsule mockups                                        | ⬜
+| Dec 20–21, 2025      | **Video file format**             | Implement the video file format for files                                                        | ⬜
+| Dec 27–28, 2025      | **Store Page Setup**              | Draft Steam page description, upload assets, tag features, and request early visibility          | ⬜
+| Jan 3–4, 2026        | **Trailer Prep / Script**         | Write and lock script for the 3 Preston meeting video, finalize shot list and pacing             | ⬜
+| Jan 10–11, 2026      | **Voice Recording**               | Record all Preston voices and clipped audio for trailer                                          | ⬜
+| Jan 17–18, 2026      | **In-Game Capture Setup**         | Build Teams-style app in SandEEE; stage meeting window and camera layout                         | ⬜
+| Jan 24–25, 2026      | **Trailer Filming (OBS)**         | Record final trailer sequence in-game, capture audio playback                                    | ⬜
+| Jan 31–Feb 1, 2026   | **Art Sprint #2**                 | Produce additional Steam artwork and thumbnails                                                  | ⬜
+| Feb 7–8, 2026        | **Demo QA (Safe Mode)**           | Test single-thread mode performance and tune load lag handling                                   | ⬜
+| Feb 14–15, 2026      | **Linux Validation**              | Verify compatibility with Linux build, fix path case issues and timing bugs                      | ⬜
+| Feb 21–22, 2026      | **Behind-the-Scenes Writeup**     | Write behind-the-scenes article explaining VM internals and fake file system                     | ⬜
+| Feb 28–Mar 1, 2026   | **Community Seeding**             | Share teaser clips, post updates on Discords and socials, open tester signups                    | ⬜
+| Mar 7–8, 2026        | **Demo Finalization**             | Lock demo build, finalize store materials, verify Steam upload and playtest                      | ⬜
+| Mar 14–15, 2026      | **Milestone: Steam Approval**     | Submit final demo for Steam Next Fest listing and confirmation                                   | ⬜
+| Apr–May 2026         | **Ongoing Promo & QA**            | Continue marketing, patching, and community engagement until Next Fest launch                    | ⬜
 
 ### Key
 - 🟩: Done

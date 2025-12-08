@@ -5,7 +5,7 @@
 
 ---
 
-## 🧭 Lore Timeline: The Rise, Fall, and Leak of SandEEE
+## :clock12: Lore Timeline: The Rise, Fall, and Leak of SandEEE
 
 ### **Pre-SandEEE (1990 – 2004): Foundations**
 - **EEE (Edenic Engineering Enterprise)** is founded with a mission to *make computing universally accessible* — not profitable.  
