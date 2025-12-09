@@ -424,8 +424,6 @@ pub fn build(b: *std.Build) !void {
     }
     exe.linkLibC();
 
-    exe_mod.addLibraryPath(b.path("zig-out/bin/lib/"));
-
     b.installArtifact(exe);
 
     // const image_path = content_path.path(b, "images");
@@ -527,7 +525,6 @@ pub fn build(b: *std.Build) !void {
     }
 
     if (target.result.os.tag == .windows) {
-        _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
         b.installFile("deps/dll/libglfw3.dll", "bin/glfw3.dll");
         b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
         b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
@@ -537,7 +534,6 @@ pub fn build(b: *std.Build) !void {
         if (steam_mode == .On)
             b.installFile("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll", "bin/steam_api64.dll");
     } else if (target.result.os.tag == .linux) {
-        _ = b.run(&[_][]const u8{ "mkdir", "-p", "zig-out/bin/lib/" });
         b.installFile("runSandEEE", "bin/runSandEEE");
         // b.installFile("deps/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
         // b.installFile("deps/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
@@ -718,8 +714,6 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
 
-        exe_mod_pub_linux.addLibraryPath(b.path("zig-out/bin/lib/"));
-
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_linux,
@@ -758,8 +752,6 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
-
-        exe_mod_pub_windows.addLibraryPath(b.path("zig-out/bin/lib/"));
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE",
@@ -862,8 +854,6 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
 
-        exe_mod_pub_linux.addLibraryPath(b.path("zig-out/bin/lib/"));
-
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_linux,
@@ -898,8 +888,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
-
-        exe_mod_pub_windows.addLibraryPath(b.path("zig-out/bin/lib/"));
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE",
@@ -971,5 +959,5 @@ pub fn build(b: *std.Build) !void {
 
     upload_itch_step.dependOn(&butler_windows_step.step);
     upload_itch_step.dependOn(&butler_linux_step.step);
-    upload_step.dependOn(upload_steam_step);
+    upload_step.dependOn(upload_itch_step);
 }
