@@ -116,7 +116,7 @@ pub const WelcomeData = struct {
             });
         }
 
-        const version_text = try std.fmt.allocPrint(allocator.alloc, "(" ++ options.VersionText ++ ")", .{options.SandEEEVersion});
+        const version_text = try std.fmt.allocPrint(allocator.alloc, "(" ++ strings.SANDEEE_VERSION_TEXT ++ ")", .{});
         defer allocator.alloc.free(version_text);
 
         try font.draw(.{

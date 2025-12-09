@@ -1,10 +1,10 @@
 const std = @import("std");
+const Version = @import("src/data/version.zig");
 
-var version: std.SemanticVersion = .{
-    .major = 0,
-    .minor = 5,
-    .patch = 0,
-    .build = null,
+var version: Version = .{
+    .program = "os",
+    .phase = .seed,
+    .index = 9,
 };
 
 pub inline fn addOverlay(
@@ -89,7 +89,7 @@ pub fn build(b: *std.Build) !void {
 
     const version_file = version_create_write.add("VERSION", b.fmt("{}", .{version}));
 
-    version.build = b.fmt("{s}-{X:0>4}", .{ version_suffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
+    version.meta = b.fmt("{s}_{X:0>4}", .{ version_suffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
 
     const iversion_file = version_create_write.add("IVERSION", b.fmt("{}", .{version}));
 
@@ -120,7 +120,7 @@ pub fn build(b: *std.Build) !void {
 
     const www_path: std.Build.InstallDir = .{ .custom = "../www" };
 
-    options.addOption(std.SemanticVersion, "SandEEEVersion", version);
+    options.addOption(Version, "SandEEEVersion", version);
     options.addOption([]const u8, "VersionText", version_text);
     options.addOption(bool, "IsDemo", is_demo);
     options.addOption(bool, "IsSteam", steam_mode != .Off);
@@ -560,6 +560,10 @@ pub fn build(b: *std.Build) !void {
     const changelog_step = b.addRunArtifact(changelog_builder_exe);
     changelog_step.addFileInput(b.path("VERSION"));
     changelog_step.addFileArg(b.path("VERSION"));
+
+    changelog_step.addFileInput(content_path.path(b, "data/os_versions.csv"));
+    changelog_step.addFileArg(content_path.path(b, "data/os_versions.csv"));
+
     const changelog_file_path = changelog_step.addOutputFileArg("changelog.edf");
     const install_changelog = b.addInstallFileWithDir(changelog_file_path, www_path, "changelog.edf");
     www_misc_step.dependOn(&install_changelog.step);
@@ -693,7 +697,7 @@ pub fn build(b: *std.Build) !void {
         pub_step.dependOn(&install_recovery_step.step);
 
         const public_options = b.addOptions();
-        public_options.addOption(std.SemanticVersion, "SandEEEVersion", version);
+        public_options.addOption(Version, "SandEEEVersion", version);
         public_options.addOption([]const u8, "VersionText", version_text);
         public_options.addOption(bool, "IsDemo", false);
         public_options.addOption(bool, "IsSteam", true);
@@ -838,7 +842,7 @@ pub fn build(b: *std.Build) !void {
         pub_step.dependOn(&install_recovery_windows_step.step);
 
         const public_options = b.addOptions();
-        public_options.addOption(std.SemanticVersion, "SandEEEVersion", version);
+        public_options.addOption(Version, "SandEEEVersion", version);
         public_options.addOption([]const u8, "VersionText", version_text);
         public_options.addOption(bool, "IsDemo", false);
         public_options.addOption(bool, "IsSteam", false);

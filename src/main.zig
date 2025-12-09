@@ -675,7 +675,7 @@ pub fn runGame() anyerror!void {
     log.log_file = try std.fs.cwd().createFile("SandEEE.log", .{});
     defer log.log_file.?.close();
 
-    log.log.info("Sandeee " ++ options.VersionText, .{options.SandEEEVersion});
+    log.log.info("Sandeee " ++ strings.SANDEEE_VERSION_TEXT, .{});
 
     // init graphics
     var graphics_loader = try Loader.init(Loader.Graphics{});

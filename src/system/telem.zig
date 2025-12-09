@@ -35,21 +35,18 @@ pub const Telem = packed struct {
     random_id: u64,
 
     version: packed struct {
-        major: u16,
-        minor: u8,
-        patch: u8,
+        major: u2,
+        index: u30,
     } = .{
-        .major = options.SandEEEVersion.major,
-        .minor = options.SandEEEVersion.minor,
-        .patch = options.SandEEEVersion.patch,
+        .major = @intFromEnum(options.SandEEEVersion.phase),
+        .index = options.SandEEEVersion.index,
     },
 
     pub fn checkVersion() void {
         if (@import("builtin").is_test) return;
 
-        if (instance.version.major != options.SandEEEVersion.major or
-            instance.version.minor != options.SandEEEVersion.minor or
-            instance.version.patch != options.SandEEEVersion.patch)
+        if (instance.version.major != @intFromEnum(options.SandEEEVersion.phase) or
+            instance.version.index != options.SandEEEVersion.index)
         {
             const update_window: Window = .atlas("win", .{
                 .source = .{ .w = 1, .h = 1 },

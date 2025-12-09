@@ -1,6 +1,10 @@
 const std = @import("std");
+const options = @import("options");
 
 const util = @import("../util/mod.zig");
+const data = @import("mod.zig");
+
+const Version = data.Version;
 
 const allocator = util.allocator;
 
@@ -17,6 +21,14 @@ pub const NOTEQUAL = "\x84";
 pub const META = "\x85";
 pub const FRAME = "\x86";
 pub const DOWN = "\x87";
+
+const SANDEEE_VERSION = Version{
+    .program = options.SandEEEVersion.program,
+    .phase = @enumFromInt(@intFromEnum(options.SandEEEVersion.phase)),
+    .index = options.SandEEEVersion.index,
+    .meta = options.SandEEEVersion.meta,
+};
+pub const SANDEEE_VERSION_TEXT = std.fmt.comptimePrint("{}", .{SANDEEE_VERSION});
 
 pub fn BLOCK(comptime id: u8) []const u8 {
     if (id > 7) @compileError("Bad Block char");

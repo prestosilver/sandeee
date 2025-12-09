@@ -31,7 +31,7 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
-const VERSION = "health:seed#1_0";
+const VERSION = "seed#1_0";
 
 const GSRecovery = @This();
 

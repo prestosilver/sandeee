@@ -21,11 +21,21 @@ const LOG_FOOTER: []const u8 =
 pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
 pub const allocator = gpa.allocator();
 
+pub var version_table: std.StringHashMap([]const u8) = .init(allocator);
+
 pub fn main() !void {
     var args = try std.process.argsWithAllocator(allocator);
     _ = args.next();
     const version_path = args.next() orelse return error.MissingVersionFile;
+    const version_convert_path = args.next() orelse return error.MissingConvFile;
     const output_file = args.next() orelse return error.MissingOutputFile;
+
+    const version_convert_file = try std.fs.openFileAbsolute(version_convert_path, .{});
+    var reader = version_convert_file.reader();
+    while (try reader.readUntilDelimiterOrEofAlloc(allocator, '\n', 1024)) |line| {
+        const comma_idx = std.mem.indexOf(u8, line, ",") orelse continue;
+        try version_table.put(line[0..comma_idx], line[comma_idx + 1 ..]);
+    }
 
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
@@ -75,7 +85,10 @@ pub fn main() !void {
         const git_term = try git_proc.wait();
         if (git_term.Exited != 0) continue;
 
-        const ver = git_stdout_buffer.items;
+        const ver = if (version_table.get(git_stdout_buffer.items)) |ver|
+            ver
+        else
+            git_stdout_buffer.items;
 
         const idx = std.mem.indexOf(u8, ver, "+") orelse ver.len;
         const version = std.mem.trim(u8, ver[0..idx], "\n");

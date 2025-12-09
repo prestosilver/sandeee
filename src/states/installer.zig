@@ -32,7 +32,7 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
-const VERSION = "0.3.0";
+const VERSION = "seed#3_1";
 const INSTALL_TIME = if (builtin.mode == .Debug) 0.0 else 1.5;
 
 const GSInstaller = @This();

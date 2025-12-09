@@ -620,6 +620,7 @@ os:tree#0_30545   -> Initial stable release
 |Explorer|web|
 |BootEEE|boot|
 |RecoverEEE|health|
+|EEEInstaller|install|
 
 ## Final Notes
 

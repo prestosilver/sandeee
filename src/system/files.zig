@@ -446,9 +446,8 @@ pub const Folder = struct {
         try telem.Telem.load();
 
         telem.Telem.instance.version = .{
-            .major = options.SandEEEVersion.major,
-            .minor = options.SandEEEVersion.minor,
-            .patch = options.SandEEEVersion.patch,
+            .major = @intFromEnum(options.SandEEEVersion.phase),
+            .index = options.SandEEEVersion.index,
         };
 
         telem.Telem.save() catch |err|
