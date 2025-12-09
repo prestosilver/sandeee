@@ -512,14 +512,17 @@ pub fn build(b: *std.Build) !void {
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
-    run_cmd.addArgs(&[_][]const u8{ "--cwd", b.install_path });
+    run_cmd.addArgs(&[_][]const u8{"--cwd"});
+    run_cmd.addFileArg(b.path("zig-out/bin/"));
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
 
     const headless_cmd = b.addRunArtifact(exe);
     headless_cmd.step.dependOn(b.getInstallStep());
-    headless_cmd.addArgs(&[_][]const u8{ "--cwd", b.install_path, "--headless" });
+    headless_cmd.addArgs(&[_][]const u8{"--cwd"});
+    headless_cmd.addFileArg(b.path("zig-out/bin/"));
+    headless_cmd.addArg("--headless");
     if (b.args) |args| {
         headless_cmd.addArgs(args);
     }
