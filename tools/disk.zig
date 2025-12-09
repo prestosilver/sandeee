@@ -7,7 +7,7 @@ pub const allocator = gpa.allocator();
 var content: [100_000_000]u8 = undefined;
 
 pub fn main() !void {
-    var args = std.process.args();
+    var args = try std.process.argsWithAllocator(allocator);
     _ = args.next();
     const output_file = args.next() orelse return error.MissingOutputFile;
 

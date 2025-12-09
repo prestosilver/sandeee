@@ -1,6 +1,10 @@
 const std = @import("std");
 const assembler = @import("asm.zig");
-var allocator: std.mem.Allocator = undefined;
+
+pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
+pub const allocator = gpa.allocator();
+
+var lib_path: []const u8 = undefined;
 
 const TokenKind = enum {
     TOKEN_OPEN_BRACE,
@@ -775,7 +779,7 @@ const VarMap = struct {
     vars: []Var,
 };
 
-pub fn lexFile(b: *std.Build, in: []const u8) !std.ArrayList(Token) {
+pub fn lexFile(in: []const u8) !std.ArrayList(Token) {
     var f = try std.fs.openFileAbsolute(in, .{});
     defer f.close();
     var reader = f.reader();
@@ -809,9 +813,9 @@ pub fn lexFile(b: *std.Build, in: []const u8) !std.ArrayList(Token) {
             var stmt = (try reader.readUntilDelimiterOrEof(&stmt_buff, '\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
-                const target = b.path("content/eon").path(b, stmt[10 .. stmt.len - 1]);
+                const path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ lib_path, stmt[10 .. stmt.len - 1] });
 
-                var toks = try lexFile(b, target.getPath(b));
+                var toks = try lexFile(path);
                 defer toks.deinit();
 
                 _ = toks.pop();
@@ -1583,26 +1587,15 @@ pub fn parseProgram(fn_prefix: *[]const u8, tokens: []Token) !Program {
     return result;
 }
 
-pub fn compileEon(
-    b: *std.Build,
-    paths: []const std.Build.LazyPath,
-    output: std.Build.LazyPath,
-) !void {
-    if (paths.len != 1) return error.BadPaths;
-    const in = paths[0];
-
+pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void {
     var fn_prefix: []const u8 = "";
 
-    allocator = b.allocator;
-
-    var tokens = try lexFile(b, in.getPath(b));
+    var tokens = try lexFile(input_file);
     defer tokens.deinit();
 
     var prog = try parseProgram(&fn_prefix, tokens.items);
 
-    const path = output.getPath(b);
-
-    var file = try std.fs.createFileAbsolute(path, .{});
+    var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
     const writer = file.writer();
@@ -1611,30 +1604,34 @@ pub fn compileEon(
     try writer.writeAll(adds);
 }
 
-pub fn compileEonLib(
-    b: *std.Build,
-    paths: []const std.Build.LazyPath,
-    output: std.Build.LazyPath,
-) !void {
-    if (paths.len != 1) return error.BadPaths;
-    const in = paths[0];
-
+pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
     var fn_prefix: []const u8 = "";
 
-    allocator = b.allocator;
-
-    var tokens = try lexFile(b, in.getPath(b));
+    var tokens = try lexFile(input_file);
     defer tokens.deinit();
 
     var prog = try parseProgram(&fn_prefix, tokens.items);
 
-    const path = output.getPath(b);
-
-    var file = try std.fs.createFileAbsolute(path, .{});
+    var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
     const writer = file.writer();
 
     const adds = try prog.toAsm(true);
     try writer.writeAll(adds);
+}
+
+pub fn main() !void {
+    var args = try std.process.argsWithAllocator(allocator);
+    _ = args.next();
+    const mode = args.next() orelse return error.MissingMode;
+    lib_path = "/home/john/doc/rep/github.com/sandeee/content/eon";
+    const input_file = args.next() orelse return error.MissingInputFile;
+    const output_file = args.next() orelse return error.MissingOutputFile;
+
+    if (std.mem.eql(u8, mode, "exe")) {
+        try compile_executable(input_file, output_file);
+    } else if (std.mem.eql(u8, mode, "lib")) {
+        try compile_library(input_file, output_file);
+    } else return error.BadBuildMode;
 }

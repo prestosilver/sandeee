@@ -3,7 +3,7 @@
 	"AppID" "4124360" // your AppID
 	"Desc" "auto build script" // internal description for this build
 
-	"ContentRoot" "../zig-out/box/" // root content folder, relative to location of this file
+	"ContentRoot" "../zig-out/pub/" // root content folder, relative to location of this file
 	"BuildOutput" "./SteamLog" // build output folder for build logs and build cache files
     "SetLive" "alpha" // set this build live on a beta branch
 

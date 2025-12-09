@@ -18,7 +18,7 @@ pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
 pub const allocator = gpa.allocator();
 
 pub fn main() !void {
-    var args = std.process.args();
+    var args = try std.process.argsWithAllocator(allocator);
     _ = args.next();
     const input_file = args.next() orelse return error.MissingInputFile;
     const output_file = args.next() orelse return error.MissingOutputFile;

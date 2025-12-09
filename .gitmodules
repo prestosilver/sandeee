@@ -1,9 +1,3 @@
-[submodule "tools/deps/zigimg"]
-	path = tools/deps/zigimg
-	url = git@github.com:zigimg/zigimg
-[submodule "deps/zig-network"]
-	path = deps/zig-network
-	url = https://github.com/MasterQ32/zig-network/
 [submodule "www"]
 	path = www
 	url = https://github.com/bob16795/sandeee.org
