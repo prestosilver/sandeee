@@ -627,6 +627,9 @@ pub fn main() void {
         };
     }
 
+    std.fs.cwd().access("disks", .{}) catch
+        std.fs.cwd().makeDir("disks") catch panic("Cannot make disks directory.", @errorReturnTrace(), null);
+
     runGame() catch |err| {
         const name = switch (err) {
             error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",

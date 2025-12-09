@@ -93,17 +93,8 @@ pub fn build(b: *std.Build) !void {
 
     const iversion_file = version_create_write.add("IVERSION", b.fmt("{}", .{version}));
 
-    const version_write = b.addSystemCommand(&.{"cp"});
-    version_write.addFileArg(version_file);
-    version_write.addFileArg(b.path("VERSION"));
-
-    version_write.step.dependOn(&version_create_write.step);
-
-    const iversion_write = b.addSystemCommand(&.{"cp"});
-    iversion_write.addFileArg(iversion_file);
-    iversion_write.addFileArg(b.path("IVERSION"));
-
-    iversion_write.step.dependOn(&version_create_write.step);
+    const version_write = b.addInstallFile(version_file, "../VERSION");
+    const iversion_write = b.addInstallFile(iversion_file, "../IVERSION");
 
     const network_dependency = b.dependency("network", .{
         .target = target,
@@ -391,12 +382,6 @@ pub fn build(b: *std.Build) !void {
         const install_disk = b.addInstallFile(disk_image_path, "bin/content/recovery.eee");
         disk_step.dependOn(&install_disk.step);
     }
-
-    // cleanup temp files
-    const clean_tmp = b.addSystemCommand(&.{ "rm", "-rf", "content/.tmp", ".zig-cache", "zig-out" });
-
-    const clean_step = b.step("clean", "cleans the build env");
-    clean_step.dependOn(&clean_tmp.step);
 
     addOverlay(b, &.{debug_image_step}, overlays_path.path(b, "debug"));
 
@@ -702,8 +687,8 @@ pub fn build(b: *std.Build) !void {
     // public builds step
     const pub_step = b.step("pub", "Build all public builds");
     {
-        const box_path: std.Build.InstallDir = .{ .custom = "pub" };
-        const install_recovery_step = b.addInstallFileWithDir(disk_image_path, box_path, "content/recovery.eee");
+        const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
+        const install_recovery_step = b.addInstallFileWithDir(disk_image_path, steam_pub_path, "content/recovery.eee");
 
         pub_step.dependOn(&install_recovery_step.step);
 
@@ -752,7 +737,7 @@ pub fn build(b: *std.Build) !void {
         const pub_linux_step = b.addInstallArtifact(
             exe_pub_linux,
             .{
-                .dest_dir = .{ .override = box_path },
+                .dest_dir = .{ .override = steam_pub_path },
                 .dest_sub_path = "linux/SandEEE",
             },
         );
@@ -796,7 +781,7 @@ pub fn build(b: *std.Build) !void {
         const pub_windows_step = b.addInstallArtifact(
             exe_pub_windows,
             .{
-                .dest_dir = .{ .override = box_path },
+                .dest_dir = .{ .override = steam_pub_path },
                 .dest_sub_path = "windows/SandEEE.exe",
             },
         );
@@ -804,46 +789,146 @@ pub fn build(b: *std.Build) !void {
         pub_step.dependOn(&pub_linux_step.step);
         pub_step.dependOn(&pub_windows_step.step);
 
-        const run_script_step = b.addInstallFileWithDir(b.path("runSandEEE"), box_path, "linux/runSandEEE");
+        const run_script_step = b.addInstallFileWithDir(b.path("runSandEEE"), steam_pub_path, "linux/runSandEEE");
 
         pub_step.dependOn(&run_script_step.step);
 
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libglfw3.dll"), box_path, "windows/glfw3.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libglfw3.dll"), steam_pub_path, "windows/glfw3.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libgcc_s_seh-1.dll"), box_path, "windows/libgcc_s_seh-1.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libgcc_s_seh-1.dll"), steam_pub_path, "windows/libgcc_s_seh-1.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libstdc++-6.dll"), box_path, "windows/libstdc++-6.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libstdc++-6.dll"), steam_pub_path, "windows/libstdc++-6.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libopenal.dll"), box_path, "windows/OpenAL32.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libopenal.dll"), steam_pub_path, "windows/OpenAL32.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libssp-0.dll"), box_path, "windows/libssp-0.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libssp-0.dll"), steam_pub_path, "windows/libssp-0.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libwinpthread-1.dll"), box_path, "windows/libwinpthread-1.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libwinpthread-1.dll"), steam_pub_path, "windows/libwinpthread-1.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll"), box_path, "windows/steam_api64.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll"), steam_pub_path, "windows/steam_api64.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so"), box_path, "linux/libsteam_api.so");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so"), steam_pub_path, "linux/libsteam_api.so");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/lib/libglfw.so"), box_path, "linux/libglfw.so.3");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/lib/libglfw.so"), steam_pub_path, "linux/libglfw.so.3");
             pub_step.dependOn(&tmp_file_step.step);
         }
+    }
+    {
+        const itch_pub_path: std.Build.InstallDir = .{ .custom = "pub/itch" };
+        const install_recovery_linux_step = b.addInstallFileWithDir(disk_image_path, itch_pub_path, "linux/content/recovery.eee");
+        const install_recovery_windows_step = b.addInstallFileWithDir(disk_image_path, itch_pub_path, "windows/content/recovery.eee");
+        pub_step.dependOn(&install_recovery_linux_step.step);
+        pub_step.dependOn(&install_recovery_windows_step.step);
+
+        const public_options = b.addOptions();
+        public_options.addOption(std.SemanticVersion, "SandEEEVersion", version);
+        public_options.addOption([]const u8, "VersionText", version_text);
+        public_options.addOption(bool, "IsDemo", false);
+        public_options.addOption(bool, "IsSteam", false);
+        public_options.addOption(bool, "fakeSteam", false);
+
+        const public_options_module = public_options.createModule();
+
+        const exe_mod_pub_linux = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = b.resolveTargetQuery(.{
+                .os_tag = .linux,
+                .abi = .gnu,
+            }),
+            .optimize = .ReleaseFast,
+            .link_libc = true,
+        });
+        exe_mod_pub_linux.addImport("options", public_options_module);
+        exe_mod_pub_linux.addImport("network", network_module);
+
+        exe_mod_pub_linux.addLibraryPath(b.path("zig-out/bin/lib/"));
+
+        const exe_pub_linux = b.addExecutable(.{
+            .name = "SandEEE",
+            .root_module = exe_mod_pub_linux,
+            .link_libc = true,
+        });
+        exe_pub_linux.addIncludePath(b.path("deps/include"));
+
+        exe_pub_linux.addLibraryPath(b.path("deps/lib"));
+        exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
+        exe_pub_linux.addCSourceFile(.{
+            .file = b.path("deps/src/glad.c"),
+            .flags = &[_][]const u8{"-std=c99"},
+        });
+
+        const pub_linux_step = b.addInstallArtifact(
+            exe_pub_linux,
+            .{
+                .dest_dir = .{ .override = itch_pub_path },
+                .dest_sub_path = "linux/SandEEE",
+            },
+        );
+
+        const exe_mod_pub_windows = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = b.resolveTargetQuery(.{
+                .os_tag = .windows,
+                .abi = .gnu,
+            }),
+            .optimize = .ReleaseFast,
+            .link_libc = true,
+        });
+        exe_mod_pub_windows.addImport("options", public_options_module);
+        exe_mod_pub_windows.addImport("network", network_module);
+
+        exe_mod_pub_windows.addLibraryPath(b.path("zig-out/bin/lib/"));
+
+        const exe_pub_windows = b.addExecutable(.{
+            .name = "SandEEE",
+            .root_module = exe_mod_pub_windows,
+            .link_libc = true,
+        });
+        exe_pub_windows.addIncludePath(b.path("deps/include"));
+
+        exe_pub_windows.addObjectFile(rc_file);
+        exe_pub_windows.addLibraryPath(b.path("deps/lib"));
+        exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe_pub_windows.subsystem = .Windows;
+
+        exe_pub_windows.addCSourceFile(.{
+            .file = b.path("deps/src/glad.c"),
+            .flags = &[_][]const u8{"-std=c99"},
+        });
+
+        const pub_windows_step = b.addInstallArtifact(
+            exe_pub_windows,
+            .{
+                .dest_dir = .{ .override = itch_pub_path },
+                .dest_sub_path = "windows/SandEEE.exe",
+            },
+        );
+
+        pub_step.dependOn(&pub_linux_step.step);
+        pub_step.dependOn(&pub_windows_step.step);
+
+        const run_script_step = b.addInstallFileWithDir(b.path("runSandEEE"), itch_pub_path, "linux/runSandEEE");
+
+        pub_step.dependOn(&run_script_step.step);
     }
 
     // upload step
@@ -858,5 +943,29 @@ pub fn build(b: *std.Build) !void {
     steamcmd_step.step.dependOn(pub_step);
 
     upload_steam_step.dependOn(&steamcmd_step.step);
+    upload_step.dependOn(upload_steam_step);
+
+    // upload step
+    const upload_itch_step = b.step("upload_itch", "Uploads a build to itch");
+
+    const butler_linux_step = b.addSystemCommand(&.{ "butler", "push" });
+    butler_linux_step.addFileInput(iversion_file);
+    butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
+    butler_linux_step.addDirectoryArg(b.path("zig-out/pub/itch/linux/"));
+    butler_linux_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux", .{}));
+
+    butler_linux_step.step.dependOn(pub_step);
+
+    const butler_windows_step = b.addSystemCommand(&.{ "butler", "push" });
+    butler_windows_step.addFileInput(iversion_file);
+    butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
+    butler_windows_step.addDirectoryArg(b.path("zig-out/pub/itch/windows/"));
+    butler_windows_step.addArg(b.fmt("prestosilver/sandeee-alpha:win", .{}));
+
+    butler_windows_step.step.dependOn(pub_step);
+    butler_linux_step.step.dependOn(pub_step);
+
+    upload_itch_step.dependOn(&butler_windows_step.step);
+    upload_itch_step.dependOn(&butler_linux_step.step);
     upload_step.dependOn(upload_steam_step);
 }
