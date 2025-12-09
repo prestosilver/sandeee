@@ -14,9 +14,10 @@ base /libs/
 base /libs/incl/
 base /prof/
 debug /prof/tests/
-debug /prof/tests/asm
-debug /prof/tests/eon
-debug /prof/tests/rand
+debug /prof/tests/eep
+debug /prof/tests/eep/asm
+debug /prof/tests/eep/eon
+debug /prof/tests/eep/rand
 debug /prof/tests/src
 debug /prof/tests/src/asm
 debug /prof/tests/src/eon
