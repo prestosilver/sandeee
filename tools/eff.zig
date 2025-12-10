@@ -1,6 +1,7 @@
 const std = @import("std");
 const zigimg = @import("zigimg");
 
+// Binary repr:
 // struct FontChar {
 //   []const []const u1: data,
 // }
