@@ -712,7 +712,6 @@ pub fn build(b: *std.Build) !void {
 
     const www_step = b.step("www", "Build the website");
     www_step.dependOn(www_misc_step);
-    //www_step.dependOn(www_files_step);
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
@@ -727,27 +726,7 @@ pub fn build(b: *std.Build) !void {
         .root_module = exe_mod,
     });
 
-    // const platform = switch (target.result.os.tag) {
-    //     .windows => "win",
-    //     .linux => "linux",
-    //     else => "",
-    // };
-
-    // const suffix = switch (optimize) {
-    //     .Debug => if (is_demo) "-dbg-new-demo" else "-dbg",
-    //     else => if (is_demo) "-new-demo" else "",
-    // };
-
     const run_exe_tests = b.addRunArtifact(exe_tests);
-
-    // const branch = b.fmt("prestosilver/sandeee-os:{s}{s}", .{ platform, suffix });
-
-    // const butler_step = try butler.ButlerStep.create(b, "zig-out/bin", branch);
-    // butler_step.step.dependOn(&exe.step);
-    // butler_step.step.dependOn(b.getInstallStep());
-
-    // const upload_step = b.step("upload", "Upload to itch");
-    // upload_step.dependOn(&butler_step.step);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_tests.step);
