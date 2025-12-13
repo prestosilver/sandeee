@@ -378,6 +378,8 @@ pub fn build(b: *std.Build) !void {
 
     // base fonts
     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEESans.png"), "/cont/fnts/SandEEESans.eff");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEESans2x.png"), "/cont/fnts/SandEEESans2x.eff");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEEJoke.png"), "/cont/fnts/SandEEEJoke.eff");
 
     // executables
     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/epkman.eon"), "/exec/epkman.eep");
@@ -505,24 +507,6 @@ pub fn build(b: *std.Build) !void {
     //     content_step.dependOn(&step.step);
     // }
 
-    // var font_joke_step = try conv.ConvertStep.create(
-    //     b,
-    //     font.convert,
-    //     &.{image_path.path(b, "SandEEEJoke.png")},
-    //     disk_path.path(b, "cont/fnts/SandEEEJoke.eff"),
-    // );
-    // var font_step = try conv.ConvertStep.create(
-    //     b,
-    //     font.convert,
-    //     &.{image_path.path(b, "SandEEESans.png")},
-    //     disk_path.path(b, "cont/fnts/SandEEESans.eff"),
-    // );
-    // var font_2x_step = try conv.ConvertStep.create(
-    //     b,
-    //     font.convert,
-    //     &.{image_path.path(b, "SandEEESans2x.png")},
-    //     disk_path.path(b, "cont/fnts/SandEEESans2x.eff"),
-    // );
     // var font_bios_step = try conv.ConvertStep.create(
     //     b,
     //     font.convert,
@@ -530,14 +514,8 @@ pub fn build(b: *std.Build) !void {
     //     b.path("src/images/main.eff"),
     // );
 
-    // font_joke_step.step.dependOn(&skel_step.step);
-    // font_step.step.dependOn(&skel_step.step);
-    // font_2x_step.step.dependOn(&skel_step.step);
     // font_bios_step.step.dependOn(&skel_step.step);
 
-    // content_step.dependOn(&font_step.step);
-    // content_step.dependOn(&font_joke_step.step);
-    // content_step.dependOn(&font_2x_step.step);
     // content_step.dependOn(&font_bios_step.step);
 
     exe.step.dependOn(&version_write.step);
@@ -572,21 +550,12 @@ pub fn build(b: *std.Build) !void {
             b.installFile("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll", "bin/steam_api64.dll");
     } else if (target.result.os.tag == .linux) {
         b.installFile("runSandEEE", "bin/runSandEEE");
-        // b.installFile("deps/lib/libglfw.so.3", "bin/lib/libglfw.so.3");
-        // b.installFile("deps/lib/libopenal.so.1", "bin/lib/libopenal.so.1");
         if (steam_mode == .On)
             b.installFile("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
 
     if (steam_mode == .On)
         b.installFile("steam_appid.txt", "bin/steam_appid.txt");
-
-    // var count: usize = 0;
-
-    // for (WWW_FILES) |file| {
-    //     for (file.files) |_|
-    //         count += 1;
-    // }
 
     const www_misc_step = b.step("www_misc", "Build www misc");
 
@@ -743,7 +712,6 @@ pub fn build(b: *std.Build) !void {
 
     const www_step = b.step("www", "Build the website");
     www_step.dependOn(www_misc_step);
-    //www_step.dependOn(www_files_step);
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
@@ -758,27 +726,7 @@ pub fn build(b: *std.Build) !void {
         .root_module = exe_mod,
     });
 
-    // const platform = switch (target.result.os.tag) {
-    //     .windows => "win",
-    //     .linux => "linux",
-    //     else => "",
-    // };
-
-    // const suffix = switch (optimize) {
-    //     .Debug => if (is_demo) "-dbg-new-demo" else "-dbg",
-    //     else => if (is_demo) "-new-demo" else "",
-    // };
-
     const run_exe_tests = b.addRunArtifact(exe_tests);
-
-    // const branch = b.fmt("prestosilver/sandeee-os:{s}{s}", .{ platform, suffix });
-
-    // const butler_step = try butler.ButlerStep.create(b, "zig-out/bin", branch);
-    // butler_step.step.dependOn(&exe.step);
-    // butler_step.step.dependOn(b.getInstallStep());
-
-    // const upload_step = b.step("upload", "Upload to itch");
-    // upload_step.dependOn(&butler_step.step);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_tests.step);

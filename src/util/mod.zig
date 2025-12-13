@@ -4,7 +4,6 @@ pub const storage = @import("storage.zig");
 pub const logger = @import("log.zig");
 pub const panic = @import("panic.zig");
 pub const audio = @import("audio.zig");
-pub const eeevm = @import("eeevm.zig");
 pub const http = @import("http.zig");
 pub const log = @import("log.zig").log;
 pub const TextureManager = @import("texturemanager.zig");

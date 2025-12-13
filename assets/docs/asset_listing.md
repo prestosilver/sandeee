@@ -21,3 +21,7 @@
 |File|Desc|
 |----|----|
 |![bg-920x430.png](../steam/store/bg-920x430.png)|A background image possibly used for some steam stuff|
+|![bg-920x430alt.png](../steam/store/bg-920x430alt.png)|An alt background image possibly used for some steam stuff|
+|![bg-920x430_crt.png](../steam/store/bg-920x430_crt.png)|A background image possibly used for some steam stuff, with a crt filter|
+|![bg-920x430_crt_store.png](../steam/store/bg-920x430_crt_store.png)|A background image possibly used for some steam stuff, with the logo for steam|
+|![bg-920x430_crt_store.png](../steam/store/bg-920x430_crt_storealt.png)|A hero image possibly used for some steam stuff, with the logo for steam|

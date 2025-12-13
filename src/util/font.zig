@@ -258,13 +258,6 @@ pub fn draw(self: *Font, params: drawParams) !void {
                 srect,
                 .{ .color = color },
             );
-            // try vert_array.append(.{ .x = xpos, .y = ypos }, .{ .x = srect.x, .y = srect.y }, color);
-            // try vert_array.append(.{ .x = xpos + w, .y = ypos + h }, .{ .x = srect.x + srect.w, .y = srect.y + srect.h }, color);
-            // try vert_array.append(.{ .x = xpos + w, .y = ypos }, .{ .x = srect.x + srect.w, .y = srect.y }, color);
-
-            // try vert_array.append(.{ .x = xpos, .y = ypos }, .{ .x = srect.x, .y = srect.y }, color);
-            // try vert_array.append(.{ .x = xpos + w, .y = ypos + h }, .{ .x = srect.x + srect.w, .y = srect.y + srect.h }, color);
-            // try vert_array.append(.{ .x = xpos, .y = ypos + h }, .{ .x = srect.x, .y = srect.y + srect.h }, color);
         } else {
             last_space = vert_array.quads().len;
             last_space_idx = idx + 1;

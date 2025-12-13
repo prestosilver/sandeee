@@ -11,3 +11,13 @@
 ## Key concepts
 
 ## Implementation plans, order, and progress
+
+## Characters
+
+### Epsilon
+
+### Eric
+
+### Erin
+
+### Eliane

@@ -157,6 +157,7 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
             try loader.require(&sounds);
 
             //// mail
+            // TODO: redo
             //try self.loader.enqueue(*const []const u8, *const u8, &mailpath, &zero, worker.mail.loadMail);
 
             LogoutState.unloader = try loader.load(&self.load_progress, 0.0, 1.0);

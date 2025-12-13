@@ -21,6 +21,8 @@ pub fn cpy(self: *Shell, params: *Shell.Params) !Shell.Result {
     const root = try root_link.resolve();
     const output_root = try output_root_link.resolve();
     const file = try root.getFile(input);
+
+    // TODO: implement copy to folder
     // if (output_root.getFolder()) {}
     try output_root.newFile(output);
     const targ = try output_root.getFile(output);
