@@ -830,6 +830,7 @@ pub fn build(b: *std.Build) !void {
             .flags = &[_][]const u8{"-std=c99"},
         });
         exe_pub_linux.linkSystemLibrary("steam_api");
+        exe_pub_linux.linkLibC();
 
         const pub_linux_step = b.addInstallArtifact(
             exe_pub_linux,
@@ -866,6 +867,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
+        exe_pub_linux.linkLibC();
 
         exe_pub_windows.addCSourceFile(.{
             .file = b.path("deps/src/glad.c"),
