@@ -39,7 +39,7 @@ pub const Sound = struct {
     }
 };
 
-const background_sound = @embedFile("../sounds/bg.era");
+const background_sound = @embedFile("bg.era");
 
 pub const AudioManager = struct {
     sources: [sizes.AUDIO_SOURCES]c.ALuint = std.mem.zeroes([sizes.AUDIO_SOURCES]c.ALuint),

@@ -93,7 +93,7 @@ pub fn build(b: *std.Build) !void {
 
     const version_file = version_create_write.add("VERSION", b.fmt("{}", .{version}));
 
-    version.meta = b.fmt("{s}_{X:0>4}", .{ version_suffix, std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0 });
+    version.meta = b.fmt("{X:0>4}_{s}", .{ std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0, version_suffix });
 
     const iversion_file = version_create_write.add("IVERSION", b.fmt("{}", .{version}));
 
@@ -462,29 +462,50 @@ pub fn build(b: *std.Build) !void {
 
     b.installArtifact(exe);
 
-    // const image_path = content_path.path(b, "images");
-    // const internal_image_path = b.path("src/images");
+    const image_path = content_path.path(b, "images");
 
-    // inline for (INTERNAL_IMAGE_FILES) |file| {
-    //     const pngf = image_path.path(b, file ++ ".png");
-    //     const eiaf = internal_image_path.path(b, file ++ ".eia");
+    inline for (INTERNAL_IMAGE_FILES) |file| {
+        const pngf = image_path.path(b, file ++ ".png");
+        const eiaf = file ++ ".eia";
 
-    //     var step = try conv.ConvertStep.create(b, image.convert, &.{pngf}, eiaf);
+        const builder = b.addRunArtifact(eia_builder_exe);
+        builder.addFileInput(pngf);
+        builder.addFileArg(pngf);
+        const output_file = builder.addOutputFileArg(eiaf);
 
-    //     content_step.dependOn(&step.step);
-    // }
+        exe_mod.addAnonymousImport(eiaf, .{
+            .root_source_file = output_file,
+        });
+    }
 
-    // const audio_path = content_path.path(b, "audio");
-    // const internal_audio_path = b.path("src/sounds");
+    const audio_path = content_path.path(b, "audio");
 
-    // inline for (INTERNAL_SOUND_FILES) |file| {
-    //     const wavf = audio_path.path(b, file ++ ".wav");
-    //     const eraf = internal_audio_path.path(b, file ++ ".era");
+    inline for (INTERNAL_SOUND_FILES) |file| {
+        const wavf = audio_path.path(b, file ++ ".wav");
+        const eraf = file ++ ".era";
 
-    //     var step = try conv.ConvertStep.create(b, sound.convert, &.{wavf}, eraf);
+        const builder = b.addRunArtifact(era_builder_exe);
+        builder.addFileInput(wavf);
+        builder.addFileArg(wavf);
+        const output_file = builder.addOutputFileArg(eraf);
 
-    //     content_step.dependOn(&step.step);
-    // }
+        exe_mod.addAnonymousImport(eraf, .{
+            .root_source_file = output_file,
+        });
+    }
+
+    {
+        const bios_font_path = image_path.path(b, "SandEEESans2x.png");
+
+        const builder = b.addRunArtifact(eff_builder_exe);
+        builder.addFileInput(bios_font_path);
+        builder.addFileArg(bios_font_path);
+        const output_file = builder.addOutputFileArg("bios.eff");
+
+        exe_mod.addAnonymousImport("bios.eff", .{
+            .root_source_file = output_file,
+        });
+    }
 
     _ = random_tests;
     // if (random_tests != 0) {
@@ -506,21 +527,7 @@ pub fn build(b: *std.Build) !void {
     //     step.step.dependOn(skel_step);
     //     content_step.dependOn(&step.step);
     // }
-
-    // var font_bios_step = try conv.ConvertStep.create(
-    //     b,
-    //     font.convert,
-    //     &.{image_path.path(b, "SandEEESans2x.png")},
-    //     b.path("src/images/main.eff"),
-    // );
-
-    // font_bios_step.step.dependOn(&skel_step.step);
-
-    // content_step.dependOn(&font_bios_step.step);
-
-    exe.step.dependOn(&version_write.step);
-    exe.step.dependOn(&iversion_write.step);
-    exe.step.dependOn(disk_step);
+    b.getInstallStep().dependOn(disk_step);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());

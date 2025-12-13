@@ -102,17 +102,17 @@ const CLEAR_FRAG_SHADER = @embedFile("shaders/clearfrag.glsl");
 const CLEAR_VERT_SHADER = @embedFile("shaders/vert.glsl");
 
 // embed images
-const LOGO_IMAGE = @embedFile("images/logo.eia");
-const LOAD_IMAGE = @embedFile("images/load.eia");
-const BIOS_IMAGE = @embedFile("images/bios.eia");
-const SAD_IMAGE = @embedFile("images/sad.eia");
-const ERROR_IMAGE = @embedFile("images/error.eia");
+const LOGO_IMAGE = @embedFile("logo.eia");
+const LOAD_IMAGE = @embedFile("load.eia");
+const BIOS_IMAGE = @embedFile("bios.eia");
+const SAD_IMAGE = @embedFile("sad.eia");
+const ERROR_IMAGE = @embedFile("error.eia");
 const WHITE_IMAGE = [_]u8{ 'e', 'i', 'm', 'g', 1, 0, 1, 0, 255, 255, 255, 255 };
 
-const BIOS_FONT_DATA: []const u8 = @embedFile("images/main.eff");
+const BIOS_FONT_DATA: []const u8 = @embedFile("bios.eff");
 
-const BLIP_SOUND_DATA = @embedFile("sounds/bios-blip.era");
-const SELECT_SOUND_DATA = @embedFile("sounds/bios-select.era");
+const BLIP_SOUND_DATA = @embedFile("bios-blip.era");
+const SELECT_SOUND_DATA = @embedFile("bios-select.era");
 
 const SHADER_FILES = [2]Shader.ShaderFile{
     Shader.ShaderFile{ .contents = FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },

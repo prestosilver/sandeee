@@ -107,4 +107,4 @@ pub const imageError = error{
     NotFound,
 };
 
-const errorImage = @embedFile("../images/error.eia");
+const errorImage = @embedFile("error.eia");

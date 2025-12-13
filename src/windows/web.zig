@@ -699,7 +699,7 @@ pub const WebData = struct {
 
                 if (std.mem.startsWith(u8, line, "[") and std.mem.endsWith(u8, line, "]")) {
                     if (self.add_imgs) {
-                        try TextureManager.instance.putMem(&texid, @embedFile("../images/error.eia"));
+                        try TextureManager.instance.putMem(&texid, @embedFile("error.eia"));
 
                         TextureManager.instance.get(&texid).?.size =
                             TextureManager.instance.get(&texid).?.size.div(4);
