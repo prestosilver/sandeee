@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const Windows = @import("mod.zig");
 
@@ -349,7 +349,7 @@ const EmailData = struct {
         if (!down) return;
 
         if (self.login == null) {
-            if (keycode == c.GLFW_KEY_TAB) {
+            if (keycode == glfw.KeyTab) {
                 self.login_input = if (self.login_input) |li|
                     switch (li) {
                         .Username => .Password,
@@ -359,11 +359,11 @@ const EmailData = struct {
                     .Username;
             }
 
-            if (keycode == c.GLFW_KEY_ENTER) {
+            if (keycode == glfw.KeyEnter) {
                 self.onLogin();
             }
 
-            if (keycode == c.GLFW_KEY_BACKSPACE) {
+            if (keycode == glfw.KeyBackspace) {
                 if (self.login_input) |input|
                     switch (input) {
                         .Username => {
@@ -388,7 +388,7 @@ const EmailData = struct {
             return;
         }
 
-        if (keycode == c.GLFW_KEY_R) {
+        if (keycode == glfw.KeyR) {
             if (self.viewing) |viewing| {
                 for (viewing.condition) |condition| {
                     if (condition != .SubmitContains and condition != .SubmitRuns and condition != .SubmitLib) return;

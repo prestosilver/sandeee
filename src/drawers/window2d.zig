@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const drawers = @import("mod.zig");
 
@@ -138,10 +138,10 @@ pub const WindowData = struct {
         }
 
         pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
-            if (keycode == c.GLFW_KEY_PAGE_UP) {
+            if (keycode == glfw.KeyPageUp) {
                 if (self.props.scroll) |*scroll_data|
                     scroll_data.value -= 1 * scroll_mul();
-            } else if (keycode == c.GLFW_KEY_PAGE_DOWN) {
+            } else if (keycode == glfw.KeyPageDown) {
                 if (self.props.scroll) |*scroll_data|
                     scroll_data.value += 1 * scroll_mul();
             } else {

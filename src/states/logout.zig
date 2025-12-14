@@ -1,6 +1,6 @@
 const options = @import("options");
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const states = @import("mod.zig");
 
@@ -99,7 +99,7 @@ pub fn update(self: *GSLogout, dt: f32) !void {
     if (self.time < 0) {
         switch (target) {
             .Quit => {
-                c.glfwSetWindowShouldClose(graphics.Context.instance.window, 1);
+                glfw.setWindowShouldClose(graphics.Context.instance.window, true);
             },
             .Bios => {
                 try events.EventManager.instance.sendEvent(system_events.EventStateChange{

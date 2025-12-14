@@ -1,5 +1,6 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
+const zgl = @import("zgl");
 
 const math = @import("../math/mod.zig");
 const util = @import("mod.zig");
@@ -17,7 +18,7 @@ const log = util.log;
 pub const Context = struct {
     pub var instance: Context = undefined;
 
-    window: ?*c.GLFWwindow,
+    window: ?*glfw.Window,
     color: Color,
     shaders: std.ArrayList(Shader),
     lock: std.Thread.Mutex = .{},
@@ -25,19 +26,19 @@ pub const Context = struct {
 
     pub inline fn makeCurrent() void {
         instance.lock.lock();
-        c.glfwMakeContextCurrent(instance.window);
+        glfw.makeContextCurrent(instance.window);
     }
 
     pub inline fn makeNotCurrent() void {
-        c.glfwMakeContextCurrent(null);
+        glfw.makeContextCurrent(null);
         instance.lock.unlock();
     }
 
     pub inline fn cursorMode(val: c_int) void {
-        c.glfwSetInputMode(instance.window, c.GLFW_CURSOR, val);
+        glfw.SetInputMode(instance.window, glfw._CURSOR, val);
     }
 
-    export fn errorCallback(err: c_int, description: [*c]const u8) void {
+    export fn errorCallback(err: c_int, description: [*:0]const u8) void {
         log.err("{s}, {}\n", .{ description, err });
     }
 
@@ -46,44 +47,54 @@ pub const Context = struct {
         GLADInit,
     };
 
-    pub fn init(name: [*c]const u8) !void {
-        _ = c.glfwSetErrorCallback(errorCallback);
+    pub fn getGlFn(_: void, func: [:0]const u8) ?zgl.binding.FunctionPointer {
+        return @ptrCast(glfw.getProcAddress(func));
+    }
 
-        if (c.glfwInit() == 0) {
-            return error.GLFWInitFailed;
+    pub fn glDebug(source: zgl.DebugSource, msg_type: zgl.DebugMessageType, id: usize, severity: zgl.DebugSeverity, message: []const u8) void {
+        _ = id;
+        _ = msg_type;
+        switch (severity) {
+            .high => log.err("{}, {s}", .{ source, message }),
+            else => |x| log.info("{}_{} {s} ", .{ x, source, message }),
         }
+    }
 
-        const monitor = c.glfwGetPrimaryMonitor();
+    pub fn init(name: [*:0]const u8) !void {
+        _ = glfw.setErrorCallback(errorCallback);
 
-        const mode = c.glfwGetVideoMode(monitor)[0];
+        try glfw.init();
 
-        c.glfwWindowHint(c.GLFW_RED_BITS, mode.redBits);
-        c.glfwWindowHint(c.GLFW_GREEN_BITS, mode.greenBits);
-        c.glfwWindowHint(c.GLFW_BLUE_BITS, mode.blueBits);
-        c.glfwWindowHint(c.GLFW_REFRESH_RATE, mode.refreshRate);
+        const monitor = glfw.getPrimaryMonitor();
 
-        const win = c.glfwCreateWindow(mode.width, mode.height, name, monitor, null);
+        const mode = glfw.getVideoMode(monitor).?;
 
-        c.glfwMakeContextCurrent(win);
+        glfw.windowHint(glfw.RedBits, mode.redBits);
+        glfw.windowHint(glfw.GreenBits, mode.greenBits);
+        glfw.windowHint(glfw.BlueBits, mode.blueBits);
+        glfw.windowHint(glfw.RefreshRate, mode.refreshRate);
 
-        c.glfwSwapInterval(1);
+        const win = try glfw.createWindow(mode.width, mode.height, name, monitor, null);
 
-        if (c.gladLoadGLLoader(@as(c.GLADloadproc, @ptrCast(&c.glfwGetProcAddress))) == 0) {
-            return error.GLADInitFailed;
-        }
+        glfw.makeContextCurrent(win);
+
+        try zgl.loadExtensions(void{}, getGlFn);
+        zgl.debugMessageCallback(void{}, glDebug);
+
+        glfw.swapInterval(1);
 
         const shaders = std.ArrayList(Shader).init(allocator.alloc);
 
         var w: c_int = 0;
         var h: c_int = 0;
 
-        c.glfwGetFramebufferSize(win, &w, &h);
+        glfw.getFramebufferSize(win, &w, &h);
 
-        c.glfwSetInputMode(win, c.GLFW_CURSOR, c.GLFW_CURSOR_HIDDEN);
+        glfw.setInputMode(win, glfw.Cursor, glfw.CursorHidden);
 
-        c.glDepthFunc(c.GL_ALWAYS);
+        zgl.depthFunc(.always);
 
-        c.glfwMakeContextCurrent(null);
+        glfw.makeContextCurrent(null);
 
         instance = Context{
             .window = win,
@@ -94,20 +105,19 @@ pub const Context = struct {
     }
 
     pub inline fn poll() bool {
-        c.glfwPollEvents();
-        return c.glfwWindowShouldClose(instance.window) == 0;
+        glfw.pollEvents();
+        return !glfw.windowShouldClose(instance.window);
     }
 
     pub inline fn clear() void {
-        c.glClearColor(instance.color.r, instance.color.g, instance.color.b, instance.color.a);
-        c.glClear(c.GL_COLOR_BUFFER_BIT);
+        zgl.clearColor(instance.color.r, instance.color.g, instance.color.b, instance.color.a);
+        zgl.clear(.{ .color = true });
     }
 
     pub inline fn swap() void {
-        c.glFinish();
-        c.glFlush();
+        zgl.flush();
 
-        c.glfwSwapBuffers(instance.window);
+        glfw.swapBuffers(instance.window);
     }
 
     pub fn regShader(s: Shader) !void {
@@ -120,10 +130,10 @@ pub const Context = struct {
         s.setFloat("screen_height", instance.size.y);
     }
 
-    pub fn resize(w: i32, h: i32) void {
+    pub fn resize(w: usize, h: usize) void {
         instance.size = .{ .x = @floatFromInt(w), .y = @floatFromInt(h) };
 
-        c.glViewport(0, 0, w, h);
+        zgl.viewport(0, 0, w, h);
 
         const proj: Mat4 = .ortho(0, @floatFromInt(w), @floatFromInt(h), 0, 100, -1);
 
@@ -136,7 +146,7 @@ pub const Context = struct {
 
     pub fn deinit() void {
         instance.shaders.deinit();
-        c.glfwDestroyWindow(instance.window);
-        c.glfwTerminate();
+        glfw.destroyWindow(instance.window);
+        glfw.terminate();
     }
 };

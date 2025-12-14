@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const drawers = @import("mod.zig");
 
@@ -29,7 +29,7 @@ pub const CursorData = struct {
         var xo: f64 = 0;
         var yo: f64 = 0;
 
-        c.glfwGetCursorPos(graphics.Context.instance.window, &xo, &yo);
+        glfw.getCursorPos(graphics.Context.instance.window, &xo, &yo);
 
         if (self.index != 0) {
             xo -= self.size.x / 2;

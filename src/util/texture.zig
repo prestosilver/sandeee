@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const zgl = @import("zgl");
 
 const util = @import("mod.zig");
 
@@ -19,14 +19,14 @@ const files = system.files;
 
 const Texture = @This();
 
-tex: c.GLuint = 0,
+tex: zgl.Texture = .invalid,
 size: Vec2,
 old_size: Vec2 = .{},
 buffer: [][4]u8,
 
 pub fn deinit(self: *const Texture) void {
     allocator.alloc.free(self.buffer);
-    c.glDeleteTextures(1, &self.tex);
+    self.tex.delete();
 }
 
 pub inline fn setPixel(self: *const Texture, x: i32, y: i32, color: [4]u8) void {
@@ -41,15 +41,13 @@ pub fn upload(self: *Texture) !void {
     graphics.Context.makeCurrent();
     defer graphics.Context.makeNotCurrent();
 
-    if (self.tex == 0) {
-        c.glGenTextures(1, &self.tex);
-
-        c.glBindTexture(c.GL_TEXTURE_2D, self.tex);
-
-        c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-        c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
+    if (self.tex == .invalid) {
+        self.tex = zgl.genTexture();
+        self.tex.bind(.@"2d");
+        self.tex.parameter(.min_filter, .nearest);
+        self.tex.parameter(.mag_filter, .nearest);
     } else {
-        c.glBindTexture(c.GL_TEXTURE_2D, self.tex);
+        self.tex.bind(.@"2d");
     }
 
     if (self.size.x == 0 or self.size.y == 0) return;
@@ -57,9 +55,9 @@ pub fn upload(self: *Texture) !void {
     if (self.size.x == self.old_size.x and
         self.size.y == self.old_size.y)
     {
-        c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, 0, 0, @intFromFloat(self.size.x), @intFromFloat(self.size.y), c.GL_RGBA, c.GL_UNSIGNED_BYTE, self.buffer.ptr);
+        self.tex.subImage2D(0, 0, 0, @intFromFloat(self.size.x), @intFromFloat(self.size.y), .rgba, .unsigned_byte, @ptrCast(self.buffer));
     } else {
-        c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @intFromFloat(self.size.x), @intFromFloat(self.size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, self.buffer.ptr);
+        zgl.textureImage2D(.@"2d", 0, .rgba, @intFromFloat(self.size.x), @intFromFloat(self.size.y), .rgba, .unsigned_byte, @ptrCast(self.buffer));
         self.old_size = self.size;
     }
 }

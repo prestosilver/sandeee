@@ -163,9 +163,10 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
             LogoutState.unloader = try loader.load(&self.load_progress, 0.0, 1.0);
         }
     }.load(in_self) catch |err| {
-        @import("../main.zig").panic(@errorName(err), @errorReturnTrace(), null);
+        // std.debug.panicExtra(@errorName(err), @errorReturnTrace(), null);
         log.err("loading error: {s}", .{@errorName(err)});
         load_error.* = @errorName(err);
+        @panic(@errorName(err));
     };
 }
 

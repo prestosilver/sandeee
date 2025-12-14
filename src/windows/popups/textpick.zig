@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../../c.zig");
+const glfw = @import("glfw");
 
 const sandeee_data = @import("../../data/mod.zig");
 const drawers = @import("../../drawers/mod.zig");
@@ -89,14 +89,14 @@ pub const PopupTextPick = struct {
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
         if (!down) return;
 
-        if (keycode == c.GLFW_KEY_BACKSPACE and self.text.len != 0) {
+        if (keycode == glfw.KeyBackspace and self.text.len != 0) {
             self.text = try allocator.alloc.realloc(self.text, self.text.len - 1);
             if (self.err) |err|
                 allocator.alloc.free(err);
             self.err = null;
         }
 
-        if (keycode == c.GLFW_KEY_ENTER) {
+        if (keycode == glfw.KeyEnter) {
             self.submit(self.text, self.data) catch |err| {
                 if (self.err) |err_i|
                     allocator.alloc.free(err_i);

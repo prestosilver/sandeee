@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const Windows = @import("mod.zig");
 
@@ -359,7 +359,7 @@ pub const ExplorerData = struct {
         const shell_root = try self.shell.root.resolve();
 
         switch (keycode) {
-            c.GLFW_KEY_DELETE => {
+            glfw.KeyDelete => {
                 if (self.selected != null and (shell_root.getFile(self.icon_data[self.selected.?].name) catch null) != null) {
                     const adds = try allocator.alloc.create(Popup.Data.confirm.PopupConfirm);
                     adds.* = .{
@@ -379,7 +379,7 @@ pub const ExplorerData = struct {
                     });
                 }
             },
-            c.GLFW_KEY_BACKSPACE => {
+            glfw.KeyBackspace => {
                 self.shell.root = shell_root.parent orelse .root;
                 try self.refresh();
                 self.selected = null;

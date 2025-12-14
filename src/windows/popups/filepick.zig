@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../../c.zig");
+const glfw = @import("glfw");
 
 const sandeee_data = @import("../../data/mod.zig");
 const drawers = @import("../../drawers/mod.zig");
@@ -86,14 +86,14 @@ pub const PopupFilePick = struct {
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
         if (!down) return;
 
-        if (keycode == c.GLFW_KEY_BACKSPACE and self.path.len != 0) {
+        if (keycode == glfw.KeyBackspace and self.path.len != 0) {
             self.path = try allocator.alloc.realloc(self.path, self.path.len - 1);
             if (self.err) |err|
                 allocator.alloc.free(err);
             self.err = null;
         }
 
-        if (keycode == c.GLFW_KEY_ENTER) {
+        if (keycode == glfw.KeyEnter) {
             const root = try files.FolderLink.resolve(.root);
 
             const file = root.getFile(self.path) catch {

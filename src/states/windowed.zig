@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const options = @import("options");
 
@@ -493,7 +493,7 @@ pub fn keypress(self: *GSWindowed, key: c_int, mods: c_int, down: bool) !void {
         return;
     }
 
-    if (key == c.GLFW_KEY_P and mods == (c.GLFW_MOD_CONTROL | c.GLFW_MOD_SHIFT) and down) {
+    if (key == glfw.KeyP and mods == (glfw.ModifierControl | glfw.ModifierShift) and down) {
         const window: Window = .atlas("win", .{
             .source = .{ .w = 1, .h = 1 },
             .pos = .{ .w = 400, .h = 500 },

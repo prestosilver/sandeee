@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const system = @import("mod.zig");
 
@@ -354,7 +354,7 @@ pub const window_commands = .{
                     const cmd_self: *windows.cmd.CMDData = @ptrCast(@alignCast(window.data.contents.ptr));
                     @memcpy(cmd_self.input_buffer[0..command.len], command);
                     cmd_self.input_len = @intCast(command.len);
-                    try cmd_self.key(c.GLFW_KEY_ENTER, 0, true);
+                    try cmd_self.key(glfw.KeyEnter, 0, true);
                 }
                 try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
                 return .{};

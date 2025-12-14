@@ -1,6 +1,7 @@
 // TODO: split to timing manager
 
 const std = @import("std");
+const glfw = @import("glfw");
 
 const system = @import("mod.zig");
 const util = @import("../util/mod.zig");
@@ -202,7 +203,7 @@ pub fn update(self: *VmManager) !void {
     const frame_start: f64 = if (@import("builtin").is_test)
         0.0
     else
-        c.glfwGetTime();
+        glfw.getTime();
 
     const frame_end = @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat((last_frame_time) * std.time.ns_per_s * vm_time));
 
@@ -268,5 +269,5 @@ pub fn update(self: *VmManager) !void {
     last_vm_time = if (@import("builtin").is_test)
         0.0
     else
-        c.glfwGetTime() - frame_start;
+        glfw.getTime() - frame_start;
 }

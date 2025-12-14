@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const zgl = @import("zgl");
 
 const util = @import("mod.zig");
 
@@ -58,40 +58,40 @@ pub fn deinit(self: *Font) void {
 pub fn initMem(data: []const u8) !Font {
     if (!std.mem.eql(u8, data[0..4], "efnt")) return error.BadFile;
 
-    const char_width = @as(c_uint, @intCast(data[4]));
-    const char_height = @as(c_uint, @intCast(data[5]));
+    const char_width: usize = @intCast(data[4]);
+    const char_height: usize = @intCast(data[5]);
 
     const atlas_size = Vec2{ .x = 128 * @as(f32, @floatFromInt(char_width)), .y = 2 * @as(f32, @floatFromInt(char_height)) };
 
     var chars: [256]Char = std.mem.zeroes([256]Char);
-    var texture: c.GLuint = 0;
 
-    c.glGenTextures(1, &texture);
-    c.glBindTexture(c.GL_TEXTURE_2D, texture);
+    const texture = zgl.genTexture();
 
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
+    // bind and size image
+    texture.bind(.@"2d");
+    zgl.pixelStore(.unpack_alignment, 1);
+    zgl.textureImage2D(.@"2d", 0, .red, @intFromFloat(atlas_size.x), @intFromFloat(atlas_size.y), .rgba, .unsigned_byte, null);
 
-    c.glPixelStorei(c.GL_UNPACK_ALIGNMENT, 1);
+    // set some params for the fonts texture
+    texture.parameter(.min_filter, .nearest);
+    texture.parameter(.mag_filter, .nearest);
 
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, @as(c_int, @intFromFloat(atlas_size.x)), @as(c_int, @intFromFloat(atlas_size.y)), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
-
-    var x: c_uint = 0;
+    var x: usize = 0;
 
     for (0..128) |i| {
         var char_start = 4 + 3 + (char_width * char_height * i);
 
-        c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), 0, @as(c_int, @intCast(char_width)), @as(c_int, @intCast(char_height)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[char_start]);
+        texture.subImage2D(0, x, 0, char_width, char_height, .red, .unsigned_byte, data[char_start..].ptr);
 
         chars[i + 128] = Char{
             .size = .{
-                .x = @as(f32, @floatFromInt(char_width)) * 2,
-                .y = @as(f32, @floatFromInt(char_height)) * 2,
+                .x = @floatFromInt(char_width * 2),
+                .y = @floatFromInt(char_height * 2),
             },
             .bearing = .{
-                .y = @as(f32, @floatFromInt(data[6])) * 2,
+                .y = @floatFromInt(data[6] * 2),
             },
-            .ax = @as(f32, @floatFromInt(char_width)) * 2 - 4,
+            .ax = @floatFromInt(char_width * 2 - 4),
             .ay = 0,
             .tx = @as(f32, @floatFromInt(x)) / atlas_size.x,
             .ty = 0.5,
@@ -101,17 +101,17 @@ pub fn initMem(data: []const u8) !Font {
 
         char_start = 4 + 3 + (char_width * char_height * (i + 128));
 
-        c.glTexSubImage2D(c.GL_TEXTURE_2D, 0, @as(c_int, @intCast(x)), @as(c_int, @intCast(char_height)), @as(c_int, @intCast(char_width)), @as(c_int, @intCast(char_height)), c.GL_RED, c.GL_UNSIGNED_BYTE, &data[char_start]);
+        texture.subImage2D(0, x, char_height, char_width, char_height, .red, .unsigned_byte, data[char_start..].ptr);
 
         chars[i] = Char{
             .size = .{
-                .x = @as(f32, @floatFromInt(char_width)) * 2,
-                .y = @as(f32, @floatFromInt(char_height)) * 2,
+                .x = @floatFromInt(char_width * 2),
+                .y = @floatFromInt(char_height * 2),
             },
             .bearing = .{
-                .y = @as(f32, @floatFromInt(data[6])) * 2,
+                .y = @floatFromInt(data[6] * 2),
             },
-            .ax = @as(f32, @floatFromInt(char_width)) * 2 - 4,
+            .ax = @floatFromInt(char_width * 2 - 4),
             .ay = 0,
             .tx = @as(f32, @floatFromInt(x)) / atlas_size.x,
             .ty = 0,
@@ -130,7 +130,7 @@ pub fn initMem(data: []const u8) !Font {
             .buffer = &.{},
         },
         .setup = true,
-        .size = @as(f32, @floatFromInt(char_height * 2)),
+        .size = @floatFromInt(char_height * 2),
     };
 }
 

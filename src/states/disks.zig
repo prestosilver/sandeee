@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
 const options = @import("options");
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const drawers = @import("../drawers/mod.zig");
 const windows = @import("../windows/mod.zig");
@@ -133,7 +133,7 @@ pub fn update(self: *GSDisks, dt: f32) !void {
             }
 
             if (self.sel == self.disks.items.len - 1) {
-                c.glfwSetWindowShouldClose(graphics.Context.instance.window, 1);
+                glfw.setWindowShouldClose(graphics.Context.instance.window, true);
             } else if (self.sel == self.disks.items.len - 2) {
                 try events.EventManager.instance.sendEvent(system_events.EventStateChange{
                     .target_state = .Recovery,
@@ -153,7 +153,7 @@ pub fn update(self: *GSDisks, dt: f32) !void {
                     .target_state = .Installer,
                 });
             } else {
-                c.glfwSetWindowShouldClose(graphics.Context.instance.window, 1);
+                glfw.setWindowShouldClose(graphics.Context.instance.window, true);
             }
             return;
         }
@@ -221,10 +221,10 @@ pub fn keypress(self: *GSDisks, key: c_int, _: c_int, down: bool) !void {
 
     self.auto = false;
     switch (key) {
-        c.GLFW_KEY_ENTER => {
+        glfw.KeyEnter => {
             self.remaining = 0;
         },
-        c.GLFW_KEY_DOWN => {
+        glfw.KeyDown => {
             if (self.sel < self.disks.items.len - 1) {
                 if (self.sel + 1 == self.start + TOTAL_LINES - 1) {
                     self.start += 1;
@@ -233,7 +233,7 @@ pub fn keypress(self: *GSDisks, key: c_int, _: c_int, down: bool) !void {
                 try audio.instance.playSound(self.blip_sound.*);
             }
         },
-        c.GLFW_KEY_UP => {
+        glfw.KeyUp => {
             if (self.sel > 0) {
                 if (self.sel - 1 == self.start) {
                     if (self.start > 0)
@@ -244,11 +244,9 @@ pub fn keypress(self: *GSDisks, key: c_int, _: c_int, down: bool) !void {
                 try audio.instance.playSound(self.blip_sound.*);
             }
         },
-        else => {
-            if (c.glfwGetKeyName(key, 0) == null) return;
-
+        else => if (glfw.getKeyName(key, 0)) |name| {
             for (self.disks.items, 0..) |disk, idx| {
-                if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
+                if (std.ascii.toUpper(name[0]) == disk[0]) {
                     self.sel = idx;
                     self.remaining = 0;
                 }

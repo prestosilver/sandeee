@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
+const zgl = @import("zgl");
 
 const Windows = @import("mod.zig");
 
@@ -38,9 +39,9 @@ pub const VMData = struct {
 
     //rects: [2]std.ArrayList(VMDataEntry),
     texture: Texture,
-    framebuffer: c.GLuint,
-    renderbuffer: c.GLuint,
-    arraybuffer: c.GLuint,
+    framebuffer: zgl.Framebuffer,
+    renderbuffer: zgl.Renderbuffer,
+    arraybuffer: zgl.Buffer,
 
     spritebatch: SpriteBatch,
     size: Vec2,
@@ -114,23 +115,22 @@ pub const VMData = struct {
             if (self.texture.size.x != self.size.x or
                 self.texture.size.y != self.size.y)
             {
-                var old_renderbuffer: c.GLuint = 0;
-                c.glGetIntegerv(c.GL_RENDERBUFFER_BINDING, @ptrCast(&old_renderbuffer));
-                c.glBindRenderbuffer(c.GL_RENDERBUFFER, self.renderbuffer);
-                defer c.glBindRenderbuffer(c.GL_RENDERBUFFER, old_renderbuffer);
+                const old_renderbuffer: zgl.Renderbuffer = @enumFromInt(zgl.getInteger(.renderbuffer_binding));
+                defer old_renderbuffer.bind(.buffer);
 
-                c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH24_STENCIL8, @intFromFloat(self.size.x), @intFromFloat(self.size.y));
+                self.renderbuffer.bind(.buffer);
+                self.renderbuffer.storage(.buffer, .depth_stencil, @intFromFloat(self.size.x), @intFromFloat(self.size.y));
 
-                c.glBindTexture(c.GL_TEXTURE_2D, self.texture.tex);
-                c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, @intFromFloat(self.size.x), @intFromFloat(self.size.y), 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+                self.texture.tex.bind(.@"2d");
+                zgl.textureImage2D(.@"2d", 0, .rgba, @intFromFloat(self.size.x), @intFromFloat(self.size.y), .rgba, .unsigned_byte, null);
 
                 self.texture.size = self.size;
             }
 
-            var old_framebuffer: c.GLuint = 0;
-            c.glGetIntegerv(c.GL_FRAMEBUFFER_BINDING, @ptrCast(&old_framebuffer));
-            defer c.glBindFramebuffer(c.GL_FRAMEBUFFER, old_framebuffer);
-            c.glBindFramebuffer(c.GL_FRAMEBUFFER, self.framebuffer);
+            const old_framebuffer: zgl.Framebuffer = @enumFromInt(zgl.getInteger(.draw_framebuffer_binding));
+            defer old_framebuffer.bind(.buffer);
+
+            self.framebuffer.bind(.buffer);
 
             const old_size = graphics.Context.instance.size;
             defer graphics.Context.resize(@intFromFloat(old_size.x), @intFromFloat(old_size.y));
@@ -234,7 +234,7 @@ pub const VMData = struct {
         self.input = try allocator.alloc.realloc(self.input, self.input.len + 1);
         self.input[self.input.len - 1] = keycode;
 
-        if (keycode == c.GLFW_KEY_F10) {
+        if (keycode == glfw.KeyF10) {
             self.debug = !self.debug;
         }
     }
@@ -258,9 +258,9 @@ pub const VMData = struct {
             graphics.Context.makeCurrent();
             defer graphics.Context.makeNotCurrent();
 
-            c.glDeleteFramebuffers(1, &self.framebuffer);
-            c.glDeleteRenderbuffers(1, &self.framebuffer);
-            c.glDeleteBuffers(1, &self.arraybuffer);
+            self.framebuffer.delete();
+            self.renderbuffer.delete();
+            self.arraybuffer.delete();
         }
 
         allocator.alloc.destroy(self);
@@ -274,48 +274,39 @@ pub fn init(idx: u8, shader: *Shader) !Window.Data.WindowContents {
         graphics.Context.makeCurrent();
         defer graphics.Context.makeNotCurrent();
 
-        var texture: c.GLuint = 0;
-        c.glGenTextures(1, &texture);
-        errdefer c.glDeleteTextures(1, &texture);
+        const texture: zgl.Texture = zgl.genTexture();
+        errdefer texture.delete();
 
-        c.glBindTexture(c.GL_TEXTURE_2D, texture);
+        texture.bind(.@"2d");
+        texture.parameter(.min_filter, .nearest);
+        texture.parameter(.mag_filter, .nearest);
 
-        c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGBA, DEFAULT_SIZE.x, DEFAULT_SIZE.y, 0, c.GL_RGBA, c.GL_UNSIGNED_BYTE, null);
+        zgl.textureImage2D(.@"2d", 0, .rgba, DEFAULT_SIZE.x, DEFAULT_SIZE.y, .rgba, .unsigned_byte, null);
 
-        c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-        c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
+        const vab = zgl.genBuffer();
+        errdefer vab.delete();
 
-        var vab: c.GLuint = 0;
-        c.glGenBuffers(1, &vab);
-        errdefer c.glDeleteBuffers(1, &vab);
-
-        var rbo: c.GLuint = 0;
-        c.glGenRenderbuffers(1, &rbo);
-        errdefer c.glDeleteRenderbuffers(1, &rbo);
+        const rbo = zgl.genRenderbuffer();
+        errdefer rbo.delete();
 
         {
-            var old_renderbuffer: c.GLuint = 0;
-            c.glGetIntegerv(c.GL_RENDERBUFFER_BINDING, @ptrCast(&old_renderbuffer));
-            c.glBindRenderbuffer(c.GL_RENDERBUFFER, rbo);
-            defer c.glBindRenderbuffer(c.GL_RENDERBUFFER, old_renderbuffer);
+            const old_renderbuffer: zgl.Renderbuffer = @enumFromInt(zgl.getInteger(.renderbuffer_binding));
+            defer old_renderbuffer.bind(.buffer);
 
-            c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH24_STENCIL8, DEFAULT_SIZE.x, DEFAULT_SIZE.y);
+            rbo.storage(.buffer, .depth_stencil, DEFAULT_SIZE.x, DEFAULT_SIZE.y);
         }
 
-        var fbo: c.GLuint = 0;
-        c.glGenFramebuffers(1, &fbo);
-        errdefer c.glDeleteFramebuffers(1, &fbo);
+        const fbo = zgl.genFramebuffer();
+        errdefer fbo.delete();
 
         {
-            var old_framebuffer: c.GLuint = 0;
-            c.glGetIntegerv(c.GL_FRAMEBUFFER_BINDING, @ptrCast(&old_framebuffer));
-            c.glBindFramebuffer(c.GL_FRAMEBUFFER, fbo);
-            defer c.glBindFramebuffer(c.GL_FRAMEBUFFER, old_framebuffer);
+            const old_framebuffer: zgl.Framebuffer = @enumFromInt(zgl.getInteger(.draw_framebuffer_binding));
+            defer old_framebuffer.bind(.buffer);
 
-            c.glFramebufferTexture2D(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, c.GL_TEXTURE_2D, texture, 0);
-            c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_STENCIL_ATTACHMENT, c.GL_RENDERBUFFER, rbo);
+            fbo.texture2D(.buffer, .color0, .@"2d", texture, 0);
+            fbo.renderbuffer(.buffer, .depth_stencil, .buffer, rbo);
 
-            if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
+            if (zgl.checkFramebufferStatus(.buffer) != .complete)
                 return error.OutOfMemory;
         }
 

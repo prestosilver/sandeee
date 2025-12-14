@@ -1,6 +1,6 @@
 const options = @import("options");
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const states = @import("mod.zig");
 
@@ -224,7 +224,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
     if (!down) return;
 
     switch (key) {
-        c.GLFW_KEY_ESCAPE => {
+        glfw.KeyEscape => {
             if (self.confirm_sel != null)
                 self.confirm_sel = null
             else if (self.sub_sel != null)
@@ -234,7 +234,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                     .target_state = .Disks,
                 });
         },
-        c.GLFW_KEY_ENTER => {
+        glfw.KeyEnter => {
             if (self.sub_sel) |sub_sel| {
                 if (self.confirm_sel) |confirm| {
                     if (confirm) {
@@ -304,7 +304,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                 try audio.instance.playSound(self.select_sound.*);
             }
         },
-        c.GLFW_KEY_DOWN => {
+        glfw.KeyDown => {
             if (self.confirm_sel != null) {
                 self.confirm_sel = false;
             } else if (self.sub_sel) |*sub_sel| {
@@ -318,7 +318,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                 try audio.instance.playSound(self.blip_sound.*);
             }
         },
-        c.GLFW_KEY_UP => {
+        glfw.KeyUp => {
             if (self.confirm_sel != null) {
                 self.confirm_sel = true;
             } else if (self.sub_sel) |*sub_sel| {
@@ -331,10 +331,8 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                 try audio.instance.playSound(self.blip_sound.*);
             }
         },
-        else => {
-            if (c.glfwGetKeyName(key, 0) == null) return;
-
-            if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == 'X') {
+        else => if (glfw.getKeyName(key, 0)) |name| {
+            if (std.ascii.toUpper(name[0]) == 'X') {
                 if (self.sub_sel) |_| {
                     self.sub_sel = null;
 
@@ -349,7 +347,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                 try audio.instance.playSound(self.select_sound.*);
             } else if (self.sub_sel) |sub_sel| {
                 _ = sub_sel;
-                switch (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0])) {
+                switch (std.ascii.toUpper(name[0])) {
                     'R' => {
                         try files.Folder.recoverDisk(self.disks.items[self.sel][2..], false);
                         self.status = "Reinstalled";
@@ -389,7 +387,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                 }
             } else {
                 for (self.disks.items, 0..) |disk, idx| {
-                    if (std.ascii.toUpper(c.glfwGetKeyName(key, 0)[0]) == disk[0]) {
+                    if (std.ascii.toUpper(name[0]) == disk[0]) {
                         self.sel = idx;
                         self.sub_sel = .Reinstall;
 

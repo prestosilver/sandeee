@@ -1,7 +1,7 @@
 const options = @import("options");
 const builtin = @import("builtin");
+const glfw = @import("glfw");
 const std = @import("std");
-const c = @import("../c.zig");
 
 const states = @import("mod.zig");
 
@@ -255,29 +255,29 @@ pub fn removeChar(self: *GSInstaller) !void {
 pub fn keypress(self: *GSInstaller, keycode: c_int, mods: c_int, down: bool) !void {
     if (!down) return;
     switch (keycode) {
-        c.GLFW_KEY_A...c.GLFW_KEY_Z => {
-            if ((mods & c.GLFW_MOD_SHIFT) != 0) {
-                try self.appendChar(@as(u8, @intCast(keycode - c.GLFW_KEY_A)) + 'A');
+        glfw.KeyA...glfw.KeyZ => {
+            if ((mods & glfw.ModifierShift) != 0) {
+                try self.appendChar(@as(u8, @intCast(keycode - glfw.KeyA)) + 'A');
             } else {
-                try self.appendChar(@as(u8, @intCast(keycode - c.GLFW_KEY_A)) + 'a');
+                try self.appendChar(@as(u8, @intCast(keycode - glfw.KeyA)) + 'a');
             }
         },
-        c.GLFW_KEY_0...c.GLFW_KEY_9 => {
-            try self.appendChar(@as(u8, @intCast(keycode - c.GLFW_KEY_0)) + '0');
+        glfw.KeyNum0...glfw.KeyNum9 => {
+            try self.appendChar(@as(u8, @intCast(keycode - glfw.KeyNum0)) + '0');
         },
-        c.GLFW_KEY_PERIOD => {
+        glfw.KeyPeriod => {
             try self.appendChar('.');
         },
-        c.GLFW_KEY_BACKSPACE => {
+        glfw.KeyBackspace => {
             try self.removeChar();
         },
-        c.GLFW_KEY_MINUS => {
+        glfw.KeyMinus => {
             try self.appendChar('-');
         },
-        c.GLFW_KEY_SPACE => {
+        glfw.KeySpace => {
             try self.appendChar('_');
         },
-        c.GLFW_KEY_ENTER => {
+        glfw.KeyEnter => {
             switch (self.status) {
                 .Naming => {
                     try audio.instance.playSound(self.select_sound.*);

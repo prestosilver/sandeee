@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const windows = @import("mod.zig");
 
@@ -716,7 +716,7 @@ pub const EditorData = struct {
 
     pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
         if (!down) return;
-        if (keycode == c.GLFW_KEY_N and mods == (c.GLFW_MOD_CONTROL)) {
+        if (keycode == glfw.KeyN and mods == (glfw.ModifierControl)) {
             try self.newFile();
             return;
         }
@@ -724,8 +724,8 @@ pub const EditorData = struct {
         if (self.buffer == null) return;
 
         switch (keycode) {
-            c.GLFW_KEY_A => {
-                if (mods == (c.GLFW_MOD_CONTROL)) {
+            glfw.KeyA => {
+                if (mods == glfw.ModifierControl) {
                     self.cursorx = 0;
                     self.cursory = 0;
                     self.cursor_len = 0;
@@ -737,8 +737,8 @@ pub const EditorData = struct {
                     return;
                 }
             },
-            c.GLFW_KEY_C => {
-                if (mods == (c.GLFW_MOD_CONTROL)) {
+            glfw.KeyC => {
+                if (mods == glfw.ModifierControl) {
                     const sel = try self.getSel();
                     defer allocator.alloc.free(sel);
 
@@ -749,18 +749,18 @@ pub const EditorData = struct {
                     return;
                 }
             },
-            c.GLFW_KEY_S => {
-                if (mods == (c.GLFW_MOD_CONTROL)) {
+            glfw.KeyS => {
+                if (mods == glfw.ModifierControl) {
                     try self.save();
 
                     return;
                 }
             },
-            c.GLFW_KEY_TAB => {
+            glfw.KeyTab => {
                 try self.char(' ', mods);
                 try self.char(' ', mods);
             },
-            c.GLFW_KEY_ENTER => {
+            glfw.KeyEnter => {
                 if (self.buffer) |*buffer| {
                     buffer.* = try allocator.alloc.realloc(buffer.*, buffer.len + 1);
                     std.mem.copyBackwards(Row, buffer.*[self.cursory + 1 ..], buffer.*[self.cursory .. buffer.len - 1]);
@@ -780,7 +780,7 @@ pub const EditorData = struct {
                     self.modified = true;
                 }
             },
-            c.GLFW_KEY_DELETE => {
+            glfw.KeyDelete => {
                 if (self.buffer) |buffer| {
                     if (self.cursor_len != 0) {
                         try self.deleteSel();
@@ -800,7 +800,7 @@ pub const EditorData = struct {
                     }
                 }
             },
-            c.GLFW_KEY_BACKSPACE => {
+            glfw.KeyBackspace => {
                 if (self.buffer) |buffer| {
                     if (self.cursor_len != 0) {
                         try self.deleteSel();
@@ -840,16 +840,16 @@ pub const EditorData = struct {
                     }
                 }
             },
-            c.GLFW_KEY_LEFT => {
+            glfw.KeyLeft => {
                 if (self.buffer) |buffer| {
-                    if (mods == c.GLFW_MOD_SHIFT and self.cursor_len < 0) {
+                    if (mods == glfw.ModifierShift and self.cursor_len < 0) {
                         self.cursor_len += 1;
-                    } else if (mods == c.GLFW_MOD_SHIFT and self.cursor_len > 0) {
+                    } else if (mods == glfw.ModifierShift and self.cursor_len > 0) {
                         if (self.cursorx > 0) {
                             self.cursorx -= 1;
                             self.cursor_len += 1;
                         }
-                    } else if (mods == c.GLFW_MOD_SHIFT) {
+                    } else if (mods == glfw.ModifierShift) {
                         if (self.cursorx > 0) {
                             self.cursorx -= 1;
                             self.cursor_len += 1;
@@ -870,16 +870,16 @@ pub const EditorData = struct {
                     }
                 }
             },
-            c.GLFW_KEY_RIGHT => {
+            glfw.KeyRight => {
                 if (self.buffer) |buffer| {
-                    if (mods == c.GLFW_MOD_SHIFT and self.cursor_len > 0) {
+                    if (mods == glfw.ModifierShift and self.cursor_len > 0) {
                         if (self.cursorx < buffer[self.cursory].text.len) {
                             self.cursorx += 1;
                             self.cursor_len -= 1;
                         }
-                    } else if (mods == c.GLFW_MOD_SHIFT and self.cursor_len < 0) {
+                    } else if (mods == glfw.ModifierShift and self.cursor_len < 0) {
                         self.cursor_len -= 1;
-                    } else if (mods == c.GLFW_MOD_SHIFT) {
+                    } else if (mods == glfw.ModifierShift) {
                         self.cursor_len -= 1;
                     } else {
                         if (self.cursor_len == 0) {
@@ -902,12 +902,12 @@ pub const EditorData = struct {
                     }
                 }
             },
-            c.GLFW_KEY_UP => {
+            glfw.KeyUp => {
                 if (self.cursory > 0)
                     self.cursory -= 1;
                 self.cursor_len = 0;
             },
-            c.GLFW_KEY_DOWN => {
+            glfw.KeyDown => {
                 if (self.buffer) |buffer| {
                     if (self.cursory < buffer.len - 1)
                         self.cursory += 1;

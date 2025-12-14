@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
 const options = @import("options");
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const drawers = @import("../drawers/mod.zig");
 const windows = @import("../windows/mod.zig");
@@ -94,7 +94,6 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
 }
 
 pub fn keypress(_: *GSCrash, key: c_int, _: c_int, down: bool) !void {
-    if (down and key == c.GLFW_KEY_ESCAPE)
-        c.glfwSetWindowShouldClose(graphics.Context.instance.window, 1);
-    return;
+    if (down and key == glfw.KeyEscape)
+        glfw.setWindowShouldClose(graphics.Context.instance.window, true);
 }

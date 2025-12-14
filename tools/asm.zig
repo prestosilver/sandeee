@@ -1,5 +1,6 @@
 const std = @import("std");
-const Vm = @import("sandeee").system.Vm;
+
+const Operation = @import("sandeee_operation");
 
 pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
 pub const allocator = gpa.allocator();
@@ -77,7 +78,7 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
         if (std.mem.indexOf(u8, l, " ") != null) {
             op = l[0..std.mem.indexOf(u8, l, " ").?];
         }
-        var code: Vm.Operation.Code = .Last;
+        var code: Operation.Code = .Last;
 
         if (std.mem.eql(u8, op, "nop")) code = .Nop;
         if (std.mem.eql(u8, op, "sys")) code = .Sys;
@@ -258,7 +259,7 @@ pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
         if (std.mem.indexOf(u8, l, " ") != null) {
             op = l[0..std.mem.indexOf(u8, l, " ").?];
         }
-        var code: Vm.Operation.Code = .Last;
+        var code: Operation.Code = .Last;
 
         if (std.mem.eql(u8, op, "nop")) code = .Nop;
         if (std.mem.eql(u8, op, "sys")) code = .Sys;

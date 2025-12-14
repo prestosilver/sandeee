@@ -15,6 +15,8 @@ pub const data = @import("data/mod.zig");
 
 // not-op programming lang
 const c = @import("c.zig");
+const zgl = @import("zgl");
+const glfw = @import("glfw");
 
 // states
 const GameState = states.GameState;
@@ -115,26 +117,26 @@ const BLIP_SOUND_DATA = @embedFile("bios-blip.era");
 const SELECT_SOUND_DATA = @embedFile("bios-select.era");
 
 const SHADER_FILES = [2]Shader.ShaderFile{
-    Shader.ShaderFile{ .contents = FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
-    Shader.ShaderFile{ .contents = VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
+    Shader.ShaderFile{ .contents = FRAG_SHADER, .kind = .fragment },
+    Shader.ShaderFile{ .contents = VERT_SHADER, .kind = .vertex },
 };
 
 const FONT_SHADER_FILES = [2]Shader.ShaderFile{
-    Shader.ShaderFile{ .contents = FONT_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
-    Shader.ShaderFile{ .contents = FONT_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
+    Shader.ShaderFile{ .contents = FONT_FRAG_SHADER, .kind = .fragment },
+    Shader.ShaderFile{ .contents = FONT_VERT_SHADER, .kind = .vertex },
 };
 
 const CRT_SHADER_FILES = [2]Shader.ShaderFile{
-    Shader.ShaderFile{ .contents = CRT_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
-    Shader.ShaderFile{ .contents = CRT_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
+    Shader.ShaderFile{ .contents = CRT_FRAG_SHADER, .kind = .fragment },
+    Shader.ShaderFile{ .contents = CRT_VERT_SHADER, .kind = .vertex },
 };
 
 const CLEAR_SHADER_FILES = [2]Shader.ShaderFile{
-    Shader.ShaderFile{ .contents = CLEAR_FRAG_SHADER, .kind = c.GL_FRAGMENT_SHADER },
-    Shader.ShaderFile{ .contents = CLEAR_VERT_SHADER, .kind = c.GL_VERTEX_SHADER },
+    Shader.ShaderFile{ .contents = CLEAR_FRAG_SHADER, .kind = .fragment },
+    Shader.ShaderFile{ .contents = CLEAR_VERT_SHADER, .kind = .vertex },
 };
 
-const FULL_QUAD = [_]c.GLfloat{
+const FULL_QUAD = [_]zgl.Float{
     -0.5, -0.5, 0.0,
     0.5,  -0.5, 0.0,
     -0.5, 0.5,  0.0,
@@ -175,10 +177,10 @@ var error_state: u8 = 0;
 var paniced = false;
 
 // for Shader rect
-var framebuffer_name: c.GLuint = 0;
-var quad_vertex_array_id: c.GLuint = 0;
-var rendered_texture: c.GLuint = 0;
-var depth_render_buffer: c.GLuint = 0;
+var framebuffer_name: zgl.Framebuffer = .invalid;
+var quad_vertex_array_id: zgl.Buffer = .invalid;
+var rendered_texture: zgl.Texture = .invalid;
+var depth_render_buffer: zgl.Renderbuffer = .invalid;
 
 // fps tracking
 var final_fps: u32 = 60;
@@ -191,13 +193,13 @@ var steam_utils: *const steam.Utils = undefined;
 var crt_enable = true;
 
 pub fn blit() !void {
-    const start_time = c.glfwGetTime();
+    const start_time = glfw.getTime();
 
     // actual gl calls start here
     graphics.Context.makeCurrent();
     defer graphics.Context.makeNotCurrent();
 
-    if (c.glfwGetWindowAttrib(graphics.Context.instance.window, c.GLFW_ICONIFIED) != 0) {
+    if (glfw.getWindowAttrib(graphics.Context.instance.window, glfw.Iconified) != 0) {
         // for when minimized render nothing
         graphics.Context.clear();
 
@@ -233,7 +235,7 @@ pub fn blit() !void {
     }
 
     if (crt_enable)
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebuffer_name);
+        framebuffer_name.bind(.buffer);
 
     graphics.Context.clear();
 
@@ -241,25 +243,24 @@ pub fn blit() !void {
     try SpriteBatch.global.render();
 
     if (crt_enable) {
-        c.glBindFramebuffer(c.GL_FRAMEBUFFER, 0);
-        c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_vertex_array_id);
-        c.glBindTexture(c.GL_TEXTURE_2D, rendered_texture);
+        zgl.Framebuffer.bind(.invalid, .buffer);
+        quad_vertex_array_id.bind(.array_buffer);
+        rendered_texture.bind(.@"2d");
 
-        c.glUseProgram(crt_shader.id);
-        crt_shader.setFloat("time", @as(f32, @floatCast(c.glfwGetTime())));
+        crt_shader.program.use();
+        crt_shader.setFloat("time", @as(f32, @floatCast(glfw.getTime())));
 
-        c.glDisable(c.GL_BLEND);
+        zgl.disable(.blend);
 
-        c.glVertexAttribPointer(0, 3, c.GL_FLOAT, 0, 3 * @sizeOf(f32), null);
-        c.glEnableVertexAttribArray(0);
-        c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
+        zgl.vertexAttribPointer(0, 3, .float, false, 3 * @sizeOf(zgl.Float), 0);
+        zgl.enableVertexAttribArray(0);
+        zgl.drawArrays(.triangles, 0, 6);
+        zgl.enable(.blend);
 
-        c.glEnable(c.GL_BLEND);
-
-        c.glBindBuffer(c.GL_ARRAY_BUFFER, 0);
+        zgl.bindBuffer(.invalid, .array_buffer);
     }
 
-    VmManager.last_render_time = c.glfwGetTime() - start_time;
+    VmManager.last_render_time = glfw.getTime() - start_time;
 
     // swap buffer
     graphics.Context.swap();
@@ -270,11 +271,11 @@ pub fn changeState(event: system_events.EventStateChange) !void {
 }
 
 pub fn keyDown(event: input_events.EventKeyDown) !void {
-    if (event.key == c.GLFW_KEY_F12) {
+    if (event.key == glfw.KeyF12) {
         show_fps = !show_fps;
     }
 
-    if (event.key == c.GLFW_KEY_V and event.mods == (c.GLFW_MOD_CONTROL)) {
+    if (event.key == glfw.KeyV and event.mods == glfw.ModifierControl) {
         try events.EventManager.instance.sendEvent(system_events.EventPaste{});
 
         return;
@@ -315,19 +316,17 @@ pub fn copy(event: system_events.EventCopy) !void {
     const to_copy = try allocator.alloc.dupeZ(u8, event.value);
     defer allocator.alloc.free(to_copy);
 
-    c.glfwSetClipboardString(graphics.Context.instance.window, to_copy);
+    glfw.setClipboardString(graphics.Context.instance.window, to_copy);
 }
 
 pub fn paste(_: system_events.EventPaste) !void {
-    const tmp = c.glfwGetClipboardString(graphics.Context.instance.window);
-    if (tmp == null) return;
-
-    const len = std.mem.len(tmp);
-    for (tmp[0..len]) |ch| {
-        if (ch == '\n') {
-            try game_states.getPtr(current_state).keypress(c.GLFW_KEY_ENTER, 0, true);
-            try game_states.getPtr(current_state).keypress(c.GLFW_KEY_ENTER, 0, false);
-        } else try game_states.getPtr(current_state).keychar(ch, 0);
+    if (glfw.getClipboardString(graphics.Context.instance.window)) |clipboard_text| {
+        for (clipboard_text) |ch| {
+            if (ch == '\n') {
+                try game_states.getPtr(current_state).keypress(glfw.KeyEnter, 0, true);
+                try game_states.getPtr(current_state).keypress(glfw.KeyEnter, 0, false);
+            } else try game_states.getPtr(current_state).keychar(ch, 0);
+        }
     }
 }
 
@@ -446,25 +445,26 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
     graphics.Context.makeCurrent();
     defer graphics.Context.makeNotCurrent();
 
-    graphics.Context.resize(event.w, event.h);
+    graphics.Context.resize(@intCast(event.w), @intCast(event.h));
 
     // clear the window
-    c.glBindTexture(c.GL_TEXTURE_2D, rendered_texture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+    rendered_texture.bind(.@"2d");
+
+    zgl.textureImage2D(.@"2d", 0, .rgb, @intFromFloat(graphics.Context.instance.size.x), @intFromFloat(graphics.Context.instance.size.y), .rgb, .unsigned_byte, null);
 
     // Poor filtering. Needed !
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
+    rendered_texture.parameter(.mag_filter, .linear);
+    rendered_texture.parameter(.min_filter, .linear);
+    rendered_texture.parameter(.wrap_s, .clamp_to_edge);
+    rendered_texture.parameter(.wrap_t, .clamp_to_edge);
 
-    c.glBindRenderbuffer(c.GL_RENDERBUFFER, depth_render_buffer);
-    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)));
+    depth_render_buffer.bind(.buffer);
+    depth_render_buffer.storage(.buffer, .depth_component, @intFromFloat(graphics.Context.instance.size.x), @intFromFloat(graphics.Context.instance.size.y));
 }
 
 var graphics_init = false;
 
-pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     defer {
         log.deinit();
 
@@ -472,6 +472,8 @@ pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noretu
             std.debug.assert(allocator.gpa.deinit() == .ok);
         }
     }
+
+    if (paniced) std.process.exit(1);
 
     paniced = true;
 
@@ -745,38 +747,39 @@ pub fn runGame() anyerror!void {
     crt_shader.setInt("dither_enable", if (is_crt) 1 else 0);
 
     // setup render texture for shaders
-    c.glGenFramebuffers(1, &framebuffer_name);
-    c.glBindFramebuffer(c.GL_FRAMEBUFFER, framebuffer_name);
+    framebuffer_name = zgl.genFramebuffer();
+    framebuffer_name.bind(.buffer);
 
-    c.glGenBuffers(1, &quad_vertex_array_id);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, quad_vertex_array_id);
-    c.glBufferData(c.GL_ARRAY_BUFFER, @as(c.GLsizeiptr, @intCast(FULL_QUAD.len * @sizeOf(f32))), &FULL_QUAD, c.GL_DYNAMIC_DRAW);
+    quad_vertex_array_id = zgl.genBuffer();
+    quad_vertex_array_id.bind(.array_buffer);
+    quad_vertex_array_id.data(zgl.Float, &FULL_QUAD, .dynamic_draw);
 
     // create color texture
-    c.glGenTextures(1, &rendered_texture);
+    rendered_texture = zgl.genTexture();
 
     // clear the windo
-    c.glBindTexture(c.GL_TEXTURE_2D, rendered_texture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RGB, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)), 0, c.GL_RGB, c.GL_UNSIGNED_BYTE, null);
+    rendered_texture.bind(.@"2d");
 
-    // Poor filtering. Needed !
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_LINEAR);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_LINEAR);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_CLAMP_TO_EDGE);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_CLAMP_TO_EDGE);
+    // poor filtering needed
+    rendered_texture.parameter(.mag_filter, .linear);
+    rendered_texture.parameter(.min_filter, .linear);
+    rendered_texture.parameter(.wrap_s, .clamp_to_edge);
+    rendered_texture.parameter(.wrap_t, .clamp_to_edge);
+
+    zgl.textureImage2D(.@"2d", 0, .rgb, @intFromFloat(graphics.Context.instance.size.x), @intFromFloat(graphics.Context.instance.size.y), .rgb, .unsigned_byte, null);
 
     // create depth texture
-    c.glGenRenderbuffers(1, &depth_render_buffer);
+    depth_render_buffer = zgl.genRenderbuffer();
+    depth_render_buffer.bind(.buffer);
 
-    c.glBindRenderbuffer(c.GL_RENDERBUFFER, depth_render_buffer);
-    c.glRenderbufferStorage(c.GL_RENDERBUFFER, c.GL_DEPTH_COMPONENT, @as(i32, @intFromFloat(graphics.Context.instance.size.x)), @as(i32, @intFromFloat(graphics.Context.instance.size.y)));
-    c.glFramebufferRenderbuffer(c.GL_FRAMEBUFFER, c.GL_DEPTH_ATTACHMENT, c.GL_RENDERBUFFER, depth_render_buffer);
+    depth_render_buffer.storage(.buffer, .depth_component, @intFromFloat(graphics.Context.instance.size.x), @intFromFloat(graphics.Context.instance.size.y));
 
-    c.glFramebufferTexture(c.GL_FRAMEBUFFER, c.GL_COLOR_ATTACHMENT0, rendered_texture, 0);
+    framebuffer_name.renderbuffer(.buffer, .depth, .buffer, depth_render_buffer);
+    framebuffer_name.texture(.buffer, .color0, rendered_texture, 0);
 
-    c.glDrawBuffers(1, &[_]c.GLenum{c.GL_COLOR_ATTACHMENT0});
+    zgl.drawBuffers(&.{.color0});
 
-    if (c.glCheckFramebufferStatus(c.GL_FRAMEBUFFER) != c.GL_FRAMEBUFFER_COMPLETE)
+    if (zgl.checkFramebufferStatus(.buffer) != .complete)
         return error.FramebufferSetupFail;
 
     // give spritebatch size
@@ -947,18 +950,18 @@ pub fn runGame() anyerror!void {
     var timer: std.time.Timer = try std.time.Timer.start();
     var last_frame_end: f64 = 0;
 
-    c.glfwSetTime(0);
+    glfw.setTime(0);
 
     // main loop
     while (graphics.Context.poll()) {
         // get the time & update
-        const start_time = c.glfwGetTime();
+        const start_time = glfw.getTime();
 
         // get the current state
         const state = game_states.getPtr(prev);
 
         // pause the game on minimize
-        if (c.glfwGetWindowAttrib(graphics.Context.instance.window, c.GLFW_ICONIFIED) == 0) {
+        if (glfw.getWindowAttrib(graphics.Context.instance.window, glfw.Iconified) == 0) {
 
             // steam callbacks
             // if (options.IsSteam) {
@@ -1019,17 +1022,17 @@ pub fn runGame() anyerror!void {
             // try batch.SpriteBatch.instance.clear();
         } else {
             // track update time
-            VmManager.last_update_time = c.glfwGetTime() - start_time;
+            VmManager.last_update_time = glfw.getTime() - start_time;
 
             // render this is in else to fix single frame bugs
             try blit();
             fps += 1;
 
             // update the time
-            const frame_time = c.glfwGetTime() - last_frame_end;
+            const frame_time = glfw.getTime() - last_frame_end;
             if (frame_time != 0) {
                 VmManager.last_frame_time = frame_time;
-                last_frame_end = c.glfwGetTime();
+                last_frame_end = glfw.getTime();
             }
         }
     }

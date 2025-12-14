@@ -1,7 +1,7 @@
 const std = @import("std");
 const steam = @import("steam");
 const options = @import("options");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const Windows = @import("mod.zig");
 
@@ -974,12 +974,12 @@ pub const WebData = struct {
         if (!down) return;
 
         switch (keycode) {
-            c.GLFW_KEY_BACKSPACE => {
+            glfw.KeyBackspace => {
                 try self.back(true);
                 return;
             },
-            c.GLFW_KEY_TAB => {
-                if (mods == c.GLFW_MOD_SHIFT) {
+            glfw.KeyTab => {
+                if (mods == glfw.ModifierShift) {
                     self.highlight_idx -= 1;
                 } else {
                     self.highlight_idx += 1;
@@ -994,7 +994,7 @@ pub const WebData = struct {
 
                 return;
             },
-            c.GLFW_KEY_ENTER => {
+            glfw.KeyEnter => {
                 try self.followLink();
             },
             else => {},

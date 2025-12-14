@@ -13,6 +13,14 @@
             .url = "git+https://github.com/zigimg/zigimg.git#7144f698850afd968fa87e04b95343d819912a33",
             .hash = "zigimg-0.1.0-8_eo2h6XEgAR6UkBiCtWECcml0gtx0oIXE3MX7sPCZof",
         },
+        .zglfw = .{
+            .url = "git+https://github.com/IridescenceTech/zglfw#d37a94ea1c28f05fc12517af181cc9e42f536e9e",
+            .hash = "zglfw-0.1.0-BghZXZbSAADZ4NJ94ndyWHeWGQv2QzOboDaiuN89AtPQ",
+        },
+        .zgl = .{
+            .url = "https://github.com/ziglibs/zgl/archive/1839ad8b69138adeeb708fc2db8d70b051171d64.tar.gz",
+            .hash = "zgl-1.1.0-p_NpAH2rCQCau2UOYRdNu2eC-_T4CMWcgpqpv8REofLl",
+        },
     },
     .paths = .{
         "build.zig",

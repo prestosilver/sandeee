@@ -100,6 +100,18 @@ pub fn build(b: *std.Build) !void {
     const version_write = b.addInstallFile(version_file, "../VERSION");
     const iversion_write = b.addInstallFile(iversion_file, "../IVERSION");
 
+    const glfw_dependency = b.dependency("zglfw", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const glfw_module = glfw_dependency.module("glfw");
+
+    const zgl_dependency = b.dependency("zgl", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zgl_module = zgl_dependency.module("zgl");
+
     const network_dependency = b.dependency("network", .{
         .target = target,
         .optimize = optimize,
@@ -133,10 +145,14 @@ pub fn build(b: *std.Build) !void {
 
     exe_mod.addImport("options", options_module);
     exe_mod.addImport("network", network_module);
+    exe_mod.addImport("glfw", glfw_module);
+    exe_mod.addImport("zgl", zgl_module);
     exe_mod.addImport("steam", steam_module);
 
     exe_host_mod.addImport("options", options_module);
     exe_host_mod.addImport("network", network_module);
+    exe_host_mod.addImport("glfw", glfw_module);
+    exe_host_mod.addImport("zgl", zgl_module);
     exe_host_mod.addImport("steam", steam_module);
 
     const image_builder_mod = b.createModule(.{
@@ -171,7 +187,9 @@ pub fn build(b: *std.Build) !void {
         .target = b.graph.host,
         .link_libc = true,
     });
-    asm_builder_mod.addImport("sandeee", exe_host_mod);
+    asm_builder_mod.addAnonymousImport("sandeee_operation", .{
+        .root_source_file = b.path("src/system/vmoperation.zig"),
+    });
     asm_builder_mod.addImport("options", options_module);
     const asm_builder_exe = b.addExecutable(.{
         .name = "asm_builder",
@@ -446,12 +464,6 @@ pub fn build(b: *std.Build) !void {
         exe.addObjectFile(b.path("deps/lib/libopenal.so"));
     }
 
-    // Sources
-    exe.addCSourceFile(.{
-        .file = b.path("deps/src/glad.c"),
-        .flags = &[_][]const u8{"-std=c99"},
-    });
-
     if (steam_mode == .On) {
         if (target.result.os.tag == .windows)
             exe.linkSystemLibrary("steam_api64")
@@ -471,6 +483,7 @@ pub fn build(b: *std.Build) !void {
         const builder = b.addRunArtifact(eia_builder_exe);
         builder.addFileInput(pngf);
         builder.addFileArg(pngf);
+
         const output_file = builder.addOutputFileArg(eiaf);
 
         exe_mod.addAnonymousImport(eiaf, .{
@@ -780,10 +793,6 @@ pub fn build(b: *std.Build) !void {
         exe_pub_linux.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
         exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
         exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
-        exe_pub_linux.addCSourceFile(.{
-            .file = b.path("deps/src/glad.c"),
-            .flags = &[_][]const u8{"-std=c99"},
-        });
         exe_pub_linux.linkSystemLibrary("steam_api");
         exe_pub_linux.linkLibC();
 
@@ -824,10 +833,6 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.subsystem = .Windows;
         exe_pub_linux.linkLibC();
 
-        exe_pub_windows.addCSourceFile(.{
-            .file = b.path("deps/src/glad.c"),
-            .flags = &[_][]const u8{"-std=c99"},
-        });
         exe_pub_windows.linkSystemLibrary("steam_api64");
 
         const pub_windows_step = b.addInstallArtifact(
@@ -920,10 +925,6 @@ pub fn build(b: *std.Build) !void {
         exe_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
         exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
-        exe_pub_linux.addCSourceFile(.{
-            .file = b.path("deps/src/glad.c"),
-            .flags = &[_][]const u8{"-std=c99"},
-        });
 
         const pub_linux_step = b.addInstallArtifact(
             exe_pub_linux,
@@ -957,11 +958,6 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
-
-        exe_pub_windows.addCSourceFile(.{
-            .file = b.path("deps/src/glad.c"),
-            .flags = &[_][]const u8{"-std=c99"},
-        });
 
         const pub_windows_step = b.addInstallArtifact(
             exe_pub_windows,

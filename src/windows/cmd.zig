@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const Windows = @import("mod.zig");
 
@@ -194,10 +194,10 @@ pub const CMDData = struct {
         if (!down) return;
         if (self.shell.vm != null) {
             switch (code) {
-                c.GLFW_KEY_ENTER => {
+                glfw.KeyEnter => {
                     try self.shell.appendVMIn('\n');
                 },
-                c.GLFW_KEY_BACKSPACE => {
+                glfw.KeyBackspace => {
                     try self.shell.appendVMIn('\x08');
                 },
                 else => {},
@@ -209,7 +209,7 @@ pub const CMDData = struct {
         self.bot = true;
 
         switch (code) {
-            c.GLFW_KEY_ENTER => {
+            glfw.KeyEnter => {
                 if (self.shell.vm != null) {
                     try self.shell.appendVMIn('\n');
 
@@ -270,7 +270,7 @@ pub const CMDData = struct {
 
                 try self.processBT();
             },
-            c.GLFW_KEY_UP => {
+            glfw.KeyUp => {
                 if (self.history_idx > 0) {
                     self.history_idx -= 1;
                     self.input_len = @as(u8, @intCast(self.history.items[self.history_idx].len));
@@ -278,7 +278,7 @@ pub const CMDData = struct {
                     @memcpy(self.input_buffer[0..self.input_len], self.history.items[self.history_idx]);
                 }
             },
-            c.GLFW_KEY_DOWN => {
+            glfw.KeyDown => {
                 if (self.history_idx < self.history.items.len) {
                     self.history_idx += 1;
                     if (self.history_idx == self.history.items.len) {
@@ -291,24 +291,24 @@ pub const CMDData = struct {
                     }
                 }
             },
-            c.GLFW_KEY_LEFT => {
+            glfw.KeyLeft => {
                 if (self.input_idx != 0) {
                     self.input_idx -= 1;
                 }
             },
-            c.GLFW_KEY_RIGHT => {
+            glfw.KeyRight => {
                 if (self.input_idx != self.input_len) {
                     self.input_idx += 1;
                 }
             },
-            c.GLFW_KEY_BACKSPACE => {
+            glfw.KeyBackspace => {
                 if (self.input_idx != 0) {
                     self.input_len -= 1;
                     self.input_idx -= 1;
                     std.mem.copyForwards(u8, self.input_buffer[self.input_idx..255], self.input_buffer[self.input_idx + 1 ..]);
                 }
             },
-            c.GLFW_KEY_DELETE => {
+            glfw.KeyDelete => {
                 if (self.input_idx != self.input_len) {
                     std.mem.copyForwards(u8, self.input_buffer[self.input_idx..255], self.input_buffer[self.input_idx + 1 ..]);
                     self.input_len -= 1;

@@ -24,11 +24,10 @@ const Windowed = states.Windowed;
 const Rope = util.Rope;
 const log = util.log;
 
-// TODOL move to data module
 pub const MAIN_NAME = "_main";
 pub const EXIT_NAME = "_quit";
 
-// TODO: Unhardcode
+// TODO: move stack stuff to settings?
 const STACK_MAX = 2048;
 const RET_STACK_MAX = 256;
 
@@ -202,80 +201,7 @@ pub inline fn replaceStack(self: *Vm, a: VmAllocator.ObjectRef, b: VmAllocator.O
     }
 }
 
-pub const Operation = struct {
-    pub const Code = enum(u8) {
-        Nop,
-        Sys,
-
-        Push,
-        Add,
-        Sub,
-        Copy,
-
-        Jmp,
-        Jz,
-        Jnz,
-        Jmpf,
-
-        Mul,
-        Div,
-
-        And,
-        Or,
-        Not,
-        Eq,
-
-        Getb,
-
-        Ret,
-        Call,
-
-        Neg,
-        Xor,
-        Disc,
-        Asign,
-        Dup,
-
-        Less,
-        Greater,
-
-        Cat,
-        Mod,
-        Create,
-        Size,
-        Len,
-
-        Sin,
-        Cos,
-        Random,
-        Seed,
-        Zero,
-        Mem,
-        DiscN,
-
-        Last,
-        _,
-    };
-
-    code: Code,
-    string: ?[]const u8 = null,
-    value: ?u64 = null,
-
-    pub fn format(
-        self: Operation,
-        comptime _: []const u8,
-        _: std.fmt.FormatOptions,
-        writer: anytype,
-    ) !void {
-        if (self.string) |string| {
-            return std.fmt.format(writer, "{s} \"{s}\"", .{ @tagName(self.code), string });
-        } else if (self.value) |value| {
-            return std.fmt.format(writer, "{s} {}", .{ @tagName(self.code), value });
-        } else {
-            return std.fmt.format(writer, "{s}", .{@tagName(self.code)});
-        }
-    }
-};
+pub const Operation = @import("vmoperation.zig");
 
 pub fn getMetaUsage(self: *Vm) !usize {
     var result = self.rsp;
@@ -446,7 +372,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
-                if (a.data().string.empty()) {
+                if (a.data().string.len() == 0) {
                     self.pc = @as(usize, @intCast(op.value.?));
                 }
                 return;
@@ -463,7 +389,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
-                if (!a.data().string.empty()) {
+                if (a.data().string.len() != 0) {
                     self.pc = @as(usize, @intCast(op.value.?));
                 }
                 return;

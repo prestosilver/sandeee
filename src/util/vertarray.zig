@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const zgl = @import("zgl");
 
 const system = @import("mod.zig");
 
@@ -15,15 +15,15 @@ const Vec3 = math.Vec3;
 const allocator = util.allocator;
 
 pub const Vert = struct {
-    x: c.GLfloat,
-    y: c.GLfloat,
-    z: c.GLfloat,
-    u: c.GLfloat,
-    v: c.GLfloat,
-    r: c.GLfloat,
-    g: c.GLfloat,
-    b: c.GLfloat,
-    a: c.GLfloat,
+    x: zgl.Float,
+    y: zgl.Float,
+    z: zgl.Float,
+    u: zgl.Float,
+    v: zgl.Float,
+    r: zgl.Float,
+    g: zgl.Float,
+    b: zgl.Float,
+    a: zgl.Float,
 
     pub inline fn array(v: Vert) [9]f32 {
         return [_]f32{ v.x, v.y, v.z, v.u, v.v, v.r, v.g, v.b, v.a };
@@ -41,20 +41,20 @@ pub const Vert = struct {
 };
 
 pub const Quad = struct {
-    sxo: c.GLfloat,
-    syo: c.GLfloat,
-    sxs: c.GLfloat,
-    sys: c.GLfloat,
+    sxo: zgl.Float,
+    syo: zgl.Float,
+    sxs: zgl.Float,
+    sys: zgl.Float,
 
-    dxo: c.GLfloat,
-    dyo: c.GLfloat,
-    dxs: c.GLfloat,
-    dys: c.GLfloat,
+    dxo: zgl.Float,
+    dyo: zgl.Float,
+    dxs: zgl.Float,
+    dys: zgl.Float,
 
-    r: c.GLfloat,
-    g: c.GLfloat,
-    b: c.GLfloat,
-    a: c.GLfloat,
+    r: zgl.Float,
+    g: zgl.Float,
+    b: zgl.Float,
+    a: zgl.Float,
 };
 
 const VertArray = @This();

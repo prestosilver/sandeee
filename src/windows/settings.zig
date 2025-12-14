@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const glfw = @import("glfw");
 
 const Windows = @import("mod.zig");
 
@@ -306,7 +306,7 @@ const SettingsData = struct {
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) void {
         if (!down) return;
         switch (keycode) {
-            c.GLFW_KEY_BACKSPACE => {
+            glfw.KeyBackspace => {
                 self.focused_pane = null;
             },
             else => {},
