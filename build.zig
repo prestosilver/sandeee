@@ -735,12 +735,14 @@ pub fn build(b: *std.Build) !void {
 
     headless_step.dependOn(&headless_cmd.step);
 
+    const install_disk_tests = b.addInstallFile(debug_image_path, "../content/recovery.eee");
+
     const exe_tests = b.addTest(.{
         .root_module = exe_mod,
     });
 
     const run_exe_tests = b.addRunArtifact(exe_tests);
-    run_exe_tests.step.dependOn(disk_step);
+    run_exe_tests.step.dependOn(&install_disk_tests.step);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_tests.step);
