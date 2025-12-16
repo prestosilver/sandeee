@@ -92,7 +92,9 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
         _ = c.ShowWindow(c.GetConsoleWindow(), c.SW_SHOW);
     }
 
-    _ = try std.Thread.spawn(.{}, inputLoop, .{});
+    // no input thread on test builds
+    if (!@import("builtin").is_test) 
+        _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
     const diskpath = try storage.getContentPath("disks/headless.eee");
     defer diskpath.deinit();
