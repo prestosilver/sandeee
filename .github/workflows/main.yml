@@ -18,6 +18,7 @@ jobs:
         run: |
           zig build test --summary all
       - name: Upload test result
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: my-artifact
