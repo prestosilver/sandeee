@@ -11,7 +11,10 @@ jobs:
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.14.0
+      - name: Install GLFW dependencies (Linux)
+        if: runner.os == 'Linux'
+        uses: RpxdYTX/install-glfw-deps@v2
       - name: Run tests
         run: |
-          apt install glfw
+          sudo apt install glfw
           zig build test
