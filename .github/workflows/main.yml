@@ -19,6 +19,7 @@ jobs:
           zig build test --summary all
         id: md
       - name: Summary results
+        if: always()
         uses: mediatech15/markdown-to-summary-action@v1.1
         with:
           file: 'test_output.md'
