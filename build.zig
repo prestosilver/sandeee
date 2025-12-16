@@ -358,7 +358,7 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/heaptest.eon"), "/prof/tests/eep/eon/heaptest.eep");
     addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/stringtest.eon"), "/prof/tests/eep/eon/stringtest.eep");
     addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/paren.eon"), "/prof/tests/eep/eon/paren.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/src/asm/fib.asm");
+    addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/src/asm/hello.asm");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/src/asm/fib.asm");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/exec/eon.eon"), "/prof/tests/src/eon/eon.eon");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/libs/eon.eon"), "/prof/tests/src/eon/eon_lib.eon");
