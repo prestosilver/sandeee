@@ -740,10 +740,10 @@ pub fn build(b: *std.Build) !void {
     });
 
     const run_exe_tests = b.addRunArtifact(exe_tests);
+    run_exe_tests.dependOn(disk_step);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_tests.step);
-    test_step.dependOn(disk_step);
 
     // public builds step
     const pub_step = b.step("pub", "Build all public builds");
