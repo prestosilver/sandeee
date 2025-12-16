@@ -1065,9 +1065,7 @@ pub fn runGame() anyerror!void {
     log.log.info("graceful deinit", .{});
 }
 
-test "headless.zig" {
+test "All tests" {
     _ = @import("util/mod.zig");
     _ = @import("system/mod.zig");
-    _ = @import("util/url.zig");
-    _ = @import("util/rope.zig");
 }
