@@ -260,7 +260,7 @@ test "Headless scripts" {
     VmManager.vm_time = 1.0;
     VmManager.last_frame_time = 10.0;
 
-    var logging = try std.fs.cwd().createFile("zig-out/test_output.md", .{ .mode = .read_write });
+    var logging = try std.fs.cwd().createFile("zig-out/test_output.md", .{ });
     defer logging.close();
 
     var start_cwd = try std.fs.cwd().openDir("tests", .{

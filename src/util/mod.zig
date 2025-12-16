@@ -20,5 +20,5 @@ test "Util tests" {
     _ = Eln;
     _ = Rope;
     _ = storage;
-    _ = url;
+    _ = Url;
 }
