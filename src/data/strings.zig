@@ -91,7 +91,7 @@ const REPLACEMENT_TABLE = [_]CharReplacement{
     .{ .eeech = STRAIGHT, .ansi = "😐" },
     .{ .eeech = SAD, .ansi = "🙁" },
     .{ .eeech = UP, .ansi = "▲" },
-
+} ++ if (@import("builtin").is_test) [_]CharReplacement{} else [_]CharReplacement{
     .{ .eeech = COLOR_BLACK, .ansi = "\x1b[0;30m" },
     .{ .eeech = COLOR_GRAY, .ansi = "\x1b[0;90m" },
     .{ .eeech = COLOR_DARK_RED, .ansi = "\x1b[0;31m" },

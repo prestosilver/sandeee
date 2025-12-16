@@ -1,5 +1,5 @@
 name: Test 
-run-name: Run zig tests
+run-name: Run zig tests for commit '${{ github.ref_name }}'
 on: [push]
 jobs:
   build:
