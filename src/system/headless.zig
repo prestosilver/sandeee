@@ -257,9 +257,6 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 }
 
 test "Headless scripts" {
-    VmManager.init();
-    defer VmManager.instance.deinit();
-
     VmManager.vm_time = 1.0;
     VmManager.last_frame_time = 10.0;
 
