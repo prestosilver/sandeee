@@ -721,15 +721,6 @@ pub fn build(b: *std.Build) !void {
     www_misc_step.dependOn(&install_downloads.step);
     www_misc_step.dependOn(&install_downloads_dir.step);
 
-    // const www_files_step = b.step("www_files", "Build www files");
-    // www_files_step.dependOn(www_misc_step);
-
-    // for (WWW_FILES) |file| {
-    //     const step = try file.getStep(b, content_path, b.path("www/downloads"), www_misc_step);
-
-    //     www_files_step.dependOn(step);
-    // }
-
     const www_step = b.step("www", "Build the website");
     www_step.dependOn(www_misc_step);
 

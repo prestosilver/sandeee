@@ -1,0 +1,16 @@
+name: Test 
+run-name: Run zig tests
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build 
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.14.0
+      - name: Run tests
+        run: |
+          zig build test
