@@ -1,3 +1,2 @@
-main:
-    push "Hello World!\n"
-    sys 0
+push "Hello World!\n"
+sys 0
