@@ -1625,7 +1625,7 @@ pub fn main() !void {
     var args = try std.process.argsWithAllocator(allocator);
     _ = args.next();
     const mode = args.next() orelse return error.MissingMode;
-    lib_path = "/home/john/doc/rep/github.com/sandeee/content/eon";
+    lib_path = "/home/runner/work/sandeee/sandeee/content/eon";
     const input_file = args.next() orelse return error.MissingInputFile;
     const output_file = args.next() orelse return error.MissingOutputFile;
 
