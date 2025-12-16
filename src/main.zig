@@ -612,7 +612,7 @@ pub fn main() void {
     // switch to headless main function if nessessary
     if (headless.is_headless) {
         return headless.main(headless_cmd orelse &.{}, false, null) catch |err| {
-            const name = switch (err) {
+            const name = switch (err) 
                 error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",
                 error.AudioInit => "Your audio hardware might not support SandEEE.",
                 error.WrongSize, error.TextureMissing => "Failed to load an internal texture.",

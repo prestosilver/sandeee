@@ -96,7 +96,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
     if (!@import("builtin").is_test) 
         _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
-    const diskpath = try storage.getContentPath("disks/headless.eee");
+    const diskpath = try storage.getContentPath("disks/" ++ DISK);
     defer diskpath.deinit();
 
     std.fs.cwd().access(diskpath.items, .{}) catch {
