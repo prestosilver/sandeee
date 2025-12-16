@@ -298,10 +298,11 @@ test "Headless scripts" {
             err = res;
 
             _ = try logging.write("```\n\n");
-
             _ = try logging.write(@errorName(res));
             _ = try logging.write("\n\n");
             success = false;
+            
+            return res;
         };
 
         if (success) {
