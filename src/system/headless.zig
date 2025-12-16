@@ -259,6 +259,10 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 }
 
 test "Headless scripts" {
+    std.fs.cwd().access("disks", .{}) catch
+        std.fs.cwd().makeDir("disks") catch
+        panic("Cannot make disks directory.", @errorReturnTrace(), null);
+
     VmManager.vm_time = 1.0;
     VmManager.last_frame_time = 10.0;
 
