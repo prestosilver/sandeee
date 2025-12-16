@@ -17,9 +17,10 @@ jobs:
       - name: Run tests
         run: |
           zig build test --summary all
-      - name: Upload test result
-        if: always()
-        uses: actions/upload-artifact@v4
+        id: md
+      - name: Summary results
+        uses: mediatech15/markdown-to-summary-action@v1.1
         with:
-          name: my-artifact
-          path: test_output.md
+          file: 'test_output.md'
+          check_name: md
+          conclusion: neutral
