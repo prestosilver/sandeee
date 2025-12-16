@@ -1,5 +1,5 @@
 name: Test 
-run-name: Run zig tests for commit '${{ github.ref_name }}'
+run-name: Run zig tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }}
 on: [push]
 jobs:
   build:

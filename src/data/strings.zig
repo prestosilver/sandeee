@@ -91,7 +91,34 @@ const REPLACEMENT_TABLE = [_]CharReplacement{
     .{ .eeech = STRAIGHT, .ansi = "😐" },
     .{ .eeech = SAD, .ansi = "🙁" },
     .{ .eeech = UP, .ansi = "▲" },
-} ++ if (@import("builtin").is_test) [_]CharReplacement{} else [_]CharReplacement{
+} ++ if (@import("builtin").is_test) [_]CharReplacement{
+    .{ .eeech = COLOR_BLACK, .ansi = "" },
+    .{ .eeech = COLOR_GRAY, .ansi = "" },
+    .{ .eeech = COLOR_DARK_RED, .ansi = "" },
+    .{ .eeech = COLOR_DARK_YELLOW, .ansi = "" },
+    .{ .eeech = COLOR_DARK_GREEN, .ansi = "" },
+    .{ .eeech = COLOR_DARK_CYAN, .ansi = "" },
+    .{ .eeech = COLOR_DARK_BLUE, .ansi = "" },
+    .{ .eeech = COLOR_DARK_MAGENTA, .ansi = "" },
+
+    .{ .eeech = COLOR_WHITE, .ansi = "" },
+    .{ .eeech = COLOR_RED, .ansi = "" },
+    .{ .eeech = COLOR_YELLOW, .ansi = "" },
+    .{ .eeech = COLOR_GREEN, .ansi = "" },
+    .{ .eeech = COLOR_CYAN, .ansi = "" },
+    .{ .eeech = COLOR_BLUE, .ansi = "" },
+    .{ .eeech = COLOR_MAGENTA, .ansi = "" },
+
+    .{ .eeech = CLEAR, .ansi = "" },
+    .{ .eeech = UNDO, .ansi = "" },
+
+    .{ .eeech = "\xf8", .ansi = "" },
+
+    .{ .eeech = "\r", .ansi = "" },
+    .{ .eeech = "\n", .ansi = "\n" },
+
+    .{ .eeech = "\x1b", .ansi = "^[" },
+} else [_]CharReplacement{
     .{ .eeech = COLOR_BLACK, .ansi = "\x1b[0;30m" },
     .{ .eeech = COLOR_GRAY, .ansi = "\x1b[0;90m" },
     .{ .eeech = COLOR_DARK_RED, .ansi = "\x1b[0;31m" },
