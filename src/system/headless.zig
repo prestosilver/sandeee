@@ -114,25 +114,27 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 
     const stdin_file = std.io.getStdIn();
 
-    // set terminal attribs
-    const original = if (USE_POSIX) try std.posix.tcgetattr(stdin_file.handle) else undefined;
-
-    if (USE_POSIX) {
-        var raw = original;
+    if (!@import("builtin").is_test) {
+        // set terminal attribs
+        const original = if (USE_POSIX) try std.posix.tcgetattr(stdin_file.handle) else undefined;
 
         if (USE_POSIX) {
-            raw.lflag.ECHO = false;
-            raw.lflag.ICANON = false;
+            var raw = original;
 
-            raw.cc[@intFromEnum(std.posix.system.V.TIME)] = 0;
-            raw.cc[@intFromEnum(std.posix.system.V.MIN)] = 1;
+            if (USE_POSIX) {
+                raw.lflag.ECHO = false;
+                raw.lflag.ICANON = false;
+
+                raw.cc[@intFromEnum(std.posix.system.V.TIME)] = 0;
+                raw.cc[@intFromEnum(std.posix.system.V.MIN)] = 1;
+            }
+
+            try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);
         }
 
-        try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);
+        defer if (USE_POSIX)
+            std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
     }
-
-    defer if (USE_POSIX)
-        std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
 
     var input_buffer = std.ArrayList(u8).init(allocator.alloc);
     try input_buffer.appendSlice(cmd);
