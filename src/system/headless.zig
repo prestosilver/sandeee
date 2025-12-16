@@ -303,8 +303,6 @@ test "Headless scripts" {
             _ = try logging.write(@errorName(res));
             _ = try logging.write("\n\n");
             success = false;
-            
-            return res;
         };
 
         if (success) {

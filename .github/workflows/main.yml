@@ -16,7 +16,7 @@ jobs:
           sudo apt install libglfw3 libglfw3-dev
       - name: Run tests
         run: |
-          zig build test --summary all
+          zig build test
         id: md
       - name: Summary results
         if: always()
