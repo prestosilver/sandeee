@@ -320,7 +320,9 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* != .value) return error.ValueMissing;
             if (b.data().* != .string) return error.StringMissing;
 
-            const old = b.data().string.*;
+            const old_rope = b.data().string.*;
+            const old = try std.fmt.allocPrint(allocator.alloc, "{}", .{old_rope});
+            defer allocator.alloc.free(old);
 
             const new = try self.allocator.alloc(u8, a.data().value);
             defer self.allocator.free(new);
