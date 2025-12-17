@@ -63,7 +63,7 @@ pub fn deinit(self: *VmManager) void {
             _ = instance.vms.remove(entry.key_ptr.*);
         }
 
-        self.vms.deinit();
+        self.vms.clearAndFree();
     }
 
     {
@@ -73,7 +73,7 @@ pub fn deinit(self: *VmManager) void {
             item.value_ptr.deinit();
         }
 
-        self.results.deinit();
+        self.results.clearAndFree();
     }
 
     {
@@ -81,7 +81,7 @@ pub fn deinit(self: *VmManager) void {
             item.join();
         }
 
-        self.threads.deinit();
+        self.threads.clearAndFree();
     }
 
     VmAllocator.deinit();

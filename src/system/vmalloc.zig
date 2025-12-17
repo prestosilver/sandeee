@@ -176,5 +176,5 @@ pub fn deinit() void {
             object.data.string.deinit();
     }
 
-    objects.deinit();
+    objects.clearAndFree();
 }
