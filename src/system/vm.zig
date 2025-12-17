@@ -352,7 +352,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.findStack(op.value.?);
 
             if (a.data().* == .string) {
-                try self.pushStackS(.initRef(a.data().string));
+                try self.pushStackS(try .initRef(a.data().string));
                 return;
             }
 
