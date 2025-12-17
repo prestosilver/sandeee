@@ -286,6 +286,11 @@ test "Headless scripts" {
     while (try iter.next()) |entry| {
         if (entry.kind != .file) continue;
 
+        VmManager.instance = .{};
+        
+        // deinit vm manager
+        defer VmManager.instance.deinit();
+
         _ = try logging.write("# ");
         _ = try logging.write(entry.path);
         _ = try logging.write("\n```\n");
@@ -312,9 +317,8 @@ test "Headless scripts" {
 
             _ = try logging.write("Success!\n\n");
         }
-
-        try VmManager.instance.update();
     }
+
 
     if (err) |result_err| {
         return result_err;
