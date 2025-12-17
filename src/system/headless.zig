@@ -312,6 +312,8 @@ test "Headless scripts" {
 
             _ = try logging.write("Success!\n\n");
         }
+
+        try VmManager.instance.update();
     }
 
     if (err) |result_err| {
