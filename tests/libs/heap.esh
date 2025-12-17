@@ -1,3 +1,3 @@
-cd tests/src/eon
+cd tests/eep/eon
 heaptest
 exit
