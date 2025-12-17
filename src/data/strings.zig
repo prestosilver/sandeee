@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const options = @import("options");
 
 const util = @import("../util/mod.zig");
@@ -91,7 +92,7 @@ const REPLACEMENT_TABLE = [_]CharReplacement{
     .{ .eeech = STRAIGHT, .ansi = "😐" },
     .{ .eeech = SAD, .ansi = "🙁" },
     .{ .eeech = UP, .ansi = "▲" },
-} ++ if (@import("builtin").is_test) [_]CharReplacement{
+} ++ if (builtin.is_test) [_]CharReplacement{
     .{ .eeech = COLOR_BLACK, .ansi = "" },
     .{ .eeech = COLOR_GRAY, .ansi = "" },
     .{ .eeech = COLOR_DARK_RED, .ansi = "" },

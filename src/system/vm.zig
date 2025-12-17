@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const c = @import("../c.zig");
 
 const system = @import("mod.zig");
@@ -410,7 +411,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
                             switch (index) {
                                 // panic
                                 128 => {
-                                    if (@import("builtin").is_test)
+                                    if (builtin.is_test)
                                         return error.InvalidSys
                                     else if (!Windowed.global_self.debug_enabled)
                                         return error.InvalidSys

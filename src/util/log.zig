@@ -1,6 +1,7 @@
 // TODO: new imports
 const std = @import("std");
 const allocator = @import("allocator.zig");
+const builtin = @import("builtin");
 
 pub var log_file: ?std.fs.File = null;
 
@@ -26,7 +27,7 @@ pub fn sandEEELogFn(
     comptime format: []const u8,
     args: anytype,
 ) void {
-    if (@import("builtin").is_test) {
+    if (builtin.is_test) {
         return;
     }
 
@@ -51,7 +52,7 @@ pub fn sandEEELogFn(
     defer std.debug.unlockStdErr();
 
     // Print the message to stderr, silently ignoring any errors
-    if (@import("builtin").mode == .Debug) {
+    if (builtin.mode == .Debug) {
         const stderr = std.io.getStdErr().writer();
         nosuspend stderr.print(color ++ prefix ++ format ++ "\x1b[m\n", args) catch return;
     }

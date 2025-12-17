@@ -1,4 +1,5 @@
 const options = @import("options");
+const builtin = @import("builtin");
 const std = @import("std");
 
 const system = @import("mod.zig");
@@ -58,7 +59,7 @@ pub var root_out: ?[]const u8 = null;
 pub const ROOT_NAME = "/";
 
 pub inline fn getExtrPath() []const u8 {
-    if (@import("builtin").mode != .Debug)
+    if (builtin.mode != .Debug)
         return "";
 
     return config.SettingManager.instance.get("extr_path") orelse "";
@@ -497,7 +498,7 @@ pub const Folder = struct {
     }
 
     pub fn setupExtr() !void {
-        if (@import("builtin").mode == .Debug) {
+        if (builtin.mode == .Debug) {
             const extr_path = getExtrPath();
             const path = if (std.fs.path.isAbsolute(extr_path))
                 std.fs.openDirAbsolute(extr_path, .{}) catch null

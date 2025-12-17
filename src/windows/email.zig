@@ -1,5 +1,6 @@
 const std = @import("std");
 const glfw = @import("glfw");
+const builtin = @import("builtin");
 
 const Windows = @import("mod.zig");
 
@@ -202,7 +203,7 @@ const EmailData = struct {
                     if (self.box != mail.EmailManager.instance.boxes.len - 1) continue;
                 } else if (email.box != self.box) continue;
                 var color = Color{ .r = 0, .g = 0, .b = 0 };
-                if (@import("builtin").mode == .Debug) {
+                if (builtin.mode == .Debug) {
                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) color.a = 0.5;
                 } else {
                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
@@ -691,7 +692,7 @@ const EmailData = struct {
                             if (self.box != mail.EmailManager.instance.boxes.len - 1) continue;
                         } else if (email.box != self.box) continue;
 
-                        if (@import("builtin").mode != .Debug) {
+                        if (builtin.mode != .Debug) {
                             if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
                         }
 

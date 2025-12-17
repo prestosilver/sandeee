@@ -1,4 +1,6 @@
 const std = @import("std");
+const builtin = @import("builtin");
+
 const files = @import("../files.zig");
 const allocator = @import("../../util/allocator.zig");
 const vm = @import("../vm.zig");
@@ -8,7 +10,7 @@ pub const inp = @import("input.zig");
 pub const snd = @import("snd.zig");
 pub const gfx = @import("gfx.zig");
 
-pub const all: []const files.Folder.FolderItem = if (@import("builtin").is_test) &.{} else &.{
+pub const all: []const files.Folder.FolderItem = if (builtin.is_test) &.{} else &.{
     .folder("win", &.{
         .file("new", .initFake(win.new)),
         .file("open", .initFake(win.open)),

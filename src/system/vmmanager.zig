@@ -2,6 +2,7 @@
 
 const std = @import("std");
 const glfw = @import("glfw");
+const builtin = @import("builtin");
 
 const system = @import("mod.zig");
 const util = @import("../util/mod.zig");
@@ -161,7 +162,7 @@ pub fn updateVmThread(vm_instance: *Vm, frame_end: u64) !void {
         return;
     }
 
-    _ = vm_instance.runTime(frame_end - time, @import("builtin").mode == .Debug) catch |err| {
+    _ = vm_instance.runTime(frame_end - time, builtin.mode == .Debug) catch |err| {
         vm_instance.stopped = true;
 
         const error_string = try std.fmt.allocPrint(allocator.alloc, "Error: {s}\n", .{@errorName(err)});
@@ -200,7 +201,7 @@ pub fn runGc(self: *VmManager) !void {
 }
 
 pub fn update(self: *VmManager) !void {
-    const frame_start: f64 = if (@import("builtin").is_test)
+    const frame_start: f64 = if (builtin.is_test)
         0.0
     else
         glfw.getTime();
@@ -266,7 +267,7 @@ pub fn update(self: *VmManager) !void {
 
     self.threads.clearAndFree();
 
-    last_vm_time = if (@import("builtin").is_test)
+    last_vm_time = if (builtin.is_test)
         0.0
     else
         glfw.getTime() - frame_start;

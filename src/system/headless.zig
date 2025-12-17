@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const util = @import("../util/mod.zig");
 const system = @import("mod.zig");
@@ -16,7 +17,8 @@ const strings = sandeee_data.strings;
 // TODO: unhardcode
 const DISK = "headless.eee";
 
-const USE_POSIX = @import("builtin").os.tag == .linux;
+
+const USE_POSIX = builtin.os.tag == .linux;
 
 pub fn write_console(stdout: std.fs.File.Writer, input: []const u8) !void {
     const text = try sandeee_data.strings.eeeCHToANSI(input);
@@ -93,7 +95,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
     }
 
     // no input thread on test builds
-    if (!@import("builtin").is_test) 
+    if (!builtin.is_test) 
         _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
     const diskpath = try storage.getContentPath("disks/" ++ DISK);
@@ -114,7 +116,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 
     const stdin_file = std.io.getStdIn();
 
-    if (!@import("builtin").is_test) {
+    if (!builtin.is_test) {
         // set terminal attribs
         const original = if (USE_POSIX) try std.posix.tcgetattr(stdin_file.handle) else undefined;
 
