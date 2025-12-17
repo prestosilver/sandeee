@@ -327,7 +327,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const new = try self.allocator.alloc(u8, a.data().value);
             defer self.allocator.free(new);
             
-            const len = @max(old.len, a.data().value);
+            const len = @min(old.len, new.len);
             @memcpy(new[0..len], old[0..len]);
 
             b.data().string = try .init(new);
