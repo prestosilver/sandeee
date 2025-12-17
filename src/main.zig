@@ -1065,7 +1065,7 @@ pub fn runGame() anyerror!void {
     log.log.info("graceful deinit", .{});
 }
 
-test "All tests" {
+test {
     _ = @import("util/mod.zig");
     _ = @import("system/mod.zig");
 }
