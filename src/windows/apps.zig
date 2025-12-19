@@ -66,7 +66,7 @@ pub const LauncherData = struct {
         const root = try files.FolderLink.resolve(.root);
         const folder = root.getFolder("conf/apps") catch return &.{};
 
-        var result: std.ArrayList(Eln) = .init(allocator.alloc);
+        var result: std.array_list.Managed(Eln) = .init(allocator.alloc);
         defer result.deinit();
 
         var sub_file = try folder.getFiles();

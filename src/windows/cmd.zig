@@ -41,7 +41,7 @@ pub const CMDData = struct {
     input_len: u8 = 0,
     input_idx: u8 = 0,
 
-    history: std.ArrayList([]const u8),
+    history: std.array_list.Managed([]const u8),
     history_idx: usize = 0,
     shell: Shell,
     bot: bool = false,
@@ -341,7 +341,7 @@ pub fn init() !Window.Data.WindowContents {
 
     self.* = .{
         .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh" ++ strings.EEE ++ "l\nUse help to list possible commands\n", .{}),
-        .history = try std.ArrayList([]const u8).initCapacity(allocator.alloc, 32),
+        .history = try .initCapacity(allocator.alloc, 32),
         .shell = .{
             .root = .home,
             .vm = null,

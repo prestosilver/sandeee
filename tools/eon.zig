@@ -94,7 +94,7 @@ const Expression = struct {
     op: ?*Token,
     b: []Expression,
 
-    fn toAsm(self: *Expression, map: *VarMap, heap: *const std.ArrayList([]const u8), idx: *usize) ![]const u8 {
+    fn toAsm(self: *Expression, map: *VarMap, heap: *const std.array_list.Managed([]const u8), idx: *usize) ![]const u8 {
         var result: []u8 = try allocator.alloc(u8, 0);
         if (self.op != null and self.op.?.kind == .TOKEN_OPEN_PAREN) {
             const start = idx.*;
@@ -397,7 +397,7 @@ const Statement = struct {
     exprs: ?[]Expression,
     blks: ?[][]Statement,
 
-    fn toAsm(self: *Statement, map: *VarMap, heap: *const std.ArrayList([]const u8), idx: *usize) ![]const u8 {
+    fn toAsm(self: *Statement, map: *VarMap, heap: *const std.array_list.Managed([]const u8), idx: *usize) ![]const u8 {
         switch (self.kind) {
             .STMT_INVALID => {
                 return try std.fmt.allocPrint(allocator, "    nop\n", .{});
@@ -726,7 +726,7 @@ const FunctionDecl = struct {
     ident: []const u8,
     stmts: []Statement,
 
-    fn toAsm(self: *FunctionDecl, heap: *const std.ArrayList([]const u8), lib: bool) ![]const u8 {
+    fn toAsm(self: *FunctionDecl, heap: *const std.array_list.Managed([]const u8), lib: bool) ![]const u8 {
         const prefix = if (lib) "_" else "";
         var result = try std.fmt.allocPrint(allocator, "{s}{s}:\n", .{ prefix, self.ident });
         var map = VarMap{ .vars = try allocator.alloc(Var, self.params.len) };
@@ -753,7 +753,7 @@ const FunctionDecl = struct {
 
 const Program = struct {
     funcs: []FunctionDecl,
-    heap: std.ArrayList([]const u8),
+    heap: std.array_list.Managed([]const u8),
 
     fn toAsm(self: *Program, lib: bool) ![]const u8 {
         var result =
@@ -779,17 +779,19 @@ const VarMap = struct {
     vars: []Var,
 };
 
-pub fn lexFile(in: []const u8) !std.ArrayList(Token) {
+pub fn lexFile(in: []const u8) !std.array_list.Managed(Token) {
     var f = try std.fs.openFileAbsolute(in, .{});
     defer f.close();
-    var reader = f.reader();
 
-    var result = std.ArrayList(Token).init(allocator);
+    var reader_buff: [1024]u8 = undefined;
+    var reader = f.reader(&reader_buff);
+
+    var result = std.array_list.Managed(Token).init(allocator);
     var buff: [1]u8 = undefined;
     var prev: u8 = '\n';
     var code = try allocator.alloc(u8, 0);
     while (true) {
-        const size = try reader.read(&buff);
+        const size = try reader.interface.readSliceShort(&buff);
         if (size == 0) break;
 
         const char = buff[0];
@@ -809,8 +811,7 @@ pub fn lexFile(in: []const u8) !std.ArrayList(Token) {
         }
 
         if (prev == '\n' and char == '#') {
-            var stmt_buff: [256]u8 = undefined;
-            var stmt = (try reader.readUntilDelimiterOrEof(&stmt_buff, '\n')).?;
+            var stmt = (try reader.interface.takeDelimiter('\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
                 const path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ lib_path, stmt[10 .. stmt.len - 1] });
@@ -1111,9 +1112,7 @@ pub fn lexFile(in: []const u8) !std.ArrayList(Token) {
 
         if (prev == '/' and char == '/') {
             code = try allocator.alloc(u8, 0);
-
-            var stmt_buff: [512]u8 = undefined;
-            _ = try reader.readUntilDelimiterOrEof(&stmt_buff, '\n');
+            _ = try reader.interface.discardDelimiterInclusive('\n');
         } else if ((std.mem.indexOf(u8, "\t\r\n ", char_string) == null or (code.len != 0 and code[0] == '"'))) {
             code = try allocator.realloc(code, code.len + 1);
             code[code.len - 1] = char;
@@ -1132,7 +1131,7 @@ pub fn lexFile(in: []const u8) !std.ArrayList(Token) {
 
 const EMPTY_EXPR = [_]Expression{};
 
-pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) !Expression {
+pub fn parseFactor(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Expression {
     var result: Expression = .{
         .a = &EMPTY_EXPR,
         .op = null,
@@ -1241,7 +1240,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usiz
     return error.NoFactor;
 }
 
-pub fn parseSum(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) !Expression {
+pub fn parseSum(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Expression {
     var result: Expression = .{
         .a = &EMPTY_EXPR,
         .op = null,
@@ -1275,7 +1274,7 @@ pub fn parseSum(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) 
     return result;
 }
 
-pub fn parseExpression(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) anyerror!Expression {
+pub fn parseExpression(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) anyerror!Expression {
     var result: Expression = .{
         .a = &EMPTY_EXPR,
         .op = null,
@@ -1318,7 +1317,7 @@ pub fn parseExpression(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *
     return result;
 }
 
-pub fn parseStatement(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) !Statement {
+pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Statement {
     var result: Statement = .{
         .kind = .STMT_INVALID,
         .name = null,
@@ -1470,7 +1469,7 @@ pub fn parseStatement(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *u
     return error.NoStmt;
 }
 
-pub fn parseBlock(tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) anyerror![]Statement {
+pub fn parseBlock(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) anyerror![]Statement {
     var result: []Statement = undefined;
 
     if (tokens[idx.*].kind != .TOKEN_OPEN_BRACE) {
@@ -1505,7 +1504,7 @@ pub fn parseFunctionParam(tokens: []Token, idx: *usize) !FunctionParam {
     return result;
 }
 
-pub fn parseFunctionDecl(fnPrefix: *[]const u8, tokens: []Token, heap: *std.ArrayList([]const u8), idx: *usize) !FunctionDecl {
+pub fn parseFunctionDecl(fnPrefix: *[]const u8, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !FunctionDecl {
     var result: FunctionDecl = undefined;
     if (tokens[idx.*].kind != .TOKEN_KEYWORD_FN) return error.ExpectedType;
     idx.* += 1;
@@ -1535,13 +1534,12 @@ pub fn parseFunctionDecl(fnPrefix: *[]const u8, tokens: []Token, heap: *std.Arra
 }
 
 pub fn parseProgram(fn_prefix: *[]const u8, tokens: []Token) !Program {
-    var result: Program = undefined;
-    var idx: usize = 0;
-    result = .{
+    var result: Program = .{
         .funcs = try allocator.alloc(FunctionDecl, 0),
-        .heap = std.ArrayList([]const u8).init(allocator),
+        .heap = .init(allocator),
     };
 
+    var idx: usize = 0;
     while (true) {
         if (parseFunctionDecl(fn_prefix, tokens, &result.heap, &idx) catch null) |func| {
             result.funcs = try allocator.realloc(result.funcs, result.funcs.len + 1);
@@ -1598,10 +1596,11 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    const writer = file.writer();
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(&writer_buffer);
 
     const adds = try prog.toAsm(false);
-    try writer.writeAll(adds);
+    try writer.interface.writeAll(adds);
 }
 
 pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
@@ -1615,10 +1614,11 @@ pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    const writer = file.writer();
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(&writer_buffer);
 
     const adds = try prog.toAsm(true);
-    try writer.writeAll(adds);
+    try writer.interface.writeAll(adds);
 }
 
 pub fn main() !void {

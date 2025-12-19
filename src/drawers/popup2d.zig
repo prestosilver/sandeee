@@ -21,7 +21,7 @@ const allocator = util.allocator;
 const graphics = util.Graphics;
 
 pub const PopupData = struct {
-    pub usingnamespace @import("../windows/popups/mod.zig");
+    pub const popups = @import("../windows/popups/mod.zig");
 
     pub var popup_shader: *Shader = undefined;
 

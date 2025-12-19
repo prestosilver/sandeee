@@ -49,7 +49,7 @@ blip_sound: *audio.Sound,
 select_sound: *audio.Sound,
 
 sel: usize = 0,
-disks: std.ArrayList([]const u8) = .init(allocator.alloc),
+disks: std.array_list.Managed([]const u8) = .init(allocator.alloc),
 status: []const u8 = "",
 sub_sel: ?RecoveryMenuEntry = null,
 confirm_sel: ?bool = null,
@@ -63,7 +63,7 @@ pub fn getDate(name: []const u8) i128 {
     const file = std.fs.cwd().openFile(path, .{}) catch return 0;
     defer file.close();
 
-    return (file.metadata() catch return 0).modified();
+    return (file.stat() catch return 0).mtime;
 }
 
 pub fn sortDisksLt(_: void, a: []const u8, b: []const u8) bool {

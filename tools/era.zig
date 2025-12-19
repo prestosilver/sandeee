@@ -31,26 +31,31 @@ pub fn main() !void {
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    const writer = file.writer();
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(&writer_buffer);
 
     var inreader = try std.fs.openFileAbsolute(input_file, .{});
     defer inreader.close();
 
-    var reader_stream = inreader.reader();
+    var reader_buffer: [1024]u8 = undefined;
+    var reader_stream = inreader.reader(&reader_buffer);
 
     var name: [4]u8 = undefined;
 
-    try reader_stream.skipBytes(12, .{});
+    try reader_stream.interface.discardAll(12);
 
     var format: FormatSection = undefined;
 
     while (true) {
-        if (try reader_stream.read(&name) != 4) break;
+        reader_stream.interface.readSliceAll(&name) catch |err| switch (err) {
+            error.EndOfStream => break,
+            else => return err,
+        };
 
-        const size = try reader_stream.readInt(u32, .little);
+        const size = try reader_stream.interface.takeInt(u32, .little);
         const section = try allocator.alloc(u8, size);
         defer allocator.free(section);
-        try reader_stream.readNoEof(section);
+        try reader_stream.interface.readSliceAll(section);
 
         if (std.mem.eql(u8, &name, "fmt ")) {
             format = @as(*align(1) FormatSection, @ptrCast(&section[0])).*;
@@ -77,7 +82,7 @@ pub fn main() !void {
                 sample.* = @intFromFloat(normalized_sample * 255);
             }
 
-            try writer.writeAll(tmp_out);
+            try writer.interface.writeAll(tmp_out);
         } else if (std.mem.eql(u8, &name, "LIST")) {} else if (std.mem.eql(u8, &name, "RIFF")) {} else return error.BadSection;
     }
 }

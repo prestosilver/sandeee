@@ -48,7 +48,7 @@ pub const char = struct {
             defer headless.input_mutex.unlock();
             const result = try allocator.alloc.alloc(u8, 1);
 
-            result[0] = headless.input_queue.readItem() orelse {
+            result[0] = headless.popInput() orelse {
                 allocator.alloc.free(result);
 
                 return &.{};

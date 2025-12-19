@@ -156,7 +156,7 @@ pub fn getPrompt(self: *Shell) ![]const u8 {
 }
 
 fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param: *Params) !Result {
-    var result_data = std.ArrayList(u8).init(allocator.alloc);
+    var result_data = std.array_list.Managed(u8).init(allocator.alloc);
     defer result_data.deinit();
 
     const folder = try root.resolve();
@@ -169,7 +169,7 @@ fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param:
         return self.runFileInFolder(root, cmdeep, param);
     };
 
-    var line = std.ArrayList(u8).init(allocator.alloc);
+    var line = std.array_list.Managed(u8).init(allocator.alloc);
     defer line.deinit();
 
     if ((try file.read(null)).len > 3 and std.mem.eql(u8, (try file.read(null))[0..4], ASM_HEADER)) {
@@ -520,7 +520,7 @@ pub const window_commands = .{
         .desc = "Opens the logout prompt",
         .func = struct {
             fn logout(_: *Shell, _: *Params) !Result {
-                const adds = try allocator.alloc.create(Popup.Data.quit.PopupQuit);
+                const adds = try allocator.alloc.create(Popup.Data.popups.quit.PopupQuit);
                 adds.* = .{
                     .shader = shader,
                     .icons = .{
@@ -579,7 +579,7 @@ pub const shell_commands = .{
         .help = "help [:help]",
         .func = struct {
             pub fn help(shell: *Shell, _: *Params) !Result {
-                var data = std.ArrayList(u8).init(allocator.alloc);
+                var data: std.array_list.Managed(u8) = .init(allocator.alloc);
                 defer data.deinit();
                 try data.appendSlice("Sh" ++ strings.EEE ++ "ll Help:\n" ++ "=============\n");
                 if (shell.headless or @import("builtin").is_test) {
@@ -618,7 +618,7 @@ pub const shell_commands = .{
                 const root = try shell.root.resolve();
                 if (params.next()) |path| {
                     const folder = try root.getFolder(path);
-                    var result_data = std.ArrayList(u8).init(allocator.alloc);
+                    var result_data: std.array_list.Managed(u8) = .init(allocator.alloc);
                     defer result_data.deinit();
                     const rootlen = folder.name.len;
                     var sub_folder = try folder.getFolders();
@@ -636,7 +636,7 @@ pub const shell_commands = .{
                     };
                 } else {
                     const folder = try shell.root.resolve();
-                    var result_data = std.ArrayList(u8).init(allocator.alloc);
+                    var result_data: std.array_list.Managed(u8) = .init(allocator.alloc);
                     defer result_data.deinit();
                     const rootlen = folder.name.len;
                     var sub_folder = try folder.getFolders();

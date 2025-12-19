@@ -70,7 +70,6 @@ pub fn build(b: *std.Build) !void {
     const exe = b.addExecutable(.{
         .name = "SandEEE",
         .root_module = exe_mod,
-        .link_libc = true,
     });
 
     const exe_host_mod = b.createModule(.{
@@ -91,11 +90,11 @@ pub fn build(b: *std.Build) !void {
 
     const version_create_write = std.Build.Step.WriteFile.create(b);
 
-    const version_file = version_create_write.add("VERSION", b.fmt("{}", .{version}));
+    const version_file = version_create_write.add("VERSION", b.fmt("{f}", .{version}));
 
     version.meta = b.fmt("{X:0>4}_{s}", .{ std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0, version_suffix });
 
-    const iversion_file = version_create_write.add("IVERSION", b.fmt("{}", .{version}));
+    const iversion_file = version_create_write.add("IVERSION", b.fmt("{f}", .{version}));
 
     const version_write = b.addInstallFile(version_file, "../VERSION");
     const iversion_write = b.addInstallFile(iversion_file, "../IVERSION");
@@ -166,7 +165,6 @@ pub fn build(b: *std.Build) !void {
     const image_builder_exe = b.addExecutable(.{
         .name = "eee_builder",
         .root_module = image_builder_mod,
-        .link_libc = true,
     });
 
     const eon_builder_mod = b.createModule(.{
@@ -179,7 +177,6 @@ pub fn build(b: *std.Build) !void {
     const eon_builder_exe = b.addExecutable(.{
         .name = "eon_builder",
         .root_module = eon_builder_mod,
-        .link_libc = true,
     });
 
     const asm_builder_mod = b.createModule(.{
@@ -194,7 +191,6 @@ pub fn build(b: *std.Build) !void {
     const asm_builder_exe = b.addExecutable(.{
         .name = "asm_builder",
         .root_module = asm_builder_mod,
-        .link_libc = true,
     });
 
     const eia_builder_mod = b.createModule(.{
@@ -208,7 +204,6 @@ pub fn build(b: *std.Build) !void {
     const eia_builder_exe = b.addExecutable(.{
         .name = "eia_builder",
         .root_module = eia_builder_mod,
-        .link_libc = true,
     });
 
     const epk_builder_mod = b.createModule(.{
@@ -222,7 +217,6 @@ pub fn build(b: *std.Build) !void {
     const epk_builder_exe = b.addExecutable(.{
         .name = "epk_builder",
         .root_module = epk_builder_mod,
-        .link_libc = true,
     });
 
     const eff_builder_mod = b.createModule(.{
@@ -236,7 +230,6 @@ pub fn build(b: *std.Build) !void {
     const eff_builder_exe = b.addExecutable(.{
         .name = "eff_builder",
         .root_module = eff_builder_mod,
-        .link_libc = true,
     });
 
     const era_builder_mod = b.createModule(.{
@@ -249,7 +242,6 @@ pub fn build(b: *std.Build) !void {
     const era_builder_exe = b.addExecutable(.{
         .name = "era_builder",
         .root_module = era_builder_mod,
-        .link_libc = true,
     });
 
     const changelog_builder_mod = b.createModule(.{
@@ -262,7 +254,6 @@ pub fn build(b: *std.Build) !void {
     const changelog_builder_exe = b.addExecutable(.{
         .name = "changelog_builder",
         .root_module = changelog_builder_mod,
-        .link_libc = true,
     });
 
     const downloads_builder_mod = b.createModule(.{
@@ -275,7 +266,6 @@ pub fn build(b: *std.Build) !void {
     const downloads_builder_exe = b.addExecutable(.{
         .name = "downloads_builder",
         .root_module = downloads_builder_mod,
-        .link_libc = true,
     });
 
     const docs_builder_mod = b.createModule(.{
@@ -288,11 +278,10 @@ pub fn build(b: *std.Build) !void {
     const docs_builder_exe = b.addExecutable(.{
         .name = "docs_builder",
         .root_module = docs_builder_mod,
-        .link_libc = true,
     });
 
     // Module setup done, remaining is disk image and final steps
-    var skel_cmd: std.ArrayList([]const u8) = .init(b.allocator);
+    var skel_cmd: std.array_list.Managed([]const u8) = .init(b.allocator);
     defer skel_cmd.deinit();
 
     var disk_image_step = b.addRunArtifact(image_builder_exe);
@@ -470,7 +459,6 @@ pub fn build(b: *std.Build) !void {
         else
             exe.linkSystemLibrary("steam_api");
     }
-    exe.linkLibC();
 
     b.installArtifact(exe);
 
@@ -784,7 +772,6 @@ pub fn build(b: *std.Build) !void {
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_linux,
-            .link_libc = true,
         });
         exe_pub_linux.addIncludePath(b.path("deps/include"));
         exe_pub_linux.addIncludePath(b.path("deps/steam_sdk/public/"));
@@ -820,7 +807,6 @@ pub fn build(b: *std.Build) !void {
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_windows,
-            .link_libc = true,
         });
         exe_pub_windows.addIncludePath(b.path("deps/include"));
         exe_pub_windows.addIncludePath(b.path("deps/steam_sdk/public/"));
@@ -918,7 +904,6 @@ pub fn build(b: *std.Build) !void {
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_linux,
-            .link_libc = true,
         });
         exe_pub_linux.addIncludePath(b.path("deps/include"));
 
@@ -949,7 +934,6 @@ pub fn build(b: *std.Build) !void {
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_windows,
-            .link_libc = true,
         });
         exe_pub_windows.addIncludePath(b.path("deps/include"));
 

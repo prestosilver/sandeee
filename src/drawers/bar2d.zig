@@ -48,7 +48,7 @@ pub const BarData = struct {
     shell: Shell,
     shader: *Shader,
 
-    pub fn drawName(self: *BarData, font_shader: *Shader, shader: *Shader, logoSprite: *Sprite, font: *Font, window_list: *std.ArrayList(*Window)) !void {
+    pub fn drawName(self: *BarData, font_shader: *Shader, shader: *Shader, logoSprite: *Sprite, font: *Font, window_list: *std.array_list.Managed(*Window)) !void {
         var pos = Rect{ .x = self.height, .y = self.screendims.y - self.height + 12, .w = self.screendims.x + self.height, .h = self.height };
 
         try font.draw(.{
@@ -158,7 +158,7 @@ pub const BarData = struct {
         return result;
     }
 
-    pub fn doClick(self: *BarData, window_list: *std.ArrayList(*Window), shader: *Shader, pos: Vec2) !bool {
+    pub fn doClick(self: *BarData, window_list: *std.array_list.Managed(*Window), shader: *Shader, pos: Vec2) !bool {
         _ = shader;
         const btn = Rect{ .y = self.screendims.y - self.height, .w = 3 * self.height, .h = self.height };
 

@@ -52,7 +52,7 @@ select_sound: *audio.Sound,
 remaining: f32 = 10,
 sel: usize = 0,
 auto: bool = true,
-disks: std.ArrayList([]const u8) = std.ArrayList([]const u8).init(allocator.alloc),
+disks: std.array_list.Managed([]const u8) = .init(allocator.alloc),
 start: usize = 0,
 
 pub fn getDate(name: []const u8) i128 {
@@ -60,7 +60,7 @@ pub fn getDate(name: []const u8) i128 {
     defer allocator.alloc.free(path);
     const file = std.fs.cwd().openFile(path, .{}) catch return 0;
     defer file.close();
-    return (file.metadata() catch return 0).modified();
+    return (file.stat() catch return 0).mtime;
 }
 
 pub fn sortDisksLt(_: u0, a: []const u8, b: []const u8) bool {

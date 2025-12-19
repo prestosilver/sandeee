@@ -9,8 +9,6 @@ meta: ?[]const u8 = null,
 
 pub fn format(
     self: Version,
-    comptime _: []const u8,
-    _: std.fmt.FormatOptions,
     writer: anytype,
 ) !void {
     return if (self.meta) |meta|

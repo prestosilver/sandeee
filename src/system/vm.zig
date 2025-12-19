@@ -102,12 +102,12 @@ code: ?[]const Operation = null,
 stopped: bool = false,
 yield: bool = false,
 misc_data: std.StringHashMap([]const u8),
-input: std.ArrayList(u8),
+input: std.array_list.Managed(u8),
 last_exec: usize = 0,
 
-streams: std.ArrayList(?*Stream),
+streams: std.array_list.Managed(?*Stream),
 
-out: std.ArrayList(u8),
+out: std.array_list.Managed(u8),
 args: [][]const u8,
 root: files.FolderLink,
 heap: []HeapEntry,
@@ -322,7 +322,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             var old = b.data().string.*;
             defer old.deinit();
 
-            const new = try std.fmt.allocPrint(self.allocator, "{}", .{old});
+            const new = try std.fmt.allocPrint(self.allocator, "{f}", .{old});
             defer self.allocator.free(new);
 
             b.data().string = try .init(new);
@@ -430,7 +430,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
                                     if (pass.data().* != .string) return error.StringMissing;
 
-                                    const input = try std.fmt.allocPrint(self.allocator, "{}", .{pass.data().string});
+                                    const input = try std.fmt.allocPrint(self.allocator, "{f}", .{pass.data().string});
                                     defer self.allocator.free(input);
 
                                     if (std.mem.eql(u8, input, "Hi")) {
@@ -724,7 +724,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             self.return_stack[self.return_rsp].function = self.inside_fn;
             self.pc = 0;
 
-            const name_value = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+            const name_value = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
             defer self.allocator.free(name_value);
 
             if (self.functions.getEntry(name_value)) |entry| {
@@ -840,8 +840,8 @@ pub fn loadList(self: *Vm, ops: []Operation) !void {
     self.code = list;
 }
 
-pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.ArrayList(Operation) {
-    var ops = std.ArrayList(Operation).init(self.allocator);
+pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(Operation) {
+    var ops: std.array_list.Managed(Operation) = .init(self.allocator);
     errdefer {
         log.warn("Vm ops failed at {any}", .{ops.items});
         ops.deinit();
@@ -944,7 +944,7 @@ pub fn getOp(self: *Vm) ![]u8 {
 
     return try std.fmt.allocPrint(
         self.allocator,
-        "In function '{s}' @ {}:\n  Operation: {}\n{s}",
+        "In function '{s}' @ {}:\n  Operation: {f}\n{s}",
         .{ self.inside_fn orelse MAIN_NAME, self.pc, oper, bt },
     );
 }

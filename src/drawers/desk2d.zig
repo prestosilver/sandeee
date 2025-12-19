@@ -128,12 +128,12 @@ pub const DeskData = struct {
                     self.shell.runBg(cmd) catch |err| {
                         const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
-                        const adds = try allocator.alloc.create(Popup.Data.confirm.PopupConfirm);
+                        const adds = try allocator.alloc.create(Popup.Data.popups.confirm.PopupConfirm);
                         adds.* = .{
                             .data = self,
                             .message = message,
                             .shader = shader,
-                            .buttons = Popup.Data.confirm.PopupConfirm.initButtonsFromStruct(errorData),
+                            .buttons = Popup.Data.popups.confirm.PopupConfirm.initButtonsFromStruct(errorData),
                         };
 
                         try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{

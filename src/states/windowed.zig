@@ -61,9 +61,9 @@ dragging_popup: ?*Popup = null,
 down: bool = false,
 
 mousepos: Vec2 = .{},
-windows: std.ArrayList(*Window) = .init(allocator.alloc),
-notifs: std.ArrayList(*Notification) = .init(allocator.alloc),
-popups: std.ArrayList(*Popup) = .init(allocator.alloc),
+windows: std.array_list.Managed(*Window) = .init(allocator.alloc),
+notifs: std.array_list.Managed(*Notification) = .init(allocator.alloc),
+popups: std.array_list.Managed(*Popup) = .init(allocator.alloc),
 
 open_window: Vec2 = .{},
 

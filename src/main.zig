@@ -464,7 +464,7 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
 
 var graphics_init = false;
 
-fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     defer {
         log.deinit();
 
@@ -483,7 +483,7 @@ fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 
     // panic log asap
     const st = panic_handler.log(trace);
-    error_message = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}\n\n{?}", .{ msg, st, trace }) catch {
+    error_message = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}\n\n{?f}", .{ msg, st, trace }) catch {
         std.process.exit(1);
     };
 
@@ -513,17 +513,17 @@ fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noreturn {
         const state = game_states.getPtr(.Crash);
 
         state.update(1.0 / 60.0) catch |err| {
-            log.log.err("crash draw failed, {!}", .{err});
+            log.log.err("crash draw failed, {any}", .{err});
 
             break;
         };
         state.draw(graphics.Context.instance.size) catch |err| {
-            log.log.err("crash draw failed, {!}", .{err});
+            log.log.err("crash draw failed, {any}", .{err});
 
             break;
         };
         blit() catch |err| {
-            log.log.err("crash blit failed {!}", .{err});
+            log.log.err("crash blit failed {any}", .{err});
 
             break;
         };
@@ -580,7 +580,7 @@ pub fn main() void {
             else if (std.mem.eql(u8, arg, "--cwd")) {
                 if (args.next()) |path|
                     std.process.changeCurDir(path) catch |err|
-                        print_help(cmd_path, "Invalid cwd path '{s}' ({!}):", .{ path, err })
+                        print_help(cmd_path, "Invalid cwd path '{s}' ({}):", .{ path, err })
                 else
                     print_help(cmd_path, "Expected cwd argument", .{});
 
@@ -595,7 +595,7 @@ pub fn main() void {
                 if (args.next()) |script| {
                     const buff = allocator.alloc.alloc(u8, 1024) catch @panic("out of memory");
                     const file = std.fs.cwd().openFile(script, .{}) catch |err|
-                        print_help(cmd_path, "Headless script '{s}' couldnt be read ({!})", .{ script, err });
+                        print_help(cmd_path, "Headless script '{s}' couldnt be read ({})", .{ script, err });
                     defer file.close();
 
                     const len = file.readAll(buff) catch @panic("couldnt read file");
@@ -649,7 +649,7 @@ pub fn main() void {
         panic(msg, @errorReturnTrace(), null);
     };
 
-    std.log.info("Done", &.{});
+    std.log.info("Done", .{});
 }
 
 pub fn runGame() anyerror!void {

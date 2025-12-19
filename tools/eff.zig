@@ -27,17 +27,19 @@ pub fn main() !void {
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    const writer = file.writer();
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(&writer_buffer);
 
-    var image = try zigimg.Image.fromFilePath(allocator, input_file);
-    defer image.deinit();
+    var reader_buffer: [1024]u8 = undefined;
+    var image = try zigimg.Image.fromFilePath(allocator, input_file, &reader_buffer);
+    defer image.deinit(allocator);
 
-    try writer.writeAll("efnt");
+    try writer.interface.writeAll("efnt");
 
     const chw = image.width / 16;
     const chh = image.height / 16 + SPACING;
 
-    try writer.writeAll(&.{
+    try writer.interface.writeAll(&.{
         @intCast(chw),
         @intCast(chh),
         1,
@@ -60,7 +62,7 @@ pub fn main() !void {
                 }
             }
 
-            try writer.writeAll(ch);
+            try writer.interface.writeAll(ch);
         }
     }
 }

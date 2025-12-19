@@ -34,7 +34,7 @@ pub fn main() !void {
 
             try files_root.newFile(disk_path);
 
-            const file = try std.fs.openFileAbsolute(input_path, .{});
+            const file = try std.fs.cwd().openFile(input_path, .{});
             defer file.close();
 
             const content_len = try file.readAll(&content);

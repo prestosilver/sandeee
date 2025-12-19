@@ -108,8 +108,14 @@ pub const WebData = struct {
                 const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
                 defer allocator.alloc.free(header_buffer);
 
-                var req = client.open(.GET, uri, .{
-                    .server_header_buffer = header_buffer,
+                var body: std.ArrayList(u8) = try .initCapacity(allocator.alloc, 0);
+                var body_writer: std.io.Writer.Allocating = .fromArrayList(allocator.alloc, &body);
+                defer body_writer.deinit();
+
+                const resp = client.fetch(.{
+                    .response_writer = &body_writer.writer,
+                    .location = .{ .uri = uri },
+                    .method = .GET,
                     .headers = .{
                         .user_agent = .{ .override = "SandEEE/0.0" },
                         .connection = .{ .override = "Close" },
@@ -121,24 +127,17 @@ pub const WebData = struct {
                         try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
                 };
 
-                defer req.deinit();
-
-                req.send() catch |err| {
-                    return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
-                };
-
-                req.wait() catch |err| {
-                    return try std.fmt.allocPrint(allocator.alloc, "Error: {s}", .{@errorName(err)});
-                };
-
-                if (req.response.status != .ok) {
-                    return try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @intFromEnum(req.response.status), @tagName(req.response.status) });
+                if (resp.status != .ok) {
+                    body.clearAndFree(allocator.alloc);
+                    return try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @intFromEnum(resp.status), @tagName(resp.status) });
                 }
 
-                const fconts = try req.reader().readAllAlloc(allocator.alloc, std.math.maxInt(usize));
-                defer allocator.alloc.free(fconts);
+                return body.items;
 
-                return try allocator.alloc.dupe(u8, fconts);
+                // const fconts = try req.reader().readAllAlloc(allocator.alloc, std.math.maxInt(usize));
+                // defer allocator.alloc.free(fconts);
+
+                // return try allocator.alloc.dupe(u8, fconts);
             },
             .Log => {
                 const log_import = @import("../util/log.zig");
@@ -236,8 +235,8 @@ pub const WebData = struct {
 
     shader: *Shader,
     conts: ?[]const u8,
-    links: std.ArrayList(WebLink),
-    hist: std.ArrayList(Url),
+    links: std.array_list.Managed(WebLink),
+    hist: std.array_list.Managed(Url),
 
     scroll_top: bool = false,
     scroll_link: bool = false,
@@ -590,7 +589,7 @@ pub const WebData = struct {
 
         const home = try files.FolderLink.resolve(.home);
 
-        const adds = try allocator.alloc.create(Popup.Data.textpick.PopupTextPick);
+        const adds = try allocator.alloc.create(Popup.Data.popups.textpick.PopupTextPick);
         adds.* = .{
             .text = try std.mem.concat(allocator.alloc, u8, &.{ home.name, name }),
             .data = @as(*anyopaque, @ptrCast(output)),

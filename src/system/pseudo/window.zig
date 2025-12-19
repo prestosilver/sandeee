@@ -37,7 +37,7 @@ const Windowed = states.Windowed;
 
 pub var wintex: *Texture = undefined;
 pub var shader: *Shader = undefined;
-pub var windows_ptr: *std.ArrayList(*Window) = undefined;
+pub var windows_ptr: *std.array_list.Managed(*Window) = undefined;
 
 pub var vm_idx: u8 = 0;
 

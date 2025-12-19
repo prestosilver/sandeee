@@ -26,19 +26,19 @@ pub const EventKeyChar = struct { codepoint: u32, mods: i32 };
 
 var global_mods: i32 = 0;
 
-pub fn cursorPosCallback(_: ?*glfw.Window, x: f64, y: f64) callconv(.C) void {
+pub fn cursorPosCallback(_: ?*glfw.Window, x: f64, y: f64) callconv(.c) void {
     EventManager.instance.sendEvent(EventMouseMove{ .x = x, .y = y }) catch |err| {
         @panic(@errorName(err));
     };
 }
 
-pub fn charCallback(_: ?*glfw.Window, codepoint: c_uint) callconv(.C) void {
+pub fn charCallback(_: ?*glfw.Window, codepoint: c_uint) callconv(.c) void {
     EventManager.instance.sendEvent(EventKeyChar{ .codepoint = codepoint, .mods = global_mods }) catch |err| {
         @panic(@errorName(err));
     };
 }
 
-pub fn keyCallback(_: ?*glfw.Window, key: c_int, _: c_int, action: c_int, mods: c_int) callconv(.C) void {
+pub fn keyCallback(_: ?*glfw.Window, key: c_int, _: c_int, action: c_int, mods: c_int) callconv(.c) void {
     _ = switch (action) {
         glfw.Press => EventManager.instance.sendEvent(EventKeyDown{ .key = key, .mods = mods }),
         glfw.Repeat => EventManager.instance.sendEvent(EventKeyDown{ .key = key, .mods = mods }),
@@ -51,7 +51,7 @@ pub fn keyCallback(_: ?*glfw.Window, key: c_int, _: c_int, action: c_int, mods: 
     global_mods = mods;
 }
 
-pub fn mouseButtonCallback(_: ?*glfw.Window, btn: c_int, action: c_int, _: c_int) callconv(.C) void {
+pub fn mouseButtonCallback(_: ?*glfw.Window, btn: c_int, action: c_int, _: c_int) callconv(.c) void {
     _ = switch (action) {
         glfw.Press => EventManager.instance.sendEvent(EventMouseDown{ .btn = btn }),
         glfw.Release => EventManager.instance.sendEvent(EventMouseUp{ .btn = btn }),
@@ -61,13 +61,13 @@ pub fn mouseButtonCallback(_: ?*glfw.Window, btn: c_int, action: c_int, _: c_int
     };
 }
 
-pub fn framebufferSizeCallback(_: ?*glfw.Window, width: c_int, height: c_int) callconv(.C) void {
+pub fn framebufferSizeCallback(_: ?*glfw.Window, width: c_int, height: c_int) callconv(.c) void {
     EventManager.instance.sendEvent(EventWindowResize{ .w = width, .h = height }) catch |err| {
         @panic(@errorName(err));
     };
 }
 
-pub fn scrollCallback(_: ?*glfw.Window, x: f64, y: f64) callconv(.C) void {
+pub fn scrollCallback(_: ?*glfw.Window, x: f64, y: f64) callconv(.c) void {
     EventManager.instance.sendEvent(EventMouseScroll{ .x = @as(f32, @floatCast(x)), .y = @as(f32, @floatCast(y)) }) catch |err| {
         @panic(@errorName(err));
     };

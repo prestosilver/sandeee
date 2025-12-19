@@ -64,7 +64,7 @@ pub const SettingManager = struct {
 
     pub fn save(self: *SettingManager) !void {
         var iter = self.settings.keyIterator();
-        var out = std.ArrayList(u8).init(allocator.alloc);
+        var out: std.array_list.Managed(u8) = .init(allocator.alloc);
         defer out.deinit();
 
         while (iter.next()) |entry| {

@@ -47,7 +47,7 @@ pub fn put(self: *Self, name: []const u8, texture: Texture) !void {
 
     try self.textures.put(new, adds);
 
-    log.debug("New texture: '{s}'", .{std.fmt.fmtSliceEscapeUpper(name)});
+    log.debug("New texture: '{f}'", .{std.ascii.hexEscape(name, .upper)});
 }
 
 pub fn putMem(self: *Self, name: []const u8, texture: []const u8) !void {

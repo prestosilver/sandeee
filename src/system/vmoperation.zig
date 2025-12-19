@@ -60,17 +60,12 @@ code: Code,
 string: ?[]const u8 = null,
 value: ?u64 = null,
 
-pub fn format(
-    self: Operation,
-    comptime _: []const u8,
-    _: std.fmt.FormatOptions,
-    writer: anytype,
-) !void {
+pub fn format(self: Operation, writer: anytype) !void {
     if (self.string) |string| {
-        return std.fmt.format(writer, "{s} \"{s}\"", .{ @tagName(self.code), string });
+        return writer.print("{s} \"{s}\"", .{ @tagName(self.code), string });
     } else if (self.value) |value| {
-        return std.fmt.format(writer, "{s} {}", .{ @tagName(self.code), value });
+        return writer.print("{s} {}", .{ @tagName(self.code), value });
     } else {
-        return std.fmt.format(writer, "{s}", .{@tagName(self.code)});
+        return writer.print("{s}", .{@tagName(self.code)});
     }
 }

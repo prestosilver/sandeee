@@ -249,7 +249,7 @@ pub const EmailManager = struct {
         }
     };
 
-    emails: std.ArrayList(Email) = std.ArrayList(Email).init(allocator.alloc),
+    emails: std.array_list.Managed(Email) = .init(allocator.alloc),
     boxes: [][]const u8 = &.{},
 
     pub fn init() !void {

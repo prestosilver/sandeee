@@ -91,7 +91,7 @@ pub const DiskError = error{
     Unexpected,
     Unseekable,
     EndOfStream,
-} || std.fs.File.Reader.Error || FileError;
+} || std.io.Reader.Error || FileError;
 
 pub const File = struct {
     const FileKind = enum {
@@ -318,7 +318,9 @@ pub const Folder = struct {
 
     pub fn loadDisk(file: std.fs.File) DiskError!*Folder {
         if (try file.getEndPos() < 4) return error.BadDiskSize;
-        const reader = file.reader();
+
+        var reader_buffer: [1024]u8 = undefined;
+        var reader = file.reader(&reader_buffer);
 
         const root = try allocator.alloc.create(Folder);
         errdefer root.deinit();
@@ -329,12 +331,12 @@ pub const Folder = struct {
             .parent = null,
         };
 
-        const folder_count = try reader.readInt(u32, .big);
+        const folder_count = try reader.interface.takeInt(u32, .big);
         for (0..folder_count) |_| {
-            const namesize = try reader.readInt(u32, .big);
+            const namesize = try reader.interface.takeInt(u32, .big);
             const namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
             defer allocator.alloc.free(namebuffer);
-            if (try reader.read(namebuffer) != namesize) return error.EndOfStream;
+            try reader.interface.readSliceAll(namebuffer);
             root.newFolder(namebuffer) catch |e| {
                 switch (e) {
                     error.FolderExists => {
@@ -345,18 +347,18 @@ pub const Folder = struct {
             };
         }
 
-        const file_count = try reader.readInt(u32, .big);
+        const file_count = try reader.interface.takeInt(u32, .big);
         for (0..file_count) |_| {
-            const namesize = try reader.readInt(u32, .big);
+            const namesize = try reader.interface.takeInt(u32, .big);
             const namebuffer: []u8 = try allocator.alloc.alloc(u8, namesize);
             defer allocator.alloc.free(namebuffer);
-            if (try reader.read(namebuffer) != namesize) return error.EndOfStream;
+            try reader.interface.readSliceAll(namebuffer);
             try root.newFile(namebuffer);
 
-            const contsize = try reader.readInt(u32, .big);
+            const contsize = try reader.interface.takeInt(u32, .big);
             const contbuffer: []u8 = try allocator.alloc.alloc(u8, contsize);
             defer allocator.alloc.free(contbuffer);
-            if (try reader.read(contbuffer) != contsize) return error.EndOfStream;
+            try reader.interface.readSliceAll(contbuffer);
 
             try root.writeFile(namebuffer, contbuffer, null);
         }
@@ -418,7 +420,7 @@ pub const Folder = struct {
             const settings = try allocator.alloc.dupe(u8, try settings_file.read(null));
             defer allocator.alloc.free(settings);
 
-            var files = std.ArrayList(*File).init(allocator.alloc);
+            var files = std.array_list.Managed(*File).init(allocator.alloc);
             defer files.deinit();
             try rec_disk.getFilesRec(&files);
 
@@ -431,7 +433,7 @@ pub const Folder = struct {
             const new_settings_file = try root_disk.getFile("/conf/system.cfg");
             try new_settings_file.write(settings, null);
         } else {
-            var files = std.ArrayList(*File).init(allocator.alloc);
+            var files = std.array_list.Managed(*File).init(allocator.alloc);
             defer files.deinit();
             try rec_disk.getFilesRec(&files);
 
@@ -526,29 +528,29 @@ pub const Folder = struct {
     }
 
     pub fn write(self: *Folder, file: std.fs.File) !void {
-        var folders = std.ArrayList(*const Folder).init(allocator.alloc);
+        var folders = std.array_list.Managed(*const Folder).init(allocator.alloc);
         defer folders.deinit();
         try self.getFoldersRec(&folders);
 
-        const writer = file.writer();
+        var writer = file.writer(&.{});
 
-        try writer.writeInt(u32, @as(u32, @intCast(folders.items.len)), .big);
+        try writer.interface.writeInt(u32, @as(u32, @intCast(folders.items.len)), .big);
         for (folders.items) |folder| {
-            try writer.writeInt(u32, @as(u32, @intCast(folder.name.len)), .big);
-            if (folder.name.len != try writer.write(folder.name)) return error.OutOfMemory;
+            try writer.interface.writeInt(u32, @as(u32, @intCast(folder.name.len)), .big);
+            try writer.interface.writeAll(folder.name);
         }
 
-        var files = std.ArrayList(*File).init(allocator.alloc);
+        var files = std.array_list.Managed(*File).init(allocator.alloc);
         defer files.deinit();
         try self.getFilesRec(&files);
 
-        try writer.writeInt(u32, @intCast(files.items.len), .big);
+        try writer.interface.writeInt(u32, @intCast(files.items.len), .big);
         for (files.items) |subfile| {
-            try writer.writeInt(u32, @intCast(subfile.name.len), .big);
-            if (subfile.name.len != try writer.write(subfile.name)) return error.OutOfMemory;
+            try writer.interface.writeInt(u32, @intCast(subfile.name.len), .big);
+            try writer.interface.writeAll(subfile.name);
 
-            try writer.writeInt(u32, @intCast(subfile.data.disk.len), .big);
-            if (subfile.data.disk.len != try writer.write(subfile.data.disk)) return error.OutOfMemory;
+            try writer.interface.writeInt(u32, @intCast(subfile.data.disk.len), .big);
+            try writer.interface.writeAll(subfile.data.disk);
         }
     }
 
@@ -571,14 +573,17 @@ pub const Folder = struct {
 
                 switch (file.kind) {
                     .file => {
-                        const file_reader = try ext_path.dir.openFile(file.name, .{});
-                        defer file_reader.close();
+                        const fs_file = try ext_path.dir.openFile(file.name, .{});
+                        defer fs_file.close();
+
+                        var reader_buffer: [256]u8 = undefined;
+                        var file_reader = fs_file.reader(&reader_buffer);
 
                         const sub_file = try allocator.alloc.create(File);
                         sub_file.* = .{
                             .parent = .link(self),
                             .data = .{
-                                .disk = try file_reader.reader().readAllAlloc(allocator.alloc, std.math.maxInt(usize)),
+                                .disk = try file_reader.interface.readAlloc(allocator.alloc, 1000000),
                             },
                             .name = try allocator.alloc.dupe(u8, fullname),
                         };
@@ -637,7 +642,7 @@ pub const Folder = struct {
         return self.folders;
     }
 
-    pub fn getFoldersRec(self: *const Folder, folders: *std.ArrayList(*const Folder)) !void {
+    pub fn getFoldersRec(self: *const Folder, folders: *std.array_list.Managed(*const Folder)) !void {
         if (self.ext == null and !self.protected) {
             try folders.append(self);
 
@@ -649,7 +654,7 @@ pub const Folder = struct {
             try sibling.getFoldersRec(folders);
     }
 
-    pub fn getFilesRec(self: *const Folder, files: *std.ArrayList(*File)) !void {
+    pub fn getFilesRec(self: *const Folder, files: *std.array_list.Managed(*File)) !void {
         if (self.ext == null and !self.protected) {
             if (self.protected) return;
             if (self.ext != null) return;
@@ -1006,10 +1011,10 @@ pub const Folder = struct {
         allocator.alloc.destroy(self);
     }
 
-    pub fn toStr(self: *Folder) !std.ArrayList(u8) {
-        var result = std.ArrayList(u8).init(allocator.alloc);
+    pub fn toStr(self: *Folder) !std.array_list.Managed(u8) {
+        var result = std.array_list.Managed(u8).init(allocator.alloc);
 
-        var folders = std.ArrayList(*const Folder).init(allocator.alloc);
+        var folders = std.array_list.Managed(*const Folder).init(allocator.alloc);
         defer folders.deinit();
         try self.getFoldersRec(&folders);
 
@@ -1023,7 +1028,7 @@ pub const Folder = struct {
             try result.appendSlice(folder.name);
         }
 
-        var files = std.ArrayList(*File).init(allocator.alloc);
+        var files = std.array_list.Managed(*File).init(allocator.alloc);
         defer files.deinit();
         try self.getFilesRec(&files);
 
@@ -1043,7 +1048,7 @@ pub const Folder = struct {
     }
 };
 
-pub fn toStr() !std.ArrayList(u8) {
+pub fn toStr() !std.array_list.Managed(u8) {
     return (try FolderLink.resolve(.root)).toStr();
 }
 

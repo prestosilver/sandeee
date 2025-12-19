@@ -28,7 +28,7 @@ const SANDEEE_VERSION = Version{
     .index = options.SandEEEVersion.index,
     .meta = options.SandEEEVersion.meta,
 };
-pub const SANDEEE_VERSION_TEXT = std.fmt.comptimePrint("{}", .{SANDEEE_VERSION});
+pub const SANDEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{SANDEEE_VERSION});
 
 pub fn BLOCK(comptime id: u8) []const u8 {
     if (id > 7) @compileError("Bad Block char");
