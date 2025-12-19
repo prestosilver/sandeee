@@ -11,3 +11,9 @@ pub const telem = @import("telem.zig");
 pub const files = @import("files.zig");
 pub const mail = @import("mail.zig");
 pub const pseudo = @import("pseudo/mod.zig");
+
+test {
+    _ = headless;
+    _ = Shell;
+    _ = Vm;
+}

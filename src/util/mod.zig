@@ -15,3 +15,10 @@ pub const Rope = @import("rope.zig");
 pub const Font = @import("font.zig");
 pub const Url = @import("url.zig");
 pub const Eln = @import("eln.zig");
+
+test {
+    _ = Eln;
+    _ = Rope;
+    _ = storage;
+    _ = Url;
+}

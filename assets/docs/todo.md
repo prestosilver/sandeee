@@ -21,3 +21,5 @@
 ## General tentative todo
 
 - [ ] New partial disk scripted recovery system
+- [ ] Aseprite exports
+- [ ] Embed file fix

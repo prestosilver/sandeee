@@ -1,5 +1,6 @@
 const std = @import("std");
 const glfw = @import("glfw");
+const builtin = @import("builtin");
 
 const system = @import("mod.zig");
 
@@ -582,7 +583,7 @@ pub const shell_commands = .{
                 var data: std.array_list.Managed(u8) = .init(allocator.alloc);
                 defer data.deinit();
                 try data.appendSlice("Sh" ++ strings.EEE ++ "ll Help:\n" ++ "=============\n");
-                if (shell.headless or @import("builtin").is_test) {
+                if (shell.headless or builtin.is_test) {
                     inline for (headless_help_data) |help_group| {
                         try data.append('\n');
                         try data.appendSlice(help_group.name ++ "\n");
@@ -868,7 +869,7 @@ pub const help_data = .{
 
 pub const command_map = std.StaticStringMap(ShellCommand).initComptime(
     shell_commands ++
-        if (!@import("builtin").is_test) window_commands else .{},
+        if (!builtin.is_test) window_commands else .{},
 );
 
 pub fn run(self: *Shell, params: []const u8) anyerror!Result {
@@ -883,7 +884,7 @@ pub fn run(self: *Shell, params: []const u8) anyerror!Result {
     const cmd = iter.next() orelse return .{};
 
     if (command_map.get(cmd)) |runs|
-        if (!runs.gui or !self.headless and !@import("builtin").is_test)
+        if (!runs.gui or !self.headless and !builtin.is_test)
             return runs.run(self, &iter);
 
     return self.runFile(cmd, &iter);

@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const c = @import("../c.zig");
 
 const system = @import("mod.zig");
@@ -319,11 +320,15 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* != .value) return error.ValueMissing;
             if (b.data().* != .string) return error.StringMissing;
 
-            var old = b.data().string.*;
-            defer old.deinit();
+            const old_rope = b.data().string.*;
+            const old = try std.fmt.allocPrint(self.allocator, "{f}", .{old_rope});
+            defer self.allocator.free(old);
 
-            const new = try std.fmt.allocPrint(self.allocator, "{f}", .{old});
+            const new = try self.allocator.alloc(u8, a.data().value);
             defer self.allocator.free(new);
+
+            const len = @min(old.len, new.len);
+            @memcpy(new[0..len], old[0..len]);
 
             b.data().string = try .init(new);
 
@@ -351,9 +356,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const a = try self.findStack(op.value.?);
 
             if (a.data().* == .string) {
-                a.data().string.refs += 1;
-
-                try self.pushStackS(a.data().string);
+                try self.pushStackS(try .initRef(a.data().string));
                 return;
             }
 
@@ -410,7 +413,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
                             switch (index) {
                                 // panic
                                 128 => {
-                                    if (@import("builtin").is_test)
+                                    if (builtin.is_test)
                                         return error.InvalidSys
                                     else if (!Windowed.global_self.debug_enabled)
                                         return error.InvalidSys

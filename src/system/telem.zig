@@ -1,5 +1,6 @@
 const std = @import("std");
 const options = @import("options");
+const builtin = @import("builtin");
 const c = @import("../c.zig");
 
 const system = @import("mod.zig");
@@ -43,7 +44,7 @@ pub const Telem = packed struct {
     },
 
     pub fn checkVersion() void {
-        if (@import("builtin").is_test) return;
+        if (builtin.is_test) return;
 
         if (instance.version.major != @intFromEnum(options.SandEEEVersion.phase) or
             instance.version.index != options.SandEEEVersion.index)

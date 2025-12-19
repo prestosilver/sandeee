@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const util = @import("../util/mod.zig");
 const system = @import("mod.zig");
@@ -16,7 +17,7 @@ const strings = sandeee_data.strings;
 // TODO: unhardcode
 const DISK = "headless.eee";
 
-const USE_POSIX = @import("builtin").os.tag == .linux;
+const USE_POSIX = builtin.os.tag == .linux;
 
 pub fn write_console(stdout: *std.fs.File.Writer, input: []const u8) !void {
     const text = try sandeee_data.strings.eeeCHToANSI(input);
@@ -111,9 +112,11 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
         _ = c.ShowWindow(c.GetConsoleWindow(), c.SW_SHOW);
     }
 
-    _ = try std.Thread.spawn(.{}, inputLoop, .{});
+    // no input thread on test builds
+    if (!builtin.is_test)
+        _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
-    const diskpath = try storage.getContentPath("disks/headless.eee");
+    const diskpath = try storage.getContentPath("disks/" ++ DISK);
     defer diskpath.deinit();
 
     std.fs.cwd().access(diskpath.items, .{}) catch {
@@ -133,25 +136,27 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 
     const stdin_file: std.fs.File = .stdin();
 
-    // set terminal attribs
-    const original = if (USE_POSIX) try std.posix.tcgetattr(stdin_file.handle) else undefined;
+    const original = if (USE_POSIX and !builtin.is_test) try std.posix.tcgetattr(stdin_file.handle) else undefined;
+    defer if (USE_POSIX and !builtin.is_test)
+        std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
 
-    if (USE_POSIX) {
-        var raw = original;
+    if (!builtin.is_test) {
+        // set terminal attribs
 
         if (USE_POSIX) {
-            raw.lflag.ECHO = false;
-            raw.lflag.ICANON = false;
+            var raw = original;
 
-            raw.cc[@intFromEnum(std.posix.system.V.TIME)] = 0;
-            raw.cc[@intFromEnum(std.posix.system.V.MIN)] = 1;
+            if (USE_POSIX) {
+                raw.lflag.ECHO = false;
+                raw.lflag.ICANON = false;
+
+                raw.cc[@intFromEnum(std.posix.system.V.TIME)] = 0;
+                raw.cc[@intFromEnum(std.posix.system.V.MIN)] = 1;
+            }
+
+            try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);
         }
-
-        try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);
     }
-
-    defer if (USE_POSIX)
-        std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
 
     var input_buffer = std.array_list.Managed(u8).init(allocator.alloc);
     try input_buffer.appendSlice(cmd);
@@ -278,13 +283,14 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 }
 
 test "Headless scripts" {
-    VmManager.init();
-    defer VmManager.instance.deinit();
+    std.fs.cwd().access("disks", .{}) catch
+        std.fs.cwd().makeDir("disks") catch
+        @panic("Cannot make disks directory.");
 
     VmManager.vm_time = 1.0;
     VmManager.last_frame_time = 10.0;
 
-    var logging = try std.fs.cwd().createFile("zig-out/test_output.md", .{ .mode = .read_write });
+    var logging = try std.fs.cwd().createFile("test_output.md", .{});
     defer logging.close();
 
     var start_cwd = try std.fs.cwd().openDir("tests", .{
@@ -299,6 +305,11 @@ test "Headless scripts" {
 
     while (try iter.next()) |entry| {
         if (entry.kind != .file) continue;
+
+        VmManager.instance = .{};
+
+        // deinit vm manager
+        defer VmManager.instance.deinit();
 
         _ = try logging.write("# ");
         _ = try logging.write(entry.path);
@@ -316,7 +327,6 @@ test "Headless scripts" {
             err = res;
 
             _ = try logging.write("```\n\n");
-
             _ = try logging.write(@errorName(res));
             _ = try logging.write("\n\n");
             success = false;

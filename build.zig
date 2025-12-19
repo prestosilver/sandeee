@@ -347,6 +347,8 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/heaptest.eon"), "/prof/tests/eep/eon/heaptest.eep");
     addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/stringtest.eon"), "/prof/tests/eep/eon/stringtest.eep");
     addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/paren.eon"), "/prof/tests/eep/eon/paren.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/src/asm/hello.asm");
+    addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/src/asm/fib.asm");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/exec/eon.eon"), "/prof/tests/src/eon/eon.eon");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/libs/eon.eon"), "/prof/tests/src/eon/eon_lib.eon");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/exec/pix.eon"), "/prof/tests/src/eon/pix.eon");
@@ -709,15 +711,6 @@ pub fn build(b: *std.Build) !void {
     www_misc_step.dependOn(&install_downloads.step);
     www_misc_step.dependOn(&install_downloads_dir.step);
 
-    // const www_files_step = b.step("www_files", "Build www files");
-    // www_files_step.dependOn(www_misc_step);
-
-    // for (WWW_FILES) |file| {
-    //     const step = try file.getStep(b, content_path, b.path("www/downloads"), www_misc_step);
-
-    //     www_files_step.dependOn(step);
-    // }
-
     const www_step = b.step("www", "Build the website");
     www_step.dependOn(www_misc_step);
 
@@ -730,11 +723,14 @@ pub fn build(b: *std.Build) !void {
 
     headless_step.dependOn(&headless_cmd.step);
 
+    const install_disk_tests = b.addInstallFile(debug_image_path, "../content/recovery.eee");
+
     const exe_tests = b.addTest(.{
         .root_module = exe_mod,
     });
 
     const run_exe_tests = b.addRunArtifact(exe_tests);
+    run_exe_tests.step.dependOn(&install_disk_tests.step);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_tests.step);
@@ -746,6 +742,7 @@ pub fn build(b: *std.Build) !void {
         const install_recovery_step = b.addInstallFileWithDir(steam_image_path, steam_pub_path, "content/recovery.eee");
 
         pub_step.dependOn(&install_recovery_step.step);
+        test_step.dependOn(&install_recovery_step.step);
 
         const public_options = b.addOptions();
         public_options.addOption(Version, "SandEEEVersion", version);
