@@ -70,6 +70,7 @@ pub fn build(b: *std.Build) !void {
     const exe = b.addExecutable(.{
         .name = "SandEEE",
         .root_module = exe_mod,
+        .use_llvm = true,
     });
 
     const exe_host_mod = b.createModule(.{
@@ -769,6 +770,7 @@ pub fn build(b: *std.Build) !void {
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_linux,
+            .use_llvm = true,
         });
         exe_pub_linux.addIncludePath(b.path("deps/include"));
         exe_pub_linux.addIncludePath(b.path("deps/steam_sdk/public/"));
@@ -804,6 +806,7 @@ pub fn build(b: *std.Build) !void {
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_windows,
+            .use_llvm = true,
         });
         exe_pub_windows.addIncludePath(b.path("deps/include"));
         exe_pub_windows.addIncludePath(b.path("deps/steam_sdk/public/"));
@@ -901,6 +904,7 @@ pub fn build(b: *std.Build) !void {
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_linux,
+            .use_llvm = true,
         });
         exe_pub_linux.addIncludePath(b.path("deps/include"));
 
@@ -931,6 +935,7 @@ pub fn build(b: *std.Build) !void {
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE",
             .root_module = exe_mod_pub_windows,
+            .use_llvm = true,
         });
         exe_pub_windows.addIncludePath(b.path("deps/include"));
 
