@@ -77,7 +77,7 @@ pub const ExplorerData = struct {
         const shell_root = try self.shell.root.resolve();
 
         //const result = try allocator.alloc.alloc(ExplorerIcon, sub_folders.len + sub_files.len);
-        var result: std.ArrayList(ExplorerIcon) = .init(allocator.alloc);
+        var result: std.array_list.Managed(ExplorerIcon) = .init(allocator.alloc);
         defer result.deinit();
 
         var sub_folder = try shell_root.getFolders();
@@ -213,11 +213,11 @@ pub const ExplorerData = struct {
                                     _ = self.shell.runBg(icon.launches) catch |err| {
                                         const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
-                                        const adds = try allocator.alloc.create(Popup.Data.confirm.PopupConfirm);
+                                        const adds = try allocator.alloc.create(Popup.Data.popups.confirm.PopupConfirm);
                                         adds.* = .{
                                             .data = self,
                                             .message = message,
-                                            .buttons = Popup.Data.confirm.PopupConfirm.initButtonsFromStruct(ErrorData),
+                                            .buttons = Popup.Data.popups.confirm.PopupConfirm.initButtonsFromStruct(ErrorData),
                                             .shader = self.shader,
                                         };
 
@@ -361,11 +361,11 @@ pub const ExplorerData = struct {
         switch (keycode) {
             glfw.KeyDelete => {
                 if (self.selected != null and (shell_root.getFile(self.icon_data[self.selected.?].name) catch null) != null) {
-                    const adds = try allocator.alloc.create(Popup.Data.confirm.PopupConfirm);
+                    const adds = try allocator.alloc.create(Popup.Data.popups.confirm.PopupConfirm);
                     adds.* = .{
                         .data = self,
                         .message = try allocator.alloc.dupe(u8, "Are you sure you want to delete this file."),
-                        .buttons = Popup.Data.confirm.PopupConfirm.initButtonsFromStruct(confirmData),
+                        .buttons = Popup.Data.popups.confirm.PopupConfirm.initButtonsFromStruct(confirmData),
                         .shader = self.shader,
                     };
 

@@ -59,8 +59,8 @@ pub const Quad = struct {
 
 const VertArray = @This();
 
-array: std.ArrayList(Vert),
-qarray: std.ArrayList(Quad),
+array: std.array_list.Managed(Vert),
+qarray: std.array_list.Managed(Quad),
 
 pub const none: VertArray = .{ .array = .init(allocator.alloc), .qarray = .init(allocator.alloc) };
 

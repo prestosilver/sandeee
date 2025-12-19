@@ -329,7 +329,7 @@ const EmailData = struct {
     pub fn submitFile(self: *Self) !void {
         const home = try files.FolderLink.resolve(.home);
 
-        const adds = try allocator.alloc.create(Popup.Data.filepick.PopupFilePick);
+        const adds = try allocator.alloc.create(Popup.Data.popups.filepick.PopupFilePick);
         adds.* = .{
             .path = try allocator.alloc.dupe(u8, home.name),
             .data = self,
@@ -543,7 +543,7 @@ const EmailData = struct {
                                         result_string = try std.fmt.allocPrint(allocator.alloc, "{}", .{result.data().value});
                                     } else if (result.data().* == .string) {
                                         allocator.alloc.free(result_string);
-                                        result_string = try std.fmt.allocPrint(allocator.alloc, "{}", .{result.data().string});
+                                        result_string = try std.fmt.allocPrint(allocator.alloc, "{f}", .{result.data().string});
                                     }
 
                                     good = good and std.ascii.eqlIgnoreCase(result_string, runs.conts);

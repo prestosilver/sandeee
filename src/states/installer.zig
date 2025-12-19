@@ -65,7 +65,7 @@ setting_id: usize = 0,
 
 timer: f32 = 1,
 status: Status = .Naming,
-disk_name: std.ArrayList(u8) = .init(allocator.alloc),
+disk_name: std.array_list.Managed(u8) = .init(allocator.alloc),
 offset: f32 = 0,
 
 pub fn setup(self: *GSInstaller) !void {

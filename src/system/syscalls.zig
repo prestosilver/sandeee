@@ -123,7 +123,7 @@ fn sysPrint(self: *Vm) VmError!void {
                 .ref => |ref| {
                     // TODO: make actual iterator
 
-                    const tmp = try std.fmt.allocPrint(self.allocator, "{s}", .{ref});
+                    const tmp = try std.fmt.allocPrint(self.allocator, "{f}", .{ref});
                     defer self.allocator.free(tmp);
                     try self.out.appendSlice(tmp);
                 },
@@ -167,7 +167,7 @@ fn sysCreate(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    const path_str = try std.fmt.allocPrint(self.allocator, "{}", .{path.data().string});
+    const path_str = try std.fmt.allocPrint(self.allocator, "{f}", .{path.data().string});
     defer self.allocator.free(path_str);
 
     if (path_str.len > 0 and path_str[0] == '/') {
@@ -184,7 +184,7 @@ fn sysOpen(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    const path_str = try std.fmt.allocPrint(self.allocator, "{}", .{path.data().string});
+    const path_str = try std.fmt.allocPrint(self.allocator, "{f}", .{path.data().string});
     defer self.allocator.free(path_str);
 
     const root = try self.root.resolve();
@@ -234,7 +234,7 @@ fn sysWrite(self: *Vm) VmError!void {
                 .ref => |ref| {
                     // TODO: make actual iterator
 
-                    const tmp = try std.fmt.allocPrint(self.allocator, "{s}", .{ref});
+                    const tmp = try std.fmt.allocPrint(self.allocator, "{f}", .{ref});
                     defer self.allocator.free(tmp);
                     try stream.write(tmp);
                 },
@@ -298,7 +298,7 @@ fn sysCheckFunc(self: *Vm) VmError!void {
 
     if (name.data().* != .string) return error.StringMissing;
 
-    const name_str = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+    const name_str = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
     defer self.allocator.free(name_str);
 
     const val: u64 = if (self.functions.contains(name_str)) 1 else 0;
@@ -313,7 +313,7 @@ fn sysGetFunc(self: *Vm) VmError!void {
 
     var val: []const u8 = "";
 
-    const name_str = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+    const name_str = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
     defer self.allocator.free(name_str);
 
     if (self.functions.get(name_str)) |newVal| val = newVal.string;
@@ -328,13 +328,13 @@ fn sysRegFunc(self: *Vm) VmError!void {
     if (func.data().* != .string) return error.StringMissing;
     if (name.data().* != .string) return error.StringMissing;
 
-    const dup = try std.fmt.allocPrint(self.allocator, "{}", .{func.data().string});
+    const dup = try std.fmt.allocPrint(self.allocator, "{f}", .{func.data().string});
 
     const ops = try self.stringToOps(dup);
     defer ops.deinit();
 
     const final_ops = try self.allocator.dupe(Operation, ops.items);
-    const final_name = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+    const final_name = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
 
     if (self.functions.fetchRemove(final_name)) |entry| {
         self.allocator.free(entry.key);
@@ -353,7 +353,7 @@ fn sysClearFunc(self: *Vm) VmError!void {
 
     if (name.data().* != .string) return error.StringMissing;
 
-    const name_str = try std.fmt.allocPrint(self.allocator, "{}", .{name.data().string});
+    const name_str = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
     defer self.allocator.free(name_str);
 
     if (self.functions.fetchRemove(name_str)) |entry| {
@@ -453,7 +453,7 @@ fn sysError(self: *Vm) VmError!void {
             .ref => |ref| {
                 // TODO: make actual iterator
 
-                const tmp = try std.fmt.allocPrint(self.allocator, "{s}", .{ref});
+                const tmp = try std.fmt.allocPrint(self.allocator, "{f}", .{ref});
                 defer self.allocator.free(tmp);
                 try self.out.appendSlice(tmp);
             },
@@ -470,7 +470,7 @@ fn sysSize(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    const path_str = try std.fmt.allocPrint(self.allocator, "{}", .{path.data().string});
+    const path_str = try std.fmt.allocPrint(self.allocator, "{f}", .{path.data().string});
     defer self.allocator.free(path_str);
 
     if (path_str.len == 0) return error.FileMissing;
@@ -505,7 +505,7 @@ fn sysSpawn(self: *Vm) VmError!void {
 
     if (exec.data().* != .string) return error.StringMissing;
 
-    const path = try std.fmt.allocPrint(self.allocator, "{}", .{exec.data().string});
+    const path = try std.fmt.allocPrint(self.allocator, "{f}", .{exec.data().string});
     defer self.allocator.free(path);
 
     const root = try self.root.resolve();
@@ -530,7 +530,7 @@ fn sysDelete(self: *Vm) VmError!void {
 
     if (file.data().* != .string) return error.StringMissing;
 
-    const path = try std.fmt.allocPrint(self.allocator, "{}", .{file.data().string});
+    const path = try std.fmt.allocPrint(self.allocator, "{f}", .{file.data().string});
     defer self.allocator.free(path);
 
     const root = try self.root.resolve();
@@ -608,7 +608,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
     if (file.data().* != .string) return error.StringMissing;
 
-    const data = try std.fmt.allocPrint(self.allocator, "{}", .{file.data().string});
+    const data = try std.fmt.allocPrint(self.allocator, "{f}", .{file.data().string});
     defer self.allocator.free(data);
 
     const ugc = steam.getSteamUGC();

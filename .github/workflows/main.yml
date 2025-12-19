@@ -10,7 +10,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.14.0
+          zig-version: 0.15.2
       - name: Install glfw
         run: |
           sudo apt install libglfw3 libglfw3-dev
@@ -30,7 +30,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.14.0
+          zig-version: 0.15.2
       - name: Install glfw
         run: |
           sudo apt install libglfw3 libglfw3-dev

@@ -20,24 +20,23 @@ pub fn main() !void {
 }
 
 pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void {
-    var inreader = try std.fs.openFileAbsolute(input_file, .{});
+    var inreader = try std.fs.cwd().openFile(input_file, .{});
     defer inreader.close();
     try inreader.sync();
 
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    const writer = file.writer();
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(&writer_buffer);
 
-    var buf_reader = std.io.bufferedReader(inreader.reader());
-    var reader_stream = buf_reader.reader();
+    var reader_buffer: [1024]u8 = undefined;
+    var reader_stream = inreader.reader(&reader_buffer);
 
     var consts = std.StringHashMap(u64).init(allocator);
     var idx: u64 = 0;
 
-    var buf: [1024]u8 = undefined;
-
-    while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (try reader_stream.interface.takeDelimiter('\n')) |line| {
         var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
@@ -56,15 +55,14 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
     }
 
     inreader.close();
-    inreader = try std.fs.openFileAbsolute(input_file, .{});
+    inreader = try std.fs.cwd().openFile(input_file, .{});
     try inreader.sync();
 
-    buf_reader = std.io.bufferedReader(inreader.reader());
-    reader_stream = buf_reader.reader();
+    reader_stream = inreader.reader(&reader_buffer);
 
-    try writer.writeAll("EEEp");
+    try writer.interface.writeAll("EEEp");
 
-    while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (try reader_stream.interface.takeDelimiter('\n')) |line| {
         var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
@@ -123,10 +121,10 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
             std.log.info("{s}", .{op});
             return error.UnknownOp;
         }
-        try writer.writeAll(&.{@as(u8, @intFromEnum(code))});
+        try writer.interface.writeAll(&.{@as(u8, @intFromEnum(code))});
 
         if (std.mem.eql(u8, op, l)) {
-            try writer.writeAll("\x00");
+            try writer.interface.writeAll("\x00");
         } else {
             const int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
                 var target = l[op.len + 1 ..];
@@ -134,14 +132,14 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
                 while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
                 if (target[0] == '"' and target[target.len - 1] == '"') {
                     if (target.len <= 2) {
-                        try writer.writeAll("\x02");
-                        try writer.writeAll("\x00");
+                        try writer.interface.writeAll("\x02");
+                        try writer.interface.writeAll("\x00");
                     } else {
                         const target_tmp = try std.zig.string_literal.parseAlloc(allocator, target);
 
-                        try writer.writeAll("\x02");
-                        try writer.writeAll(target_tmp);
-                        try writer.writeAll("\x00");
+                        try writer.interface.writeAll("\x02");
+                        try writer.interface.writeAll(target_tmp);
+                        try writer.interface.writeAll("\x00");
                     }
                 } else {
                     if (!consts.contains(target)) {
@@ -150,11 +148,11 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
                     } else {
                         const value = consts.get(target).?;
                         if (value > 255) {
-                            try writer.writeAll("\x01");
-                            try writer.writeAll(&std.mem.toBytes(value));
+                            try writer.interface.writeAll("\x01");
+                            try writer.interface.writeAll(&std.mem.toBytes(value));
                         } else {
-                            try writer.writeAll("\x03");
-                            try writer.writeAll(&std.mem.toBytes(@as(u8, @intCast(value))));
+                            try writer.interface.writeAll("\x03");
+                            try writer.interface.writeAll(&std.mem.toBytes(@as(u8, @intCast(value))));
                         }
                     }
                 }
@@ -162,40 +160,39 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
                 continue;
             };
             if (int > 255) {
-                try writer.writeAll("\x01");
-                try writer.writeAll(&std.mem.toBytes(int));
+                try writer.interface.writeAll("\x01");
+                try writer.interface.writeAll(&std.mem.toBytes(int));
             } else {
-                try writer.writeAll("\x03");
-                try writer.writeAll(&std.mem.toBytes(@as(u8, @intCast(int))));
+                try writer.interface.writeAll("\x03");
+                try writer.interface.writeAll(&std.mem.toBytes(@as(u8, @intCast(int))));
             }
         }
     }
 }
 
 pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
-    var inreader = try std.fs.openFileAbsolute(input_file, .{});
+    var inreader = try std.fs.cwd().openFile(input_file, .{});
     defer inreader.close();
     try inreader.sync();
 
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    const writer = file.writer();
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(&writer_buffer);
 
-    var toc = std.ArrayList(u8).init(allocator);
-    var data = std.ArrayList(u8).init(allocator);
-    var funcs = std.ArrayList([]const u8).init(allocator);
+    var toc = std.array_list.Managed(u8).init(allocator);
+    var data = std.array_list.Managed(u8).init(allocator);
+    var funcs = std.array_list.Managed([]const u8).init(allocator);
 
-    var buf_reader = std.io.bufferedReader(inreader.reader());
-    var reader_stream = buf_reader.reader();
+    var reader_buffer: [1024]u8 = undefined;
+    var reader_stream = inreader.reader(&reader_buffer);
 
     var consts = std.StringHashMap(u64).init(allocator);
     var idx: u64 = 0;
     var toc_count: u8 = 0;
 
-    var buf: [1024]u8 = undefined;
-
-    while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (try reader_stream.interface.takeDelimiter('\n')) |line| {
         var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
@@ -223,16 +220,15 @@ pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
     try toc.append(@as(u8, @intCast(toc_count)));
 
     inreader.close();
-    inreader = try std.fs.openFileAbsolute(input_file, .{});
+    inreader = try std.fs.cwd().openFile(input_file, .{});
     try inreader.sync();
 
-    buf_reader = std.io.bufferedReader(inreader.reader());
-    reader_stream = buf_reader.reader();
+    reader_stream = inreader.reader(&reader_buffer);
     var prev_toc: usize = 0;
 
-    try writer.writeAll("elib");
+    try writer.interface.writeAll("elib");
 
-    while (try reader_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (try reader_stream.interface.takeDelimiter('\n')) |line| {
         var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
@@ -362,10 +358,10 @@ pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
     try toc.append(@as(u8, @intCast(len / 256)));
     try toc.append(@as(u8, @intCast(len % 256)));
 
-    try writer.writeAll(&.{
+    try writer.interface.writeAll(&.{
         @as(u8, @intCast((toc.items.len + 6) / 256)),
         @as(u8, @intCast((toc.items.len + 6) % 256)),
     });
-    try writer.writeAll(toc.items);
-    try writer.writeAll(data.items);
+    try writer.interface.writeAll(toc.items);
+    try writer.interface.writeAll(data.items);
 }

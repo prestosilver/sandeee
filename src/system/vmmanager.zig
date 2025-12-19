@@ -27,7 +27,7 @@ pub var last_vm_time: f64 = 0;
 pub var last_update_time: f64 = 0;
 pub var last_render_time: f64 = 0;
 
-threads: std.ArrayList(std.Thread) = .init(allocator.alloc),
+threads: std.array_list.Managed(std.Thread) = .init(allocator.alloc),
 vms: std.AutoHashMap(usize, Vm) = .init(allocator.alloc),
 results: std.AutoHashMap(usize, VMResult) = .init(allocator.alloc),
 vm_index: usize = 0,

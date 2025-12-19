@@ -20,7 +20,7 @@ pub const Context = struct {
 
     window: ?*glfw.Window,
     color: Color,
-    shaders: std.ArrayList(Shader),
+    shaders: std.array_list.Managed(Shader),
     lock: std.Thread.Mutex = .{},
     size: Vec2,
 
@@ -83,8 +83,6 @@ pub const Context = struct {
 
         glfw.swapInterval(1);
 
-        const shaders = std.ArrayList(Shader).init(allocator.alloc);
-
         var w: c_int = 0;
         var h: c_int = 0;
 
@@ -99,7 +97,7 @@ pub const Context = struct {
         instance = Context{
             .window = win,
             .color = .{ .r = 0, .g = 0, .b = 0 },
-            .shaders = shaders,
+            .shaders = .init(allocator.alloc),
             .size = .{ .x = @floatFromInt(w), .y = @floatFromInt(h) },
         };
     }

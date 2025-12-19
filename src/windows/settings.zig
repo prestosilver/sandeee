@@ -93,7 +93,7 @@ const SettingsData = struct {
                                 switch (item.kind) {
                                     .string, .dropdown, .slider => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(Popup.Data.textpick.PopupTextPick);
+                                        const adds = try allocator.alloc.create(Popup.Data.popups.textpick.PopupTextPick);
                                         adds.* = .{
                                             .prompt = try allocator.alloc.dupe(u8, item.setting),
                                             .text = try allocator.alloc.dupe(u8, self.value),
@@ -115,7 +115,7 @@ const SettingsData = struct {
                                     },
                                     .file => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(Popup.Data.filepick.PopupFilePick);
+                                        const adds = try allocator.alloc.create(Popup.Data.popups.filepick.PopupFilePick);
                                         adds.* = .{
                                             .path = try allocator.alloc.dupe(u8, self.value),
                                             .data = self,
@@ -136,7 +136,7 @@ const SettingsData = struct {
                                     },
                                     .folder => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(Popup.Data.folderpick.PopupFolderPick);
+                                        const adds = try allocator.alloc.create(Popup.Data.popups.folderpick.PopupFolderPick);
                                         adds.* = .{
                                             .path = try allocator.alloc.dupe(u8, self.value),
                                             .data = self,

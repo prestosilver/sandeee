@@ -17,26 +17,44 @@ const strings = sandeee_data.strings;
 // TODO: unhardcode
 const DISK = "headless.eee";
 
-
 const USE_POSIX = builtin.os.tag == .linux;
 
-pub fn write_console(stdout: std.fs.File.Writer, input: []const u8) !void {
+pub fn write_console(stdout: *std.fs.File.Writer, input: []const u8) !void {
     const text = try sandeee_data.strings.eeeCHToANSI(input);
     defer allocator.alloc.free(text);
 
-    try stdout.writeAll(text);
+    try stdout.interface.writeAll(text);
 }
 
 pub var is_headless = false;
 
 pub var input_mutex: std.Thread.Mutex = .{};
-pub var input_queue = std.fifo.LinearFifo(u8, .Dynamic).init(allocator.alloc);
+pub var input_queue: [128]u8 = undefined;
+pub var last_input: usize = 0;
+pub var last_processed_input: usize = 0;
+
+pub fn pushInput(input: u8) !void {
+    if (last_input == last_processed_input)
+        return error.InputOverflow;
+
+    input_queue[last_input] = input;
+    last_input += 1;
+    last_input = last_input % input_queue.len;
+}
+
+pub fn popInput() ?u8 {
+    if (last_input == last_processed_input) return null;
+    last_processed_input += 1;
+
+    return input_queue[last_processed_input - 1];
+}
 
 fn inputLoop() void {
-    const stdin = std.io.getStdIn().reader();
+    var stdin_buffer: [256]u8 = undefined;
+    var stdin = std.fs.File.stdin().reader(&stdin_buffer);
 
     while (true) {
-        var c = stdin.readByte() catch break;
+        var c = stdin.interface.takeByte() catch break;
 
         if (c == '\x7f')
             c = strings.UNDO[0];
@@ -44,7 +62,7 @@ fn inputLoop() void {
         input_mutex.lock();
         defer input_mutex.unlock();
 
-        input_queue.writeItem(c) catch break;
+        pushInput(c) catch @panic("bad input");
     }
 }
 
@@ -95,7 +113,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
     }
 
     // no input thread on test builds
-    if (!builtin.is_test) 
+    if (!builtin.is_test)
         _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
     const diskpath = try storage.getContentPath("disks/" ++ DISK);
@@ -111,14 +129,19 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 
     var main_shell = Shell{ .root = .home, .headless = true };
 
-    const stdout_file = logging orelse std.io.getStdOut();
-    const stdout = stdout_file.writer();
+    const stdout_file: std.fs.File = logging orelse .stdout();
 
-    const stdin_file = std.io.getStdIn();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout = stdout_file.writer(&stdout_buffer);
+
+    const stdin_file: std.fs.File = .stdin();
+
+    const original = if (USE_POSIX and !builtin.is_test) try std.posix.tcgetattr(stdin_file.handle) else undefined;
+    defer if (USE_POSIX and !builtin.is_test)
+        std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
 
     if (!builtin.is_test) {
         // set terminal attribs
-        const original = if (USE_POSIX) try std.posix.tcgetattr(stdin_file.handle) else undefined;
 
         if (USE_POSIX) {
             var raw = original;
@@ -133,15 +156,12 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 
             try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);
         }
-
-        defer if (USE_POSIX)
-            std.posix.tcsetattr(stdin_file.handle, .NOW, original) catch {};
     }
 
-    var input_buffer = std.ArrayList(u8).init(allocator.alloc);
+    var input_buffer = std.array_list.Managed(u8).init(allocator.alloc);
     try input_buffer.appendSlice(cmd);
 
-    _ = try write_console(stdout, strings.CLEAR ++ "Welcome To Sh" ++ strings.EEE ++ "l\n");
+    _ = try write_console(&stdout, strings.CLEAR ++ "Welcome To Sh" ++ strings.EEE ++ "l\n");
 
     var done = false;
     var got_input = false;
@@ -155,10 +175,10 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
             // setup vm data for update
             const result_data = try main_shell.getVMResult();
             if (result_data) |result|
-                try write_console(stdout, result.data);
+                try write_console(&stdout, result.data);
 
             if (main_shell.vm == null)
-                try write_console(stdout, "\n");
+                try write_console(&stdout, "\n");
 
             continue;
         }
@@ -168,8 +188,8 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
             const prompt = try main_shell.getPrompt();
             defer allocator.alloc.free(prompt);
 
-            try write_console(stdout, strings.COLOR_WHITE);
-            try write_console(stdout, prompt);
+            try write_console(&stdout, strings.COLOR_WHITE);
+            try write_console(&stdout, prompt);
         }
 
         if (input_buffer.items.len == 0) {
@@ -179,7 +199,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
                 const ch = blk: {
                     input_mutex.lock();
                     defer input_mutex.unlock();
-                    break :blk input_queue.readItem();
+                    break :blk popInput();
                 } orelse {
                     std.Thread.sleep(1000);
                     continue;
@@ -193,24 +213,24 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
                         continue;
                     },
                     '\n' => {
-                        try write_console(stdout, "\n");
+                        try write_console(&stdout, "\n");
                         break;
                     },
                     '\x1b' => {
-                        try write_console(stdout, "\x1b");
+                        try write_console(&stdout, "\x1b");
                         try input_buffer.append(ch);
                     },
                     '\x08' => {
                         if (input_buffer.pop()) |_|
-                            try write_console(stdout, strings.UNDO);
+                            try write_console(&stdout, strings.UNDO);
                     },
                     else => {
                         if (std.ascii.isControl(ch)) {
-                            try stdout.print("\\X{X:02}", .{ch});
+                            try stdout.interface.print("\\X{X:02}", .{ch});
                             try input_buffer.append(ch);
                         } else {
-                            try write_console(stdout, &.{ch});
-                            try stdout.print("{c}", .{ch});
+                            try write_console(&stdout, &.{ch});
+                            try stdout.interface.print("{c}", .{ch});
                             try input_buffer.append(ch);
                         }
                     },
@@ -228,11 +248,11 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 
         if (command.len != 0) {
             if (!got_input)
-                try stdout.print("{s}\n", .{command});
+                try stdout.interface.print("{s}\n", .{command});
 
             const result = main_shell.run(command) catch |err| {
-                try stdout.print("Error: {s}\n", .{@errorName(err)});
-                try stdout.print("In {s}\n", .{command});
+                try stdout.interface.print("Error: {s}\n", .{@errorName(err)});
+                try stdout.interface.print("In {s}\n", .{command});
 
                 if (exit_fail) return err;
 
@@ -242,14 +262,14 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
             defer allocator.alloc.free(result.data);
 
             if (result.data.len != 0) {
-                try write_console(stdout, result.data);
+                try write_console(&stdout, result.data);
 
                 if (result.data[result.data.len - 1] != '\n')
-                    try write_console(stdout, "\n");
+                    try write_console(&stdout, "\n");
             }
 
             if (result.clear)
-                try write_console(stdout, strings.CLEAR);
+                try write_console(&stdout, strings.CLEAR);
 
             if (result.exit)
                 done = true;
@@ -265,12 +285,12 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 test "Headless scripts" {
     std.fs.cwd().access("disks", .{}) catch
         std.fs.cwd().makeDir("disks") catch
-            @panic("Cannot make disks directory.");
+        @panic("Cannot make disks directory.");
 
     VmManager.vm_time = 1.0;
     VmManager.last_frame_time = 10.0;
 
-    var logging = try std.fs.cwd().createFile("test_output.md", .{ });
+    var logging = try std.fs.cwd().createFile("test_output.md", .{});
     defer logging.close();
 
     var start_cwd = try std.fs.cwd().openDir("tests", .{
@@ -287,7 +307,7 @@ test "Headless scripts" {
         if (entry.kind != .file) continue;
 
         VmManager.instance = .{};
-        
+
         // deinit vm manager
         defer VmManager.instance.deinit();
 
@@ -318,7 +338,6 @@ test "Headless scripts" {
             _ = try logging.write("Success!\n\n");
         }
     }
-
 
     if (err) |result_err| {
         return result_err;

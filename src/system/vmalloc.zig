@@ -63,7 +63,7 @@ pub const ObjectRef = struct {
     }
 };
 
-var objects = std.ArrayList(Object).init(allocator.alloc);
+var objects = std.array_list.Managed(Object).init(allocator.alloc);
 var free_ref: ?ObjectRef = null;
 var free_lock = std.Thread.Mutex{};
 

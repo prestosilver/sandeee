@@ -14,22 +14,24 @@ pub fn main() !void {
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    const writer = file.writer();
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(&writer_buffer);
 
-    var image = try zigimg.Image.fromFilePath(allocator, input_file);
-    defer image.deinit();
+    var reader_buffer: [1024]u8 = undefined;
+    var image = try zigimg.Image.fromFilePath(allocator, input_file, &reader_buffer);
+    defer image.deinit(allocator);
 
-    try writer.writeAll("eimg");
+    try writer.interface.writeAll("eimg");
 
-    try writer.writeAll(&std.mem.toBytes(@as(u16, @intCast(image.width))));
-    try writer.writeAll(&std.mem.toBytes(@as(u16, @intCast(image.height))));
+    try writer.interface.writeAll(&std.mem.toBytes(@as(u16, @intCast(image.width))));
+    try writer.interface.writeAll(&std.mem.toBytes(@as(u16, @intCast(image.height))));
 
     var iter = zigimg.color.PixelStorageIterator.init(&image.pixels);
 
     while (iter.next()) |item| {
-        try writer.writeAll(&std.mem.toBytes(@as(u8, @intCast(@as(u8, @intFromFloat(item.r * 255))))));
-        try writer.writeAll(&std.mem.toBytes(@as(u8, @intCast(@as(u8, @intFromFloat(item.g * 255))))));
-        try writer.writeAll(&std.mem.toBytes(@as(u8, @intCast(@as(u8, @intFromFloat(item.b * 255))))));
-        try writer.writeAll(&std.mem.toBytes(@as(u8, @intCast(@as(u8, @intFromFloat(item.a * 255))))));
+        try writer.interface.writeAll(&std.mem.toBytes(@as(u8, @intCast(@as(u8, @intFromFloat(item.r * 255))))));
+        try writer.interface.writeAll(&std.mem.toBytes(@as(u8, @intCast(@as(u8, @intFromFloat(item.g * 255))))));
+        try writer.interface.writeAll(&std.mem.toBytes(@as(u8, @intCast(@as(u8, @intFromFloat(item.b * 255))))));
+        try writer.interface.writeAll(&std.mem.toBytes(@as(u8, @intCast(@as(u8, @intFromFloat(item.a * 255))))));
     }
 }

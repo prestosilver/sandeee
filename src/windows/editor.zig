@@ -441,7 +441,7 @@ pub const EditorData = struct {
                     if (open.contains(mousepos)) {
                         const home = try files.FolderLink.resolve(.home);
 
-                        const adds = try allocator.alloc.create(Popup.Data.filepick.PopupFilePick);
+                        const adds = try allocator.alloc.create(Popup.Data.popups.filepick.PopupFilePick);
                         adds.* = .{
                             .path = try allocator.alloc.dupe(u8, home.name),
                             .data = self,
@@ -491,7 +491,7 @@ pub const EditorData = struct {
         var idx: usize = 0;
 
         if (self.buffer) |buffer| {
-            var new_buffer = std.ArrayList(Row).init(allocator.alloc);
+            var new_buffer = std.array_list.Managed(Row).init(allocator.alloc);
             defer new_buffer.deinit();
 
             const abs_sel: usize = @intCast(@abs(self.cursor_len));
@@ -535,7 +535,7 @@ pub const EditorData = struct {
     pub fn getSel(self: *Self) ![]const u8 {
         const abs_sel: usize = @intCast(@abs(self.cursor_len));
 
-        var result = try std.ArrayList(u8).initCapacity(allocator.alloc, abs_sel);
+        var result = try std.array_list.Managed(u8).initCapacity(allocator.alloc, abs_sel);
         defer result.deinit();
 
         var idx: usize = 0;
@@ -565,7 +565,7 @@ pub const EditorData = struct {
     pub fn save(self: *Self) !void {
         if (self.buffer) |buffer| {
             if (self.file) |file| {
-                var buff = std.ArrayList(u8).init(allocator.alloc);
+                var buff = std.array_list.Managed(u8).init(allocator.alloc);
                 defer buff.deinit();
 
                 for (buffer) |line| {
@@ -580,7 +580,7 @@ pub const EditorData = struct {
             } else {
                 const home = try files.FolderLink.resolve(.home);
 
-                const adds = try allocator.alloc.create(Popup.Data.textpick.PopupTextPick);
+                const adds = try allocator.alloc.create(Popup.Data.popups.textpick.PopupTextPick);
                 adds.* = .{
                     .text = try allocator.alloc.dupe(u8, home.name),
                     .submit = &submitSave,

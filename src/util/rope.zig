@@ -51,7 +51,7 @@ pub fn initRef(rope: *Rope) !*Rope {
 
     rope.refs += 1;
 
-    log.info("init rope ref: {}", .{self});
+    log.info("init rope ref: {f}", .{self});
 
     return self;
 }
@@ -101,7 +101,7 @@ pub fn subString(rope: *const Rope, start: usize, end: ?usize) !*Rope {
             },
     }
 
-    const string = try std.fmt.allocPrint(allocator.alloc, "{}", .{rope});
+    const string = try std.fmt.allocPrint(allocator.alloc, "{f}", .{rope});
     defer allocator.alloc.free(string);
 
     const start_idx = @min(start, string.len);
@@ -231,12 +231,12 @@ const SkipWriter = struct {
     pub const Writer = std.io.Writer(*Self, std.io.AnyWriter.Error, write);
 };
 
-pub fn format(value: *const Rope, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
+pub fn format(value: *const Rope, writer: anytype) !void {
     var current: ?*const Rope = value;
     while (current) |node| : (current = node.next) {
         switch (node.data) {
             .string => |str| try writer.writeAll(str),
-            .ref => |ref| try format(ref, "", .{}, writer),
+            .ref => |ref| try writer.print("{f}", .{ref}),
         }
     }
 }
@@ -251,7 +251,7 @@ test "concat" {
     const rope_c = try rope_a.cat(rope_b);
     defer rope_c.deinit();
 
-    try std.testing.expectFmt("asdfghjkl", "{}", .{rope_c});
+    try std.testing.expectFmt("asdfghjkl", "{f}", .{rope_c});
 }
 
 test "concat rope" {
@@ -270,7 +270,7 @@ test "concat rope" {
     const rope_e = try rope_d.cat(rope_c);
     defer rope_e.deinit();
 
-    try std.testing.expectFmt("foobarbuzz", "{}", .{rope_e});
+    try std.testing.expectFmt("foobarbuzz", "{f}", .{rope_e});
 }
 
 test "substring overflow" {
@@ -292,10 +292,10 @@ test "substring overflow" {
     const rope_f = try rope_d.cat(rope_e);
     defer rope_f.deinit();
 
-    try std.testing.expectFmt("sdf", "{}", .{rope_b});
-    try std.testing.expectFmt("df", "{}", .{rope_c});
-    try std.testing.expectFmt("", "{}", .{rope_d});
-    try std.testing.expectFmt("asdf", "{}", .{rope_f});
+    try std.testing.expectFmt("sdf", "{f}", .{rope_b});
+    try std.testing.expectFmt("df", "{f}", .{rope_c});
+    try std.testing.expectFmt("", "{f}", .{rope_d});
+    try std.testing.expectFmt("asdf", "{f}", .{rope_f});
 }
 
 test "substring cat" {
@@ -308,16 +308,16 @@ test "substring cat" {
     const rope_c = try rope_a.cat(rope_b);
     defer rope_c.deinit();
 
-    try std.testing.expectFmt("asdfasdf", "{}", .{rope_c});
+    try std.testing.expectFmt("asdfasdf", "{f}", .{rope_c});
     const rope_d = try rope_c.subString(5, null);
     defer rope_d.deinit();
 
-    try std.testing.expectFmt("sdf", "{}", .{rope_d});
+    try std.testing.expectFmt("sdf", "{f}", .{rope_d});
 
     const rope_e = try rope_c.subString(0, 5);
     defer rope_e.deinit();
 
-    try std.testing.expectFmt("asd", "{}", .{rope_e});
+    try std.testing.expectFmt("asd", "{f}", .{rope_e});
 }
 
 test "index" {

@@ -8,7 +8,7 @@ const Self = @This();
 time: u64 = 100,
 
 pub fn load(self: *const Self) anyerror!void {
-    std.time.sleep(self.time * 1_000_000);
+    std.Thread.sleep(self.time * 1_000_000);
 }
 
 pub fn unload(_: *const Self) void {}

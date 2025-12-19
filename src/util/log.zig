@@ -52,14 +52,15 @@ pub fn sandEEELogFn(
     defer std.debug.unlockStdErr();
 
     // Print the message to stderr, silently ignoring any errors
-    if (builtin.mode == .Debug) {
+    if (@import("builtin").mode == .Debug) {
         const stderr = std.io.getStdErr().writer();
         nosuspend stderr.print(color ++ prefix ++ format ++ "\x1b[m\n", args) catch return;
     }
 
     if (log_file) |file| {
-        const writer = file.writer();
-        nosuspend writer.print(prefix ++ format ++ "\n", args) catch return;
+        var writer_buffer: [1024]u8 = undefined;
+        var writer = file.writer(&writer_buffer);
+        nosuspend writer.interface.print(prefix ++ format ++ "\n", args) catch return;
     }
 
     if (stop_logs)

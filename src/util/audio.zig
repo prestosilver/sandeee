@@ -4,6 +4,10 @@ const c = @import("../c.zig");
 const util = @import("../util/mod.zig");
 const sandeee_data = @import("../data/mod.zig");
 
+const no_audio = true;
+
+const al = c.al;
+
 const log = util.log;
 
 const sizes = sandeee_data.sizes;
@@ -15,15 +19,17 @@ pub const AudioErrors = error{
 pub var instance: AudioManager = .{};
 
 pub const Sound = struct {
-    buffer: ?c.ALuint = null,
+    buffer: ?al.ALuint = null,
 
     pub fn init(data: []const u8) Sound {
+        if (no_audio) return .{};
+
         if (data.len == 0) return Sound{ .buffer = null };
 
-        var buffer: c.ALuint = 0;
+        var buffer: al.ALuint = 0;
 
-        c.alGenBuffers(1, &buffer);
-        c.alBufferData(buffer, c.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
+        al.alGenBuffers(1, &buffer);
+        al.alBufferData(buffer, al.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
 
         log.debug("Load sound len {0}", .{data.len});
 
@@ -33,8 +39,10 @@ pub const Sound = struct {
     }
 
     pub fn deinit(self: *const Sound) void {
+        if (no_audio) return;
+
         if (self.buffer) |buffer| {
-            c.alDeleteBuffers(1, &buffer);
+            al.alDeleteBuffers(1, &buffer);
         }
     }
 };
@@ -42,15 +50,15 @@ pub const Sound = struct {
 const background_sound = @embedFile("bg.era");
 
 pub const AudioManager = struct {
-    sources: [sizes.AUDIO_SOURCES]c.ALuint = std.mem.zeroes([sizes.AUDIO_SOURCES]c.ALuint),
+    sources: [sizes.AUDIO_SOURCES]al.ALuint = std.mem.zeroes([sizes.AUDIO_SOURCES]al.ALuint),
     next: usize = 0,
-    device: ?*c.ALCdevice = null,
-    context: ?*c.ALCcontext = null,
+    device: ?*al.ALCdevice = null,
+    context: ?*al.ALCcontext = null,
     volume: f32 = 1.0,
     muted: bool = false,
-    bg: c.ALuint = 0,
+    bg: al.ALuint = 0,
 
-    const eff = c.EFXEAXREVERBPROPERTIES{
+    const eff = al.EFXEAXREVERBPROPERTIES{
         .flDensity = 0.4287,
         .flDiffusion = 1.0000,
         .flGain = 0.3162,
@@ -77,34 +85,36 @@ pub const AudioManager = struct {
     };
 
     pub fn init() !void {
-        const device_name = c.alcGetString(null, c.ALC_DEFAULT_DEVICE_SPECIFIER);
+        if (no_audio) return;
 
-        const device = c.alcOpenDevice(device_name);
+        const device_name = al.alGetString(al.ALC_DEFAULT_DEVICE_SPECIFIER);
 
-        const context = c.alcCreateContext(device, null);
+        const device = al.alcOpenDevice(device_name);
 
-        if (c.alcMakeContextCurrent(context) == 0) return error.AudioInit;
+        const context = al.alcCreateContext(device, null);
+
+        if (al.alcMakeContextCurrent(context) == 0) return error.AudioInit;
 
         const background_data = Sound.init(background_sound);
 
-        var sources = std.mem.zeroes([sizes.AUDIO_SOURCES]c.ALuint);
+        var sources = std.mem.zeroes([sizes.AUDIO_SOURCES]al.ALuint);
 
         // generate sources for sfx
-        c.alGenSources(sizes.AUDIO_SOURCES, &sources);
+        al.alGenSources(sizes.AUDIO_SOURCES, &sources);
 
-        var bg: c.ALuint = 0;
+        var bg: al.ALuint = 0;
 
         // generate bg sound
-        c.alGenSources(1, &bg);
+        al.alGenSources(1, &bg);
 
         // set bg properties
-        c.alSourcei(bg, c.AL_LOOPING, c.AL_TRUE);
-        c.alSourcef(bg, c.AL_GAIN, 0.5);
+        al.alSourcei(bg, al.AL_LOOPING, al.AL_TRUE);
+        al.alSourcef(bg, al.AL_GAIN, 0.5);
 
         if (background_data.buffer) |buffer|
-            c.alSourcei(bg, c.AL_BUFFER, @intCast(buffer));
+            al.alSourcei(bg, al.AL_BUFFER, @intCast(buffer));
 
-        c.alSourcePlay(bg);
+        al.alSourcePlay(bg);
 
         instance = .{
             .device = device,
@@ -115,16 +125,18 @@ pub const AudioManager = struct {
     }
 
     pub fn playSound(self: *AudioManager, snd: Sound) !void {
+        if (no_audio) return;
+
         if (self.muted) return;
         if (snd.buffer) |buffer| {
-            var source_state: c.ALint = 0;
+            var source_state: al.ALint = 0;
 
-            c.alGetSourcei(self.sources[self.next], c.AL_SOURCE_STATE, &source_state);
-            if (source_state != c.AL_PLAYING) {
-                c.alSourcei(self.sources[self.next], c.AL_BUFFER, @as(c_int, @intCast(buffer)));
-                c.alSourcef(self.sources[self.next], c.AL_GAIN, self.volume);
+            al.alGetSourcei(self.sources[self.next], al.AL_SOURCE_STATE, &source_state);
+            if (source_state != al.AL_PLAYING) {
+                al.alSourcei(self.sources[self.next], al.AL_BUFFER, @as(c_int, @intCast(buffer)));
+                al.alSourcef(self.sources[self.next], al.AL_GAIN, self.volume);
 
-                c.alSourcePlay(self.sources[self.next]);
+                al.alSourcePlay(self.sources[self.next]);
             }
             self.next += 1;
 

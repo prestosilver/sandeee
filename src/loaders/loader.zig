@@ -25,7 +25,7 @@ const Vtable = struct {
 ptr: *const anyopaque,
 vtable: *const Vtable,
 loaded: bool = false,
-deps: std.ArrayList(*Self) = std.ArrayList(*Self).init(allocator.alloc),
+deps: std.array_list.Managed(*Self) = .init(allocator.alloc),
 name: []const u8,
 
 pub fn init(data: anytype) !Self {
@@ -98,7 +98,7 @@ pub fn load(self: *Self, prog: *f32, start: f32, total: f32) !Unloader {
 }
 
 pub const Unloader = struct {
-    deps: std.ArrayList(Unloader) = .init(allocator.alloc),
+    deps: std.array_list.Managed(Unloader) = .init(allocator.alloc),
     vtable: *const Vtable,
     ptr: *const anyopaque,
     name: []const u8,
