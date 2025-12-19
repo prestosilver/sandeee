@@ -728,6 +728,7 @@ pub fn build(b: *std.Build) !void {
 
     const exe_tests = b.addTest(.{
         .root_module = exe_mod,
+        .use_llvm = true,
     });
 
     const run_exe_tests = b.addRunArtifact(exe_tests);
