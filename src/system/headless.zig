@@ -34,7 +34,7 @@ pub var input_mutex: std.Thread.Mutex = .{};
 pub var input_queue: [128]u8 = undefined;
 pub var last_input: usize = 0;
 pub var last_processed_input: usize = 0;
-pub var disk = "headless.eee";
+pub var disk: []const u8 = "headless.eee";
 
 pub fn pushInput(input: u8) !void {
     if (last_input == last_processed_input)
@@ -119,7 +119,10 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
     if (!builtin.is_test)
         _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
-    const diskpath = try storage.getContentPath(root_prefix ++ "disks/" ++ disk);
+    const alloc_path = try std.fmt.allocPrint(allocator.alloc, root_prefix ++ "disks/{s}", .{disk});
+    defer allocator.alloc.free(alloc_path);
+
+    const diskpath = try storage.getContentPath(alloc_path);
     defer diskpath.deinit();
 
     std.fs.cwd().access(diskpath.items, .{}) catch {
