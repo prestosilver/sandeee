@@ -747,7 +747,6 @@ pub fn build(b: *std.Build) !void {
         const install_recovery_step = b.addInstallFileWithDir(steam_image_path, steam_pub_path, "content/recovery.eee");
 
         pub_step.dependOn(&install_recovery_step.step);
-        test_step.dependOn(&install_recovery_step.step);
 
         const public_options = b.addOptions();
         public_options.addOption(Version, "SandEEEVersion", version);

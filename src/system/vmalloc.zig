@@ -50,8 +50,8 @@ pub const ObjectRef = struct {
         switch (self.data().*) {
             .free => {},
             .value => {},
-            .string => |str| {
-                str.deinit();
+            .string => {
+                self.data().string.deinit();
             },
         }
 

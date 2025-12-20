@@ -954,7 +954,7 @@ pub fn runGame() anyerror!void {
     const target_fps: f32 = 60;
 
     // fps tracker stats
-    var fps: usize = 0;
+    var fps: f32 = 0;
     var timer: std.time.Timer = try .start();
     var last_frame_end: f64 = 0;
 
@@ -982,7 +982,7 @@ pub fn runGame() anyerror!void {
         if (timer.read() > @as(u64, @intFromFloat(std.time.ns_per_s * state_refresh_rate))) {
             try events.EventManager.instance.sendEvent(system_events.EventTelemUpdate{});
 
-            const lap = timer.lap();
+            const lap: f32 = @floatFromInt(timer.lap());
 
             try state.refresh();
 
@@ -990,7 +990,7 @@ pub fn runGame() anyerror!void {
 
             try VmManager.instance.runGc();
 
-            final_fps = @intCast(fps / lap * std.time.ns_per_s);
+            final_fps = @intFromFloat(fps / lap * std.time.ns_per_s);
             if (VmManager.instance.vms.count() != 0 and final_fps != 0) {
                 // TODO: move these into settings
                 if (final_fps < target_fps - 5) VmManager.vm_time -= 0.01;

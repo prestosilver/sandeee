@@ -108,9 +108,7 @@ pub const WebData = struct {
                 const header_buffer = try allocator.alloc.alloc(u8, HEADER_SIZE);
                 defer allocator.alloc.free(header_buffer);
 
-                var body: std.ArrayList(u8) = try .initCapacity(allocator.alloc, 0);
-                var body_writer: std.io.Writer.Allocating = .fromArrayList(allocator.alloc, &body);
-                defer body_writer.deinit();
+                var body_writer: std.io.Writer.Allocating = .init(allocator.alloc);
 
                 const resp = client.fetch(.{
                     .response_writer = &body_writer.writer,
@@ -128,11 +126,11 @@ pub const WebData = struct {
                 };
 
                 if (resp.status != .ok) {
-                    body.clearAndFree(allocator.alloc);
+                    body_writer.deinit();
                     return try std.fmt.allocPrint(allocator.alloc, "Error: {} - {s}", .{ @intFromEnum(resp.status), @tagName(resp.status) });
                 }
 
-                return body.items;
+                return body_writer.written();
 
                 // const fconts = try req.reader().readAllAlloc(allocator.alloc, std.math.maxInt(usize));
                 // defer allocator.alloc.free(fconts);
