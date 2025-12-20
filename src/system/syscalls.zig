@@ -2,12 +2,11 @@ const std = @import("std");
 const options = @import("options");
 const steam = @import("steam");
 
-const system = @import("mod.zig");
-const util = @import("../util/mod.zig");
+const system = @import("../system.zig");
+const util = @import("../util.zig");
 
 const log = util.log;
 
-const VmManager = system.VmManager;
 const Stream = system.Stream;
 const Vm = system.Vm;
 const files = system.files;
@@ -116,18 +115,7 @@ fn sysPrint(self: *Vm) VmError!void {
     const a = try self.popStack();
 
     if (a.data().* == .string) {
-        var rope: ?*Rope = a.data().string;
-        while (rope) |node| : (rope = node.next)
-            switch (node.data) {
-                .string => |str| try self.out.appendSlice(str),
-                .ref => |ref| {
-                    // TODO: make actual iterator
-
-                    const tmp = try std.fmt.allocPrint(self.allocator, "{f}", .{ref});
-                    defer self.allocator.free(tmp);
-                    try self.out.appendSlice(tmp);
-                },
-            };
+        try self.out.appendSlice(a.data().string.data);
 
         if (headless.is_headless)
             self.yield = true;
@@ -227,18 +215,7 @@ fn sysWrite(self: *Vm) VmError!void {
 
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
     if (fs) |stream| {
-        var rope: ?*Rope = str.data().string;
-        while (rope) |node| : (rope = node.next)
-            switch (node.data) {
-                .string => |string| try stream.write(string),
-                .ref => |ref| {
-                    // TODO: make actual iterator
-
-                    const tmp = try std.fmt.allocPrint(self.allocator, "{f}", .{ref});
-                    defer self.allocator.free(tmp);
-                    try stream.write(tmp);
-                },
-            };
+        try stream.write(str.data().string.data);
     } else {
         return error.InvalidStream;
     }
@@ -394,7 +371,6 @@ fn sysReadHeap(self: *Vm) VmError!void {
             try self.pushStackI(adds.value);
         },
         .string => {
-            adds.string.refs += 1;
             try self.pushStackS(adds.string);
         },
     }
@@ -421,8 +397,6 @@ fn sysWriteHeap(self: *Vm) VmError!void {
             };
         },
         .string => {
-            data.data().string.refs += 1;
-
             self.heap[idx] = .{
                 .string = data.data().string,
             };
@@ -446,18 +420,7 @@ fn sysError(self: *Vm) VmError!void {
 
     try self.out.appendSlice("Error: ");
 
-    var rope: ?*Rope = msg.data().string;
-    while (rope) |node| : (rope = node.next)
-        switch (node.data) {
-            .string => |str| try self.out.appendSlice(str),
-            .ref => |ref| {
-                // TODO: make actual iterator
-
-                const tmp = try std.fmt.allocPrint(self.allocator, "{f}", .{ref});
-                defer self.allocator.free(tmp);
-                try self.out.appendSlice(tmp);
-            },
-        };
+    try self.out.appendSlice(msg.data().string.data);
 
     try self.out.appendSlice("\n");
     try self.out.appendSlice(msg_string);
@@ -512,7 +475,7 @@ fn sysSpawn(self: *Vm) VmError!void {
     const file = try root.getFile(path);
     const conts = try file.read(null);
 
-    const handle = try VmManager.instance.spawn(self.root, path, conts[4..]);
+    const handle = try Vm.Manager.instance.spawn(self.root, path, conts[4..]);
 
     try self.pushStackI(handle.id);
 }
@@ -704,7 +667,7 @@ fn sysSteam(self: *Vm) VmError!void {
             const folder = try root.getFolder(path);
 
             {
-                var folder_list: std.ArrayList(*const files.Folder) = .init(self.allocator);
+                var folder_list: std.array_list.Managed(*const files.Folder) = .init(self.allocator);
                 defer folder_list.deinit();
 
                 try folder.getFoldersRec(&folder_list);
@@ -720,7 +683,7 @@ fn sysSteam(self: *Vm) VmError!void {
             }
 
             {
-                var file_list: std.ArrayList(*files.File) = .init(self.allocator);
+                var file_list: std.array_list.Managed(*files.File) = .init(self.allocator);
                 defer file_list.deinit();
 
                 try folder.getFilesRec(&file_list);

@@ -1,12 +1,12 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-const sandeee_data = @import("../../data/mod.zig");
-const drawers = @import("../../drawers/mod.zig");
-const system = @import("../../system/mod.zig");
-const events = @import("../../events/mod.zig");
-const math = @import("../../math/mod.zig");
-const util = @import("../../util/mod.zig");
+const sandeee_data = @import("../../data.zig");
+const drawers = @import("../../drawers.zig");
+const system = @import("../../system.zig");
+const events = @import("../../events.zig");
+const math = @import("../../math.zig");
+const util = @import("../../util.zig");
 
 const Sprite = drawers.Sprite;
 const Popup = drawers.Popup;
@@ -50,10 +50,10 @@ pub const PopupTextPick = struct {
         }).x);
 
         const text = if (self.text.len > maxlen)
-            try std.fmt.allocPrint(allocator.alloc, strings.DOTS ++ "{s}", .{self.text[self.text.len - maxlen + 1 ..]})
+            try std.fmt.allocPrint(allocator, strings.DOTS ++ "{s}", .{self.text[self.text.len - maxlen + 1 ..]})
         else
-            try allocator.alloc.dupe(u8, self.text);
-        defer allocator.alloc.free(text);
+            try allocator.dupe(u8, self.text);
+        defer allocator.free(text);
 
         const text_background: Sprite = .atlas("ui", .{
             .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
@@ -90,17 +90,17 @@ pub const PopupTextPick = struct {
         if (!down) return;
 
         if (keycode == glfw.KeyBackspace and self.text.len != 0) {
-            self.text = try allocator.alloc.realloc(self.text, self.text.len - 1);
+            self.text = try allocator.realloc(self.text, self.text.len - 1);
             if (self.err) |err|
-                allocator.alloc.free(err);
+                allocator.free(err);
             self.err = null;
         }
 
         if (keycode == glfw.KeyEnter) {
             self.submit(self.text, self.data) catch |err| {
                 if (self.err) |err_i|
-                    allocator.alloc.free(err_i);
-                self.err = try allocator.alloc.dupe(u8, @errorName(err));
+                    allocator.free(err_i);
+                self.err = try allocator.dupe(u8, @errorName(err));
                 return;
             };
 
@@ -113,20 +113,20 @@ pub const PopupTextPick = struct {
     pub fn char(self: *Self, keycode: u32, _: i32) !void {
         if (keycode < 256) {
             if (self.err) |err|
-                allocator.alloc.free(err);
+                allocator.free(err);
             self.err = null;
 
-            self.text = try allocator.alloc.realloc(self.text, self.text.len + 1);
+            self.text = try allocator.realloc(self.text, self.text.len + 1);
             self.text[self.text.len - 1] = @as(u8, @intCast(keycode));
         }
     }
 
     pub fn deinit(self: *Self) void {
         if (self.err) |err|
-            allocator.alloc.free(err);
+            allocator.free(err);
 
-        allocator.alloc.free(self.prompt);
-        allocator.alloc.free(self.text);
-        allocator.alloc.destroy(self);
+        allocator.free(self.prompt);
+        allocator.free(self.text);
+        allocator.destroy(self);
     }
 };

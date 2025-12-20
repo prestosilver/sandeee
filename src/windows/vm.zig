@@ -3,14 +3,13 @@ const builtin = @import("builtin");
 const glfw = @import("glfw");
 const zgl = @import("zgl");
 
-const Windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const Windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -175,13 +174,13 @@ pub const VMData = struct {
             var y: f32 = 0;
 
             {
-                const val = try std.fmt.allocPrint(allocator.alloc, "BNDS: {}x{}+{}+{}", .{
+                const val = try std.fmt.allocPrint(allocator, "BNDS: {}x{}+{}+{}", .{
                     @as(i32, @intFromFloat(bnds.w)),
                     @as(i32, @intFromFloat(bnds.h)),
                     @as(i32, @intFromFloat(bnds.x)),
                     @as(i32, @intFromFloat(bnds.y)),
                 });
-                defer allocator.alloc.free(val);
+                defer allocator.free(val);
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -193,8 +192,8 @@ pub const VMData = struct {
             }
 
             {
-                const val = try std.fmt.allocPrint(allocator.alloc, "FRAME: {}", .{self.total_counter});
-                defer allocator.alloc.free(val);
+                const val = try std.fmt.allocPrint(allocator, "FRAME: {}", .{self.total_counter});
+                defer allocator.free(val);
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -206,8 +205,8 @@ pub const VMData = struct {
             }
 
             {
-                const val = try std.fmt.allocPrint(allocator.alloc, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
-                defer allocator.alloc.free(val);
+                const val = try std.fmt.allocPrint(allocator, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
+                defer allocator.free(val);
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -223,15 +222,15 @@ pub const VMData = struct {
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (!down) {
             const old_input = self.input;
-            defer allocator.alloc.free(old_input);
+            defer allocator.free(old_input);
 
-            self.input = try allocator.alloc.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
+            self.input = try allocator.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
             _ = std.mem.replace(i32, old_input, &.{keycode}, &.{}, self.input);
 
             return;
         }
 
-        self.input = try allocator.alloc.realloc(self.input, self.input.len + 1);
+        self.input = try allocator.realloc(self.input, self.input.len + 1);
         self.input[self.input.len - 1] = keycode;
 
         if (keycode == glfw.KeyF10) {
@@ -249,7 +248,7 @@ pub const VMData = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        allocator.alloc.free(self.input);
+        allocator.free(self.input);
 
         self.spritebatch.deinit();
         self.texture.deinit();
@@ -263,12 +262,12 @@ pub const VMData = struct {
             self.arraybuffer.delete();
         }
 
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 };
 
 pub fn init(idx: u8, shader: *Shader) !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(VMData);
+    const self = try allocator.create(VMData);
 
     {
         graphics.Context.makeCurrent();

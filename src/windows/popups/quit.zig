@@ -1,12 +1,12 @@
 const std = @import("std");
 const c = @import("../../c.zig");
 
-const drawers = @import("../../drawers/mod.zig");
-const system = @import("../../system/mod.zig");
-const events = @import("../../events/mod.zig");
-const states = @import("../../states/mod.zig");
-const math = @import("../../math/mod.zig");
-const util = @import("../../util/mod.zig");
+const drawers = @import("../../drawers.zig");
+const system = @import("../../system.zig");
+const events = @import("../../events.zig");
+const states = @import("../../states.zig");
+const math = @import("../../math.zig");
+const util = @import("../../util.zig");
 
 const Sprite = drawers.Sprite;
 const Popup = drawers.Popup;
@@ -90,6 +90,6 @@ pub const PopupQuit = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 };

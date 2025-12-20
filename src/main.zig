@@ -3,20 +3,20 @@ const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");
 const steam = @import("steam");
+const glfw = @import("glfw");
+const zgl = @import("zgl");
 
-pub const drawers = @import("drawers/mod.zig");
-pub const loaders = @import("loaders/mod.zig");
-pub const system = @import("system/mod.zig");
-pub const events = @import("events/mod.zig");
-pub const states = @import("states/mod.zig");
-pub const math = @import("math/mod.zig");
-pub const util = @import("util/mod.zig");
-pub const data = @import("data/mod.zig");
+pub const drawers = @import("drawers.zig");
+pub const loaders = @import("loaders.zig");
+pub const system = @import("system.zig");
+pub const events = @import("events.zig");
+pub const states = @import("states.zig");
+pub const math = @import("math.zig");
+pub const util = @import("util.zig");
+pub const data = @import("data.zig");
 
 // not-op programming lang
 const c = @import("c.zig");
-const zgl = @import("zgl");
-const glfw = @import("glfw");
 
 // states
 const GameState = states.GameState;
@@ -37,6 +37,7 @@ const Shader = util.Shader;
 const Font = util.Font;
 const panic_handler = util.panic;
 const allocator = util.allocator;
+
 const graphics = util.graphics;
 const storage = util.storage;
 const audio = util.audio;
@@ -67,8 +68,8 @@ const Desk = drawers.Desk;
 const Bar = drawers.Bar;
 
 // misc system stuff
-const VmManager = system.VmManager;
 const Shell = system.Shell;
+const Vm = system.Vm;
 const headless = system.headless;
 const config = system.config;
 const files = system.files;
@@ -87,7 +88,7 @@ pub const steam_options = struct {
     pub const fake_steam = options.fakeSteam;
     pub const use_steam = options.IsSteam;
     pub const app_id = 4124360;
-    pub const alloc = allocator.alloc;
+    pub const alloc = allocator;
 };
 
 // embed shaders
@@ -209,22 +210,22 @@ pub fn blit() !void {
     }
 
     if (show_fps and bios_font.setup) {
-        const text = try std.fmt.allocPrint(allocator.alloc, "{s}FPS: {}\n{s}VMS: {}\n{s}VMT: {}%\nSTA: {}", .{
+        const text = try std.fmt.allocPrint(allocator, "{s}FPS: {}\n{s}VMS: {}\n{s}VMT: {}%\nSTA: {}", .{
             if (final_fps < 50)
                 strings.COLOR_RED
             else
                 strings.COLOR_WHITE,
             final_fps,
-            if (VmManager.instance.vms.count() == 0)
+            if (Vm.Manager.instance.vms.count() == 0)
                 strings.COLOR_GRAY
             else
                 strings.COLOR_WHITE,
-            VmManager.instance.vms.count(),
+            Vm.Manager.instance.vms.count(),
             strings.COLOR_WHITE,
-            @as(u8, @intFromFloat(VmManager.vm_time * 100)),
+            @as(u8, @intFromFloat(Vm.Manager.vm_time * 100)),
             @intFromEnum(current_state),
         });
-        defer allocator.alloc.free(text);
+        defer allocator.free(text);
 
         try bios_font.draw(.{
             .text = text,
@@ -260,7 +261,7 @@ pub fn blit() !void {
         zgl.bindBuffer(.invalid, .array_buffer);
     }
 
-    VmManager.last_render_time = glfw.getTime() - start_time;
+    Vm.Manager.last_render_time = glfw.getTime() - start_time;
 
     // swap buffer
     graphics.Context.swap();
@@ -313,8 +314,8 @@ pub fn notification(_: window_events.EventNotification) !void {
 }
 
 pub fn copy(event: system_events.EventCopy) !void {
-    const to_copy = try allocator.alloc.dupeZ(u8, event.value);
-    defer allocator.alloc.free(to_copy);
+    const to_copy = try allocator.dupeZ(u8, event.value);
+    defer allocator.free(to_copy);
 
     glfw.setClipboardString(graphics.Context.instance.window, to_copy);
 }
@@ -464,15 +465,18 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
 
 var graphics_init = false;
 
-pub const panic = std.debug.FullPanic(fullPanic);
+pub const panic = std.debug.FullPanic(
+    if (builtin.is_test or builtin.mode == .Debug)
+        std.debug.defaultPanic
+    else
+        fullPanic,
+);
 
 fn fullPanic(msg: []const u8, _: ?usize) noreturn {
     defer {
         log.deinit();
 
-        if (!builtin.link_libc or !allocator.useclib) {
-            std.debug.assert(allocator.gpa.deinit() == .ok);
-        }
+        util.deinitAllocator();
     }
 
     if (paniced) std.process.exit(1);
@@ -485,7 +489,7 @@ fn fullPanic(msg: []const u8, _: ?usize) noreturn {
 
     // panic log asap
     // const st = panic_handler.log(trace);
-    // error_message = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}\n\n{?f}", .{ msg, st, trace }) catch {
+    // error_message = std.fmt.allocPrint(allocator, "{s}\n{s}\n\n{?f}", .{ msg, st, trace }) catch {
     //     std.process.exit(1);
     // };
 
@@ -561,9 +565,7 @@ pub fn main() void {
     defer {
         log.deinit();
 
-        if (!builtin.link_libc or !allocator.useclib) {
-            std.debug.assert(allocator.gpa.deinit() == .ok);
-        }
+        util.deinitAllocator();
     }
 
     // setup the headless command
@@ -572,7 +574,7 @@ pub fn main() void {
 
     {
         // check arguments
-        var args = std.process.ArgIterator.initWithAllocator(allocator.alloc) catch @panic("Out of memory");
+        var args = std.process.ArgIterator.initWithAllocator(allocator) catch @panic("Out of memory");
         defer args.deinit();
 
         const cmd_path = args.next().?;
@@ -599,7 +601,7 @@ pub fn main() void {
                     print_help(cmd_path, "Expected disk file path", .{});
             } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
                 if (args.next()) |script| {
-                    const buff = allocator.alloc.alloc(u8, 1024) catch @panic("out of memory");
+                    const buff = allocator.alloc(u8, 1024) catch @panic("out of memory");
                     const file = std.fs.cwd().openFile(script, .{}) catch |err|
                         print_help(cmd_path, "Headless script '{s}' couldnt be read ({})", .{ script, err });
                     defer file.close();
@@ -629,7 +631,7 @@ pub fn main() void {
                 else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
             };
 
-            const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
+            const msg = std.fmt.allocPrint(allocator, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
 
             @panic(msg);
         };
@@ -651,7 +653,7 @@ pub fn main() void {
             else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
         };
 
-        const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
+        const msg = std.fmt.allocPrint(allocator, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
 
         @panic(msg);
     };
@@ -687,7 +689,7 @@ pub fn runGame() anyerror!void {
     log.log.info("Sandeee " ++ strings.SANDEEE_VERSION_TEXT, .{});
 
     // init graphics
-    var graphics_loader = try Loader.init(Loader.Graphics{});
+    var graphics_loader: Loader = try .init(loaders.Graphics{});
     graphics_init = true;
 
     try audio.AudioManager.init();
@@ -696,48 +698,48 @@ pub fn runGame() anyerror!void {
     bios_font.setup = false;
     main_font.setup = false;
 
-    var blip_sound = audio.Sound.init(BLIP_SOUND_DATA);
-    var select_sound = audio.Sound.init(SELECT_SOUND_DATA);
+    var blip_sound: audio.Sound = .init(BLIP_SOUND_DATA);
+    var select_sound: audio.Sound = .init(SELECT_SOUND_DATA);
 
     // create the loaders queue
-    var base_shader_loader = try Loader.init(Loader.Shader{
+    var base_shader_loader: Loader = try .init(loaders.Shader{
         .files = SHADER_FILES,
         .out = &shader,
     });
     try base_shader_loader.require(&graphics_loader);
 
-    var font_shader_loader = try Loader.init(Loader.Shader{
+    var font_shader_loader: Loader = try .init(loaders.Shader{
         .files = FONT_SHADER_FILES,
         .out = &font_shader,
     });
     try font_shader_loader.require(&graphics_loader);
 
-    var crt_shader_loader = try Loader.init(Loader.Shader{
+    var crt_shader_loader: Loader = try .init(loaders.Shader{
         .files = CRT_SHADER_FILES,
         .out = &crt_shader,
     });
     try crt_shader_loader.require(&graphics_loader);
 
-    var clear_shader_loader = try Loader.init(Loader.Shader{
+    var clear_shader_loader: Loader = try .init(loaders.Shader{
         .files = CLEAR_SHADER_FILES,
         .out = &clear_shader,
     });
     try clear_shader_loader.require(&graphics_loader);
 
-    var texture_loader = try Loader.init(Loader.Group{});
+    var texture_loader: Loader = try .init(loaders.Group{});
     try texture_loader.require(&base_shader_loader);
     try texture_loader.require(&font_shader_loader);
     try texture_loader.require(&crt_shader_loader);
     try texture_loader.require(&clear_shader_loader);
 
     // fonts
-    var font_loader = try Loader.init(Loader.Font{
+    var font_loader: Loader = try .init(loaders.Font{
         .data = .{ .mem = BIOS_FONT_DATA },
         .output = &bios_font,
     });
     try font_loader.require(&graphics_loader);
 
-    var loader = try Loader.init(Loader.Group{});
+    var loader: Loader = try .init(loaders.Group{});
     try loader.require(&texture_loader);
     try loader.require(&font_loader);
 
@@ -873,7 +875,7 @@ pub fn runGame() anyerror!void {
     };
 
     // crashed state
-    const gs_crash = try allocator.alloc.create(CrashState);
+    const gs_crash = try allocator.create(CrashState);
     gs_crash.* = .{
         .shader = &shader,
         .font_shader = &font_shader,
@@ -972,7 +974,7 @@ pub fn runGame() anyerror!void {
         if (glfw.getWindowAttrib(graphics.Context.instance.window, glfw.Iconified) == 0) {
 
             // update the game state
-            try state.update(@max(1 / target_fps, @as(f32, @floatCast(VmManager.last_frame_time))));
+            try state.update(@max(1 / target_fps, @as(f32, @floatCast(Vm.Manager.last_frame_time))));
 
             // get tris
             try state.draw(graphics.Context.instance.size);
@@ -988,16 +990,16 @@ pub fn runGame() anyerror!void {
 
             // log.log.debug("Rendered in {d:.6}ms", .{VmManager.last_render_time * 1000});
 
-            try VmManager.instance.runGc();
+            try Vm.Manager.instance.runGc();
 
             final_fps = @intFromFloat(fps / lap * std.time.ns_per_s);
-            if (VmManager.instance.vms.count() != 0 and final_fps != 0) {
+            if (Vm.Manager.instance.vms.count() != 0 and final_fps != 0) {
                 // TODO: move these into settings
-                if (final_fps < target_fps - 5) VmManager.vm_time -= 0.01;
-                if (final_fps > target_fps - 2) VmManager.vm_time += 0.01;
+                if (final_fps < target_fps - 5) Vm.Manager.vm_time -= 0.01;
+                if (final_fps > target_fps - 2) Vm.Manager.vm_time += 0.01;
 
                 // limit goals for auto vm time calibration
-                VmManager.vm_time = std.math.clamp(VmManager.vm_time, 0.25, 0.9);
+                Vm.Manager.vm_time = std.math.clamp(Vm.Manager.vm_time, 0.25, 0.9);
             }
 
             fps = 0;
@@ -1013,7 +1015,7 @@ pub fn runGame() anyerror!void {
             try game_states.getPtr(current_state).setup();
         } else {
             // track update time
-            VmManager.last_update_time = glfw.getTime() - start_time;
+            Vm.Manager.last_update_time = glfw.getTime() - start_time;
 
             // this render is in else to fix single frame bugs
             try blit();
@@ -1022,7 +1024,7 @@ pub fn runGame() anyerror!void {
             // update the time
             const frame_time = glfw.getTime() - last_frame_end;
             if (frame_time != 0) {
-                VmManager.last_frame_time = frame_time;
+                Vm.Manager.last_frame_time = frame_time;
                 last_frame_end = glfw.getTime();
             }
         }
@@ -1031,7 +1033,7 @@ pub fn runGame() anyerror!void {
     graphics_init = false;
 
     // deinit vm manager
-    VmManager.instance.deinit();
+    Vm.Manager.instance.deinit();
 
     // deinit the current state
     game_states.getPtr(current_state).deinit();
@@ -1042,7 +1044,7 @@ pub fn runGame() anyerror!void {
     LogoutState.unloader = null;
 
     // free crash state bc game can no longer crash
-    allocator.alloc.destroy(gs_crash);
+    allocator.destroy(gs_crash);
 
     // deinit sb
     SpriteBatch.global.deinit();
@@ -1057,6 +1059,6 @@ pub fn runGame() anyerror!void {
 }
 
 test {
-    _ = @import("util/mod.zig");
-    _ = @import("system/mod.zig");
+    _ = util;
+    _ = system;
 }

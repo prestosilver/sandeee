@@ -1,14 +1,15 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-const Windows = @import("mod.zig");
+const windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const popups = windows.popups;
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -93,10 +94,10 @@ const SettingsData = struct {
                                 switch (item.kind) {
                                     .string, .dropdown, .slider => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(Popup.Data.popups.textpick.PopupTextPick);
+                                        const adds = try allocator.create(popups.textpick.PopupTextPick);
                                         adds.* = .{
-                                            .prompt = try allocator.alloc.dupe(u8, item.setting),
-                                            .text = try allocator.alloc.dupe(u8, self.value),
+                                            .prompt = try allocator.dupe(u8, item.setting),
+                                            .text = try allocator.dupe(u8, self.value),
                                             .data = self,
                                             .submit = &submit,
                                         };
@@ -115,9 +116,9 @@ const SettingsData = struct {
                                     },
                                     .file => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(Popup.Data.popups.filepick.PopupFilePick);
+                                        const adds = try allocator.create(popups.filepick.PopupFilePick);
                                         adds.* = .{
-                                            .path = try allocator.alloc.dupe(u8, self.value),
+                                            .path = try allocator.dupe(u8, self.value),
                                             .data = self,
                                             .submit = &submitFile,
                                         };
@@ -136,9 +137,9 @@ const SettingsData = struct {
                                     },
                                     .folder => {
                                         self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.alloc.create(Popup.Data.popups.folderpick.PopupFolderPick);
+                                        const adds = try allocator.create(popups.folderpick.PopupFolderPick);
                                         adds.* = .{
-                                            .path = try allocator.alloc.dupe(u8, self.value),
+                                            .path = try allocator.dupe(u8, self.value),
                                             .data = self,
                                             .submit = &submitFolder,
                                         };
@@ -231,11 +232,11 @@ const SettingsData = struct {
         try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 42, .y = bnds.y + 2 });
         try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 44, .y = bnds.y + 4 });
 
-        const text = try std.mem.concat(allocator.alloc, u8, &.{
+        const text = try std.mem.concat(allocator, u8, &.{
             "!SET:/",
             if (self.focused_pane) |focused| settings.SETTINGS[focused].name else "",
         });
-        defer allocator.alloc.free(text);
+        defer allocator.free(text);
 
         try font.draw(.{
             .shader = font_shader,
@@ -314,12 +315,12 @@ const SettingsData = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 };
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(SettingsData);
+    const self = try allocator.create(SettingsData);
 
     self.* = .{
         .shader = shader,

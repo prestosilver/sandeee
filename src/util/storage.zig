@@ -1,12 +1,12 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const util = @import("mod.zig");
+const util = @import("../util.zig");
 
 const allocator = util.allocator;
 
 pub fn getContentPath(file: []const u8) !std.array_list.Managed(u8) {
-    var result = std.array_list.Managed(u8).init(allocator.alloc);
+    var result = std.array_list.Managed(u8).init(allocator);
 
     if (builtin.os.tag == .windows) {
         try std.array_list.Managed(u8).appendSlice(&result, file);
@@ -15,8 +15,8 @@ pub fn getContentPath(file: []const u8) !std.array_list.Managed(u8) {
         return result;
     }
 
-    const first = try std.process.getCwdAlloc(allocator.alloc);
-    defer allocator.alloc.free(first);
+    const first = try std.process.getCwdAlloc(allocator);
+    defer allocator.free(first);
 
     try result.appendSlice(first);
 

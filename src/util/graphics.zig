@@ -2,8 +2,8 @@ const std = @import("std");
 const glfw = @import("glfw");
 const zgl = @import("zgl");
 
-const math = @import("../math/mod.zig");
-const util = @import("mod.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
 
 const Rect = math.Rect;
 const Vec2 = math.Vec2;
@@ -97,7 +97,7 @@ pub const Context = struct {
         instance = Context{
             .window = win,
             .color = .{ .r = 0, .g = 0, .b = 0 },
-            .shaders = .init(allocator.alloc),
+            .shaders = .init(allocator),
             .size = .{ .x = @floatFromInt(w), .y = @floatFromInt(h) },
         };
     }

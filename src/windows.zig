@@ -1,0 +1,12 @@
+pub const vm = @import("windows/vm.zig");
+pub const cmd = @import("windows/cmd.zig");
+pub const web = @import("windows/web.zig");
+pub const email = @import("windows/email.zig");
+pub const editor = @import("windows/editor.zig");
+pub const explorer = @import("windows/explorer.zig");
+pub const settings = @import("windows/settings.zig");
+pub const welcome = @import("windows/welcome.zig");
+pub const update = @import("windows/update.zig");
+pub const tasks = @import("windows/tasks.zig");
+pub const apps = @import("windows/apps.zig");
+pub const popups = @import("windows/popups.zig");

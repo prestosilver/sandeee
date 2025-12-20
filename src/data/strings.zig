@@ -2,8 +2,8 @@ const std = @import("std");
 const builtin = @import("builtin");
 const options = @import("options");
 
-const util = @import("../util/mod.zig");
-const data = @import("mod.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Version = data.Version;
 
@@ -162,7 +162,7 @@ pub fn eeeCHToANSI(input: []const u8) ![]const u8 {
         } else len += 1;
     }
 
-    var result = try allocator.alloc.alloc(u8, len);
+    var result = try allocator.alloc(u8, len);
     var idx: usize = 0;
     for (input) |ch| {
         inline for (REPLACEMENT_TABLE) |entry| {

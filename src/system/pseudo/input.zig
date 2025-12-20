@@ -1,14 +1,13 @@
 const std = @import("std");
 const c = @import("../../c.zig");
 
-const system = @import("../mod.zig");
-
-const drawers = @import("../../drawers/mod.zig");
-const windows = @import("../../windows/mod.zig");
-const events = @import("../../events/mod.zig");
-const states = @import("../../states/mod.zig");
-const math = @import("../../math/mod.zig");
-const util = @import("../../util/mod.zig");
+const system = @import("../../system.zig");
+const drawers = @import("../../drawers.zig");
+const windows = @import("../../windows.zig");
+const events = @import("../../events.zig");
+const states = @import("../../states.zig");
+const math = @import("../../math.zig");
+const util = @import("../../util.zig");
 
 const files = system.files;
 
@@ -46,10 +45,10 @@ pub const char = struct {
         if (headless.is_headless) {
             headless.input_mutex.lock();
             defer headless.input_mutex.unlock();
-            const result = try allocator.alloc.alloc(u8, 1);
+            const result = try allocator.alloc(u8, 1);
 
             result[0] = headless.popInput() orelse {
-                allocator.alloc.free(result);
+                allocator.free(result);
 
                 return &.{};
             };
@@ -58,7 +57,7 @@ pub const char = struct {
         }
 
         if (vm_instance.?.input.items.len != 0) {
-            const result = try allocator.alloc.alloc(u8, 1);
+            const result = try allocator.alloc(u8, 1);
 
             result[0] = vm_instance.?.input.orderedRemove(0);
 
@@ -80,7 +79,7 @@ pub const win = struct {
                     const self: *VmWindow.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
 
                     if (self.idx == aid[0]) {
-                        result = try allocator.alloc.realloc(result, self.input.len * 2);
+                        result = try allocator.realloc(result, self.input.len * 2);
                         for (self.input, 0..) |in, index| {
                             result[index * 2] = std.mem.toBytes(in)[0];
                             result[index * 2 + 1] = std.mem.toBytes(in)[1];
@@ -97,7 +96,7 @@ pub const win = struct {
 
 pub const mouse = struct {
     pub fn read(vm_instance: ?*Vm) ![]const u8 {
-        const result = try allocator.alloc.alloc(u8, 5);
+        const result = try allocator.alloc(u8, 5);
         @memset(result, 0);
 
         if (vm_instance == null) return result;

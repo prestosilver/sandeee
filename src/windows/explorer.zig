@@ -1,14 +1,13 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-const Windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -17,6 +16,8 @@ const Popup = drawers.Popup;
 const Rect = math.Rect;
 const Vec2 = math.Vec2;
 const Color = math.Color;
+
+const popups = windows.popups;
 
 const SpriteBatch = util.SpriteBatch;
 const VertArray = util.VertArray;
@@ -76,8 +77,8 @@ pub const ExplorerData = struct {
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
         const shell_root = try self.shell.root.resolve();
 
-        //const result = try allocator.alloc.alloc(ExplorerIcon, sub_folders.len + sub_files.len);
-        var result: std.array_list.Managed(ExplorerIcon) = .init(allocator.alloc);
+        //const result = try allocator(ExplorerIcon, sub_folders.len + sub_files.len);
+        var result: std.array_list.Managed(ExplorerIcon) = .init(allocator);
         defer result.deinit();
 
         var sub_folder = try shell_root.getFolders();
@@ -85,8 +86,8 @@ pub const ExplorerData = struct {
             const name = folder.name[shell_root.name.len .. folder.name.len - 1];
 
             try result.append(ExplorerIcon{
-                .name = try allocator.alloc.dupe(u8, name),
-                .launches = try allocator.alloc.dupe(u8, name),
+                .name = try allocator.dupe(u8, name),
+                .launches = try allocator.dupe(u8, name),
                 .icon = self.icons[1],
             });
         }
@@ -103,13 +104,13 @@ pub const ExplorerData = struct {
             const folder_idx = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
 
             try result.append(ExplorerIcon{
-                .name = try allocator.alloc.dupe(u8, file.name[(folder_idx + 1)..]),
-                .launches = try allocator.alloc.dupe(u8, parsed.launches),
+                .name = try allocator.dupe(u8, file.name[(folder_idx + 1)..]),
+                .launches = try allocator.dupe(u8, parsed.launches),
                 .icon = icon_spr,
             });
         }
 
-        return try allocator.alloc.dupe(ExplorerIcon, result.items);
+        return try allocator.dupe(ExplorerIcon, result.items);
     }
 
     pub const ErrorData = struct {
@@ -134,14 +135,14 @@ pub const ExplorerData = struct {
 
         const shell_root = try self.shell.root.resolve();
 
-        const title = try std.fmt.allocPrint(allocator.alloc, "{s}", .{shell_root.name});
-        defer allocator.alloc.free(title);
+        const title = try std.fmt.allocPrint(allocator, "{s}", .{shell_root.name});
+        defer allocator.free(title);
         try props.setTitle(title);
 
         if (self.shell.vm != null) {
             const result = self.shell.getVMResult() catch null;
             if (result) |result_data| {
-                allocator.alloc.free(result_data.data);
+                allocator.free(result_data.data);
             }
         }
 
@@ -211,13 +212,13 @@ pub const ExplorerData = struct {
                                     continue :draw_loop;
                                 } else {
                                     _ = self.shell.runBg(icon.launches) catch |err| {
-                                        const message = try std.fmt.allocPrint(allocator.alloc, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
+                                        const message = try std.fmt.allocPrint(allocator, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
-                                        const adds = try allocator.alloc.create(Popup.Data.popups.confirm.PopupConfirm);
+                                        const adds = try allocator.create(popups.confirm.PopupConfirm);
                                         adds.* = .{
                                             .data = self,
                                             .message = message,
-                                            .buttons = Popup.Data.popups.confirm.PopupConfirm.initButtonsFromStruct(ErrorData),
+                                            .buttons = popups.confirm.PopupConfirm.initButtonsFromStruct(ErrorData),
                                             .shader = self.shader,
                                         };
 
@@ -277,11 +278,11 @@ pub const ExplorerData = struct {
     pub fn deinit(self: *Self) void {
         self.shell.deinit();
         for (self.icon_data) |icon| {
-            allocator.alloc.free(icon.name);
-            allocator.alloc.free(icon.launches);
+            allocator.free(icon.name);
+            allocator.free(icon.launches);
         }
-        allocator.alloc.free(self.icon_data);
-        allocator.alloc.destroy(self);
+        allocator.free(self.icon_data);
+        allocator.destroy(self);
     }
 
     pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
@@ -328,10 +329,10 @@ pub const ExplorerData = struct {
 
     pub fn refresh(self: *Self) !void {
         for (self.icon_data) |icon| {
-            allocator.alloc.free(icon.name);
-            allocator.alloc.free(icon.launches);
+            allocator.free(icon.name);
+            allocator.free(icon.launches);
         }
-        allocator.alloc.free(self.icon_data);
+        allocator.free(self.icon_data);
         self.icon_data = try self.getIcons();
     }
 
@@ -361,11 +362,11 @@ pub const ExplorerData = struct {
         switch (keycode) {
             glfw.KeyDelete => {
                 if (self.selected != null and (shell_root.getFile(self.icon_data[self.selected.?].name) catch null) != null) {
-                    const adds = try allocator.alloc.create(Popup.Data.popups.confirm.PopupConfirm);
+                    const adds = try allocator.create(popups.confirm.PopupConfirm);
                     adds.* = .{
                         .data = self,
-                        .message = try allocator.alloc.dupe(u8, "Are you sure you want to delete this file."),
-                        .buttons = Popup.Data.popups.confirm.PopupConfirm.initButtonsFromStruct(confirmData),
+                        .message = try allocator.dupe(u8, "Are you sure you want to delete this file."),
+                        .buttons = popups.confirm.PopupConfirm.initButtonsFromStruct(confirmData),
                         .shader = self.shader,
                     };
 
@@ -390,7 +391,7 @@ pub const ExplorerData = struct {
 };
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(ExplorerData);
+    const self = try allocator.create(ExplorerData);
 
     self.* = .{
         .gray = .atlas("ui", .{

@@ -1,8 +1,8 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const util = @import("../util/mod.zig");
-const sandeee_data = @import("../data/mod.zig");
+const util = @import("../util.zig");
+const sandeee_data = @import("../data.zig");
 
 const no_audio = true;
 

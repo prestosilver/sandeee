@@ -1,7 +1,9 @@
-// TODO: new imports
 const std = @import("std");
-const allocator = @import("allocator.zig");
 const builtin = @import("builtin");
+
+const util = @import("../util.zig");
+
+const allocator = util.allocator;
 
 pub var log_file: ?std.fs.File = null;
 
@@ -68,12 +70,12 @@ pub fn sandEEELogFn(
         return;
 
     if (logs[last_log].data) |log_data|
-        allocator.alloc.free(log_data);
+        allocator.free(log_data);
 
     if (total_logs < HIST_LEN) {
         logs[last_log] = .{
             .level = level,
-            .data = std.fmt.allocPrint(allocator.alloc, prefix ++ format ++ "\n", args) catch return,
+            .data = std.fmt.allocPrint(allocator, prefix ++ format ++ "\n", args) catch return,
         };
 
         last_log += 1;
@@ -81,7 +83,7 @@ pub fn sandEEELogFn(
     } else {
         logs[last_log] = .{
             .level = level,
-            .data = std.fmt.allocPrint(allocator.alloc, prefix ++ format ++ "\n", args) catch return,
+            .data = std.fmt.allocPrint(allocator, prefix ++ format ++ "\n", args) catch return,
         };
 
         last_log += 1;
@@ -104,7 +106,7 @@ pub fn deinit() void {
     stop_logs = true;
     for (&logs) |*log_item| {
         if (log_item.data) |data|
-            allocator.alloc.free(data);
+            allocator.free(data);
         log_item.data = null;
     }
 }

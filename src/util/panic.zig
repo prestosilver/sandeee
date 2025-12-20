@@ -1,8 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const util = @import("mod.zig");
-const sandeee_data = @import("../data/mod.zig");
+const util = @import("../util.zig");
+const sandeee_data = @import("../data.zig");
 
 const allocator = util.allocator;
 

@@ -1,9 +1,0 @@
-pub const Bar = @import("bar2d.zig").drawer;
-pub const Cursor = @import("cursor2d.zig").drawer;
-pub const Desk = @import("desk2d.zig").drawer;
-pub const Graph = @import("graph2d.zig").drawer;
-pub const Notification = @import("notification2d.zig").drawer;
-pub const Popup = @import("popup2d.zig").drawer;
-pub const Sprite = @import("sprite2d.zig").drawer;
-pub const Wall = @import("wall2d.zig").drawer;
-pub const Window = @import("window2d.zig").drawer;

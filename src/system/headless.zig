@@ -1,15 +1,15 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const util = @import("../util/mod.zig");
-const system = @import("mod.zig");
-const sandeee_data = @import("../data/mod.zig");
+const util = @import("../util.zig");
+const system = @import("../system.zig");
+const sandeee_data = @import("../data.zig");
 
 const storage = util.storage;
 const allocator = util.allocator;
 
-const VmManager = system.VmManager;
 const Shell = system.Shell;
+const Vm = system.Vm;
 const files = system.files;
 
 const strings = sandeee_data.strings;
@@ -23,7 +23,7 @@ else
 
 pub fn write_console(stdout: *std.fs.File.Writer, input: []const u8) !void {
     const text = try sandeee_data.strings.eeeCHToANSI(input);
-    defer allocator.alloc.free(text);
+    defer allocator.free(text);
 
     try stdout.interface.writeAll(text);
 }
@@ -119,8 +119,8 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
     if (!builtin.is_test)
         _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
-    const alloc_path = try std.fmt.allocPrint(allocator.alloc, root_prefix ++ "disks/{s}", .{disk});
-    defer allocator.alloc.free(alloc_path);
+    const alloc_path = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{disk});
+    defer allocator.free(alloc_path);
 
     const diskpath = try storage.getContentPath(alloc_path);
     defer diskpath.deinit();
@@ -164,7 +164,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
         }
     }
 
-    var input_buffer = std.array_list.Managed(u8).init(allocator.alloc);
+    var input_buffer = std.array_list.Managed(u8).init(allocator);
     try input_buffer.appendSlice(cmd);
     defer input_buffer.clearAndFree();
 
@@ -174,15 +174,18 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
     var got_input = false;
 
     while (!done) {
-        VmManager.last_frame_time = 0.1;
+        Vm.Manager.last_frame_time = 0.1;
 
         if (main_shell.vm != null) {
-            try VmManager.instance.update();
+            try Vm.Manager.instance.update();
+            try Vm.Manager.instance.runGc();
 
             // setup vm data for update
             const result_data = try main_shell.getVMResult();
-            if (result_data) |result|
+            if (result_data) |result| {
                 try write_console(stdout, result.data);
+                result.deinit();
+            }
 
             if (main_shell.vm == null)
                 try write_console(stdout, "\n");
@@ -193,7 +196,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
         // print the prompt
         {
             const prompt = try main_shell.getPrompt();
-            defer allocator.alloc.free(prompt);
+            defer allocator.free(prompt);
 
             try write_console(stdout, strings.COLOR_WHITE);
             try write_console(stdout, prompt);
@@ -248,8 +251,8 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
         var iter = std.mem.splitScalar(u8, input_buffer.items, '\n');
 
         const first = iter.next() orelse "";
-        const rest = try allocator.alloc.dupe(u8, iter.rest());
-        defer allocator.alloc.free(rest);
+        const rest = try allocator.dupe(u8, iter.rest());
+        defer allocator.free(rest);
 
         const command = std.mem.trim(u8, first, &std.ascii.whitespace);
 
@@ -266,7 +269,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
                 continue;
             };
 
-            defer allocator.alloc.free(result.data);
+            defer allocator.free(result.data);
 
             if (result.data.len != 0) {
                 try write_console(stdout, result.data);
@@ -294,8 +297,8 @@ test "Headless scripts" {
         std.fs.cwd().makeDir("zig-out/bin/disks") catch
         @panic("Cannot make disks directory.");
 
-    VmManager.vm_time = 1.0;
-    VmManager.last_frame_time = 10.0;
+    Vm.Manager.vm_time = 1.0;
+    Vm.Manager.last_frame_time = 10.0;
 
     var logging_file = try std.fs.cwd().createFile("zig-out/test_output.md", .{});
     defer logging_file.close();
@@ -317,10 +320,10 @@ test "Headless scripts" {
 
         std.fs.cwd().deleteFile("zig-out/bin/disks/headless.eee") catch {};
 
-        VmManager.instance = .{};
+        Vm.Manager.instance = .{};
 
         // deinit vm manager
-        defer VmManager.instance.deinit();
+        defer Vm.Manager.instance.deinit();
 
         try logging.interface.writeAll("# ");
         try logging.interface.writeAll(entry.path);

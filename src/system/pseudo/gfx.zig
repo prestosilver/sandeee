@@ -1,14 +1,13 @@
 const std = @import("std");
 const c = @import("../../c.zig");
 
-const system = @import("../mod.zig");
-
-const drawers = @import("../../drawers/mod.zig");
-const windows = @import("../../windows/mod.zig");
-const events = @import("../../events/mod.zig");
-const states = @import("../../states/mod.zig");
-const math = @import("../../math/mod.zig");
-const util = @import("../../util/mod.zig");
+const system = @import("../../system.zig");
+const drawers = @import("../../drawers.zig");
+const windows = @import("../../windows.zig");
+const events = @import("../../events.zig");
+const states = @import("../../states.zig");
+const math = @import("../../math.zig");
+const util = @import("../../util.zig");
 
 const Vm = system.Vm;
 const files = system.files;
@@ -36,7 +35,7 @@ pub var texture_idx: u8 = 0;
 
 pub const new = struct {
     pub fn read(_: ?*Vm) files.FileError![]const u8 {
-        const result = try allocator.alloc.alloc(u8, 1);
+        const result = try allocator.alloc(u8, 1);
 
         result[0] = texture_idx;
 
@@ -142,13 +141,13 @@ pub const save = struct {
             const root = try vmi.root.resolve();
             try root.newFile(image);
 
-            const conts = try std.mem.concat(allocator.alloc, u8, &.{
+            const conts = try std.mem.concat(allocator, u8, &.{
                 "eimg",
                 std.mem.asBytes(&@as(i16, @intFromFloat(texture.size.x))),
                 std.mem.asBytes(&@as(i16, @intFromFloat(texture.size.y))),
                 std.mem.sliceAsBytes(texture.buffer),
             });
-            defer allocator.alloc.free(conts);
+            defer allocator.free(conts);
 
             try root.writeFile(image, conts, null);
         }

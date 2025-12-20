@@ -3,13 +3,13 @@ const options = @import("options");
 const builtin = @import("builtin");
 const c = @import("../c.zig");
 
-const system = @import("mod.zig");
+const system = @import("../system.zig");
 
-const windows = @import("../windows/mod.zig");
-const drawers = @import("../drawers/mod.zig");
-const events = @import("../events/mod.zig");
-const util = @import("../util/mod.zig");
-const math = @import("../math/mod.zig");
+const windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const events = @import("../events.zig");
+const util = @import("../util.zig");
+const math = @import("../math.zig");
 
 const EventManager = events.EventManager;
 const window_events = events.windows;
@@ -78,7 +78,7 @@ pub const Telem = packed struct {
             };
 
             const pass = try getDebugPassword();
-            defer allocator.alloc.free(pass);
+            defer allocator.free(pass);
             log.debug("Set telem pass: {s}", .{pass});
         }
     }
@@ -107,6 +107,6 @@ pub const Telem = packed struct {
         const aenc = enc.encode(&ap, a_bytes);
         const benc = enc.encode(&bp, b_bytes);
 
-        return try std.mem.concat(allocator.alloc, u8, &.{ aenc, "-", benc });
+        return try std.mem.concat(allocator, u8, &.{ aenc, "-", benc });
     }
 };

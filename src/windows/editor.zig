@@ -1,14 +1,13 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-const windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -17,6 +16,8 @@ const Popup = drawers.Popup;
 const Rect = math.Rect;
 const Vec2 = math.Vec2;
 const Color = math.Color;
+
+const popups = windows.popups;
 
 const SpriteBatch = util.SpriteBatch;
 const Texture = util.Texture;
@@ -53,12 +54,12 @@ pub const EditorData = struct {
 
         pub fn clearRender(self: *Row) void {
             if (self.render) |r| {
-                allocator.alloc.free(r);
+                allocator.free(r);
                 self.render = null;
             }
 
             if (self.err) |e| {
-                allocator.alloc.free(e);
+                allocator.free(e);
                 self.err = null;
             }
         }
@@ -66,9 +67,9 @@ pub const EditorData = struct {
         pub fn getRenderLine(self: *const Row) ![]const u8 {
             return if (self.render) |render|
                 if (self.err) |e|
-                    try std.fmt.allocPrint(allocator.alloc, STRING_ERROR, .{ render, e })
+                    try std.fmt.allocPrint(allocator, STRING_ERROR, .{ render, e })
                 else
-                    try allocator.alloc.dupe(u8, render)
+                    try allocator.dupe(u8, render)
             else
                 &.{};
         }
@@ -112,7 +113,7 @@ pub const EditorData = struct {
     bnds: Rect = .{ .w = 0, .h = 0 },
 
     pub fn hlLine(row: *Row) !void {
-        var line = try allocator.alloc.dupe(u8, row.text);
+        var line = try allocator.dupe(u8, row.text);
         var err: ?[]u8 = null;
 
         if (line.len == 0) {
@@ -130,55 +131,55 @@ pub const EditorData = struct {
         for (HL_KEYWORD1) |keyword| {
             const comment = std.mem.indexOf(u8, line, COMMENT_START) orelse line.len;
 
-            const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+            const replacement = try std.mem.concat(allocator, u8, &.{
                 strings.COLOR_BLUE,
                 keyword,
                 strings.COLOR_BLACK,
             });
-            defer allocator.alloc.free(replacement);
+            defer allocator.free(replacement);
 
             const old_line = line;
-            defer allocator.alloc.free(old_line);
+            defer allocator.free(old_line);
 
             const rep_size = std.mem.replacementSize(u8, line[0..comment], keyword, replacement);
 
-            line = try allocator.alloc.alloc(u8, rep_size + (line.len - comment));
+            line = try allocator.alloc(u8, rep_size + (line.len - comment));
             _ = std.mem.replace(u8, old_line[0..comment], keyword, replacement, line);
             @memcpy(line[rep_size..], old_line[comment..]);
         }
 
         for (HL_KEYWORD2) |keyword| {
-            const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+            const replacement = try std.mem.concat(allocator, u8, &.{
                 strings.COLOR_DARK_CYAN,
                 keyword,
                 strings.COLOR_BLACK,
             });
-            defer allocator.alloc.free(replacement);
+            defer allocator.free(replacement);
 
             const old_line = line;
-            defer allocator.alloc.free(old_line);
+            defer allocator.free(old_line);
 
-            line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
+            line = try allocator.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
             _ = std.mem.replace(u8, old_line, keyword, replacement, line);
         }
 
         {
-            const replacement = try std.mem.concat(allocator.alloc, u8, &.{
+            const replacement = try std.mem.concat(allocator, u8, &.{
                 strings.COLOR_WHITE,
                 COMMENT_START,
             });
-            defer allocator.alloc.free(replacement);
+            defer allocator.free(replacement);
 
             const old_line = line;
-            defer allocator.alloc.free(old_line);
+            defer allocator.free(old_line);
 
-            line = try allocator.alloc.alloc(u8, std.mem.replacementSize(u8, line, COMMENT_START, replacement));
+            line = try allocator.alloc(u8, std.mem.replacementSize(u8, line, COMMENT_START, replacement));
             _ = std.mem.replace(u8, old_line, COMMENT_START, replacement, line);
         }
 
         {
             const old_line = line;
-            defer allocator.alloc.free(old_line);
+            defer allocator.free(old_line);
 
             var count: usize = 0;
 
@@ -206,10 +207,10 @@ pub const EditorData = struct {
                 }
 
                 if (in_string) {
-                    err = try allocator.alloc.dupe(u8, "missing \"");
+                    err = try allocator.dupe(u8, "missing \"");
                 }
 
-                line = try allocator.alloc.alloc(u8, count);
+                line = try allocator.alloc(u8, count);
             }
 
             var idx: usize = 0;
@@ -260,8 +261,8 @@ pub const EditorData = struct {
             const file_name = if (self.file) |file| file.name else "[New File]";
 
             const idx = if (std.mem.lastIndexOf(u8, file_name, "/")) |idx| idx + 1 else 0;
-            const title = try std.fmt.allocPrint(allocator.alloc, strings.EEE ++ "DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
-            defer allocator.alloc.free(title);
+            const title = try std.fmt.allocPrint(allocator, strings.EEE ++ "DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
+            defer allocator.free(title);
 
             try props.setTitle(title);
         }
@@ -351,7 +352,7 @@ pub const EditorData = struct {
                     try hlLine(line);
 
                 const render_text = try line.getRenderLine();
-                defer allocator.alloc.free(render_text);
+                defer allocator.free(render_text);
 
                 try font.draw(.{
                     .shader = shader,
@@ -361,8 +362,8 @@ pub const EditorData = struct {
                     .maxlines = 1,
                 });
 
-                const linenr = try std.fmt.allocPrint(allocator.alloc, "{}", .{lineidx + 1});
-                defer allocator.alloc.free(linenr);
+                const linenr = try std.fmt.allocPrint(allocator, "{}", .{lineidx + 1});
+                defer allocator.free(linenr);
                 try font.draw(.{
                     .shader = shader,
                     .text = linenr,
@@ -441,9 +442,9 @@ pub const EditorData = struct {
                     if (open.contains(mousepos)) {
                         const home = try files.FolderLink.resolve(.home);
 
-                        const adds = try allocator.alloc.create(Popup.Data.popups.filepick.PopupFilePick);
+                        const adds = try allocator.create(popups.filepick.PopupFilePick);
                         adds.* = .{
-                            .path = try allocator.alloc.dupe(u8, home.name),
+                            .path = try allocator.dupe(u8, home.name),
                             .data = self,
                             .submit = &submitOpen,
                         };
@@ -491,7 +492,7 @@ pub const EditorData = struct {
         var idx: usize = 0;
 
         if (self.buffer) |buffer| {
-            var new_buffer = std.array_list.Managed(Row).init(allocator.alloc);
+            var new_buffer = std.array_list.Managed(Row).init(allocator);
             defer new_buffer.deinit();
 
             const abs_sel: usize = @intCast(@abs(self.cursor_len));
@@ -503,7 +504,7 @@ pub const EditorData = struct {
 
                 for (line.text) |ch| {
                     if (!(idx >= self.cursorx and idx < self.cursorx + abs_sel)) {
-                        new_line.text = try allocator.alloc.realloc(new_line.text, new_line.text.len + 1);
+                        new_line.text = try allocator.realloc(new_line.text, new_line.text.len + 1);
                         new_line.text[new_line.text.len - 1] = ch;
                     }
                     idx += 1;
@@ -515,16 +516,16 @@ pub const EditorData = struct {
                 if ((!(idx >= self.cursorx and idx < self.cursorx + abs_sel)) or new_line.text.len != 0) {
                     try new_buffer.append(new_line);
                 } else {
-                    allocator.alloc.free(new_line.text);
+                    allocator.free(new_line.text);
                 }
             }
 
             self.clearBuffer();
 
             self.buffer = if (self.buffer) |old_buffer|
-                try allocator.alloc.realloc(old_buffer, new_buffer.items.len)
+                try allocator.realloc(old_buffer, new_buffer.items.len)
             else
-                try allocator.alloc.alloc(Row, new_buffer.items.len);
+                try allocator.alloc(Row, new_buffer.items.len);
 
             @memcpy(self.buffer.?, new_buffer.items);
         }
@@ -535,7 +536,7 @@ pub const EditorData = struct {
     pub fn getSel(self: *Self) ![]const u8 {
         const abs_sel: usize = @intCast(@abs(self.cursor_len));
 
-        var result = try std.array_list.Managed(u8).initCapacity(allocator.alloc, abs_sel);
+        var result = try std.array_list.Managed(u8).initCapacity(allocator, abs_sel);
         defer result.deinit();
 
         var idx: usize = 0;
@@ -559,13 +560,13 @@ pub const EditorData = struct {
             }
         }
 
-        return try allocator.alloc.dupe(u8, result.items);
+        return try allocator.dupe(u8, result.items);
     }
 
     pub fn save(self: *Self) !void {
         if (self.buffer) |buffer| {
             if (self.file) |file| {
-                var buff = std.array_list.Managed(u8).init(allocator.alloc);
+                var buff = std.array_list.Managed(u8).init(allocator);
                 defer buff.deinit();
 
                 for (buffer) |line| {
@@ -580,11 +581,11 @@ pub const EditorData = struct {
             } else {
                 const home = try files.FolderLink.resolve(.home);
 
-                const adds = try allocator.alloc.create(Popup.Data.popups.textpick.PopupTextPick);
+                const adds = try allocator.create(popups.textpick.PopupTextPick);
                 adds.* = .{
-                    .text = try allocator.alloc.dupe(u8, home.name),
+                    .text = try allocator.dupe(u8, home.name),
                     .submit = &submitSave,
-                    .prompt = try allocator.alloc.dupe(u8, "Enter the file path"),
+                    .prompt = try allocator.dupe(u8, "Enter the file path"),
                     .data = self,
                 };
 
@@ -622,16 +623,16 @@ pub const EditorData = struct {
             self.clearBuffer();
 
             if (self.buffer) |buffer| {
-                self.buffer = try allocator.alloc.realloc(buffer, lines);
+                self.buffer = try allocator.realloc(buffer, lines);
             } else {
-                self.buffer = try allocator.alloc.alloc(Row, lines);
+                self.buffer = try allocator.alloc(Row, lines);
             }
 
             var iter = std.mem.splitScalar(u8, file_conts, '\n');
             var idx: usize = 0;
             while (iter.next()) |line| {
                 self.buffer.?[idx] = .{
-                    .text = try allocator.alloc.dupe(u8, line),
+                    .text = try allocator.dupe(u8, line),
                     .render = null,
                 };
 
@@ -661,13 +662,13 @@ pub const EditorData = struct {
         if (self.buffer) |buffer| {
             for (buffer) |*line| {
                 if (line.render) |render| {
-                    allocator.alloc.free(render);
+                    allocator.free(render);
                 }
 
-                allocator.alloc.free(line.text);
+                allocator.free(line.text);
             }
 
-            allocator.alloc.free(buffer);
+            allocator.free(buffer);
 
             self.buffer = null;
         }
@@ -678,7 +679,7 @@ pub const EditorData = struct {
 
         self.clearBuffer();
 
-        self.buffer = try allocator.alloc.dupe(Row, &[_]Row{Row{
+        self.buffer = try allocator.dupe(Row, &[_]Row{Row{
             .text = &.{},
         }});
 
@@ -688,9 +689,9 @@ pub const EditorData = struct {
     pub fn deinit(self: *Self) void {
         self.clearBuffer();
         if (self.buffer) |buffer|
-            allocator.alloc.free(buffer);
+            allocator.free(buffer);
 
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 
     pub fn char(self: *Self, code: u32, _: i32) !void {
@@ -701,7 +702,7 @@ pub const EditorData = struct {
         if (self.buffer) |buffer| {
             const line = &buffer[self.cursory];
 
-            line.text = try allocator.alloc.realloc(line.text, line.text.len + 1);
+            line.text = try allocator.realloc(line.text, line.text.len + 1);
 
             std.mem.copyBackwards(u8, line.text[self.cursorx + 1 ..], line.text[self.cursorx .. line.text.len - 1]);
             line.text[self.cursorx] = @intCast(@rem(code, 255));
@@ -740,7 +741,7 @@ pub const EditorData = struct {
             glfw.KeyC => {
                 if (mods == glfw.ModifierControl) {
                     const sel = try self.getSel();
-                    defer allocator.alloc.free(sel);
+                    defer allocator.free(sel);
 
                     try events.EventManager.instance.sendEvent(system_events.EventCopy{
                         .value = sel,
@@ -762,15 +763,15 @@ pub const EditorData = struct {
             },
             glfw.KeyEnter => {
                 if (self.buffer) |*buffer| {
-                    buffer.* = try allocator.alloc.realloc(buffer.*, buffer.len + 1);
+                    buffer.* = try allocator.realloc(buffer.*, buffer.len + 1);
                     std.mem.copyBackwards(Row, buffer.*[self.cursory + 1 ..], buffer.*[self.cursory .. buffer.len - 1]);
 
                     const line = &buffer.*[self.cursory];
                     buffer.*[self.cursory + 1] = .{
-                        .text = try allocator.alloc.dupe(u8, line.text[self.cursorx..]),
+                        .text = try allocator.dupe(u8, line.text[self.cursorx..]),
                     };
 
-                    line.text = try allocator.alloc.realloc(line.text, self.cursorx);
+                    line.text = try allocator.realloc(line.text, self.cursorx);
 
                     line.clearRender();
 
@@ -792,7 +793,7 @@ pub const EditorData = struct {
 
                     if (self.cursorx < line.text.len) {
                         std.mem.copyForwards(u8, line.text[self.cursorx .. line.text.len - 1], line.text[self.cursorx + 1 ..]);
-                        line.text = try allocator.alloc.realloc(line.text, line.text.len - 1);
+                        line.text = try allocator.realloc(line.text, line.text.len - 1);
 
                         line.clearRender();
 
@@ -812,7 +813,7 @@ pub const EditorData = struct {
                         const line = &buffer[self.cursory];
 
                         std.mem.copyForwards(u8, line.text[self.cursorx - 1 .. line.text.len - 1], line.text[self.cursorx..]);
-                        line.text = try allocator.alloc.realloc(line.text, line.text.len - 1);
+                        line.text = try allocator.realloc(line.text, line.text.len - 1);
 
                         line.clearRender();
 
@@ -821,9 +822,9 @@ pub const EditorData = struct {
                         self.cursorx -= 1;
                     } else if (self.cursory > 0) {
                         const old_line = buffer[self.cursory - 1].text;
-                        defer allocator.alloc.free(old_line);
+                        defer allocator.free(old_line);
 
-                        buffer[self.cursory - 1].text = try std.mem.concat(allocator.alloc, u8, &.{
+                        buffer[self.cursory - 1].text = try std.mem.concat(allocator, u8, &.{
                             buffer[self.cursory - 1].text,
                             buffer[self.cursory].text,
                         });
@@ -831,7 +832,7 @@ pub const EditorData = struct {
 
                         buffer[self.cursory - 1].clearRender();
 
-                        self.buffer = try allocator.alloc.realloc(buffer, buffer.len - 1);
+                        self.buffer = try allocator.realloc(buffer, buffer.len - 1);
 
                         self.modified = true;
 
@@ -934,7 +935,7 @@ pub const EditorData = struct {
 };
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(EditorData);
+    const self = try allocator.create(EditorData);
 
     self.* = .{
         .menubar = .atlas("ui", .{

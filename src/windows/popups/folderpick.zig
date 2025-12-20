@@ -1,12 +1,12 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-const sandeee_data = @import("../../data/mod.zig");
-const drawers = @import("../../drawers/mod.zig");
-const system = @import("../../system/mod.zig");
-const events = @import("../../events/mod.zig");
-const math = @import("../../math/mod.zig");
-const util = @import("../../util/mod.zig");
+const sandeee_data = @import("../../data.zig");
+const drawers = @import("../../drawers.zig");
+const system = @import("../../system.zig");
+const events = @import("../../events.zig");
+const math = @import("../../math.zig");
+const util = @import("../../util.zig");
 
 const Sprite = drawers.Sprite;
 const Popup = drawers.Popup;
@@ -45,10 +45,10 @@ pub const PopupFolderPick = struct {
         const maxlen: usize = @intFromFloat((bnds.w - 60) / 10);
 
         const text = if (self.path.len > maxlen)
-            try std.fmt.allocPrint(allocator.alloc, strings.DOTS ++ "{s}", .{self.path[self.path.len - maxlen + 1 ..]})
+            try std.fmt.allocPrint(allocator, strings.DOTS ++ "{s}", .{self.path[self.path.len - maxlen + 1 ..]})
         else
-            try allocator.alloc.dupe(u8, self.path);
-        defer allocator.alloc.free(text);
+            try allocator.dupe(u8, self.path);
+        defer allocator.free(text);
 
         const text_background: Sprite = .atlas("ui", .{
             .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
@@ -85,9 +85,9 @@ pub const PopupFolderPick = struct {
         if (!down) return;
 
         if (keycode == glfw.KeyBackspace and self.path.len != 0) {
-            self.path = try allocator.alloc.realloc(self.path, self.path.len - 1);
+            self.path = try allocator.realloc(self.path, self.path.len - 1);
             if (self.err) |err|
-                allocator.alloc.free(err);
+                allocator.free(err);
             self.err = null;
         }
 
@@ -101,8 +101,8 @@ pub const PopupFolderPick = struct {
                 });
             } else {
                 if (self.err) |err|
-                    allocator.alloc.free(err);
-                self.err = try allocator.alloc.dupe(u8, "Folder Not Found");
+                    allocator.free(err);
+                self.err = try allocator.dupe(u8, "Folder Not Found");
             }
         }
     }
@@ -110,19 +110,19 @@ pub const PopupFolderPick = struct {
     pub fn char(self: *Self, keycode: u32, _: i32) !void {
         if (keycode < 256) {
             if (self.err) |err|
-                allocator.alloc.free(err);
+                allocator.free(err);
             self.err = null;
 
-            self.path = try allocator.alloc.realloc(self.path, self.path.len + 1);
+            self.path = try allocator.realloc(self.path, self.path.len + 1);
             self.path[self.path.len - 1] = @as(u8, @intCast(keycode));
         }
     }
 
     pub fn deinit(self: *Self) void {
         if (self.err) |err|
-            allocator.alloc.free(err);
+            allocator.free(err);
 
-        allocator.alloc.free(self.path);
-        allocator.alloc.destroy(self);
+        allocator.free(self.path);
+        allocator.destroy(self);
     }
 };

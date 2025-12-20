@@ -1,14 +1,13 @@
 const std = @import("std");
 const c = @import("../../c.zig");
 
-const system = @import("../mod.zig");
-
-const drawers = @import("../../drawers/mod.zig");
-const windows = @import("../../windows/mod.zig");
-const events = @import("../../events/mod.zig");
-const states = @import("../../states/mod.zig");
-const math = @import("../../math/mod.zig");
-const util = @import("../../util/mod.zig");
+const system = @import("../../system.zig");
+const drawers = @import("../../drawers.zig");
+const windows = @import("../../windows.zig");
+const events = @import("../../events.zig");
+const states = @import("../../states.zig");
+const math = @import("../../math.zig");
+const util = @import("../../util.zig");
 
 const files = system.files;
 
@@ -43,7 +42,7 @@ pub var vm_idx: u8 = 0;
 
 pub const new = struct {
     pub fn read(vm_instance: ?*Vm) files.FileError![]const u8 {
-        const result = try allocator.alloc.alloc(u8, 1);
+        const result = try allocator.alloc(u8, 1);
         const window_data = try VmWindow.init(vm_idx, shader);
 
         const window: Window = .atlas("win", .{
@@ -59,7 +58,7 @@ pub const new = struct {
         result[0] = vm_idx;
         vm_idx = vm_idx +% 1;
 
-        const window_id = try allocator.alloc.dupe(u8, result);
+        const window_id = try allocator.dupe(u8, result);
         try vm_instance.?.misc_data.put("window", window_id);
 
         return result;
@@ -68,7 +67,7 @@ pub const new = struct {
 
 pub const open = struct {
     pub fn read(vm_instance: ?*Vm) files.FileError![]const u8 {
-        const result = try allocator.alloc.alloc(u8, 1);
+        const result = try allocator.alloc(u8, 1);
         @memset(result, 0);
 
         if (vm_instance == null) return result;
@@ -206,7 +205,7 @@ pub const title = struct {
                     const self = @as(*VmWindow.VMData, @ptrCast(@alignCast(item.data.contents.ptr)));
 
                     if (self.idx == aaid[0]) {
-                        return allocator.alloc.dupe(u8, item.data.contents.props.info.name);
+                        return allocator.dupe(u8, item.data.contents.props.info.name);
                     }
                 }
             }
@@ -236,7 +235,7 @@ pub const title = struct {
 
 pub const size = struct {
     pub fn read(vm_instance: ?*Vm) files.FileError![]const u8 {
-        const result = try allocator.alloc.alloc(u8, 4);
+        const result = try allocator.alloc(u8, 4);
         @memset(result, 0);
 
         if (vm_instance == null) return result;

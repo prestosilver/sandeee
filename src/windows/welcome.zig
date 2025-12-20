@@ -2,14 +2,13 @@ const std = @import("std");
 const options = @import("options");
 const c = @import("../c.zig");
 
-const Windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const Windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -86,8 +85,8 @@ pub const WelcomeData = struct {
             const remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
             if (remaining < 0) @panic("Demo Over");
 
-            const demo_text = try std.fmt.allocPrint(allocator.alloc, "{} seconds remianing.", .{@as(usize, @intFromFloat(remaining / 1e+9))});
-            defer allocator.alloc.free(demo_text);
+            const demo_text = try std.fmt.allocPrint(allocator, "{} seconds remianing.", .{@as(usize, @intFromFloat(remaining / 1e+9))});
+            defer allocator.free(demo_text);
 
             try font.draw(.{
                 .shader = font_shader,
@@ -116,8 +115,8 @@ pub const WelcomeData = struct {
             });
         }
 
-        const version_text = try std.fmt.allocPrint(allocator.alloc, "(" ++ strings.SANDEEE_VERSION_TEXT ++ ")", .{});
-        defer allocator.alloc.free(version_text);
+        const version_text = try std.fmt.allocPrint(allocator, "(" ++ strings.SANDEEE_VERSION_TEXT ++ ")", .{});
+        defer allocator.free(version_text);
 
         try font.draw(.{
             .shader = font_shader,
@@ -136,12 +135,12 @@ pub const WelcomeData = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 };
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(WelcomeData);
+    const self = try allocator.create(WelcomeData);
 
     self.* = .{
         .shell = .{

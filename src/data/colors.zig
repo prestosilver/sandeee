@@ -1,4 +1,4 @@
-const math = @import("../math/mod.zig");
+const math = @import("../math.zig");
 
 const Color = math.Color;
 

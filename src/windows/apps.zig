@@ -1,14 +1,13 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const Windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const Windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -66,7 +65,7 @@ pub const LauncherData = struct {
         const root = try files.FolderLink.resolve(.root);
         const folder = root.getFolder("conf/apps") catch return &.{};
 
-        var result: std.array_list.Managed(Eln) = .init(allocator.alloc);
+        var result: std.array_list.Managed(Eln) = .init(allocator);
         defer result.deinit();
 
         var sub_file = try folder.getFiles();
@@ -76,11 +75,11 @@ pub const LauncherData = struct {
 
         self.max_sprites = @max(self.max_sprites, @as(u8, @intCast(result.items.len)));
 
-        return try allocator.alloc.dupe(Eln, result.items);
+        return try allocator.dupe(Eln, result.items);
     }
 
     pub fn refresh(self: *Self) !void {
-        allocator.alloc.free(self.icon_data);
+        allocator.free(self.icon_data);
         self.icon_data = try self.getIcons();
     }
 
@@ -102,7 +101,7 @@ pub const LauncherData = struct {
         if (self.shell.vm) |_| {
             const result = self.shell.getVMResult() catch null;
             if (result) |result_data| {
-                allocator.alloc.free(result_data.data);
+                allocator.free(result_data.data);
             }
         }
 
@@ -178,8 +177,8 @@ pub const LauncherData = struct {
 
         // deinit rest
         self.shell.deinit();
-        allocator.alloc.free(self.icon_data);
-        allocator.alloc.destroy(self);
+        allocator.free(self.icon_data);
+        allocator.destroy(self);
     }
 
     pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
@@ -223,7 +222,7 @@ pub const LauncherData = struct {
 };
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(LauncherData);
+    const self = try allocator.create(LauncherData);
 
     self.* = .{
         .idx = g_idx,

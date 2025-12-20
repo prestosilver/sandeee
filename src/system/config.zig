@@ -1,10 +1,10 @@
 const std = @import("std");
 const c = @import("../c.zig");
 
-const system = @import("mod.zig");
+const system = @import("../system.zig");
 
-const events = @import("../events/mod.zig");
-const util = @import("../util/mod.zig");
+const events = @import("../events.zig");
+const util = @import("../util.zig");
 
 const allocator = util.allocator;
 const log = util.log;
@@ -17,15 +17,15 @@ const system_events = events.system;
 pub const SettingManager = struct {
     pub var instance: SettingManager = .{};
 
-    settings: std.StringHashMap([]u8) = std.StringHashMap([]u8).init(allocator.alloc),
+    settings: std.StringHashMap([]u8) = std.StringHashMap([]u8).init(allocator),
 
     pub fn set(self: *SettingManager, setting: []const u8, value: []const u8) !void {
         if (self.settings.fetchRemove(setting)) |val| {
-            allocator.alloc.free(val.key);
-            allocator.alloc.free(val.value);
+            allocator.free(val.key);
+            allocator.free(val.value);
         }
 
-        try self.*.settings.put(try allocator.alloc.dupe(u8, setting), try allocator.alloc.dupe(u8, value));
+        try self.*.settings.put(try allocator.dupe(u8, setting), try allocator.dupe(u8, value));
 
         try events.EventManager.instance.sendEvent(system_events.EventSetSetting{
             .setting = setting,
@@ -64,7 +64,7 @@ pub const SettingManager = struct {
 
     pub fn save(self: *SettingManager) !void {
         var iter = self.settings.keyIterator();
-        var out: std.array_list.Managed(u8) = .init(allocator.alloc);
+        var out: std.array_list.Managed(u8) = .init(allocator);
         defer out.deinit();
 
         while (iter.next()) |entry| {
@@ -86,8 +86,8 @@ pub const SettingManager = struct {
         var iter = instance.settings.iterator();
 
         while (iter.next()) |*entry| {
-            allocator.alloc.free(entry.value_ptr.*);
-            allocator.alloc.free(entry.key_ptr.*);
+            allocator.free(entry.value_ptr.*);
+            allocator.free(entry.key_ptr.*);
         }
 
         instance.settings.deinit();

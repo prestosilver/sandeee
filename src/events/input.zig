@@ -1,7 +1,7 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-pub const events = @import("mod.zig");
+pub const events = @import("../events.zig");
 
 pub const EventManager = events.EventManager;
 

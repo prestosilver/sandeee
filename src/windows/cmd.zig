@@ -1,14 +1,13 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-const Windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const Windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 
@@ -49,9 +48,9 @@ pub const CMDData = struct {
 
     pub fn processBT(self: *Self) !void {
         const oldbt = self.bt;
-        defer allocator.alloc.free(oldbt);
+        defer allocator.free(oldbt);
 
-        self.bt = try allocator.alloc.alloc(u8, self.bt.len);
+        self.bt = try allocator.alloc(u8, self.bt.len);
         var idx: usize = 0;
 
         for (oldbt) |ch| {
@@ -76,7 +75,7 @@ pub const CMDData = struct {
             }
         }
 
-        self.bt = try allocator.alloc.realloc(self.bt, idx);
+        self.bt = try allocator.realloc(self.bt, idx);
     }
 
     pub fn draw(self: *Self, shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
@@ -89,8 +88,8 @@ pub const CMDData = struct {
         props.close = self.close;
 
         if (self.bt.len > MAX_SIZE) {
-            const newbt = try allocator.alloc.dupe(u8, self.bt[self.bt.len - MAX_SIZE ..]);
-            allocator.alloc.free(self.bt);
+            const newbt = try allocator.dupe(u8, self.bt[self.bt.len - MAX_SIZE ..]);
+            allocator.free(self.bt);
             self.bt = newbt;
         }
 
@@ -100,10 +99,10 @@ pub const CMDData = struct {
         if (self.shell.vm == null) {
             const shell_prompt = try self.shell.getPrompt();
 
-            defer allocator.alloc.free(shell_prompt);
+            defer allocator.free(shell_prompt);
 
-            const prompt = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ shell_prompt, self.input_buffer[0..self.input_len] });
-            defer allocator.alloc.free(prompt);
+            const prompt = try std.fmt.allocPrint(allocator, "{s}{s}", .{ shell_prompt, self.input_buffer[0..self.input_len] });
+            defer allocator.free(prompt);
             try font.draw(.{
                 .shader = shader,
                 .text = prompt,
@@ -132,7 +131,7 @@ pub const CMDData = struct {
                 defer result_data.deinit();
 
                 const start = self.bt.len;
-                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + result_data.data.len);
+                self.bt = try allocator.realloc(self.bt, self.bt.len + result_data.data.len);
 
                 @memcpy(self.bt[start..], result_data.data);
                 try self.processBT();
@@ -217,27 +216,27 @@ pub const CMDData = struct {
                 }
 
                 if (self.input_len != 0 and (self.history.items.len == 0 or !std.mem.eql(u8, self.history.getLast(), self.input_buffer[0..self.input_len])))
-                    try self.history.append(try allocator.alloc.dupe(u8, self.input_buffer[0..self.input_len]));
+                    try self.history.append(try allocator.dupe(u8, self.input_buffer[0..self.input_len]));
 
                 const shell_prompt = try self.shell.getPrompt();
-                defer allocator.alloc.free(shell_prompt);
+                defer allocator.free(shell_prompt);
 
-                const prompt = try std.fmt.allocPrint(allocator.alloc, "\n{s}{s}\n", .{ shell_prompt, self.input_buffer[0..self.input_len] });
-                defer allocator.alloc.free(prompt);
+                const prompt = try std.fmt.allocPrint(allocator, "\n{s}{s}\n", .{ shell_prompt, self.input_buffer[0..self.input_len] });
+                defer allocator.free(prompt);
                 var start = self.bt.len;
 
-                self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + prompt.len);
+                self.bt = try allocator.realloc(self.bt, self.bt.len + prompt.len);
                 @memcpy(self.bt[start .. start + prompt.len], prompt);
 
                 const al = self.shell.run(self.input_buffer[0..self.input_len]) catch |err| {
                     const msg = @errorName(err);
 
                     start = self.bt.len;
-                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + 7);
+                    self.bt = try allocator.realloc(self.bt, self.bt.len + 7);
                     @memcpy(self.bt[start..], "Error: ");
 
                     start = self.bt.len;
-                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + msg.len);
+                    self.bt = try allocator.realloc(self.bt, self.bt.len + msg.len);
                     @memcpy(self.bt[start..], msg);
 
                     self.input_len = 0;
@@ -249,18 +248,18 @@ pub const CMDData = struct {
                 if (al.exit)
                     self.close = true;
 
-                defer allocator.alloc.free(al.data);
+                defer allocator.free(al.data);
 
                 if (al.data.len == 0 and self.shell.vm == null)
-                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len - 1);
+                    self.bt = try allocator.realloc(self.bt, self.bt.len - 1);
 
                 if (al.clear) {
-                    allocator.alloc.free(self.bt);
+                    allocator.free(self.bt);
                     self.bt = &.{};
                 } else {
                     start = self.bt.len;
 
-                    self.bt = try allocator.alloc.realloc(self.bt, self.bt.len + al.data.len);
+                    self.bt = try allocator.realloc(self.bt, self.bt.len + al.data.len);
                     @memcpy(self.bt[start..], al.data);
                 }
 
@@ -320,28 +319,28 @@ pub const CMDData = struct {
 
     pub fn deinit(self: *Self) void {
         // free backtrace
-        allocator.alloc.free(self.bt);
+        allocator.free(self.bt);
 
         // free vm
         self.shell.deinit();
 
         // free history
         for (self.history.items) |item| {
-            allocator.alloc.free(item);
+            allocator.free(item);
         }
         self.history.deinit();
 
         // free self
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 };
 
 pub fn init() !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(CMDData);
+    const self = try allocator.create(CMDData);
 
     self.* = .{
-        .bt = try std.fmt.allocPrint(allocator.alloc, "Welcome to Sh" ++ strings.EEE ++ "l\nUse help to list possible commands\n", .{}),
-        .history = try .initCapacity(allocator.alloc, 32),
+        .bt = try std.fmt.allocPrint(allocator, "Welcome to Sh" ++ strings.EEE ++ "l\nUse help to list possible commands\n", .{}),
+        .history = try .initCapacity(allocator, 32),
         .shell = .{
             .root = .home,
             .vm = null,

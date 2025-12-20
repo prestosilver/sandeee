@@ -78,13 +78,13 @@ pub const User = extern struct {
 };
 
 fn updateFakeUGC() !void {
-    const file = try std.fs.cwd().openFile("/home/john/doc/rep/github.com/sandeee/fake_steam/ugc.csv", .{ .mode = .write_only });
+    const file = try std.fs.openFileAbsolute("/home/john/doc/rep/github.com/sandeee/fake_steam/ugc.csv", .{ .mode = .write_only });
     defer file.close();
 
-    const writer = file.writer();
+    var writer = file.writer(&.{});
 
     for (steam_items.items) |item| {
-        try writer.print("{s},{s},{s}\n", .{ item.title, item.desc, item.folder });
+        try writer.interface.print("{s},{s},{s}\n", .{ item.title, item.desc, item.folder });
     }
 }
 
@@ -667,7 +667,7 @@ pub const FakeUGCEntry = struct {
     folder: []u8,
 };
 
-pub var steam_items: std.ArrayList(FakeUGCEntry) = .init(allocator);
+pub var steam_items: std.array_list.Managed(FakeUGCEntry) = .init(allocator);
 
 extern fn SteamAPI_Init() bool;
 pub fn init() !void {
@@ -677,18 +677,18 @@ pub fn init() !void {
         }
         return;
     } else {
-        const file = try std.fs.cwd().openFile("fake_steam/ugc.csv", .{});
+        const file = try std.fs.openFileAbsolute("/home/john/doc/rep/github.com/sandeee/fake_steam/ugc.csv", .{});
         defer file.close();
 
-        const reader = file.reader();
+        var reader_buffer: [1024]u8 = undefined;
+        var reader = file.reader(&reader_buffer);
 
-        while (reader.readUntilDelimiterOrEofAlloc(allocator, '\n', 1000) catch null) |buffer| {
-            defer allocator.free(buffer);
+        while (try reader.interface.takeDelimiter('\n')) |line| {
+            var split = std.mem.splitScalar(u8, line, ',');
 
-            var iter = std.mem.splitScalar(u8, buffer, ',');
-            const title = iter.next() orelse continue;
-            const desc = iter.next() orelse continue;
-            const folder = iter.next() orelse continue;
+            const title = split.next() orelse continue;
+            const desc = split.next() orelse continue;
+            const folder = split.next() orelse continue;
 
             try steam_items.append(.{
                 .title = try allocator.dupe(u8, title),

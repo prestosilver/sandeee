@@ -1,14 +1,13 @@
 const std = @import("std");
 const c = @import("../../c.zig");
 
-const system = @import("../mod.zig");
-
-const drawers = @import("../../drawers/mod.zig");
-const windows = @import("../../windows/mod.zig");
-const events = @import("../../events/mod.zig");
-const states = @import("../../states/mod.zig");
-const math = @import("../../math/mod.zig");
-const util = @import("../../util/mod.zig");
+const system = @import("../../system.zig");
+const drawers = @import("../../drawers.zig");
+const windows = @import("../../windows.zig");
+const events = @import("../../events.zig");
+const states = @import("../../states.zig");
+const math = @import("../../math.zig");
+const util = @import("../../util.zig");
 
 const Vm = system.Vm;
 const files = system.files;

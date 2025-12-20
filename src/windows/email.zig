@@ -2,14 +2,13 @@ const std = @import("std");
 const glfw = @import("glfw");
 const builtin = @import("builtin");
 
-const Windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -18,6 +17,8 @@ const Popup = drawers.Popup;
 const Rect = math.Rect;
 const Vec2 = math.Vec2;
 const Color = math.Color;
+
+const popups = windows.popups;
 
 const SpriteBatch = util.SpriteBatch;
 const Texture = util.Texture;
@@ -110,8 +111,8 @@ const EmailData = struct {
             });
 
             {
-                const text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.login_text[1], if (self.login_input != null and self.login_input.? == .Password) "|" else "" });
-                defer allocator.alloc.free(text);
+                const text = try std.fmt.allocPrint(allocator, "{s}{s}", .{ self.login_text[1], if (self.login_input != null and self.login_input.? == .Password) "|" else "" });
+                defer allocator.free(text);
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -136,8 +137,8 @@ const EmailData = struct {
             });
 
             {
-                const text = try std.fmt.allocPrint(allocator.alloc, "{s}{s}", .{ self.login_text[0], if (self.login_input != null and self.login_input.? == .Username) "|" else "" });
-                defer allocator.alloc.free(text);
+                const text = try std.fmt.allocPrint(allocator, "{s}{s}", .{ self.login_text[0], if (self.login_input != null and self.login_input.? == .Username) "|" else "" });
+                defer allocator.free(text);
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -209,8 +210,8 @@ const EmailData = struct {
                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
                 }
 
-                const text = try std.fmt.allocPrint(allocator.alloc, "{s} - {s}", .{ email.from, email.subject });
-                defer allocator.alloc.free(text);
+                const text = try std.fmt.allocPrint(allocator, "{s} - {s}", .{ email.from, email.subject });
+                defer allocator.free(text);
 
                 if (email.is_complete or inbox) {
                     try font.draw(.{
@@ -254,16 +255,16 @@ const EmailData = struct {
 
             const email = self.viewing.?;
 
-            const from = try std.fmt.allocPrint(allocator.alloc, "from: {s}", .{email.from});
-            defer allocator.alloc.free(from);
+            const from = try std.fmt.allocPrint(allocator, "from: {s}", .{email.from});
+            defer allocator.free(from);
             try font.draw(.{
                 .shader = font_shader,
                 .text = from,
                 .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 },
             });
 
-            const text = try std.fmt.allocPrint(allocator.alloc, "subject: {s}", .{email.subject});
-            defer allocator.alloc.free(text);
+            const text = try std.fmt.allocPrint(allocator, "subject: {s}", .{email.subject});
+            defer allocator.free(text);
             try font.draw(.{
                 .shader = font_shader,
                 .text = text,
@@ -297,8 +298,8 @@ const EmailData = struct {
 
         for (mail.EmailManager.instance.boxes, 0..) |box, idx| {
             if (idx == self.box) {
-                const text = try std.fmt.allocPrint(allocator.alloc, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
-                defer allocator.alloc.free(text);
+                const text = try std.fmt.allocPrint(allocator, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
+                defer allocator.free(text);
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -329,9 +330,9 @@ const EmailData = struct {
     pub fn submitFile(self: *Self) !void {
         const home = try files.FolderLink.resolve(.home);
 
-        const adds = try allocator.alloc.create(Popup.Data.popups.filepick.PopupFilePick);
+        const adds = try allocator.create(popups.filepick.PopupFilePick);
         adds.* = .{
-            .path = try allocator.alloc.dupe(u8, home.name),
+            .path = try allocator.dupe(u8, home.name),
             .data = self,
             .submit = @ptrCast(&submit),
         };
@@ -370,7 +371,7 @@ const EmailData = struct {
                         .Username => {
                             if (self.login_text[0].len == 0) return;
 
-                            self.login_text[0] = try allocator.alloc.realloc(
+                            self.login_text[0] = try allocator.realloc(
                                 self.login_text[0],
                                 self.login_text[0].len - 1,
                             );
@@ -378,7 +379,7 @@ const EmailData = struct {
                         .Password => {
                             if (self.login_text[1].len == 0) return;
 
-                            self.login_text[1] = try allocator.alloc.realloc(
+                            self.login_text[1] = try allocator.realloc(
                                 self.login_text[1],
                                 self.login_text[1].len - 1,
                             );
@@ -430,7 +431,7 @@ const EmailData = struct {
             //         if (library_idx + name_len < conts.len and std.mem.eql(u8, fnname, conts[library_idx .. library_idx + name_len])) {
             //             const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
 
-            //             var vm_instance = try Vm.init(allocator.alloc, files.home, "", true);
+            //             var vm_instance = try Vm.init(allocator, files.home, "", true);
             //             defer vm_instance.deinit();
 
             //             vm_instance.loadString(conts[start_idx .. start_idx + fnsize]) catch {
@@ -465,7 +466,7 @@ const EmailData = struct {
             // }
 
             if (!std.mem.startsWith(u8, conts, "EEEp")) return;
-            var vmInstance = try Vm.init(allocator.alloc, files.home, "", true);
+            var vmInstance = try Vm.init(allocator, files.home, "", true);
             defer vmInstance.deinit();
 
             // try vmInstance.input.appendSlice(input.items);
@@ -498,7 +499,7 @@ const EmailData = struct {
                         .SubmitRuns => |runs| blk: {
                             if (!std.mem.startsWith(u8, conts, "EEEp")) break :blk;
 
-                            var vm_instance: Vm = .init(allocator.alloc, .home, &.{}, true);
+                            var vm_instance: Vm = .init(allocator, .home, &.{}, true);
                             defer vm_instance.deinit();
 
                             if (runs.input) |input|
@@ -522,7 +523,7 @@ const EmailData = struct {
                                 if (library_idx + name_len < conts.len and std.mem.eql(u8, runs.libfn, conts[library_idx .. library_idx + name_len])) {
                                     const fnsize = @as(usize, @intCast(conts[library_idx + 1 + name_len])) * 256 + @as(usize, @intCast(conts[library_idx + 2 + name_len]));
 
-                                    var vm_instance: Vm = .init(allocator.alloc, .home, &.{}, true);
+                                    var vm_instance: Vm = .init(allocator, .home, &.{}, true);
                                     defer vm_instance.deinit();
 
                                     try vm_instance.loadString(conts[start_idx .. start_idx + fnsize]);
@@ -537,13 +538,13 @@ const EmailData = struct {
                                     const result = try vm_instance.popStack();
 
                                     var result_string: []const u8 = &.{};
-                                    defer allocator.alloc.free(result_string);
+                                    defer allocator.free(result_string);
                                     if (result.data().* == .value) {
-                                        allocator.alloc.free(result_string);
-                                        result_string = try std.fmt.allocPrint(allocator.alloc, "{}", .{result.data().value});
+                                        allocator.free(result_string);
+                                        result_string = try std.fmt.allocPrint(allocator, "{}", .{result.data().value});
                                     } else if (result.data().* == .string) {
-                                        allocator.alloc.free(result_string);
-                                        result_string = try std.fmt.allocPrint(allocator.alloc, "{f}", .{result.data().string});
+                                        allocator.free(result_string);
+                                        result_string = try std.fmt.allocPrint(allocator, "{f}", .{result.data().string});
                                     }
 
                                     good = good and std.ascii.eqlIgnoreCase(result_string, runs.conts);
@@ -569,14 +570,14 @@ const EmailData = struct {
                 // var iter = std.mem.split(u8, selected.condition.Submit.req, ";");
 
                 // var good = true;
-                // var input = std.ArrayList(u8).init(allocator.alloc);
+                // var input = std.ArrayList(u8).init(allocator);
                 // defer input.deinit();
 
                 // const total = std.mem.count(u8, selected.condition.Submit.req, ";") + 1;
-                // var threads = try allocator.alloc.alloc(std.Thread, total);
-                // var outputs = try allocator.alloc.alloc(bool, total);
-                // defer allocator.alloc.free(threads);
-                // defer allocator.alloc.free(outputs);
+                // var threads = try allocator(std.Thread, total);
+                // var outputs = try allocator(bool, total);
+                // defer allocator.free(threads);
+                // defer allocator.free(outputs);
 
                 // var idx: usize = 0;
 
@@ -746,16 +747,16 @@ const EmailData = struct {
                 switch (input) {
                     .Username => {
                         const old = self.login_text[0];
-                        defer allocator.alloc.free(old);
-                        self.login_text[0] = try std.mem.concat(allocator.alloc, u8, &.{
+                        defer allocator.free(old);
+                        self.login_text[0] = try std.mem.concat(allocator, u8, &.{
                             self.login_text[0],
                             &.{@as(u8, @intCast(codepoint))},
                         });
                     },
                     .Password => {
                         const old = self.login_text[1];
-                        defer allocator.alloc.free(old);
-                        self.login_text[1] = try std.mem.concat(allocator.alloc, u8, &.{
+                        defer allocator.free(old);
+                        self.login_text[1] = try std.mem.concat(allocator, u8, &.{
                             self.login_text[1],
                             &.{@as(u8, @intCast(codepoint))},
                         });
@@ -766,14 +767,14 @@ const EmailData = struct {
 
     pub fn deinit(self: *Self) void {
         for (self.login_text) |i|
-            allocator.alloc.free(i);
+            allocator.free(i);
 
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 };
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(EmailData);
+    const self = try allocator.create(EmailData);
 
     self.* = .{
         .divx = .atlas("ui", .{

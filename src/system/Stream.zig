@@ -1,0 +1,96 @@
+const std = @import("std");
+
+const system = @import("../system.zig");
+
+const util = @import("../util.zig");
+
+const allocator = util.allocator;
+const log = util.log;
+
+const files = system.files;
+const Vm = system.Vm;
+
+const Stream = @This();
+
+pub const StreamError = error{
+    OutOfMemory,
+    FileMissing,
+    UnknownError,
+} || files.FileError;
+
+path: []u8,
+contents: []u8,
+offset: u32,
+updated: bool,
+vm_instance: ?*Vm,
+
+pub fn open(root: *files.Folder, path: []const u8, vm_instance: ?*Vm) StreamError!*Stream {
+    if (path.len == 0) return error.FileMissing;
+
+    const folder = if (std.mem.startsWith(u8, path, "/"))
+        try (files.FolderLink.resolve(.root))
+    else
+        root;
+
+    const file = try folder.getFile(path);
+
+    const result = try allocator.create(Stream);
+    const conts = try file.read(vm_instance);
+
+    defer if (file.data != .disk) allocator.free(conts);
+
+    result.* = .{
+        .path = try allocator.dupe(u8, file.name),
+        .contents = try allocator.dupe(u8, conts),
+        .updated = false,
+        .vm_instance = vm_instance,
+        .offset = 0,
+    };
+
+    return result;
+}
+
+pub fn read(self: *Stream, len: u32) StreamError![]const u8 {
+    const target = @min(self.contents.len - self.offset, len);
+
+    const input = self.contents[self.offset .. self.offset + target];
+
+    const result = try allocator.dupe(u8, input);
+
+    self.offset += @as(u32, @intCast(target));
+
+    return result;
+}
+
+pub fn write(self: *Stream, data: []const u8) StreamError!void {
+    const targetsize = self.offset + data.len;
+
+    self.contents = try allocator.realloc(self.contents, targetsize);
+
+    @memcpy(self.contents[self.offset .. self.offset + data.len], data);
+
+    self.offset += @as(u32, @intCast(data.len));
+    self.updated = true;
+}
+
+pub fn flush(self: *Stream) StreamError!void {
+    const root = try files.FolderLink.resolve(.root);
+
+    if (self.updated)
+        try root.writeFile(self.path, self.contents, self.vm_instance);
+    self.updated = false;
+}
+
+pub fn deinit(self: *Stream) void {
+    if (self.updated)
+        std.log.warn("Deinit stream before flush", .{});
+
+    allocator.free(self.contents);
+    allocator.free(self.path);
+    allocator.destroy(self);
+}
+
+pub fn close(self: *Stream) !void {
+    try self.flush();
+    self.deinit();
+}

@@ -2,14 +2,13 @@ const std = @import("std");
 const options = @import("options");
 const c = @import("../c.zig");
 
-const Windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const Windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -31,8 +30,8 @@ const allocator = util.allocator;
 const graphics = util.graphics;
 const log = util.log;
 
-const VmManager = system.VmManager;
 const Shell = system.Shell;
+const Vm = system.Vm;
 const config = system.config;
 const files = system.files;
 
@@ -46,7 +45,7 @@ pub const TasksData = struct {
 
     panel: [2]Sprite,
     shader: *Shader,
-    stats: []VmManager.VMStats,
+    stats: []Vm.Manager.VMStats,
     render_graph: Graph,
     vm_graph: Graph,
 
@@ -90,8 +89,8 @@ pub const TasksData = struct {
 
         for (self.stats, 0..) |s, idx| {
             const y = bnds.h - 284 - 21 + @as(f32, @floatFromInt(idx)) * font.size - self.scroll_value;
-            const text = try std.fmt.allocPrint(allocator.alloc, "{X:2}|{s:<9}|" ++ strings.META ++ " {:<4} |" ++ strings.FRAME ++ " {:<4}", .{ s.id, s.name, s.meta_usage, s.last_exec });
-            defer allocator.alloc.free(text);
+            const text = try std.fmt.allocPrint(allocator, "{X:2}|{s:<9}|" ++ strings.META ++ " {:<4} |" ++ strings.FRAME ++ " {:<4}", .{ s.id, s.name, s.meta_usage, s.last_exec });
+            defer allocator.free(text);
 
             try font.draw(.{
                 .shader = font_shader,
@@ -168,38 +167,38 @@ pub const TasksData = struct {
 
     pub fn refresh(self: *Self) !void {
         for (self.stats) |stat| {
-            allocator.alloc.free(stat.name);
+            allocator.free(stat.name);
         }
 
-        allocator.alloc.free(self.stats);
+        allocator.free(self.stats);
 
-        self.stats = try VmManager.instance.getStats();
+        self.stats = try Vm.Manager.instance.getStats();
 
         std.mem.copyForwards(f32, self.vm_graph.data.data[0 .. self.vm_graph.data.data.len - 1], self.vm_graph.data.data[1..]);
         std.mem.copyForwards(f32, self.render_graph.data.data[0 .. self.render_graph.data.data.len - 1], self.render_graph.data.data[1..]);
 
-        var acc: f32 = @floatCast(VmManager.last_vm_time / VmManager.last_frame_time);
+        var acc: f32 = @floatCast(Vm.Manager.last_vm_time / Vm.Manager.last_frame_time);
         self.vm_graph.data.data[self.vm_graph.data.data.len - 1] = acc;
-        acc += @floatCast(VmManager.last_render_time / VmManager.last_frame_time);
+        acc += @floatCast(Vm.Manager.last_render_time / Vm.Manager.last_frame_time);
         self.render_graph.data.data[self.render_graph.data.data.len - 1] = acc;
     }
 
     pub fn deinit(self: *Self) void {
-        allocator.alloc.free(self.render_graph.data.data);
-        allocator.alloc.free(self.vm_graph.data.data);
+        allocator.free(self.render_graph.data.data);
+        allocator.free(self.vm_graph.data.data);
 
         for (self.stats) |stat| {
-            allocator.alloc.free(stat.name);
+            allocator.free(stat.name);
         }
 
-        allocator.alloc.free(self.stats);
+        allocator.free(self.stats);
 
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 };
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(TasksData);
+    const self = try allocator.create(TasksData);
     self.* = .{
         .panel = .{
             .atlas("ui", .{
@@ -230,15 +229,15 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
             }),
         },
         .shader = shader,
-        .stats = try VmManager.instance.getStats(),
+        .stats = try Vm.Manager.instance.getStats(),
         .render_graph = .atlas("white", .{
             .size = .{ .x = 100, .y = 100 },
-            .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
+            .data = try allocator.dupe(f32, &(.{0} ** 20)),
             .color = .{ .r = 0.5, .g = 0, .b = 0 },
         }),
         .vm_graph = .atlas("white", .{
             .size = .{ .x = 100, .y = 100 },
-            .data = try allocator.alloc.dupe(f32, &(.{0} ** 20)),
+            .data = try allocator.dupe(f32, &(.{0} ** 20)),
             .color = .{ .r = 1, .g = 0.5, .b = 0.5 },
         }),
     };

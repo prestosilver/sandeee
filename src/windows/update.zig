@@ -3,15 +3,14 @@ const builtin = @import("builtin");
 const options = @import("options");
 const c = @import("../c.zig");
 
-const Windows = @import("mod.zig");
-
-const drawers = @import("../drawers/mod.zig");
-const system = @import("../system/mod.zig");
-const states = @import("../states/mod.zig");
-const events = @import("../events/mod.zig");
-const math = @import("../math/mod.zig");
-const util = @import("../util/mod.zig");
-const data = @import("../data/mod.zig");
+const Windows = @import("../windows.zig");
+const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
+const states = @import("../states.zig");
+const events = @import("../events.zig");
+const math = @import("../math.zig");
+const util = @import("../util.zig");
+const data = @import("../data.zig");
 
 const Window = drawers.Window;
 
@@ -97,7 +96,7 @@ pub const UpdateData = struct {
         _ = pos;
         if (self.focused_link) {
             const idx = std.mem.lastIndexOf(u8, files.root_out.?, "/") orelse unreachable;
-            LogoutState.target_file = try allocator.alloc.dupe(u8, files.root_out.?[idx + 1 ..]);
+            LogoutState.target_file = try allocator.dupe(u8, files.root_out.?[idx + 1 ..]);
             LogoutState.target = .Update;
             try events.EventManager.instance.sendEvent(system_events.EventStateChange{
                 .target_state = .Logout,
@@ -106,12 +105,12 @@ pub const UpdateData = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        allocator.alloc.destroy(self);
+        allocator.destroy(self);
     }
 };
 
 pub fn init() !Window.Data.WindowContents {
-    const self = try allocator.alloc.create(UpdateData);
+    const self = try allocator.create(UpdateData);
 
     self.* = .{};
 

@@ -186,7 +186,7 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
     });
     asm_builder_mod.addAnonymousImport("sandeee_operation", .{
-        .root_source_file = b.path("src/system/vmoperation.zig"),
+        .root_source_file = b.path("src/system/Vm/Operation.zig"),
     });
     asm_builder_mod.addImport("options", options_module);
     const asm_builder_exe = b.addExecutable(.{
