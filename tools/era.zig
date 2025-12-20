@@ -31,8 +31,7 @@ pub fn main() !void {
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    var writer_buffer: [1024]u8 = undefined;
-    var writer = file.writer(&writer_buffer);
+    var writer = file.writer(&.{});
 
     var inreader = try std.fs.openFileAbsolute(input_file, .{});
     defer inreader.close();

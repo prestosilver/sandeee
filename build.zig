@@ -38,7 +38,7 @@ pub inline fn addConvertFile(
 ) void {
     var current_file = input;
 
-    inline for (converters, args, 0..) |converter, arg, idx| {
+    for (converters, args, 0..) |converter, arg, idx| {
         const new_step = b.addRunArtifact(converter);
         new_step.addArgs(arg);
         new_step.addFileArg(current_file);
@@ -293,6 +293,7 @@ pub fn build(b: *std.Build) !void {
     const steam_image_path = steam_image_step.addOutputFileArg("steam_recovery.eee");
 
     const overlays_path = content_path.path(b, "overlays");
+    const eon_lib_path = content_path.path(b, "eon");
 
     {
         const paths_file = content_path.path(b, "overlays/paths.txt");
@@ -332,6 +333,8 @@ pub fn build(b: *std.Build) !void {
 
     addOverlay(b, &.{ steam_image_step, disk_image_step, debug_image_step }, overlays_path.path(b, "base"));
 
+    const eon_lib_path_str = eon_lib_path.getPath(b);
+
     // debug files
     addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/eep/asm/hello.eep");
     addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/tests/window.asm"), "/prof/tests/eep/asm/window.eep");
@@ -340,14 +343,14 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/tests/arraytest.asm"), "/prof/tests/eep/asm/arraytest.eep");
     addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/tests/audiotest.asm"), "/prof/tests/eep/asm/audiotest.eep");
     addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/tests/tabletest.asm"), "/prof/tests/eep/asm/tabletest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/input.eon"), "/prof/tests/eep/eon/input.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/console.eon"), "/prof/tests/eep/eon/console.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/color.eon"), "/prof/tests/eep/eon/color.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/bugs.eon"), "/prof/tests/eep/eon/bugs.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/tabletest.eon"), "/prof/tests/eep/eon/tabletest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/heaptest.eon"), "/prof/tests/eep/eon/heaptest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/stringtest.eon"), "/prof/tests/eep/eon/stringtest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/tests/paren.eon"), "/prof/tests/eep/eon/paren.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/input.eon"), "/prof/tests/eep/eon/input.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/console.eon"), "/prof/tests/eep/eon/console.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/color.eon"), "/prof/tests/eep/eon/color.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/bugs.eon"), "/prof/tests/eep/eon/bugs.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/tabletest.eon"), "/prof/tests/eep/eon/tabletest.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/heaptest.eon"), "/prof/tests/eep/eon/heaptest.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/stringtest.eon"), "/prof/tests/eep/eon/stringtest.eep");
+    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/paren.eon"), "/prof/tests/eep/eon/paren.eep");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/src/asm/hello.asm");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/src/asm/fib.asm");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/exec/eon.eon"), "/prof/tests/src/eon/eon.eon");
@@ -357,7 +360,7 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{debug_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/debug.png"), "/cont/icns/debug.eia");
     addConvertFile(b, &.{debug_image_step}, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/redbone.wav"), "/cont/snds/redbone.era");
 
-    addConvertFile(b, &.{ debug_image_step, steam_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/steamtool.eon"), "/exec/steamtool.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/steamtool.eon"), "/exec/steamtool.eep");
 
     // base images
     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/email-logo.png"), "/cont/imgs/email-logo.eia");
@@ -392,21 +395,21 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEEJoke.png"), "/cont/fnts/SandEEEJoke.eff");
 
     // executables
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/epkman.eon"), "/exec/epkman.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/eon.eon"), "/exec/eon.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/stat.eon"), "/exec/stat.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/player.eon"), "/exec/player.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/asm.eon"), "/exec/asm.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/pix.eon"), "/exec/pix.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/elib.eon"), "/exec/elib.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"exe"}, &.{"exe"} }, content_path.path(b, "eon/exec/alib.eon"), "/exec/alib.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/epkman.eon"), "/exec/epkman.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/eon.eon"), "/exec/eon.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/stat.eon"), "/exec/stat.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/player.eon"), "/exec/player.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/asm.eon"), "/exec/asm.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/pix.eon"), "/exec/pix.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/elib.eon"), "/exec/elib.eep");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/alib.eon"), "/exec/alib.eep");
 
     // libraries
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"lib"}, &.{"lib"} }, content_path.path(b, "eon/libs/ui.eon"), "/libs/ui.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"lib"}, &.{"lib"} }, content_path.path(b, "eon/libs/heap.eon"), "/libs/heap.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"lib"}, &.{"lib"} }, content_path.path(b, "eon/libs/table.eon"), "/libs/table.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"lib"}, &.{"lib"} }, content_path.path(b, "eon/libs/asm.eon"), "/libs/asm.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{"lib"}, &.{"lib"} }, content_path.path(b, "eon/libs/eon.eon"), "/libs/eon.ell");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/ui.eon"), "/libs/ui.ell");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/heap.eon"), "/libs/heap.ell");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/table.eon"), "/libs/table.ell");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/asm.eon"), "/libs/asm.ell");
+    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/eon.eon"), "/libs/eon.ell");
     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/string.asm"), "/libs/string.ell");
     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/window.asm"), "/libs/window.ell");
     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/texture.asm"), "/libs/texture.ell");
@@ -724,7 +727,7 @@ pub fn build(b: *std.Build) !void {
 
     headless_step.dependOn(&headless_cmd.step);
 
-    const install_disk_tests = b.addInstallFile(debug_image_path, "../content/recovery.eee");
+    const install_disk_tests = b.addInstallFile(debug_image_path, "bin/content/recovery.eee");
 
     const exe_tests = b.addTest(.{
         .root_module = exe_mod,

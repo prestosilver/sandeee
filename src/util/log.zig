@@ -53,13 +53,14 @@ pub fn sandEEELogFn(
 
     // Print the message to stderr, silently ignoring any errors
     if (@import("builtin").mode == .Debug) {
-        const stderr = std.io.getStdErr().writer();
-        nosuspend stderr.print(color ++ prefix ++ format ++ "\x1b[m\n", args) catch return;
+        const stderr: std.fs.File = .stderr();
+        var writer = stderr.writer(&.{});
+
+        nosuspend writer.interface.print(color ++ prefix ++ format ++ "\x1b[m\n", args) catch return;
     }
 
     if (log_file) |file| {
-        var writer_buffer: [1024]u8 = undefined;
-        var writer = file.writer(&writer_buffer);
+        var writer = file.writer(&.{});
         nosuspend writer.interface.print(prefix ++ format ++ "\n", args) catch return;
     }
 

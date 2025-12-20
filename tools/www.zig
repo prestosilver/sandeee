@@ -114,8 +114,7 @@ pub const EpkFileStep = struct {
         const file = try std.fs.createFileAbsolute(path, .{});
         defer file.close();
 
-        const writer_buffer: [1024]u8 = undefined;
-        const writer = file.writer(&writer_buffer);
+        const writer = file.writer(&.{});
 
         try writer.writeAll("epak");
 

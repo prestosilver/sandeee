@@ -21,7 +21,7 @@ jobs:
       - name: Summary results
         if: always()
         run: |
-          cat test_output.md >> $GITHUB_STEP_SUMMARY
+          cat zig-out/test_output.md >> $GITHUB_STEP_SUMMARY
   tests-rel:
     runs-on: ubuntu-latest
     name: Run tests (release)
@@ -41,4 +41,4 @@ jobs:
       - name: Summary results
         if: always()
         run: |
-          cat test_output.md >> $GITHUB_STEP_SUMMARY
+          cat zig-out/test_output.md >> $GITHUB_STEP_SUMMARY

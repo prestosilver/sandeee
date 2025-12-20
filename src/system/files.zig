@@ -18,6 +18,11 @@ const fake = @import("pseudo/mod.zig");
 
 pub var named_paths: std.EnumArray(NamedPath, ?*Folder) = .initFill(null);
 
+const root_prefix = if (builtin.is_test)
+    "zig-out/bin/"
+else
+    "";
+
 pub const NamedPath = enum {
     root,
     home,
@@ -370,7 +375,7 @@ pub const Folder = struct {
     pub fn setupDisk(disk_name: []const u8, settings: []const u8) !void {
         const d = std.fs.cwd();
 
-        const recovery = try d.openFile("content/recovery.eee", .{});
+        const recovery = try d.openFile(root_prefix ++ "content/recovery.eee", .{});
         defer recovery.close();
 
         var root = try loadDisk(recovery);
@@ -386,7 +391,7 @@ pub const Folder = struct {
 
         try conf.write(settings_out, null);
 
-        const out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{disk_name});
+        const out = try std.fmt.allocPrint(allocator.alloc, root_prefix ++ "disks/{s}", .{disk_name});
         defer allocator.alloc.free(out);
 
         const file = try std.fs.cwd().createFile(out, .{});
@@ -398,7 +403,7 @@ pub const Folder = struct {
     pub fn recoverDisk(disk_name: []const u8, override_settings: bool) !void {
         const d = std.fs.cwd();
 
-        const out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{disk_name});
+        const out = try std.fmt.allocPrint(allocator.alloc, root_prefix ++ "disks/{s}", .{disk_name});
         defer allocator.alloc.free(out);
 
         const out_file = try d.openFile(out, .{ .mode = .read_write });
@@ -407,7 +412,7 @@ pub const Folder = struct {
         var root_disk = try loadDisk(out_file);
         defer root_disk.deinit();
 
-        const recovery = try d.openFile("content/recovery.eee", .{});
+        const recovery = try d.openFile(root_prefix ++ "content/recovery.eee", .{});
         defer recovery.close();
 
         var rec_disk = try loadDisk(recovery);
@@ -469,7 +474,7 @@ pub const Folder = struct {
         }
 
         if (input_disk_path) |diskPath| {
-            const user_disk_out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskPath});
+            const user_disk_out = try std.fmt.allocPrint(allocator.alloc, root_prefix ++ "disks/{s}", .{diskPath});
             defer allocator.alloc.free(user_disk_out);
 
             var user_disk = try std.fs.cwd().openFile(user_disk_out, .{});
@@ -487,7 +492,7 @@ pub const Folder = struct {
 
             root.folders = fake_root;
 
-            root_out = try std.fmt.allocPrint(allocator.alloc, "disks/{s}", .{diskPath});
+            root_out = try std.fmt.allocPrint(allocator.alloc, root_prefix ++ "disks/{s}", .{diskPath});
 
             if (root.getFolder("/prof") catch null) |folder| {
                 named_paths.set(.home, folder);

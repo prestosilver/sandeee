@@ -464,7 +464,9 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
 
 var graphics_init = false;
 
-pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+pub const panic = std.debug.FullPanic(fullPanic);
+
+fn fullPanic(msg: []const u8, _: ?usize) noreturn {
     defer {
         log.deinit();
 
@@ -482,14 +484,14 @@ pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, _: ?usize) noretu
     error_state = @intFromEnum(current_state);
 
     // panic log asap
-    const st = panic_handler.log(trace);
-    error_message = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}\n\n{?f}", .{ msg, st, trace }) catch {
-        std.process.exit(1);
-    };
+    // const st = panic_handler.log(trace);
+    // error_message = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}\n\n{?f}", .{ msg, st, trace }) catch {
+    //     std.process.exit(1);
+    // };
 
     std.fs.cwd().writeFile(.{
         .sub_path = "CrashLog.txt",
-        .data = error_message,
+        .data = msg,
     }) catch {};
 
     // no display on headless
@@ -547,6 +549,7 @@ pub fn print_help(path: []const u8, comptime reason: []const u8, reason_params: 
         \\--no-crt         Disable the crt shader
         \\--no-thread      Disable threading
         \\--headless       Headless mode
+        \\--disk [path]    Boot to the specified disk
         \\--headless-cmd   Run a command in headless mode then exit
         \\
     , reason_params ++ .{path});
@@ -591,6 +594,9 @@ pub fn main() void {
                 LoadingState.no_load_thread = true;
             } else if (std.mem.eql(u8, arg, "--headless")) {
                 headless.is_headless = true;
+            } else if (std.mem.eql(u8, arg, "--disk")) {
+                headless.disk = args.next() orelse
+                    print_help(cmd_path, "Expected disk file path", .{});
             } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
                 if (args.next()) |script| {
                     const buff = allocator.alloc.alloc(u8, 1024) catch @panic("out of memory");
@@ -625,12 +631,13 @@ pub fn main() void {
 
             const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
 
-            panic(msg, @errorReturnTrace(), null);
+            @panic(msg);
         };
     }
 
     std.fs.cwd().access("disks", .{}) catch
-        std.fs.cwd().makeDir("disks") catch panic("Cannot make disks directory.", @errorReturnTrace(), null);
+        std.fs.cwd().makeDir("disks") catch
+        @panic("Cannot make disks directory.");
 
     runGame() catch |err| {
         const name = switch (err) {
@@ -646,7 +653,7 @@ pub fn main() void {
 
         const msg = std.fmt.allocPrint(allocator.alloc, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
 
-        panic(msg, @errorReturnTrace(), null);
+        @panic(msg);
     };
 
     std.log.info("Done", .{});
@@ -944,10 +951,11 @@ pub fn runGame() anyerror!void {
 
     // setup state machine
     var prev = current_state;
+    const target_fps: f32 = 60;
 
     // fps tracker stats
     var fps: usize = 0;
-    var timer: std.time.Timer = try std.time.Timer.start();
+    var timer: std.time.Timer = try .start();
     var last_frame_end: f64 = 0;
 
     glfw.setTime(0);
@@ -963,20 +971,8 @@ pub fn runGame() anyerror!void {
         // pause the game on minimize
         if (glfw.getWindowAttrib(graphics.Context.instance.window, glfw.Iconified) == 0) {
 
-            // steam callbacks
-            // if (options.IsSteam) {
-            //     const cb = struct {
-            //         fn callback(callbackMsg: steam.CallbackMsg) anyerror!void {
-            //             _ = callbackMsg;
-            //             //log.log.warn("steam callback {}", .{callbackMsg.callback});
-            //         }
-            //     }.callback;
-
-            //     try steam.manualCallback(cb);
-            // }
-
             // update the game state
-            try state.update(@max(1 / 60, @as(f32, @floatCast(VmManager.last_frame_time))));
+            try state.update(@max(1 / target_fps, @as(f32, @floatCast(VmManager.last_frame_time))));
 
             // get tris
             try state.draw(graphics.Context.instance.size);
@@ -994,16 +990,13 @@ pub fn runGame() anyerror!void {
 
             try VmManager.instance.runGc();
 
-            final_fps = @as(u32, @intFromFloat(@as(f64, @floatFromInt(fps)) / @as(f64, @floatFromInt(lap)) * @as(f64, @floatFromInt(std.time.ns_per_s))));
+            final_fps = @intCast(fps / lap * std.time.ns_per_s);
             if (VmManager.instance.vms.count() != 0 and final_fps != 0) {
-                if (final_fps < 55) {
-                    VmManager.vm_time -= 0.01;
-                }
+                // TODO: move these into settings
+                if (final_fps < target_fps - 5) VmManager.vm_time -= 0.01;
+                if (final_fps > target_fps - 2) VmManager.vm_time += 0.01;
 
-                if (final_fps > 58) {
-                    VmManager.vm_time += 0.01;
-                }
-
+                // limit goals for auto vm time calibration
                 VmManager.vm_time = std.math.clamp(VmManager.vm_time, 0.25, 0.9);
             }
 
@@ -1018,13 +1011,11 @@ pub fn runGame() anyerror!void {
 
             // run setup
             try game_states.getPtr(current_state).setup();
-
-            // try batch.SpriteBatch.instance.clear();
         } else {
             // track update time
             VmManager.last_update_time = glfw.getTime() - start_time;
 
-            // render this is in else to fix single frame bugs
+            // this render is in else to fix single frame bugs
             try blit();
             fps += 1;
 

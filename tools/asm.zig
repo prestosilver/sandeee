@@ -27,8 +27,7 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    var writer_buffer: [1024]u8 = undefined;
-    var writer = file.writer(&writer_buffer);
+    var writer = file.writer(&.{});
 
     var reader_buffer: [1024]u8 = undefined;
     var reader_stream = inreader.reader(&reader_buffer);
@@ -178,8 +177,7 @@ pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
     var file = try std.fs.createFileAbsolute(output_file, .{});
     defer file.close();
 
-    var writer_buffer: [1024]u8 = undefined;
-    var writer = file.writer(&writer_buffer);
+    var writer = file.writer(&.{});
 
     var toc = std.array_list.Managed(u8).init(allocator);
     var data = std.array_list.Managed(u8).init(allocator);

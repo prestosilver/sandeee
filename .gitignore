@@ -6,9 +6,11 @@ tmp$
 disk.eee
 test.eep
 test.asm
+disks/headless.eee
 out.zip
 content/disk
 content/default.eee
+content/recovery.eee
 content/emails.eme
 content/app.res.obj
 **/\>
@@ -33,3 +35,4 @@ assets/docs_pres.html
 assets/presentations/docs_pres.html
 tmp
 **/*.blend1
+test_output.md

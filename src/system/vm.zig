@@ -846,7 +846,18 @@ pub fn loadList(self: *Vm, ops: []Operation) !void {
 pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(Operation) {
     var ops: std.array_list.Managed(Operation) = .init(self.allocator);
     errdefer {
-        log.warn("Vm ops failed at {any}", .{ops.items});
+        var tmp: std.array_list.Managed(u8) = .init(self.allocator);
+        defer tmp.deinit();
+        tmp.print("{{", .{}) catch unreachable;
+        for (ops.items, 0..) |item, idx| {
+            if (idx != 0)
+                tmp.print(", ", .{}) catch unreachable;
+
+            tmp.print("{f}", .{item}) catch unreachable;
+        }
+        tmp.print("}}", .{}) catch unreachable;
+
+        log.warn("Vm ops failed at {s}", .{tmp.items});
         ops.deinit();
     }
 
@@ -856,10 +867,12 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(
             return error.InvalidAsm;
         }
         const code: Operation.Code = std.meta.intToEnum(Operation.Code, conts[parse_ptr]) catch {
+            std.log.warn("couldnt grab code", .{});
             return error.InvalidAsm;
         };
         parse_ptr += 1;
         if (parse_ptr >= conts.len) {
+            std.log.warn("Half made op", .{});
             return error.InvalidAsm;
         }
         const kind = conts[parse_ptr];
@@ -895,6 +908,7 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(
         } else if (kind == 0) {
             try ops.append(Vm.Operation{ .code = code });
         } else {
+            std.log.warn("Invalid op kind", .{});
             return error.InvalidAsm;
         }
     }

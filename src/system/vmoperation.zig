@@ -62,7 +62,7 @@ value: ?u64 = null,
 
 pub fn format(self: Operation, writer: anytype) !void {
     if (self.string) |string| {
-        return writer.print("{s} \"{s}\"", .{ @tagName(self.code), string });
+        return writer.print("{s} \"{f}\"", .{ @tagName(self.code), std.ascii.hexEscape(string, .lower) });
     } else if (self.value) |value| {
         return writer.print("{s} {}", .{ @tagName(self.code), value });
     } else {

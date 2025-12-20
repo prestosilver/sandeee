@@ -14,10 +14,12 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
-// TODO: unhardcode
-const DISK = "headless.eee";
-
 const USE_POSIX = builtin.os.tag == .linux;
+
+const root_prefix = if (builtin.is_test)
+    "zig-out/bin/"
+else
+    "";
 
 pub fn write_console(stdout: *std.fs.File.Writer, input: []const u8) !void {
     const text = try sandeee_data.strings.eeeCHToANSI(input);
@@ -32,6 +34,7 @@ pub var input_mutex: std.Thread.Mutex = .{};
 pub var input_queue: [128]u8 = undefined;
 pub var last_input: usize = 0;
 pub var last_processed_input: usize = 0;
+pub var disk = "headless.eee";
 
 pub fn pushInput(input: u8) !void {
     if (last_input == last_processed_input)
@@ -66,7 +69,7 @@ fn inputLoop() void {
     }
 }
 
-pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) anyerror!void {
+pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Writer) anyerror!void {
     if (!USE_POSIX) {
         const c = @cImport({
             @cInclude("windows.h");
@@ -116,23 +119,23 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
     if (!builtin.is_test)
         _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
-    const diskpath = try storage.getContentPath("disks/" ++ DISK);
+    const diskpath = try storage.getContentPath(root_prefix ++ "disks/" ++ disk);
     defer diskpath.deinit();
 
     std.fs.cwd().access(diskpath.items, .{}) catch {
-        try files.Folder.setupDisk(DISK, "");
+        try files.Folder.setupDisk(disk, "");
     };
 
-    try files.Folder.init(DISK);
+    try files.Folder.init(disk);
 
     defer files.deinit();
 
     var main_shell = Shell{ .root = .home, .headless = true };
 
-    const stdout_file: std.fs.File = logging orelse .stdout();
+    var stdout_file: std.fs.File = .stdout();
+    var stdout_file_writer = stdout_file.writer(&.{});
 
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout = stdout_file.writer(&stdout_buffer);
+    const stdout: *std.fs.File.Writer = logging orelse &stdout_file_writer;
 
     const stdin_file: std.fs.File = .stdin();
 
@@ -160,8 +163,9 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 
     var input_buffer = std.array_list.Managed(u8).init(allocator.alloc);
     try input_buffer.appendSlice(cmd);
+    defer input_buffer.clearAndFree();
 
-    _ = try write_console(&stdout, strings.CLEAR ++ "Welcome To Sh" ++ strings.EEE ++ "l\n");
+    try write_console(stdout, strings.CLEAR ++ "Welcome To Sh" ++ strings.EEE ++ "l\n");
 
     var done = false;
     var got_input = false;
@@ -175,10 +179,10 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
             // setup vm data for update
             const result_data = try main_shell.getVMResult();
             if (result_data) |result|
-                try write_console(&stdout, result.data);
+                try write_console(stdout, result.data);
 
             if (main_shell.vm == null)
-                try write_console(&stdout, "\n");
+                try write_console(stdout, "\n");
 
             continue;
         }
@@ -188,8 +192,8 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
             const prompt = try main_shell.getPrompt();
             defer allocator.alloc.free(prompt);
 
-            try write_console(&stdout, strings.COLOR_WHITE);
-            try write_console(&stdout, prompt);
+            try write_console(stdout, strings.COLOR_WHITE);
+            try write_console(stdout, prompt);
         }
 
         if (input_buffer.items.len == 0) {
@@ -213,23 +217,23 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
                         continue;
                     },
                     '\n' => {
-                        try write_console(&stdout, "\n");
+                        try write_console(stdout, "\n");
                         break;
                     },
                     '\x1b' => {
-                        try write_console(&stdout, "\x1b");
+                        try write_console(stdout, "\x1b");
                         try input_buffer.append(ch);
                     },
                     '\x08' => {
                         if (input_buffer.pop()) |_|
-                            try write_console(&stdout, strings.UNDO);
+                            try write_console(stdout, strings.UNDO);
                     },
                     else => {
                         if (std.ascii.isControl(ch)) {
                             try stdout.interface.print("\\X{X:02}", .{ch});
                             try input_buffer.append(ch);
                         } else {
-                            try write_console(&stdout, &.{ch});
+                            try write_console(stdout, &.{ch});
                             try stdout.interface.print("{c}", .{ch});
                             try input_buffer.append(ch);
                         }
@@ -262,14 +266,14 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
             defer allocator.alloc.free(result.data);
 
             if (result.data.len != 0) {
-                try write_console(&stdout, result.data);
+                try write_console(stdout, result.data);
 
                 if (result.data[result.data.len - 1] != '\n')
-                    try write_console(&stdout, "\n");
+                    try write_console(stdout, "\n");
             }
 
             if (result.clear)
-                try write_console(&stdout, strings.CLEAR);
+                try write_console(stdout, strings.CLEAR);
 
             if (result.exit)
                 done = true;
@@ -283,15 +287,17 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?std.fs.File) an
 }
 
 test "Headless scripts" {
-    std.fs.cwd().access("disks", .{}) catch
-        std.fs.cwd().makeDir("disks") catch
+    std.fs.cwd().access("zig-out/bin/disks", .{}) catch
+        std.fs.cwd().makeDir("zig-out/bin/disks") catch
         @panic("Cannot make disks directory.");
 
     VmManager.vm_time = 1.0;
     VmManager.last_frame_time = 10.0;
 
-    var logging = try std.fs.cwd().createFile("test_output.md", .{});
-    defer logging.close();
+    var logging_file = try std.fs.cwd().createFile("zig-out/test_output.md", .{});
+    defer logging_file.close();
+
+    var logging = logging_file.writer(&.{});
 
     var start_cwd = try std.fs.cwd().openDir("tests", .{
         .iterate = true,
@@ -301,19 +307,21 @@ test "Headless scripts" {
     var iter = try start_cwd.walk(std.testing.allocator);
     defer iter.deinit();
 
-    var err: ?anyerror!void = null;
+    var err: ?anyerror = null;
 
     while (try iter.next()) |entry| {
         if (entry.kind != .file) continue;
+
+        std.fs.cwd().deleteFile("zig-out/bin/disks/headless.eee") catch {};
 
         VmManager.instance = .{};
 
         // deinit vm manager
         defer VmManager.instance.deinit();
 
-        _ = try logging.write("# ");
-        _ = try logging.write(entry.path);
-        _ = try logging.write("\n```\n");
+        try logging.interface.writeAll("# ");
+        try logging.interface.writeAll(entry.path);
+        try logging.interface.writeAll("\n```\n");
 
         var file = try start_cwd.openFile(entry.path, .{});
         defer file.close();
@@ -323,19 +331,18 @@ test "Headless scripts" {
 
         var success = true;
 
-        main(conts, true, logging) catch |res| {
+        main(conts, true, &logging) catch |res| {
             err = res;
 
-            _ = try logging.write("```\n\n");
-            _ = try logging.write(@errorName(res));
-            _ = try logging.write("\n\n");
+            try logging.interface.writeAll("```\n\n");
+            try logging.interface.writeAll(@errorName(res));
+            try logging.interface.writeAll("\n\n");
             success = false;
         };
 
         if (success) {
-            _ = try logging.write("```\n\n");
-
-            _ = try logging.write("Success!\n\n");
+            try logging.interface.writeAll("```\n\n");
+            try logging.interface.writeAll("Success!\n\n");
         }
     }
 
