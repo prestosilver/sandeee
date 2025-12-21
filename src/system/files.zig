@@ -56,6 +56,18 @@ pub const FolderLink = union(LinkKind) {
             .valid => |v| return v,
         }
     }
+
+    pub fn format(self: FolderLink, writer: anytype) !void {
+        switch (self) {
+            .named => |n| {
+                if (named_paths.get(n)) |named|
+                    return named.format(writer)
+                else
+                    return writer.print("?{s}?", .{@tagName(n)});
+            },
+            .valid => |v| return v.format(writer),
+        }
+    }
 };
 
 pub var root_out: ?[]const u8 = null;
@@ -140,10 +152,13 @@ pub const File = struct {
     lock: std.Thread.Mutex = .{},
     parent: FolderLink,
     name: []const u8,
-
     next_sibling: ?*File = null,
 
     data: FileData,
+
+    pub fn format(self: File, writer: anytype) !void {
+        try writer.writeAll(self.name);
+    }
 
     pub fn size(self: *const File) FileError!usize {
         switch (self.data) {
@@ -259,6 +274,10 @@ pub const Folder = struct {
         files_visited: bool = false,
         folders_visited: bool = false,
     } = null,
+
+    pub fn format(self: Folder, writer: anytype) !void {
+        try writer.writeAll(self.name);
+    }
 
     const FolderItemKind = enum { folder, file };
     pub const FolderItem = struct {
@@ -690,6 +709,7 @@ pub const Folder = struct {
     pub fn newFile(self: *Folder, name: []const u8) FileError!void {
         if (std.mem.containsAtLeast(u8, name, 1, " ")) {
             log.err("space in file name '{s}'", .{name});
+
             return error.InvalidFileName;
         }
 

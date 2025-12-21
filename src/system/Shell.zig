@@ -221,10 +221,10 @@ fn runFile(self: *Shell, cmd: []const u8, param: *Params) !Result {
         } else |err| {
             switch (err) {
                 error.FileNotFound => {
-                    log.warn("File not found {s} {s} in {}", .{ cmd, param.rest(), dir });
+                    log.warn("File not found {s}[{s}] in {f}", .{ cmd, param.rest(), dir });
                 },
                 error.InvalidFileType => {
-                    log.warn("Bad filetype {s} {s} in {}", .{ cmd, param.rest(), dir });
+                    log.warn("Bad filetype {s}[{s}] in {f}", .{ cmd, param.rest(), dir });
                 },
                 else => return err,
             }

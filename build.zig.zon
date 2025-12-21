@@ -1,6 +1,7 @@
 .{
     .name = .SandEEE,
     .version = "0.0.0",
+    .minimum_zig_version = "0.15.2",
     .fingerprint = 0x235618a7935966bd,
     .dependencies = .{
         .network = .{
@@ -11,16 +12,25 @@
             .url = "git+https://github.com/zigimg/zigimg.git#eab2522c023b9259db8b13f2f90d609b7437e5f6",
             .hash = "zigimg-0.1.0-8_eo2vUZFgAAtN1c6dAO5DdqL0d4cEWHtn6iR5ucZJti",
         },
-        .zglfw = .{
-            .url = "git+https://github.com/IridescenceTech/zglfw#e05188a71db6053ec56bba83a27fb736a26562ce",
-            .hash = "zglfw-0.1.0-BghZXabUAACfsXVTPWvmy44XLsc-wux2G9w8Mbp523pJ",
-        },
         .zgl = .{
             .url = "git+https://github.com/ziglibs/zgl#6ee54c287f3c4f176bd05a92746828bb791a1ad0",
             .hash = "zgl-1.1.0-p_NpAJNECgCzUGx0aF5KFsmD5VOwfw8LaOsN0fcoU2bi",
         },
+        .zglfw = .{
+            .url = "git+https://github.com/prestosilver/zglfw#bae61173266d923b0c07f9bc9cc703a8f5a96219",
+            .hash = "zglfw-0.1.0-BghZXaTUAACGayXkH2tKJKfpr_CpHpDyIxTbPKjquaXC",
+        },
+        // .zig_steamworks_fake = .{
+        //     .url = "git+https://github.com/prestosilver/zig-steamworks-fake#e35597e768863b9d19698e8948bd4a336f4f4601",
+        //     .hash = "zig_steamworks_fake-0.0.0-3i7XFq1lAAD953PC02OUP_PUtQELs6b-Pawie0SVEnDQ",
+        // },
+        .zig_steamworks_fake = .{
+            .path = "../zig-steamworks-fake",
+        },
     },
     .paths = .{
+        "assets",
+        "content",
         "build.zig",
         "build.zig.zon",
         "src",

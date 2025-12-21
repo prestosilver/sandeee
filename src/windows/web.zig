@@ -68,7 +68,7 @@ pub const WebData = struct {
                             return try allocator.dupe(u8, "Error: Invalid item page");
                         };
 
-                        return steamItem(.{ .id = page_idx }, url) catch |err|
+                        return steamItem(@enumFromInt(page_idx), url) catch |err|
                             try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
                     } else {
                         return try allocator.dupe(u8, "Error: Bad steam link");
@@ -256,9 +256,9 @@ pub const WebData = struct {
     pub fn steamList(page: u32, mine: bool, query_text: [:0]const u8) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const query = if (mine)
-            ugc.createUserQueryRequest(steam.getUser().getSteamId(), .Published, 0, .CreateAsc, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1)
+            ugc.createUserQueryRequest(steam.getUser().getSteamId(), .published, 0, .create_asc, .none, .this_app, page + 1)
         else
-            ugc.createQueryRequest(.RankedByVote, .Items, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
+            ugc.createQueryRequest(.ranked_by_vote, .items, .none, .this_app, page + 1);
 
         // const query = ugc.createUserQueryRequest(steam.getUser().getSteamId(), .Published, 0, .CreateAsc, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
         defer query.deinit(ugc);
@@ -310,7 +310,7 @@ pub const WebData = struct {
                 const title_text = try std.fmt.allocPrint(allocator, "--- {s} ---", .{details.title});
                 defer allocator.free(title_text);
 
-                const desc_text = try std.fmt.allocPrint(allocator, "{s}\n> link: $item{}:", .{ details.desc, details.file_id.id });
+                const desc_text = try std.fmt.allocPrint(allocator, "{s}\n> link: $item{}:", .{ details.desc, @intFromEnum(details.file_id) });
                 defer allocator.free(desc_text);
 
                 conts = try std.mem.concat(allocator, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
@@ -320,11 +320,11 @@ pub const WebData = struct {
 
                 const title: [*:0]u8 = @ptrCast(&details.title);
 
-                const title_text = try std.fmt.allocPrint(allocator, "--- {s} ---", .{title[0..std.mem.len(title)]});
+                const title_text = try std.fmt.allocPrint(allocator, "--- {s} ---", .{std.mem.span(title)});
                 defer allocator.free(title_text);
 
                 const desc: [*:0]u8 = @ptrCast(&details.desc);
-                const desc_text = try std.fmt.allocPrint(allocator, "{s}\n> link: $item{}:", .{ desc[0..std.mem.len(desc)], details.file_id.id });
+                const desc_text = try std.fmt.allocPrint(allocator, "{s}\n> link: $item{}:", .{ std.mem.span(desc), @intFromEnum(details.file_id) });
                 defer allocator.free(desc_text);
 
                 conts = try std.mem.concat(allocator, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
@@ -379,7 +379,7 @@ pub const WebData = struct {
         if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp))
             return error.SteamDownloadError;
 
-        const folder_pointer = folder[0..std.mem.len(@as([*:0]u8, @ptrCast(&folder)))];
+        const folder_pointer = std.mem.span(@as([*:0]u8, @ptrCast(&folder)));
 
         const file_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ folder_pointer, url.path });
         defer allocator.free(file_path);
@@ -416,9 +416,9 @@ pub const WebData = struct {
         var iter = walker.iterate();
 
         var conts = if (std.mem.eql(u8, url.path, ""))
-            try std.fmt.allocPrint(allocator, "Contents of $item{}:/", .{id.id})
+            try std.fmt.allocPrint(allocator, "Contents of $item{}:/", .{@intFromEnum(id)})
         else
-            try std.fmt.allocPrint(allocator, "Contents of $item{}:{s}", .{ id.id, url.path });
+            try std.fmt.allocPrint(allocator, "Contents of $item{}:{s}", .{ @intFromEnum(id), url.path });
 
         while (try iter.next()) |item| {
             const old = conts;

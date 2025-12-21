@@ -124,9 +124,11 @@ pub fn build(b: *std.Build) !void {
     });
     const zigimg_module = zigimg_dependency.module("zigimg");
 
-    const steam_module = b.addModule("steam", .{
-        .root_source_file = b.path("steam/steam.zig"),
+    const steam_dependency = b.dependency("zig_steamworks_fake", .{
+        .target = target,
+        .optimize = optimize,
     });
+    const steam_module = steam_dependency.module("steam");
 
     const options = b.addOptions();
 

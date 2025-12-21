@@ -663,7 +663,7 @@ pub fn main() void {
 
 pub fn runGame() anyerror!void {
     if (options.IsSteam) {
-        if (steam.restartIfNeeded(steam.STEAM_APP_ID)) {
+        if (steam.restartIfNeeded(.this_app)) {
             log.log.err("Restarting for steam", .{});
             return; // steam will relaunch the game from the steam client.
         }

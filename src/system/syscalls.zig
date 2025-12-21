@@ -524,7 +524,7 @@ const SteamYieldCreate = struct {
         ))
             return error.UnknownError;
 
-        try vm_instance.pushStackI(@byteSwap(result.file_id.id));
+        try vm_instance.pushStackI(@byteSwap(@intFromEnum(result.file_id)));
 
         return true;
     }
@@ -577,7 +577,7 @@ fn sysSteam(self: *Vm) VmError!void {
     const ugc = steam.getSteamUGC();
 
     if (data.len == 0) {
-        const handle = ugc.createItem(steam.STEAM_APP_ID, .Community);
+        const handle = ugc.createItem(.this_app, .community);
 
         return self.yieldUntil(SteamYieldCreate, .{ .handle = handle });
     } else if (data[0] == 'm' and data.len > 1) {
@@ -597,7 +597,7 @@ fn sysSteam(self: *Vm) VmError!void {
             };
 
             if (std.mem.eql(u8, prop, "title")) {
-                const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
+                const update = ugc.startUpdate(.this_app, @enumFromInt(item_id));
 
                 if (!update.setTitle(ugc, value))
                     return error.UnknownError;
@@ -608,7 +608,7 @@ fn sysSteam(self: *Vm) VmError!void {
             }
 
             if (std.mem.eql(u8, prop, "description")) {
-                const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
+                const update = ugc.startUpdate(.this_app, @enumFromInt(item_id));
 
                 if (!update.setDescription(ugc, value))
                     return error.UnknownError;
@@ -620,20 +620,20 @@ fn sysSteam(self: *Vm) VmError!void {
 
             if (std.mem.eql(u8, prop, "visibility")) {
                 const parsed: steam.WorkshopItemVisibility = if (std.mem.eql(u8, value, "public"))
-                    .Public
+                    .public
                 else if (std.mem.eql(u8, value, "friends"))
-                    .FriendsOnly
+                    .friends_only
                 else if (std.mem.eql(u8, value, "private"))
-                    .Private
+                    .private
                 else if (std.mem.eql(u8, value, "unlisted"))
-                    .Unlisted
+                    .unlisted
                 else {
                     std.log.scoped(.Steam).err("Invalid steam item visibility {s}", .{value});
 
                     return error.UnknownError;
                 };
 
-                const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
+                const update = ugc.startUpdate(.this_app, @enumFromInt(item_id));
 
                 if (!update.setVisibility(ugc, parsed))
                     return error.UnknownError;
@@ -705,7 +705,7 @@ fn sysSteam(self: *Vm) VmError!void {
                 return error.UnknownError;
             };
 
-            const update = ugc.startUpdate(steam.STEAM_APP_ID, .{ .id = item_id });
+            const update = ugc.startUpdate(.this_app, @enumFromInt(item_id));
 
             if (!update.setContent(ugc, upload))
                 return error.UnknownError;
