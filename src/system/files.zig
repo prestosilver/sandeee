@@ -2,8 +2,8 @@ const options = @import("options");
 const builtin = @import("builtin");
 const std = @import("std");
 
+const sandeee_data = @import("../data.zig");
 const system = @import("../system.zig");
-
 const util = @import("../util.zig");
 
 const allocator = util.allocator;
@@ -13,6 +13,8 @@ const log = util.log;
 const Vm = system.Vm;
 const config = system.config;
 const telem = system.telem;
+
+const strings = sandeee_data.strings;
 
 const fake = system.pseudo;
 
@@ -71,9 +73,6 @@ pub const FolderLink = union(LinkKind) {
 };
 
 pub var root_out: ?[]const u8 = null;
-
-// TODO: move to data module, and test other values
-pub const ROOT_NAME = "/";
 
 pub inline fn getExtrPath() []const u8 {
     if (builtin.mode != .Debug)
@@ -352,7 +351,7 @@ pub const Folder = struct {
 
         root.* = .{
             .protected = false,
-            .name = try allocator.dupe(u8, ROOT_NAME),
+            .name = try allocator.dupe(u8, strings.ROOT_PATH),
             .parent = null,
         };
 

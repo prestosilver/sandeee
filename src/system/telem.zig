@@ -3,8 +3,8 @@ const options = @import("options");
 const builtin = @import("builtin");
 const c = @import("../c.zig");
 
+const sandeee_data = @import("../data.zig");
 const system = @import("../system.zig");
-
 const windows = @import("../windows.zig");
 const drawers = @import("../drawers.zig");
 const events = @import("../events.zig");
@@ -21,12 +21,11 @@ const files = system.files;
 const allocator = util.allocator;
 const log = util.log;
 
+const strings = sandeee_data.strings;
+
 const Window = drawers.Window;
 
 pub const Telem = packed struct {
-    // TODO: move to data module
-    pub const PATH = "/_priv/telem.bin";
-
     pub var instance: Telem = .{
         .random_id = 0,
     };
@@ -65,7 +64,7 @@ pub const Telem = packed struct {
 
         const root = try files.FolderLink.resolve(.root);
 
-        if (root.getFile(PATH) catch null) |file| {
+        if (root.getFile(strings.TELEM_PATH) catch null) |file| {
             const conts = try file.read(null);
 
             if (conts.len != @sizeOf(Telem)) return;
@@ -88,8 +87,8 @@ pub const Telem = packed struct {
 
         const root = try files.FolderLink.resolve(.root);
 
-        _ = try root.newFile(PATH);
-        try root.writeFile(PATH, conts, null);
+        _ = try root.newFile(strings.TELEM_PATH);
+        try root.writeFile(strings.TELEM_PATH, conts, null);
     }
 
     pub fn getDebugPassword() ![]u8 {

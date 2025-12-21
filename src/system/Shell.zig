@@ -53,9 +53,6 @@ pub const Result = struct {
 
 pub var shader: *Shader = undefined;
 
-// TODO: move to data module
-pub const ASM_HEADER = "EEEp";
-
 const ShellError = error{
     MissingParameter,
     BadASMFile,
@@ -173,7 +170,7 @@ fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param:
     var line = std.array_list.Managed(u8).init(allocator);
     defer line.deinit();
 
-    if ((try file.read(null)).len > 3 and std.mem.eql(u8, (try file.read(null))[0..4], ASM_HEADER)) {
+    if ((try file.read(null)).len > 3 and std.mem.eql(u8, (try file.read(null))[0..4], strings.ASM_HEADER)) {
         return try self.runAsm(root, cmd, param);
     }
 
@@ -282,7 +279,7 @@ fn runAsm(self: *Shell, root: files.FolderLink, cmd: []const u8, params: *Params
     while (file) |item| : (file = item.next_sibling) {
         if (std.mem.eql(u8, item.name[rootlen..], cmd)) {
             const cont = try item.read(null);
-            if (cont.len < 4 or !std.mem.eql(u8, cont[0..4], ASM_HEADER)) {
+            if (cont.len < 4 or !std.mem.eql(u8, cont[0..4], strings.ASM_HEADER)) {
                 return error.BadASMFile;
             }
 

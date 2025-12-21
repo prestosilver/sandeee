@@ -148,8 +148,6 @@ const REPLACEMENT_TABLE = [_]CharReplacement{
     .{ .eeech = "\x1b", .ansi = "^[" },
 };
 
-// TODO: version struct
-
 pub fn eeeCHToANSI(input: []const u8) ![]const u8 {
     var len: usize = 0;
     for (input) |ch| {
@@ -180,3 +178,7 @@ pub fn eeeCHToANSI(input: []const u8) ![]const u8 {
 
     return result;
 }
+
+pub const ASM_HEADER = "EEEp";
+pub const TELEM_PATH = "/_priv/telem.bin";
+pub const ROOT_PATH = "/";

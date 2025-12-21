@@ -1,5 +1,6 @@
 const std = @import("std");
 const files = @import("sandeee").system.files;
+const strings = @import("sandeee").data.strings;
 
 pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
 pub const allocator = gpa.allocator();
@@ -15,7 +16,7 @@ pub fn main() !void {
 
     files_root.* = .{
         .parent = null,
-        .name = files.ROOT_NAME,
+        .name = strings.ROOT_PATH,
     };
 
     files.named_paths.set(.root, files_root);
