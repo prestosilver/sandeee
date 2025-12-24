@@ -21,3 +21,4 @@ debug /prof/tests/eep/rand
 debug /prof/tests/src
 debug /prof/tests/src/asm
 debug /prof/tests/src/eon
+debug /prof/tests/rand

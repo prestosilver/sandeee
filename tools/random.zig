@@ -46,10 +46,33 @@ const INSTRUCTION_TYPES = [_]InstructionData{
     .{ .stack_out = 0, .stack_in = 0, .params = .{ false, true, false } }, // seed
 };
 
-pub fn create(_: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
-    var result = try std.ArrayList(u8).initCapacity(alloc, 1024);
+pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
+pub const allocator = gpa.allocator();
 
-    try result.appendSlice("EEEp");
+pub fn main() !void {
+    var args = try std.process.argsWithAllocator(allocator);
+    _ = args.next();
+
+    const mode = args.next() orelse return error.MissingMode;
+    const output_file_path = args.next() orelse return error.MissingOutputFile;
+
+    if (std.mem.eql(u8, mode, "--script")) {
+        const count_value = args.next() orelse return error.MissingOutputFile;
+        const count = try std.fmt.parseInt(usize, count_value, 10);
+
+        return genScript(output_file_path, count);
+    } else if (std.mem.eql(u8, mode, "--rand")) {
+        return genFile(output_file_path);
+    } else return error.InvalidMode;
+}
+
+pub fn genFile(output: []const u8) !void {
+    const output_file = try std.fs.createFileAbsolute(output, .{});
+    defer output_file.close();
+
+    var writer = output_file.writer(&.{});
+
+    try writer.interface.writeAll("EEEp");
 
     var buffer: [1020]u8 = undefined;
 
@@ -107,20 +130,19 @@ pub fn create(_: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8
         stack += INSTRUCTION_TYPES[inst].stack_out;
     }
 
-    try result.appendSlice(buffer[0..idx]);
-
-    return result;
+    try writer.interface.writeAll(buffer[0..idx]);
 }
 
-pub fn createScript(in: []const []const u8, alloc: std.mem.Allocator) !std.ArrayList(u8) {
-    var result = try std.ArrayList(u8).initCapacity(alloc, 1024);
+pub fn genScript(output: []const u8, count: usize) !void {
+    const output_file = try std.fs.createFileAbsolute(output, .{});
+    defer output_file.close();
 
-    for (0..try std.fmt.parseInt(usize, in[0], 10)) |idx| {
-        const text = try std.fmt.allocPrint(alloc, "{}.eep\n", .{idx});
-        defer alloc.free(text);
+    var writer = output_file.writer(&.{});
 
-        try result.appendSlice(text);
+    for (0..count) |idx| {
+        const text = try std.fmt.allocPrint(allocator, "{}.eep\n", .{idx});
+        defer allocator.free(text);
+
+        try writer.interface.writeAll(text);
     }
-
-    return result;
 }

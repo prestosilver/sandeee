@@ -9,14 +9,14 @@ pub fn main() !void {
     const output_file = args.next() orelse return error.MissingOutputFile;
     const output_path = args.next() orelse return error.MissingOutputPath;
 
-    var out_file = try std.fs.createFileAbsolute(output_file, .{});
+    var out_file = try std.fs.createFileAbsolute(output_file, .{ .exclusive = true });
     defer out_file.close();
 
-    const writer = out_file.writer();
+    var writer = out_file.writer(&.{});
 
-    try writer.writeAll("#Style @/style.eds\n\n");
-    try writer.writeAll(":logo: [@/logo.eia]\n\n");
-    try writer.writeAll(":center: -- Downloads --\n\n");
+    try writer.interface.writeAll("#Style @/style.eds\n\n");
+    try writer.interface.writeAll(":logo: [@/logo.eia]\n\n");
+    try writer.interface.writeAll(":center: -- Downloads --\n\n");
     var section_folder: []const u8 = "";
 
     while (args.next()) |kind| {
@@ -25,7 +25,7 @@ pub fn main() !void {
             const section_folder_name = args.next() orelse return error.MissingSectionName;
 
             if (section_folder.len != 0)
-                try writer.writeAll("\n");
+                try writer.interface.writeAll("\n");
 
             section_folder = try allocator.dupe(u8, section_folder_name);
 
@@ -34,20 +34,20 @@ pub fn main() !void {
 
             try std.fs.makeDirAbsolute(targ_path);
 
-            try writer.print(":hs: {s}\n\n", .{section_name});
+            try writer.interface.print(":hs: {s}\n\n", .{section_name});
         } else if (std.mem.eql(u8, kind, "--file")) {
             const file_name = args.next() orelse return error.MissingFileName;
             const file_path = args.next() orelse return error.MissingFilePath;
             const slash_index = std.mem.lastIndexOf(u8, file_path, "/") orelse return error.BadPath;
 
-            const targ_path = try std.fmt.allocPrint(allocator, "{s}/{s}/{s}", .{ output_path, section_folder, file_path[slash_index + 1 ..] });
+            const targ_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ section_folder, file_path[slash_index + 1 ..] });
             defer allocator.free(targ_path);
 
-            try std.fs.copyFileAbsolute(file_path, targ_path, .{});
+            try std.fs.cwd().copyFile(file_path, try std.fs.openDirAbsolute(output_path, .{}), targ_path, .{});
 
-            try writer.print(":biglink: > {s}: @/downloads/{s}/{s}\n", .{ file_name, section_folder, file_path[slash_index + 1 ..] });
+            try writer.interface.print(":biglink: > {s}: @/downloads/{s}/{s}\n", .{ file_name, section_folder, file_path[slash_index + 1 ..] });
         } else return error.UnknownArg;
     }
 
-    try writer.writeAll("\n:center: --- EEE Sees all ---");
+    try writer.interface.writeAll("\n:center: --- EEE Sees all ---");
 }

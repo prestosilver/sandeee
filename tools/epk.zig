@@ -25,7 +25,7 @@ pub fn main() !void {
             try output_file.writeAll(&.{std.mem.asBytes(&name_len)[0]});
             try output_file.writeAll(dest_path);
 
-            const input_file = try std.fs.openFileAbsolute(source_file, .{});
+            const input_file = try std.fs.cwd().openFile(source_file, .{});
             defer input_file.close();
 
             const data_len: u16 = @intCast(try input_file.readAll(&data));

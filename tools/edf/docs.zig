@@ -50,13 +50,12 @@ pub fn main() !void {
                 const output_file = try std.fs.cwd().createFile(output_file_path, .{});
                 defer output_file.close();
 
-                var reader = input_file.reader();
+                var reader_buffer: [1024]u8 = undefined;
+                var reader = input_file.reader(&reader_buffer);
 
                 _ = try output_file.write(DOC_HEADER);
 
-                while (try reader.readUntilDelimiterOrEofAlloc(allocator, '\n', 1024)) |line| {
-                    defer allocator.free(line);
-
+                while (try reader.interface.takeDelimiter('\n')) |line| {
                     if (std.mem.containsAtLeast(u8, line, 1, "> ")) {
                         const link_index = std.mem.indexOf(u8, line, "> ") orelse unreachable;
                         const index = link_index + 2 + (std.mem.indexOf(u8, line[link_index..], ": ") orelse 0);

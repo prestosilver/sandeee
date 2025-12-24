@@ -138,7 +138,7 @@ pub fn build(b: *std.Build) !void {
 
     const is_demo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
     const steam_mode = b.option(enum { Off, On, Fake }, "steam", "Makes SandEEE build a steam build") orelse .Off;
-    const random_tests = b.option(i32, "random", "Makes SandEEE write some random files") orelse 0;
+    const random_tests = b.option(usize, "random", "Makes SandEEE write some random files") orelse 0;
     const version_suffix = switch (optimize) {
         .Debug => if (is_demo) "D0DE" else "00DE",
         else => if (is_demo) "D000" else "0000",
@@ -249,6 +249,18 @@ pub fn build(b: *std.Build) !void {
     const asm_builder_exe = b.addExecutable(.{
         .name = "asm_builder",
         .root_module = asm_builder_mod,
+    });
+
+    const random_builder_mod = b.createModule(.{
+        .root_source_file = b.path("tools/random.zig"),
+        .target = b.graph.host,
+        .link_libc = true,
+    });
+    random_builder_mod.addImport("sandeee", exe_host_mod);
+    random_builder_mod.addImport("options", options_module);
+    const random_builder_exe = b.addExecutable(.{
+        .name = "random_builder",
+        .root_module = random_builder_mod,
     });
 
     const eia_builder_mod = b.createModule(.{
@@ -527,26 +539,29 @@ pub fn build(b: *std.Build) !void {
 
     b.installArtifact(exe);
 
-    _ = random_tests;
-    // if (random_tests != 0) {
-    //     _ = b.run(&[_][]const u8{ "mkdir", "-p", "content/disk/prof/tests/rand" });
-    //     const filename = b.fmt("content/disk/prof/tests/rand/all.esh", .{});
-    //     const count = b.fmt("{}", .{random_tests});
+    if (random_tests != 0) {
+        for (0..random_tests) |idx| {
+            const random_step = b.addRunArtifact(random_builder_exe);
+            random_step.addArg("--rand");
+            const random_file = random_step.addOutputFileArg(b.fmt("random_{}.eep", .{idx}));
 
-    //     var step = try conv.ConvertStep.create(b, rand.createScript, count, filename);
+            debug_image_step.addArg("--file");
+            debug_image_step.addFileInput(random_file);
+            debug_image_step.addFileArg(random_file);
+            debug_image_step.addArg(b.fmt("/prof/tests/rand/{}.eep", .{idx}));
+        }
 
-    //     step.step.dependOn(skel_step);
-    //     content_step.dependOn(&step.step);
-    // }
+        const random_step = b.addRunArtifact(random_builder_exe);
+        random_step.addArg("--script");
+        const random_file = random_step.addOutputFileArg("random.esh");
+        random_step.addArg(b.fmt("{}", .{random_tests}));
 
-    // for (0..@intCast(random_tests)) |idx| {
-    //     const filename = b.fmt("content/disk/prof/tests/rand/{}.eep", .{idx});
+        debug_image_step.addArg("--file");
+        debug_image_step.addFileInput(random_file);
+        debug_image_step.addFileArg(random_file);
+        debug_image_step.addArg("/prof/tests/rand/random.esh");
+    }
 
-    //     var step = try conv.ConvertStep.create(b, rand.create, "", filename);
-
-    //     step.step.dependOn(skel_step);
-    //     content_step.dependOn(&step.step);
-    // }
     b.getInstallStep().dependOn(disk_step);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -647,6 +662,7 @@ pub fn build(b: *std.Build) !void {
 
         const pong_eon_step = b.addRunArtifact(eon_builder_exe);
         pong_eon_step.addArg("exe");
+        pong_eon_step.addArg(eon_lib_path_str);
         pong_eon_step.addFileInput(content_path.path(b, "eon/exec/pong.eon"));
         pong_eon_step.addFileArg(content_path.path(b, "eon/exec/pong.eon"));
         const pong_asm_file = pong_eon_step.addOutputFileArg("pong.eon");
@@ -689,6 +705,7 @@ pub fn build(b: *std.Build) !void {
 
         const paint_eon_step = b.addRunArtifact(eon_builder_exe);
         paint_eon_step.addArg("exe");
+        paint_eon_step.addArg(eon_lib_path_str);
         paint_eon_step.addFileInput(content_path.path(b, "eon/exec/paint.eon"));
         paint_eon_step.addFileArg(content_path.path(b, "eon/exec/paint.eon"));
         const paint_asm_file = paint_eon_step.addOutputFileArg("paint.eon");
