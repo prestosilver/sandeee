@@ -56,6 +56,61 @@ pub inline fn addConvertFile(
     }
 }
 
+pub fn addFileImports(
+    b: *std.Build,
+    exe_mod: *std.Build.Module,
+    content_path: std.Build.LazyPath,
+    eia_builder_exe: *std.Build.Step.Compile,
+    era_builder_exe: *std.Build.Step.Compile,
+    eff_builder_exe: *std.Build.Step.Compile,
+) void {
+    const image_path = content_path.path(b, "images");
+
+    inline for (INTERNAL_IMAGE_FILES) |file| {
+        const pngf = image_path.path(b, file ++ ".png");
+        const eiaf = file ++ ".eia";
+
+        const builder = b.addRunArtifact(eia_builder_exe);
+        builder.addFileInput(pngf);
+        builder.addFileArg(pngf);
+
+        const output_file = builder.addOutputFileArg(eiaf);
+
+        exe_mod.addAnonymousImport(eiaf, .{
+            .root_source_file = output_file,
+        });
+    }
+
+    const audio_path = content_path.path(b, "audio");
+
+    inline for (INTERNAL_SOUND_FILES) |file| {
+        const wavf = audio_path.path(b, file ++ ".wav");
+        const eraf = file ++ ".era";
+
+        const builder = b.addRunArtifact(era_builder_exe);
+        builder.addFileInput(wavf);
+        builder.addFileArg(wavf);
+        const output_file = builder.addOutputFileArg(eraf);
+
+        exe_mod.addAnonymousImport(eraf, .{
+            .root_source_file = output_file,
+        });
+    }
+
+    {
+        const bios_font_path = image_path.path(b, "SandEEESans2x.png");
+
+        const builder = b.addRunArtifact(eff_builder_exe);
+        builder.addFileInput(bios_font_path);
+        builder.addFileArg(bios_font_path);
+        const output_file = builder.addOutputFileArg("bios.eff");
+
+        exe_mod.addAnonymousImport("bios.eff", .{
+            .root_source_file = output_file,
+        });
+    }
+}
+
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
@@ -283,6 +338,8 @@ pub fn build(b: *std.Build) !void {
         .root_module = docs_builder_mod,
     });
 
+    addFileImports(b, exe_mod, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+
     // Module setup done, remaining is disk image and final steps
     var skel_cmd: std.array_list.Managed([]const u8) = .init(b.allocator);
     defer skel_cmd.deinit();
@@ -469,52 +526,6 @@ pub fn build(b: *std.Build) !void {
     }
 
     b.installArtifact(exe);
-
-    const image_path = content_path.path(b, "images");
-
-    inline for (INTERNAL_IMAGE_FILES) |file| {
-        const pngf = image_path.path(b, file ++ ".png");
-        const eiaf = file ++ ".eia";
-
-        const builder = b.addRunArtifact(eia_builder_exe);
-        builder.addFileInput(pngf);
-        builder.addFileArg(pngf);
-
-        const output_file = builder.addOutputFileArg(eiaf);
-
-        exe_mod.addAnonymousImport(eiaf, .{
-            .root_source_file = output_file,
-        });
-    }
-
-    const audio_path = content_path.path(b, "audio");
-
-    inline for (INTERNAL_SOUND_FILES) |file| {
-        const wavf = audio_path.path(b, file ++ ".wav");
-        const eraf = file ++ ".era";
-
-        const builder = b.addRunArtifact(era_builder_exe);
-        builder.addFileInput(wavf);
-        builder.addFileArg(wavf);
-        const output_file = builder.addOutputFileArg(eraf);
-
-        exe_mod.addAnonymousImport(eraf, .{
-            .root_source_file = output_file,
-        });
-    }
-
-    {
-        const bios_font_path = image_path.path(b, "SandEEESans2x.png");
-
-        const builder = b.addRunArtifact(eff_builder_exe);
-        builder.addFileInput(bios_font_path);
-        builder.addFileArg(bios_font_path);
-        const output_file = builder.addOutputFileArg("bios.eff");
-
-        exe_mod.addAnonymousImport("bios.eff", .{
-            .root_source_file = output_file,
-        });
-    }
 
     _ = random_tests;
     // if (random_tests != 0) {
@@ -761,31 +772,29 @@ pub fn build(b: *std.Build) !void {
 
         const exe_mod_pub_linux = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
-            .target = b.resolveTargetQuery(.{
-                .os_tag = .linux,
-                .abi = .gnu,
-            }),
+            .target = b.resolveTargetQuery(.{ .os_tag = .linux }),
             .optimize = .ReleaseFast,
             .link_libc = true,
         });
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
+        exe_mod_pub_linux.addImport("glfw", glfw_module);
+        exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
-            .name = "SandEEE",
+            .name = "SandEEE (Steam Linux)",
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
         exe_pub_linux.addIncludePath(b.path("deps/include"));
         exe_pub_linux.addIncludePath(b.path("deps/steam_sdk/public/"));
-
         exe_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_pub_linux.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
         exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
         exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
         exe_pub_linux.linkSystemLibrary("steam_api");
-        exe_pub_linux.linkLibC();
 
         const pub_linux_step = b.addInstallArtifact(
             exe_pub_linux,
@@ -797,19 +806,19 @@ pub fn build(b: *std.Build) !void {
 
         const exe_mod_pub_windows = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
-            .target = b.resolveTargetQuery(.{
-                .os_tag = .windows,
-                .abi = .gnu,
-            }),
+            .target = b.resolveTargetQuery(.{ .os_tag = .windows }),
             .optimize = .ReleaseFast,
             .link_libc = true,
         });
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
+        exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
-            .name = "SandEEE",
+            .name = "SandEEE (Steam Windows)",
             .root_module = exe_mod_pub_windows,
             .use_llvm = true,
         });
@@ -822,7 +831,6 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
-        exe_pub_linux.linkLibC();
 
         exe_pub_windows.linkSystemLibrary("steam_api64");
 
@@ -896,18 +904,18 @@ pub fn build(b: *std.Build) !void {
 
         const exe_mod_pub_linux = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
-            .target = b.resolveTargetQuery(.{
-                .os_tag = .linux,
-                .abi = .gnu,
-            }),
+            .target = b.resolveTargetQuery(.{ .os_tag = .linux }),
             .optimize = .ReleaseFast,
             .link_libc = true,
         });
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
+        exe_mod_pub_linux.addImport("glfw", glfw_module);
+        exe_mod_pub_linux.addImport("zgl", zgl_module);
+        addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
-            .name = "SandEEE",
+            .name = "SandEEE (Itch Linux)",
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
@@ -927,18 +935,18 @@ pub fn build(b: *std.Build) !void {
 
         const exe_mod_pub_windows = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
-            .target = b.resolveTargetQuery(.{
-                .os_tag = .windows,
-                .abi = .gnu,
-            }),
+            .target = b.resolveTargetQuery(.{ .os_tag = .windows }),
             .optimize = .ReleaseFast,
             .link_libc = true,
         });
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
+        exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("zgl", zgl_module);
+        addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
-            .name = "SandEEE",
+            .name = "SandEEE (Itch Windows)",
             .root_module = exe_mod_pub_windows,
             .use_llvm = true,
         });
