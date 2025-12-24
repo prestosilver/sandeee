@@ -592,6 +592,8 @@ pub fn build(b: *std.Build) !void {
 
     changelog_step.addFileInput(content_path.path(b, "data/os_versions.csv"));
     changelog_step.addFileArg(content_path.path(b, "data/os_versions.csv"));
+    changelog_step.addFileInput(content_path.path(b, "data/changelog_ignore.txt"));
+    changelog_step.addFileArg(content_path.path(b, "data/changelog_ignore.txt"));
 
     const changelog_file_path = changelog_step.addOutputFileArg("changelog.edf");
     const install_changelog = b.addInstallFileWithDir(changelog_file_path, www_path, "changelog.edf");
