@@ -345,6 +345,8 @@ test "Headless scripts" {
             try logging.interface.writeAll("\n\n");
             success = false;
         };
+        
+        try Vm.Pool.collect();
 
         if (success) {
             try logging.interface.writeAll("```\n\n");
