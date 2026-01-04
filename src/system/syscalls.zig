@@ -398,7 +398,7 @@ fn sysWriteHeap(self: *Vm) VmError!void {
         },
         .string => {
             self.heap[idx] = .{
-                .string = data.data().string,
+                .string = try data.data().string.clone(),
             };
         },
     }
