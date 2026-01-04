@@ -42,7 +42,40 @@ pub fn main() !void {
 
             try files_root.writeFile(disk_path, content[0..content_len], null);
             count += 1;
-        } else return error.UnknownArg;
+        } else if (std.mem.eql(u8, kind, "--disk")) {
+            const input_path = args.next() orelse return error.MissingFile;
+
+            const recovery = try std.fs.cwd().openFile(input_path, .{});
+            defer recovery.close();
+
+            var overlay_disk = try files.Folder.loadDisk(recovery);
+            defer overlay_disk.deinit();
+
+            var folder_list = std.array_list.Managed(*const files.Folder).init(allocator);
+            defer folder_list.deinit();
+            try overlay_disk.getFoldersRec(&folder_list);
+
+            for (folder_list.items) |folder| {
+                files_root.newFolder(folder.name) catch |err| switch (err) {
+                    error.FolderExists => {},
+                    else => |e| return e,
+                };
+            }
+
+            var file_list = std.array_list.Managed(*files.File).init(allocator);
+            defer file_list.deinit();
+            try overlay_disk.getFilesRec(&file_list);
+
+            for (file_list.items) |file| {
+                if (file.data != .disk) continue;
+
+                try files_root.newFile(file.name);
+                try files_root.writeFile(file.name, file.data.disk, null);
+            }
+        } else {
+            std.log.info("{s}", .{kind});
+            return error.UnknownArg;
+        }
     }
 
     try std.fs.cwd().writeFile(.{

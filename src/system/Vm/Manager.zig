@@ -26,19 +26,19 @@ pub var last_vm_time: f64 = 0;
 pub var last_update_time: f64 = 0;
 pub var last_render_time: f64 = 0;
 
-pub const VmHandle = enum(u32) {
+pub const Handle = enum(u32) {
     _,
 
-    pub inline fn inc(self: VmHandle) VmHandle {
+    pub inline fn inc(self: Handle) Handle {
         const id = @intFromEnum(self);
         return @enumFromInt(id +% 1);
     }
 };
 
 threads: std.array_list.Managed(std.Thread) = .init(allocator),
-vms: std.AutoHashMap(VmHandle, Vm) = .init(allocator),
-results: std.AutoHashMap(VmHandle, VMResult) = .init(allocator),
-vm_index: VmHandle = @enumFromInt(0),
+vms: std.AutoHashMap(Handle, Vm) = .init(allocator),
+results: std.AutoHashMap(Handle, VMResult) = .init(allocator),
+vm_index: Handle = @enumFromInt(0),
 
 pub const VMResult = struct {
     data: []u8,
@@ -92,7 +92,7 @@ pub fn deinit(self: *Self) void {
 }
 
 pub const VMStats = struct {
-    id: VmHandle,
+    id: Handle,
     name: []const u8,
     meta_usage: usize,
     last_exec: usize,
@@ -117,7 +117,7 @@ pub fn getStats(self: *Self) ![]VMStats {
     return results;
 }
 
-pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []const u8) !VmHandle {
+pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []const u8) !Handle {
     const id = self.vm_index;
 
     self.vm_index = self.vm_index.inc();
@@ -146,7 +146,7 @@ pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []co
     return id;
 }
 
-pub fn destroy(self: *Self, handle: VmHandle) void {
+pub fn destroy(self: *Self, handle: Handle) void {
     if (self.vms.getPtr(handle)) |entry| {
         entry.deinit();
         _ = self.vms.remove(handle);
@@ -179,13 +179,13 @@ pub fn updateVmThread(vm_instance: *Vm, frame_end: u64) !void {
     };
 }
 
-pub fn appendInputSlice(self: *Self, handle: VmHandle, data: []const u8) !void {
+pub fn appendInputSlice(self: *Self, handle: Handle, data: []const u8) !void {
     if (self.vms.getPtr(handle)) |vm_instance| {
         try vm_instance.input.appendSlice(data);
     }
 }
 
-pub fn getOutput(self: *Self, handle: VmHandle) !VMResult {
+pub fn getOutput(self: *Self, handle: Handle) !VMResult {
     return if (self.results.fetchRemove(handle)) |item| item.value else .{
         .data = &.{},
         .done = !self.vms.contains(handle),

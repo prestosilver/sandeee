@@ -64,7 +64,7 @@ const TOTAL_BAR_SPRITES: f32 = 13;
 const Shell = @This();
 
 headless: bool = false,
-vm: ?Vm.Manager.VmHandle = null,
+vm: ?Vm.Manager.Handle = null,
 
 root: files.FolderLink,
 

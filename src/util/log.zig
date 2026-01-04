@@ -57,7 +57,9 @@ pub fn sandEEELogFn(
         std.debug.lockStdErr();
         defer std.debug.unlockStdErr();
 
-        std.fs.File.stderr().writeAll(color ++ prefix ++ format ++ "\x1b[m\n") catch {};
+        var stderr: std.fs.File = .stderr();
+        var stderr_writer = stderr.writer(&.{});
+        stderr_writer.interface.print(color ++ prefix ++ format ++ "\x1b[m\n", args) catch {};
     }
 
     if (log_file) |_| {

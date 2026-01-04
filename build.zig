@@ -115,7 +115,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    const exe_mod = b.createModule(.{
+    const exe_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
@@ -124,13 +124,14 @@ pub fn build(b: *std.Build) !void {
 
     const exe = b.addExecutable(.{
         .name = "SandEEE",
-        .root_module = exe_mod,
+        .root_module = exe_module,
         .use_llvm = true,
     });
 
-    const exe_host_mod = b.createModule(.{
+    const exe_host_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
 
@@ -162,17 +163,35 @@ pub fn build(b: *std.Build) !void {
     });
     const glfw_module = glfw_dependency.module("glfw");
 
+    const glfw_host_dependency = b.dependency("zglfw", .{
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    const glfw_host_module = glfw_host_dependency.module("glfw");
+
     const zgl_dependency = b.dependency("zgl", .{
         .target = target,
         .optimize = optimize,
     });
     const zgl_module = zgl_dependency.module("zgl");
 
+    const zgl_host_dependency = b.dependency("zgl", .{
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    const zgl_host_module = zgl_host_dependency.module("zgl");
+
     const network_dependency = b.dependency("network", .{
         .target = target,
         .optimize = optimize,
     });
     const network_module = network_dependency.module("network");
+
+    const network_host_dependency = b.dependency("network", .{
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    const network_host_module = network_host_dependency.module("network");
 
     const zigimg_host_dependency = b.dependency("zigimg", .{
         .target = b.graph.host,
@@ -186,7 +205,11 @@ pub fn build(b: *std.Build) !void {
     });
     const steam_module = steam_dependency.module("steam");
 
-    const options = b.addOptions();
+    const steam_host_dependency = b.dependency("zig_steamworks_fake", .{
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    const steam_host_module = steam_host_dependency.module("steam");
 
     const version_text = b.fmt("V_{{}}", .{});
 
@@ -194,6 +217,7 @@ pub fn build(b: *std.Build) !void {
 
     const www_path: std.Build.InstallDir = .{ .custom = "../www" };
 
+    const options = b.addOptions();
     options.addOption(Version, "SANDEEE_VERSION", version);
     options.addOption([]const u8, "VERSION_TEXT", version_text);
     options.addOption(bool, "is_demo", is_demo);
@@ -202,38 +226,66 @@ pub fn build(b: *std.Build) !void {
     options.addOption(bool, "default_panic", default_panic);
     const options_module = options.createModule();
 
-    exe_mod.addImport("options", options_module);
-    exe_mod.addImport("network", network_module);
-    exe_mod.addImport("glfw", glfw_module);
-    exe_mod.addImport("zgl", zgl_module);
-    exe_mod.addImport("steam", steam_module);
+    const options_host = b.addOptions();
+    options_host.addOption(Version, "SANDEEE_VERSION", .{
+        .program = version.program,
+        .phase = version.phase,
+        .index = version.index,
+    });
+    options_host.addOption([]const u8, "VERSION_TEXT", "HOST");
+    options_host.addOption(bool, "is_demo", false);
+    options_host.addOption(bool, "is_steam", false);
+    options_host.addOption(bool, "fake_steam", false);
+    options_host.addOption(bool, "default_panic", true);
+    const options_host_module = options_host.createModule();
 
-    exe_host_mod.addImport("options", options_module);
-    exe_host_mod.addImport("network", network_module);
-    exe_host_mod.addImport("glfw", glfw_module);
-    exe_host_mod.addImport("zgl", zgl_module);
-    exe_host_mod.addImport("steam", steam_module);
+    exe_module.addImport("options", options_module);
+    exe_module.addImport("network", network_module);
+    exe_module.addImport("glfw", glfw_module);
+    exe_module.addImport("zgl", zgl_module);
+    exe_module.addImport("steam", steam_module);
+
+    exe_host_module.addImport("options", options_host_module);
+    exe_host_module.addImport("network", network_host_module);
+    exe_host_module.addImport("glfw", glfw_host_module);
+    exe_host_module.addImport("zgl", zgl_host_module);
+    exe_host_module.addImport("steam", steam_host_module);
 
     const image_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/disk.zig"),
         .target = b.graph.host,
-        .optimize = optimize,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    image_builder_mod.addImport("sandeee", exe_host_mod);
-    image_builder_mod.addImport("options", options_module);
+    image_builder_mod.addImport("sandeee", exe_host_module);
+    image_builder_mod.addImport("options", options_host_module);
     const image_builder_exe = b.addExecutable(.{
         .name = "eee_builder",
         .root_module = image_builder_mod,
     });
 
+    const eme_builder_mod = b.createModule(.{
+        .root_source_file = b.path("tools/eme.zig"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+        .link_libc = true,
+    });
+    eme_builder_mod.addImport("sandeee", exe_host_module);
+    eme_builder_mod.addImport("options", options_host_module);
+    const eme_builder_exe = b.addExecutable(.{
+        .name = "eme_builder",
+        .root_module = eme_builder_mod,
+    });
+    _ = eme_builder_exe;
+
     const eon_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/eon.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    eon_builder_mod.addImport("sandeee", exe_host_mod);
-    eon_builder_mod.addImport("options", options_module);
+    eon_builder_mod.addImport("sandeee", exe_host_module);
+    eon_builder_mod.addImport("options", options_host_module);
     const eon_builder_exe = b.addExecutable(.{
         .name = "eon_builder",
         .root_module = eon_builder_mod,
@@ -242,12 +294,13 @@ pub fn build(b: *std.Build) !void {
     const asm_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/asm.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
     asm_builder_mod.addAnonymousImport("sandeee_operation", .{
         .root_source_file = b.path("src/system/Vm/Operation.zig"),
     });
-    asm_builder_mod.addImport("options", options_module);
+    asm_builder_mod.addImport("options", options_host_module);
     const asm_builder_exe = b.addExecutable(.{
         .name = "asm_builder",
         .root_module = asm_builder_mod,
@@ -256,10 +309,11 @@ pub fn build(b: *std.Build) !void {
     const random_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/random.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    random_builder_mod.addImport("sandeee", exe_host_mod);
-    random_builder_mod.addImport("options", options_module);
+    random_builder_mod.addImport("sandeee", exe_host_module);
+    random_builder_mod.addImport("options", options_host_module);
     const random_builder_exe = b.addExecutable(.{
         .name = "random_builder",
         .root_module = random_builder_mod,
@@ -268,11 +322,12 @@ pub fn build(b: *std.Build) !void {
     const eia_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/eia.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    eia_builder_mod.addImport("sandeee", exe_host_mod);
+    eia_builder_mod.addImport("sandeee", exe_host_module);
     eia_builder_mod.addImport("zigimg", zigimg_host_module);
-    eia_builder_mod.addImport("options", options_module);
+    eia_builder_mod.addImport("options", options_host_module);
     const eia_builder_exe = b.addExecutable(.{
         .name = "eia_builder",
         .root_module = eia_builder_mod,
@@ -281,11 +336,12 @@ pub fn build(b: *std.Build) !void {
     const epk_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/epk.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    epk_builder_mod.addImport("sandeee", exe_host_mod);
+    epk_builder_mod.addImport("sandeee", exe_host_module);
     epk_builder_mod.addImport("zigimg", zigimg_host_module);
-    epk_builder_mod.addImport("options", options_module);
+    epk_builder_mod.addImport("options", options_host_module);
     const epk_builder_exe = b.addExecutable(.{
         .name = "epk_builder",
         .root_module = epk_builder_mod,
@@ -294,11 +350,12 @@ pub fn build(b: *std.Build) !void {
     const eff_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/eff.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    eff_builder_mod.addImport("sandeee", exe_host_mod);
+    eff_builder_mod.addImport("sandeee", exe_host_module);
     eff_builder_mod.addImport("zigimg", zigimg_host_module);
-    eff_builder_mod.addImport("options", options_module);
+    eff_builder_mod.addImport("options", options_host_module);
     const eff_builder_exe = b.addExecutable(.{
         .name = "eff_builder",
         .root_module = eff_builder_mod,
@@ -307,10 +364,11 @@ pub fn build(b: *std.Build) !void {
     const era_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/era.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    era_builder_mod.addImport("sandeee", exe_host_mod);
-    era_builder_mod.addImport("options", options_module);
+    era_builder_mod.addImport("sandeee", exe_host_module);
+    era_builder_mod.addImport("options", options_host_module);
     const era_builder_exe = b.addExecutable(.{
         .name = "era_builder",
         .root_module = era_builder_mod,
@@ -319,10 +377,11 @@ pub fn build(b: *std.Build) !void {
     const changelog_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/edf/changelog.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    changelog_builder_mod.addImport("sandeee", exe_host_mod);
-    changelog_builder_mod.addImport("options", options_module);
+    changelog_builder_mod.addImport("sandeee", exe_host_module);
+    changelog_builder_mod.addImport("options", options_host_module);
     const changelog_builder_exe = b.addExecutable(.{
         .name = "changelog_builder",
         .root_module = changelog_builder_mod,
@@ -331,10 +390,11 @@ pub fn build(b: *std.Build) !void {
     const downloads_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/edf/downloads.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    downloads_builder_mod.addImport("sandeee", exe_host_mod);
-    downloads_builder_mod.addImport("options", options_module);
+    downloads_builder_mod.addImport("sandeee", exe_host_module);
+    downloads_builder_mod.addImport("options", options_host_module);
     const downloads_builder_exe = b.addExecutable(.{
         .name = "downloads_builder",
         .root_module = downloads_builder_mod,
@@ -343,16 +403,17 @@ pub fn build(b: *std.Build) !void {
     const docs_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/edf/docs.zig"),
         .target = b.graph.host,
+        .optimize = .Debug,
         .link_libc = true,
     });
-    docs_builder_mod.addImport("sandeee", exe_host_mod);
-    docs_builder_mod.addImport("options", options_module);
+    docs_builder_mod.addImport("sandeee", exe_host_module);
+    docs_builder_mod.addImport("options", options_host_module);
     const docs_builder_exe = b.addExecutable(.{
         .name = "docs_builder",
         .root_module = docs_builder_mod,
     });
 
-    addFileImports(b, exe_mod, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+    addFileImports(b, exe_module, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
     // Module setup done, remaining is disk image and final steps
     var skel_cmd: std.array_list.Managed([]const u8) = .init(b.allocator);
@@ -371,6 +432,7 @@ pub fn build(b: *std.Build) !void {
     {
         const paths_file = content_path.path(b, "overlays/paths.txt");
         disk_image_step.addFileInput(paths_file);
+        debug_image_step.addFileInput(paths_file);
         steam_image_step.addFileInput(paths_file);
         const skel_file = try std.fs.openFileAbsolute(paths_file.getPath(b), .{});
         defer skel_file.close();
@@ -386,25 +448,26 @@ pub fn build(b: *std.Build) !void {
             if (std.mem.eql(u8, line[0..first_space], "debug")) {
                 debug_image_step.addArg("--dir");
                 debug_image_step.addArg(line[first_space + 1 ..]);
-                continue;
-            }
-
-            if (std.mem.eql(u8, line[0..first_space], "steam") and steam_mode == .Off) {
+            } else if (std.mem.eql(u8, line[0..first_space], "steam")) {
                 steam_image_step.addArg("--dir");
                 steam_image_step.addArg(line[first_space + 1 ..]);
-                continue;
-            }
+            } else if (std.mem.eql(u8, line[0..first_space], "base")) {
+                disk_image_step.addArg("--dir");
+                disk_image_step.addArg(line[first_space + 1 ..]);
+            } else if (std.mem.eql(u8, line[0..first_space], "all")) {
+                disk_image_step.addArg("--dir");
+                disk_image_step.addArg(line[first_space + 1 ..]);
 
-            steam_image_step.addArg("--dir");
-            steam_image_step.addArg(line[first_space + 1 ..]);
-            debug_image_step.addArg("--dir");
-            debug_image_step.addArg(line[first_space + 1 ..]);
-            disk_image_step.addArg("--dir");
-            disk_image_step.addArg(line[first_space + 1 ..]);
+                debug_image_step.addArg("--dir");
+                debug_image_step.addArg(line[first_space + 1 ..]);
+
+                steam_image_step.addArg("--dir");
+                steam_image_step.addArg(line[first_space + 1 ..]);
+            } else return error.UnknownDisk;
         }
     }
 
-    addOverlay(b, &.{ steam_image_step, disk_image_step, debug_image_step }, overlays_path.path(b, "base"));
+    addOverlay(b, &.{disk_image_step}, overlays_path.path(b, "base"));
 
     const eon_lib_path_str = eon_lib_path.getPath(b);
 
@@ -433,82 +496,97 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{debug_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/debug.png"), "/cont/icns/debug.eia");
     addConvertFile(b, &.{debug_image_step}, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/redbone.wav"), "/cont/snds/redbone.era");
 
-    addConvertFile(b, &.{ debug_image_step, steam_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/steamtool.eon"), "/exec/steamtool.eep");
+    addConvertFile(b, &.{steam_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/steamtool.eon"), "/exec/steamtool.eep");
 
     // base images
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/email-logo.png"), "/cont/imgs/email-logo.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons.png"), "/cont/imgs/icons.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/ui.png"), "/cont/imgs/ui.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/bar.png"), "/cont/imgs/bar.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/iconsBig.png"), "/cont/imgs/iconsBig.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/window.png"), "/cont/imgs/window.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/wall1.png"), "/cont/imgs/wall1.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/wall2.png"), "/cont/imgs/wall2.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/wall3.png"), "/cont/imgs/wall3.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/barlogo.png"), "/cont/imgs/barlogo.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/cursor.png"), "/cont/imgs/cursor.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/web.png"), "/cont/icns/web.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/settings.png"), "/cont/icns/settings.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/logout.png"), "/cont/icns/logout.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/launch.png"), "/cont/icns/launch.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/cmd.png"), "/cont/icns/cmd.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/email.png"), "/cont/icns/email.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/folder.png"), "/cont/icns/folder.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/tasks.png"), "/cont/icns/tasks.eia");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/eeedt.png"), "/cont/icns/eeedt.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/email-logo.png"), "/cont/imgs/email-logo.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons.png"), "/cont/imgs/icons.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/ui.png"), "/cont/imgs/ui.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/bar.png"), "/cont/imgs/bar.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/iconsBig.png"), "/cont/imgs/iconsBig.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/window.png"), "/cont/imgs/window.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/wall1.png"), "/cont/imgs/wall1.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/wall2.png"), "/cont/imgs/wall2.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/wall3.png"), "/cont/imgs/wall3.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/barlogo.png"), "/cont/imgs/barlogo.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/cursor.png"), "/cont/imgs/cursor.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/web.png"), "/cont/icns/web.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/settings.png"), "/cont/icns/settings.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/logout.png"), "/cont/icns/logout.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/launch.png"), "/cont/icns/launch.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/cmd.png"), "/cont/icns/cmd.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/email.png"), "/cont/icns/email.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/folder.png"), "/cont/icns/folder.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/tasks.png"), "/cont/icns/tasks.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/eeedt.png"), "/cont/icns/eeedt.eia");
 
     // base audio
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/login.wav"), "/cont/snds/login.era");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/logout.wav"), "/cont/snds/logout.era");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/message.wav"), "/cont/snds/message.era");
+    addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/login.wav"), "/cont/snds/login.era");
+    addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/logout.wav"), "/cont/snds/logout.era");
+    addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/message.wav"), "/cont/snds/message.era");
 
     // base fonts
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEESans.png"), "/cont/fnts/SandEEESans.eff");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEESans2x.png"), "/cont/fnts/SandEEESans2x.eff");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEEJoke.png"), "/cont/fnts/SandEEEJoke.eff");
+    addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEESans.png"), "/cont/fnts/SandEEESans.eff");
+    addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEESans2x.png"), "/cont/fnts/SandEEESans2x.eff");
+    addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEEJoke.png"), "/cont/fnts/SandEEEJoke.eff");
 
     // executables
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/epkman.eon"), "/exec/epkman.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/eon.eon"), "/exec/eon.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/stat.eon"), "/exec/stat.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/player.eon"), "/exec/player.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/asm.eon"), "/exec/asm.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/pix.eon"), "/exec/pix.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/elib.eon"), "/exec/elib.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/alib.eon"), "/exec/alib.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/epkman.eon"), "/exec/epkman.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/eon.eon"), "/exec/eon.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/stat.eon"), "/exec/stat.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/player.eon"), "/exec/player.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/asm.eon"), "/exec/asm.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/pix.eon"), "/exec/pix.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/elib.eon"), "/exec/elib.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/alib.eon"), "/exec/alib.eep");
 
     // libraries
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/ui.eon"), "/libs/ui.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/heap.eon"), "/libs/heap.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/table.eon"), "/libs/table.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/asm.eon"), "/libs/asm.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/eon.eon"), "/libs/eon.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/string.asm"), "/libs/string.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/window.asm"), "/libs/window.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/texture.asm"), "/libs/texture.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/sound.asm"), "/libs/sound.ell");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/array.asm"), "/libs/array.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/ui.eon"), "/libs/ui.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/heap.eon"), "/libs/heap.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/table.eon"), "/libs/table.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/asm.eon"), "/libs/asm.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "lib", eon_lib_path_str }, &.{"lib"} }, content_path.path(b, "eon/libs/eon.eon"), "/libs/eon.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/string.asm"), "/libs/string.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/window.asm"), "/libs/window.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/texture.asm"), "/libs/texture.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/sound.asm"), "/libs/sound.ell");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"lib"}}, content_path.path(b, "asm/libs/array.asm"), "/libs/array.ell");
 
     // includable libs
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/libs/libload.asm"), "/libs/libload.eep");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{}, &.{}, content_path.path(b, "eon/libs/incl/sys.eon"), "/libs/incl/sys.eon");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{}, &.{}, content_path.path(b, "eon/libs/incl/libload.eon"), "/libs/incl/libload.eon");
-    addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{}, &.{}, content_path.path(b, "asm/libs/incl/libload.asm"), "/libs/incl/libload.asm");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/libs/libload.asm"), "/libs/libload.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{}, &.{}, content_path.path(b, "eon/libs/incl/sys.eon"), "/libs/incl/sys.eon");
+    addConvertFile(b, &.{disk_image_step}, &.{}, &.{}, content_path.path(b, "eon/libs/incl/libload.eon"), "/libs/incl/libload.eon");
+    addConvertFile(b, &.{disk_image_step}, &.{}, &.{}, content_path.path(b, "asm/libs/incl/libload.asm"), "/libs/incl/libload.asm");
+
+    // if (enable_email) {
+    //     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{}, &.{}, content_path.path(b, "mail/inbox"), "/libs/incl/libload.asm");
+    // }
 
     addOverlay(b, &.{steam_image_step}, overlays_path.path(b, "steam"));
-    if (steam_mode != .Off)
-        addOverlay(b, &.{ debug_image_step, steam_image_step, disk_image_step }, overlays_path.path(b, "steam"));
 
     const disk_step = b.step("disk", "Builds the disk image");
-    if (optimize == .Debug) {
-        const install_disk = b.addInstallFile(debug_image_path, "bin/content/recovery.eee");
-        disk_step.dependOn(&install_disk.step);
-        b.getInstallStep().dependOn(&install_disk.step);
-    } else {
-        const install_disk = b.addInstallFile(disk_image_path, "bin/content/recovery.eee");
-        disk_step.dependOn(&install_disk.step);
-        b.getInstallStep().dependOn(&install_disk.step);
+
+    var full_disk_image_step = b.addRunArtifact(image_builder_exe);
+    const full_disk_image_path = full_disk_image_step.addOutputFileArg("disk_full.eee");
+
+    const install_disk = b.addInstallFile(full_disk_image_path, "bin/content/recovery.eee");
+
+    full_disk_image_step.addFileInput(disk_image_path);
+    full_disk_image_step.addArg("--disk");
+    full_disk_image_step.addFileArg(disk_image_path);
+    if (steam_mode != .Off) {
+        full_disk_image_step.addFileInput(steam_image_path);
+        full_disk_image_step.addArg("--disk");
+        full_disk_image_step.addFileArg(steam_image_path);
     }
+    if (optimize == .Debug) {
+        full_disk_image_step.addFileInput(debug_image_path);
+        full_disk_image_step.addArg("--disk");
+        full_disk_image_step.addFileArg(debug_image_path);
+    }
+
+    disk_step.dependOn(&install_disk.step);
+    b.getInstallStep().dependOn(disk_step);
 
     addOverlay(b, &.{debug_image_step}, overlays_path.path(b, "debug"));
 
@@ -764,7 +842,7 @@ pub fn build(b: *std.Build) !void {
     const install_disk_tests = b.addInstallFile(debug_image_path, "bin/content/recovery.eee");
 
     const exe_tests = b.addTest(.{
-        .root_module = exe_mod,
+        .root_module = exe_module,
         .use_llvm = true,
     });
 
@@ -783,11 +861,12 @@ pub fn build(b: *std.Build) !void {
         pub_step.dependOn(&install_recovery_step.step);
 
         const public_options = b.addOptions();
-        public_options.addOption(Version, "SandEEEVersion", version);
-        public_options.addOption([]const u8, "VersionText", version_text);
-        public_options.addOption(bool, "IsDemo", false);
-        public_options.addOption(bool, "IsSteam", true);
-        public_options.addOption(bool, "fakeSteam", false);
+        public_options.addOption(Version, "SANDEEE_VERSION", version);
+        public_options.addOption([]const u8, "VERSION_TEXT", version_text);
+        public_options.addOption(bool, "is_demo", false);
+        public_options.addOption(bool, "is_steam", true);
+        public_options.addOption(bool, "fake_steam", false);
+        public_options.addOption(bool, "default_panic", false);
 
         const public_options_module = public_options.createModule();
 
@@ -920,7 +999,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(bool, "is_demo", false);
         public_options.addOption(bool, "is_steam", false);
         public_options.addOption(bool, "fake_steam", false);
-        public_options.addOption(bool, "default_panic", true);
+        public_options.addOption(bool, "default_panic", false);
 
         const public_options_module = public_options.createModule();
 

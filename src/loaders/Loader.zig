@@ -15,7 +15,7 @@ const Vtable = struct {
     unload: *const fn (*const anyopaque) void,
 };
 
-ptr: *align(64) const anyopaque,
+ptr: *const anyopaque,
 vtable: *const Vtable,
 loaded: bool = false,
 deps: std.array_list.Managed(*Self) = .init(allocator),
@@ -25,32 +25,33 @@ pub fn init(data: anytype) !Self {
     const Ptr = @TypeOf(data);
     const ptr_info = @typeInfo(*Ptr);
 
-    const ptr: *align(64) Ptr = @ptrCast((try allocator.alignedAlloc(u8, .@"64", @min(4, @sizeOf(Ptr)))).ptr);
-
+    const ptr = try allocator.create(Ptr);
     ptr.* = data;
 
     const gen = struct {
         fn loadImpl(pointer: *const anyopaque) !void {
             const self: *const Ptr = @ptrCast(@alignCast(pointer));
 
-            return @call(.auto, ptr_info.pointer.child.load, .{self});
+            return @call(.always_inline, ptr_info.pointer.child.load, .{self});
         }
 
         fn unloadImpl(pointer: *const anyopaque) void {
             const self: *const Ptr = @ptrCast(@alignCast(pointer));
 
-            @call(.auto, ptr_info.pointer.child.unload, .{self});
+            @call(.always_inline, ptr_info.pointer.child.unload, .{self});
 
             allocator.destroy(self);
         }
+
+        const vtable = Vtable{
+            .load = loadImpl,
+            .unload = unloadImpl,
+        };
     };
 
     return Self{
         .ptr = ptr,
-        .vtable = &.{
-            .load = gen.loadImpl,
-            .unload = gen.unloadImpl,
-        },
+        .vtable = &gen.vtable,
         .name = @typeName(Ptr),
     };
 }
@@ -80,7 +81,7 @@ pub fn load(self: *Self, prog: *f32, start: f32, total: f32) !Unloader {
     try self.vtable.load(self.ptr);
     self.loaded = true;
 
-    log.info("loaded {s} ({d:.1}%)", .{ self.name, total * 100 });
+    log.debug("loaded {s} ({}%)", .{ self.name, @as(usize, @intFromFloat(total * 100)) });
 
     prog.* = total;
 
@@ -102,7 +103,7 @@ pub const Unloader = struct {
     pub fn run(self: *Unloader) void {
         self.vtable.unload(self.ptr);
 
-        log.info("unloaded {s}", .{self.name});
+        log.debug("unloaded {s}", .{self.name});
 
         var iter = std.mem.reverseIterator(self.deps.items);
 
