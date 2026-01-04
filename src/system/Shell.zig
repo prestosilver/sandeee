@@ -1,6 +1,7 @@
 const std = @import("std");
 const glfw = @import("glfw");
 const builtin = @import("builtin");
+const options = @import("options");
 
 const system = @import("../system.zig");
 const sandeee_data = @import("../data.zig");
@@ -447,22 +448,6 @@ pub const window_commands = .{
             }
         }.web,
     } },
-    .{ "mail", ShellCommand{
-        .gui = true,
-        .name = "mail",
-        .help = "mail [:help]",
-        .desc = "Opens the email browser",
-        .func = struct {
-            fn mail(_: *Shell, _: *Params) !Result {
-                const window: Window = .atlas("win", .{
-                    .contents = try windows.email.init(shader),
-                    .active = true,
-                });
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
-                return .{};
-            }
-        }.mail,
-    } },
     .{ "task", ShellCommand{
         .gui = true,
         .name = "task",
@@ -567,6 +552,25 @@ pub const window_commands = .{
                 return .{};
             }
         }.files,
+    } },
+};
+
+pub const email_commands = .{
+    .{ "mail", ShellCommand{
+        .gui = true,
+        .name = "mail",
+        .help = "mail [:help]",
+        .desc = "Opens the email browser",
+        .func = struct {
+            fn mail(_: *Shell, _: *Params) !Result {
+                const window: Window = .atlas("win", .{
+                    .contents = try windows.email.init(shader),
+                    .active = true,
+                });
+                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                return .{};
+            }
+        }.mail,
     } },
 };
 
@@ -864,7 +868,8 @@ pub const help_data = .{
 
 pub const command_map = std.StaticStringMap(ShellCommand).initComptime(
     shell_commands ++
-        if (!builtin.is_test) window_commands else .{},
+        (if (options.enable_email) email_commands else .{}) ++
+        (if (!builtin.is_test) window_commands else .{}),
 );
 
 pub fn run(self: *Shell, params: []const u8) anyerror!Result {

@@ -138,6 +138,7 @@ pub fn build(b: *std.Build) !void {
     var commit = b.run(&.{ "git", "rev-list", "HEAD", "--count" });
 
     const is_demo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
+    const enable_email = b.option(bool, "email_app", "Enables the email app") orelse false;
     const steam_mode = b.option(enum { Off, On, Fake }, "steam", "Makes SandEEE build a steam build") orelse .Off;
     const default_panic = b.option(bool, "default_panic", "Force the default zig panic handler") orelse false;
     const random_tests = b.option(usize, "random", "Makes SandEEE write some random files") orelse 0;
@@ -224,6 +225,7 @@ pub fn build(b: *std.Build) !void {
     options.addOption(bool, "is_steam", steam_mode != .Off);
     options.addOption(bool, "fake_steam", steam_mode == .Fake);
     options.addOption(bool, "default_panic", default_panic);
+    options.addOption(bool, "enable_email", enable_email);
     const options_module = options.createModule();
 
     const options_host = b.addOptions();
@@ -237,6 +239,7 @@ pub fn build(b: *std.Build) !void {
     options_host.addOption(bool, "is_steam", false);
     options_host.addOption(bool, "fake_steam", false);
     options_host.addOption(bool, "default_panic", true);
+    options_host.addOption(bool, "enable_email", false);
     const options_host_module = options_host.createModule();
 
     exe_module.addImport("options", options_module);
@@ -867,6 +870,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(bool, "is_steam", true);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
+        public_options.addOption(bool, "enable_email", false);
 
         const public_options_module = public_options.createModule();
 
@@ -1000,6 +1004,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(bool, "is_steam", false);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
+        public_options.addOption(bool, "enable_email", false);
 
         const public_options_module = public_options.createModule();
 
