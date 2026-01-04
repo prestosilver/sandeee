@@ -842,7 +842,16 @@ pub fn build(b: *std.Build) !void {
 
     headless_step.dependOn(&headless_cmd.step);
 
-    const install_disk_tests = b.addInstallFile(debug_image_path, "bin/content/recovery.eee");
+    var install_disk_image_step = b.addRunArtifact(image_builder_exe);
+    const install_disk_image_path = install_disk_image_step.addOutputFileArg("disk_full.eee");
+    install_disk_image_step.addFileInput(disk_image_path);
+    install_disk_image_step.addArg("--disk");
+    install_disk_image_step.addFileArg(disk_image_path);
+    install_disk_image_step.addFileInput(debug_image_path);
+    install_disk_image_step.addArg("--disk");
+    install_disk_image_step.addFileArg(debug_image_path);
+
+    const install_disk_tests = b.addInstallFile(install_disk_image_path, "bin/content/recovery.eee");
 
     const exe_tests = b.addTest(.{
         .root_module = exe_module,
