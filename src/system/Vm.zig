@@ -197,7 +197,7 @@ pub inline fn findStack(self: *Vm, idx: u64) VmError!Pool.ObjectRef {
 
 pub inline fn replaceStack(self: *Vm, a: Pool.ObjectRef, b: Pool.ObjectRef) VmError!void {
     for (self.stack[0..self.rsp]) |*entry| {
-        if (entry.*.id == a.id) {
+        if (entry.* == a) {
             entry.* = b;
         }
     }
@@ -279,7 +279,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* != .value) return error.ValueMissing;
 
             if (b.data().* == .string) {
-                try self.pushStackS(try b.data().string.subString(a.data().value, null));
+                try self.pushStackS(try b.data().string.subString(@intCast(a.data().value), null));
 
                 return;
             }
@@ -297,12 +297,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             if (a.data().* != .value) return error.ValueMissing;
 
             if (b.data().* == .string) {
-                try self.pushStackS(try b.data().string.subString(0, a.data().value));
-                // if (b.data().string.len < a.data().value) {
-                //     try self.pushStackS("");
-                // } else {
-                //     try self.pushStackS(b.data().string[0 .. b.data().string.len - a.data().value]);
-                // }
+                try self.pushStackS(try b.data().string.subString(0, @intCast(a.data().value)));
 
                 return;
             }
@@ -323,7 +318,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const old = try std.fmt.allocPrint(self.allocator, "{f}", .{old_rope});
             defer self.allocator.free(old);
 
-            const new = try self.allocator.alloc(u8, a.data().value);
+            const new = try self.allocator.alloc(u8, @intCast(a.data().value));
             defer self.allocator.free(new);
 
             const len = @min(old.len, new.len);
@@ -759,7 +754,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
             if (b.data().* != .value) return error.ValueMissing;
 
-            const adds = try self.allocator.alloc(u8, b.data().value);
+            const adds = try self.allocator.alloc(u8, @intCast(b.data().value));
             defer self.allocator.free(adds);
 
             @memset(adds, 0);
@@ -795,7 +790,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
             if (a.data().* != .value) return error.ValueMissing;
 
-            if (Pool.find(a.data().value)) |obj| {
+            if (Pool.find(@intCast(a.data().value))) |obj| {
                 try self.pushStack(obj);
             } else {
                 return error.InvalidAddr;
@@ -814,7 +809,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
 
             const items = self.stack[self.rsp - start_v .. self.rsp];
             self.rsp -= start_v;
-            self.rsp -= op.value.?;
+            self.rsp -= @intCast(op.value.?);
 
             std.mem.copyForwards(Pool.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
             self.rsp += items.len;

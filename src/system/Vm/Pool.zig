@@ -23,14 +23,22 @@ pub const Object = struct {
     data: ObjectData,
 };
 
-pub const ObjectRef = struct {
-    id: usize,
+pub const ObjectRef = enum(usize) {
+    _,
+
+    pub inline fn id(self: ObjectRef) usize {
+        return @intFromEnum(self);
+    }
+
+    pub inline fn new(value: usize) ObjectRef {
+        return @enumFromInt(value);
+    }
 
     pub inline fn data(self: ObjectRef) *ObjectData {
-        const result = &objects.items[self.id].data;
+        const result = &objects.items[self.id()].data;
 
         if (result.* == .free) {
-            const msg = std.fmt.allocPrint(allocator, "bad data {}", .{self.id}) catch "bad data ?";
+            const msg = std.fmt.allocPrint(allocator, "bad data {}", .{self}) catch "bad data ?";
             @panic(msg);
         }
 
@@ -38,14 +46,14 @@ pub const ObjectRef = struct {
     }
 
     pub inline fn mark(self: ObjectRef) !void {
-        objects.items[self.id].marked = true;
+        objects.items[self.id()].marked = true;
     }
 
     pub fn deinit(self: ObjectRef) void {
         free_lock.lock();
         defer free_lock.unlock();
 
-        if (objects.items[self.id].data == .free) {
+        if (objects.items[self.id()].data == .free) {
             log.err("Double Free", .{});
             return;
         }
@@ -74,9 +82,7 @@ pub fn find(addr: usize) ?ObjectRef {
     if (addr >= objects.items.len) return null;
     if (objects.items[addr].data == .free) return null;
 
-    return .{
-        .id = addr,
-    };
+    return .new(addr);
 }
 
 pub fn new(data: ObjectData) !ObjectRef {
@@ -84,8 +90,8 @@ pub fn new(data: ObjectData) !ObjectRef {
     defer free_lock.unlock();
 
     if (free_ref) |result| {
-        free_ref = objects.items[result.id].data.free;
-        objects.items[result.id].data = data;
+        free_ref = objects.items[result.id()].data.free;
+        objects.items[result.id()].data = data;
 
         return result;
     }
@@ -95,9 +101,7 @@ pub fn new(data: ObjectData) !ObjectRef {
         .data = data,
     });
 
-    return .{
-        .id = objects.items.len - 1,
-    };
+    return .new(objects.items.len - 1);
 }
 
 pub fn clean() !void {
@@ -119,9 +123,7 @@ pub fn clean() !void {
 
     for (objects.items, 0..) |*entry, id| {
         if (entry.data == .free) {
-            prev_ref.* = .{
-                .id = id,
-            };
+            prev_ref.* = .new(id);
 
             prev_ref = &entry.data.free;
         }
@@ -137,7 +139,7 @@ pub fn collect() !void {
         if (object.data == .free) continue;
 
         if (!object.marked) {
-            (ObjectRef{ .id = id }).deinit();
+            ObjectRef.new(id).deinit();
 
             free_count += 1;
         }

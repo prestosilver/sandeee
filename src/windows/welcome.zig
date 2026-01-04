@@ -66,7 +66,7 @@ pub const WelcomeData = struct {
         });
         try font.draw(.{
             .shader = font_shader,
-            .text = if (options.IsDemo)
+            .text = if (options.is_demo)
                 "  " ++ strings.BULLET ++ " This demo will not save progress."
             else
                 "  " ++ strings.BULLET ++ " You can open Xplore anytime for help",
@@ -80,7 +80,7 @@ pub const WelcomeData = struct {
             .scale = 1,
         });
 
-        if (options.IsDemo) {
+        if (options.is_demo) {
             props.no_close = true;
             const remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
             if (remaining < 0) @panic("Demo Over");
@@ -93,7 +93,7 @@ pub const WelcomeData = struct {
                 .text = demo_text,
                 .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 10 * font.size },
                 .scale = 2,
-                .color = .newColor(1, 0, 0, 1),
+                .color = .{ .r = 1, .g = 0, .b = 0 },
             });
         } else {
             // draw checkbox

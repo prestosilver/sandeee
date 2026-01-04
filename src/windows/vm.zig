@@ -36,7 +36,6 @@ const DEFAULT_SIZE: Vec2 = .{ .x = 600, .y = 400 };
 pub const VMData = struct {
     const Self = @This();
 
-    //rects: [2]std.ArrayList(VMDataEntry),
     texture: Texture,
     framebuffer: zgl.Framebuffer,
     renderbuffer: zgl.Renderbuffer,

@@ -35,7 +35,7 @@ pub fn init(comptime total: u32, files: [total]ShaderFile) !Shader {
             const info_log = try shader.getCompileLog(allocator);
             defer allocator.free(info_log);
 
-            log.err("{s}", .{info_log});
+            log.info("{s}", .{info_log});
 
             return error.CompileError;
         }
@@ -48,6 +48,8 @@ pub fn init(comptime total: u32, files: [total]ShaderFile) !Shader {
     if (program.get(.link_status) == 0) {
         const info_log = try program.getCompileLog(allocator);
         defer allocator.free(info_log);
+
+        log.info("{s}", .{info_log});
 
         return error.CompileError;
     }

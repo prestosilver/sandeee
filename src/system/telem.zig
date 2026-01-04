@@ -38,15 +38,15 @@ pub const Telem = packed struct {
         major: u2,
         index: u30,
     } = .{
-        .major = @intFromEnum(options.SandEEEVersion.phase),
-        .index = options.SandEEEVersion.index,
+        .major = @intFromEnum(options.SANDEEE_VERSION.phase),
+        .index = options.SANDEEE_VERSION.index,
     },
 
     pub fn checkVersion() void {
         if (builtin.is_test) return;
 
-        if (instance.version.major != @intFromEnum(options.SandEEEVersion.phase) or
-            instance.version.index != options.SandEEEVersion.index)
+        if (instance.version.major != @intFromEnum(options.SANDEEE_VERSION.phase) or
+            instance.version.index != options.SANDEEE_VERSION.index)
         {
             const update_window: Window = .atlas("win", .{
                 .source = .{ .w = 1, .h = 1 },
@@ -87,7 +87,10 @@ pub const Telem = packed struct {
 
         const root = try files.FolderLink.resolve(.root);
 
-        _ = try root.newFile(strings.TELEM_PATH);
+        _ = root.newFile(strings.TELEM_PATH) catch |err| switch (err) {
+            error.FileExists => {},
+            else => return err,
+        };
         try root.writeFile(strings.TELEM_PATH, conts, null);
     }
 

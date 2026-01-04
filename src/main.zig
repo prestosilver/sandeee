@@ -85,8 +85,8 @@ pub const std_options = std.Options{
 };
 
 pub const steam_options = struct {
-    pub const fake_steam = options.fakeSteam;
-    pub const use_steam = options.IsSteam;
+    pub const fake_steam = options.fake_steam;
+    pub const use_steam = options.is_steam;
     pub const app_id = 4124360;
     pub const alloc = allocator;
 };
@@ -276,6 +276,11 @@ pub fn keyDown(event: input_events.EventKeyDown) !void {
         show_fps = !show_fps;
     }
 
+    if (event.key == glfw.KeyF12 and event.mods & glfw.ModifierControl != 0) {
+        const fdsa: ?*u32 = null;
+        log.log.info("{}", fdsa.?);
+    }
+
     if (event.key == glfw.KeyV and event.mods == glfw.ModifierControl) {
         try events.EventManager.instance.sendEvent(system_events.EventPaste{});
 
@@ -427,8 +432,8 @@ pub fn drawLoading(self: *LoadingState) void {
             if (!graphics.Context.poll())
                 self.done.store(true, .monotonic);
 
-            // if (paniced)
-            //     self.done.store(true, .monotonic);
+            if (paniced)
+                self.done.store(true, .monotonic);
         }
 
         // render loading screen
@@ -463,16 +468,14 @@ pub fn windowResize(event: input_events.EventWindowResize) !void {
     depth_render_buffer.storage(.buffer, .depth_component, @intFromFloat(graphics.Context.instance.size.x), @intFromFloat(graphics.Context.instance.size.y));
 }
 
-var graphics_init = false;
-
 pub const panic = std.debug.FullPanic(
-    if (builtin.is_test or builtin.mode == .Debug)
+    if (builtin.is_test or options.default_panic)
         std.debug.defaultPanic
     else
         fullPanic,
 );
 
-fn fullPanic(msg: []const u8, _: ?usize) noreturn {
+fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
     defer {
         log.deinit();
 
@@ -488,10 +491,10 @@ fn fullPanic(msg: []const u8, _: ?usize) noreturn {
     error_state = @intFromEnum(current_state);
 
     // panic log asap
-    // const st = panic_handler.log(trace);
-    // error_message = std.fmt.allocPrint(allocator, "{s}\n{s}\n\n{?f}", .{ msg, st, trace }) catch {
-    //     std.process.exit(1);
-    // };
+    const st = panic_handler.log(msg, first_trace_addr);
+    error_message = std.fmt.allocPrint(allocator, "{s}\n{s}\n", .{ msg, st }) catch {
+        std.process.exit(1);
+    };
 
     std.fs.cwd().writeFile(.{
         .sub_path = "CrashLog.txt",
@@ -499,7 +502,7 @@ fn fullPanic(msg: []const u8, _: ?usize) noreturn {
     }) catch {};
 
     // no display on headless
-    if (!graphics_init) {
+    if (!graphics.is_init) {
         std.process.exit(1);
     }
 
@@ -574,7 +577,7 @@ pub fn main() void {
 
     {
         // check arguments
-        var args = std.process.ArgIterator.initWithAllocator(allocator) catch @panic("Out of memory");
+        var args = std.process.ArgIterator.initWithAllocator(allocator) catch std.debug.panic("Out of memory", .{});
         defer args.deinit();
 
         const cmd_path = args.next().?;
@@ -601,12 +604,12 @@ pub fn main() void {
                     print_help(cmd_path, "Expected disk file path", .{});
             } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
                 if (args.next()) |script| {
-                    const buff = allocator.alloc(u8, 1024) catch @panic("out of memory");
+                    const buff = allocator.alloc(u8, 1024) catch std.debug.panic("out of memory", .{});
                     const file = std.fs.cwd().openFile(script, .{}) catch |err|
                         print_help(cmd_path, "Headless script '{s}' couldnt be read ({})", .{ script, err });
                     defer file.close();
 
-                    const len = file.readAll(buff) catch @panic("couldnt read file");
+                    const len = file.readAll(buff) catch std.debug.panic("couldnt read file", .{});
                     headless_cmd = buff[0..len];
 
                     headless.is_headless = true;
@@ -631,15 +634,13 @@ pub fn main() void {
                 else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
             };
 
-            const msg = std.fmt.allocPrint(allocator, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
-
-            @panic(msg);
+            std.debug.panic("{s}\n{s}", .{ @errorName(err), name });
         };
     }
 
     std.fs.cwd().access("disks", .{}) catch
         std.fs.cwd().makeDir("disks") catch
-        @panic("Cannot make disks directory.");
+        std.debug.panic("Cannot make disks directory.", .{});
 
     runGame() catch |err| {
         const name = switch (err) {
@@ -653,16 +654,14 @@ pub fn main() void {
             else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
         };
 
-        const msg = std.fmt.allocPrint(allocator, "{s}\n{s}", .{ @errorName(err), name }) catch "Cannont allocate error message";
-
-        @panic(msg);
+        std.debug.panic("{s}\n{s}", .{ @errorName(err), name });
     };
 
     std.log.info("Done", .{});
 }
 
 pub fn runGame() anyerror!void {
-    if (options.IsSteam) {
+    if (options.is_steam) {
         if (steam.restartIfNeeded(.this_app)) {
             log.log.err("Restarting for steam", .{});
             return; // steam will relaunch the game from the steam client.
@@ -676,23 +675,17 @@ pub fn runGame() anyerror!void {
         // TODO: cleanup downloads maybe?
     }
 
-    defer if (options.IsSteam)
+    defer if (options.is_steam)
         steam.deinit();
 
-    // if (!cwd_change)
-    // if (std.mem.lastIndexOf(u8, first orelse "", "/")) |last_slash|
-    //     try std.process.changeCurDir(first.?[0..last_slash]);
-
-    log.log_file = try std.fs.cwd().createFile("SandEEE.log", .{});
-    defer log.log_file.?.close();
+    try log.setLogFile("SandEEE.log");
 
     log.log.info("Sandeee " ++ strings.SANDEEE_VERSION_TEXT, .{});
 
+    try audio.AudioManager.init();
+
     // init graphics
     var graphics_loader: Loader = try .init(loaders.Graphics{});
-    graphics_init = true;
-
-    try audio.AudioManager.init();
 
     // setup fonts deinit
     bios_font.setup = false;
@@ -988,7 +981,9 @@ pub fn runGame() anyerror!void {
 
             try state.refresh();
 
-            // log.log.debug("Rendered in {d:.6}ms", .{VmManager.last_render_time * 1000});
+            // Make sure this dosent run on release, a print every frame problaby has overhead
+            if (builtin.mode == .Debug)
+                log.log.debug("Rendered in {d:.6}ms", .{Vm.Manager.last_render_time * 1000});
 
             try Vm.Manager.instance.runGc();
 
@@ -1029,8 +1024,6 @@ pub fn runGame() anyerror!void {
             }
         }
     }
-
-    graphics_init = false;
 
     // deinit vm manager
     Vm.Manager.instance.deinit();

@@ -313,7 +313,6 @@ pub fn render(sb: *Self) !void {
                 zgl.vertexAttribDivisor(5, 1);
                 zgl.vertexAttribDivisor(6, 1);
 
-                // zgl.bindVertexArray(@enumFromInt(@intFromEnum(sb.quad)));
                 zgl.drawArraysInstanced(.triangles, 0, 6, entry.verts.quads().len);
 
                 zgl.vertexAttribDivisor(2, 0);

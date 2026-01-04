@@ -5,7 +5,9 @@ const util = @import("../util.zig");
 
 const allocator = util.allocator;
 
-pub var log_file: ?std.fs.File = null;
+var log_file: ?std.fs.File = null;
+var log_file_writer: std.fs.File.Writer = undefined;
+var log_lock: std.Thread.Mutex = .{};
 
 pub const log = std.log.scoped(.SandEEE);
 
@@ -21,7 +23,7 @@ pub var logs: [HIST_LEN]LogData = .{LogData{}} ** HIST_LEN;
 pub var last_log: usize = 0;
 pub var total_logs: usize = 0;
 
-pub var stop_logs: bool = false;
+pub var stop_logs: bool = true;
 
 pub fn sandEEELogFn(
     comptime level: std.log.Level,
@@ -50,20 +52,19 @@ pub fn sandEEELogFn(
         .debug => "\x1b[90m",
     };
 
-    std.debug.lockStdErr();
-    defer std.debug.unlockStdErr();
-
     // Print the message to stderr, silently ignoring any errors
     if (@import("builtin").mode == .Debug) {
-        const stderr: std.fs.File = .stderr();
-        var writer = stderr.writer(&.{});
+        std.debug.lockStdErr();
+        defer std.debug.unlockStdErr();
 
-        nosuspend writer.interface.print(color ++ prefix ++ format ++ "\x1b[m\n", args) catch return;
+        std.fs.File.stderr().writeAll(color ++ prefix ++ format ++ "\x1b[m\n") catch {};
     }
 
-    if (log_file) |file| {
-        var writer = file.writer(&.{});
-        nosuspend writer.interface.print(prefix ++ format ++ "\n", args) catch return;
+    if (log_file) |_| {
+        log_lock.lock();
+        defer log_lock.unlock();
+
+        log_file_writer.interface.print(prefix ++ format ++ "\n", args) catch return;
     }
 
     if (stop_logs)
@@ -100,8 +101,18 @@ pub fn getLogs() [2][]const LogData {
     }
 }
 
+pub fn setLogFile(file: []const u8) !void {
+    log_file = try std.fs.cwd().createFile(file, .{});
+    log_file_writer = log_file.?.writer(&.{});
+
+    stop_logs = false;
+}
+
 pub fn deinit() void {
     if (stop_logs) return;
+
+    log_file.?.close();
+    log_file = null;
 
     stop_logs = true;
     for (&logs) |*log_item| {

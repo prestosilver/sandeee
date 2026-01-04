@@ -26,10 +26,19 @@ pub var last_vm_time: f64 = 0;
 pub var last_update_time: f64 = 0;
 pub var last_render_time: f64 = 0;
 
+pub const VmHandle = enum(u32) {
+    _,
+
+    pub inline fn inc(self: VmHandle) VmHandle {
+        const id = @intFromEnum(self);
+        return @enumFromInt(id +% 1);
+    }
+};
+
 threads: std.array_list.Managed(std.Thread) = .init(allocator),
-vms: std.AutoHashMap(usize, Vm) = .init(allocator),
-results: std.AutoHashMap(usize, VMResult) = .init(allocator),
-vm_index: usize = 0,
+vms: std.AutoHashMap(VmHandle, Vm) = .init(allocator),
+results: std.AutoHashMap(VmHandle, VMResult) = .init(allocator),
+vm_index: VmHandle = @enumFromInt(0),
 
 pub const VMResult = struct {
     data: []u8,
@@ -38,10 +47,6 @@ pub const VMResult = struct {
     pub fn deinit(self: VMResult) void {
         allocator.free(self.data);
     }
-};
-
-pub const VMHandle = struct {
-    id: usize,
 };
 
 pub fn logout() !void {
@@ -87,7 +92,7 @@ pub fn deinit(self: *Self) void {
 }
 
 pub const VMStats = struct {
-    id: usize,
+    id: VmHandle,
     name: []const u8,
     meta_usage: usize,
     last_exec: usize,
@@ -112,10 +117,10 @@ pub fn getStats(self: *Self) ![]VMStats {
     return results;
 }
 
-pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []const u8) !VMHandle {
+pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []const u8) !VmHandle {
     const id = self.vm_index;
 
-    self.vm_index = self.vm_index +% 1;
+    self.vm_index = self.vm_index.inc();
 
     const count = std.mem.count(u8, params, " ");
     const input = try allocator.alloc([]const u8, count + 1);
@@ -138,19 +143,17 @@ pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []co
 
     log.debug("Spawned vm id: {}", .{id});
 
-    return .{
-        .id = id,
-    };
+    return id;
 }
 
-pub fn destroy(self: *Self, handle: VMHandle) void {
-    if (self.vms.getPtr(handle.id)) |entry| {
+pub fn destroy(self: *Self, handle: VmHandle) void {
+    if (self.vms.getPtr(handle)) |entry| {
         entry.deinit();
-        _ = self.vms.remove(handle.id);
+        _ = self.vms.remove(handle);
 
-        log.debug("Destroy vm id: {}", .{handle.id});
+        log.debug("Destroy vm id: {}", .{handle});
     } else {
-        log.warn("Failed to destroy empty vm id: {}", .{handle.id});
+        log.warn("Failed to destroy empty vm id: {}", .{handle});
     }
 }
 
@@ -176,16 +179,16 @@ pub fn updateVmThread(vm_instance: *Vm, frame_end: u64) !void {
     };
 }
 
-pub fn appendInputSlice(self: *Self, handle: VMHandle, data: []const u8) !void {
-    if (self.vms.getPtr(handle.id)) |vm_instance| {
+pub fn appendInputSlice(self: *Self, handle: VmHandle, data: []const u8) !void {
+    if (self.vms.getPtr(handle)) |vm_instance| {
         try vm_instance.input.appendSlice(data);
     }
 }
 
-pub fn getOutput(self: *Self, handle: VMHandle) !VMResult {
-    return if (self.results.fetchRemove(handle.id)) |item| item.value else .{
+pub fn getOutput(self: *Self, handle: VmHandle) !VMResult {
+    return if (self.results.fetchRemove(handle)) |item| item.value else .{
         .data = &.{},
-        .done = !self.vms.contains(handle.id),
+        .done = !self.vms.contains(handle),
     };
 }
 
@@ -222,9 +225,7 @@ pub fn update(self: *Self) !void {
                 .done = true,
             };
 
-            self.destroy(.{
-                .id = vm_id,
-            });
+            self.destroy(vm_id);
 
             if (self.results.getPtr(vm_id)) |old_result| {
                 defer result.deinit();

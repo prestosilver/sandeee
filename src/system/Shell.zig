@@ -64,7 +64,7 @@ const TOTAL_BAR_SPRITES: f32 = 13;
 const Shell = @This();
 
 headless: bool = false,
-vm: ?Vm.Manager.VMHandle = null,
+vm: ?Vm.Manager.VmHandle = null,
 
 root: files.FolderLink,
 
@@ -705,9 +705,7 @@ pub const shell_commands = .{
             pub fn stop(_: *Shell, params: *Params) !Result {
                 if (params.next()) |id_string| {
                     const id = try std.fmt.parseInt(u8, id_string, 16);
-                    Vm.Manager.instance.destroy(.{
-                        .id = id,
-                    });
+                    Vm.Manager.instance.destroy(@enumFromInt(id));
                     return .{
                         .data = try allocator.dupe(u8, "Stopped"),
                     };

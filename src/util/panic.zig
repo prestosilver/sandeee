@@ -4,42 +4,62 @@ const builtin = @import("builtin");
 const util = @import("../util.zig");
 const sandeee_data = @import("../data.zig");
 
-const allocator = util.allocator;
-
 const strings = sandeee_data.strings;
 
 // TODO: fix display in game, shouldnt conver to eeech
+var panic_stage: u32 = 0;
+var panicking = std.atomic.Value(u8).init(0);
 
-pub fn log(trace: ?*std.builtin.StackTrace) []const u8 {
-    // Try to run a backtrace to get where the log message originated from
-    if (builtin.strip_debug_info) return strings.NO_STACKTRACE_MESSAGE;
-    const stack_trace = trace orelse return strings.NO_STACKTRACE_MESSAGE;
-    const debug_info = std.debug.getSelfDebugInfo() catch return strings.NO_STACKTRACE_MESSAGE;
+pub fn log(msg: []const u8, first_trace_addr: ?usize) []const u8 {
+    @branchHint(.cold);
 
-    var result: []u8 = &.{};
-    var frame_index: usize = 0;
-    var frames_left: usize = @min(stack_trace.index, stack_trace.instruction_addresses.len);
-    while (frames_left != 0) : ({
-        frames_left -= 1;
-        frame_index = (frame_index + 1) % stack_trace.instruction_addresses.len;
-    }) {
-        const return_address = stack_trace.instruction_addresses[frame_index];
+    var alloc: std.heap.DebugAllocator(.{}) = .init;
+    const allocator = alloc.allocator();
 
-        const module = debug_info.getModuleForAddress(return_address - 1) catch |err| {
-            std.debug.print("error: {s}\n", .{@errorName(err)});
-            continue;
-        };
-        const symbol_info = module.getSymbolAtAddress(debug_info.allocator, return_address - 1) catch continue;
-        const li = symbol_info.source_location.?;
+    var writer_alloc: std.Io.Writer.Allocating = .init(allocator);
+    const writer = &writer_alloc.writer;
 
-        const index = std.mem.indexOf(u8, li.file_name, "sandeee/") orelse 0;
-        // Good backtrace, print with the source location of the log
-        const adds = std.fmt.allocPrint(allocator.alloc, "{s}:{d}\n", .{ li.file_name[index..], li.line }) catch return result;
-        defer allocator.alloc.free(adds);
-        const start = result.len;
-        result = allocator.alloc.realloc(result, result.len + adds.len) catch return result;
-        @memcpy(result[start..], adds);
+    // There is very similar logic to the following in `handleSegfault`.
+    switch (panic_stage) {
+        0 => {
+            panic_stage = 1;
+            _ = panicking.fetchAdd(1, .seq_cst);
+
+            trace: {
+                if (builtin.single_threaded) {
+                    writer.print("panic: ", .{}) catch break :trace;
+                } else {
+                    const current_thread_id = std.Thread.getCurrentId();
+                    writer.print("thread {d} panic: ", .{current_thread_id}) catch break :trace;
+                }
+                writer.print("{s}\n", .{msg}) catch break :trace;
+
+                const debug_info = std.debug.getSelfDebugInfo() catch |err| {
+                    writer.print("Unable to dump stack trace: Unable to open debug info: {s}\n", .{@errorName(err)}) catch break :trace;
+                    break :trace;
+                };
+                if (@errorReturnTrace()) |t| if (t.index > 0) {
+                    writer.writeAll("error return context:\n") catch break :trace;
+                    std.debug.writeStackTrace(t.*, writer, debug_info, .no_color) catch break :trace;
+                    writer.writeAll("\nstack trace:\n") catch break :trace;
+                };
+                std.debug.writeCurrentStackTrace(
+                    writer,
+                    debug_info,
+                    .no_color,
+                    first_trace_addr orelse @returnAddress(),
+                ) catch break :trace;
+            }
+        },
+        1 => {
+            panic_stage = 2;
+            // A panic happened while trying to print a previous panic message.
+            // We're still holding the mutex but that's fine as we're going to
+            // call abort().
+            std.fs.File.stderr().writeAll("aborting due to recursive panic :()\n") catch {};
+        },
+        else => {}, // Panicked while printing the recursive panic message.
     }
 
-    return result;
+    return writer_alloc.toArrayList().items;
 }

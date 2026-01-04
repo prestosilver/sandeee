@@ -15,6 +15,8 @@ const Shader = util.Shader;
 const allocator = util.allocator;
 const log = util.log;
 
+pub var is_init = false;
+
 pub const Context = struct {
     pub var instance: Context = undefined;
 
@@ -74,7 +76,8 @@ pub const Context = struct {
         glfw.windowHint(glfw.BlueBits, mode.blueBits);
         glfw.windowHint(glfw.RefreshRate, mode.refreshRate);
 
-        const win = try glfw.createWindow(mode.width, mode.height, name, monitor, null);
+        //const win = try glfw.createWindow(mode.width, mode.height, name, monitor, null);
+        const win = try glfw.createWindow(mode.width, mode.height, name, null, null);
 
         glfw.makeContextCurrent(win);
 
@@ -93,6 +96,8 @@ pub const Context = struct {
         zgl.depthFunc(.always);
 
         glfw.makeContextCurrent(null);
+
+        is_init = true;
 
         instance = Context{
             .window = win,
@@ -143,6 +148,8 @@ pub const Context = struct {
     }
 
     pub fn deinit() void {
+        is_init = false;
+
         instance.shaders.deinit();
         glfw.destroyWindow(instance.window);
         glfw.terminate();

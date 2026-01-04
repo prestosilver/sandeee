@@ -8,6 +8,7 @@ const system = @import("../system.zig");
 
 const TextureManager = util.TextureManager;
 const graphics = util.graphics;
+const log = util.log;
 
 const Self = @This();
 

@@ -77,7 +77,6 @@ pub const ExplorerData = struct {
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
         const shell_root = try self.shell.root.resolve();
 
-        //const result = try allocator(ExplorerIcon, sub_folders.len + sub_files.len);
         var result: std.array_list.Managed(ExplorerIcon) = .init(allocator);
         defer result.deinit();
 

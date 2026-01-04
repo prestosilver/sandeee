@@ -458,9 +458,9 @@ fn sysRSP(self: *Vm) VmError!void {
 
     if (num.data().* != .value) return error.ValueMissing;
 
-    if (self.rsp < num.data().value) return error.InvalidSys;
+    if (self.rsp < @as(u64, @intCast(num.data().value))) return error.InvalidSys;
 
-    self.rsp = num.data().value;
+    self.rsp = @intCast(num.data().value);
 }
 
 fn sysSpawn(self: *Vm) VmError!void {
@@ -477,7 +477,7 @@ fn sysSpawn(self: *Vm) VmError!void {
 
     const handle = try Vm.Manager.instance.spawn(self.root, path, conts[4..]);
 
-    try self.pushStackI(handle.id);
+    try self.pushStackI(@intFromEnum(handle));
 }
 
 fn sysStatus(self: *Vm) VmError!void {
@@ -564,7 +564,7 @@ const SteamYieldUpdate = struct {
 };
 
 fn sysSteam(self: *Vm) VmError!void {
-    if (!options.IsSteam)
+    if (!options.is_steam)
         return error.InvalidSys;
 
     const file = try self.popStack();

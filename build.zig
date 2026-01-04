@@ -138,6 +138,7 @@ pub fn build(b: *std.Build) !void {
 
     const is_demo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
     const steam_mode = b.option(enum { Off, On, Fake }, "steam", "Makes SandEEE build a steam build") orelse .Off;
+    const default_panic = b.option(bool, "default_panic", "Force the default zig panic handler") orelse false;
     const random_tests = b.option(usize, "random", "Makes SandEEE write some random files") orelse 0;
     const version_suffix = switch (optimize) {
         .Debug => if (is_demo) "D0DE" else "00DE",
@@ -173,11 +174,11 @@ pub fn build(b: *std.Build) !void {
     });
     const network_module = network_dependency.module("network");
 
-    const zigimg_dependency = b.dependency("zigimg", .{
-        .target = target,
-        .optimize = optimize,
+    const zigimg_host_dependency = b.dependency("zigimg", .{
+        .target = b.graph.host,
+        .optimize = .Debug,
     });
-    const zigimg_module = zigimg_dependency.module("zigimg");
+    const zigimg_host_module = zigimg_host_dependency.module("zigimg");
 
     const steam_dependency = b.dependency("zig_steamworks_fake", .{
         .target = target,
@@ -193,11 +194,12 @@ pub fn build(b: *std.Build) !void {
 
     const www_path: std.Build.InstallDir = .{ .custom = "../www" };
 
-    options.addOption(Version, "SandEEEVersion", version);
-    options.addOption([]const u8, "VersionText", version_text);
-    options.addOption(bool, "IsDemo", is_demo);
-    options.addOption(bool, "IsSteam", steam_mode != .Off);
-    options.addOption(bool, "fakeSteam", steam_mode == .Fake);
+    options.addOption(Version, "SANDEEE_VERSION", version);
+    options.addOption([]const u8, "VERSION_TEXT", version_text);
+    options.addOption(bool, "is_demo", is_demo);
+    options.addOption(bool, "is_steam", steam_mode != .Off);
+    options.addOption(bool, "fake_steam", steam_mode == .Fake);
+    options.addOption(bool, "default_panic", default_panic);
     const options_module = options.createModule();
 
     exe_mod.addImport("options", options_module);
@@ -269,7 +271,7 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
     });
     eia_builder_mod.addImport("sandeee", exe_host_mod);
-    eia_builder_mod.addImport("zigimg", zigimg_module);
+    eia_builder_mod.addImport("zigimg", zigimg_host_module);
     eia_builder_mod.addImport("options", options_module);
     const eia_builder_exe = b.addExecutable(.{
         .name = "eia_builder",
@@ -282,7 +284,7 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
     });
     epk_builder_mod.addImport("sandeee", exe_host_mod);
-    epk_builder_mod.addImport("zigimg", zigimg_module);
+    epk_builder_mod.addImport("zigimg", zigimg_host_module);
     epk_builder_mod.addImport("options", options_module);
     const epk_builder_exe = b.addExecutable(.{
         .name = "epk_builder",
@@ -295,7 +297,7 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
     });
     eff_builder_mod.addImport("sandeee", exe_host_mod);
-    eff_builder_mod.addImport("zigimg", zigimg_module);
+    eff_builder_mod.addImport("zigimg", zigimg_host_module);
     eff_builder_mod.addImport("options", options_module);
     const eff_builder_exe = b.addExecutable(.{
         .name = "eff_builder",
@@ -501,9 +503,11 @@ pub fn build(b: *std.Build) !void {
     if (optimize == .Debug) {
         const install_disk = b.addInstallFile(debug_image_path, "bin/content/recovery.eee");
         disk_step.dependOn(&install_disk.step);
+        b.getInstallStep().dependOn(&install_disk.step);
     } else {
         const install_disk = b.addInstallFile(disk_image_path, "bin/content/recovery.eee");
         disk_step.dependOn(&install_disk.step);
+        b.getInstallStep().dependOn(&install_disk.step);
     }
 
     addOverlay(b, &.{debug_image_step}, overlays_path.path(b, "debug"));
@@ -561,8 +565,6 @@ pub fn build(b: *std.Build) !void {
         debug_image_step.addFileArg(random_file);
         debug_image_step.addArg("/prof/tests/rand/random.esh");
     }
-
-    b.getInstallStep().dependOn(disk_step);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
@@ -913,11 +915,12 @@ pub fn build(b: *std.Build) !void {
         pub_step.dependOn(&install_recovery_windows_step.step);
 
         const public_options = b.addOptions();
-        public_options.addOption(Version, "SandEEEVersion", version);
-        public_options.addOption([]const u8, "VersionText", version_text);
-        public_options.addOption(bool, "IsDemo", false);
-        public_options.addOption(bool, "IsSteam", false);
-        public_options.addOption(bool, "fakeSteam", false);
+        public_options.addOption(Version, "SANDEEE_VERSION", version);
+        public_options.addOption([]const u8, "VERSION_TEXT", version_text);
+        public_options.addOption(bool, "is_demo", false);
+        public_options.addOption(bool, "is_steam", false);
+        public_options.addOption(bool, "fake_steam", false);
+        public_options.addOption(bool, "default_panic", true);
 
         const public_options_module = public_options.createModule();
 

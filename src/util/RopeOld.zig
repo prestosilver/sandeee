@@ -87,7 +87,6 @@ const SkipWriter = struct {
 
     base: std.io.AnyWriter,
     skip: usize,
-    // end: []const u8,
 
     fn write(
         self: *Self,

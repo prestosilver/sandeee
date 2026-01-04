@@ -163,7 +163,7 @@ pub const File = struct {
         switch (self.data) {
             .os => |os_file| {
                 const stat = try os_file.stat();
-                return stat.size;
+                return @intCast(stat.size);
             },
             .disk => |disk_file| {
                 return disk_file.len;
@@ -199,7 +199,7 @@ pub const File = struct {
         switch (self.data) {
             .os => |os_file| {
                 const stat = try os_file.stat();
-                const result = try allocator.alloc(u8, stat.size);
+                const result = try allocator.alloc(u8, @intCast(stat.size));
 
                 try os_file.seekTo(0);
                 _ = try os_file.readAll(result);
@@ -472,8 +472,8 @@ pub const Folder = struct {
         try telem.Telem.load();
 
         telem.Telem.instance.version = .{
-            .major = @intFromEnum(options.SandEEEVersion.phase),
-            .index = options.SandEEEVersion.index,
+            .major = @intFromEnum(options.SANDEEE_VERSION.phase),
+            .index = options.SANDEEE_VERSION.index,
         };
 
         telem.Telem.save() catch |err|
@@ -1078,7 +1078,7 @@ pub fn toStr() !std.array_list.Managed(u8) {
 }
 
 pub fn write() void {
-    if (options.IsDemo) return;
+    if (options.is_demo) return;
 
     if (root_out) |output| {
         const file = std.fs.cwd().createFile(output, .{}) catch {

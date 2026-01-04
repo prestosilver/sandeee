@@ -24,10 +24,10 @@ pub const FRAME = "\x86";
 pub const DOWN = "\x87";
 
 const SANDEEE_VERSION = Version{
-    .program = options.SandEEEVersion.program,
-    .phase = @enumFromInt(@intFromEnum(options.SandEEEVersion.phase)),
-    .index = options.SandEEEVersion.index,
-    .meta = options.SandEEEVersion.meta,
+    .program = options.SANDEEE_VERSION.program,
+    .phase = @enumFromInt(@intFromEnum(options.SANDEEE_VERSION.phase)),
+    .index = options.SANDEEE_VERSION.index,
+    .meta = options.SANDEEE_VERSION.meta,
 };
 pub const SANDEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{SANDEEE_VERSION});
 

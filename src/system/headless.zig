@@ -31,41 +31,40 @@ pub fn write_console(stdout: *std.fs.File.Writer, input: []const u8) !void {
 pub var is_headless = false;
 
 pub var input_mutex: std.Thread.Mutex = .{};
-pub var input_queue: [128]u8 = undefined;
+pub var input_queue: std.array_list.Managed(u8) = .init(allocator);
 pub var last_input: usize = 0;
 pub var last_processed_input: usize = 0;
 pub var disk: []const u8 = "headless.eee";
 
 pub fn pushInput(input: u8) !void {
-    if (last_input == last_processed_input)
-        return error.InputOverflow;
+    input_mutex.lock();
+    defer input_mutex.unlock();
 
-    input_queue[last_input] = input;
-    last_input += 1;
-    last_input = last_input % input_queue.len;
+    try input_queue.append(input);
 }
 
 pub fn popInput() ?u8 {
-    if (last_input == last_processed_input) return null;
-    last_processed_input += 1;
+    input_mutex.lock();
+    defer input_mutex.unlock();
 
-    return input_queue[last_processed_input - 1];
+    return input_queue.pop();
 }
 
 fn inputLoop() void {
-    var stdin_buffer: [256]u8 = undefined;
-    var stdin = std.fs.File.stdin().reader(&stdin_buffer);
+    var stdin_file = std.fs.File.stdin();
+    var t: [1]u8 = undefined;
 
     while (true) {
-        var c = stdin.interface.takeByte() catch break;
+        const c = stdin_file.read(&t) catch break;
+        if (c == 0) {
+            std.Thread.sleep(100);
+            continue;
+        }
 
-        if (c == '\x7f')
-            c = strings.UNDO[0];
+        if (t[0] == '\x7f')
+            t[0] = strings.UNDO[0];
 
-        input_mutex.lock();
-        defer input_mutex.unlock();
-
-        pushInput(c) catch @panic("bad input");
+        pushInput(t[0]) catch @panic("bad input");
     }
 }
 
@@ -207,11 +206,9 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
 
             while (true) {
                 const ch = blk: {
-                    input_mutex.lock();
-                    defer input_mutex.unlock();
                     break :blk popInput();
                 } orelse {
-                    std.Thread.sleep(1000);
+                    std.Thread.sleep(100);
                     continue;
                 };
 
@@ -220,7 +217,8 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
                         continue;
                     },
                     '\r' => {
-                        continue;
+                        try write_console(stdout, "\n");
+                        break;
                     },
                     '\n' => {
                         try write_console(stdout, "\n");

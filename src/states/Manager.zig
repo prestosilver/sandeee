@@ -86,20 +86,20 @@ pub const GameState = struct {
             fn setupImpl(pointer: *anyopaque) anyerror!void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.pointer.child.setup, .{self});
+                return @call(.auto, ptr_info.pointer.child.setup, .{self});
             }
 
             fn deinitImpl(pointer: *anyopaque) void {
                 const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                return @call(.always_inline, ptr_info.pointer.child.deinit, .{self});
+                return @call(.auto, ptr_info.pointer.child.deinit, .{self});
             }
 
             fn refreshImpl(pointer: *anyopaque) anyerror!void {
                 if (std.meta.hasMethod(child_t, "refresh")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.refresh, .{self});
+                    return @call(.auto, ptr_info.pointer.child.refresh, .{self});
                 }
             }
 
@@ -107,7 +107,7 @@ pub const GameState = struct {
                 if (std.meta.hasMethod(child_t, "draw")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.draw, .{ self, size });
+                    return @call(.auto, ptr_info.pointer.child.draw, .{ self, size });
                 }
             }
 
@@ -115,7 +115,7 @@ pub const GameState = struct {
                 if (std.meta.hasMethod(child_t, "update")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.update, .{ self, dt });
+                    return @call(.auto, ptr_info.pointer.child.update, .{ self, dt });
                 }
             }
 
@@ -123,7 +123,7 @@ pub const GameState = struct {
                 if (std.meta.hasMethod(child_t, "keypress")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.keypress, .{ self, key, mods, down });
+                    return @call(.auto, ptr_info.pointer.child.keypress, .{ self, key, mods, down });
                 }
             }
 
@@ -131,7 +131,7 @@ pub const GameState = struct {
                 if (std.meta.hasMethod(child_t, "keychar")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.keychar, .{ self, codepoint, mods });
+                    return @call(.auto, ptr_info.pointer.child.keychar, .{ self, codepoint, mods });
                 }
             }
 
@@ -139,7 +139,7 @@ pub const GameState = struct {
                 if (std.meta.hasMethod(child_t, "mousepress")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.mousepress, .{ self, btn });
+                    return @call(.auto, ptr_info.pointer.child.mousepress, .{ self, btn });
                 }
             }
 
@@ -147,7 +147,7 @@ pub const GameState = struct {
                 if (std.meta.hasMethod(child_t, "mouserelease")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.mouserelease, .{self});
+                    return @call(.auto, ptr_info.pointer.child.mouserelease, .{self});
                 }
             }
 
@@ -155,7 +155,7 @@ pub const GameState = struct {
                 if (std.meta.hasMethod(child_t, "mousemove")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.mousemove, .{ self, size });
+                    return @call(.auto, ptr_info.pointer.child.mousemove, .{ self, size });
                 }
             }
 
@@ -163,28 +163,26 @@ pub const GameState = struct {
                 if (std.meta.hasMethod(child_t, "mousescroll")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.always_inline, ptr_info.pointer.child.mousescroll, .{ self, dir });
+                    return @call(.auto, ptr_info.pointer.child.mousescroll, .{ self, dir });
                 }
             }
-
-            const vtable = Vtable{
-                .setup = setupImpl,
-                .deinit = deinitImpl,
-                .refresh = refreshImpl,
-                .draw = drawImpl,
-                .update = updateImpl,
-                .keypress = keypressImpl,
-                .keychar = keycharImpl,
-                .mousepress = mousepressImpl,
-                .mouserelease = mousereleaseImpl,
-                .mousemove = mousemoveImpl,
-                .mousescroll = mousescrollImpl,
-            };
         };
 
         return .{
             .ptr = ptr,
-            .vtable = &gen.vtable,
+            .vtable = &.{
+                .setup = gen.setupImpl,
+                .deinit = gen.deinitImpl,
+                .refresh = gen.refreshImpl,
+                .draw = gen.drawImpl,
+                .update = gen.updateImpl,
+                .keypress = gen.keypressImpl,
+                .keychar = gen.keycharImpl,
+                .mousepress = gen.mousepressImpl,
+                .mouserelease = gen.mousereleaseImpl,
+                .mousemove = gen.mousemoveImpl,
+                .mousescroll = gen.mousescrollImpl,
+            },
             .is_setup = false,
         };
     }

@@ -53,7 +53,7 @@ pub const WebData = struct {
     pub fn getConts(_: *Self, url: Url) ![]const u8 {
         switch (url.kind) {
             .Steam => {
-                if (options.IsSteam) {
+                if (options.is_steam) {
                     const root = url.domain;
                     const sub = try allocator.dupeZ(u8, url.path);
                     defer allocator.free(sub);
@@ -260,7 +260,6 @@ pub const WebData = struct {
         else
             ugc.createQueryRequest(.ranked_by_vote, .items, .none, .this_app, page + 1);
 
-        // const query = ugc.createUserQueryRequest(steam.getUser().getSteamId(), .Published, 0, .CreateAsc, steam.NO_APP_ID, steam.STEAM_APP_ID, page + 1);
         defer query.deinit(ugc);
 
         if (query_text.len != 0 and !mine) {
@@ -299,8 +298,6 @@ pub const WebData = struct {
         var added = false;
 
         while (ugc.getQueryResult(query, idx, details)) : (idx += 1) {
-            // if (details.visible != 0) continue;
-
             added = true;
 
             if (steam.fake_api) {

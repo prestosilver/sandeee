@@ -59,18 +59,21 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
         .pos = .{ .x = 300, .y = 100 },
         .color = .{ .r = 1, .g = 1, .b = 1 },
         .wrap = size.x - 400,
+        .scale = 0.5,
     });
     try self.face.draw(.{
         .shader = self.font_shader,
         .text = self.message.*,
-        .pos = .{ .x = 300, .y = 100 + self.face.size },
+        .pos = .{ .x = 300, .y = 100 + self.face.size * 0.5 },
         .color = .{ .r = 1, .g = 1, .b = 1 },
         .wrap = size.x - 400,
+        .scale = 0.5,
     });
 
     const offset = self.face.sizeText(.{
         .text = self.message.*,
         .wrap = size.x - 400,
+        .scale = 0.5,
     }).y;
 
     const state_text = try std.fmt.allocPrint(allocator, "State: {}", .{self.prev_state.*});
@@ -82,6 +85,7 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
         .pos = .{ .x = 300, .y = 100 + self.face.size * 1 + offset },
         .color = .{ .r = 1, .g = 1, .b = 1 },
         .wrap = size.x - 400,
+        .scale = 0.5,
     });
 
     try self.face.draw(.{
@@ -90,6 +94,7 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
         .pos = .{ .x = 300, .y = 100 + self.face.size * 3 + offset },
         .color = .{ .r = 1, .g = 1, .b = 1 },
         .wrap = size.x - 400,
+        .scale = 0.5,
     });
 }
 
