@@ -1,5 +1,7 @@
 # SandEEE OS
 
+> **WARNING**❗Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
+
 ## What is sandeee
 
 SandEEE is a game! :open_mouth:
