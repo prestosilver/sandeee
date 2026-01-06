@@ -1,22 +1,20 @@
 # SandEEE OS
 
-> **WARNING**❗Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
+> :bangbang::bangbang: **WARNING** :bangbang::bangbang: Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
 
 ## What is sandeee
 
 SandEEE is a game! :open_mouth:
 
-Actually though, sandeee is a programming game ment to be as emersive as possible. Pulling no punches when it comes to design and planning.
-
-SandEEE assumes a world where text is the fundamental data layer, not a byproduct of binary design. Consistency, human-readability, and reversibility take precedence over performance when documenting internal systems. When uncertain, programs shall prefer formats that read easily when opened as plain text. Use this as a framework for any decision made, that will keep the project online to preform its vision well.
+Jokes aside, SandEEE is a programming game ment to be as emersive as possible. Pulling no punches when it comes to design and planning. SandEEE assumes a world where text is the fundamental data layer, not a byproduct of binary design. Consistency, human-readability, and reversibility take precedence over performance when documenting internal systems. When uncertain, programs shall prefer formats that read easily when opened as plain text. Use this as a framework for any decision made, that will keep the project online to preform its vision well.
 
 ## Repo structure
 
 |Path|Purpose|
 |---|---|
 |assets/ | All the assets for the game, this is stuff out of the builds
-|assets/disks | Disk image backups
-|assets/steam | Steam related images
+|assets/disks/ | Disk image backups
+|assets/steam/ | Steam related images
 |deps/ | Some dependencies, I might not use them all.
 |docs/ | The User facing docs, unprocessed zig build www builds
 |fake_steam/|Files used for the fake steamworks 
