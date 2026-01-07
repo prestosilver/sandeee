@@ -37,7 +37,7 @@ Jokes aside, SandEEE is a programming game ment to be as immersive as possible. 
 
 ### SandEEE's AI Policy
 
-In early 2024 I was using AI a bit to aid with planning. In mid-late 2025 for personal reasons I decided to stop this practice, and with that have moved these documents into the repo and clearly labeled all stuff that was in some form AI processed. I do/will not be using these tools in the future, and will not exercise the thought. Any edits to these documents will be hand written.
+In early 2024 I was using AI a bit to aid with time planning. In mid-late 2025 for personal reasons I decided to stop this practice, and with that have moved these documents into the repo and clearly labeled all stuff that was in some form AI processed. I do/will not be using these tools in the future, and will not exercise the thought. Any future edits to these documents will be hand written.
 
 ### License
 
