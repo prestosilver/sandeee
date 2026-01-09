@@ -1,6 +1,7 @@
 # SandEEE OS
 
-> :bangbang::bangbang: **WARNING** :bangbang::bangbang: Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
+> [!WARNING]
+> Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
 
 ## What is sandeee
 
@@ -17,7 +18,7 @@ Jokes aside, SandEEE is a programming game ment to be as immersive as possible. 
 |assets/steam/ | Steam related images
 |deps/ | Some dependencies, I might not use them all.
 |docs/ | The User facing docs, unprocessed zig build www builds
-|fake_steam/ |Files used for the fake steamworks 
+|fake_steam/ |Files used for the fake steamworks
 |steam/ | A small custom steam library for zig
 |tests/ | Tests for in game (non zig) code.
 |tools/ | Some zig tools for converting file formats and stuffs
