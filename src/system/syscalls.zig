@@ -232,9 +232,7 @@ fn sysFlush(self: *Vm) VmError!void {
     const fs = self.streams.items[@as(usize, @intCast(idx.data().value))];
     if (fs) |stream| {
         try stream.flush();
-    } else {
-        return error.InvalidStream;
-    }
+    } else return error.InvalidStream;
 }
 
 fn sysClose(self: *Vm) VmError!void {
@@ -353,7 +351,7 @@ fn sysResizeHeap(self: *Vm) VmError!void {
 
     if (start < self.heap.len) {
         for (start..self.heap.len) |idx| {
-            self.heap[idx] = .{ .value = 0 };
+            self.heap[idx] = null;
         }
     }
 }
@@ -365,15 +363,8 @@ fn sysReadHeap(self: *Vm) VmError!void {
     if (item.data().value >= self.heap.len) return error.HeapOutOfBounds;
 
     const adds = self.heap[@as(usize, @intCast(item.data().value))];
-
-    switch (adds) {
-        .value => {
-            try self.pushStackI(adds.value);
-        },
-        .string => {
-            try self.pushStackS(adds.string);
-        },
-    }
+    if (adds) |a|
+        try self.pushStack(a);
 }
 
 fn sysWriteHeap(self: *Vm) VmError!void {
@@ -386,22 +377,7 @@ fn sysWriteHeap(self: *Vm) VmError!void {
 
     const idx: usize = @intCast(item.data().value);
 
-    if (self.heap[idx] == .string)
-        self.heap[idx].string.deinit();
-
-    switch (data.data().*) {
-        .free => return error.HeapOutOfBounds,
-        .value => {
-            self.heap[idx] = .{
-                .value = data.data().value,
-            };
-        },
-        .string => {
-            self.heap[idx] = .{
-                .string = try data.data().string.clone(),
-            };
-        },
-    }
+    self.heap[idx] = data;
 
     try self.pushStack(data);
 }

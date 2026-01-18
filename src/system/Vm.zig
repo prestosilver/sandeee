@@ -66,11 +66,6 @@ const StackEntryKind = enum {
     value,
 };
 
-pub const HeapEntry = union(StackEntryKind) {
-    string: Rope,
-    value: u64,
-};
-
 pub const RetStackEntry = struct {
     function: ?[]const u8,
     location: usize,
@@ -113,7 +108,7 @@ streams: std.array_list.Managed(?*Stream),
 out: std.array_list.Managed(u8),
 args: [][]const u8,
 root: files.FolderLink,
-heap: []HeapEntry,
+heap: []?Pool.ObjectRef,
 
 name: []const u8,
 
@@ -237,12 +232,6 @@ pub fn deinit(self: *Vm) void {
 
     for (self.args) |*item|
         self.allocator.free(item.*);
-
-    for (self.heap) |item|
-        switch (item) {
-            .string => |v| v.deinit(),
-            else => {},
-        };
 
     var misc_iter = self.misc_data.iterator();
 
@@ -1055,6 +1044,10 @@ pub fn markData(self: *Vm) !void {
     for (self.stack[0..self.rsp]) |entry| {
         try entry.mark();
     }
+
+    for (self.heap) |entry|
+        if (entry) |e|
+            try e.mark();
 }
 
 test "Vm Compile bad returns error" {
