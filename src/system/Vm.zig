@@ -309,7 +309,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
         },
         .Size => {
             const a = try self.popStack();
-            const b = try self.findStack(0);
+            const b = try self.popStack();
 
             if (a.data().* != .value) return error.ValueMissing;
             if (b.data().* != .string) return error.StringMissing;
@@ -324,7 +324,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const len = @min(old.len, new.len);
             @memcpy(new[0..len], old[0..len]);
 
-            b.data().string = try .init(new);
+            try self.pushStackS(try .init(new));
 
             return;
         },
