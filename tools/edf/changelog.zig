@@ -175,6 +175,7 @@ pub fn main() !void {
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "bump")) ch[1] = ' ';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "meta")) ch[1] = ' ';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "githide")) ch[1] = ' ';
+                if (std.mem.containsAtLeast(u8, lower_line, 1, "merge branch")) ch[1] = ' ';
 
                 if (ch[1] != ' ') {
                     _ = try file.write(&ch);
