@@ -1,43 +1,36 @@
 const std = @import("std");
-const mail = @import("../src/system/mail.zig");
+const mail = @import("sandeee").system.mail;
 
 var mail_lock = std.Thread.Mutex{};
 
-pub fn emails(
-    b: *std.Build,
-    paths: []const std.Build.LazyPath,
-    output: std.Build.LazyPath,
-) anyerror!void {
-    if (paths.len != 1) return error.BadPaths;
+pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
+pub const allocator = gpa.allocator();
 
-    mail_lock.lock();
-    defer mail_lock.unlock();
+pub fn main() !void {
+    var args = try std.process.argsWithAllocator(allocator);
+    _ = args.next();
+    const output_file = args.next() orelse return error.MissingOutputFile;
 
     try mail.EmailManager.init();
     defer mail.EmailManager.instance.deinit();
 
-    var root = try std.fs.cwd().openDir(paths[0].getPath3(b, null).sub_path, .{ .access_sub_paths = true, .iterate = true });
-    var walker = try root.walk(b.allocator);
-
-    var count: usize = 0;
-
-    while (try walker.next()) |file| {
-        switch (file.kind) {
-            .file => {
-                var f = try root.openFile(file.path, .{});
-                defer f.close();
-                try mail.EmailManager.instance.append(try mail.EmailManager.Email.parseTxt(f));
-                count += 1;
-            },
-            else => {},
+    while (args.next()) |kind| {
+        if (std.mem.eql(u8, kind, "--file")) {
+            const file_path = args.next() orelse return error.MissingFile;
+            var f = try std.fs.cwd().openFile(file_path, .{});
+            defer f.close();
+            try mail.EmailManager.instance.append(try mail.EmailManager.Email.parseTxt(f));
+        } else {
+            std.log.info("{s}", .{kind});
+            return error.UnknownArg;
         }
     }
 
-    const path = output.getPath(b);
-    var file = try std.fs.createFileAbsolute(path, .{});
-    defer file.close();
-
     const appends = try mail.EmailManager.instance.exportData();
 
-    _ = try file.writer().write(appends);
+    var file = try std.fs.createFileAbsolute(output_file, .{});
+    defer file.close();
+
+    var writer = file.writer(&.{});
+    try writer.interface.writeAll(appends);
 }

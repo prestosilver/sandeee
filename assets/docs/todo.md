@@ -17,6 +17,7 @@
 - [ ] Unify double click
 - [ ] Steam in web can lag the game
 - [ ] Switch to proper versioning everywhere
+- [X] Fix random mem leak on tests
 
 ## General tentative todo
 

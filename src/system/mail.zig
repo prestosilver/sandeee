@@ -137,14 +137,13 @@ pub const EmailManager = struct {
                 .condition = &.{},
             };
 
-            var buf_reader = std.io.bufferedReader(file.reader());
-            const in_stream = buf_reader.reader();
-            var contents = std.ArrayList(u8).init(allocator);
+            var reader_buffer: [1024]u8 = undefined;
+            var reader = file.reader(&reader_buffer);
+            var contents = std.array_list.Managed(u8).init(allocator);
             defer contents.deinit();
             var input: ?[]const u8 = null;
 
-            var buf: [1024]u8 = undefined;
-            while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+            while (try reader.interface.takeDelimiter('\n')) |line| {
                 _ = std.mem.replace(u8, line, "EEE", strings.EEE, line);
                 _ = std.mem.replace(u8, line, "Epsilon", strings.E ++ "psilon", line);
 
@@ -271,7 +270,7 @@ pub const EmailManager = struct {
 
         allocator.free(self.boxes);
 
-        self.emails.deinit();
+        self.emails.clearAndFree();
     }
 
     pub fn getPc(self: *EmailManager, box: usize) u8 {
@@ -393,7 +392,8 @@ pub const EmailManager = struct {
     }
 
     pub fn loadStateFile(self: *EmailManager, path: []const u8) !void {
-        const file = try files.root.getFile(path);
+        const files_root = try files.FolderLink.resolve(.root);
+        const file = try files_root.getFile(path);
 
         const conts = try file.read(null);
         var idx: usize = 0;
@@ -440,7 +440,7 @@ pub const EmailManager = struct {
         for (self.emails.items) |email| {
             const start = result.len;
 
-            var cond_list = std.ArrayList(u8).init(allocator);
+            var cond_list = std.array_list.Managed(u8).init(allocator);
             defer cond_list.deinit();
 
             for (email.condition) |input| {
@@ -491,18 +491,21 @@ pub const EmailManager = struct {
     }
 
     pub fn loadFromFolder(self: *EmailManager, path: []const u8) !void {
-        const folder = try files.root.getFolder(path);
-        var file_list = std.ArrayList(*files.File).init(allocator);
-        defer file_list.deinit();
+        const root_path = try files.FolderLink.resolve(.root);
+        const folder = try root_path.getFolder(path);
 
-        try folder.getFilesRec(&file_list);
+        self.boxes = try allocator.alloc([]const u8, 1);
 
-        self.boxes = try allocator.alloc([]const u8, file_list.items.len + 1);
+        var current: ?*files.File = folder.files;
+        var boxid: usize = 0;
 
-        self.boxes[self.boxes.len - 1] = "outbox";
+        while (current) |file| : ({
+            boxid += 1;
+            current = file.next_sibling;
+        }) {
+            self.boxes = try allocator.realloc(self.boxes, self.boxes.len + 1);
 
-        for (file_list.items, 0..) |file, boxid| {
-            log.debug("load emails: {s}", .{file.name});
+            log.info("load emails: {s}", .{file.name});
 
             self.boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
 
@@ -512,7 +515,8 @@ pub const EmailManager = struct {
 
             const start = self.emails.items.len;
 
-            const count = @as(u32, @bitCast(conts[fidx .. fidx + 4][0..4].*));
+            const count: usize = @intCast(@as(*align(1) const u32, @ptrCast(&conts[fidx])).*);
+
             try self.emails.resize(start + count);
 
             fidx += 4;
@@ -529,8 +533,7 @@ pub const EmailManager = struct {
 
                 self.emails.items[idx].box = @as(u8, @intCast(boxid));
 
-                const len_kind = *align(1) const u32;
-                const conds_length = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                const conds_length = @as(*align(1) const u32, @ptrCast(&conts[fidx])).*;
                 fidx += 4;
 
                 self.emails.items[idx].condition = try allocator.alloc(Email.Condition, conds_length);
@@ -539,7 +542,7 @@ pub const EmailManager = struct {
                     const cond_kind: Email.ConditionKind = @enumFromInt(conts[fidx]);
                     fidx += 1;
 
-                    var data = std.ArrayList(u8).init(allocator);
+                    var data = std.array_list.Managed(u8).init(allocator);
                     defer data.deinit();
 
                     while (conts[fidx] != '\x00') : (fidx += 1) {
@@ -619,31 +622,31 @@ pub const EmailManager = struct {
                         log.debug("email condition {} '{s}'", .{ cond_kind, data.items });
                 }
 
-                var len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                var len = @as(*align(1) const u32, @ptrCast(&conts[fidx])).*;
                 fidx += 4;
 
                 self.emails.items[idx].deps = try allocator.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
-                len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                len = @as(*align(1) const u32, @ptrCast(&conts[fidx])).*;
                 fidx += 4;
 
                 self.emails.items[idx].to = try allocator.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
-                len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                len = @as(*align(1) const u32, @ptrCast(&conts[fidx])).*;
                 fidx += 4;
 
                 self.emails.items[idx].from = try allocator.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
-                len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                len = @as(*align(1) const u32, @ptrCast(&conts[fidx])).*;
                 fidx += 4;
 
                 self.emails.items[idx].subject = try allocator.dupe(u8, conts[fidx .. fidx + len]);
                 fidx += len;
 
-                len = @as(len_kind, @ptrCast(conts[fidx .. fidx + 4])).*;
+                len = @as(*align(1) const u32, @ptrCast(&conts[fidx])).*;
                 fidx += 4;
 
                 self.emails.items[idx].contents = try allocator.dupe(u8, conts[fidx .. fidx + len]);
@@ -652,5 +655,9 @@ pub const EmailManager = struct {
 
             std.sort.insertion(Email, self.emails.items[start..], false, Email.lessThan);
         }
+
+        std.log.info("emails count: {}", .{self.emails.items.len});
+
+        self.boxes[self.boxes.len - 1] = "outbox";
     }
 };

@@ -1,15 +1,17 @@
 const std = @import("std");
-const font = @import("../util/font.zig");
-const mail = @import("../system/mail.zig");
-const c = @import("../c.zig");
 
-const log = @import("../util/log.zig").log;
+const system = @import("../system.zig");
+const util = @import("../util.zig");
+
+const mail = system.mail;
+
+const log = util.log;
 
 const Self = @This();
 
 folder: []const u8,
 
-pub fn load(self: *Self) anyerror!void {
+pub fn load(self: *const Self) anyerror!void {
     log.debug("load mail", .{});
 
     try mail.EmailManager.init();
@@ -17,8 +19,6 @@ pub fn load(self: *Self) anyerror!void {
     try mail.EmailManager.instance.loadFromFolder(self.folder);
 
     mail.EmailManager.instance.loadStateFile("/_priv/emails.bin") catch {};
-
-    return true;
 }
 
 pub fn unload(_: *const Self) void {

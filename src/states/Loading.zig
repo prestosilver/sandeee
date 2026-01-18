@@ -1,4 +1,5 @@
 const builtin = @import("builtin");
+const options = @import("options");
 const std = @import("std");
 
 const drawers = @import("../drawers.zig");
@@ -56,12 +57,12 @@ const TEXTURE_NAMES = [_][2][]const u8{
 const LOAD_WAIT = if (builtin.mode == .Debug) 0.0 else 1.0;
 const FADE_STEPS = 23;
 
-const mailpath: []const u8 = "/cont/mail";
+const mail_path: []const u8 = "/cont/mail/";
 const login_sound_path: []const u8 = "login_sound_path";
 const logout_sound_path: []const u8 = "logout_sound_path";
 const message_sound_path: []const u8 = "message_sound_path";
 const settings_path: []const u8 = "/conf/system.cfg";
-const fontpath: []const u8 = "system_font";
+const font_path: []const u8 = "system_font";
 
 pub var no_load_thread: bool = false;
 
@@ -119,7 +120,7 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
 
             var face: Loader = try .init(loaders.Font{
                 .data = .{
-                    .path = fontpath,
+                    .path = font_path,
                 },
                 .output = self.face,
             });
@@ -156,8 +157,14 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
             try loader.require(&sounds);
 
             //// mail
-            // TODO: redo
-            //try self.loader.enqueue(*const []const u8, *const u8, &mailpath, &zero, worker.mail.loadMail);
+            if (options.enable_email) {
+                var email: Loader = try .init(loaders.Mail{
+                    .folder = mail_path,
+                });
+
+                try email.require(&settings);
+                try loader.require(&email);
+            }
 
             LogoutState.unloader = try loader.load(&self.load_progress, 0.0, 1.0);
         }

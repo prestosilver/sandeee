@@ -1,6 +1,7 @@
 pub const Loader = @import("loaders/Loader.zig");
 pub const Unloader = Loader.Unloader;
 
+pub const Mail = @import("loaders/Mail.zig");
 pub const Font = @import("loaders/Font.zig");
 pub const Group = @import("loaders/Group.zig");
 pub const Delay = @import("loaders/Delay.zig");

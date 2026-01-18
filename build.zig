@@ -56,6 +56,39 @@ pub inline fn addConvertFile(
     }
 }
 
+pub fn addEmails(
+    b: *std.Build,
+    eme_builder_exe: *std.Build.Step.Compile,
+    disk_image_step: *std.Build.Step.Run,
+    content_path: std.Build.LazyPath,
+    box_path: []const u8,
+    disk_path: []const u8,
+) !void {
+    var email_step = b.addRunArtifact(eme_builder_exe);
+    const email_file_path = email_step.addOutputFileArg("mail.eme");
+
+    const mail_path = content_path.path(b, box_path);
+
+    var root = try std.fs.cwd().openDir(mail_path.getPath(b), .{ .iterate = true });
+    var walker = try root.walk(b.allocator);
+
+    while (try walker.next()) |file| {
+        switch (file.kind) {
+            .file => {
+                email_step.addArg("--file");
+                email_step.addFileInput(mail_path.path(b, file.path));
+                email_step.addFileArg(mail_path.path(b, file.path));
+            },
+            else => {},
+        }
+    }
+
+    disk_image_step.addArg("--file");
+    disk_image_step.addFileInput(email_file_path);
+    disk_image_step.addFileArg(email_file_path);
+    disk_image_step.addArg(disk_path);
+}
+
 pub fn addFileImports(
     b: *std.Build,
     exe_mod: *std.Build.Module,
@@ -279,7 +312,6 @@ pub fn build(b: *std.Build) !void {
         .name = "eme_builder",
         .root_module = eme_builder_mod,
     });
-    _ = eme_builder_exe;
 
     const eon_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/eon.zig"),
@@ -561,9 +593,12 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{disk_image_step}, &.{}, &.{}, content_path.path(b, "eon/libs/incl/libload.eon"), "/libs/incl/libload.eon");
     addConvertFile(b, &.{disk_image_step}, &.{}, &.{}, content_path.path(b, "asm/libs/incl/libload.asm"), "/libs/incl/libload.asm");
 
-    // if (enable_email) {
-    //     addConvertFile(b, &.{ debug_image_step, steam_image_step, disk_image_step }, &.{}, &.{}, content_path.path(b, "mail/inbox"), "/libs/incl/libload.asm");
-    // }
+    if (enable_email) {
+        try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/inbox", "/cont/mail/inbox.eme");
+        try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/private", "/cont/mail/private.eme");
+        try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/spam", "/cont/mail/spam.eme");
+        try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/work", "/cont/mail/work.eme");
+    }
 
     addOverlay(b, &.{steam_image_step}, overlays_path.path(b, "steam"));
 
