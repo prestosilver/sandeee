@@ -2,11 +2,11 @@
 ## Known Bugs
 
 - [X] Editor selection color wrong
-- [ ] Steam item id is not labeled right
+- [ ] Steamtool item id is not labeled right
 - [ ] Editor selection acts really weird
 - [ ] Wordwrap in console
-- [ ] Back button works in web when no history exists
-- [ ] !!!!144hz bs
+- [X] Back button works in web when no history exists
+- [X] !!!!144hz bs
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
 
 ## Minor non bug fixes

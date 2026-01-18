@@ -898,9 +898,7 @@ pub const WebData = struct {
 
             self.highlight_idx = 0;
             self.scroll_top = true;
-        } else {
-            self.conts = try allocator.dupe(u8, "Error: No more history");
-        }
+        } else return;
     }
 
     // TODO: BUG possible leak
