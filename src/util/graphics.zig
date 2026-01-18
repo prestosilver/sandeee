@@ -25,6 +25,7 @@ pub const Context = struct {
     shaders: std.array_list.Managed(Shader),
     lock: std.Thread.Mutex = .{},
     size: Vec2,
+    refresh_rate: f32,
 
     pub inline fn makeCurrent() void {
         instance.lock.lock();
@@ -104,6 +105,7 @@ pub const Context = struct {
             .color = .{ .r = 0, .g = 0, .b = 0 },
             .shaders = .init(allocator),
             .size = .{ .x = @floatFromInt(w), .y = @floatFromInt(h) },
+            .refresh_rate = @floatFromInt(mode.refreshRate),
         };
     }
 

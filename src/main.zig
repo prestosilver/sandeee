@@ -184,7 +184,7 @@ var rendered_texture: zgl.Texture = .invalid;
 var depth_render_buffer: zgl.Renderbuffer = .invalid;
 
 // fps tracking
-var final_fps: u32 = 60;
+var final_fps: f32 = 60;
 var show_fps: bool = false;
 
 // steam
@@ -211,7 +211,7 @@ pub fn blit() !void {
 
     if (show_fps and bios_font.setup) {
         const text = try std.fmt.allocPrint(allocator, "{s}FPS: {}\n{s}VMS: {}\n{s}VMT: {}%\nSTA: {}", .{
-            if (final_fps < 50)
+            if (final_fps < graphics.Context.instance.refresh_rate - 5)
                 strings.COLOR_RED
             else
                 strings.COLOR_WHITE,
@@ -521,7 +521,7 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
         // get crash state
         const state = game_states.getPtr(.Crash);
 
-        state.update(1.0 / 60.0) catch |err| {
+        state.update(1.0 / graphics.Context.instance.refresh_rate) catch |err| {
             log.log.err("crash draw failed, {any}", .{err});
 
             break;
@@ -946,7 +946,6 @@ pub fn runGame() anyerror!void {
 
     // setup state machine
     var prev = current_state;
-    const target_fps: f32 = 60;
 
     // fps tracker stats
     var fps: f32 = 0;
@@ -967,7 +966,7 @@ pub fn runGame() anyerror!void {
         if (glfw.getWindowAttrib(graphics.Context.instance.window, glfw.Iconified) == 0) {
 
             // update the game state
-            try state.update(@max(1 / target_fps, @as(f32, @floatCast(Vm.Manager.last_frame_time))));
+            try state.update(@max(1 / graphics.Context.instance.refresh_rate, @as(f32, @floatCast(Vm.Manager.last_frame_time))));
 
             // get tris
             try state.draw(graphics.Context.instance.size);
@@ -987,11 +986,11 @@ pub fn runGame() anyerror!void {
 
             try Vm.Manager.instance.runGc();
 
-            final_fps = @intFromFloat(fps / lap * std.time.ns_per_s);
+            final_fps = fps / lap * std.time.ns_per_s;
             if (Vm.Manager.instance.vms.count() != 0 and final_fps != 0) {
                 // TODO: move these into settings
-                if (final_fps < target_fps - 5) Vm.Manager.vm_time -= 0.01;
-                if (final_fps > target_fps - 2) Vm.Manager.vm_time += 0.01;
+                if (final_fps < graphics.Context.instance.refresh_rate - 5.0) Vm.Manager.vm_time -= 0.01;
+                if (final_fps > graphics.Context.instance.refresh_rate - 1.0) Vm.Manager.vm_time += 0.01;
 
                 // limit goals for auto vm time calibration
                 Vm.Manager.vm_time = std.math.clamp(Vm.Manager.vm_time, 0.25, 0.9);
