@@ -1,10 +1,11 @@
 const std = @import("std");
 const c = @import("../c.zig");
+const options = @import("options");
 
 const util = @import("../util.zig");
 const sandeee_data = @import("../data.zig");
 
-const no_audio = true;
+const no_audio = options.disable_audio;
 
 const al = c.al;
 

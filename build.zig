@@ -170,6 +170,7 @@ pub fn build(b: *std.Build) !void {
 
     var commit = b.run(&.{ "git", "rev-list", "HEAD", "--count" });
 
+    const disable_audio = b.option(bool, "no_audio", "Disables audio") orelse false;
     const is_demo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
     const enable_email = b.option(bool, "email_app", "Enables the email app") orelse false;
     const steam_mode = b.option(enum { Off, On, Fake }, "steam", "Makes SandEEE build a steam build") orelse .Off;
@@ -254,6 +255,7 @@ pub fn build(b: *std.Build) !void {
     const options = b.addOptions();
     options.addOption(Version, "SANDEEE_VERSION", version);
     options.addOption([]const u8, "VERSION_TEXT", version_text);
+    options.addOption(bool, "disable_audio", disable_audio);
     options.addOption(bool, "is_demo", is_demo);
     options.addOption(bool, "is_steam", steam_mode != .Off);
     options.addOption(bool, "fake_steam", steam_mode == .Fake);
@@ -269,6 +271,7 @@ pub fn build(b: *std.Build) !void {
     });
     options_host.addOption([]const u8, "VERSION_TEXT", "HOST");
     options_host.addOption(bool, "is_demo", false);
+    options_host.addOption(bool, "disable_audio", false);
     options_host.addOption(bool, "is_steam", false);
     options_host.addOption(bool, "fake_steam", false);
     options_host.addOption(bool, "default_panic", true);
@@ -911,6 +914,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(Version, "SANDEEE_VERSION", version);
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", false);
+        public_options.addOption(bool, "disable_audio", false);
         public_options.addOption(bool, "is_steam", true);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
@@ -1045,6 +1049,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(Version, "SANDEEE_VERSION", version);
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", false);
+        public_options.addOption(bool, "disable_audio", false);
         public_options.addOption(bool, "is_steam", false);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
