@@ -492,10 +492,10 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/tests/paren.eon"), "/prof/tests/eep/eon/paren.eep");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/src/asm/hello.asm");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/src/asm/fib.asm");
+    addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/tests/fib.eon"), "/prof/tests/src/eon/fib.eon");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/exec/eon.eon"), "/prof/tests/src/eon/eon.eon");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/libs/eon.eon"), "/prof/tests/src/eon/eon_lib.eon");
     addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/exec/pix.eon"), "/prof/tests/src/eon/pix.eon");
-    addConvertFile(b, &.{debug_image_step}, &.{}, &.{}, content_path.path(b, "eon/exec/pix.eon"), "/prof/tests/src/eon/fib.eon");
     addConvertFile(b, &.{debug_image_step}, &.{eia_builder_exe}, &.{&.{}}, content_path.path(b, "images/icons/debug.png"), "/cont/icns/debug.eia");
     addConvertFile(b, &.{debug_image_step}, &.{era_builder_exe}, &.{&.{}}, content_path.path(b, "audio/redbone.wav"), "/cont/snds/redbone.era");
 

@@ -14,7 +14,7 @@ fn libInit() {
 
 fn HeapSize() {
     asm "push 0";
-    asm "push 1";
+    asm "push 0";
     asm "sys 15";
     asm "getb";
     asm "push 1024";
@@ -25,7 +25,7 @@ fn HeapSize() {
 fn HeapGrow() {
     asm "push 0";
     asm "push 0";
-    asm "push 1";
+    asm "push 0";
     asm "sys 15";
     asm "getb";
     asm "push 1";
@@ -39,7 +39,7 @@ fn HeapGrow() {
 }
 
 fn getWord(idx) {
-    asm "push 2";
+    asm "push 1";
     asm "sys 15";
     asm "dup 0";
     asm "push 1";

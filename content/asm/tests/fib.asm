@@ -28,7 +28,7 @@ main:
     push 1
 block_1_loop:
     copy 0
-    push 30
+    push 15
     lt
     jz block_1_end
     copy 0

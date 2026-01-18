@@ -8,13 +8,13 @@ fn reada(addr) {
 }
 
 fn main() {
-    setupLibLoad();
-    loadLib("/libs/heap.ell");
-    var a = _HeapAlloc(128);
+    // setupLibLoad();
+    // loadLib("/libs/heap.ell");
+    // var a = _HeapAlloc(128);
 
-    print("_HeapAlloc(128) = ");
-    print(a);
-    print("\n"); 
+    // print("_HeapAlloc(128) = ");
+    // print(a);
+    // print("\n"); 
 
     return 0;
 }

@@ -1,4 +1,4 @@
 cd tests/src/eon
-exit
 eon fib.eon fib.eep
 fib.eep
+exit
