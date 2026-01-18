@@ -46,6 +46,7 @@ pub const Result = struct {
     data: []u8 = &.{},
     exit: bool = false,
     clear: bool = false,
+    failure: bool = false,
 
     pub fn deinit(self: *const Result) void {
         allocator.free(self.data);
@@ -258,6 +259,7 @@ pub fn getVMResult(self: *Shell) !?Result {
         if (data.done) self.vm = null;
 
         return .{
+            .failure = data.failed,
             .data = try allocator.dupe(u8, data.data),
         };
     }

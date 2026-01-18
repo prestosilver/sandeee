@@ -43,6 +43,7 @@ vm_index: Handle = @enumFromInt(0),
 pub const VMResult = struct {
     data: []u8,
     done: bool,
+    failed: bool,
 
     pub fn deinit(self: VMResult) void {
         allocator.free(self.data);
@@ -166,6 +167,7 @@ pub fn updateVmThread(vm_instance: *Vm, frame_end: u64) !void {
 
     _ = vm_instance.runTime(frame_end - time, builtin.mode == .Debug) catch |err| {
         vm_instance.stopped = true;
+        vm_instance.errored = true;
 
         const error_string = try std.fmt.allocPrint(allocator, "Error: {s}\n", .{@errorName(err)});
         defer allocator.free(error_string);
@@ -188,6 +190,7 @@ pub fn appendInputSlice(self: *Self, handle: Handle, data: []const u8) !void {
 pub fn getOutput(self: *Self, handle: Handle) !VMResult {
     return if (self.results.fetchRemove(handle)) |item| item.value else .{
         .data = &.{},
+        .failed = false,
         .done = !self.vms.contains(handle),
     };
 }
@@ -223,6 +226,7 @@ pub fn update(self: *Self) !void {
             var result: VMResult = VMResult{
                 .data = try allocator.dupe(u8, vm_instance.out.items),
                 .done = true,
+                .failed = vm_instance.errored,
             };
 
             self.destroy(vm_id);
@@ -244,6 +248,7 @@ pub fn update(self: *Self) !void {
 
         var result: VMResult = VMResult{
             .data = try allocator.dupe(u8, vm_instance.out.items),
+            .failed = false,
             .done = false,
         };
 

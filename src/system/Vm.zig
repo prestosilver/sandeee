@@ -102,6 +102,7 @@ yield_data: ?struct {
 pc: usize = 0,
 code: ?[]const Operation = null,
 stopped: bool = false,
+errored: bool = false,
 yield: bool = false,
 misc_data: std.StringHashMap([]const u8),
 input: std.array_list.Managed(u8),
@@ -1049,6 +1050,8 @@ pub fn runNum(self: *Vm, num: u64) !bool {
 }
 
 pub fn markData(self: *Vm) !void {
+    if (self.stopped) return;
+
     for (self.stack[0..self.rsp]) |entry| {
         try entry.mark();
     }

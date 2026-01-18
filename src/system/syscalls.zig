@@ -426,6 +426,7 @@ fn sysError(self: *Vm) VmError!void {
     try self.out.appendSlice(msg_string);
 
     self.stopped = true;
+    self.errored = true;
 }
 
 fn sysSize(self: *Vm) VmError!void {

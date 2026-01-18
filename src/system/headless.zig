@@ -133,6 +133,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
     defer files.deinit();
 
     var main_shell = Shell{ .root = .home, .headless = true };
+    defer main_shell.deinit();
 
     var stdout_file: std.fs.File = .stdout();
     var stdout_file_writer = stdout_file.writer(&.{});
@@ -177,17 +178,26 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
 
         if (main_shell.vm != null) {
             try Vm.Manager.instance.update();
-            try Vm.Manager.instance.runGc();
 
             // setup vm data for update
             const result_data = try main_shell.getVMResult();
             if (result_data) |result| {
                 try write_console(stdout, result.data);
                 result.deinit();
+
+                if (main_shell.vm == null)
+                    try write_console(stdout, "\n");
+
+                if (result.failure)
+                    return error.VMError;
             }
 
             if (main_shell.vm == null)
                 try write_console(stdout, "\n");
+
+            if (result_data) |result|
+                if (result.failure)
+                    return error.VMError;
 
             continue;
         }
@@ -316,12 +326,11 @@ test "Headless scripts" {
     while (try iter.next()) |entry| {
         if (entry.kind != .file) continue;
 
+        try Vm.Manager.instance.runGc();
+
         std.fs.cwd().deleteFile("zig-out/bin/disks/headless.eee") catch {};
 
-        Vm.Manager.instance = .{};
-
         // deinit vm manager
-        defer Vm.Manager.instance.deinit();
 
         try logging.interface.writeAll("# ");
         try logging.interface.writeAll(entry.path);
@@ -343,14 +352,17 @@ test "Headless scripts" {
             try logging.interface.writeAll("\n\n");
             success = false;
         };
-        
-        try Vm.Pool.collect();
 
         if (success) {
             try logging.interface.writeAll("```\n\n");
             try logging.interface.writeAll("Success!\n\n");
         }
+
+        try Vm.Manager.instance.runGc();
     }
+
+    try Vm.Manager.instance.runGc();
+    Vm.Manager.instance.deinit();
 
     if (err) |result_err| {
         return result_err;
