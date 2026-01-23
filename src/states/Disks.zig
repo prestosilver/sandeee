@@ -41,6 +41,8 @@ const TOTAL_LINES = 10;
 
 const DISK_LIST = "0123456789ABCDEF";
 
+pub var autoload_disk: ?[]const u8 = null;
+
 face: *Font,
 font_shader: *Shader,
 shader: *Shader,
@@ -119,6 +121,16 @@ pub fn deinit(self: *GSDisks) void {
 }
 
 pub fn update(self: *GSDisks, dt: f32) !void {
+    if (autoload_disk) |load| {
+        self.disk.* = try allocator.dupe(u8, load);
+
+        try events.EventManager.instance.sendEvent(system_events.EventStateChange{
+            .target_state = .Loading,
+        });
+
+        return;
+    }
+
     if (self.auto) self.remaining -= dt;
 
     if (self.remaining <= 0) {

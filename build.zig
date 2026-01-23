@@ -192,6 +192,18 @@ pub fn build(b: *std.Build) !void {
     const version_write = b.addInstallFile(version_file, "../VERSION");
     const iversion_write = b.addInstallFile(iversion_file, "../IVERSION");
 
+    const flags_dependency = b.dependency("flags", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const flags_module = flags_dependency.module("flags");
+
+    const flags_host_dependency = b.dependency("flags", .{
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    const flags_host_module = flags_host_dependency.module("flags");
+
     const glfw_dependency = b.dependency("zglfw", .{
         .target = target,
         .optimize = optimize,
@@ -281,12 +293,14 @@ pub fn build(b: *std.Build) !void {
     exe_module.addImport("options", options_module);
     exe_module.addImport("network", network_module);
     exe_module.addImport("glfw", glfw_module);
+    exe_module.addImport("flags", flags_module);
     exe_module.addImport("zgl", zgl_module);
     exe_module.addImport("steam", steam_module);
 
     exe_host_module.addImport("options", options_host_module);
     exe_host_module.addImport("network", network_host_module);
     exe_host_module.addImport("glfw", glfw_host_module);
+    exe_host_module.addImport("flags", flags_host_module);
     exe_host_module.addImport("zgl", zgl_host_module);
     exe_host_module.addImport("steam", steam_host_module);
 
@@ -931,6 +945,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
+        exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
@@ -965,6 +980,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
@@ -1066,6 +1082,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
+        exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
@@ -1097,6 +1114,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 

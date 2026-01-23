@@ -63,7 +63,7 @@ pub const Context = struct {
         }
     }
 
-    pub fn init(name: [*:0]const u8) !void {
+    pub fn init(name: [*:0]const u8, real_fullscreen: bool) !void {
         _ = glfw.setErrorCallback(errorCallback);
 
         try glfw.init();
@@ -77,8 +77,10 @@ pub const Context = struct {
         glfw.windowHint(glfw.BlueBits, mode.blueBits);
         glfw.windowHint(glfw.RefreshRate, mode.refreshRate);
 
-        //const win = try glfw.createWindow(mode.width, mode.height, name, monitor, null);
-        const win = try glfw.createWindow(mode.width, mode.height, name, null, null);
+        const win = if (real_fullscreen)
+            try glfw.createWindow(mode.width, mode.height, name, monitor, null)
+        else
+            try glfw.createWindow(mode.width, mode.height, name, null, null);
 
         glfw.makeContextCurrent(win);
 

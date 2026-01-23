@@ -339,7 +339,9 @@ test "Headless scripts" {
         var file = try start_cwd.openFile(entry.path, .{});
         defer file.close();
 
-        const conts = try file.readToEndAlloc(std.testing.allocator, 10000);
+        var reader = file.reader(&.{});
+
+        const conts = try reader.interface.allocRemaining(std.testing.allocator, .unlimited);
         defer std.testing.allocator.free(conts);
 
         var success = true;

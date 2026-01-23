@@ -27,6 +27,10 @@
         // .zig_steamworks_fake = .{
         //     .path = "../zig-steamworks-fake",
         // },
+        .flags = .{
+            .url = "git+https://github.com/joegm/flags#2d62be30ff33661a2a3c6743ac922a78302d78a0",
+            .hash = "flags-0.10.0-a_9h3pxvAAA6wPndlO7ktfrpZUmhQu1y8aDm0lTi5ATR",
+        },
     },
     .paths = .{
         "assets",

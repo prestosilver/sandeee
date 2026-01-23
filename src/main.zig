@@ -5,6 +5,7 @@ const options = @import("options");
 const steam = @import("steam");
 const glfw = @import("glfw");
 const zgl = @import("zgl");
+const flags = @import("flags");
 
 pub const drawers = @import("drawers.zig");
 pub const loaders = @import("loaders.zig");
@@ -498,7 +499,7 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
 
     std.fs.cwd().writeFile(.{
         .sub_path = "CrashLog.txt",
-        .data = msg,
+        .data = error_message,
     }) catch {};
 
     // no display on headless
@@ -544,25 +545,7 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
 }
 
 var is_crt = true;
-
-pub fn print_help(path: []const u8, comptime reason: []const u8, reason_params: anytype) noreturn {
-    std.debug.print(reason ++
-        \\
-        \\usage: 
-        \\ {s} [args]
-        \\
-        \\--help           Display this message and exit
-        \\--cwd            Set the current working directory of the game
-        \\--no-crt         Disable the crt shader
-        \\--no-thread      Disable threading
-        \\--headless       Headless mode
-        \\--disk [path]    Boot to the specified disk
-        \\--headless-cmd   Run a command in headless mode then exit
-        \\
-    , reason_params ++ .{path});
-
-    std.process.exit(1);
-}
+var real_fullscreen = false;
 
 pub fn main() void {
     defer {
@@ -575,49 +558,71 @@ pub fn main() void {
     var headless_cmd: ?[]const u8 = null;
     var cwd_change = false;
 
-    {
-        // check arguments
-        var args = std.process.ArgIterator.initWithAllocator(allocator) catch std.debug.panic("Out of memory", .{});
-        defer args.deinit();
+    const args = std.process.argsAlloc(allocator) catch std.debug.panic("Out of memory", .{});
+    defer std.process.argsFree(allocator, args);
 
-        const cmd_path = args.next().?;
+    const cli = flags.parse(
+        args,
+        "SandEEE",
 
-        while (args.next()) |arg| {
-            if (std.mem.eql(u8, arg, "--help"))
-                print_help(cmd_path, "SandEEE help:", .{})
-            else if (std.mem.eql(u8, arg, "--cwd")) {
-                if (args.next()) |path|
-                    std.process.changeCurDir(path) catch |err|
-                        print_help(cmd_path, "Invalid cwd path '{s}' ({}):", .{ path, err })
-                else
-                    print_help(cmd_path, "Expected cwd argument", .{});
+        struct {
+            pub const description =
+                \\SandEEE OS: a virtual fantasy desktop.
+            ;
 
-                cwd_change = true;
-            } else if (std.mem.eql(u8, arg, "--no-crt")) {
-                is_crt = false;
-            } else if (std.mem.eql(u8, arg, "--no-thread")) {
-                LoadingState.no_load_thread = true;
-            } else if (std.mem.eql(u8, arg, "--headless")) {
-                headless.is_headless = true;
-            } else if (std.mem.eql(u8, arg, "--disk")) {
-                headless.disk = args.next() orelse
-                    print_help(cmd_path, "Expected disk file path", .{});
-            } else if (std.mem.eql(u8, arg, "--headless-cmd")) {
-                if (args.next()) |script| {
-                    const buff = allocator.alloc(u8, 1024) catch std.debug.panic("out of memory", .{});
-                    const file = std.fs.cwd().openFile(script, .{}) catch |err|
-                        print_help(cmd_path, "Headless script '{s}' couldnt be read ({})", .{ script, err });
-                    defer file.close();
+            pub const descriptions = .{
+                .no_crt = "Disable the crt filter.",
+                .no_threads = "Disable loading threads.",
+                .real_fullscreen = "Use real fullscreen instead of borderless windowed.",
+                .cwd = "Set the working directory before loading anything.",
+                .disk = "Automatically load a disk.",
+                .extr_files = "Enable extr file system (Unsandboxed).",
+                .headless = "Enable headless mode.",
+                .headless_script = "Automatically run a script in headless mode.",
+            };
 
-                    const len = file.readAll(buff) catch std.debug.panic("couldnt read file", .{});
-                    headless_cmd = buff[0..len];
+            no_crt: bool,
+            no_threads: bool,
+            real_fullscreen: bool,
+            cwd: ?[]const u8,
+            disk: ?[]const u8,
+            extr_files: bool,
+            headless: bool,
+            headless_script: ?[]const u8,
+        },
 
-                    headless.is_headless = true;
-                } else print_help(cmd_path, "Expected headless cmd argument", .{});
-            } else {
-                print_help(cmd_path, "Invalid paramter '{s}':", .{arg});
-            }
-        }
+        .{},
+    );
+
+    is_crt = !cli.no_crt;
+    headless.is_headless = cli.headless;
+    LoadingState.no_load_thread = cli.no_threads;
+    real_fullscreen = cli.real_fullscreen;
+    files.enable_extr = cli.extr_files;
+    if (cli.disk) |new_disk| {
+        headless.disk = new_disk;
+        DiskState.autoload_disk = new_disk;
+    }
+    if (cli.cwd) |new_cwd| {
+        std.process.changeCurDir(new_cwd) catch |err| {
+            std.log.err("Failed to change cwd to '{s}', {}", .{ new_cwd, err });
+            return;
+        };
+        cwd_change = true;
+    }
+
+    if (cli.headless_script) |script| {
+        var file = std.fs.cwd().openFile(script, .{}) catch |err| {
+            std.log.err("Failed to load headless script '{s}', {}", .{ script, err });
+            return;
+        };
+        defer file.close();
+
+        var reader = file.reader(&.{});
+        headless_cmd = reader.interface.allocRemaining(allocator, .unlimited) catch {
+            std.log.err("Out of memory", .{});
+            return;
+        };
     }
 
     // switch to headless main function if nessessary
@@ -685,7 +690,7 @@ pub fn runGame() anyerror!void {
     try audio.AudioManager.init();
 
     // init graphics
-    var graphics_loader: Loader = try .init(loaders.Graphics{});
+    var graphics_loader: Loader = try .init(loaders.Graphics{ .real_fullscreen = real_fullscreen });
 
     // setup fonts deinit
     bios_font.setup = false;
