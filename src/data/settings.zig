@@ -46,6 +46,5 @@ pub const SETTINGS = [_]Panel{
         .{ .setting = "window update rate", .key = "refresh_rate", .kind = .{ .slider = .{ .min = 0.1, .max = 5.0 } } },
         .{ .setting = "Show Welcome", .key = "show_welcome", .kind = .boolean },
         .{ .setting = "Startup Script", .key = "startup_file", .kind = .file },
-        .{ .setting = "Extr path", .key = "extr_path", .kind = .string },
     } },
 };

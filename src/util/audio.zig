@@ -110,7 +110,7 @@ pub const AudioManager = struct {
 
         // set bg properties
         al.alSourcei(bg, al.AL_LOOPING, al.AL_TRUE);
-        al.alSourcef(bg, al.AL_GAIN, 0.5);
+        al.alSourcef(bg, al.AL_GAIN, 0.25);
 
         if (background_data.buffer) |buffer|
             al.alSourcei(bg, al.AL_BUFFER, @intCast(buffer));

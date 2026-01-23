@@ -364,7 +364,9 @@ fn sysReadHeap(self: *Vm) VmError!void {
 
     const adds = self.heap[@as(usize, @intCast(item.data().value))];
     if (adds) |a|
-        try self.pushStack(a);
+        try self.pushStack(try Vm.Pool.new(a.data().*))
+    else
+        return error.NullHeapAccess;
 }
 
 fn sysWriteHeap(self: *Vm) VmError!void {
@@ -377,7 +379,7 @@ fn sysWriteHeap(self: *Vm) VmError!void {
 
     const idx: usize = @intCast(item.data().value);
 
-    self.heap[idx] = data;
+    self.heap[idx] = try Vm.Pool.new(data.data().*);
 
     try self.pushStack(data);
 }

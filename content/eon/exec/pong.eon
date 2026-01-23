@@ -213,7 +213,11 @@ fn main() {
     loadLib("/libs/texture.ell");
     loadLib("/libs/string.ell");
     loadLib("/libs/sound.ell");
-    
+
+    predictiondx := 0;
+    predictionsince := 0;
+    scorea := 0;
+    scoreb := 0;
     ballx := 195;
     bally := 145;
     ax := 100;
@@ -232,8 +236,6 @@ fn main() {
     _SetWindowRule("max", 408, 338);
     _SetWindowTitle(window, "Pong");
     _SetWindowSize(408, 338);
-
-    var test = "";
 
     _TextureUpload(_TextureRead("/cont/imgs/pong.eia"), texture);
 

@@ -212,7 +212,7 @@ pub fn blit() !void {
 
     if (show_fps and bios_font.setup) {
         const text = try std.fmt.allocPrint(allocator, "{s}FPS: {}\n{s}VMS: {}\n{s}VMT: {}%\nSTA: {}", .{
-            if (final_fps < graphics.Context.instance.refresh_rate - 5)
+            if (final_fps < graphics.Context.instance.refresh_rate - 6.0)
                 strings.COLOR_RED
             else
                 strings.COLOR_WHITE,
@@ -986,8 +986,14 @@ pub fn runGame() anyerror!void {
             try state.refresh();
 
             // Make sure this dosent run on release, a print every frame problaby has overhead
-            if (builtin.mode == .Debug)
-                log.log.debug("Rendered in {d:.6}ms", .{Vm.Manager.last_render_time * 1000});
+            if (builtin.mode == .Debug) {
+                const counter = struct {
+                    var idx: usize = 0;
+                };
+                if (counter.idx % 100 == 0)
+                    log.log.debug("Rendered in {d:.6}ms", .{Vm.Manager.last_render_time * 1000});
+                counter.idx += 1;
+            }
 
             try Vm.Manager.instance.runGc();
 

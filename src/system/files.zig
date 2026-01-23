@@ -73,10 +73,11 @@ pub const FolderLink = union(LinkKind) {
 };
 
 pub var root_out: ?[]const u8 = null;
+pub var enable_extr = false;
 
-pub inline fn getExtrPath() []const u8 {
-    if (builtin.mode != .Debug)
-        return "";
+pub inline fn getExtrPath() ?[]const u8 {
+    if (!enable_extr)
+        return null;
 
     return config.SettingManager.instance.get("extr_path") orelse "";
 }
@@ -523,31 +524,29 @@ pub const Folder = struct {
     }
 
     pub fn setupExtr() !void {
-        if (builtin.mode == .Debug) {
-            const extr_path = getExtrPath();
-            const path = if (std.fs.path.isAbsolute(extr_path))
-                std.fs.openDirAbsolute(extr_path, .{}) catch null
-            else
-                std.fs.cwd().openDir(extr_path, .{}) catch null;
+        const extr_path = getExtrPath() orelse return;
+        const path = if (std.fs.path.isAbsolute(extr_path))
+            std.fs.openDirAbsolute(extr_path, .{}) catch null
+        else
+            std.fs.cwd().openDir(extr_path, .{}) catch null;
 
-            const root = try FolderLink.resolve(.root);
+        const root = try FolderLink.resolve(.root);
 
-            if (path) |extr_dir| {
-                const extr = try allocator.create(Folder);
-                extr.* = .{
-                    .ext = .{
-                        .dir = extr_dir,
-                    },
-                    .protected = true,
-                    .parent = .root,
-                    .name = try allocator.dupe(u8, "/extr/"),
-                };
+        if (path) |extr_dir| {
+            const extr = try allocator.create(Folder);
+            extr.* = .{
+                .ext = .{
+                    .dir = extr_dir,
+                },
+                .protected = true,
+                .parent = .root,
+                .name = try allocator.dupe(u8, "/extr/"),
+            };
 
-                extr.next_sibling = root.folders;
-                root.folders = extr;
-            } else {
-                log.err("failed to load extr path: '{s}'", .{extr_path});
-            }
+            extr.next_sibling = root.folders;
+            root.folders = extr;
+        } else {
+            log.err("failed to load extr path: '{s}'", .{extr_path});
         }
     }
 
@@ -607,7 +606,7 @@ pub const Folder = struct {
                         sub_file.* = .{
                             .parent = .link(self),
                             .data = .{
-                                .disk = try file_reader.interface.readAlloc(allocator, 1000000),
+                                .disk = try file_reader.interface.allocRemaining(allocator, .unlimited),
                             },
                             .name = try allocator.dupe(u8, fullname),
                         };

@@ -43,6 +43,7 @@ pub const VmError = error{
     CallStackUnderflow,
     CallStackOverflow,
     HeapOutOfBounds,
+    NullHeapAccess,
     ValueMissing,
     StringMissing,
     FunctionMissing,

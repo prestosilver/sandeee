@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const util = @import("../util/mod.zig");
+const util = @import("../util.zig");
 
 const allocator = util.allocator;
 
@@ -13,96 +13,100 @@ const RopeKind = enum {
     ref,
 };
 
-refs: usize = 0,
-data: union(RopeKind) {
-    string: []const u8,
-    ref: *Rope,
-},
-next: ?*Rope = null,
+const RopeData = struct {
+    refs: usize = 0,
+    data: union(RopeKind) {
+        string: []const u8,
+        ref: Rope,
+    },
+    next: ?Rope = null,
+};
 
-pub fn init(text: []const u8) !*Rope {
-    const self = try allocator.alloc.create(Rope);
-    errdefer allocator.alloc.destroy(self);
+data: *RopeData,
 
-    self.* = .{
+pub fn init(text: []const u8) !Rope {
+    const data = try allocator.create(RopeData);
+    errdefer allocator.destroy(data);
+
+    data.* = .{
         .refs = 1,
         .data = .{
-            .string = try allocator.alloc.dupe(u8, text),
+            .string = try allocator.dupe(u8, text),
         },
     };
 
-    return self;
+    return .{ .data = data };
 }
 
-pub fn clone(rope: *const Rope) !*Rope {
+pub fn clone(rope: Rope) !Rope {
     return try .initRef(rope);
 }
 
-pub fn initRef(rope: *Rope) !*Rope {
-    const self = try allocator.alloc.create(Rope);
-    errdefer allocator.alloc.destroy(self);
+pub fn initRef(rope: Rope) !Rope {
+    const data = try allocator.create(RopeData);
+    errdefer allocator.destroy(data);
 
-    self.* = .{
+    data.* = .{
         .refs = 1,
         .data = .{
-            .ref = rope,
+            .ref = .{ .data = rope.data },
         },
     };
 
-    rope.refs += 1;
+    rope.data.refs += 1;
 
-    log.info("init rope ref: {f}", .{self});
+    log.info("init rope ref: {f}", .{Rope{ .data = data }});
 
-    return self;
+    return .{ .data = data };
 }
 
 pub fn len(rope: *const Rope) usize {
-    return switch (rope.data) {
+    return switch (rope.data.data) {
         .string => |str| str.len,
         .ref => |ref| ref.len(),
-    } + if (rope.next) |next| next.len() else 0;
+    } + if (rope.data.next) |next| next.len() else 0;
 }
 
 pub fn index(rope: *const Rope, idx: usize) ?u8 {
-    return switch (rope.data) {
+    return switch (rope.data.data) {
         .string => |str| return if (idx < str.len)
             str[idx]
-        else if (rope.next) |next|
-            index(next, idx - str.len)
+        else if (rope.data.next) |next|
+            index(&next, idx - str.len)
         else
             null,
         .ref => |ref| return if (idx < ref.len())
             ref.index(idx)
-        else if (rope.next) |next|
+        else if (rope.data.next) |next|
             next.index(idx - ref.len())
         else
             null,
     };
 }
 
-pub fn cat(self: *Rope, other: *Rope) !*Rope {
-    var result: *Rope = try .initRef(self);
+pub fn cat(self: Rope, other: Rope) !Rope {
+    var result: Rope = try .initRef(self);
 
-    other.refs += 1;
-    result.next = other;
+    other.data.refs += 1;
+    result.data.next = other;
 
     return result;
 }
 
-pub fn subString(rope: *const Rope, start: usize, end: ?usize) !*Rope {
-    switch (rope.data) {
+pub fn subString(rope: *const Rope, start: usize, end: ?usize) !Rope {
+    switch (rope.data.data) {
         .string => |str| if (str.len < start)
-            if (rope.next) |next| {
-                return subString(next, start - str.len, if (end) |e| e - str.len else null);
+            if (rope.data.next) |next| {
+                return subString(&next, start - str.len, if (end) |e| e - str.len else null);
             },
         .ref => |ref| if (ref.len() < start)
-            if (rope.next) |next| {
-                return subString(next, start - ref.len(), if (end) |e| e - ref.len() else null);
+            if (rope.data.next) |next| {
+                return subString(&next, start - ref.len(), if (end) |e| e - ref.len() else null);
             },
     }
 
-    const string = try std.fmt.allocPrint(allocator.alloc, "{f}", .{rope});
-    defer allocator.alloc.free(string);
+    const string = try std.fmt.allocPrint(allocator, "{f}", .{rope});
+    defer allocator.free(string);
 
     const start_idx = @min(start, string.len);
     const end_idx = if (end) |e| @max(start_idx, string.len - e) else string.len;
@@ -111,18 +115,18 @@ pub fn subString(rope: *const Rope, start: usize, end: ?usize) !*Rope {
 }
 
 pub fn empty(self: *const Rope) bool {
-    return self.next == null and switch (self.data) {
+    return self.data.next == null and switch (self.data.data) {
         .string => |str| str.len == 0,
         .ref => |ref| ref.empty(),
     };
 }
 
-pub fn iterate(self: *const Rope) Iterator {
+pub fn iterate(self: Rope) Iterator {
     return Iterator{ .rope = self };
 }
 
 const Iterator = struct {
-    rope: *const Rope,
+    rope: Rope,
     child: ?*Iterator = null,
     index: usize = 0,
 
@@ -131,13 +135,13 @@ const Iterator = struct {
             if (child.next()) |nxt|
                 return nxt
             else {
-                allocator.alloc.destroy(child);
+                allocator.destroy(child);
                 self.child = null;
                 return self.next();
             }
         }
 
-        switch (self.rope.data) {
+        switch (self.rope.data.data) {
             .string => |str| {
                 if (self.index < str.len) {
                     defer self.index += 1;
@@ -145,15 +149,15 @@ const Iterator = struct {
                     return str[self.index];
                 }
 
-                if (self.rope.next) |next_rope| {
+                if (self.rope.data.next) |next_rope| {
                     self.rope = next_rope;
                     self.index = 0;
                     return self.next();
                 }
             },
             .ref => |r| {
-                if (self.rope.next) |next_rope| {
-                    self.child = allocator.alloc.create(Iterator) catch unreachable;
+                if (self.rope.data.next) |next_rope| {
+                    self.child = allocator.create(Iterator) catch unreachable;
                     self.child.?.* = .{
                         .rope = r,
                         .index = 0,
@@ -176,14 +180,14 @@ const Iterator = struct {
     pub fn atEnd(self: *const Iterator) bool {
         if (self.child) |_| return false;
 
-        return switch (self.rope.data) {
+        return switch (self.rope.data.data) {
             .string => |str| self.index >= str.len,
             .ref => |_| false,
-        } and self.rope.next == null;
+        } and self.rope.data.next == null;
     }
 };
 
-pub fn eql(self: *const Rope, other: *const Rope) bool {
+pub fn eql(self: Rope, other: Rope) bool {
     var self_iter = self.iterate();
     var other_iter = other.iterate();
 
@@ -194,21 +198,21 @@ pub fn eql(self: *const Rope, other: *const Rope) bool {
     return self_iter.atEnd() and other_iter.atEnd();
 }
 
-pub fn deinit(self: *Rope) void {
-    self.refs -= 1;
+pub fn deinit(self: Rope) void {
+    self.data.refs -= 1;
 
-    if (self.refs > 0)
+    if (self.data.refs > 0)
         return;
 
-    if (self.next) |next|
+    if (self.data.next) |next|
         next.deinit();
 
-    switch (self.data) {
-        .string => |str| allocator.alloc.free(str),
+    switch (self.data.data) {
+        .string => |str| allocator.free(str),
         .ref => |r| r.deinit(),
     }
 
-    allocator.alloc.destroy(self);
+    allocator.destroy(self.data);
 }
 
 const SkipWriter = struct {
@@ -231,9 +235,9 @@ const SkipWriter = struct {
 };
 
 pub fn format(value: *const Rope, writer: anytype) !void {
-    var current: ?*const Rope = value;
-    while (current) |node| : (current = node.next) {
-        switch (node.data) {
+    var current: ?Rope = value.*;
+    while (current) |node| : (current = node.data.next) {
+        switch (node.data.data) {
             .string => |str| try writer.writeAll(str),
             .ref => |ref| try writer.print("{f}", .{ref}),
         }
