@@ -106,23 +106,60 @@ pub const WebData = struct {
                 var body_writer: std.io.Writer.Allocating = .init(allocator);
                 defer body_writer.deinit();
 
-                const resp = client.fetch(.{
-                    .response_writer = &body_writer.writer,
-                    .location = .{ .uri = uri },
-                    .method = .GET,
-                    .headers = .{
-                        .user_agent = .{ .override = "SandEEE/0.0" },
-                        .connection = .{ .override = "Close" },
-                    },
-                }) catch |err| {
-                    return if (err == error.TemporaryNameServerFailure)
-                        try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
-                    else
-                        try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
-                };
+                {
+                    var req = client.request(.GET, uri, .{
+                        .redirect_behavior = @enumFromInt(3),
+                        .headers = .{
+                            .user_agent = .{ .override = "SandEEE/0.0" },
+                            .connection = .{ .override = "Close" },
+                        },
+                    }) catch |err|
+                        return if (err == error.TemporaryNameServerFailure)
+                            try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
+                        else
+                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
+                    defer req.deinit();
 
-                if (resp.status != .ok) {
-                    return try std.fmt.allocPrint(allocator, "Error: {} - {s}", .{ @intFromEnum(resp.status), @tagName(resp.status) });
+                    req.sendBodiless() catch |err|
+                        return if (err == error.TemporaryNameServerFailure)
+                            try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
+                        else
+                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
+
+                    const redirect_buffer: []u8 = try allocator.alloc(u8, 8 * 1024);
+                    defer allocator.free(redirect_buffer);
+
+                    var response = req.receiveHead(redirect_buffer) catch |err|
+                        return if (err == error.TemporaryNameServerFailure)
+                            try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
+                        else
+                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
+
+                    if (response.head.status != .ok) {
+                        return try std.fmt.allocPrint(allocator, "Error: {} - {s}", .{ @intFromEnum(response.head.status), @tagName(response.head.status) });
+                    }
+
+                    if (response.head.content_type) |content_type|
+                        if (!std.mem.eql(u8, content_type, "application/octet-stream") and !std.mem.eql(u8, content_type, "text/eeedocumentfile"))
+                            return try std.fmt.allocPrint(allocator, "Error: Invalid content type {s}", .{content_type});
+
+                    const decompress_buffer: []u8 = switch (response.head.content_encoding) {
+                        .identity => &.{},
+                        .zstd => try client.allocator.alloc(u8, std.compress.zstd.default_window_len),
+                        .deflate, .gzip => try client.allocator.alloc(u8, std.compress.flate.max_window_len),
+                        .compress => return error.UnsupportedCompressionMethod,
+                    };
+                    defer client.allocator.free(decompress_buffer);
+
+                    var transfer_buffer: [64]u8 = undefined;
+                    var decompress: std.http.Decompress = undefined;
+                    const reader = response.readerDecompressing(&transfer_buffer, &decompress, decompress_buffer);
+
+                    _ = reader.streamRemaining(&body_writer.writer) catch |err|
+                        return if (err == error.TemporaryNameServerFailure)
+                            try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
+                        else
+                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
                 }
 
                 return try allocator.dupe(u8, body_writer.written());
