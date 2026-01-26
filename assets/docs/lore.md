@@ -10,6 +10,8 @@
 
 ## Key concepts
 
+- SandEEE is an opinionated recreation of DunEEE made by Epsilon.
+
 ## Implementation plans, order, and progress
 
 ## Characters
