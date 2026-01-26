@@ -725,8 +725,6 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
             const b = try self.popStack();
             const a = try self.popStack();
 
-            log.info("{any}", .{a});
-
             if (a.data().* != .string) return error.StringMissing;
 
             if (b.data().* == .string) {

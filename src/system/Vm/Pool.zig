@@ -66,7 +66,7 @@ pub const ObjectRef = enum(usize) {
             },
         }
 
-        self.data().* = .{
+        objects.items[self.id()].data = .{
             .free = free_ref,
         };
 
