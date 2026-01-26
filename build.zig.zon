@@ -21,8 +21,8 @@
             .hash = "zglfw-0.1.0-BghZXaTUAACGayXkH2tKJKfpr_CpHpDyIxTbPKjquaXC",
         },
         .zig_steamworks_fake = .{
-            .url = "git+https://github.com/prestosilver/zig-steamworks-fake#b23bf52e485bd4fc626636a20a5ade4dfd397d8b",
-            .hash = "zig_steamworks_fake-0.0.0-3i7XFmxmAACFtbONx9gUT_t3LJds_HqBvy1D5Jo0FedT",
+            .url = "git+https://github.com/prestosilver/zig-steamworks-fake#051e4331a9e9ad80772f300acafaf934cd06de13",
+            .hash = "zig_steamworks_fake-0.0.0-3i7XFnpmAABV-Phup4GUT8gBAFCxtIV6OsxC4MllS_fl",
         },
         // .zig_steamworks_fake = .{
         //     .path = "../zig-steamworks-fake",
