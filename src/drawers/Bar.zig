@@ -102,7 +102,9 @@ pub const BarData = struct {
         const total_height: f32 = @floatFromInt(apps.len * (ICON_SIZE + ICON_SPACE));
 
         if (self.btn_active) {
-            try SpriteBatch.global.draw(Sprite, logoSprite, shader, .{ .x = 2, .y = self.screendims.y - total_height - 2 - self.height });
+            logoSprite.data.size.y = total_height;
+
+            try SpriteBatch.global.draw(Sprite, logoSprite, shader, .{ .x = 2, .y = self.screendims.y - total_height - self.height });
 
             for (apps, 0..) |app, i| {
                 const icon_spr: Sprite = if (app.icon) |icn|
