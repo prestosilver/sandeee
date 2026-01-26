@@ -1,6 +1,9 @@
 const std = @import("std");
 
 const math = @import("../math.zig");
+const events = @import("../events.zig");
+
+const ClickKind = events.input.ClickKind;
 
 const Vec2 = math.Vec2;
 
@@ -15,8 +18,7 @@ pub const GameState = struct {
         update: *const fn (*anyopaque, f32) anyerror!void,
         keypress: *const fn (*anyopaque, c_int, c_int, bool) anyerror!void,
         keychar: *const fn (*anyopaque, u32, i32) anyerror!void,
-        mousepress: *const fn (*anyopaque, c_int) anyerror!void,
-        mouserelease: *const fn (*anyopaque) anyerror!void,
+        mousepress: *const fn (*anyopaque, c_int, ClickKind) anyerror!void,
         mousemove: *const fn (*anyopaque, Vec2) anyerror!void,
         mousescroll: *const fn (*anyopaque, Vec2) anyerror!void,
     };
@@ -57,12 +59,8 @@ pub const GameState = struct {
         return state.vtable.keychar(state.ptr, codepoint, mods);
     }
 
-    pub fn mousepress(state: *Self, btn: c_int) anyerror!void {
-        return state.vtable.mousepress(state.ptr, btn);
-    }
-
-    pub fn mouserelease(state: *Self) anyerror!void {
-        return state.vtable.mouserelease(state.ptr);
+    pub fn mousepress(state: *Self, btn: c_int, kind: ClickKind) anyerror!void {
+        return state.vtable.mousepress(state.ptr, btn, kind);
     }
 
     pub fn mousemove(state: *Self, pos: Vec2) anyerror!void {
@@ -135,19 +133,11 @@ pub const GameState = struct {
                 }
             }
 
-            fn mousepressImpl(pointer: *anyopaque, btn: c_int) anyerror!void {
+            fn mousepressImpl(pointer: *anyopaque, btn: c_int, kind: ClickKind) anyerror!void {
                 if (std.meta.hasMethod(child_t, "mousepress")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                    return @call(.auto, ptr_info.pointer.child.mousepress, .{ self, btn });
-                }
-            }
-
-            fn mousereleaseImpl(pointer: *anyopaque) anyerror!void {
-                if (std.meta.hasMethod(child_t, "mouserelease")) {
-                    const self: Ptr = @ptrCast(@alignCast(pointer));
-
-                    return @call(.auto, ptr_info.pointer.child.mouserelease, .{self});
+                    return @call(.auto, ptr_info.pointer.child.mousepress, .{ self, btn, kind });
                 }
             }
 
@@ -179,7 +169,6 @@ pub const GameState = struct {
                 .keypress = gen.keypressImpl,
                 .keychar = gen.keycharImpl,
                 .mousepress = gen.mousepressImpl,
-                .mouserelease = gen.mousereleaseImpl,
                 .mousemove = gen.mousemoveImpl,
                 .mousescroll = gen.mousescrollImpl,
             },

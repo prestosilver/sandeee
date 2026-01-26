@@ -37,17 +37,6 @@ const settings = data.settings;
 const SettingsData = struct {
     const Self = @This();
 
-    const SettingsMouseActionType = enum {
-        SingleLeft,
-        DoubleLeft,
-    };
-
-    const SettingsMouseAction = struct {
-        kind: SettingsMouseActionType,
-        pos: Vec2,
-        time: f32,
-    };
-
     shader: *Shader,
     highlight: Sprite,
     menubar: Sprite,
@@ -55,9 +44,10 @@ const SettingsData = struct {
     back_button: Sprite,
     text_box: [2]Sprite,
 
+    mousepos: Vec2 = .{},
     focused: ?usize = null,
-    selection: usize = 0,
-    last_action: ?SettingsMouseAction = null,
+    hover_idx: ?usize = null,
+    selected: ?usize = null,
     focused_pane: ?usize = null,
     editing: ?usize = null,
     bnds: Rect = .{ .w = 0, .h = 0 },
@@ -65,20 +55,13 @@ const SettingsData = struct {
     value: []const u8,
 
     pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, _: *Window.Data.WindowContents.WindowProps) !void {
-        if (self.last_action) |*last_action| {
-            if (last_action.time <= 0) {
-                self.last_action = null;
-            } else {
-                last_action.time -= 5;
-            }
-        }
-
         self.bnds = bnds.*;
 
         if (self.focused_pane) |focused| {
             var pos = Vec2{ .y = 40 };
 
-            for (settings.SETTINGS[focused].entries) |item| {
+            self.hover_idx = null;
+            for (settings.SETTINGS[focused].entries, 0..) |item, idx| {
                 // draw name
                 try font.draw(.{
                     .shader = font_shader,
@@ -87,80 +70,8 @@ const SettingsData = struct {
                 });
 
                 // check click
-                if (self.last_action) |action| {
-                    if ((Rect{ .x = pos.x, .y = pos.y, .w = bnds.w, .h = font.size }).contains(action.pos)) {
-                        switch (action.kind) {
-                            .SingleLeft => {
-                                switch (item.kind) {
-                                    .string, .dropdown, .slider => {
-                                        self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.create(popups.textpick.PopupTextPick);
-                                        adds.* = .{
-                                            .prompt = try allocator.dupe(u8, item.setting),
-                                            .text = try allocator.dupe(u8, self.value),
-                                            .data = self,
-                                            .submit = &submit,
-                                        };
-
-                                        self.value = item.key;
-
-                                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                                            .popup = .atlas("win", .{
-                                                .title = "Text Picker",
-                                                .source = .{ .w = 1, .h = 1 },
-                                                .pos = .initCentered(self.bnds, 350, 125),
-                                                .contents = .init(adds),
-                                            }),
-                                        });
-                                        self.last_action = null;
-                                    },
-                                    .file => {
-                                        self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.create(popups.filepick.PopupFilePick);
-                                        adds.* = .{
-                                            .path = try allocator.dupe(u8, self.value),
-                                            .data = self,
-                                            .submit = &submitFile,
-                                        };
-
-                                        self.value = item.key;
-
-                                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                                            .popup = .atlas("win", .{
-                                                .title = "Text Picker",
-                                                .source = .{ .w = 1.0, .h = 1.0 },
-                                                .pos = .initCentered(self.bnds, 350, 125),
-                                                .contents = .init(adds),
-                                            }),
-                                        });
-                                        self.last_action = null;
-                                    },
-                                    .folder => {
-                                        self.value = config.SettingManager.instance.get(item.key) orelse "";
-                                        const adds = try allocator.create(popups.folderpick.PopupFolderPick);
-                                        adds.* = .{
-                                            .path = try allocator.dupe(u8, self.value),
-                                            .data = self,
-                                            .submit = &submitFolder,
-                                        };
-
-                                        self.value = item.key;
-
-                                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                                            .popup = .atlas("win", .{
-                                                .title = "Text Picker",
-                                                .source = .{ .w = 1.0, .h = 1.0 },
-                                                .pos = .initCentered(self.bnds, 350, 125),
-                                                .contents = .init(adds),
-                                            }),
-                                        });
-                                        self.last_action = null;
-                                    },
-                                }
-                            },
-                            .DoubleLeft => {},
-                        }
-                    }
+                if ((Rect{ .x = pos.x, .y = pos.y, .w = bnds.w, .h = font.size }).contains(self.mousepos)) {
+                    self.hover_idx = idx;
                 }
 
                 // draw value
@@ -186,6 +97,7 @@ const SettingsData = struct {
             var x: f32 = 0;
             var y: f32 = 40;
 
+            self.hover_idx = null;
             for (settings.SETTINGS, 0..) |panel, idx| {
                 const size = font.sizeText(.{ .text = panel.name });
                 const xo = (128 - size.x) / 2;
@@ -198,21 +110,11 @@ const SettingsData = struct {
 
                 try SpriteBatch.global.draw(Sprite, &self.icons[panel.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
-                if (idx + 1 == self.selection)
+                if (idx == self.selected)
                     try SpriteBatch.global.draw(Sprite, &self.icons[4], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
-                if (self.last_action) |action| {
-                    if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(action.pos)) {
-                        switch (action.kind) {
-                            .SingleLeft => {
-                                self.selection = idx + 1;
-                            },
-                            .DoubleLeft => {
-                                self.selection = 0;
-                                self.focused_pane = idx;
-                            },
-                        }
-                    }
+                if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(self.mousepos)) {
+                    self.hover_idx = idx;
                 }
 
                 x += 128;
@@ -267,40 +169,102 @@ const SettingsData = struct {
         try config.SettingManager.instance.save();
     }
 
-    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
-        if (btn == null) return;
+    pub fn move(self: *Self, x: f32, y: f32) void {
+        self.mousepos = .{ .x = x, .y = y };
+    }
 
-        switch (btn.?) {
-            0 => {
-                if (mousepos.y < 40) {
-                    if (mousepos.x < 40) {
-                        self.focused_pane = null;
+    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: i32, kind: events.input.ClickKind) !void {
+        if (self.focused_pane) |focused| {
+            if (kind == .single) {
+                if (self.hover_idx) |hover_idx| {
+                    const item = settings.SETTINGS[focused].entries[hover_idx];
+                    switch (item.kind) {
+                        .string, .dropdown, .slider => {
+                            if (btn == 0) {
+                                self.value = config.SettingManager.instance.get(item.key) orelse "";
+                                const adds = try allocator.create(popups.textpick.PopupTextPick);
+                                adds.* = .{
+                                    .prompt = try allocator.dupe(u8, item.setting),
+                                    .text = try allocator.dupe(u8, self.value),
+                                    .data = self,
+                                    .submit = &submit,
+                                };
+
+                                self.value = item.key;
+
+                                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                                    .popup = .atlas("win", .{
+                                        .title = "Text Picker",
+                                        .source = .{ .w = 1, .h = 1 },
+                                        .pos = .initCentered(self.bnds, 350, 125),
+                                        .contents = .init(adds),
+                                    }),
+                                });
+                            }
+                        },
+                        .file => {
+                            if (btn == 0) {
+                                self.value = config.SettingManager.instance.get(item.key) orelse "";
+                                const adds = try allocator.create(popups.filepick.PopupFilePick);
+                                adds.* = .{
+                                    .path = try allocator.dupe(u8, self.value),
+                                    .data = self,
+                                    .submit = &submitFile,
+                                };
+
+                                self.value = item.key;
+
+                                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                                    .popup = .atlas("win", .{
+                                        .title = "Text Picker",
+                                        .source = .{ .w = 1.0, .h = 1.0 },
+                                        .pos = .initCentered(self.bnds, 350, 125),
+                                        .contents = .init(adds),
+                                    }),
+                                });
+                            }
+                        },
+                        .folder => {
+                            if (btn == 0) {
+                                self.value = config.SettingManager.instance.get(item.key) orelse "";
+                                const adds = try allocator.create(popups.folderpick.PopupFolderPick);
+                                adds.* = .{
+                                    .path = try allocator.dupe(u8, self.value),
+                                    .data = self,
+                                    .submit = &submitFolder,
+                                };
+
+                                self.value = item.key;
+
+                                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                                    .popup = .atlas("win", .{
+                                        .title = "Text Picker",
+                                        .source = .{ .w = 1.0, .h = 1.0 },
+                                        .pos = .initCentered(self.bnds, 350, 125),
+                                        .contents = .init(adds),
+                                    }),
+                                });
+                            }
+                        },
                     }
-
-                    return;
+                }
+            }
+            if (mousepos.y < 40) {
+                if (mousepos.x < 40) {
+                    if (btn == 0)
+                        self.focused_pane = null;
                 }
 
-                self.last_action = if (self.last_action) |last_action|
-                    if (mousepos.distSq(last_action.pos) < 100)
-                        .{
-                            .kind = .DoubleLeft,
-                            .pos = mousepos,
-                            .time = 10,
-                        }
-                    else
-                        .{
-                            .kind = .SingleLeft,
-                            .pos = mousepos,
-                            .time = 100,
-                        }
-                else
-                    .{
-                        .kind = .SingleLeft,
-                        .pos = mousepos,
-                        .time = 100,
-                    };
-            },
-            else => {},
+                return;
+            }
+        } else {
+            if (btn == 0 and kind == .single) {
+                self.selected = self.hover_idx;
+            } else if (btn == 0 and kind == .double) {
+                if (self.hover_idx) |hover_idx|
+                    self.focused_pane = hover_idx;
+                self.selected = null;
+            }
         }
     }
 

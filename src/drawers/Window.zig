@@ -5,6 +5,7 @@ const drawers = @import("../drawers.zig");
 const util = @import("../util.zig");
 const math = @import("../math.zig");
 const system = @import("../system.zig");
+const events = @import("../events.zig");
 
 const Sprite = drawers.Sprite;
 
@@ -19,6 +20,8 @@ const Font = util.Font;
 const graphics = util.graphics;
 const allocator = util.allocator;
 const SpriteBatch = util.SpriteBatch;
+
+const ClickKind = events.input.ClickKind;
 
 const config = system.config;
 
@@ -86,7 +89,7 @@ pub const WindowData = struct {
 
         const Vtable = struct {
             draw: *const fn (*anyopaque, *Shader, *Rect, *Font, *WindowProps) anyerror!void,
-            click: *const fn (*anyopaque, Vec2, Vec2, ?i32) anyerror!void,
+            click: *const fn (*anyopaque, Vec2, Vec2, i32, ClickKind) anyerror!void,
             key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
             char: *const fn (*anyopaque, u32, i32) anyerror!void,
             scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
@@ -152,8 +155,8 @@ pub const WindowData = struct {
             return self.vtable.char(self.ptr, codepoint, mods);
         }
 
-        pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: ?i32) !void {
-            if (btn) |_| {
+        pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: i32, kind: ClickKind) !void {
+            if (kind == .down) {
                 if (self.props.scroll) |*scroll_data| {
                     self.scrolling = false;
                     if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scroll_data.offset_start + 14) {
@@ -165,7 +168,7 @@ pub const WindowData = struct {
                 }
             }
 
-            return self.vtable.click(self.ptr, size, mousepos, btn);
+            return self.vtable.click(self.ptr, size, mousepos, btn, kind);
         }
 
         pub fn drag(self: *Self, size: Vec2, mousepos: Vec2) !void {
@@ -257,11 +260,11 @@ pub const WindowData = struct {
                     }
                 }
 
-                fn clickImpl(pointer: *anyopaque, size: Vec2, pos: Vec2, btn: ?c_int) !void {
+                fn clickImpl(pointer: *anyopaque, size: Vec2, pos: Vec2, btn: c_int, click_kind: ClickKind) !void {
                     if (std.meta.hasMethod(child_t, "click")) {
                         const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                        return @call(.always_inline, ptr_info.pointer.child.click, .{ self, size, pos, btn });
+                        return @call(.always_inline, ptr_info.pointer.child.click, .{ self, size, pos, btn, click_kind });
                     }
                 }
 
@@ -508,7 +511,7 @@ pub const WindowData = struct {
         return bnds;
     }
 
-    pub fn click(self: *WindowData, mousepos: Vec2, btn: ?i32) !void {
+    pub fn click(self: *WindowData, mousepos: Vec2, btn: i32, kind: ClickKind) !void {
         if (self.min) return;
         var bnds = self.pos;
         bnds.x += 4;
@@ -516,8 +519,8 @@ pub const WindowData = struct {
         bnds.w -= 8;
         bnds.h -= 36;
 
-        if (bnds.contains(mousepos) or btn == null) {
-            return self.contents.click(bnds.size(), .{ .x = mousepos.x - bnds.x, .y = mousepos.y - bnds.y }, btn);
+        if (bnds.contains(mousepos) or kind == .up) {
+            return self.contents.click(bnds.size(), .{ .x = mousepos.x - bnds.x, .y = mousepos.y - bnds.y }, btn, kind);
         }
     }
 

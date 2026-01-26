@@ -299,16 +299,12 @@ pub fn keyChar(event: input_events.EventKeyChar) !void {
     try game_states.getPtr(current_state).keychar(event.codepoint, event.mods);
 }
 
-pub fn mouseDown(event: input_events.EventMouseDown) !void {
-    try game_states.getPtr(current_state).mousepress(event.btn);
-}
-
-pub fn mouseUp(_: input_events.EventMouseUp) !void {
-    try game_states.getPtr(current_state).mouserelease();
+pub fn mouseClick(event: input_events.EventMouseClick) !void {
+    try game_states.getPtr(current_state).mousepress(event.btn, event.kind);
 }
 
 pub fn mouseMove(event: input_events.EventMouseMove) !void {
-    try game_states.getPtr(current_state).mousemove(.{ .x = @floatCast(event.x), .y = @floatCast(event.y) });
+    try game_states.getPtr(current_state).mousemove(event.pos);
 }
 
 pub fn mouseScroll(event: input_events.EventMouseScroll) !void {
@@ -921,8 +917,7 @@ pub fn runGame() anyerror!void {
     try events.EventManager.instance.registerListener(input_events.EventWindowResize, windowResize);
     try events.EventManager.instance.registerListener(input_events.EventMouseScroll, mouseScroll);
     try events.EventManager.instance.registerListener(input_events.EventMouseMove, mouseMove);
-    try events.EventManager.instance.registerListener(input_events.EventMouseDown, mouseDown);
-    try events.EventManager.instance.registerListener(input_events.EventMouseUp, mouseUp);
+    try events.EventManager.instance.registerListener(input_events.EventMouseClick, mouseClick);
     try events.EventManager.instance.registerListener(input_events.EventKeyDown, keyDown);
     try events.EventManager.instance.registerListener(input_events.EventKeyChar, keyChar);
     try events.EventManager.instance.registerListener(input_events.EventKeyUp, keyUp);

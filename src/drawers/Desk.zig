@@ -75,11 +75,13 @@ pub const DeskData = struct {
         return name[idx + 1] != '_';
     }
 
-    pub fn click(self: *DeskData, shader: *Shader, pos: ?Vec2) !void {
+    pub fn click(self: *DeskData, shader: *Shader, pos: ?Vec2, btn: c_int, kind: events.input.ClickKind) !void {
         if (pos == null) {
             self.sel = null;
             return;
         }
+
+        if (btn != 0) return;
 
         var position = Vec2{};
         var idx: usize = 0;
@@ -91,7 +93,7 @@ pub const DeskData = struct {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
             if ((Rect{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
-                if (self.sel != null and self.sel == idx) {
+                if (kind == .double and self.sel == idx) {
                     const window: Window = .atlas("win", .{
                         .source = Rect{ .w = 1, .h = 1 },
                         .contents = try windows.explorer.init(shader),
@@ -107,8 +109,10 @@ pub const DeskData = struct {
                     self.sel = null;
 
                     return;
+                } else if (kind == .single) {
+                    self.sel = idx;
+                    return;
                 }
-                self.sel = idx;
             }
 
             idx += 1;
@@ -121,7 +125,7 @@ pub const DeskData = struct {
             if (!checkIconSkip(file.name)) continue;
 
             if ((Rect{ .x = position.x * SPACING.x, .y = position.y * SPACING.y, .w = SPACING.x, .h = SPACING.y }).contains(pos.?)) {
-                if (self.sel != null and self.sel == idx) {
+                if (kind == .double and self.sel == idx) {
                     const index = std.mem.lastIndexOf(u8, file.name, "/") orelse 0;
 
                     const cmd = file.name[index + 1 ..];
@@ -154,8 +158,10 @@ pub const DeskData = struct {
                     self.sel = null;
 
                     return;
+                } else if (kind == .single) {
+                    self.sel = idx;
+                    return;
                 }
-                self.sel = idx;
             }
 
             idx += 1;

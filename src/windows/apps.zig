@@ -34,17 +34,6 @@ var g_idx: u8 = 0;
 pub const LauncherData = struct {
     const Self = @This();
 
-    const LauncherMouseActionType = enum {
-        SingleLeft,
-        DoubleLeft,
-    };
-
-    const LauncherMouseAction = struct {
-        kind: LauncherMouseActionType,
-        pos: Vec2,
-        time: f32,
-    };
-
     shader: *Shader,
     text_box: [2]Sprite,
     menubar: Sprite,
@@ -53,8 +42,9 @@ pub const LauncherData = struct {
     shell: Shell,
 
     focused: ?u64 = null,
-    selected: usize = 0,
-    last_action: ?LauncherMouseAction = null,
+    selected: ?usize = null,
+    hover_idx: ?usize = null,
+    mousepos: Vec2 = .{},
 
     icon_data: []const Eln = &.{},
     idx: u8,
@@ -90,14 +80,6 @@ pub const LauncherData = struct {
             };
         }
 
-        if (self.last_action) |*last_action| {
-            if (last_action.time <= 0) {
-                self.last_action = null;
-            } else {
-                last_action.time -= 5;
-            }
-        }
-
         if (self.shell.vm) |_| {
             const result = self.shell.getVMResult() catch null;
             if (result) |result_data| {
@@ -110,6 +92,7 @@ pub const LauncherData = struct {
 
         const hidden = config.SettingManager.instance.getBool("explorer_hidden") orelse false;
 
+        self.hover_idx = null;
         for (self.icon_data, 0..) |icon, idx| {
             if (icon.name.len == 0) continue;
             if (!hidden and icon.name[0] == '_') continue;
@@ -143,23 +126,12 @@ pub const LauncherData = struct {
 
                 try SpriteBatch.global.draw(Sprite, &icon_spr, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
-                if (idx + 1 == self.selected)
+                if (idx == self.selected)
                     try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
             }
 
-            if (self.last_action) |last_action| {
-                if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(last_action.pos)) {
-                    switch (last_action.kind) {
-                        .SingleLeft => {
-                            self.selected = idx + 1;
-                        },
-                        .DoubleLeft => {
-                            try icon.run(&self.shell, self.shader);
-
-                            self.last_action = null;
-                        },
-                    }
-                }
+            if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(self.mousepos)) {
+                self.hover_idx = idx;
             }
 
             x += 128;
@@ -181,33 +153,21 @@ pub const LauncherData = struct {
         allocator.destroy(self);
     }
 
-    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
-        if (self.shell.vm != null) return;
-        if (btn == null) return;
+    pub fn move(self: *Self, x: f32, y: f32) void {
+        self.mousepos = .{ .x = x, .y = y };
+    }
 
-        switch (btn.?) {
-            0 => {
-                self.last_action = if (self.last_action) |last_action|
-                    if (mousepos.distSq(last_action.pos) < 100)
-                        .{
-                            .kind = .DoubleLeft,
-                            .pos = mousepos,
-                            .time = 10,
-                        }
-                    else
-                        .{
-                            .kind = .SingleLeft,
-                            .pos = mousepos,
-                            .time = 100,
-                        }
-                else
-                    .{
-                        .kind = .SingleLeft,
-                        .pos = mousepos,
-                        .time = 100,
-                    };
-            },
-            else => {},
+    pub fn click(self: *Self, _: Vec2, _: Vec2, btn: i32, kind: events.input.ClickKind) !void {
+        if (self.shell.vm != null) return;
+        if (kind == .down or kind == .up) return;
+
+        if (btn == 0 and kind == .single) {
+            self.selected = self.hover_idx;
+        } else if (btn == 0 and kind == .double) {
+            if (self.hover_idx) |hover_idx|
+                try self.icon_data[hover_idx].run(&self.shell, self.shader);
+
+            self.selected = null;
         }
     }
 

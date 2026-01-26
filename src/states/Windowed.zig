@@ -46,6 +46,7 @@ const files = system.files;
 const mail = system.mail;
 
 const EventManager = events.EventManager;
+const ClickKind = events.input.ClickKind;
 const window_events = events.windows;
 const system_events = events.system;
 
@@ -471,10 +472,23 @@ pub fn update(self: *GSWindowed, dt: f32) !void {
     };
 
     for (self.windows.items) |window| {
-        if (!screen_bounds.containsSome(window.data.pos)) {
-            window.data.pos.x = 100;
-            window.data.pos.y = 100;
-        }
+        if (window.data.pos.x < 0)
+            window.data.pos.x = 0;
+
+        if (window.data.pos.y < 0)
+            window.data.pos.y = 0;
+
+        if (window.data.pos.w > screen_bounds.w)
+            window.data.pos.w = screen_bounds.w;
+
+        if (window.data.pos.h > screen_bounds.h)
+            window.data.pos.h = screen_bounds.h;
+
+        if (window.data.pos.x > screen_bounds.w - window.data.pos.w)
+            window.data.pos.x = screen_bounds.w - window.data.pos.w;
+
+        if (window.data.pos.y > screen_bounds.h - window.data.pos.h)
+            window.data.pos.y = screen_bounds.h - window.data.pos.h;
     }
 }
 
@@ -529,71 +543,62 @@ pub fn keychar(self: *GSWindowed, code: u32, mods: c_int) !void {
     }
 }
 
-pub fn mousepress(self: *GSWindowed, btn: c_int) !void {
-    self.down = true;
-
+pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
+    // TODO: This function feels hacky, clean it up
+    //       maybe to a state machine structure or something
+    //       idk i'll research
     if (self.popups.items.len != 0) {
-        switch (try self.popups.items[0].data.click(self.mousepos)) {
-            .Close => _ = self.popups.orderedRemove(0),
-            .Move => {
-                self.dragging_popup = self.popups.items[0];
-                self.dragging_mode = .Move;
+        if (kind == .down) {
+            switch (try self.popups.items[0].data.click(self.mousepos)) {
+                .Close => try events.EventManager.instance.sendEvent(window_events.EventClosePopup{ .popup_conts = self.popups.items[0].data.contents.ptr }),
+                .Move => {
+                    self.dragging_popup = self.popups.items[0];
+                    self.dragging_mode = .Move;
 
-                const start = self.dragging_popup.?.data.pos;
-                self.dragging_start = .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y };
-            },
-            .None => {},
+                    const start = self.dragging_popup.?.data.pos;
+                    self.dragging_start = .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y };
+                },
+                .None => {},
+            }
         }
 
-        return;
+        if (kind != .up)
+            return;
     }
 
-    switch (btn) {
-        0 => {
-            if (try self.bar.data.doClick(&self.windows, self.shader, self.mousepos)) return;
+    var new_top: ?u32 = null;
 
-            var new_top: ?u32 = null;
+    for (self.windows.items, 0..) |_, idx| {
+        if (self.windows.items[idx].data.min) continue;
 
-            for (self.windows.items, 0..) |_, idx| {
-                if (self.windows.items[idx].data.min) continue;
+        const window_pos = self.windows.items[idx].data.pos;
+        const pos = Rect{
+            .x = window_pos.x - 10,
+            .y = window_pos.y - 10,
+            .w = window_pos.w + 20,
+            .h = window_pos.h + 20,
+        };
 
-                const window_pos = self.windows.items[idx].data.pos;
-                const pos = Rect{
-                    .x = window_pos.x - 10,
-                    .y = window_pos.y - 10,
-                    .w = window_pos.w + 20,
-                    .h = window_pos.h + 20,
-                };
+        if (pos.contains(self.mousepos)) {
+            new_top = @as(u32, @intCast(idx));
+        } else self.windows.items[idx].data.active = false;
+    }
 
-                if (pos.contains(self.mousepos)) {
-                    new_top = @as(u32, @intCast(idx));
-                }
-
-                self.windows.items[idx].data.active = false;
-            }
-
+    switch (kind) {
+        .double => {
             if (new_top) |top| {
                 var swap = self.windows.orderedRemove(@as(usize, @intCast(top)));
+                const mode = swap.data.getDragMode(self.mousepos);
 
                 if (!swap.data.active) {
                     swap.data.active = true;
                     try swap.data.contents.focus();
+                    try swap.data.contents.move(self.mousepos.x - swap.data.pos.x, self.mousepos.y - swap.data.pos.y - 36);
+                    try swap.data.click(self.mousepos, btn, kind);
                 }
 
-                const mode = swap.data.getDragMode(self.mousepos);
                 switch (mode) {
-                    .Close => {
-                        if (swap.data.contents.props.no_close)
-                            try self.windows.append(swap)
-                        else {
-                            swap.data.deinit();
-
-                            allocator.destroy(swap);
-
-                            return;
-                        }
-                    },
-                    .Full => {
+                    .Move => {
                         if (swap.data.full) {
                             swap.data.pos = swap.data.oldpos;
                         } else {
@@ -602,40 +607,104 @@ pub fn mousepress(self: *GSWindowed, btn: c_int) !void {
 
                         swap.data.full = !swap.data.full;
                         try swap.data.contents.moveResize(swap.data.pos);
-
-                        try self.windows.append(swap);
                     },
-                    .Min => {
-                        if (!swap.data.contents.props.no_min) {
-                            swap.data.min = !swap.data.min;
-                        }
-
-                        try self.windows.append(swap);
-                    },
-                    else => {
-                        try self.windows.append(swap);
-                        if (!swap.data.full) drag: {
-                            self.dragging_mode = mode;
-                            self.dragging_window = self.windows.items[self.windows.items.len - 1];
-                            const start = self.dragging_window.?.data.pos;
-                            self.dragging_start = switch (self.dragging_mode) {
-                                .None => break :drag,
-                                .Close => break :drag,
-                                .Full => .{},
-                                .Min => break :drag,
-                                .Move => .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y },
-                                .ResizeR => .{ .x = start.w - self.mousepos.x },
-                                .ResizeB => .{ .y = start.h - self.mousepos.y },
-                                .ResizeL => .{ .x = start.w + start.x },
-                                .ResizeRB => .{ .x = start.w - self.mousepos.x, .y = start.h - self.mousepos.y },
-                                .ResizeLB => .{ .x = start.w + start.x, .y = start.h - self.mousepos.y },
-                            };
-
-                            try swap.data.contents.moveResize(swap.data.pos);
-                        }
-                    },
+                    else => {},
                 }
+
+                if (self.dragging_window) |dragging| {
+                    try dragging.data.contents.moveResize(dragging.data.pos);
+                    self.dragging_window = null;
+                }
+
+                try self.windows.append(swap);
             }
+        },
+        .down => {
+            switch (btn) {
+                0 => {
+                    if (try self.bar.data.doClick(&self.windows, self.shader, self.mousepos)) return;
+
+                    if (new_top) |top| {
+                        var swap = self.windows.orderedRemove(@as(usize, @intCast(top)));
+
+                        if (!swap.data.active) {
+                            swap.data.active = true;
+                            try swap.data.contents.focus();
+                            try swap.data.contents.move(self.mousepos.x - swap.data.pos.x, self.mousepos.y - swap.data.pos.y - 36);
+                            try swap.data.click(self.mousepos, btn, kind);
+                        }
+
+                        const mode = swap.data.getDragMode(self.mousepos);
+                        switch (mode) {
+                            .Close => {
+                                if (swap.data.contents.props.no_close)
+                                    try self.windows.append(swap)
+                                else {
+                                    swap.data.deinit();
+
+                                    allocator.destroy(swap);
+
+                                    return;
+                                }
+                            },
+                            .Full => {
+                                if (swap.data.full) {
+                                    swap.data.pos = swap.data.oldpos;
+                                } else {
+                                    swap.data.oldpos = swap.data.pos;
+                                }
+
+                                swap.data.full = !swap.data.full;
+                                try swap.data.contents.moveResize(swap.data.pos);
+
+                                try self.windows.append(swap);
+                            },
+                            .Min => {
+                                if (!swap.data.contents.props.no_min) {
+                                    swap.data.min = !swap.data.min;
+                                }
+
+                                try self.windows.append(swap);
+                            },
+                            else => {
+                                try self.windows.append(swap);
+                                drag: {
+                                    self.dragging_mode = mode;
+                                    self.dragging_window = self.windows.items[self.windows.items.len - 1];
+                                    const start = self.dragging_window.?.data.pos;
+                                    self.dragging_start = switch (self.dragging_mode) {
+                                        .None => break :drag,
+                                        .Close => break :drag,
+                                        .Full => .{},
+                                        .Min => break :drag,
+                                        .Move => .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y },
+                                        .ResizeR => .{ .x = start.w - self.mousepos.x },
+                                        .ResizeB => .{ .y = start.h - self.mousepos.y },
+                                        .ResizeL => .{ .x = start.w + start.x },
+                                        .ResizeRB => .{ .x = start.w - self.mousepos.x, .y = start.h - self.mousepos.y },
+                                        .ResizeLB => .{ .x = start.w + start.x, .y = start.h - self.mousepos.y },
+                                    };
+
+                                    try swap.data.contents.moveResize(swap.data.pos);
+                                }
+                            },
+                        }
+                    }
+                },
+                else => {},
+            }
+        },
+        .up => {
+            if (self.dragging_window) |dragging| {
+                try dragging.data.contents.moveResize(dragging.data.pos);
+                self.dragging_window = null;
+            }
+
+            if (self.dragging_popup) |_| {
+                self.dragging_popup = null;
+            }
+
+            self.down = false;
         },
         else => {},
     }
@@ -643,36 +712,19 @@ pub fn mousepress(self: *GSWindowed, btn: c_int) !void {
     for (self.windows.items) |window| {
         if (!window.data.active) continue;
 
-        try self.desk.data.click(self.shader, null);
+        try self.desk.data.click(self.shader, null, btn, kind);
 
-        return window.data.click(self.mousepos, btn);
+        return window.data.click(self.mousepos, btn, kind);
     }
 
-    try self.desk.data.click(self.shader, self.mousepos);
-}
-
-pub fn mouserelease(self: *GSWindowed) !void {
-    if (self.dragging_window) |dragging| {
-        try dragging.data.contents.moveResize(dragging.data.pos);
-        self.dragging_window = null;
-    }
-
-    if (self.dragging_popup) |_| {
-        self.dragging_popup = null;
-    }
-
-    self.down = false;
-
-    for (self.windows.items) |window| {
-        try window.data.click(self.mousepos, null);
-    }
+    try self.desk.data.click(self.shader, self.mousepos, btn, kind);
 }
 
 pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
     self.mousepos = pos;
 
     if (self.dragging_popup) |dragging| {
-        const winpos = pos.add(self.dragging_start);
+        const winpos = self.mousepos.add(self.dragging_start);
 
         switch (self.dragging_mode) {
             .Move => {
@@ -685,7 +737,7 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
 
     if (self.dragging_window) |dragging| {
         const old = dragging.data.pos;
-        const winpos = pos.add(self.dragging_start);
+        const winpos = self.mousepos.add(self.dragging_start);
 
         switch (self.dragging_mode) {
             .None => {},
@@ -693,15 +745,38 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
             .Full => {},
             .Min => {},
             .Move => {
-                dragging.data.pos.x = winpos.x;
-                dragging.data.pos.y = winpos.y;
+                if (self.mousepos.y < 10) {
+                    if (!dragging.data.full) {
+                        // dont need to update dragging pos here bc its unnoticable to user
+
+                        dragging.data.full = true;
+                        dragging.data.oldpos = dragging.data.pos;
+                    }
+                } else {
+                    if (dragging.data.full) {
+                        dragging.data.full = false;
+                        dragging.data.pos = dragging.data.oldpos;
+                    }
+
+                    dragging.data.pos.x = winpos.x;
+                    dragging.data.pos.y = winpos.y;
+
+                    // dont want to move the grab point if uneeded, feels
+                    // weirder than not moving it when it technically should
+                    // this is a fix for fullscreen grabs when the windows
+                    // size shrinks immedieatly
+                    if (!dragging.data.pos.contains(self.mousepos)) {
+                        self.dragging_start.x = -dragging.data.oldpos.w * 0.5;
+                        self.dragging_start.y = -6;
+                    }
+                }
             },
             .ResizeR => {
                 dragging.data.pos.w = winpos.x;
             },
             .ResizeL => {
-                dragging.data.pos.x = pos.x;
-                dragging.data.pos.w = self.dragging_start.x - pos.x;
+                dragging.data.pos.x = self.mousepos.x;
+                dragging.data.pos.w = self.dragging_start.x - self.mousepos.x;
             },
             .ResizeB => {
                 dragging.data.pos.h = winpos.y;
@@ -711,8 +786,8 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
                 dragging.data.pos.h = winpos.y;
             },
             .ResizeLB => {
-                dragging.data.pos.x = pos.x;
-                dragging.data.pos.w = self.dragging_start.x - pos.x;
+                dragging.data.pos.x = self.mousepos.x;
+                dragging.data.pos.w = self.dragging_start.x - self.mousepos.x;
                 dragging.data.pos.h = winpos.y;
             },
         }
@@ -755,8 +830,8 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
 
     if (self.dragging_mode == .None) {
         for (self.windows.items) |window| {
-            if (!window.data.active) continue;
-            try window.data.contents.move(pos.x - window.data.pos.x, pos.y - window.data.pos.y - 36);
+            if (window.data.min) continue;
+            try window.data.contents.move(self.mousepos.x - window.data.pos.x, self.mousepos.y - window.data.pos.y - 36);
         }
     }
 }

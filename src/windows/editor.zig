@@ -432,12 +432,13 @@ pub const EditorData = struct {
         try SpriteBatch.global.draw(Sprite, &self.icons[2], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
     }
 
-    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
-        self.click_down = self.click_down and btn != null;
+    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: i32, kind: events.input.ClickKind) !void {
+        if (kind == .up)
+            self.click_down = false;
 
-        if (btn) |button|
-            switch (button) {
-                0 => {
+        switch (btn) {
+            0 => {
+                if (kind == .single) {
                     const open = Rect{ .w = 36, .h = 36 };
                     if (open.contains(mousepos)) {
                         const home = try files.FolderLink.resolve(.home);
@@ -468,22 +469,25 @@ pub const EditorData = struct {
                     if (new_bnds.contains(mousepos)) {
                         try self.newFile();
                     }
+                }
 
-                    if (self.buffer) |buffer| {
-                        if (buffer.len != 0) {
-                            if (mousepos.y > 40 and mousepos.x > 82) {
-                                self.click_pos = mousepos.sub(.{
-                                    .y = 40,
-                                    .x = 82,
-                                });
-                                self.click_done = self.click_pos;
-                                self.click_down = true;
-                            }
+                if (self.buffer) |buffer| {
+                    if (buffer.len != 0 and
+                        mousepos.y > 40 and mousepos.x > 82)
+                    {
+                        if (kind == .down) {
+                            self.click_pos = mousepos.sub(.{
+                                .y = 40,
+                                .x = 82,
+                            });
+                            self.click_done = self.click_pos;
+                            self.click_down = true;
                         }
                     }
-                },
-                else => {},
-            };
+                }
+            },
+            else => {},
+        }
     }
 
     pub fn deleteSel(self: *Self) !void {
@@ -952,7 +956,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         }),
         .icons = .{
             .atlas("icons", .{
-                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .source = .{ .x = 1.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
                 .size = .{ .x = 32, .y = 32 },
             }),
             .atlas("icons", .{

@@ -47,17 +47,6 @@ pub const ExplorerData = struct {
 
     const Self = @This();
 
-    const ExplorerMouseActionType = enum {
-        SingleLeft,
-        DoubleLeft,
-    };
-
-    const ExplorerMouseAction = struct {
-        kind: ExplorerMouseActionType,
-        pos: Vec2,
-        time: f32,
-    };
-
     shader: *Shader,
     icons: [2]Sprite,
     selected_sprite: Sprite,
@@ -69,10 +58,11 @@ pub const ExplorerData = struct {
 
     focused: ?u64 = null,
 
+    hover_idx: ?usize = 0,
     selected: ?usize = null,
-    last_action: ?ExplorerMouseAction = null,
     icon_data: []const ExplorerIcon = &.{},
     bnds: Rect = .{ .w = 0, .h = 0 },
+    mousepos: Vec2 = .{},
 
     pub fn getIcons(self: *Self) ![]const ExplorerIcon {
         const shell_root = try self.shell.root.resolve();
@@ -122,13 +112,6 @@ pub const ExplorerData = struct {
                 .offset_start = 34,
             };
         }
-        if (self.last_action) |*last_action| {
-            if (last_action.time <= 0) {
-                self.last_action = null;
-            } else {
-                last_action.time -= 5;
-            }
-        }
 
         self.bnds = bnds.*;
 
@@ -145,106 +128,53 @@ pub const ExplorerData = struct {
             }
         }
 
-        var done: bool = false;
-        draw_loop: while (!done) {
-            done = true;
+        var x: f32 = 0;
+        var y: f32 = -props.scroll.?.value + 36;
 
-            var x: f32 = 0;
-            var y: f32 = -props.scroll.?.value + 36;
+        const hidden = config.SettingManager.instance.getBool("explorer_hidden") orelse false;
 
-            const hidden = config.SettingManager.instance.getBool("explorer_hidden") orelse false;
+        self.hover_idx = null;
+        for (self.icon_data, 0..) |icon, idx| {
+            if (icon.name.len == 0) continue;
+            if (!hidden and icon.name[0] == '_') continue;
 
-            for (self.icon_data, 0..) |icon, idx| {
-                if (icon.name.len == 0) continue;
-                if (!hidden and icon.name[0] == '_') continue;
+            const size = font.sizeText(.{
+                .text = icon.name,
+                .wrap = 100,
+            }).x;
+            const xo = (128 - size) / 2;
 
-                const size = font.sizeText(.{
+            if (y + 64 + font.size > 0 and y < bnds.h) {
+                try font.draw(.{
+                    .shader = font_shader,
                     .text = icon.name,
+                    .pos = .{ .x = bnds.x + x + xo - 14, .y = bnds.y + 64 + y + 6 },
+                    .color = .{ .r = 0, .g = 0, .b = 0 },
                     .wrap = 100,
-                }).x;
-                const xo = (128 - size) / 2;
+                    .maxlines = 1,
+                });
 
-                if (y + 64 + font.size > 0 and y < bnds.h) {
-                    try font.draw(.{
-                        .shader = font_shader,
-                        .text = icon.name,
-                        .pos = .{ .x = bnds.x + x + xo - 14, .y = bnds.y + 64 + y + 6 },
-                        .color = .{ .r = 0, .g = 0, .b = 0 },
-                        .wrap = 100,
-                        .maxlines = 1,
-                    });
+                try SpriteBatch.global.draw(Sprite, &icon.icon, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
-                    try SpriteBatch.global.draw(Sprite, &icon.icon, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
-
-                    if (self.selected) |selected| {
-                        if (selected == idx) {
-                            try SpriteBatch.global.draw(Sprite, &self.selected_sprite, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
-                        }
+                if (self.selected) |selected| {
+                    if (selected == idx) {
+                        try SpriteBatch.global.draw(Sprite, &self.selected_sprite, self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
                     }
-                }
-
-                if (self.last_action) |last_action| {
-                    if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(last_action.pos)) {
-                        switch (last_action.kind) {
-                            .SingleLeft => {
-                                self.selected = idx;
-                            },
-                            .DoubleLeft => {
-                                self.last_action = null;
-
-                                const new_path = shell_root.getFolder(icon.name) catch null;
-                                if (new_path) |path| {
-                                    self.shell.root = .link(path);
-                                    try self.refresh();
-                                    self.selected = null;
-
-                                    // the active folder changed !!!
-                                    // clear and redraw
-                                    try SpriteBatch.global.addEntry(&.{
-                                        .texture = .none,
-                                        .verts = try VertArray.init(0),
-                                        .shader = self.shader.*,
-                                        .clear = props.clear_color,
-                                    });
-
-                                    done = false;
-                                    continue :draw_loop;
-                                } else {
-                                    _ = self.shell.runBg(icon.launches) catch |err| {
-                                        const message = try std.fmt.allocPrint(allocator, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
-
-                                        const adds = try allocator.create(popups.confirm.PopupConfirm);
-                                        adds.* = .{
-                                            .data = self,
-                                            .message = message,
-                                            .buttons = popups.confirm.PopupConfirm.initButtonsFromStruct(ErrorData),
-                                            .shader = self.shader,
-                                        };
-
-                                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
-                                            .popup = .atlas("win", .{
-                                                .title = "Error",
-                                                .source = .{ .w = 1, .h = 1 },
-                                                .pos = .initCentered(self.bnds, 350, 125),
-                                                .contents = .init(adds),
-                                            }),
-                                        });
-                                    };
-                                }
-                            },
-                        }
-                    }
-                }
-
-                x += 128;
-                if (x + 128 > bnds.w) {
-                    y += 72 + font.size;
-                    x = 0;
                 }
             }
 
-            props.scroll.?.maxy = y + 64 + font.size + font.size + props.scroll.?.value - bnds.h;
+            if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(self.mousepos)) {
+                self.hover_idx = idx;
+            }
+
+            x += 128;
+            if (x + 128 > bnds.w) {
+                y += 72 + font.size;
+                x = 0;
+            }
         }
+
+        props.scroll.?.maxy = y + 64 + font.size + font.size + props.scroll.?.value - bnds.h;
 
         // draw menubar
         self.menubar.data.size.x = bnds.w;
@@ -284,14 +214,21 @@ pub const ExplorerData = struct {
         allocator.destroy(self);
     }
 
-    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: ?i32) !void {
+    pub fn move(self: *Self, x: f32, y: f32) void {
+        self.mousepos = .{ .x = x, .y = y };
+    }
+
+    pub fn click(self: *Self, _: Vec2, mousepos: Vec2, btn: i32, kind: events.input.ClickKind) !void {
         if (self.shell.vm != null) return;
-        if (btn == null) return;
+        if (kind == .down or kind == .up) return;
 
         const shell_root = try self.shell.root.resolve();
 
         if (mousepos.y < 36) {
-            if ((Rect{ .w = 28, .h = 28 }).contains(mousepos)) {
+            if ((Rect{ .w = 28, .h = 28 }).contains(mousepos) and
+                kind == .single and
+                btn == 0)
+            {
                 self.shell.root = shell_root.parent orelse .root;
                 try self.refresh();
                 self.selected = null;
@@ -300,29 +237,40 @@ pub const ExplorerData = struct {
             return;
         }
 
-        switch (btn.?) {
-            0 => {
-                self.last_action = if (self.last_action) |last_action|
-                    if (mousepos.distSq(last_action.pos) < 100)
-                        .{
-                            .kind = .DoubleLeft,
-                            .pos = mousepos,
-                            .time = 10,
-                        }
-                    else
-                        .{
-                            .kind = .SingleLeft,
-                            .pos = mousepos,
-                            .time = 100,
-                        }
-                else
-                    .{
-                        .kind = .SingleLeft,
-                        .pos = mousepos,
-                        .time = 100,
+        if (btn == 0 and kind == .single) {
+            self.selected = self.hover_idx;
+        } else if (btn == 0 and kind == .double) {
+            if (self.hover_idx) |hover_idx| {
+                const new_path = shell_root.getFolder(self.icon_data[hover_idx].name) catch null;
+                if (new_path) |path| {
+                    self.shell.root = .link(path);
+                    try self.refresh();
+                    self.selected = null;
+                } else {
+                    _ = self.shell.runBg(self.icon_data[hover_idx].launches) catch |err| {
+                        const message = try std.fmt.allocPrint(allocator, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
+
+                        const adds = try allocator.create(popups.confirm.PopupConfirm);
+                        adds.* = .{
+                            .data = self,
+                            .message = message,
+                            .buttons = popups.confirm.PopupConfirm.initButtonsFromStruct(ErrorData),
+                            .shader = self.shader,
+                        };
+
+                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                            .popup = .atlas("win", .{
+                                .title = "Error",
+                                .source = .{ .w = 1, .h = 1 },
+                                .pos = .initCentered(self.bnds, 350, 125),
+                                .contents = .init(adds),
+                            }),
+                        });
                     };
-            },
-            else => {},
+                }
+            }
+
+            self.selected = null;
         }
     }
 

@@ -92,7 +92,7 @@ pub const UpdateData = struct {
         });
     }
 
-    pub fn click(self: *Self, _: Vec2, pos: Vec2, _: ?i32) !void {
+    pub fn click(self: *Self, _: Vec2, pos: Vec2, _: i32, _: events.input.ClickKind) !void {
         _ = pos;
         if (self.focused_link) {
             const idx = std.mem.lastIndexOf(u8, files.root_out.?, "/") orelse unreachable;

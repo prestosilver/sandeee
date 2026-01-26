@@ -964,27 +964,31 @@ pub const WebData = struct {
         self.scroll_top = true;
     }
 
-    pub fn click(self: *Self, _: Vec2, pos: Vec2, btn: ?i32) !void {
-        if (btn == null) return;
-
+    pub fn click(self: *Self, _: Vec2, pos: Vec2, btn: i32, kind: events.input.ClickKind) !void {
         if (pos.y < 40) {
             if ((Rect{ .w = 38, .h = 40 }).contains(pos)) {
-                try self.back(false);
+                if (btn == 0 and kind == .single) {
+                    try self.back(false);
+                }
             }
 
             if ((Rect{ .x = 38, .w = 38, .h = 40 }).contains(pos)) {
-                if (self.conts) |conts| {
-                    if (!self.loading) {
-                        allocator.free(conts);
-                        self.conts = null;
-                        self.scroll_top = true;
+                if (btn == 0 and kind == .single) {
+                    if (self.conts) |conts| {
+                        if (!self.loading) {
+                            allocator.free(conts);
+                            self.conts = null;
+                            self.scroll_top = true;
+                        }
                     }
                 }
             }
 
             return;
         } else {
-            try self.followLink();
+            if (btn == 0 and kind == .single) {
+                try self.followLink();
+            }
         }
     }
 

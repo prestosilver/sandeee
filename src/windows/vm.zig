@@ -237,8 +237,12 @@ pub const VMData = struct {
         }
     }
 
-    pub fn click(self: *Self, _: Vec2, pos: Vec2, btn: ?i32) !void {
-        self.mousebtn = btn;
+    pub fn click(self: *Self, _: Vec2, pos: Vec2, btn: i32, kind: events.input.ClickKind) !void {
+        if (kind == .down)
+            self.mousebtn = btn
+        else if (kind == .up)
+            self.mousebtn = null;
+
         self.mousepos = pos;
     }
 

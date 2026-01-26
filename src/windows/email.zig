@@ -32,6 +32,7 @@ const mail = system.mail;
 const files = system.files;
 
 const EventManager = events.EventManager;
+const ClickKind = events.input.ClickKind;
 const window_events = events.windows;
 
 const strings = data.strings;
@@ -618,8 +619,8 @@ const EmailData = struct {
         }
     }
 
-    pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: ?i32) !void {
-        if (btn == null) return;
+    pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: i32, kind: ClickKind) !void {
+        if (kind == .down or kind == .up) return;
 
         if (self.login == null) {
             {
@@ -667,18 +668,20 @@ const EmailData = struct {
             return;
         }
 
-        switch (btn.?) {
+        switch (btn) {
             0 => {
                 if (self.viewing) |_| {
-                    const reply_bnds = Rect{ .x = 104, .w = 32, .h = 32 };
-                    if (reply_bnds.contains(mousepos)) {
-                        try self.submitFile();
-                    }
+                    if (kind == .single) {
+                        const reply_bnds = Rect{ .x = 104, .w = 32, .h = 32 };
+                        if (reply_bnds.contains(mousepos)) {
+                            try self.submitFile();
+                        }
 
-                    const back_bnds = Rect{ .x = 144, .w = 32, .h = 32 };
-                    if (back_bnds.contains(mousepos)) {
-                        self.viewing = null;
-                        return;
+                        const back_bnds = Rect{ .x = 144, .w = 32, .h = 32 };
+                        if (back_bnds.contains(mousepos)) {
+                            self.viewing = null;
+                            return;
+                        }
                     }
                 }
 
@@ -707,12 +710,12 @@ const EmailData = struct {
                         y += @intFromFloat(self.rowsize);
 
                         if (bnds.contains(mousepos)) {
-                            if (self.selected != null and email == self.selected.?) {
+                            if (kind == .double) {
                                 try mail.EmailManager.instance.viewEmail(email);
                                 self.selected = null;
                                 self.viewing = email;
                                 self.scroll_top = true;
-                            } else {
+                            } else if (kind == .single) {
                                 self.selected = email;
                             }
                         }
@@ -727,10 +730,12 @@ const EmailData = struct {
                         self.viewing = null;
                         self.scroll_top = true;
 
-                        if (self.box < 0) {
-                            self.box = 0;
-                        } else if (self.box > mail.EmailManager.instance.boxes.len - 1) {
-                            self.box = mail.EmailManager.instance.boxes.len - 1;
+                        if (kind == .single) {
+                            if (self.box < 0) {
+                                self.box = 0;
+                            } else if (self.box > mail.EmailManager.instance.boxes.len - 1) {
+                                self.box = mail.EmailManager.instance.boxes.len - 1;
+                            }
                         }
                     }
                 }

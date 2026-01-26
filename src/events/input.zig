@@ -1,9 +1,15 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-pub const events = @import("../events.zig");
+const math = @import("../math.zig");
+const events = @import("../events.zig");
+const util = @import("../util.zig");
 
-pub const EventManager = events.EventManager;
+const Vec2 = math.Vec2;
+
+const EventManager = events.EventManager;
+
+const graphics = util.graphics;
 
 pub fn setup(win: ?*glfw.Window, enabled: bool) void {
     if (!enabled) return;
@@ -15,19 +21,32 @@ pub fn setup(win: ?*glfw.Window, enabled: bool) void {
     _ = glfw.setScrollCallback(win, scrollCallback);
 }
 
-pub const EventMouseMove = struct { x: f64, y: f64 };
+pub const ClickKind = enum { down, up, double, single };
+
+pub const EventMouseMove = struct { pos: Vec2 };
 pub const EventKeyDown = struct { key: i32, mods: i32 };
 pub const EventKeyUp = struct { key: i32, mods: i32 };
-pub const EventMouseDown = struct { btn: i32 };
-pub const EventMouseUp = struct { btn: i32 };
+pub const EventMouseClick = struct { btn: i32, kind: ClickKind };
 pub const EventWindowResize = struct { w: i32, h: i32 };
 pub const EventMouseScroll = struct { x: f32, y: f32 };
 pub const EventKeyChar = struct { codepoint: u32, mods: i32 };
 
 var global_mods: i32 = 0;
+var mouse_pos: Vec2 = .{};
 
 pub fn cursorPosCallback(_: ?*glfw.Window, x: f64, y: f64) callconv(.c) void {
-    EventManager.instance.sendEvent(EventMouseMove{ .x = x, .y = y }) catch |err| {
+    mouse_pos = .{ .x = @floatCast(x), .y = @floatCast(y) };
+
+    if (mouse_pos.x < 0)
+        mouse_pos.x = 0;
+    if (mouse_pos.y < 0)
+        mouse_pos.y = 0;
+    if (mouse_pos.x > graphics.Context.instance.size.x)
+        mouse_pos.x = graphics.Context.instance.size.x;
+    if (mouse_pos.y > graphics.Context.instance.size.y)
+        mouse_pos.y = graphics.Context.instance.size.y;
+
+    EventManager.instance.sendEvent(EventMouseMove{ .pos = mouse_pos }) catch |err| {
         @panic(@errorName(err));
     };
 }
@@ -51,12 +70,41 @@ pub fn keyCallback(_: ?*glfw.Window, key: c_int, _: c_int, action: c_int, mods: 
     global_mods = mods;
 }
 
-pub fn mouseButtonCallback(_: ?*glfw.Window, btn: c_int, action: c_int, _: c_int) callconv(.c) void {
-    _ = switch (action) {
-        glfw.Press => EventManager.instance.sendEvent(EventMouseDown{ .btn = btn }),
-        glfw.Release => EventManager.instance.sendEvent(EventMouseUp{ .btn = btn }),
+pub var last_mouse_release_pos: Vec2 = .{};
+pub var last_mouse_release_time: f64 = 0;
+pub var is_single_click: bool = false;
+
+pub fn mouseButtonHandle(btn: c_int, action: c_int) !void {
+    const action_time = glfw.getTime();
+    const time_diff = action_time - last_mouse_release_time;
+
+    switch (action) {
+        glfw.Press => {
+            try EventManager.instance.sendEvent(EventMouseClick{ .btn = btn, .kind = .down });
+
+            if (time_diff < 0.1 and
+                mouse_pos.distSq(last_mouse_release_pos) < 100 and
+                is_single_click)
+            {
+                try EventManager.instance.sendEvent(EventMouseClick{ .btn = btn, .kind = .double });
+                is_single_click = false;
+            } else {
+                try EventManager.instance.sendEvent(EventMouseClick{ .btn = btn, .kind = .single });
+                is_single_click = true;
+            }
+        },
+        glfw.Release => {
+            defer last_mouse_release_time = action_time;
+            defer last_mouse_release_pos = mouse_pos;
+
+            try EventManager.instance.sendEvent(EventMouseClick{ .btn = btn, .kind = .up });
+        },
         else => {},
-    } catch |err| {
+    }
+}
+
+pub fn mouseButtonCallback(_: ?*glfw.Window, btn: c_int, action: c_int, _: c_int) callconv(.c) void {
+    _ = mouseButtonHandle(btn, action) catch |err| {
         @panic(@errorName(err));
     };
 }
