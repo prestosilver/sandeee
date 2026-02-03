@@ -1,6 +1,9 @@
 name: Test 
 run-name: Run zig tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }}
 on: [push]
+branches:
+  - main
+  - steam_upload
 jobs:
   tests-dbg:
     runs-on: ubuntu-latest
