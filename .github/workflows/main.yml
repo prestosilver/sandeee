@@ -11,10 +11,9 @@ jobs:
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.15.2
-      - name: Install glfw-deps
-        uses: RpxdYTX/install-glfw-deps@v2
       - name: Install glfw
         run: |
+          sudo apt update
           sudo apt install libglfw3 libglfw3-dev
       - name: Run tests
         run: |
@@ -33,10 +32,9 @@ jobs:
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.15.2
-      - name: Install glfw-deps
-        uses: RpxdYTX/install-glfw-deps@v2
       - name: Install glfw
         run: |
+          sudo apt update
           sudo apt install libglfw3 libglfw3-dev
       - name: Run tests
         run: |
@@ -56,10 +54,9 @@ jobs:
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.15.2
-      - name: Install glfw-deps
-        uses: RpxdYTX/install-glfw-deps@v2
       - name: Install glfw
         run: |
+          sudo apt update
           sudo apt install libglfw3 libglfw3-dev
       - name: Uploads to steam
         env: # Set the secret as an input
