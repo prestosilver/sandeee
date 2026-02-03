@@ -45,8 +45,8 @@ jobs:
   steam_upload:
     runs-on: ubuntu-latest
     name: Steam Upload
-    if: github.ref == 'refs/heads/master' or github.ref == 'refs/heads/steam_upload' 
-    needs: [tests-dbg tests-rel]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/steam_upload' 
+    needs: [tests-dbg, tests-rel]
     steps:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
@@ -56,7 +56,7 @@ jobs:
         run: |
           sudo apt install libglfw3 libglfw3-dev
       - name: Uploads to steam
-        with: # Set the secret as an input
+        env: # Set the secret as an input
           STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
         run: |
-          zig build upload_steam
+          echo $STEAM_PASSWORD | zig build upload_steam
