@@ -50,6 +50,9 @@ jobs:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/steam_upload' 
     needs: [tests-dbg, tests-rel]
     steps:
+      - uses: actions/checkout@v3
+      - name: Setup SteamCMD
+        uses: CyberAndrii/setup-steamcmd@v1
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
