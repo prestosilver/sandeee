@@ -2,7 +2,7 @@ name: Test
 run-name: Run zig tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }}
 on: [push]
 jobs:
-  tests:
+  tests-dbg:
     runs-on: ubuntu-latest
     name: Run tests 
     steps:
@@ -42,3 +42,23 @@ jobs:
         if: always()
         run: |
           cat zig-out/test_output.md >> $GITHUB_STEP_SUMMARY
+  steam_upload:
+    runs-on: ubuntu-latest
+    name: Steam Upload
+    needs: tests-dbg tests-rel
+    branches:
+      - master
+      - steam_upload
+    steps:
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.15.2
+      - name: Install glfw
+        run: |
+          sudo apt install libglfw3 libglfw3-dev
+      - name: Uploads to steam
+        with: # Set the secret as an input
+          STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
+        run: |
+          zig build upload_steam
