@@ -45,10 +45,8 @@ jobs:
   steam_upload:
     runs-on: ubuntu-latest
     name: Steam Upload
-    needs: tests-dbg tests-rel
-    branches:
-      - master
-      - steam_upload
+    if: github.ref == 'refs/heads/master' or github.ref == 'refs/heads/steam_upload' 
+    needs: [tests-dbg tests-rel]
     steps:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
