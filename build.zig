@@ -747,7 +747,12 @@ pub fn build(b: *std.Build) !void {
 
     const changelog_file_path = changelog_step.addOutputFileArg("changelog.edf");
     const install_changelog = b.addInstallFileWithDir(changelog_file_path, www_path, "changelog.edf");
+
+    const install_changelog_out = b.addInstallFile(changelog_file_path, "changelog.edf");
     www_misc_step.dependOn(&install_changelog.step);
+
+    const changelog_gen_step = b.step("changelog", "Generates only a changelog");
+    changelog_gen_step.dependOn(&install_changelog_out.step);
 
     const docs_step = b.addRunArtifact(docs_builder_exe);
     docs_step.addArg("@/docs/");

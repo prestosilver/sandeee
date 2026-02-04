@@ -90,4 +90,4 @@ jobs:
       - name: Summary results
         if: always()
         run: |
-          cat www/changelog.edf >> $GITHUB_STEP_SUMMARY
+          cat zig-out/changelog.edf >> $GITHUB_STEP_SUMMARY
