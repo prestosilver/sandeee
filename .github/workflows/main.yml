@@ -72,8 +72,7 @@ jobs:
           echo $STEAM_PASSWORD | zig build upload_steam
   gen-changelog:
     runs-on: ubuntu-latest
-    name: Run tests (release)
-    needs: [steam_upload]
+    name: Generate changelog
     steps:
       - uses: actions/checkout@v3
       - name: Setup Zig
