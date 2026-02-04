@@ -83,11 +83,11 @@ jobs:
         run: |
           sudo apt update
           sudo apt install libglfw3 libglfw3-dev
-      - name: Run tests
+      - name: Generate changelog
         run: |
           zig build changelog
         id: md
       - name: Summary results
         if: always()
         run: |
-          cat zig-out/www/changelog.edf >> $GITHUB_STEP_SUMMARY
+          cat www/changelog.edf >> $GITHUB_STEP_SUMMARY
