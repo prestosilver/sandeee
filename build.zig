@@ -724,11 +724,11 @@ pub fn build(b: *std.Build) !void {
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
         if (steam_mode == .On)
-            b.installFile("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll", "bin/steam_api64.dll");
+            b.installFile("deps/dll/steam_api64.dll", "bin/steam_api64.dll");
     } else if (target.result.os.tag == .linux) {
         b.installFile("runSandEEE", "bin/runSandEEE");
         if (steam_mode == .On)
-            b.installFile("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so", "bin/lib/libsteam_api.so");
+            b.installFile("deps/lib/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
 
     if (steam_mode == .On)
@@ -1047,11 +1047,11 @@ pub fn build(b: *std.Build) !void {
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll"), steam_pub_path, "windows/steam_api64.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/steam_api64.dll"), steam_pub_path, "windows/steam_api64.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so"), steam_pub_path, "linux/libsteam_api.so");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/lib/libsteam_api.so"), steam_pub_path, "linux/libsteam_api.so");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
