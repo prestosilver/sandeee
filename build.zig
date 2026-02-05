@@ -655,7 +655,7 @@ pub fn build(b: *std.Build) !void {
     exe.addIncludePath(b.path("deps/steam_sdk/public/"));
     if (target.result.os.tag == .windows) {
         exe.addObjectFile(rc_file);
-        exe.addLibraryPath(b.path("deps/lib"));
+        exe.addLibraryPath(b.path("deps/dll"));
         exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
         exe.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe.addObjectFile(b.path("deps/dll/libopenal.dll"));
@@ -724,11 +724,11 @@ pub fn build(b: *std.Build) !void {
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
         if (steam_mode == .On)
-            b.installFile("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll", "bin/steam_api64.dll");
+            b.installFile("deps/dll/steam_api64.dll", "bin/steam_api64.dll");
     } else if (target.result.os.tag == .linux) {
         b.installFile("runSandEEE", "bin/runSandEEE");
         if (steam_mode == .On)
-            b.installFile("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so", "bin/lib/libsteam_api.so");
+            b.installFile("deps/lib/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
 
     if (steam_mode == .On)
@@ -747,7 +747,12 @@ pub fn build(b: *std.Build) !void {
 
     const changelog_file_path = changelog_step.addOutputFileArg("changelog.edf");
     const install_changelog = b.addInstallFileWithDir(changelog_file_path, www_path, "changelog.edf");
+
+    const install_changelog_out = b.addInstallFile(changelog_file_path, "changelog.edf");
     www_misc_step.dependOn(&install_changelog.step);
+
+    const changelog_gen_step = b.step("changelog", "Generates only a changelog");
+    changelog_gen_step.dependOn(&install_changelog_out.step);
 
     const docs_step = b.addRunArtifact(docs_builder_exe);
     docs_step.addArg("@/docs/");
@@ -994,7 +999,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.addIncludePath(b.path("deps/steam_sdk/public/"));
 
         exe_pub_windows.addObjectFile(rc_file);
-        exe_pub_windows.addLibraryPath(b.path("deps/lib"));
+        exe_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
@@ -1042,11 +1047,11 @@ pub fn build(b: *std.Build) !void {
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/steam_sdk/redistributable_bin/win64/steam_api64.dll"), steam_pub_path, "windows/steam_api64.dll");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/steam_api64.dll"), steam_pub_path, "windows/steam_api64.dll");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
-            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/steam_sdk/redistributable_bin/linux64/libsteam_api.so"), steam_pub_path, "linux/libsteam_api.so");
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/lib/libsteam_api.so"), steam_pub_path, "linux/libsteam_api.so");
             pub_step.dependOn(&tmp_file_step.step);
         }
         {
@@ -1126,7 +1131,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.addIncludePath(b.path("deps/include"));
 
         exe_pub_windows.addObjectFile(rc_file);
-        exe_pub_windows.addLibraryPath(b.path("deps/lib"));
+        exe_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
