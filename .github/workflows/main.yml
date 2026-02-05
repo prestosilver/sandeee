@@ -65,11 +65,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt install gcc-mingw-w64
-      - name: Uploads to steam
-        env: # Set the secret as an input
-          STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
+      - name: Uploads to steam: 
         run: |
-          echo $STEAM_PASSWORD | zig build upload_steam
+          echo ${{ secrets.STEAM_PASSWORD }} | zig build upload_steam
   gen-changelog:
     runs-on: ubuntu-latest
     name: Generate changelog
@@ -90,4 +88,5 @@ jobs:
       - name: Summary results
         if: always()
         run: |
+
           cat zig-out/changelog.edf >> $GITHUB_STEP_SUMMARY
