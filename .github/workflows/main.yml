@@ -1,4 +1,4 @@
-fname: Test 
+name: Test 
 run-name: Run zig tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }}
 on: [push]
 jobs:
@@ -91,5 +91,6 @@ jobs:
         run: |
 
           cat zig-out/changelog.edf >> $GITHUB_STEP_SUMMARY
+
 
 
