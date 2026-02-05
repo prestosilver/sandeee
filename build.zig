@@ -1151,9 +1151,14 @@ pub fn build(b: *std.Build) !void {
     const upload_step = b.step("upload", "Uploads a build to all platforms");
     const upload_steam_step = b.step("upload_steam", "Uploads a build to steam");
 
-    const steamcmd_step = b.addSystemCommand(&.{ "steamcmd", "+login", "preston3410", "+run_app_build", "-desc", "Auto Upload" });
-    steamcmd_step.addFileInput(b.path("steam/upload.vdf"));
-    steamcmd_step.addFileArg(b.path("steam/upload.vdf"));
+    const steam_desc = b.run(&.{ "git", "show", "-s", "--format='%s'" });
+
+    const steamcmd_step = b.addSystemCommand(&.{ "steamcmd", "+login", "preston3410", "+run_app_build", "-desc", steam_desc });
+    steamcmd_step.addFileInput(b.path("steam/upload_4124360.vdf"));
+    steamcmd_step.addFileArg(b.path("steam/upload_4124360.vdf"));
+    steamcmd_step.addArgs(&.{ "+run_app_build", "-desc", steam_desc });
+    steamcmd_step.addFileInput(b.path("steam/upload_4124370.vdf"));
+    steamcmd_step.addFileArg(b.path("steam/upload_4124370.vdf"));
     steamcmd_step.addArg("+quit");
 
     steamcmd_step.step.dependOn(pub_step);
