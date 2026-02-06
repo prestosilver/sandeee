@@ -3,7 +3,7 @@ run-name: Run zig tests for commit '${{ github.event.head_commit.message }}' on 
 on: [push]
 jobs:
   tests-dbg:
-    runs-on: ubuntu-late
+    runs-on: ubuntu-latest
     name: Run tests 
     steps:
       - uses: actions/checkout@v3
@@ -91,6 +91,7 @@ jobs:
         run: |
 
           cat zig-out/changelog.edf >> $GITHUB_STEP_SUMMARY
+
 
 
 
