@@ -329,12 +329,21 @@ pub const ShellCommand = struct {
 
             if (std.mem.eql(u8, param[1..], "help")) {
                 return .{
-                    .data = try std.fmt.allocPrint(allocator, "{s} - {s}\n\n{s}\n", .{ self.name, self.desc, self.help }),
+                    .data = try std.fmt.allocPrint(allocator, "{s} - {s}\n\n{s}", .{ self.name, self.desc, self.help }),
                 };
             }
         }
 
         return self.func(shell, params);
+    }
+
+    pub fn fromImport(comptime I: anytype) ShellCommand {
+        return .{
+            .name = I.NAME,
+            .desc = I.DESCRIPTION,
+            .help = I.HELP,
+            .func = @field(I, I.NAME),
+        };
     }
 };
 
@@ -740,26 +749,7 @@ pub const shell_commands = .{
             }.new,
         },
     },
-    .{
-        "dnew", ShellCommand{
-            .name = "dnew",
-            .desc = "Creates a new directory",
-            .help = "dnew [:help] path",
-            .func = struct {
-                fn dnew(self: *Shell, param: *Params) !Result {
-                    if (param.next()) |path| {
-                        // TODO: /root
-                        const root = try self.root.resolve();
-                        try root.newFolder(path);
-                        return .{
-                            .data = try allocator.dupe(u8, "Created"),
-                        };
-                    }
-                    return error.MissingParameter;
-                }
-            }.dnew,
-        },
-    },
+    .{ "dnew", ShellCommand.fromImport(@import("Shell/dnew.zig")) },
     .{
         "rem", ShellCommand{
             .name = "rem",
@@ -781,33 +771,8 @@ pub const shell_commands = .{
             }.rem,
         },
     },
-    .{
-        "drem", ShellCommand{
-            .name = "drem",
-            .desc = "Deletes a directory",
-            .help = "drem [:help] paths+",
-            .func = struct {
-                fn drem(self: *Shell, params: *Params) !Result {
-                    if (params.peek() == null)
-                        return error.MissingParameter;
-                    // TODO: /root
-                    const root = try self.root.resolve();
-                    while (params.next()) |path| {
-                        try root.removeFolder(path);
-                    }
-                    return .{
-                        .data = try allocator.dupe(u8, "Removed"),
-                    };
-                }
-            }.drem,
-        },
-    },
-    .{ "cpy", ShellCommand{
-        .name = "cpy",
-        .desc = "Copies a file",
-        .help = "cpy [:help] src dst",
-        .func = @import("Shell/cpy.zig").cpy,
-    } },
+    .{ "drem", ShellCommand.fromImport(@import("Shell/drem.zig")) },
+    .{ "cpy", ShellCommand.fromImport(@import("Shell/cpy.zig")) },
     todo("dcpy"),
     .{ "bg", ShellCommand{
         .name = "bg",

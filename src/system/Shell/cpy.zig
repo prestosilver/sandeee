@@ -6,6 +6,10 @@ const files = system.files;
 
 const allocator = util.allocator;
 
+pub const NAME = "cpy";
+pub const DESCRIPTION = "Copies a file";
+pub const HELP = "cpy [:help] src dst";
+
 pub fn cpy(self: *Shell, params: *Shell.Params) !Shell.Result {
     const input = params.next() orelse return error.MissingParameter;
     const output = params.next() orelse return error.MissingParameter;
