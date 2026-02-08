@@ -64,7 +64,7 @@ pub const Telem = packed struct {
 
         const root = try files.FolderLink.resolve(.root);
 
-        if (root.getFile(strings.TELEM_PATH) catch null) |file| {
+        if (root.getFile(strings.TELEM_DATA_PATH) catch null) |file| {
             const conts = try file.read(null);
 
             if (conts.len != @sizeOf(Telem)) return;
@@ -87,11 +87,11 @@ pub const Telem = packed struct {
 
         const root = try files.FolderLink.resolve(.root);
 
-        _ = root.newFile(strings.TELEM_PATH) catch |err| switch (err) {
+        _ = root.newFile(strings.TELEM_DATA_PATH) catch |err| switch (err) {
             error.FileExists => {},
             else => return err,
         };
-        try root.writeFile(strings.TELEM_PATH, conts, null);
+        try root.writeFile(strings.TELEM_DATA_PATH, conts, null);
     }
 
     pub fn getDebugPassword() ![]u8 {

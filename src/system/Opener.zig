@@ -3,6 +3,7 @@ const std = @import("std");
 const system = @import("../system.zig");
 const drawers = @import("../drawers.zig");
 const util = @import("../util.zig");
+const sandeee_data = @import("../data.zig");
 
 const Sprite = drawers.Sprite;
 
@@ -11,6 +12,8 @@ const allocator = util.allocator;
 const log = util.log;
 
 const files = system.files;
+
+const strings = sandeee_data.strings;
 
 const OpenError = error{
     CommandNotFound,

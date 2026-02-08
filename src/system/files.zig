@@ -362,7 +362,7 @@ pub const Folder = struct {
             try reader.interface.readSliceAll(namebuffer);
 
             const contsize = try reader.interface.takeInt(u32, .big);
-            if (std.mem.eql(u8, namebuffer, "/_recovery_meta")) {
+            if (std.mem.eql(u8, namebuffer, strings.RECOVERY_METADATA_PATH)) {
                 const contbuffer: []u8 = try allocator.alloc(u8, contsize);
                 try reader.interface.readSliceAll(contbuffer);
 
@@ -436,7 +436,7 @@ pub const Folder = struct {
         named_paths.set(.root, root);
         defer named_paths.set(.root, null);
 
-        const conf = try root.getFile("/conf/system.cfg");
+        const conf = try root.getFile(strings.SETTINGS_PATH);
         const conts = try conf.read(null);
 
         const settings_out = try std.mem.concat(allocator, u8, &.{ conts, "\n", settings });
@@ -478,7 +478,7 @@ pub const Folder = struct {
         defer named_paths.set(.root, null);
 
         if (!override_settings) {
-            const settings_file = try root_disk.getFile("/conf/system.cfg");
+            const settings_file = try root_disk.getFile(strings.SETTINGS_PATH);
             const settings = try allocator.dupe(u8, try settings_file.read(null));
             defer allocator.free(settings);
 
@@ -496,12 +496,12 @@ pub const Folder = struct {
                 try root_disk.writeFile(file.name, file.data.disk, null);
             }
 
-            root_disk.newFile("/conf/system.cfg") catch |err| switch (err) {
+            root_disk.newFile(strings.SETTINGS_PATH) catch |err| switch (err) {
                 error.FileExists => {},
                 else => |e| return e,
             };
 
-            const new_settings_file = try root_disk.getFile("/conf/system.cfg");
+            const new_settings_file = try root_disk.getFile(strings.SETTINGS_PATH);
             try new_settings_file.write(settings, null);
         } else {
             var files = std.array_list.Managed(*File).init(allocator);
@@ -550,7 +550,7 @@ pub const Folder = struct {
             named_paths.set(.root, root);
             errdefer named_paths.set(.root, null);
 
-            const fake_root: *Folder = try .fromFolderItemArray("/fake/", fake.all);
+            const fake_root: *Folder = try .fromFolderItemArray(strings.FAKE_PATH, fake.all);
             fake_root.protected = true;
             fake_root.parent = .root;
             fake_root.next_sibling = root.folders;
@@ -559,11 +559,11 @@ pub const Folder = struct {
 
             root_out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{diskPath});
 
-            if (root.getFolder("/prof") catch null) |folder| {
+            if (root.getFolder(strings.PROF_PATH) catch null) |folder| {
                 named_paths.set(.home, folder);
             }
 
-            if (root.getFolder("/exec") catch null) |folder| {
+            if (root.getFolder(strings.EXEC_PATH) catch null) |folder| {
                 named_paths.set(.exec, folder);
             }
         }
@@ -586,7 +586,7 @@ pub const Folder = struct {
                 },
                 .protected = true,
                 .parent = .root,
-                .name = try allocator.dupe(u8, "/extr/"),
+                .name = try allocator.dupe(u8, strings.EXTR_PATH),
             };
 
             extr.next_sibling = root.folders;

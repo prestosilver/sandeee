@@ -180,5 +180,16 @@ pub fn eeeCHToANSI(input: []const u8) ![]const u8 {
 }
 
 pub const ASM_HEADER = "EEEp";
-pub const TELEM_PATH = "/_priv/telem.bin";
+
 pub const ROOT_PATH = "/";
+pub const TELEM_DATA_PATH = "/_priv/telem.bin";
+pub const EMAIL_DATA_PATH = "/_priv/email.bin";
+pub const MAIL_PATH = "/cont/mail/";
+pub const SETTINGS_PATH = "/conf/system.cfg";
+pub const OPENER_PATH = "/conf/opener.cfg"; // TODO: this should problaby be a setting
+pub const RECOVERY_METADATA_PATH = "/_recovery_meta";
+
+pub const FAKE_PATH = "/fake/";
+pub const PROF_PATH = "/prof/";
+pub const EXEC_PATH = "/exec/";
+pub const EXTR_PATH = "/extr/";

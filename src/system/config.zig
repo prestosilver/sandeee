@@ -5,6 +5,7 @@ const system = @import("../system.zig");
 
 const events = @import("../events.zig");
 const util = @import("../util.zig");
+const sandeee_data = @import("../data.zig");
 
 const allocator = util.allocator;
 const log = util.log;
@@ -13,6 +14,8 @@ const files = system.files;
 
 const EventManager = events.EventManager;
 const system_events = events.system;
+
+const strings = sandeee_data.strings;
 
 pub const SettingManager = struct {
     pub var instance: SettingManager = .{};
@@ -75,7 +78,7 @@ pub const SettingManager = struct {
         }
 
         const root = try files.FolderLink.resolve(.root);
-        try root.writeFile("/conf/system.cfg", out.items, null);
+        try root.writeFile(strings.SETTINGS_PATH, out.items, null);
     }
 
     pub fn deinit() void {

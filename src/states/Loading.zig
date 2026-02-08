@@ -41,6 +41,8 @@ const system_events = events.system;
 
 const LogoutState = states.Logout;
 
+const strings = data.strings;
+
 const GSLoading = @This();
 
 const TEXTURE_NAMES = [_][2][]const u8{
@@ -57,11 +59,11 @@ const TEXTURE_NAMES = [_][2][]const u8{
 const LOAD_WAIT = if (builtin.mode == .Debug) 0.0 else 1.0;
 const FADE_STEPS = 23;
 
-const mail_path: []const u8 = "/cont/mail/";
+const mail_path: []const u8 = strings.MAIL_PATH;
 const login_sound_path: []const u8 = "login_sound_path";
 const logout_sound_path: []const u8 = "logout_sound_path";
 const message_sound_path: []const u8 = "message_sound_path";
-const settings_path: []const u8 = "/conf/system.cfg";
+const settings_path: []const u8 = strings.SETTINGS_PATH;
 const font_path: []const u8 = "system_font";
 
 pub var no_load_thread: bool = false;
