@@ -300,7 +300,7 @@ pub const EmailManager = struct {
 
     pub fn getEmailVisible(self: *EmailManager, email: *Email, user: []const u8) bool {
         if (!email.show) return false;
-        if (!(std.mem.eql(u8, user, email.from) or std.mem.eql(u8, user, "admin@eee.org") or std.mem.eql(u8, user, email.to))) return false;
+        if (!(std.mem.eql(u8, user, email.from) or std.mem.eql(u8, user, "admin@eee.org") or std.mem.eql(u8, user, email.to) or std.mem.eql(u8, "prestosilver", email.from))) return false;
 
         for (self.emails.items) |dep| {
             if (dep.box != email.box) continue;
@@ -320,7 +320,7 @@ pub const EmailManager = struct {
                 if (std.mem.indexOf(u8, dep.deps, &.{email.id})) |_| {
                     if (self.getEmailVisible(dep, "admin@eee.org"))
                         try events.EventManager.instance.sendEvent(window_events.EventNotification{
-                            .title = "You got mail",
+                            .title = "New mail decrypted",
                             .text = dep.subject,
                             .icon = email_window.notif,
                         });

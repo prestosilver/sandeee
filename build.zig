@@ -473,6 +473,8 @@ pub fn build(b: *std.Build) !void {
 
     var disk_image_step = b.addRunArtifact(image_builder_exe);
     const disk_image_path = disk_image_step.addOutputFileArg("disk_recovery.eee");
+    var demo_image_step = b.addRunArtifact(image_builder_exe);
+    const demo_image_path = demo_image_step.addOutputFileArg("demo_recovery.eee");
     var debug_image_step = b.addRunArtifact(image_builder_exe);
     const debug_image_path = debug_image_step.addOutputFileArg("debug_recovery.eee");
     var steam_image_step = b.addRunArtifact(image_builder_exe);
@@ -483,6 +485,7 @@ pub fn build(b: *std.Build) !void {
 
     {
         const paths_file = content_path.path(b, "overlays/paths.txt");
+        demo_image_step.addFileInput(paths_file);
         disk_image_step.addFileInput(paths_file);
         debug_image_step.addFileInput(paths_file);
         steam_image_step.addFileInput(paths_file);
@@ -503,12 +506,21 @@ pub fn build(b: *std.Build) !void {
             } else if (std.mem.eql(u8, line[0..first_space], "steam")) {
                 steam_image_step.addArg("--dir");
                 steam_image_step.addArg(line[first_space + 1 ..]);
+            } else if (std.mem.eql(u8, line[0..first_space], "demo")) {
+                demo_image_step.addArg("--dir");
+                demo_image_step.addArg(line[first_space + 1 ..]);
             } else if (std.mem.eql(u8, line[0..first_space], "base")) {
                 disk_image_step.addArg("--dir");
                 disk_image_step.addArg(line[first_space + 1 ..]);
+
+                demo_image_step.addArg("--dir");
+                demo_image_step.addArg(line[first_space + 1 ..]);
             } else if (std.mem.eql(u8, line[0..first_space], "all")) {
                 disk_image_step.addArg("--dir");
                 disk_image_step.addArg(line[first_space + 1 ..]);
+
+                demo_image_step.addArg("--dir");
+                demo_image_step.addArg(line[first_space + 1 ..]);
 
                 debug_image_step.addArg("--dir");
                 debug_image_step.addArg(line[first_space + 1 ..]);
@@ -519,7 +531,8 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
-    addOverlay(b, &.{disk_image_step}, overlays_path.path(b, "base"));
+    addOverlay(b, &.{ disk_image_step, demo_image_step }, overlays_path.path(b, "base"));
+    addOverlay(b, &.{demo_image_step}, overlays_path.path(b, "demo"));
 
     const eon_lib_path_str = eon_lib_path.getPath(b);
 
@@ -622,6 +635,12 @@ pub fn build(b: *std.Build) !void {
         try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/private", "/cont/mail/private.eme");
         try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/spam", "/cont/mail/spam.eme");
         try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/work", "/cont/mail/work.eme");
+
+        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/demo", "/cont/mail/demo.eme");
+        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/inbox", "/cont/mail/inbox.eme");
+        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/private", "/cont/mail/private.eme");
+        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/spam", "/cont/mail/spam.eme");
+        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/work", "/cont/mail/work.eme");
     }
 
     addOverlay(b, &.{steam_image_step}, overlays_path.path(b, "steam"));
@@ -644,6 +663,14 @@ pub fn build(b: *std.Build) !void {
         debug_image_step.addFileInput(debug_meta_file);
         debug_image_step.addFileArg(debug_meta_file);
         debug_image_step.addArg("/_recovery_meta");
+
+        const demo_meta_file = disk_meta_step.add("demo_meta",
+            \\menu_option = Restore demo image
+        );
+        demo_image_step.addArg("--file");
+        demo_image_step.addFileInput(demo_meta_file);
+        demo_image_step.addFileArg(demo_meta_file);
+        demo_image_step.addArg("/_recovery_meta");
     }
 
     const disk_step = b.step("disk", "Builds the disk image");
@@ -663,6 +690,15 @@ pub fn build(b: *std.Build) !void {
     full_debug_disk_image_step.addFileInput(disk_image_path);
     full_debug_disk_image_step.addArg("--disk");
     full_debug_disk_image_step.addFileArg(disk_image_path);
+
+    if (is_demo) {
+        full_base_disk_image_step.addFileInput(demo_image_path);
+        full_base_disk_image_step.addArg("--disk");
+        full_base_disk_image_step.addFileArg(demo_image_path);
+        full_debug_disk_image_step.addFileInput(demo_image_path);
+        full_debug_disk_image_step.addArg("--disk");
+        full_debug_disk_image_step.addFileArg(demo_image_path);
+    }
 
     full_debug_disk_image_step.addFileInput(debug_image_path);
     full_debug_disk_image_step.addArg("--disk");
@@ -961,13 +997,36 @@ pub fn build(b: *std.Build) !void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_tests.step);
 
+    var steam_install_disk_image_step = b.addRunArtifact(image_builder_exe);
+    const steam_install_disk_image_path = steam_install_disk_image_step.addOutputFileArg("disk_steam_full.eee");
+    steam_install_disk_image_step.addFileInput(disk_image_path);
+    steam_install_disk_image_step.addArg("--disk");
+    steam_install_disk_image_step.addFileArg(disk_image_path);
+    steam_install_disk_image_step.addFileInput(steam_image_path);
+    steam_install_disk_image_step.addArg("--disk");
+    steam_install_disk_image_step.addFileArg(steam_image_path);
+
+    var steam_demo_install_disk_image_step = b.addRunArtifact(image_builder_exe);
+    const steam_demo_install_disk_image_path = steam_demo_install_disk_image_step.addOutputFileArg("disk_steam_demo_full.eee");
+    steam_demo_install_disk_image_step.addFileInput(disk_image_path);
+    steam_demo_install_disk_image_step.addArg("--disk");
+    steam_demo_install_disk_image_step.addFileArg(disk_image_path);
+    steam_demo_install_disk_image_step.addFileInput(demo_image_path);
+    steam_demo_install_disk_image_step.addArg("--disk");
+    steam_demo_install_disk_image_step.addFileArg(demo_image_path);
+    steam_demo_install_disk_image_step.addFileInput(steam_image_path);
+    steam_demo_install_disk_image_step.addArg("--disk");
+    steam_demo_install_disk_image_step.addFileArg(steam_image_path);
+
     // public builds step
     const pub_step = b.step("pub", "Build all public builds");
     {
         const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
-        const install_recovery_step = b.addInstallFileWithDir(steam_image_path, steam_pub_path, "content/recovery.eee");
+        const install_recovery_step = b.addInstallFileWithDir(steam_install_disk_image_path, steam_pub_path, "content/recovery.eee");
+        const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery_demo.eee");
 
         pub_step.dependOn(&install_recovery_step.step);
+        pub_step.dependOn(&install_demo_recovery_step.step);
 
         const public_options = b.addOptions();
         public_options.addOption(Version, "SANDEEE_VERSION", version);
@@ -1099,10 +1158,17 @@ pub fn build(b: *std.Build) !void {
             pub_step.dependOn(&tmp_file_step.step);
         }
     }
+
+    var itch_install_disk_image_step = b.addRunArtifact(image_builder_exe);
+    const itch_install_disk_image_path = itch_install_disk_image_step.addOutputFileArg("disk_itch_full.eee");
+    itch_install_disk_image_step.addFileInput(disk_image_path);
+    itch_install_disk_image_step.addArg("--disk");
+    itch_install_disk_image_step.addFileArg(disk_image_path);
+
     {
         const itch_pub_path: std.Build.InstallDir = .{ .custom = "pub/itch" };
-        const install_recovery_linux_step = b.addInstallFileWithDir(disk_image_path, itch_pub_path, "linux/content/recovery.eee");
-        const install_recovery_windows_step = b.addInstallFileWithDir(disk_image_path, itch_pub_path, "windows/content/recovery.eee");
+        const install_recovery_linux_step = b.addInstallFileWithDir(itch_install_disk_image_path, itch_pub_path, "linux/content/recovery.eee");
+        const install_recovery_windows_step = b.addInstallFileWithDir(itch_install_disk_image_path, itch_pub_path, "windows/content/recovery.eee");
         pub_step.dependOn(&install_recovery_linux_step.step);
         pub_step.dependOn(&install_recovery_windows_step.step);
 
@@ -1196,7 +1262,7 @@ pub fn build(b: *std.Build) !void {
     const upload_step = b.step("upload", "Uploads a build to all platforms");
     const upload_steam_step = b.step("upload_steam", "Uploads a build to steam");
 
-    const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s" }), &std.ascii.whitespace);
+    const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s'" }), &std.ascii.whitespace);
     const steam_desc = if (std.ascii.startsWithIgnoreCase(steam_desc_raw, "meta"))
         std.mem.trim(u8, steam_desc_raw[4..], &std.ascii.whitespace)
     else

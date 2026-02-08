@@ -1,6 +1,6 @@
 id: 1
 deps: 2
-from: eee@eee.org
+from: eee@eEe.org
 to: rob_r@eee.org
 sub: You came back?
 view

@@ -1,5 +1,5 @@
 id: 0
-from: eee@eee.org
+from: admin@eEe.org
 to: rob_r@eee.org
 sub: EEE sees all
 Hello,

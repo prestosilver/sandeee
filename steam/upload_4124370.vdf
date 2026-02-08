@@ -13,8 +13,8 @@
 		{
 			"FileMapping"
 			{
-				"LocalPath" "./content/*" // all files from contentroot folder
-				"DepotPath" "./content" // mapped into the root of the depot
+				"LocalPath" "./content_demo/*" // all files from contentroot folder
+				"DepotPath" "./content_demo" // mapped into the root of the depot
 				"recursive" "1" // include all subfolders
 			}
 		}
