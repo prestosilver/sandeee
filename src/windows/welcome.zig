@@ -38,7 +38,8 @@ const window_events = events.windows;
 
 const strings = data.strings;
 
-const DEMO_TIME = 6e+11;
+// 30 minutes
+const DEMO_TIME = 30 * 60 * 1e+9;
 
 pub const WelcomeData = struct {
     const Self = @This();
@@ -52,49 +53,70 @@ pub const WelcomeData = struct {
     pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         props.no_min = true;
 
+        var y: f32 = 0;
+
         try font.draw(.{
             .shader = font_shader,
             .text = "Welcome to Sand" ++ strings.EEE,
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 },
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
             .scale = 2,
         });
+        y += 3;
+
+        if (options.is_demo) {
+            try font.draw(.{
+                .shader = font_shader,
+                .text = "trial version",
+                .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
+                .scale = 1,
+            });
+        }
+        y += 2;
+
         try font.draw(.{
             .shader = font_shader,
             .text = "  " ++ strings.BULLET ++ " Open " ++ strings.EEE ++ "Mail to get started",
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 3 * font.size },
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
             .scale = 1,
         });
+        y += 2;
+
         try font.draw(.{
             .shader = font_shader,
             .text = if (options.is_demo)
                 "  " ++ strings.BULLET ++ " This demo will not save progress."
             else
                 "  " ++ strings.BULLET ++ " You can open Xplore anytime for help",
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 5 * font.size },
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
             .scale = 1,
         });
+        y += 2;
+
         try font.draw(.{
             .shader = font_shader,
             .text = "  " ++ strings.BULLET ++ " Remember " ++ strings.EEE ++ " is monitoring your activity",
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 7 * font.size },
+            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
             .scale = 1,
         });
+        y += 2;
 
         if (options.is_demo) {
             props.no_close = true;
             const remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
-            if (remaining < 0) @panic("Demo Over");
+            if (remaining < 0) @panic("Trial Over");
 
-            const demo_text = try std.fmt.allocPrint(allocator, "{} seconds remianing.", .{@as(usize, @intFromFloat(remaining / 1e+9))});
+            const demo_text = try std.fmt.allocPrint(allocator, "Trial ends in {}m", .{@as(usize, @intFromFloat(remaining / (60 * 1e+9)))});
             defer allocator.free(demo_text);
 
             try font.draw(.{
                 .shader = font_shader,
                 .text = demo_text,
-                .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + 10 * font.size },
+                .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
                 .scale = 2,
                 .color = .{ .r = 1, .g = 0, .b = 0 },
             });
+
+            y += 3;
         } else {
             // draw checkbox
             const cb: usize = if (config.SettingManager.instance.getBool("show_welcome") orelse true) 0 else 1;
@@ -159,7 +181,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         .timer = try std.time.Timer.start(),
     };
 
-    var result = try Window.Data.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ strings.EEE, .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    var result = try Window.Data.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ strings.EEE ++ if (options.is_demo) " (trial)" else "", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
     result.props.size.min = .{ .x = 600, .y = 350 };
     result.props.size.max = .{ .x = 600, .y = 350 };
 

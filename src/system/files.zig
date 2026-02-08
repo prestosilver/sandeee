@@ -1134,7 +1134,8 @@ pub fn toStr() !std.array_list.Managed(u8) {
 }
 
 pub fn write() void {
-    if (options.is_demo) return;
+    // Demos can save since the game is free!
+    // if (options.is_demo) return;
 
     if (root_out) |output| {
         const file = std.fs.cwd().createFile(output, .{}) catch {
