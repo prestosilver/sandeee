@@ -106,7 +106,7 @@ pub fn update(self: *GSLogout, dt: f32) !void {
                 });
             },
             .Update => {
-                try files.Folder.recoverDisk(target_file, false);
+                try files.Folder.recoverDisk(target_file, "recovery.eee", false);
 
                 try events.EventManager.instance.sendEvent(system_events.EventStateChange{
                     .target_state = .Disks,

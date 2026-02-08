@@ -25,7 +25,7 @@ pub fn main() !void {
     while (args.next()) |kind| {
         if (std.mem.eql(u8, kind, "--dir")) {
             const folder_path = args.next() orelse return error.MissingDirectory;
-            files_root.newFolder(folder_path) catch |err| switch (err) {
+            files_root.newFolder(folder_path, true) catch |err| switch (err) {
                 error.FolderExists => {},
                 else => |e| return e,
             };
@@ -33,7 +33,10 @@ pub fn main() !void {
             const input_path = args.next() orelse return error.MissingFile;
             const disk_path = args.next() orelse return error.MissingPath;
 
-            try files_root.newFile(disk_path);
+            files_root.newFile(disk_path) catch |err| switch (err) {
+                error.FileExists => {},
+                else => |e| return e,
+            };
 
             const file = try std.fs.cwd().openFile(input_path, .{});
             defer file.close();
@@ -56,7 +59,7 @@ pub fn main() !void {
             try overlay_disk.getFoldersRec(&folder_list);
 
             for (folder_list.items) |folder| {
-                files_root.newFolder(folder.name) catch |err| switch (err) {
+                files_root.newFolder(folder.name, true) catch |err| switch (err) {
                     error.FolderExists => {},
                     else => |e| return e,
                 };
@@ -69,7 +72,10 @@ pub fn main() !void {
             for (file_list.items) |file| {
                 if (file.data != .disk) continue;
 
-                try files_root.newFile(file.name);
+                files_root.newFile(file.name) catch |err| switch (err) {
+                    error.FileExists => {},
+                    else => |e| return e,
+                };
                 try files_root.writeFile(file.name, file.data.disk, null);
             }
         } else {

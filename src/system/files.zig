@@ -341,6 +341,40 @@ pub const Folder = struct {
         return root;
     }
 
+    pub fn diskRecoveryInfo(file: std.fs.File) DiskError!?[]const u8 {
+        if (try file.getEndPos() < 4) return error.BadDiskSize;
+
+        var reader_buffer: [1024]u8 = undefined;
+        var reader = file.reader(&reader_buffer);
+
+        // Dont care about folders
+        const folder_count = try reader.interface.takeInt(u32, .big);
+        for (0..folder_count) |_| {
+            const namesize = try reader.interface.takeInt(u32, .big);
+            try reader.interface.discardAll(namesize);
+        }
+
+        const file_count = try reader.interface.takeInt(u32, .big);
+        for (0..file_count) |_| {
+            const namesize = try reader.interface.takeInt(u32, .big);
+            const namebuffer: []u8 = try allocator.alloc(u8, namesize);
+            defer allocator.free(namebuffer);
+            try reader.interface.readSliceAll(namebuffer);
+
+            const contsize = try reader.interface.takeInt(u32, .big);
+            if (std.mem.eql(u8, namebuffer, "/_recovery_meta")) {
+                const contbuffer: []u8 = try allocator.alloc(u8, contsize);
+                try reader.interface.readSliceAll(contbuffer);
+
+                return contbuffer;
+            } else {
+                try reader.interface.discardAll(contsize);
+            }
+        }
+
+        return null;
+    }
+
     pub fn loadDisk(file: std.fs.File) DiskError!*Folder {
         if (try file.getEndPos() < 4) return error.BadDiskSize;
 
@@ -362,7 +396,7 @@ pub const Folder = struct {
             const namebuffer: []u8 = try allocator.alloc(u8, namesize);
             defer allocator.free(namebuffer);
             try reader.interface.readSliceAll(namebuffer);
-            root.newFolder(namebuffer) catch |e| {
+            root.newFolder(namebuffer, true) catch |e| {
                 switch (e) {
                     error.FolderExists => {
                         log.warn("folder exists on load {s}", .{namebuffer});
@@ -419,7 +453,7 @@ pub const Folder = struct {
         try root.write(file);
     }
 
-    pub fn recoverDisk(disk_name: []const u8, override_settings: bool) !void {
+    pub fn recoverDisk(disk_name: []const u8, source_disk: []const u8, override_settings: bool) !void {
         const d = std.fs.cwd();
 
         const out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{disk_name});
@@ -431,7 +465,10 @@ pub const Folder = struct {
         var root_disk = try loadDisk(out_file);
         defer root_disk.deinit();
 
-        const recovery = try d.openFile(root_prefix ++ "content/recovery.eee", .{});
+        const source_disk_path = try std.fmt.allocPrint(allocator, root_prefix ++ "content/{s}", .{source_disk});
+        defer allocator.free(source_disk_path);
+
+        const recovery = try d.openFile(source_disk_path, .{});
         defer recovery.close();
 
         var rec_disk = try loadDisk(recovery);
@@ -452,8 +489,17 @@ pub const Folder = struct {
             for (files.items) |file| {
                 if (file.data != .disk) continue;
 
+                root_disk.newFile(file.name) catch |err| switch (err) {
+                    error.FileExists => {},
+                    else => |e| return e,
+                };
                 try root_disk.writeFile(file.name, file.data.disk, null);
             }
+
+            root_disk.newFile("/conf/system.cfg") catch |err| switch (err) {
+                error.FileExists => {},
+                else => |e| return e,
+            };
 
             const new_settings_file = try root_disk.getFile("/conf/system.cfg");
             try new_settings_file.write(settings, null);
@@ -668,13 +714,15 @@ pub const Folder = struct {
     pub fn getFoldersRec(self: *const Folder, folders: *std.array_list.Managed(*const Folder)) !void {
         if (self.ext == null and !self.protected) {
             try folders.append(self);
-
-            if (self.folders) |folder|
-                try folder.getFoldersRec(folders);
         }
 
         if (self.next_sibling) |sibling|
             try sibling.getFoldersRec(folders);
+
+        if (self.ext == null and !self.protected) {
+            if (self.folders) |folder|
+                try folder.getFoldersRec(folders);
+        }
     }
 
     pub fn getFilesRec(self: *const Folder, files: *std.array_list.Managed(*File)) !void {
@@ -713,6 +761,11 @@ pub const Folder = struct {
 
         const last = std.mem.lastIndexOf(u8, name, "/");
 
+        if (last) |li|
+            self.newFolder(name[0..li], true) catch |err| switch (err) {
+                error.FolderExists => {},
+                else => |e| return e,
+            };
         const folder = if (last) |li| try self.getFolder(name[0..li]) else self;
 
         const fullname = if (last) |li|
@@ -740,23 +793,23 @@ pub const Folder = struct {
         folder.files = file;
     }
 
-    pub fn newFolder(self: *Folder, name: []const u8) FileError!void {
+    pub fn newFolder(self: *Folder, name: []const u8, parent: bool) FileError!void {
         if (std.mem.containsAtLeast(u8, name, 1, " ")) return error.InvalidFolderName;
         if (self.protected) return error.FolderProtected;
         if (name.len == 0) return;
 
-        if (std.mem.endsWith(u8, name, "/")) return self.newFolder(name[0 .. name.len - 1]);
+        if (std.mem.endsWith(u8, name, "/")) return self.newFolder(name[0 .. name.len - 1], parent);
 
         const first = std.mem.indexOf(u8, name, "/");
         if (first) |index| {
             const folder = name[0..index];
 
             if (std.mem.eql(u8, folder, "..")) return if (self.parent) |p|
-                (try p.resolve()).newFolder(name[index + 1 ..])
+                (try p.resolve()).newFolder(name[index + 1 ..], parent)
             else
                 error.FolderNotFound;
-            if (std.mem.eql(u8, folder, ".")) return self.newFolder(name[index + 1 ..]);
-            if (std.mem.eql(u8, folder, "")) return self.newFolder(name[index + 1 ..]);
+            if (std.mem.eql(u8, folder, ".")) return self.newFolder(name[index + 1 ..], parent);
+            if (std.mem.eql(u8, folder, "")) return self.newFolder(name[index + 1 ..], parent);
 
             const fullname = try std.mem.concat(allocator, u8, &.{ self.name, folder, "/" });
             defer allocator.free(fullname);
@@ -764,10 +817,14 @@ pub const Folder = struct {
             var subfolder_node = self.folders;
             while (subfolder_node) |subfolder| : (subfolder_node = subfolder.next_sibling) {
                 if (std.mem.eql(u8, subfolder.name, fullname))
-                    return subfolder.newFolder(name[index + 1 ..]);
+                    return subfolder.newFolder(name[index + 1 ..], parent);
             }
 
-            return error.FolderNotFound;
+            if (parent) {
+                try self.newFolder(folder, parent);
+                const new_subfolder = try self.getFolder(folder);
+                return try new_subfolder.newFolder(name[index + 1 ..], parent);
+            } else return error.FolderNotFound;
         }
 
         const fullname = try std.fmt.allocPrint(allocator, "{s}{s}/", .{ self.name, name });

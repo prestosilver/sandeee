@@ -619,26 +619,59 @@ pub fn build(b: *std.Build) !void {
 
     addOverlay(b, &.{steam_image_step}, overlays_path.path(b, "steam"));
 
+    var disk_meta_step = b.addWriteFiles();
+
+    {
+        const base_meta_file = disk_meta_step.add("base_meta",
+            \\menu_option = Restore default image
+        );
+        disk_image_step.addArg("--file");
+        disk_image_step.addFileInput(base_meta_file);
+        disk_image_step.addFileArg(base_meta_file);
+        disk_image_step.addArg("/_recovery_meta");
+
+        const debug_meta_file = disk_meta_step.add("debug_meta",
+            \\menu_option = Restore debug image
+        );
+        debug_image_step.addArg("--file");
+        debug_image_step.addFileInput(debug_meta_file);
+        debug_image_step.addFileArg(debug_meta_file);
+        debug_image_step.addArg("/_recovery_meta");
+    }
+
     const disk_step = b.step("disk", "Builds the disk image");
 
-    var full_disk_image_step = b.addRunArtifact(image_builder_exe);
-    const full_disk_image_path = full_disk_image_step.addOutputFileArg("disk_full.eee");
+    var full_base_disk_image_step = b.addRunArtifact(image_builder_exe);
+    const full_base_disk_image_path = full_base_disk_image_step.addOutputFileArg("disk_full.eee");
 
-    const install_disk = b.addInstallFile(full_disk_image_path, "bin/content/recovery.eee");
+    var full_debug_disk_image_step = b.addRunArtifact(image_builder_exe);
+    const full_debug_disk_image_path = full_debug_disk_image_step.addOutputFileArg("disk_debug.eee");
 
-    full_disk_image_step.addFileInput(disk_image_path);
-    full_disk_image_step.addArg("--disk");
-    full_disk_image_step.addFileArg(disk_image_path);
+    const install_disk = b.addInstallFile(full_base_disk_image_path, "bin/content/recovery.eee");
+    const install_debug_disk = b.addInstallFile(full_debug_disk_image_path, "bin/content/recovery_debug.eee");
+
+    full_base_disk_image_step.addFileInput(disk_image_path);
+    full_base_disk_image_step.addArg("--disk");
+    full_base_disk_image_step.addFileArg(disk_image_path);
+    full_debug_disk_image_step.addFileInput(disk_image_path);
+    full_debug_disk_image_step.addArg("--disk");
+    full_debug_disk_image_step.addFileArg(disk_image_path);
+
+    full_debug_disk_image_step.addFileInput(debug_image_path);
+    full_debug_disk_image_step.addArg("--disk");
+    full_debug_disk_image_step.addFileArg(debug_image_path);
+
     if (steam_mode != .Off) {
-        full_disk_image_step.addFileInput(steam_image_path);
-        full_disk_image_step.addArg("--disk");
-        full_disk_image_step.addFileArg(steam_image_path);
+        full_base_disk_image_step.addFileInput(steam_image_path);
+        full_base_disk_image_step.addArg("--disk");
+        full_base_disk_image_step.addFileArg(steam_image_path);
+        full_debug_disk_image_step.addFileInput(steam_image_path);
+        full_debug_disk_image_step.addArg("--disk");
+        full_debug_disk_image_step.addFileArg(steam_image_path);
     }
-    if (optimize == .Debug) {
-        full_disk_image_step.addFileInput(debug_image_path);
-        full_disk_image_step.addArg("--disk");
-        full_disk_image_step.addFileArg(debug_image_path);
-    }
+
+    if (optimize == .Debug)
+        disk_step.dependOn(&install_debug_disk.step);
 
     disk_step.dependOn(&install_disk.step);
     b.getInstallStep().dependOn(disk_step);
