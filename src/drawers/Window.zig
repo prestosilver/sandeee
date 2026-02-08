@@ -403,6 +403,8 @@ pub const WindowData = struct {
             return DragMode.Move;
         }
 
+        // cant resize fullscreen
+        if (self.full) return DragMode.None;
         if (self.contents.props.size.max) |max_size| {
             const min_size = self.contents.props.size.min;
             if (max_size.x == min_size.x and

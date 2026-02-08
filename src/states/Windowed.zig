@@ -598,7 +598,15 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
                 }
 
                 switch (mode) {
-                    .Move => {
+                    .Move => blk: {
+                        if (swap.data.contents.props.size.max) |max_size| {
+                            const min_size = swap.data.contents.props.size.min;
+
+                            if (max_size.x == min_size.x and
+                                max_size.y == min_size.y)
+                                break :blk;
+                        }
+
                         if (swap.data.full) {
                             swap.data.pos = swap.data.oldpos;
                         } else {
