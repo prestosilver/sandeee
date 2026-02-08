@@ -1196,7 +1196,11 @@ pub fn build(b: *std.Build) !void {
     const upload_step = b.step("upload", "Uploads a build to all platforms");
     const upload_steam_step = b.step("upload_steam", "Uploads a build to steam");
 
-    const steam_desc = b.run(&.{ "git", "show", "-s", "--format='%s'" });
+    const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s" }), &std.ascii.whitespace);
+    const steam_desc = if (std.ascii.startsWithIgnoreCase(steam_desc_raw, "meta"))
+        std.mem.trim(u8, steam_desc_raw[4..], &std.ascii.whitespace)
+    else
+        steam_desc_raw;
 
     const steamcmd_step = b.addSystemCommand(&.{ "steamcmd", "+login", "preston3410", "+run_app_build", "-desc", steam_desc });
     steamcmd_step.addFileInput(b.path("steam/upload_4124360.vdf"));
