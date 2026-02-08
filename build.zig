@@ -582,7 +582,14 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEESans2x.png"), "/cont/fnts/SandEEESans2x.eff");
     addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, &.{&.{}}, content_path.path(b, "images/SandEEEJoke.png"), "/cont/fnts/SandEEEJoke.eff");
 
-    // executables
+    // asm executables
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/exec/libdump.asm"), "/exec/libdump.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/exec/dump.asm"), "/exec/dump.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/exec/time.asm"), "/exec/time.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/exec/aplay.asm"), "/exec/aplay.eep");
+    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, &.{&.{"exe"}}, content_path.path(b, "asm/exec/echo.asm"), "/exec/echo.eep");
+
+    // eon executables
     addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/epkman.eon"), "/exec/epkman.eep");
     addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/eon.eon"), "/exec/eon.eep");
     addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, &.{ &.{ "exe", eon_lib_path_str }, &.{"exe"} }, content_path.path(b, "eon/exec/stat.eon"), "/exec/stat.eep");
