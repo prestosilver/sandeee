@@ -85,19 +85,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup SteamCMD
         id: steamcmd
-        uses: CyberAndrii/setup-steamcmd@v1
-      - name: Cache steam login
-        id: cache-steam
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-steam
-        with:
-          path: |
-            ${{ env.STEAM_DIR }}
-            ${{ env.STEAM_TEMP }}
-          key: steamcmd
-          restore-keys: steamcmd
-          save-always: true
+        uses: RageAgainstThePixel/setup-steamcmd@v1
       - name: Cache zig build
         uses: actions/cache@v4
         env:
@@ -113,9 +101,10 @@ jobs:
             zig-build-
             zig-
       - name: Steamworks login
-        if: ${{ steps.cache-steam.outputs.cache-hit != 'true' }}
         run: |
-          steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit 
+          if [[ "$(steamcmd +login preston3410 +info +quit)" == *"Logon state: Logged Off"* ]]; then
+            steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit 
+          fi
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
