@@ -102,11 +102,7 @@ jobs:
             zig-
       - name: Steamworks login
         run: |
-          LOG_FILE="steamcmd_log.txt"
-          steamcmd +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login preston3410 +quit > "$LOG_FILE" 2>&1
-          if ! grep -q "Logging in as" "$LOG_FILE"; then
-            steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
-          fi
+          steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
