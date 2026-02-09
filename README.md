@@ -1,4 +1,4 @@
-# SandEEE OS
+# <img src="https://raw.githubusercontent.com/prestosilver/sandeee/master/assets/steam/logo.png" alt="SandEEE" width="300" />
 
 > [!WARNING]
 > Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
@@ -11,15 +11,6 @@ SandEEE is a game! :open_mouth:
 
 Jokes aside, SandEEE is a programming game ment to be as immersive as possible. Pulling no punches when it comes to design and planning. SandEEE assumes it exists in a world where text is the fundamental data layer, not a byproduct of binary design. Hence consistency, human-readability, and reversibility will always take precedence over performance when it comes to internal systems. When uncertain, programs should prefer formats that read easily when opened as plain text, even if a faster way does exist.
 
-### Important docs and quicklinks
-
-- [The metadocumentation](assets/docs/meta.md)
-- [Lore sheet & reference](assets/docs/lore.md)
-- [Trailer plans (GPT Generated)](assets/docs/gpt/gpt_trailer.md)
-- [Rolling Bug/Todo List](assets/docs/todo.md)
-- [Various **low pri** optimization ideas](assets/docs/opt_ideas.md)
-- [Important asset listing](assets/docs/asset_index.md)
-- [Content asset listing](assets/docs/content_index.md)
 
 ## Random Q&A
 
@@ -49,7 +40,23 @@ Jokes aside, SandEEE is a programming game ment to be as immersive as possible. 
   
   **A:** Unfortunatly no. Although most of it is here, there was an initial period of a couple years where the project was just an engine and had no VCS. The [first screenshot](assets/screenshots/2023-01-08-123545_814x695_scrot.png) is here though, and properly dated, so I do know when I first got the project rendering images.
 
-## Repo root structure overview
+* **Q: Can I help**
+  
+  **A:** problaby not as of right now. Feel free to PR, but I cant promise I wont just reimplement what you do manually.
+
+## Repo structure overview
+
+## Important docs and quicklinks
+
+- [The metadocumentation](assets/docs/meta.md)
+- [Lore sheet & reference](assets/docs/lore.md)
+- [Trailer plans (GPT Generated)](assets/docs/gpt/gpt_trailer.md)
+- [Rolling Bug/Todo List](assets/docs/todo.md)
+- [Various **low pri** optimization ideas](assets/docs/opt_ideas.md)
+- [Important asset listing](assets/docs/asset_index.md)
+- [Content asset listing](assets/docs/content_index.md)
+
+### Repo root
 
 |Path|Purpose|
 |---|---|
