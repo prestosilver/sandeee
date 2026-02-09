@@ -18,9 +18,11 @@
 - [ ] Steam in web can lag the game
 - [X] Switch to proper versioning everywhere
 - [X] Fix random mem leak on tests
+- [ ] Back button should look disabled when disabled
+- [ ] Seperate builds for demo and debug bc different appids
 
 ## General tentative todo
 
-- [ ] New partial disk scripted recovery system
-- [ ] Aseprite exports
+- [X] New partial disk scripted recovery system
 - [ ] Embed file fix
+- [ ] Change email unlocked to key based

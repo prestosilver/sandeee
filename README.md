@@ -9,20 +9,23 @@ SandEEE is a game! :open_mouth:
 
 Jokes aside, SandEEE is a programming game ment to be as immersive as possible. Pulling no punches when it comes to design and planning. SandEEE assumes it exists in a world where text is the fundamental data layer, not a byproduct of binary design. Hence consistency, human-readability, and reversibility will always take precedence over performance when it comes to internal systems. When uncertain, programs should prefer formats that read easily when opened as plain text, even if a faster way does exist.
 
-## Repo structure
+## Repo structure overview
 
 |Path|Purpose|
 |---|---|
-|assets/ | All the assets for the game, this is stuff out of the builds
-|assets/disks/ | Disk image backups
-|assets/steam/ | Steam related images
-|deps/ | Some dependencies, I might not use them all.
-|docs/ | The User facing docs, unprocessed zig build www builds
-|fake_steam/ |Files used for the fake steamworks
-|steam/ | A small custom steam library for zig
-|tests/ | Tests for in game (non zig) code.
-|tools/ | Some zig tools for converting file formats and stuffs
-|www/ | A submodule that is hosted on [SandEEE website](http://sandeee.prestosilver.info)
+|[assets/](assets/) | All the assets for the game, this is stuff out of the builds
+|[assets/docs/](assets/docs/)  | Internal documentation
+|[assets/disks/](assets/disks/) | Disk image backups
+|[assets/steam/](assets/steam/) | Steam related images
+|[deps/](deps/) | Some dependencies, I might not use them all.
+|[docs/](docs/) | The User facing docs, unprocessed zig build www builds
+|[src/](src/)  | The Source code
+|[fake_steam/](fake_steam/) |Files used for the fake steamworks
+|[steam/](steam/) | A small custom steam library for zig
+|[tests/](tests/) | Tests for in game (non zig) code.
+|[tools/](tools/) | Some zig tools for converting file formats and stuffs
+|[www/](www/) | A submodule that is hosted on [SandEEE website](http://sandeee.prestosilver.info)
+|[VERSION](VERSION) | A file with the current version, used for changelog generation.
 
 ### Important docs
 
@@ -31,7 +34,7 @@ Jokes aside, SandEEE is a programming game ment to be as immersive as possible. 
 - [Trailer plans (GPT Generated)](assets/docs/gpt/gpt_trailer.md)
 - [Rolling Bug/Todo List](assets/docs/todo.md)
 - [Various **low pri** optimization ideas](assets/docs/opt_ideas.md)
-- [Important asset listing](assets/docs/asset_listing.md)
+- [Important asset listing](assets/docs/asset_index.md)
 - [Content asset listing](assets/docs/content_index.md)
 
 ## Legal stuffs & notices

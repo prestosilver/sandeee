@@ -4,22 +4,37 @@
 
 | Date      | Event           | Notes 
 |-----------|-----------------|-|
-| 03/03/93  | EEE is founded. | - Their goal was to make programming a universal right, something as common as reading/writing. <br/> - They start with simple programs for normal machines, but in the background are devloping a "string efficient cpu". <br/>
-| 04/07/00  | Desktop release | EEE finishes their machine, and decide to make it public, it gains wide support.
-| 03/03/03  | Operating system | EEE releases DunEEE A desktop opereating system for thier machines.
+| 03/03/1993  | EEE is founded. | - Their goal was to make programming a universal right, something as common as reading/writing. <br/> - They start with simple programs for normal machines, but in the background are devloping a "string efficient cpu". <br/>
+| 04/07/2000  | Desktop release | EEE finishes their machine, and decide to make it public, it gains wide support.
+| 03/03/2003  | Operating system | EEE announces work on DunEEE A desktop opereating system for thier machines.
+| 05/03/2004  | Epsilon hired | Epsilon is hired by EEE
+| 08/01/2009  | Epsilon leaks | Epsilon "leaks" a modified build of SandEEE to make himself look like a whisle blower. EEE is framed for greed, they wanted to accept donations but Epsilon made it look manditory.
+| 08/01/2004 | EEE hated | Many articles suspiciously report immedietly on EEE's unverified "Wrongdoings", the public hates them it baloons and they can really get their own thoughts out.
+| 08/06/2005 | EEE dies | EEE Files bankruptcy
 
 ## Key concepts
 
 - SandEEE is an opinionated recreation of DunEEE made by Epsilon.
+    - SandEEE is advertised as a leak with corperate docs, however these docs are fake/modified/untrustworthy.
 
 ## Implementation plans, order, and progress
 
-## Characters
+### Initial release
 
-### Epsilon
+- Full sandbox
+- Subtle inconsistencies in design
+    - Should feel like it was made by a team but repurposed by indivisual
 
-### Eric
+### Lore drop 1
 
-### Erin
+- Base story, feels too neat
 
-### Eliane
+### Lore drop 2
+
+- New recovery disk?
+- Epsilon starts to feel off
+
+### Lore drop 3
+
+- The reveal, epsilon was a spy dropped in by unnamed.
+- Have a draft for the entire plot accessible by now, "Wait this was all planned."
