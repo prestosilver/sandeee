@@ -102,7 +102,9 @@ jobs:
             zig-
       - name: Steamworks login
         run: |
-          if steamcmd +login preston3410 +info +quit 2>&1 | grep -q "Logged Off"; then
+          LOG_FILE="steamcmd_log.txt"
+          steamcmd +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login preston3410 +quit > "$LOG_FILE" 2>&1
+          if ! grep -q "Logging in as" "$LOG_FILE"; then
             steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
           fi
       - name: Setup Zig
