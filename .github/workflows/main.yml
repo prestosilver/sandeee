@@ -15,8 +15,12 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: ${{ runner.os }}-zig
-          restore-keys: ${{ runner.os }}-zig
+          key: zig-tests-dbg-${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          restore-keys: |
+            zig-tests-dbg-${{ runner.os }}-
+            zig-tests-dbg-
+            zig-tests-
+            zig-
 
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
@@ -48,9 +52,13 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: ${{ runner.os }}-zig
-          restore-keys: ${{ runner.os }}-zig
-          
+          key: zig-tests-rel=${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          restore-keys: |
+            zig-tests-rel-${{ runner.os }}-
+            zig-tests-rel-
+            zig-tests-
+            zig-
+
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
@@ -75,15 +83,21 @@ jobs:
     needs: [tests-dbg, tests-rel]
     steps:
       - uses: actions/checkout@v3
+      - name: Setup SteamCMD
+        id: steamcmd
+        uses: CyberAndrii/setup-steamcmd@v1
       - name: Cache steam login
         id: cache-steam
         uses: actions/cache@v4
         env:
           cache-name: cache-steam
         with:
-          path: ~/.local/share/steam
-          key: ${{ runner.os }}-steam
-          restore-keys: ${{ runner.os }}-steam
+          path: |
+            ${{ env.STEAM_DIR }}
+            ${{ env.STEAM_TEMP }}
+          key: steamcmd
+          restore-keys: steamcmd
+          always-save: true
       - name: Cache zig build
         uses: actions/cache@v4
         env:
@@ -92,11 +106,12 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: ${{ runner.os }}-zig
-          restore-keys: ${{ runner.os }}-zig
-
-      - name: Setup SteamCMD
-        uses: CyberAndrii/setup-steamcmd@v1
+          key: zig-build-steam=${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          restore-keys: |
+            zig-build-steam-${{ runner.os }}-
+            zig-build-steam-
+            zig-build-
+            zig-
       - name: Steamworks login
         if: ${{ steps.cache-steam.outputs.cache-hit != 'true' }}
         run: |
@@ -124,6 +139,21 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ~/.cache/zig
+            ~/.zig-cache
+          key: zig-tests-rel=${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          restore-keys: |
+            zig-build-changelog-${{ runner.os }}-
+            zig-build-changelog-
+            zig-build-
+            zig-
+
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
