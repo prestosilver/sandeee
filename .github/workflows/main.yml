@@ -52,7 +52,7 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: zig-tests-rel=${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          key: zig-tests-rel-${{ runner.os }}-${{hashFiles('**/*.zig')}}
           restore-keys: |
             zig-tests-rel-${{ runner.os }}-
             zig-tests-rel-
@@ -97,7 +97,7 @@ jobs:
             ${{ env.STEAM_TEMP }}
           key: steamcmd
           restore-keys: steamcmd
-          always-save: true
+          save-always: true
       - name: Cache zig build
         uses: actions/cache@v4
         env:
@@ -147,7 +147,7 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: zig-tests-rel=${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          key: zig-build-changelog-${{ runner.os }}-${{hashFiles('**/*.zig')}}
           restore-keys: |
             zig-build-changelog-${{ runner.os }}-
             zig-build-changelog-
