@@ -11,6 +11,14 @@ jobs:
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.15.2
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ~/.cache/zig
+            ~/.zig-cache
       - name: Install glfw
         run: |
           sudo apt update
@@ -32,6 +40,14 @@ jobs:
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.15.2
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ~/.cache/zig
+            ~/.zig-cache
       - name: Install glfw
         run: |
           sudo apt update
@@ -51,15 +67,31 @@ jobs:
     needs: [tests-dbg, tests-rel]
     steps:
       - uses: actions/checkout@v3
+      - name: Cache steam login
+        id: cache-steam
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-steam
+        with:
+          path: ~/.local/share/steam
       - name: Setup SteamCMD
         uses: CyberAndrii/setup-steamcmd@v1
       - name: Steamworks login
+        if: ${{ steps.cache-steam.outputs.cache-hit != 'true' }}
         run: |
           steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit 
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.15.2
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ~/.cache/zig
+            ~/.zig-cache
       - name: Install glfw
         run: |
           sudo apt update
