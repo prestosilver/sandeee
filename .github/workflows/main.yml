@@ -82,8 +82,8 @@ jobs:
           cache-name: cache-steam
         with:
           path: ~/.local/share/steam
-          key: ${{ runner.os }}
-          fetch-key: ${{ runner.os }}
+          key: ${{ runner.os }}-steam
+          restore-keys: ${{ runner.os }}-steam
       - name: Cache zig build
         uses: actions/cache@v4
         env:
