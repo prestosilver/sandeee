@@ -102,8 +102,9 @@ jobs:
             zig-
       - name: Steamworks login
         run: |
-          if [[ $(steamcmd +login preston3410 +quit2 2&>1 ) == *"Logged Off"* ]]; then
-          steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
+          if [[ $(steamcmd +login preston3410 +quit 2&>1 ) == *"Logged Off"* ]]; then
+            steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
+          fi
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
@@ -155,7 +156,6 @@ jobs:
           zig build changelog
 
       - name: Summary results
-        if: always()
         run: |
           cat zig-out/changelog.edf >> $GITHUB_STEP_SUMMARY
 
