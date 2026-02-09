@@ -3,6 +3,8 @@
 > [!WARNING]
 > Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
 
+[![Test](https://github.com/prestosilver/sandeee/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/prestosilver/sandeee/actions/workflows/main.yml)
+
 ## What is sandeee
 
 SandEEE is a game! :open_mouth:
