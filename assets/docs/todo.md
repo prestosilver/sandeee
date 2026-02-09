@@ -20,9 +20,12 @@
 - [X] Fix random mem leak on tests
 - [ ] Back button should look disabled when disabled
 - [ ] Seperate builds for demo and debug bc different appids
+- [ ] Dont copy _*_meta files on disk install
+- [ ] SandEEE install should be configurable somehow, cli flag problaby.
 
 ## General tentative todo
 
 - [X] New partial disk scripted recovery system
 - [ ] Embed file fix
 - [ ] Change email unlocked to key based
+- [ ] Move runSandEEE to a subfolder somewhere
