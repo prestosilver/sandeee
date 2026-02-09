@@ -102,11 +102,9 @@ jobs:
             zig-
       - name: Steamworks login
         run: |
-          if [[ "$(steamcmd +login preston3410 +info +quit)" == *"Logon state: Logged Off"* ]]; then
-            steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit 
-          fi
+          steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
       - name: Setup Zig
-        uses: korandoru/setup-zig@v1
+        uses: korandoru/setup-zig@v2
         with:
           zig-version: 0.15.2
       - name: Install glfw
