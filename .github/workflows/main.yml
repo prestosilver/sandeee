@@ -15,7 +15,7 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: zig-tests-dbg-${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          key: zig-tests-dbg-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-tests-dbg-${{ runner.os }}-
             zig-tests-dbg-
@@ -52,7 +52,7 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: zig-tests-rel-${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          key: zig-tests-rel-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-tests-rel-${{ runner.os }}-
             zig-tests-rel-
@@ -94,7 +94,7 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: zig-build-steam=${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          key: zig-build-steam-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-steam-${{ runner.os }}-
             zig-build-steam-
@@ -102,6 +102,7 @@ jobs:
             zig-
       - name: Steamworks login
         run: |
+          if [[ $(steamcmd +login preston3410 +quit2 2&>1 ) == *"Logged Off"* ]]; then
           steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
@@ -134,7 +135,7 @@ jobs:
           path: |
             ~/.cache/zig
             ~/.zig-cache
-          key: zig-build-changelog-${{ runner.os }}-${{hashFiles('**/*.zig')}}
+          key: zig-build-changelog-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-changelog-${{ runner.os }}-
             zig-build-changelog-
