@@ -102,9 +102,7 @@ jobs:
             zig-
       - name: Steamworks login
         run: |
-          info=$(steamcmd +login preston3410 +quit 2>&1)
-          echo $info
-          if [[ $info == *"Logged Off"* ]]; then
+          if [[ $(steamcmd +login preston3410 +info +quit 2>&1) == *"Logged Off"* ]]; then
             steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
           fi
       - name: Setup Zig
