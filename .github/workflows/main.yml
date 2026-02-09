@@ -85,7 +85,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup SteamCMD
         id: steamcmd
-        uses: RageAgainstThePixel/setup-steamcmd@v1
+        uses: RageAgainstThePixel/setup-steamcmd@v2
       - name: Cache zig build
         uses: actions/cache@v4
         env:
@@ -104,7 +104,7 @@ jobs:
         run: |
           steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
       - name: Setup Zig
-        uses: korandoru/setup-zig@v2
+        uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.15.2
       - name: Install glfw
