@@ -113,7 +113,7 @@ jobs:
       - name: Install mingw
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: gcc-mingw-w64
+          packages: gcc-mingw-w64 mingw-w64
           version: mingw
 
       - name: Build game
