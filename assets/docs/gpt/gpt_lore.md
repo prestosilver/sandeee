@@ -1,5 +1,5 @@
 # SandEEE Lore & Implementation Plan  
-> **THIS PHRASING IS GPT GENERATED BTW!!!!**, I leaded the ideas, I just dont have the energy to consolidate ideas quite yet
+> **THIS PHRASING IS GPT GENERATED BTW!!!!**, I leaded the ideas, I just don't have the energy to consolidate ideas quite yet
 
 *(Consolidated World Timeline + Dev Execution Overview)*  
 
@@ -14,7 +14,7 @@
   - Built on unique hardware with a *string-efficient* architecture:  
     > “Strings were efficient because the hardware understood them.”  
 - The company is viewed as a *corporate joke* — altruistic but unprofitable, a “charity that sells code.”  
-- Rival megacorps dismiss EEE’s tech as unscalable fantasy.
+- Rival mega corps dismiss EEE’s tech as unscalable fantasy.
 
 ---
 
@@ -28,7 +28,7 @@
   - **Free Version:** Full OS, no restrictions.  
   - **$5 Source Version:** Includes complete source and compilers — a “paid open source” model.  
 - For the first time, EEE turns a profit.  
-- Users quickly begin extending SandEEE with *community tools*, which the company loved, and often recognised, even adapting them to be builtin.  
+- Users quickly begin extending SandEEE with *community tools*, which the company loved, and often recognized, even adapting them to be builtin.  
 - Among them: **Epsilon**, a solo developer who becomes the most prolific contributor.  
   - His tools push SandEEE into cult-favorite status among hobbyists.
 
@@ -77,7 +77,7 @@
 |----------|-------------|
 | **EEE** | Altruistic company; believed tech should belong to everyone. Collapsed under mysterious pressure. |
 | **SandEEE OS** | Consumer-friendly desktop built atop EEE’s command system. Released free with open-source option. |
-| **Epsilon** | Star community developer → employee → whistleblower → archivist. |
+| **Epsilon** | Star community developer → employee → whistle blower → archivist. |
 | **String-Efficient Hardware** | EEE’s machine-level anomaly; allowed “impossible” string operations. Sabotaged before replication. |
 | **The Impossible Assumption** | The idea that computation could treat strings as fundamental. Modern hardware can’t reproduce it. |
 | **E-VM** | Epsilon’s emulator; incomplete recreation of EEE’s hardware and compiler behavior. Introduces quirks/glitches. |

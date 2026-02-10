@@ -26,6 +26,7 @@ style: |
 <!-- backgroundAttachment: fixed -->
 
 # In Defense of Metadocumentation
+
 Preston Precourt (prestosilver)
 
 ---
@@ -44,11 +45,11 @@ Preston Precourt (prestosilver)
 
 ---
 
-# Documenting documentation???
+# Documenting documentation though???
 
 <!--
 
-- Define metadocs
+- Define meta docs
 
 -->
 
@@ -65,7 +66,6 @@ Preston Precourt (prestosilver)
 
 <div class="columns">
 <div>
-
 Documentation for eon
 ```edf
 #Style @/style.eds
@@ -100,8 +100,8 @@ Documentation for asm
 
 <!--
 
-- If you're not documenting your game for your userbase, I would not suggest this
-- This takes a long time, and if you dont follow it its not worth it.
+- If you're not documenting your game for your user-base, I would not suggest this
+- This takes a long time, and if you don't follow it its not worth it.
 
 -->
 
@@ -116,7 +116,7 @@ Documentation for asm
 
 <!--
 
-- I was pleasantly suprised and wanted to pitch this to people who may not know its a thing
+- I was pleasantly surprised and wanted to pitch this to people who may not know its a thing
 
 -->
 

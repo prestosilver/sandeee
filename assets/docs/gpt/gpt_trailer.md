@@ -5,7 +5,6 @@
 
 ## 🗓️ Timeline Overview
 
-
 | Weekend Range        | Focus Area                        | Key Tasks                                                                                        | Status |
 |----------------------|-----------------------------------|--------------------------------------------------------------------------------------------------|:------:|
 | Nov 8–9, 2025        | **Debugging / Threading**         | Begin reproducing Windows threading crash; log allocator and GC edge cases                       | 🟩
@@ -30,6 +29,7 @@
 | Apr–May 2026         | **Ongoing Promo & QA**            | Continue marketing, patching, and community engagement until Next Fest launch                    | ⬜
 
 ### Key
+
 - 🟩: Done
 - 🟨: Started
 - ⬜: Complete
@@ -37,6 +37,7 @@
 ---
 
 ### ✅ Summary of Priorities
+
 - [X] Fix Windows threading crash (safe mode debugging included)
 - [ ] Build `/fake/gfx/pixel` + `/fake/gfx/stride` systems
 - [ ] Create Teams-style in-game app for trailer
@@ -51,6 +52,7 @@
 ## Overview Checklist
 
 ### 🧠 Core Development
+
 - [X] Debug Windows threading crash (via Safe Mode)
 - [X] Confirm GC & allocator stability under multithread
 - [X] Implement ropes
@@ -59,6 +61,7 @@
 - [ ] Write audio queue system
 
 ### 🖼️ Art & Store
+
 - [ ] Write final Steam description (with lore + tagline)
 - [ ] Produce hero & capsule art early
 - [ ] Gather screenshots of CRT/UI
@@ -66,6 +69,7 @@
 - [ ] Submit store page for early review (Dec 2025)
 
 ### 🎥 Trailer
+
 - [ ] Build in-game Teams-like app for trailer
 - [ ] Record each Preston role separately (one take per role)
 - [ ] Merge via clipped audio edits
@@ -73,12 +77,14 @@
 - [ ] Maintain “all in-game” authenticity
 
 ### 🧪 Demo
+
 - [X] Enable Safe Mode as default for demo build
 - [X] Test load time lag—style it as “Booting threads…”
 - [X] Verify .eep and .ell integrity
 - [ ] Ship Windows & Linux demo builds
 
 ### 📣 Release & Community
+
 - [ ] Post early store link + GIFs on social
 - [X] Set up small Discord for testers
 - [ ] Steam Next Fest registration (May 2026)
