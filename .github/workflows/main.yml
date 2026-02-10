@@ -121,13 +121,13 @@ jobs:
         with:
             username: preston3410
             password: ${{ secrets.STEAM_PASSWORD }}
-            app_build: ${{github.workspace}}/steam/upload_4124360.vdf
+            app_build: ${{github.workspace}}/zig-out/pub/steam/upload_4124360.vdf
       - name: Upload to steam (demo)
         uses: RageAgainstThePixel/upload-steam@v2
         with:
             username: preston3410
             password: ${{ secrets.STEAM_PASSWORD }}
-            app_build: ${{github.workspace}}/steam/upload_4124370.vdf
+            app_build: ${{github.workspace}}/zig-out/pub/steam/upload_4124370.vdf
   gen-changelog:
     runs-on: ubuntu-latest
     name: Generate changelog
