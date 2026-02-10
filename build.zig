@@ -1030,7 +1030,7 @@ pub fn build(b: *std.Build) !void {
         const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
         
         const steam_vdf_game_conts = @embedFile("steam/upload_4124360.vdf");
-        const steam_vdf_game_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_game_conts, "}") orelse steam_vdf_game_conts.len;
+        const steam_vdf_game_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_game_conts, "// END TEMPLATE") orelse steam_vdf_game_conts.len;
         const steam_desc_game_file = disk_meta_step.add("steam_game.vdf", b.fmt(
             \\{s}
             \\    "ContentRoot" "./"
@@ -1040,7 +1040,7 @@ pub fn build(b: *std.Build) !void {
         ));        
 
         const steam_vdf_demo_conts = @embedFile("steam/upload_4124370.vdf");
-        const steam_vdf_demo_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_demo_conts, "}") orelse steam_vdf_demo_conts.len;
+        const steam_vdf_demo_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_demo_conts, "// END TEMPLATE") orelse steam_vdf_demo_conts.len;
         const steam_desc_demo_file = disk_meta_step.add("steam_demo.vdf", b.fmt(
             \\{s}
             \\    "ContentRoot" "./"
