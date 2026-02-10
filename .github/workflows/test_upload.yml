@@ -1,5 +1,5 @@
-name: Test 
-run-name: Run zig tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }}
+name: Test and upload
+run-name: Run tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }} and upload to steam.
 on: [push]
 jobs:
   tests-dbg:
@@ -168,7 +168,3 @@ jobs:
       - name: Summary results
         run: |
           cat zig-out/changelog.edf >> $GITHUB_STEP_SUMMARY
-
-
-
-
