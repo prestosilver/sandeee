@@ -1029,24 +1029,24 @@ pub fn build(b: *std.Build) !void {
     {
         const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
         
+        const steam_vdf_game_conts = @embedFile("steam/upload_4124360.vdf");
+        const steam_vdf_game_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_game_conts, "}") orelse steam_vdf_game_conts.len;
         const steam_desc_game_file = disk_meta_step.add("steam_game.vdf", b.fmt(
-            \\"AppBuild"
-            \\{{
+            \\{s}
             \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            \\{s}
-            , .{ steam_desc_raw, @embedFile("steam/upload_4124360.vdf") }
+            , .{ steam_vdf_game_conts[0..steam_desc_game_semi_idx], steam_desc_raw }
         ));        
 
-        const steam_desc_demo_file = disk_meta_step.add("steam_game.vdf", b.fmt(
-            \\"AppBuild"
-            \\{{
+        const steam_vdf_demo_conts = @embedFile("steam/upload_4124370.vdf");
+        const steam_vdf_demo_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_demo_conts, "}") orelse steam_vdf_demo_conts.len;
+        const steam_desc_demo_file = disk_meta_step.add("steam_demo.vdf", b.fmt(
+            \\{s}
             \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            \\{s}
-            , .{ steam_desc_raw, @embedFile("steam/upload_4124370.vdf") }
+            , .{ steam_vdf_demo_conts[0..steam_vdf_demo_semi_idx], steam_desc_raw }
         ));
 
         const install_desc_game_vdf_step = b.addInstallFileWithDir(steam_desc_game_file, steam_pub_path, "upload_4124360.vdf");
