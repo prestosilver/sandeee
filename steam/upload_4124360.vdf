@@ -1,8 +1,7 @@
-#include "../zig-out/pub/steam/desc.vdf"
-
 "AppBuild"
 {
 	"AppID" "4124360" // your AppID
+    "Desc" "Auto Upload"
 
 	"ContentRoot" "../zig-out/pub/steam/" // root content folder, relative to location of this file
 	"BuildOutput" "./SteamLog" // build output folder for build logs and build cache files

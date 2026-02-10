@@ -1,5 +1,3 @@
-#include "../zig-out/pub/steam/desc.vdf"
-
 "AppBuild"
 {
 	"AppID" "4124370" // your AppID

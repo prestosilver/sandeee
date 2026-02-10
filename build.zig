@@ -1029,21 +1029,35 @@ pub fn build(b: *std.Build) !void {
     {
         const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
         
-        const steam_desc_file = disk_meta_step.add("steam_vdf", b.fmt(
+        const steam_desc_game_file = disk_meta_step.add("steam_game.vdf", b.fmt(
+            \\{s}
             \\"AppBuild"
             \\{{
+            \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            , .{steam_desc_raw}
+            , .{@embedFile("steam/upload_4124360.vdf"), steam_desc_raw}
+        ));        
+
+        const steam_desc_demo_file = disk_meta_step.add("steam_game.vdf", b.fmt(
+            \\{s}
+            \\"AppBuild"
+            \\{{
+            \\    "ContentRoot" "./"
+            \\    "Desc" "{s}"
+            \\}}
+            , .{@embedFile("steam/upload_4124370.vdf"), steam_desc_raw}
         ));
 
-        const install_desc_vdf_step = b.addInstallFileWithDir(steam_desc_file, steam_pub_path, "desc.vdf");
+        const install_desc_game_vdf_step = b.addInstallFileWithDir(steam_desc_game_file, steam_pub_path, "upload_4124360.vdf");
+        const install_desc_demo_vdf_step = b.addInstallFileWithDir(steam_desc_demo_file, steam_pub_path, "upload_4124370.vdf");
         const install_recovery_step = b.addInstallFileWithDir(steam_install_disk_image_path, steam_pub_path, "content/recovery.eee");
         const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery_demo.eee");
 
         pub_step.dependOn(&install_recovery_step.step);
         pub_step.dependOn(&install_demo_recovery_step.step);
-        pub_step.dependOn(&install_desc_vdf_step.step);
+        pub_step.dependOn(&install_desc_game_vdf_step.step);
+        pub_step.dependOn(&install_desc_demo_vdf_step.step);
 
         const public_options = b.addOptions();
         public_options.addOption(Version, "SANDEEE_VERSION", version);
@@ -1278,13 +1292,14 @@ pub fn build(b: *std.Build) !void {
     // upload step
     const upload_step = b.step("upload", "Uploads a build to all platforms");
     const upload_steam_step = b.step("upload_steam", "Uploads a build to steam");
-
-    const steamcmd_step = b.addSystemCommand(&.{ "steamcmd", "+login", "preston3410", "+run_app_build", "-desc", steam_desc });
-    steamcmd_step.addFileInput(b.path("steam/upload_4124360.vdf"));
-    steamcmd_step.addFileArg(b.path("steam/upload_4124360.vdf"));
+    
+    const steamcmd_step = b.addSystemCommand(&.{ "steamcmd", "+login", "preston3410" });
     steamcmd_step.addArgs(&.{ "+run_app_build", "-desc", steam_desc });
-    steamcmd_step.addFileInput(b.path("steam/upload_4124370.vdf"));
-    steamcmd_step.addFileArg(b.path("steam/upload_4124370.vdf"));
+    steamcmd_step.addFileInput(b.path("zig-out/pub/steam/upload_4124360.vdf"));
+    steamcmd_step.addFileArg(b.path("zig-out/pub/steam/upload_4124360.vdf"));
+    steamcmd_step.addArgs(&.{ "+run_app_build", "-desc", steam_desc });
+    steamcmd_step.addFileInput(b.path("zig-out/pub/steam/upload_4124370.vdf"));
+    steamcmd_step.addFileArg(b.path("zig-out/pub/steam/upload_4124370.vdf"));
     steamcmd_step.addArg("+quit");
 
     steamcmd_step.step.dependOn(pub_step);
