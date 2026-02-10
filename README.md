@@ -3,7 +3,7 @@
 > [!WARNING]
 > Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
 
-[![Test](https://github.com/prestosilver/sandeee/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/prestosilver/sandeee/actions/workflows/main.yml)
+[![Test](https://github.com/prestosilver/sandeee/actions/workflows/test_upload.yml/badge.svg?branch=master)](https://github.com/prestosilver/sandeee/actions/workflows/test_upload.yml)
 
 ## What is SandEEE
 
