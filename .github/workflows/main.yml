@@ -120,13 +120,13 @@ jobs:
         run: |
           zig build pub
       - name: Upload to steam (release)
-        uses: RageAgainstThePixel/upload-steam@v1
+        uses: RageAgainstThePixel/upload-steam@v2
         with:
             username: preston3410
             password: ${{ secrets.STEAM_PASSWORD }}
             app_build: steam/upload_4124360.vdf
       - name: Upload to steam (demo)
-        uses: RageAgainstThePixel/upload-steam@v1
+        uses: RageAgainstThePixel/upload-steam@v2
         with:
             username: preston3410
             password: ${{ secrets.STEAM_PASSWORD }}
