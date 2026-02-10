@@ -4,18 +4,18 @@
 
 | Date      | Event           | Notes 
 |-----------|-----------------|-|
-| 03/03/1993  | EEE is founded. | - Their goal was to make programming a universal right, something as common as reading/writing. <br/> - They start with simple programs for normal machines, but in the background are devloping a "string efficient cpu". <br/>
+| 03/03/1993  | EEE is founded. | - Their goal was to make programming a universal right, something as common as reading/writing. <br/> - They start with simple programs for normal machines, but in the background are developing a "string efficient cpu". <br/>
 | 04/07/2000  | Desktop release | EEE finishes their machine, and decide to make it public, it gains wide support.
-| 03/03/2003  | Operating system | EEE announces work on DunEEE A desktop opereating system for thier machines.
+| 03/03/2003  | Operating system | EEE announces work on DunEEE A desktop operating system for their machines.
 | 05/03/2004  | Epsilon hired | Epsilon is hired by EEE
-| 08/01/2009  | Epsilon leaks | Epsilon "leaks" a modified build of SandEEE to make himself look like a whisle blower. EEE is framed for greed, they wanted to accept donations but Epsilon made it look manditory.
-| 08/01/2004 | EEE hated | Many articles suspiciously report immedietly on EEE's unverified "Wrongdoings", the public hates them it baloons and they can really get their own thoughts out.
+| 08/01/2009  | Epsilon leaks | Epsilon "leaks" a modified build of SandEEE to make himself look like a whistle blower. EEE is framed for greed, they wanted to accept donations but Epsilon made it look mandatory.
+| 08/01/2004 | EEE hated | Many articles suspiciously report immediately on EEE's unverified "Wrongdoings", the public hates them it balloons and they can really get their own thoughts out.
 | 08/06/2005 | EEE dies | EEE Files bankruptcy
 
 ## Key concepts
 
 - SandEEE is an opinionated recreation of DunEEE made by Epsilon.
-    - SandEEE is advertised as a leak with corperate docs, however these docs are fake/modified/untrustworthy.
+  - SandEEE is advertised as a leak with corporate docs, however these docs are fake/modified/untrustworthy.
 
 ## Implementation plans, order, and progress
 
@@ -23,7 +23,7 @@
 
 - Full sandbox
 - Subtle inconsistencies in design
-    - Should feel like it was made by a team but repurposed by indivisual
+  - Should feel like it was made by a team but repurposed by individual
 
 ### Lore drop 1
 

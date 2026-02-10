@@ -4,27 +4,27 @@
 
 - Things that shall happen are definite, while things that should happen are definite but only when applicable.
 - This is the documentation for the documentation, no user facing docs will be repeated here.
-    - This document shall not describe any specific behaviours, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
+  - This document shall not describe any specific behaviors, though the examples are from real docs, they may be upstream see the real docs if your referencing program specific info.
 - Anywhere where this document has made a weird/odd decision, there will be a `Reason:` tag, everything else is either intuitive or a project wide assumption.
-- This is all internal convention, as such not publicly released so users dont have to know this exists.
-    - This means this document shall contain no fixes to issues, if the convention isnt for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
+- This is all internal convention, as such not publicly released so users don't have to know this exists.
+  - This means this document shall contain no fixes to issues, if the convention isn't for consistency (think fixes for things like import loops) this is the wrong place, and those bugs cannot be considered fixed.
 - Something is considered user facing if the user can see it at any time, whether thats on www, or in any recovery image.
-- Definition sections in this document are included for atypical features that already exist, but are not the same as tipical convention, or things that could be misinterpreted easily.
+- Definition sections in this document are included for atypical features that already exist, but are not the same as typical convention, or things that could be misinterpreted easily.
 - All code in this document may have a heading or footer omitted, that will be indicated with a `...` at either the beginning or end of the file respectively
-    - This will also have 1 empty line next to it, that is not part of the code so it may be ignored.
+  - This will also have 1 empty line next to it, that is not part of the code so it may be ignored.
 - Code examples here have the proper language tags, even though markdown doesn't highlight check the source if needed
 - All formats defined here are assumed to always consist of this format, versioning is completely separate of this document.
-    - If you need to see old docs roll the repo back
-    - this is a style guide so make sure to use the latest version when writing docs
+  - If you need to see old docs roll the repo back
+  - this is a style guide so make sure to use the latest version when writing docs
 - user facing formats such as `.edf` and `.eds` are immutable and documented elsewhere.
-    - Reason: Documenting one thing twice can cause contradictions later, and this document is less formal than user docs.
+  - Reason: Documenting one thing twice can cause contradictions later, and this document is less formal than user docs.
 - No user-facing docs shall be generated with assistants such as chatgpt.
-    - Reason: Since SandEEE is focused on a different yet familiar system, picked up without reading a doc. Forcing manual writing means the user will read the docs while writing them, ensuring nothing was made up/wrong.
+  - Reason: Since SandEEE is focused on a different yet familiar system, picked up without reading a doc. Forcing manual writing means the user will read the docs while writing them, ensuring nothing was made up/wrong.
 
 ## General structure & rules
 
-- All documentation shall be hosted on sandeee.prestosilver.info
-    - this will be moved to a full domain once I get it
+- All documentation shall be hosted on [sandeee.prestosilver.info](http://sandeee.prestosilver.info)
+  - this will be moved to a full domain once I get it
 - All documentation shall be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
 - Documentation will include no hidden files, these are files starting with an underscore(`_`).
 - No dead links obviously, this shall be automatically checked.
@@ -35,38 +35,38 @@
 
 - A syscall is *hidden* if it is not documented in the general documentation
 - Syscalls shall be documented exactly the same as instructions
-- Syscalls shall remain consistent between updates post the inital steam release.
+- Syscalls shall remain consistent between updates post the initial steam release.
 
 ### Name Style Rules
 
 - The SandEEE E is character Ⲉ (U+2C88) in unicode, and a standard E (capital) in ascii.
 - SandEEE shall always be spelled SandEEE with the EEEch character for the SandEEE E in place of its Es.
 - All SandEEE docs are written in the .edf format, see the user docs for that.
-- EEE shall be pronounced "tripple E"
+- EEE shall be pronounced "triple E"
 - EEE is always capitalized if in ascii, even in a subset of a program name
 - slogan capitalization and formatting is `--- EEE Sees all ---`, centered if possible
-    - Always a footer
+  - Always a footer
 
 ### Style rules
 
 - Doc names are the same case as what they are describing
-    - file extension docs are named after their extension.
-    - Encoding docs are named after the encodings acronym/shortend form
-    - libraries are named after their .ell file name
+  - file extension docs are named after their extension.
+  - Encoding docs are named after the encodings acronym/shortened form
+  - libraries are named after their .ell file name
 - All docs shall include the main style sheet with `#style @www/docs/style.eds`
-    - Code blocks are made with the `:code:`, `:code-edge:` and `:code-bad:` styles
-        - Bad code is defined as: any line of code that, if left in place, will prevent that block of code from compiling.
-        - :code: shall be wrapped in the :code-edge: style for compat.
-        - :code-edge: lines have no text.
-    - No text shall be centered unless its the footer, header, image, or diagram.
+  - Code blocks are made with the `:code:`, `:code-edge:` and `:code-bad:` styles
+    - Bad code is defined as: any line of code that, if left in place, will prevent that block of code from compiling.
+    - :code: shall be wrapped in the :code-edge: style for compat.
+    - :code-edge: lines have no text.
+  - No text shall be centered unless its the footer, header, image, or diagram.
 - All docs shall include the usual `:center: --- EEE Sees all ---` footer.
 - All documents shall start with a `:center: -- Title --` style for the title.
-    - After this this style will never be reused, use heading 2 then 1, then restructure. `-- H2 --` -> `- H1 -` -> redesign layout to avoid over indent.
+  - After this this style will never be reused, use heading 2 then 1, then restructure. `-- H2 --` -> `- H1 -` -> redesign layout to avoid over indent.
 - Normal text (unstyled), shall have one empty line preceding it.
 - Code blocks shall be surrounded by blank lines
 - Code blocks shall always have a heading describing their use.
 - Links in docs shall use only relative paths.
-    - Important for relocation, docs shall contain no reliance at all about where theyre hosted
+  - Important for relocation, docs shall contain no reliance at all about where they're hosted
 - Back paths are under the title for documents.
 - Examples shall be wrapped with :example-start:, and :example-end:
 
@@ -74,11 +74,12 @@
 
 - Index pages shall exist for every folder, **including** the root.
 - They shall have a list of all sibling files or subdirs, but never both ie. if a subdir is needed there can be no siblings.
-- Index files shall never be linked to, except in backlinks, or the parent directory.
+- Index files shall never be linked to, except in back-links, or the parent directory.
 
 ### Examples
 
 Code
+
 ```edf
 ...
 
@@ -94,6 +95,7 @@ Code
 ```
 
 Document structure
+
 ```edf
 #style @/docs/style.eds
 
@@ -115,40 +117,40 @@ This is documenting stuff
 - www/docs/index.edf
 - www/docs/style.eds
 - www/docs/assembly/
-    - www/docs/assembly/index.edf
-    - www/docs/assembly/instructions/
-        - www/docs/assembly/instructions/index.edf
-        - www/docs/assembly/instructions/nop.edf
+  - www/docs/assembly/index.edf
+  - www/docs/assembly/instructions/
+    - www/docs/assembly/instructions/index.edf
+    - www/docs/assembly/instructions/nop.edf
 - www/docs/encodings/
-    - www/docs/encodings/index.edf
-    - www/docs/encodings/EEEch.eia
+  - www/docs/encodings/index.edf
+  - www/docs/encodings/EEEch.eia
 - www/docs/binaries/
-    - www/docs/binaries/index.edf
-    - www/docs/binaries/eia.edf
-    - www/docs/binaries/ell.edf
-    - www/docs/binaries/epk.edf
-    - www/docs/binaries/eep.edf
-    - www/docs/binaries/eme.edf
-    - www/docs/binaries/era.edf
+  - www/docs/binaries/index.edf
+  - www/docs/binaries/eia.edf
+  - www/docs/binaries/ell.edf
+  - www/docs/binaries/epk.edf
+  - www/docs/binaries/eep.edf
+  - www/docs/binaries/eme.edf
+  - www/docs/binaries/era.edf
 - www/docs/text/
-    - www/docs/text/index.edf
-    - www/docs/text/eon.edf
-    - www/docs/text/edf.edf
-    - www/docs/text/eds.edf
-    - www/docs/text/eln.edf
+  - www/docs/text/index.edf
+  - www/docs/text/eon.edf
+  - www/docs/text/edf.edf
+  - www/docs/text/eds.edf
+  - www/docs/text/eln.edf
 - www/docs/files/
-    - www/docs/files/index.edf
-    - www/docs/files/images/
-        - www/docs/files/images/index.edf
-        - www/docs/files/images/ui.edf
-    - www/docs/files/libraries/
-        - www/docs/files/libraries/index.edf
-        - www/docs/files/libraries/eon.edf
-        - www/docs/files/libraries/asm.edf
+  - www/docs/files/index.edf
+  - www/docs/files/images/
+    - www/docs/files/images/index.edf
+    - www/docs/files/images/ui.edf
+  - www/docs/files/libraries/
+    - www/docs/files/libraries/index.edf
+    - www/docs/files/libraries/eon.edf
+    - www/docs/files/libraries/asm.edf
 - www/docs/errors/
-    - www/docs/errors/index.edf
-    - www/docs/errors/asm.edf
-    - www/docs/errors/eon.edf
+  - www/docs/errors/index.edf
+  - www/docs/errors/asm.edf
+  - www/docs/errors/eon.edf
 
 ## Formats and uses
 
@@ -157,17 +159,17 @@ This is documenting stuff
 - All EEE file extensions start with `.e`
 - All EEE file extensions are 3 lowercase alpha letters
 
-| Format | builtin | Used for  | Notes |
-|--------|-|-----------|---|
-|.eee    |✔| Disk images
-|.epk    |✔| Recovery scripts<br>Packages
-|.eap    |✖| Archives
-|.era    |✔| Audio files
-|.edf    |✔| Rich text documents
-|.eds    |✔| Rich text document style
-|.ell    |✖| Libraries | libload.ell is raw code
-|.eln    |✔| Shortcuts
-|.eep    |✔| Executables
+| Format | builtin | Used for                     | Notes                   |
+|--------|---------|------------------------------|-------------------------|
+|.eee    |      ✔  | Disk images                  |                         |
+|.epk    |      ✔  | Recovery scripts<br>Packages |                         |
+|.eap    |      ✖  | Archives                     |                         |
+|.era    |      ✔  | Audio files                  |                         |
+|.edf    |      ✔  | Rich text documents          |                         |
+|.eds    |      ✔  | Rich text document style     |                         |
+|.ell    |      ✖  | Libraries                    | libload.ell is raw code |
+|.eln    |      ✔  | Shortcuts                    |                         |
+|.eep    |      ✔  | Executables                  |                         |
 
 ### EEEch Format
 
@@ -176,7 +178,7 @@ This is documenting stuff
 - EEEch uses single byte specs, there is no character longer than one.
 - EEEch has color symbols, and emojis, though those should not be used in docs.
 
-For further notes on eeech see the userdocs, specfics are omited here to avoid documentation variances.
+For further notes on EEEch see the user-docs, specifics are omitted here to avoid documentation variances.
 
 ## Text file extensions
 
@@ -189,15 +191,16 @@ For further notes on eeech see the userdocs, specfics are omited here to avoid d
 - A text format is considered "Builtin" if it is parsed by SandEEE itself rather than an `.eep` program
 - Docs shall specify if a file format is builtin
 - Grammar definitions shall be under a heading labeled `Grammar`
-    - Each grammar rule is started with a `:rule:` styled line
-    - This is followed by each value this rule can convert to
-    - The first rule should always be named the same as the file format, following rules are breadth first.
-    - The EOF keyword shall always represent the end of the file
-    - The ALPHA keyword in grammer refers to any EEEch lowercase or capital letter, this does not include the SandEEE e
-    - The NUMBER keyword in grammer refers to any number character 0-9
+  - Each grammar rule is started with a `:rule:` styled line
+  - This is followed by each value this rule can convert to
+  - The first rule should always be named the same as the file format, following rules are breadth first.
+  - The EOF keyword shall always represent the end of the file
+  - The ALPHA keyword in grammar refers to any EEEch lowercase or capital letter, this does not include the SandEEE e
+  - The NUMBER keyword in grammar refers to any number character 0-9
 
 Example:
-```md
+
+```edf
 #style @/docs/style.eds
 
 :center: -- Eon --
@@ -229,34 +232,34 @@ Example:
 - A binary format is considered "Builtin" if it is parsed by SandEEE itself rather than an `.eep` program
 - Everything has 4 char magic, capitalization will be inconsistent. Docs shall mention this first in the format definition, followed by format specs.
 - File extensions shall be listed in the same line as what the file does
-    - Format `File usecase (extensions)`
+  - Format `File usecase (extensions)`
 - Format shall **never** use int names, it shall always be a character width.
-    - Reasoning: SandEEE was made in a world where strings are fast, so they are more conventional.
+  - Reasoning: SandEEE was made in a world where strings are fast, so they are more conventional.
 - All docs shall be in .edf format
-- Everything after the magic shall be in a `Data` secion
+- Everything after the magic shall be in a `Data` section
 - Formats are ordered lists, syntax
 - Binary files shall be given a proper name, ex. for eia can be called "EEE Image Array"
 - Docs shall specify if a file format is builtin
-- Proper unitys for this is chars, label ch.
-    - Section repetitions are specified by starting a line with repeat.
-    - Expressions can exist, only if they are based off previous entries.
-    - Expressions can only use multiplication and addition.
+- Proper units for this is chars, label ch.
+  - Section repetitions are specified by starting a line with repeat.
+  - Expressions can exist, only if they are based off previous entries.
+  - Expressions can only use multiplication and addition.
 
 ### Classic constructs
 
-> Definition: Classic constructs are common things that will be represented alot, but not a single character.
+> Definition: Classic constructs are common things that will be represented a lot, but not a single character.
 
 - Colors
-    - Alpha is never the name of a channel in docs
-    - Red, Green, Blue, and *Transparent*
-    - 32 bpp, 8888RGBA
+  - Alpha is never the name of a channel in docs
+  - Red, Green, Blue, and *Transparent*
+  - 32 bpp, 8888RGBA
 - Strings
-    - 2 bytes for length followed by the value
-    - **NEVER** null terminated
-        - Reasoning: SandEEE was made in a world where strings take 8 bytes always, so null terminators were slower.
+  - 2 bytes for length followed by the value
+  - **NEVER** null terminated
+    - Reasoning: SandEEE was made in a world where strings take 8 bytes always, so null terminators were slower.
 - Numbers
-    - All ints shall be big->small, eg: 2 width = [1]\*256^1 + [2]\*256^0
-    - Widths are 1, 2, 4, 8. Nothing bigger.
+  - All integers shall be big->small, eg: 2 width = [1]\*256^1 + [2]\*256^0
+  - Widths are 1, 2, 4, 8. Nothing bigger.
 
 ### Example
 
@@ -282,12 +285,13 @@ Example:
 
 - Instruction 255 is documented outside of the docs site as it is a "backdoor instruction"
 - Documentation for each instruction shall include how it modifies the stack
-    - \- Popped +Pushed
+  - \- Popped +Pushed
 - Instruction documentation shall include every case of popped values, string or int
 - All potential edge cases shall be explicitly explained and tagged with the :edge: style
 - Examples are tagged with `:example:`
 
 Example
+
 ```edf
 #style @/docs/style.eds
 
@@ -315,14 +319,15 @@ Adds 2 numbers
 - Image file documentation shall be put inside a `images` group
 - Image file documentation shall be named identically to the image file
 - Image documentation shall contain a preview image directly after the page title
-    - The line adding preview image shall have 1 line of whitespace before and after it
-    - Use the style `:preview-image:` for the preview image
-    - This shall be stored next to the image file, with the same name
+  - The line adding preview image shall have 1 line of whitespace before and after it
+  - Use the style `:preview-image:` for the preview image
+  - This shall be stored next to the image file, with the same name
 - Following that there shall be a summary section defining how the image is used.
 - Following that there shall be a more descriptive area for per sprite documentation
-- Sprite areas are 1 indexed rectanges with the format `X,Y WxH` followed by ` | Description`
+- Sprite areas are 1 indexed rectangles with the format `X,Y WxH` followed by ` | Description`
 
 Example:
+
 ```edf
 #style @/docs/style.eds
 
@@ -367,32 +372,33 @@ The image used for ui assets.
 
 - Every shell command will return a properly named error on invalid input.
 - When a shell command fails
-    - If there are no args passed then display the help
-    - If args are passed print the error and some related info
-- Every shell command shall require atleast one argument
+  - If there are no args passed then display the help
+  - If args are passed print the error and some related info
+- Every shell command shall require at least one argument
 
 ### Help syntax
 
 - All commands shall have a help message
 - Help messages shall have a line showing full usage with all possible flags
-    - Flags are unordered, other than help with is the first thing following the command.
-    - Args can be before after or inbetween flags
+  - Flags are unordered, other than help with is the first thing following the command.
+  - Args can be before after or between flags
 - After that there shall be a empty line followed by a complete sentence description of the programs purpose, followed by another newline.
 - Finally, there shall be a list of every argument followed by a complete sentence usage.
 - Programs may also list bugs or quirks after the arguments with a blank line preceding them.
 - Parameter lists are formatted with a tab following the parameter ":parameter\tusage"
-    - The help paramters description is always "Displays this message"
+  - The help parameters description is always "Displays this message"
 - Required arguments and Optional arguments should have headings with the format `- Optional Arguments -` and `- Required Arguments -` respectively
 - Required arguments shall not include files unless no file means the program cannot run at all
-    - This means all editors can run without a file loaded
-    
-Example: 
+  - This means all editors can run without a file loaded
+
+Example:
+
 ```text
 edit [:help] [:new] [file]
 
 - Optional Arguments -
 :help      Displays this message.
-:new       Dont load the file, just make a new one.
+:new       Don't load the file, just make a new one.
 file       Specify which file to load
 
 Opens a file in EEEdit.
@@ -404,7 +410,7 @@ If no file is provided the editor will open without a file loaded.
 
 - All library docs shall be listed under categories labeled `libraries`, to keep things consistent that means no shortening to "libs".
 - Functions shall list names, eon call signature, and any errors they can raise.
-    - For errors, the library shall list each error and what caused that, in a complete sentence description.
+  - For errors, the library shall list each error and what caused that, in a complete sentence description.
 - Errors shall not include the name of the library, ex. No "TextureFileNotFound", use "FileNotFound".
 
 ## Styles
@@ -417,10 +423,11 @@ If no file is provided the editor will open without a file loaded.
 - Each style shall have no spacers between their name and definition.
 - Each style shall have no repeated definitions.
 - The default style shall not be modified.
-- Wrapper styles shall be named as :wrap-start:, and :wrap-end:, or :wrap-edge: if theyre the same.
-    - If the style is required per line, then also include :wrap:
+- Wrapper styles shall be named as :wrap-start:, and :wrap-end:, or :wrap-edge: if they're the same.
+  - If the style is required per line, then also include :wrap:
 
 Example:
+
 ```eds
 #logo
 align: Center
@@ -470,24 +477,25 @@ see [Style Rules](#style-rules)
 ### asm
 
 - Assembly can be commented on stack states on user facing code
-    - The top of the stack is the end of the line
+  - The top of the stack is the end of the line
 - Assembly files should be kept eon compatible where possible
 - loop labels shall start with `loop_`
 - procedural labels shall start with `proc_`
 - There are no labels named functions in EEE asm
 - Conditional labels shall start with `cond_`
-- Other labels dont have any prefix
+- Other labels don't have any prefix
 - Labels shall be in lowerCamelCase, minus their prefix. ex. `proc_doSomething:`
 - Since labels are free, exported procs are double labeled
 - Asm files shall have a footer of `; --- EEE Sees all ---`
 - All asm code files shall be annotated with a header comment
-    - first line is title, 2nd is EEE and then year (5 years before the current year), and then a blank comment line (`;`)
-    - Then any info in a header, bugs first then explanation, no examples in asm code though.
-        - Reason: Top level examples are repetitive, libraries will be documented per function, and executables in the help message.
+  - first line is title, 2nd is EEE and then year (5 years before the current year), and then a blank comment line (`;`)
+  - Then any info in a header, bugs first then explanation, no examples in asm code though.
+    - Reason: Top level examples are repetitive, libraries will be documented per function, and executables in the help message.
 - The main function shall be labeled even if its never called by asm.
 - The main function comes first, no call/jump
 
 Example:
+
 ```asm
 ; SandEEE example Code
 ; EEE 2020
@@ -522,8 +530,8 @@ proc_test2:
 
 - Eon programs shall always `#include "/libs/incl/consts.eon"`.
 - Eon programs shall `#include "/libs/incl/sys.eon"` if they need to call syscalls
-- All functions shall have a documentation coment preceding them
-    - For main this is ignored
+- All functions shall have a documentation comment preceding them
+  - For main this is ignored
 - The main function shall be at the end of a file
 - When calling a lib function the `"function"()` syntax shall never be used.
 - Assembly functions shall be commented after their signature line, and not use `return x;`, rather use the `asm "ret";`
@@ -532,9 +540,9 @@ proc_test2:
 - All branches outside of assembly functions shall end with either a `return`, or a `error()`
 - There shall be no trailing code after a `return` or `error()`
 - All eon code files shall be annotated with a header comment
-    - first line is title, 2nd is EEE and then year (5 years before the current year), and then a blank comment line (`//`)
-    - Then any info in a header, bugs first then explanation, no examples in eon code though.
-        - Reason: Top level examples are repetitive, libraries will be documented per function, and executables in the help message.
+  - first line is title, 2nd is EEE and then year (5 years before the current year), and then a blank comment line (`//`)
+  - Then any info in a header, bugs first then explanation, no examples in eon code though.
+    - Reason: Top level examples are repetitive, libraries will be documented per function, and executables in the help message.
 - There shall be a single line of whitespace after the header comment
 - There shall be a single line of space after includes (if used)
 - There shall be a single line of space after imports (if used)
@@ -547,6 +555,7 @@ proc_test2:
 - Eon files shall have a footer of `// --- EEE Sees all ---`
 
 Example:
+
 ```eon
 // SandEEE Example code
 // EEE 2020
@@ -578,13 +587,13 @@ fn main() {
 
 ## Errors
 
-> Definition: Errors are considered unrecoverable, and critical. Anywhere in this document where the word error is used its refering to the associated syscall.
+> Definition: Errors are considered unrecoverable, and critical. Anywhere in this document where the word error is used its referring to the associated syscall.
 > If something else happens, say a recoverable error like an invalid input this shall be handled by code rather than in the asm.
 
 ### Conventions
 
 - All memory errors are all named `AllocatorFault`.
-    - Reason: the few cases that cause these are super rare, out of memory, double free, etc. that they can be grouped on user end.
+  - Reason: the few cases that cause these are super rare, out of memory, double free, etc. that they can be grouped on user end.
 - Todo errors are named `Unimplemented`
 - Errors can give more information after their name with a ` - ` as separation (including the spaces).
 - Stream errors shall be caught and handled, with a valid reason & file printed to the user.
@@ -601,10 +610,11 @@ fn main() {
   - This is lowercase
 - Finally there is a hashtag(`#`) followed by the current public build, and a underscore(`_`) for the build number
 - On a major increment seed->sapling the number resets
-- Bug fixes shall not increment the version, but they shall incrmement the build
+- Bug fixes shall not increment the version, but they shall increment the build
 - Build numbers never reset, but are up to the program to document what it means and how its increment
 
 Examples:
+
 ```text
 os:seed#3_542     -> Development build 542 of third public seed build
 os:sapling#0_1034 -> First sapling release (reset)
@@ -612,14 +622,15 @@ os:tree#0_30545   -> Initial stable release
 ```
 
 ### Programs internal ids
-|Program|name|
-|---|---|
-|SandEEE OS|os|
-|EEEdt|text|
-|EEEmail|mail|
-|Explorer|web|
-|BootEEE|boot|
-|RecoverEEE|health|
+
+|Program     |name   |
+|------------|-------|
+|SandEEE OS  |os     |
+|EEEdt       |text   |
+|EEEmail     |mail   |
+|Explorer    |web    |
+|BootEEE     |boot   |
+|RecoverEEE  |health |
 |EEEInstaller|install|
 
 ## Final Notes

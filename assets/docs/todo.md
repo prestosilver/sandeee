@@ -1,4 +1,5 @@
 # SandEEE task list
+
 ## Known Bugs
 
 - [X] Editor selection color wrong
@@ -11,7 +12,7 @@
 
 ## Minor non bug fixes
 
-- [ ] Control the dithering, and crt of the shader seperately
+- [ ] Control the dithering, and crt of the shader separately
 - [X] Error when web content type is not either "application/octet-stream" or "text/eeedocument"
 - [ ] Add actual pickers to settings ui
 - [X] Unify double click
@@ -19,9 +20,9 @@
 - [X] Switch to proper versioning everywhere
 - [X] Fix random mem leak on tests
 - [ ] Back button should look disabled when disabled
-- [ ] Seperate builds for demo and debug bc different appids
-- [ ] Dont copy _*_meta files on disk install
-- [ ] SandEEE install should be configurable somehow, cli flag problaby.
+- [ ] Separate builds for demo and debug bc different appids
+- [ ] Don't copy _*_meta files on disk install
+- [ ] SandEEE install should be configurable somehow, cli flag probably.
 
 ## General tentative todo
 

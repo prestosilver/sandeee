@@ -1,5 +1,25 @@
 {
     "markdown.marp.themes": [
         "assets/theme.css"
+    ],
+    "cSpell.words": [
+      "appids",
+      "Aseprite",
+      "biglink",
+      "devlog",
+      "eeedocument",
+      "eimg",
+      "fdsa",
+      "imgs",
+      "libload",
+      "prestosilver",
+      "procs",
+      "RGBA",
+      "Steamtool",
+      "Steamworks",
+      "subdirs",
+      "syscall",
+      "Syscalls",
+      "usecase"
     ]
 }

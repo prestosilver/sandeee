@@ -19,25 +19,25 @@
 |&emsp;&emsp;&emsp;[window.asm](../../content/asm/libs/window.asm)|Basic window utilities|
 |&emsp;&emsp;[tests/](../../content/asm/tests/)|Tests written in EEE Assembly|
 |&emsp;[audio/](../../content/audio)|All audio files|
-|&emsp;&emsp;[bg.wav](../../content/audio/bg.wav)|Some background noise<br/> ment to sound like a pc fan|
+|&emsp;&emsp;[bg.wav](../../content/audio/bg.wav)|Some background noise<br/> meant to sound like a pc fan|
 |&emsp;&emsp;[bios-blip.wav](../../content/audio/bios-blip.wav)|Played when a option is hovered in BootEEE|
 |&emsp;&emsp;[bios-select.wav](../../content/audio/bios-select.wav)|Played when a option is selected in BootEEE|
 |&emsp;&emsp;[fart.wav](../../content/audio/fart.wav)|A sound used for testing short multi second sfx|
 |&emsp;&emsp;[login.wav](../../content/audio/login.wav)|Played when the user logs in|
 |&emsp;&emsp;[logout.wav](../../content/audio/logout.wav)|Played when the user logs out|
-|&emsp;&emsp;[message.wav](../../content/audio/message.wav)|Played when the user recieves an email[^1]|
+|&emsp;&emsp;[message.wav](../../content/audio/message.wav)|Played when the user receives an email[^1]|
 |&emsp;[data/](../../content/data)|Raw text files that contain some sort of data|
 |&emsp;&emsp;[app.rc](../../content/data/app.rc)|Windows app.rc|
 |&emsp;&emsp;[os_versions.csv](../../content/data/os_versions.csv)|A conversion table from the old semver versions to EEEversions|
-|&emsp;[elns/](../../content/elns)|Eln files for epk downloads<br/>seperate because this is raw text|
-|&emsp;&emsp;[Connectris.eln](../../content/elns/Connectris.eln)|The eln for the connectris app|
+|&emsp;[elns/](../../content/elns)|Eln files for epk downloads<br/>separate because this is raw text|
+|&emsp;&emsp;[Connectris.eln](../../content/elns/Connectris.eln)|The eln for the connects app|
 |&emsp;&emsp;[Paint.eln](../../content/elns/Paint.eln)|The eln for the paint app|
 |&emsp;&emsp;[Pong.eln](../../content/elns/Pong.eln)|The eln for the pong app|
 |&emsp;[eon/](../../content/eon)|All EEE Eon programs|
 |&emsp;&emsp;[exec/](../../content/eon/exec)|Executables written in EEE Eon|
 |&emsp;&emsp;&emsp;[alib.eon](../../content/eon/exec/alib.eon)|An assembler for .ell files|
 |&emsp;&emsp;&emsp;[asm.eon](../../content/eon/exec/asm.eon)|An assembler for .eep files|
-|&emsp;&emsp;&emsp;[connectris.eon](../../content/eon/exec/connectris.eon)|The connectris app|
+|&emsp;&emsp;&emsp;[connectris.eon](../../content/eon/exec/connectris.eon)|The connects app|
 |&emsp;&emsp;&emsp;[elib.eon](../../content/eon/exec/elib.eon)|The Eon .ell compiler|
 |&emsp;&emsp;&emsp;[eon.eon](../../content/eon/exec/eon.eon)|The Eon .eep compiler|
 |&emsp;&emsp;&emsp;[epkman.eon](../../content/eon/exec/epkman.eon)|The .epk file installer|
@@ -53,10 +53,10 @@
 |&emsp;&emsp;&emsp;&emsp;[libload.eon](../../content/eon/libs/incl/libload.eon)|Used by programs to load the .ell file loader|
 |&emsp;&emsp;&emsp;&emsp;[sys.eon](../../content/eon/libs/incl/sys.eon)|A wrapper for syscalls|
 |&emsp;[images/](../../content/images)|Image assets in normal formats|
-|&emsp;&emsp;[ase/](../../content/images/ase)|The asperite project files for sandeee images|
-|&emsp;&emsp;[icon.ico](../../content/images/icon.ico)|The sandeee app icon for windows[^2]|
-|&emsp;&emsp;*.png|Png image assets in sandeee[^2]|
-|&emsp;[mail/](../../content/mail)|Email rawtext[^1]|
+|&emsp;&emsp;[ase/](../../content/images/ase)|The Aseprite project files for SandEEE images|
+|&emsp;&emsp;[icon.ico](../../content/images/icon.ico)|The SandEEE app icon for windows[^2]|
+|&emsp;&emsp;*.png|Png image assets in SandEEE[^2]|
+|&emsp;[mail/](../../content/mail)|Email raw text[^1]|
 |&emsp;[overlays/](../../content/overlays/)|Disk image overlays for special builds|
 
 [^1]: Asset will be scrapped, however is cannon hence is being kept
