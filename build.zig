@@ -1031,13 +1031,13 @@ pub fn build(b: *std.Build) !void {
         
         const steam_desc_file = disk_meta_step.add("steam_vdf", b.fmt(
             \\"AppBuild"
-            \\{
+            \\{{
             \\    "Desc" "{s}"
-            \\}
+            \\}}
             , .{steam_desc_raw}
         ));
+
         const install_desc_vdf_step = b.addInstallFileWithDir(steam_desc_file, steam_pub_path, "desc.vdf");
-        
         const install_recovery_step = b.addInstallFileWithDir(steam_install_disk_image_path, steam_pub_path, "content/recovery.eee");
         const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery_demo.eee");
 
