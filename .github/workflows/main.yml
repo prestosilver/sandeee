@@ -27,10 +27,10 @@ jobs:
         with:
           zig-version: 0.15.2
       - name: Install glfw
-        run: |
-          sudo apt update
-          sudo apt install libglfw3 libglfw3-dev
-
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
       - name: Run tests
         run: |
           zig build test
@@ -64,9 +64,10 @@ jobs:
         with:
           zig-version: 0.15.2
       - name: Install glfw
-        run: |
-          sudo apt update
-          sudo apt install libglfw3 libglfw3-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
 
       - name: Run tests
         run: |
@@ -108,14 +109,16 @@ jobs:
         with:
           zig-version: 0.15.2
       - name: Install glfw
-        run: |
-          sudo apt update
-          sudo apt install libglfw3 libglfw3-dev 
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
       - name: Install mingw
-        run: |
-          sudo apt update
-          sudo apt install gcc-mingw-w64
-          
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: gcc-mingw-w64
+          version: mingw
+
       - name: Uploads to steam
         run: |
           zig build upload_steam
@@ -146,9 +149,10 @@ jobs:
         with:
           zig-version: 0.15.2
       - name: Install glfw
-        run: |
-          sudo apt update
-          sudo apt install libglfw3 libglfw3-dev
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
       - name: Generate changelog
         run: |
           zig build changelog
