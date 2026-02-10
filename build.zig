@@ -1030,23 +1030,23 @@ pub fn build(b: *std.Build) !void {
         const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
         
         const steam_desc_game_file = disk_meta_step.add("steam_game.vdf", b.fmt(
-            \\{s}
             \\"AppBuild"
             \\{{
             \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            , .{@embedFile("steam/upload_4124360.vdf"), steam_desc_raw}
+            \\{s}
+            , .{ steam_desc_raw, @embedFile("steam/upload_4124360.vdf") }
         ));        
 
         const steam_desc_demo_file = disk_meta_step.add("steam_game.vdf", b.fmt(
-            \\{s}
             \\"AppBuild"
             \\{{
             \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            , .{@embedFile("steam/upload_4124370.vdf"), steam_desc_raw}
+            \\{s}
+            , .{ steam_desc_raw, @embedFile("steam/upload_4124370.vdf") }
         ));
 
         const install_desc_game_vdf_step = b.addInstallFileWithDir(steam_desc_game_file, steam_pub_path, "upload_4124360.vdf");
