@@ -1036,7 +1036,7 @@ pub fn build(b: *std.Build) !void {
             \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            , .{ steam_vdf_game_conts[0..steam_desc_game_semi_idx], steam_desc_raw }
+            , .{ steam_vdf_game_conts[0..steam_vdf_game_semi_idx], steam_desc_raw }
         ));        
 
         const steam_vdf_demo_conts = @embedFile("steam/upload_4124370.vdf");
