@@ -645,6 +645,12 @@ pub fn build(b: *std.Build) !void {
 
     addOverlay(b, &.{steam_image_step}, overlays_path.path(b, "steam"));
 
+    const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s'" }), &std.ascii.whitespace);
+    const steam_desc = if (std.ascii.startsWithIgnoreCase(steam_desc_raw, "meta"))
+        std.mem.trim(u8, steam_desc_raw[4..], &std.ascii.whitespace)
+    else
+        steam_desc_raw;
+
     var disk_meta_step = b.addWriteFiles();
 
     {
@@ -1021,12 +1027,22 @@ pub fn build(b: *std.Build) !void {
     // public builds step
     const pub_step = b.step("pub", "Build all public builds");
     {
+        const steam_desc_file = disk_meta_step.add("steam_vdf", b.fmt(
+            \\"AppBuild"
+            \\{
+            \\    "Desc" "{s}"
+            \\}
+            , .{steam_desc_raw}
+        ));
+        const install_desc_vdf_step = b.addInstallFileWithDir(steam_desc_file, steam_pub_path, "desc.vdf");
+        
         const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
         const install_recovery_step = b.addInstallFileWithDir(steam_install_disk_image_path, steam_pub_path, "content/recovery.eee");
         const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery_demo.eee");
 
         pub_step.dependOn(&install_recovery_step.step);
         pub_step.dependOn(&install_demo_recovery_step.step);
+        pub_step.dependOn(&install_desc_vdf_step.step);
 
         const public_options = b.addOptions();
         public_options.addOption(Version, "SANDEEE_VERSION", version);
@@ -1261,12 +1277,6 @@ pub fn build(b: *std.Build) !void {
     // upload step
     const upload_step = b.step("upload", "Uploads a build to all platforms");
     const upload_steam_step = b.step("upload_steam", "Uploads a build to steam");
-
-    const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s'" }), &std.ascii.whitespace);
-    const steam_desc = if (std.ascii.startsWithIgnoreCase(steam_desc_raw, "meta"))
-        std.mem.trim(u8, steam_desc_raw[4..], &std.ascii.whitespace)
-    else
-        steam_desc_raw;
 
     const steamcmd_step = b.addSystemCommand(&.{ "steamcmd", "+login", "preston3410", "+run_app_build", "-desc", steam_desc });
     steamcmd_step.addFileInput(b.path("steam/upload_4124360.vdf"));

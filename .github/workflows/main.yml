@@ -101,9 +101,6 @@ jobs:
             zig-build-steam-
             zig-build-
             zig-
-      - name: Steamworks login
-        run: |
-          steamcmd +login preston3410 ${{ secrets.STEAM_PASSWORD }} +quit
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
@@ -119,9 +116,21 @@ jobs:
           packages: gcc-mingw-w64
           version: mingw
 
-      - name: Uploads to steam
+      - name: Build game
         run: |
-          zig build upload_steam
+          zig build pub
+      - name: Upload to steam (release)
+        uses: RageAgainstThePixel/upload-steam@v1
+        with:
+            username: preston3410
+            password: ${{ secrets.STEAM_PASSWORD }}
+            app_build: steam/upload_4124360.vdf
+      - name: Upload to steam (demo)
+        uses: RageAgainstThePixel/upload-steam@v1
+        with:
+            username: preston3410
+            password: ${{ secrets.STEAM_PASSWORD }}
+            app_build: steam/upload_4124370.vdf
   gen-changelog:
     runs-on: ubuntu-latest
     name: Generate changelog
