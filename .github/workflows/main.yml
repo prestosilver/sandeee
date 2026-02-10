@@ -111,12 +111,8 @@ jobs:
           packages: libglfw3 libglfw3-dev
           version: glfw
       - name: Install mingw
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: gcc-mingw-w64 binutils-mingw-w64
-          version: mingw
-          execute_install_scripts: true
-
+        run: sudo apt-get install gcc-mingw-w64 binutils-mingw-w64-x86-64
+        shell: bash
       - name: Build game
         run: |
           zig build pub
