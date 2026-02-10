@@ -115,6 +115,7 @@ jobs:
         with:
           packages: gcc-mingw-w64 mingw-w64
           version: mingw
+          execute_install_scripts: true
 
       - name: Build game
         run: |
