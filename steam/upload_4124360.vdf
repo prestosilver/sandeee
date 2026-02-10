@@ -1,4 +1,4 @@
-#base "../zig-out/pub/steam/desc.vdf"
+#include "../zig-out/pub/steam/desc.vdf"
 
 "AppBuild"
 {
