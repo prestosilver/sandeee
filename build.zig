@@ -1027,6 +1027,8 @@ pub fn build(b: *std.Build) !void {
     // public builds step
     const pub_step = b.step("pub", "Build all public builds");
     {
+        const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
+        
         const steam_desc_file = disk_meta_step.add("steam_vdf", b.fmt(
             \\"AppBuild"
             \\{
@@ -1036,7 +1038,6 @@ pub fn build(b: *std.Build) !void {
         ));
         const install_desc_vdf_step = b.addInstallFileWithDir(steam_desc_file, steam_pub_path, "desc.vdf");
         
-        const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
         const install_recovery_step = b.addInstallFileWithDir(steam_install_disk_image_path, steam_pub_path, "content/recovery.eee");
         const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery_demo.eee");
 
