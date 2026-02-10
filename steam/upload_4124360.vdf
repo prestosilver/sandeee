@@ -1,8 +1,9 @@
 "AppBuild"
 {
-	"AppID" "4124360" // your AppID
-	"BuildOutput" "./SteamLog" // build output folder for build logs and build cache files
-    "SetLive" "alpha" // set this build live on a beta branch
+	"AppID" "4124360" // Base game id
+	
+	"BuildOutput" "./UploadGameLog"
+    "SetLive" "alpha"
 
 	"Depots"
 	{
@@ -10,32 +11,32 @@
 		{
 			"FileMapping"
 			{
-				"LocalPath" "./content/*" // all files from contentroot folder
-				"DepotPath" "./content" // mapped into the root of the depot
-				"recursive" "1" // include all subfolders
+				"LocalPath" "./content/*"
+				"DepotPath" "./content"
+				"recursive" "1"
 			}
 		}
-		"4124363" // Content depot
+		"4124363" // Linux depot
 		{
 			"FileMapping"
 			{
-				"LocalPath" "./linux/*" // all files from contentroot folder
-				"DepotPath" "./" // mapped into the root of the depot
-				"recursive" "1" // include all subfolders
+				"LocalPath" "./linux/*"
+				"DepotPath" "./"
+				"recursive" "1"
 			}
 		}
-		"4124364" // Content depot
+		"4124364" // Windows depot
 		{
 			"FileMapping"
 			{
-				"LocalPath" "./windows/*" // all files from contentroot folder
-				"DepotPath" "./" // mapped into the root of the depot
-				"recursive" "1" // include all subfolders
+				"LocalPath" "./windows/*"
+				"DepotPath" "./"
+				"recursive" "1"
 			}
 		}
 	}
 	
 	// END TEMPLATE
+	"ContentRoot" "../zig-out/pub/steam/"
     "Desc" "Auto Upload"
-	"ContentRoot" "../zig-out/pub/steam/" // root content folder, relative to location of this file
 }

@@ -645,7 +645,7 @@ pub fn build(b: *std.Build) !void {
 
     addOverlay(b, &.{steam_image_step}, overlays_path.path(b, "steam"));
 
-    const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s'" }), &std.ascii.whitespace);
+    const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s" }), &std.ascii.whitespace);
     const steam_desc = if (std.ascii.startsWithIgnoreCase(steam_desc_raw, "meta"))
         std.mem.trim(u8, steam_desc_raw[4..], &std.ascii.whitespace)
     else
@@ -1036,8 +1036,8 @@ pub fn build(b: *std.Build) !void {
             \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            , .{ steam_vdf_game_conts[0..steam_vdf_game_semi_idx], steam_desc_raw }
-        ));        
+            , .{ steam_vdf_game_conts[0..steam_vdf_game_semi_idx], steam_desc }
+        ));
 
         const steam_vdf_demo_conts = @embedFile("steam/upload_4124370.vdf");
         const steam_vdf_demo_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_demo_conts, "// END TEMPLATE") orelse steam_vdf_demo_conts.len;
@@ -1046,7 +1046,7 @@ pub fn build(b: *std.Build) !void {
             \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            , .{ steam_vdf_demo_conts[0..steam_vdf_demo_semi_idx], steam_desc_raw }
+            , .{ steam_vdf_demo_conts[0..steam_vdf_demo_semi_idx], steam_desc }
         ));
 
         const install_desc_game_vdf_step = b.addInstallFileWithDir(steam_desc_game_file, steam_pub_path, "upload_4124360.vdf");

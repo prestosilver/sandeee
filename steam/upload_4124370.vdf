@@ -1,9 +1,9 @@
 "AppBuild"
 {
-	"AppID" "4124370" // your AppID
+	"AppID" "4124370" // Demo id
 
-	"BuildOutput" "./SteamLog" // build output folder for build logs and build cache files
-    "SetLive" "alpha" // set this build live on a beta branch
+	"BuildOutput" "./UploadDemoLog"
+    "SetLive" "alpha"
 
 	"Depots"
 	{
@@ -11,14 +11,14 @@
 		{
 			"FileMapping"
 			{
-				"LocalPath" "./content_demo/*" // all files from contentroot folder
-				"DepotPath" "./content_demo" // mapped into the root of the depot
-				"recursive" "1" // include all subfolders
+				"LocalPath" "./content_demo/*"
+				"DepotPath" "./content_demo"
+				"recursive" "1"
 			}
 		}
 	}
 
 	// END TEMPLATE
+	"ContentRoot" "../zig-out/pub/steam/"
     "Desc" "Auto Upload"
-	"ContentRoot" "../zig-out/pub/steam/" // root content folder, relative to location of this file
 }
