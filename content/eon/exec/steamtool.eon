@@ -7,7 +7,7 @@ fn runSteam(data) {
 }
 
 fn main() {
-    var cmd = getArg(1);
+    var cmd = getArgument(1);
     if (cmd == "create") {
         var item = runSteam("");
         var workshop_id = numString(item);
@@ -19,13 +19,13 @@ fn main() {
 
         return 0;
     } else if (cmd == "metadata") {
-        var meta_item = getArg(2);
-        var meta_entry = getArg(3);
+        var meta_item = getArgument(2);
+        var meta_entry = getArgument(3);
 
         var i = 4;
         var value = "";
 
-        var arg = getArg(i);
+        var arg = getArgument(i);
 
         while (arg != "") {
             if (value != 0)
@@ -33,7 +33,7 @@ fn main() {
             value &= arg;
 
             i += 1;
-            arg = getArg(i);
+            arg = getArgument(i);
         }
 
         var meta_result = runSteam("m" & meta_item & ":" & meta_entry & ":" & value);
@@ -43,8 +43,8 @@ fn main() {
 
         return meta_result;
     } else if (cmd == "upload") {
-        var upload_item = getArg(2);
-        var upload_path = getArg(3);
+        var upload_item = getArgument(2);
+        var upload_path = getArgument(3);
 
         var upload_result = runSteam("f" & upload_item & ":" & upload_path);
         
@@ -53,8 +53,8 @@ fn main() {
 
         return upload_result;
     } else if (cmd == "download") {
-        var download_item = getArg(2);
-        var download_path = getArg(3);
+        var download_item = getArgument(2);
+        var download_path = getArgument(3);
 
         var download_result = runSteam("d" & download_item & ":" & download_path);
         

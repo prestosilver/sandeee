@@ -7,7 +7,7 @@ var file_name;
 var last_button;
 
 fn processArgs() {
-    var file = getArg(1);
+    var file = getArgument(1);
 
     return file;
 }

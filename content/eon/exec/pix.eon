@@ -4,7 +4,7 @@
 var tex; 
 
 fn processArgs() {
-    var file = getArg(1);
+    var file = getArgument(1);
 
     if (file == 0) {
        error("Missing File");

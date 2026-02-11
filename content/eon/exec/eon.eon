@@ -5,11 +5,11 @@ fn main() {
     setupLibLoad();
     loadLib("/libs/eon.ell");
 
-    var file_name = getArg(1);
+    var file_name = getArgument(1);
     var output_name = "out.eep";
 
-    if (getArg(2) != "") {
-        outName = getArg(2);
+    if (getArgument(2) != "") {
+        outName = getArgument(2);
     }
 
     _eonFile(file_name, output_name, 0);

@@ -162,26 +162,26 @@ fn main() {
     loadLib("/libs/window.ell");
     loadLib("/libs/texture.ell");
 
-    var op = getArg(1);
+    var op = getArgument(1);
 
     if (op == "pack") {
-        var out = getArg(2);
-        var epk = epkStart(getArg(3));
+        var out = getArgument(2);
+        var epk = epkStart(getArgument(3));
 
         var i;
-        var arg = getArg(4);
+        var arg = getArgument(4);
         for (i = 4; arg != ""; 0) {
             print("add " & arg & "\n");
             epkAdd(epk, arg);
             i += 1;
-            arg = getArg(i);
+            arg = getArgument(i);
         }
 
         var outFile = createOpen(out);
         write(outFile, epk);
         close(outFile);
     } else if (op == "unpack") {
-        var out = getArg(2);
+        var out = getArgument(2);
 
         unpack(out);
     }
