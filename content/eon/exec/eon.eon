@@ -9,7 +9,7 @@ fn main() {
     var output_name = "out.eep";
 
     if (getArgument(2) != "") {
-        outName = getArgument(2);
+        output_name = getArgument(2);
     }
 
     _eonFile(file_name, output_name, 0);
