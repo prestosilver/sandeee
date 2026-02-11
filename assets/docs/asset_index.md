@@ -1,5 +1,7 @@
-# Listing of various sandeee assets
+# Listing of various SandEEE assets
+
 ## Disk images
+
 |File|Desc|
 |----|----|
 |[capy.eee](../disks/capy.eee)|A test image with every asset replaced with a capybara image|
@@ -7,28 +9,33 @@
 |[player.eee](../disks/player.eee)|Used to make the audiophile page|
 
 ## Documents
+
 |File|Desc|
 |----|----|
-|[asset_listing.md](../docs/asset_index.md)|This list|
-|[content_listing.md](../docs/content_index.md)|A list of all content in /content|
+|[asset_index.md](../docs/asset_index.md)|This list|
+|[content_index.md](../docs/content_index.md)|A list of all content in /content|
 |[lore.md](../docs/lore.md)|A writeup of SandEEE's lore|
 |[meta.md](../docs/meta.md)|Documentation on how SandEEE will be documented|
 |[opt_ideas.md](../docs/opt_ideas.md)|Sone random ideas for optimization in the future|
+|[software_list.md](../docs/software_list.md)|A list of all EEE programs|
 |[todo.md](../docs/todo.md)|A rolling todo list of repo wide todos|
 |[trailer_devlog.md](../docs/trailer_devlog.md)|A draft for a devlog about the trailer|
 
 ## Presentations
+
 |File|Desc|
 |----|----|
 |[docs_pres.md](../assets/presentations/docs_pres.md)|A presentation on meta-docs|
 
 ## Images
+
 |File|Desc|
 |----|----|
 |![prestosilver.png](../images/prestosilver.png)|The first image made in SandEEEs paint app, was edited later.|
 |![image.bmp](../images/image.bmp)|A image used as borders for presentations|
 
 ## Steam assets
+
 |File|Desc|
 |----|----|
 |![600x900.png](../steam/library/600x900.png)|A vertical capsule used for the steam library|
@@ -49,6 +56,7 @@
 |![bg-1232x706_crt_store.png](../steam/store/bg-920x430_crt_store.png)|A background image possibly used for some steam stuff, with the logo for steam|
 
 ## Videos
+
 |File|Desc|
 |----|----|
 |![magic_sub.mp4](../videos/magic_sub.mp4)|A video used to submit SandEEE to the rit magic program (I didn't get in obviously).|

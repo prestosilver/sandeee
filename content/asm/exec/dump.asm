@@ -6,12 +6,12 @@ main:
     sys 3                       ; open file
 
 loop:
-    copy 0                      ; duplacte file handle
+    copy 0                      ; duplicate file handle
     push 1000000                ; read size
     sys 4                       ; read
     copy 0                      ; duplicate read
     sys 0                       ; print
-    jnz loop                    ; reloop
+    jnz loop                    ; re-loop
     sys 1
 
 error:

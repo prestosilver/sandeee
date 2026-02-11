@@ -13,7 +13,7 @@ An EON function should always return a value.
 You can give a function parameters by putting names in a comma separated list inside the functions parenthesis.
 
 :code-edge:
-:code:    | fn paramters(a, b, c) {
+:code:    | fn parameters(a, b, c) {
 :code:    |     return a + b * c;
 :code:    | }
 :code-edge:
@@ -53,7 +53,7 @@ If you feed a variable into a function and assign to it in the function it will 
 :code:    | }
 :code-edge:
 
-You can avoid this behaviour with the dup function.
+You can avoid this behavior with the dup function.
 
 :code-edge:
 :code:    | fn setValue(val) {
@@ -146,7 +146,7 @@ ELL Libraries can be loaded through the libload.eon header library.
 
 -- 5 Advanced Features --
 
-EON functions can be called with too many parameters. These paramterers will be ignored by the function, this will result in an error unless you use the arguments with asm.
+EON functions can be called with too many parameters. These parameters will be ignored by the function, this will result in an error unless you use the arguments with asm.
 
 Say you have the function:
 

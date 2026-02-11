@@ -553,6 +553,8 @@ proc_test2:
 - Consts can be separated by at most one line of space.
 - Eon files shall be indented by 4 spaces.
 - Eon files shall have a footer of `// --- EEE Sees all ---`
+- All function names shall be in camelCase
+- All variables shall be in snake_case
 
 Example:
 

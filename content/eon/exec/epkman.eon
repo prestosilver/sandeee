@@ -14,10 +14,10 @@ fn toShort(val) {
 }
 
 fn readShort(file) {
-    var res = @read(file, 1);
-    var smal = @read(file, 1);
+    var upper = @read(file, 1);
+    var lower = @read(file, 1);
 
-    return (res * 256) + smal;
+    return (upper * 256) + lower;
 }
 
 fn fileSizeS(file) {
@@ -51,7 +51,7 @@ fn epkAdd(epk, file) {
     return 0;
 }
 
-fn getclick() {
+fn getClick() {
     asm "push \"/fake/inp/mouse\"";
     asm "sys 3";
     asm "copy 0";
@@ -64,7 +64,7 @@ fn getclick() {
 }
 
 fn processClick(good) {
-    var clickData = getclick();
+    var clickData = getClick();
     
     if (@clickData == 255) {
         return 0;
@@ -127,31 +127,31 @@ fn unpack(file) {
     }
 
     var done = 0;
-    var fileh = open(file);
-    var outh = 0;
+    var fileHandle = open(file);
+    var outputHandle = 0;
     var nameSize = 0;
     var name = "";
     var contSize = 0;
     var cont = "";
 
-    if (read(fileh, 4) != "epak") {
+    if (read(fileHandle, 4) != "epak") {
         error("Invalid File");
     }
 
-    nameSize = readShort(fileh);
+    nameSize = readShort(fileHandle);
 
     while (nameSize != 0) {
-        name = read(fileh, nameSize);
-        contSize = readShort(fileh);
-        cont = read(fileh, contSize);
+        name = read(fileHandle, nameSize);
+        contSize = readShort(fileHandle);
+        cont = read(fileHandle, contSize);
 
         print(name & "\n");
 
-        outh = createOpen(name);
-        write(outh, cont);
-        close(outh);
+        outputHandle = createOpen(name);
+        write(outputHandle, cont);
+        close(outputHandle);
 
-        nameSize = readShort(fileh);
+        nameSize = readShort(fileHandle);
     }
 
     return 0;

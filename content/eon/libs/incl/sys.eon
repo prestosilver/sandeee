@@ -1,5 +1,5 @@
 // gets the nth argument
-fn getArg() { // arguments: n
+fn getArgument() { // arguments: n
     asm "sys 8";
     asm "ret";
 }
@@ -88,14 +88,14 @@ fn prealloc() {
     asm "ret";
 }
 
-fn rand(max) {
+fn random(max) {
     var i = 0;
     asm "disc 0";
     asm "rand";
     return i % max;
 }
 
-fn readStr(prompt) {
+fn readString(prompt) {
     var file = 0;
     var done = 0;
     var result = "";
@@ -125,7 +125,7 @@ fn readStr(prompt) {
     return result;
 }
 
-fn readInt() {
+fn readNumber() {
     var file = 0;
     var done = 0;
     var result = 0;
@@ -158,7 +158,7 @@ fn readInt() {
     return result;
 }
 
-fn numString(num) {
+fn stringIsNumber(num) {
     if (num == 0) {
         return "0";
     }

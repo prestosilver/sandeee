@@ -5,7 +5,7 @@ main:
     jz error                    ; jump if zero
     sys 3                       ; open file
 
-    copy 0                      ; duplacte file handle
+    copy 0                      ; duplicate file handle
     push 1000000                ; read size
     sys 4                       ; read
     push 4

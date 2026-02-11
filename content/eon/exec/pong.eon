@@ -1,15 +1,15 @@
 #include "/libs/incl/libload.eon"
 #include "/libs/incl/sys.eon"
 
-var scorea;
-var scoreb;
-var ax;
-var bx;
-var ballx;
-var bally;
+var score_a;
+var score_b;
+var a_x;
+var b_x;
+var ball_x;
+var ball_y;
 
-var predictiondx;
-var predictionsince;
+var prediction_dx;
+var prediction_since;
 
 fn render(win, tex, vx, vy) {
     var source = "";
@@ -18,21 +18,21 @@ fn render(win, tex, vx, vy) {
     _WindowClear(win);
 
     source = _MakeRect(256, 0, 256, 1024);
-    dest = _MakeRect($ballx, $bally, 10, 10);
+    dest = _MakeRect($ball_x, $ball_y, 10, 10);
 
     _WindowRender(win, tex, dest, source);
 
     source = _MakeRect(256, 0, 256, 1024);
-    dest = _MakeRect(10, $ax, 20, 100);
+    dest = _MakeRect(10, $a_x, 20, 100);
 
     _WindowRender(win, tex, dest, source);
 
     source = _MakeRect(256, 0, 256, 1024);
-    dest = _MakeRect(370, $bx, 20, 100);
+    dest = _MakeRect(370, $b_x, 20, 100);
 
     _WindowRender(win, tex, dest, source);
 
-    var text = @(48 + $scoreb) & " - " & @(48 + $scorea);
+    var text = @(48 + $score_b) & " - " & @(48 + $score_a);
 
     _WindowText(win, 150, 10, text);
        
@@ -41,7 +41,7 @@ fn render(win, tex, vx, vy) {
     return 0;
 }
 
-fn getkey() {
+fn getKey() {
     asm "push \"/fake/inp/win\"";
     asm "sys 3";
     asm "copy 0";
@@ -54,38 +54,38 @@ fn getkey() {
 }
 
 fn aiProcess(vx, vy, dt) {
-    var dx = $predictiondx;
+    var dx = $prediction_dx;
 
-    var yTmp = $bally;
-    if (yTmp > 50) {
-        yTmp -= 50;
+    var start_y = $ball_y;
+    if (start_y > 50) {
+        start_y -= 50;
     }
 
     if (dx == 0) {
-        if ($bx > yTmp) {
-            if ($bx > 9) bx := $bx - 10;
+        if ($b_x > start_y) {
+            if ($b_x > 9) b_x := $b_x - 10;
         } else {
-            predictiondx := 10;
+            prediction_dx := 10;
         }
     } else if (dx == 20) {
-        if ($bx < yTmp) {
-            if ($bx < 200) bx := $bx + 10;
+        if ($b_x < start_y) {
+            if ($b_x < 200) b_x := $b_x + 10;
         } else {
-            predictiondx := 10;
+            prediction_dx := 10;
         }
     }
 
-    if ($predictionsince < 500) {
-        predictionsince := $predictionsince + dt;
+    if ($prediction_since < 500) {
+        prediction_since := $prediction_since + dt;
         return 0;
     }
 
-    predictionsince := 0;
+    prediction_since := 0;
 
-    if ($bx > yTmp) {
-        predictiondx := 0;
+    if ($b_x > start_y) {
+        prediction_dx := 0;
     } else {
-        predictiondx := 20;
+        prediction_dx := 20;
     }
 
     return 0;
@@ -103,61 +103,61 @@ fn update(vx, vy, pings, blip, dt) {
         tvx = 100 - vx;
         tvx = acc * tvx / 15;
 
-        contained = $bally < $ax + 100;
-        tmp = $bally > $ax;
+        contained = $ball_y < $a_x + 100;
+        tmp = $ball_y > $a_x;
         contained = contained && tmp;
-        tmp = $ballx < tvx + 30;
+        tmp = $ball_x < tvx + 30;
         contained = contained && tmp;
 
         if (contained) {
             _playSound(blip);
             vx = 200 - vx;
-            ballx := $ballx + tvx;
-            vy = $bally - $ax;
+            ball_x := $ball_x + tvx;
+            vy = $ball_y - $a_x;
             vy = vy * 2;
             pings = pings + 1;
         } else {
-            if ($ballx < tvx) {
+            if ($ball_x < tvx) {
                 vx = 200;
                 vy = 0;
-                ballx := 195;
-                bally := 145;
+                ball_x := 195;
+                ball_y := 145;
                 pings = 1;
-                scoreb := $scoreb + 1;
+                score_b := $scoreB + 1;
 
                 return 0;
             }
-            ballx := $ballx - tvx;
+            ball_x := $ball_x - tvx;
         }
     } else {
         tvx = vx - 100;
         tvx = acc * tvx / 15;
 
-        contained = $bally < $bx + 100;
-        tmp = $bally > $bx;
+        contained = $ball_y < $b_x + 100;
+        tmp = $ball_y > $b_x;
         contained = contained && tmp;
-        tmp = $ballx > 360 - tvx;
+        tmp = $ball_x > 360 - tvx;
         contained = contained && tmp;
 
         if (contained) {
             _playSound(blip);
             vx = 200 - vx;
-            vy = $bally - $bx;
+            vy = $ball_y - $b_x;
             vy = vy * 2;
-            ballx := $ballx - tvx;
+            ball_x := $ball_x - tvx;
             pings = pings + 1;
         } else {
-            if ($ballx > 390 - tvx) {
+            if ($ball_x > 390 - tvx) {
                 vx = 0;
                 vy = 200;
-                ballx := 195;
-                bally := 145;
+                ball_x := 195;
+                ball_y := 145;
                 pings = 1;
-                scorea := $scorea + 1;
+                score_a := $score_a + 1;
 
                 return 0;
             }
-            ballx := $ballx + tvx;
+            ball_x := $ball_x + tvx;
         }
     }
 
@@ -165,30 +165,30 @@ fn update(vx, vy, pings, blip, dt) {
         tvy = 100 - vy;
         tvy = tvy / 15;
 
-        if ($bally < tvy) {
+        if ($ball_y < tvy) {
             vy = 200 - vy;
             _playSound(blip);
-            bally := $bally + tvy;
+            ball_y := $ball_y + tvy;
         } else {
-            bally := $bally - tvy;
+            ball_y := $ball_y - tvy;
         }
     } else {
         tvy = vy - 100;
         tvy = tvy / 15;
         
-        if ($bally > 290 - tvy) {
-            bally := $bally - tvy;
+        if ($ball_y > 290 - tvy) {
+            ball_y := $ball_y - tvy;
             vy = 200 - vy;
             _playSound(blip);
         } else {
-            bally := $bally + tvy;
+            ball_y := $ball_y + tvy;
         }
     }
 
     var keycode = 0;
     var adds = 0;
     
-    for (var key = getkey(); _StringLength(key) != 0; key = key + 2) {
+    for (var key = getKey(); _StringLength(key) != 0; key = key + 2) {
         keycode = @dup(key);
         adds = key + 1;
         adds = @adds;
@@ -196,9 +196,9 @@ fn update(vx, vy, pings, blip, dt) {
         keycode = keycode + adds;
 
         if (keycode == 87) {
-            if ($ax > 9) ax := $ax - 10;
+            if ($a_x > 9) a_x := $a_x - 10;
         } else if (keycode == 83) {
-            if ($ax < 200) ax := $ax + 10;
+            if ($a_x < 200) a_x := $a_x + 10;
         }
     }
 
@@ -214,18 +214,18 @@ fn main() {
     loadLib("/libs/string.ell");
     loadLib("/libs/sound.ell");
 
-    predictiondx := 0;
-    predictionsince := 0;
-    scorea := 0;
-    scoreb := 0;
-    ballx := 195;
-    bally := 145;
-    ax := 100;
-    bx := 100;
+    prediction_dx := 0;
+    prediction_since := 0;
+    score_a := 0;
+    score_b := 0;
+    ball_x := 195;
+    ball_y := 145;
+    a_x := 100;
+    b_x := 100;
 
     var window = _WindowCreate();
     var texture = _TextureCreate();
-    var lastTime = time();
+    var last_time = time();
     var dt = 0;
     var vx = 0;
     var vy = 200;
@@ -240,8 +240,8 @@ fn main() {
     _TextureUpload(_TextureRead("/cont/imgs/pong.eia"), texture);
 
     while (_WindowOpen()) {
-        dt = time() - lastTime;
-        lastTime = time();
+        dt = time() - last_time;
+        last_time = time();
 
         update(vx, vy, pings, blip, dt);
         

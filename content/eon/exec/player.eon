@@ -62,9 +62,9 @@ fn main() {
     songTime = songTime / 441;
 
     var startTime = time();
-    var targTime = startTime + songTime;
+    var targetTime = startTime + songTime;
     var running = 1;
-    var curTime;
+    var currentTime;
     var playTime = 0;
     var seconds;
     var minutes;
@@ -75,11 +75,11 @@ fn main() {
 
         render(window, menuTex, input, seconds % 60, minutes);
 
-        curTime = time();
+        currentTime = time();
 
-        playTime = curTime - startTime;
+        playTime = currentTime - startTime;
         
-        if (curTime > targTime) {
+        if (currentTime > targetTime) {
             running = 0;
         }
     }

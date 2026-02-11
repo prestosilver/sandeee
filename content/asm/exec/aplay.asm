@@ -4,7 +4,7 @@ main:
     copy 0
     jz error                    ; jump if zero
     sys 3                       ; open file
-    copy 0                      ; duplacte file handle
+    copy 0                      ; duplicate file handle
     push 1
     sys 8                       ; get file arg
     sys 19                      ; get size of file 

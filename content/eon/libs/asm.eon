@@ -179,25 +179,25 @@ fn processLine(table, line) {
     return @enum & data;
 }
 
-fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
-    if (isLib) {
-        write(outfile, "elib");
+fn processFile(total_lines, toc_count, table, input_file, output_file, is_library) {
+    if (is_library) {
+        write(output_file, "elib");
     } else {
-        write(outfile, "EEEp");
+        write(output_file, "EEEp");
     }
 
     var toc = @toc_count; 
-    var conts = "";
+    var contents = "";
 
     var line = "";
-    var currentLine = 0;
+    var current_line = 0;
     var prev_toc = 0;
     var len = 0;
 
     var done = 0;
-    for (var chr = read(infile, 1); done == 0; chr = read(infile, 1)) {
+    for (var chr = read(input_file, 1); done == 0; chr = read(input_file, 1)) {
         if (@chr == 92) {
-            chr = read(infile, 1);
+            chr = read(input_file, 1);
             if (@chr == 110) {
                 line = line & @10;
             } else if (@chr == 114) {
@@ -207,14 +207,14 @@ fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
             }
         } else if (@chr == 10) {
             if (_StringLast(line) != 58) {
-                conts &= processLine(table, line);
+                contents &= processLine(table, line);
             } else {
                 if (@line == 95) {
                     line += 1;
                     line -= 1;
 
                     if (prev_toc != 0) {
-                        len = _StringLength(conts) - prev_toc;
+                        len = _StringLength(contents) - prev_toc;
                         len += 1;
                         toc &= @(len / 256);
                         toc &= @len;
@@ -223,23 +223,23 @@ fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
                     print(line & "\n");
                     toc &= line;
                     toc &= @0;
-                    prev_toc = _StringLength(conts) + 1;
+                    prev_toc = _StringLength(contents) + 1;
                 }
             }
                 
-            currentLine += 1;
+            current_line += 1;
 
-            if (currentLine % 5 == 0) {
+            if (current_line % 5 == 0) {
                 print("\r");
-                print(currentLine);
+                print(current_line);
                 print("/");
-                print(totalLines);
+                print(total_lines);
             }
 
             line = "";
         } else if (chr == "") {
             if (_StringLast(line) != 58) {
-                conts &= processLine(table, line);
+                contents &= processLine(table, line);
             } else {
                 print(line & "\n");
 
@@ -248,7 +248,7 @@ fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
                     line -= 1;
 
                     if (prev_toc != 0) {
-                        len = _StringLength(conts) - prev_toc + 1;
+                        len = _StringLength(contents) - prev_toc + 1;
                         toc &= @(len / 256);
                         toc &= @len;
                     }
@@ -256,14 +256,14 @@ fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
                     print(line & "\n");
                     toc &= line;
                     toc &= @0;
-                    prev_toc = _StringLength(conts) + 1;
+                    prev_toc = _StringLength(contents) + 1;
                 }
             }
                 
             print("\r");
-            print(currentLine);
+            print(current_line);
             print("/");
-            print(totalLines);
+            print(total_lines);
             print("\n");
 
             line = "";
@@ -273,7 +273,7 @@ fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
         }
     }
 
-    len = _StringLength(conts) - prev_toc;
+    len = _StringLength(contents) - prev_toc;
     len += 1;
     toc &= @(len / 256);
     toc &= @len;
@@ -281,13 +281,13 @@ fn processFile(totalLines, toc_count, table, infile, outfile, isLib) {
     if (isLib) {
         len = _StringLength(toc) + 6;
 
-        write(outfile, @(len / 256));
-        write(outfile, @len);
+        write(output_file, @(len / 256));
+        write(output_file, @len);
 
-        write(outfile, toc);
+        write(output_file, toc);
     }
 
-    write(outfile, conts);
+    write(output_file, contents);
 
     return 0;
 }

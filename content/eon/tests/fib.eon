@@ -15,7 +15,7 @@ fn main() {
 }
 
 //fn main() {
-//    var i = readInt();
+//    var i = readNumber();
 //
 //    print(fib(i));
 //

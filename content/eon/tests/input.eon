@@ -1,7 +1,7 @@
 #include "/libs/incl/sys.eon"
 
 fn main() {
-    var name = readStr("Enter your name: ");
+    var name = readString("Enter your name: ");
 
     print("Hello " & name & "!");
 

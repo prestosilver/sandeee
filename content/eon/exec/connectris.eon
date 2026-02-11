@@ -15,11 +15,11 @@ fn createMap() {
 
 fn getTile(map, pos) {
     var tile = map + pos;
-    var tilev = @tile;
-    var id = tilev + 65;
+    var tile_value = @tile;
+    var id = tile_value + 65;
 
-    var x = tilev / 4;
-    var y = tilev % 4;
+    var x = tile_value / 4;
+    var y = tile_value % 4;
 
     return _MakeRect(256 * x, 256 * y, 256, 256);
 }
@@ -27,7 +27,7 @@ fn getTile(map, pos) {
 fn renderMap(map, win, tex) {
     var x;
     var y;
-    var pos = 0;
+    var position = 0;
     var id = "";
     var source = _MakeRect(256, 0, 256, 256);
     var dest = _MakeRect(0, 0, 16, 16);
@@ -36,14 +36,14 @@ fn renderMap(map, win, tex) {
 
     for (y = 0; y < 24; y = y + 1) {
         for (x = 0; x < 8; x = x + 1) {
-            pos = y * 8;
-            pos += x;
-            id = map + pos;
+            position = y * 8;
+            position += x;
+            id = map + position;
             id = @id;
             id = id % 16;
 
             if (id) {
-                source = getTile(map, pos);
+                source = getTile(map, position);
                 dest = _MakeRect(x * 16, y * 16, 16, 16);
 
                 _WindowRender(win, tex, dest, source);
@@ -58,26 +58,26 @@ fn renderMap(map, win, tex) {
 }
 
 fn spawnTiles(map) {
-   var i = rand(4);
+    var i = random(4);
 
-   var result = map;
+    var result = map;
 
-   return result;
+    return result;
 }
 
 fn updateMap(map) {
     var x = 0;
     var y = 1;
     var result = "";
-    var pos = 0;
-    var posup = 0;
-    var posdown = 0;
+    var position = 0;
+    var position_up = 0;
+    var position_down = 0;
     var tile = 0;
-    var tileup = 0;
-    var tiledown = 0;
-    var tilev = "";
-    var tileupv = "";
-    var tiledownv = "";
+    var tile_up = 0;
+    var tile_down = 0;
+    var tile_value = "";
+    var tile_up_value = "";
+    var tile_down_value = "";
 
     for (x = 0; x < 8; x = x + 1) {
         result = result & @0;
@@ -87,40 +87,40 @@ fn updateMap(map) {
 
     for (y = 0; y < 23; y = y + 1) {
         for (x = 0; x < 8; x = x + 1) {
-            posup = y * 8;
-            posup = posup + x;
+            position_up = y * 8;
+            position_up = position_up + x;
 
-            pos = posup + 8;
-            posdown = pos + 8;
+            position = position_up + 8;
+            position_down = position + 8;
 
-            tilev = map + pos;
-            tile = @tilev;
+            tile_value = map + pos;
+            tile = @tile_value;
             if (tile > 15) {
-               control = 1;
+                control = 1;
             }
 
-            tileupv = map + posup;
-            tileup = @tileupv;
-            if (tileup > 15) {
-               control = 1;
+            tile_up_value = map + position_up;
+            tile_up = @tile_up_value;
+            if (tile_up > 15) {
+                control = 1;
             }
 
-            tiledownv = map + posdown;
-            tiledown = @tiledownv;
-            tiledown = tiledown % 16;
+            tile_down_value = map + position_down;
+            tile_down = @tile_down_value;
+            tile_down = tile_down % 16;
 
             if (y == 22) {
-                tiledown = 15;
+                tile_down = 15;
             }
 
             if (tile == 0) {
-                if (tileup != 0) {
-                    result = result & @tileup;
+                if (tile_up != 0) {
+                    result = result & @tile_up;
                 } else {
                     result = result & @0;
                 }
             } else {
-                if (tiledown == 0) {
+                if (tile_down == 0) {
                     result = result & @0;
                 } else {
                     tile = tile % 16;
@@ -131,17 +131,17 @@ fn updateMap(map) {
     }
 
     if (control == 0) {
-       return spawnTiles(result);
+        return spawnTiles(result);
     }
 
     return result;
 }
 
-fn update(map, cntr, dt) {
-    cntr = cntr + dt;
+fn update(map, counter, dt) {
+    counter = counter + dt;
 
-    if (cntr > 100) {
-        cntr = cntr - 100;
+    if (counter > 100) {
+        counter = counter - 100;
         map = updateMap(map);
     }
 
@@ -157,8 +157,8 @@ fn main() {
     var map = createMap();
     var window = _WindowCreate();
     var texture = _TextureCreate();
-    var lastTime = time();
-    var cntr = 0;
+    var last_time = time();
+    var counter = 0;
     var dt = 0;
 
     _SetWindowRule("min", 256 + 6, 384 + 38);
@@ -171,10 +171,10 @@ fn main() {
     _TextureUpload(_TextureRead("/cont/imgs/connectris.eia"), texture);
 
     for (0; _WindowOpen(); 1) {
-        dt = time() - lastTime;
-        lastTime = time();
+        dt = time() - last_time;
+        last_time = time();
 
-        update(map, cntr, dt);
+        update(map, counter, dt);
         
         renderMap(map, window, texture);
         
