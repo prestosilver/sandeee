@@ -1112,7 +1112,10 @@ pub fn lexFile(in: []const u8) !std.array_list.Managed(Token) {
 
         if (prev == '/' and char == '/') {
             code = try allocator.alloc(u8, 0);
-            _ = try reader.interface.discardDelimiterInclusive('\n');
+            _ = reader.interface.discardDelimiterInclusive('\n') catch |err| switch (err) {
+                error.EndOfStream => {},
+                else => |e| return e,
+            };
         } else if ((std.mem.indexOf(u8, "\t\r\n ", char_string) == null or (code.len != 0 and code[0] == '"'))) {
             code = try allocator.realloc(code, code.len + 1);
             code[code.len - 1] = char;
