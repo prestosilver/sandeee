@@ -17,9 +17,9 @@ fn render(win, tex, input, seconds, minutes) {
     _WindowText(win, 10, 10, "Playing " & input);
 
     if (minutes > 0) {
-        _WindowText(win, 10, 30, "    At " & numString(minutes) & "m " & numString(seconds) & "s");
+        _WindowText(win, 10, 30, "    At " & numberToString(minutes) & "m " & numberToString(seconds) & "s");
     } else {
-        _WindowText(win, 10, 30, "    At " & numString(seconds) & "s");
+        _WindowText(win, 10, 30, "    At " & numberToString(seconds) & "s");
     }
     
     _WindowFlip(win);

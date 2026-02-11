@@ -1,4 +1,4 @@
-#include "/libs/incl/sys.eon"
+stringToNumber#include "/libs/incl/sys.eon"
 
 fn libInit() {
     _libload("/libs/string.ell");

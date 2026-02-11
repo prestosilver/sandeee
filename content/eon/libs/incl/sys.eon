@@ -158,7 +158,7 @@ fn readNumber() {
     return result;
 }
 
-fn stringIsNumber(num) {
+fn numberToString(num) {
     if (num == 0) {
         return "0";
     }
