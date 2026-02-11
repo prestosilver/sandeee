@@ -1,23 +1,23 @@
 #include "/libs/incl/sys.eon"
 
-fn fib(idx) {
-    if (idx < 2) return 1;
+fn fib(index) {
+    if (index < 2) return 1;
 
-    return fib(idx - 1) + fib(idx - 2);
+    return fib(index - 1) + fib(index - 2);
 }
 
 fn main() {
-    var i = 10;
+    var index = 10;
 
-    print(fib(i));
+    print(fib(index));
 
     return 0;
 }
 
 //fn main() {
-//    var i = readNumber();
+//    var index = readNumber();
 //
-//    print(fib(i));
+//    print(fib(index));
 //
 //    return 0;
 //}

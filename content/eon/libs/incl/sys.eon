@@ -58,11 +58,11 @@ fn read() {
 }
 
 fn readAll(file) {
-    var f = open(file);
+    var handle = open(file);
     var size = fileSize(file);
 
-    var result = read(f, size);
-    close(f);
+    var result = read(handle, size);
+    close(handle);
 
     return result;
 }
@@ -89,10 +89,10 @@ fn prealloc() {
 }
 
 fn random(max) {
-    var i = 0;
+    var index = 0;
     asm "disc 0";
     asm "rand";
-    return i % max;
+    return index % max;
 }
 
 fn readString(prompt) {
