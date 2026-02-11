@@ -162,7 +162,7 @@ fn parseFlow(buff, idx, stack, varTable, is_library, heapTable) {
 
     var last_index = dup(idx);
     var oldstack = dup(stack);
-    var flowidx = numString(last_index);
+    var flowidx = numberToString(last_index);
     var tableCopy = dup(varTable);
     var word = nextWord(buff, idx);
     var result = "";
@@ -397,7 +397,7 @@ fn parseFactor(buff, idx, stack, varTable, is_library, heapTable) {
 
     if (variable != "") {
         index = stack - @variable;
-        index = numString(index);
+        index = numberToString(index);
 
         if (stack != 255) stack = stack + 1;
 
@@ -407,7 +407,7 @@ fn parseFactor(buff, idx, stack, varTable, is_library, heapTable) {
     variable = _TableGet(heapTable, newWord);
 
     if (variable != "") {
-        index = numString(@variable);
+        index = numberToString(@variable);
 
         if (stack != 255) stack = stack + 1;
 
@@ -861,7 +861,7 @@ fn parseFile(buff, idx, is_library) {
         }
     }
 
-    return "push " & numString(_TableLen(heapTable)) & "\nsys 14\n" & code;
+    return "push " & numberToString(_TableLen(heapTable)) & "\nsys 14\n" & code;
 }
 
 fn split(conts, delim) {
