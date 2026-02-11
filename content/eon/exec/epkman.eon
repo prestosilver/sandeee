@@ -177,9 +177,9 @@ fn main() {
             arg = getArgument(i);
         }
 
-        var outFile = createOpen(out);
-        write(outFile, epk);
-        close(outFile);
+        var output_file = createOpen(out);
+        write(output_file, epk);
+        close(output_file);
     } else if (op == "unpack") {
         var out = getArgument(2);
 

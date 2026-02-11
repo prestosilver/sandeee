@@ -49,11 +49,11 @@ fn main() {
 
     _SetWindowTitle(window, "PlayEEEr - " & input);
 
-    var inFile = open(input);
+    var input_file = open(input);
 
-    var inData = read(inFile, 10000000);
+    var inData = read(input_file, 10000000);
 
-    close(inFile);
+    close(input_file);
 
     _playSound(inData);
 

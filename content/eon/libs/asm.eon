@@ -278,7 +278,7 @@ fn processFile(total_lines, toc_count, table, input_file, output_file, is_librar
     toc &= @(len / 256);
     toc &= @len;
 
-    if (isLib) {
+    if (is_library) {
         len = _StringLength(toc) + 6;
 
         write(output_file, @(len / 256));
@@ -296,16 +296,16 @@ fn toEntry(val) {
    return (@val) & @(val / 256);
 }
 
-fn processConsts(table, toc_count, infile) {
-    var totalLines = 0;
+fn processConsts(table, toc_count, input_file) {
+    var total_lines = 0;
     var line = "";
 
     var name = "";
     var idx = 0;
     var done = 0;
-    for (var chr = read(infile, 1); done == 0; chr = read(infile, 1)) {
+    for (var chr = read(input_file, 1); done == 0; chr = read(input_file, 1)) {
         if (@chr == 92) {
-            chr = read(infile, 1);
+            chr = read(input_file, 1);
             if (@chr == 78) {
                 line = line & @10;
             } else {
@@ -326,7 +326,7 @@ fn processConsts(table, toc_count, infile) {
                 }
             }
 
-            totalLines = totalLines + 1;
+            total_lines = total_lines + 1;
             line = "";
         } else if (chr == "") {
             if (_StringLast(line) == 58) {
@@ -345,7 +345,7 @@ fn processConsts(table, toc_count, infile) {
         }
     }
 
-    return totalLines;
+    return total_lines;
 }
 
 fn libInit() {
@@ -354,30 +354,30 @@ fn libInit() {
     asm "ret";
 }
 
-fn asmFile(inname, outname, isLib) {
+fn asmFile(input_name, output_name, is_library) {
     var table = _TableCreate(20, 2);
 
-    var inhandleb = open(inname);
-    var inhandlea = open(inname);
+    var input_handle_a = open(input_name);
+    var input_handle_b = open(input_name);
 
     var toc_count = 0;
 
     // open output
-    var outhandle = createOpen(outname);
+    var output_handle = createOpen(output_name);
 
     // get consts
-    print("PASS1: " & inname & "\n");
-    var totalLines = processConsts(table, toc_count, inhandlea);
-    close(inhandlea);
+    print("PASS1: " & input_name & "\n");
+    var total_lines = processConsts(table, toc_count, input_handle_a);
+    close(input_handle_a);
 
     // create out file
-    print("PASS2: " & inname & "\n");
-    processFile(totalLines, toc_count, table, inhandleb, outhandle, isLib);
+    print("PASS2: " & input_name & "\n");
+    processFile(total_lines, toc_count, table, input_handle_b, output_handle, is_library);
 
-    print("Wrote: '" & outname & "'\n");
+    print("Wrote: '" & output_name & "'\n");
 
-    close(inhandleb);
-    close(outhandle);
+    close(input_handle_b);
+    close(output_handle);
 
     return 0;
 }
