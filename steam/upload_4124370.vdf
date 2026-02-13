@@ -12,7 +12,7 @@
 			"FileMapping"
 			{
 				"LocalPath" "./content_demo/*"
-				"DepotPath" "./content_demo"
+				"DepotPath" "./content"
 				"recursive" "1"
 			}
 		}
