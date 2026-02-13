@@ -293,9 +293,9 @@ pub const WebData = struct {
     pub fn steamList(page: u32, mine: bool, query_text: [:0]const u8) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const query = if (mine)
-            ugc.createUserQueryRequest(steam.getUser().getSteamId(), .published, 0, .create_asc, .none, .this_app, page + 1)
+            ugc.createUserQueryRequest(steam.getUser().getSteamId(), .published, 0, .create_asc, .none, .ugc_app, page + 1)
         else
-            ugc.createQueryRequest(.ranked_by_vote, .items, .none, .this_app, page + 1);
+            ugc.createQueryRequest(.ranked_by_vote, .items, .none, .ugc_app, page + 1);
 
         defer query.deinit(ugc);
 

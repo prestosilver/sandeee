@@ -88,7 +88,13 @@ pub const std_options = std.Options{
 pub const steam_options = struct {
     pub const fake_steam = options.fake_steam;
     pub const use_steam = options.is_steam;
-    pub const app_id = 4124360;
+    pub const app_id = if (options.is_demo)
+        4124370
+    else if (builtin.mode == .Debug)
+        4401090
+    else
+        4124360;
+    pub const ugc_app_id = 4124360;
     pub const alloc = allocator;
 };
 
