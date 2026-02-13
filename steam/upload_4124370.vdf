@@ -21,7 +21,7 @@
 			"FileMapping"
 			{
 				"LocalPath" "./windows_demo/*"
-				"DepotPath" "./windows_demo"
+				"DepotPath" "./"
 				"recursive" "1"
 			}
 		}
@@ -30,7 +30,7 @@
 			"FileMapping"
 			{
 				"LocalPath" "./linux_demo/*"
-				"DepotPath" "./linux_demo"
+				"DepotPath" "./"
 				"recursive" "1"
 			}
 		}
