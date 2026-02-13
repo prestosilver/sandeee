@@ -1191,7 +1191,7 @@ pub fn build(b: *std.Build) !void {
         , .{ steam_vdf_demo_conts[0..steam_vdf_demo_semi_idx], steam_desc }));
 
         const install_desc_demo_vdf_step = b.addInstallFileWithDir(steam_desc_demo_file, steam_pub_path, "upload_4124370.vdf");
-        const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery_demo.eee");
+        const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery.eee");
 
         pub_step.dependOn(&install_demo_recovery_step.step);
         pub_step.dependOn(&install_desc_demo_vdf_step.step);
