@@ -1,10 +1,3 @@
-// The Eon compiler library
-// EEE 2021
-//
-// TODO: Implement exports
-// TODO: Add case statements
-// TODO: statement blocks
-
 #include "/libs/incl/sys.eon"
 
 fn libInit() {
@@ -14,8 +7,8 @@ fn libInit() {
     asm "ret";
 }
 
-// returns 1 if char is whitespace
 fn isWhitespace(char) {
+    // returns 1 if char is whitespace
     if (@char == 32) return 1; // space
     if (@char == 10) return 1; // lf
     if (@char == 11) return 1; // tab
@@ -24,8 +17,8 @@ fn isWhitespace(char) {
     return 0;
 }
 
-// returns 1 if char should be a whole word
 fn single(char) {
+    // returns 1 if char should be a whole word
     if (@char == 59) return 1;  // ;
     if (@char == 123) return 1; // {
     if (@char == 125) return 1; // }
@@ -38,21 +31,21 @@ fn single(char) {
     return 0;
 }
 
-// sets the size of a string
 fn setSize() {
+    // sets the size of a string
     asm "size";
     asm "ret";
 }
 
-// gets the next word in a buffer
-fn nextWord(buff, index) {
-    var old_index = dup(index);
-    var copy = dup(buff) + index;
+fn nextWord(buff, idx) {
+    // gets the next word in a buffer
+    var oldidx = dup(idx);
+    var copy = dup(buff) + idx;
     var length = 0;
     var done = 0;
     var ws = 0;
     var word = 1;
-    var last_len = 0;
+    var plen = 0;
     var isQuote = 0;
 
     if (isWhitespace(copy)) {
@@ -61,10 +54,10 @@ fn nextWord(buff, index) {
 
     if (@copy == 34) { // "
         length += 1;
-        index += 1;
+        idx += 1;
         isQuote = 1;
     } else if (single(copy)) {
-        index += 1;
+        idx += 1;
         copy = setSize(copy, 1);
 
         return copy;
@@ -72,14 +65,14 @@ fn nextWord(buff, index) {
 
     // find the next word
     while (done == 0) {
-        copy += length - last_len;
-        last_len = dup(length);
+        copy += length - plen;
+        plen = dup(length);
         if (copy == "") done = 1;
 
         if (@copy == 92) { // backslash
             // ignore next char backslash
             length += 2;
-            index += 2;
+            idx += 2;
         } else {
             ws = isWhitespace(copy);
             if (isQuote) {
@@ -87,14 +80,14 @@ fn nextWord(buff, index) {
                     if (length > 0) {
                         done = 1;
                         length += 1;
-                        index += 1;
+                        idx += 1;
                     }
                 }
             } else if (single(copy)) {
                if (length == 0) {
-                   index += 1;
+                   idx += 1;
    
-                   copy = setSize(dup(buff) + old_index, 1);
+                   copy = setSize(dup(buff) + oldidx, 1);
 
                    return copy;
                }
@@ -110,8 +103,8 @@ fn nextWord(buff, index) {
                 if (copy == "") done = 1;
 
                 if ((ws == 1) && (word == 0)) {
-                    index += 1;
-                    old_index += 1;
+                    idx += 1;
+                    oldidx += 1;
                     copy += 1;
                 } else if ((ws == 0) && (word == 0)) {
                     word = 1;
@@ -125,13 +118,13 @@ fn nextWord(buff, index) {
 
                 if (word) {
                     length += 1;
-                    index += 1;
+                    idx += 1;
                 }
             }
         }
     }
     
-    copy = setSize(dup(buff) + old_index, length);
+    copy = setSize(dup(buff) + oldidx, length);
     
     var result = "";
     var ch = "";
@@ -161,48 +154,49 @@ fn nextWord(buff, index) {
     return result;
 }
 
-// parses a block statment:
-// if (expr) block
-// while (expr) block
-// for (expr; expr; expr) block
-fn parseFlow(buff, index, stack, variable_table, is_library, heap_table) {
-    var last_index = dup(index);
-    var old_stack = dup(stack);
-    var last_flow_index = numberToString(last_index);
-    var tableCopy = dup(variable_table);
-    var word = nextWord(buff, index);
+fn parseFlow(buff, idx, stack, varTable, isLib, heapTable) {
+    // parses a block statment:
+    // if (expr) block
+    // while (expr) block
+    // for (expr; expr; expr) block
+
+    var lastidx = dup(idx);
+    var oldstack = dup(stack);
+    var flowidx = numberToString(lastidx);
+    var tableCopy = dup(varTable);
+    var word = nextWord(buff, idx);
     var result = "";
     var last = "";
 
     if (word == "if") {
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
         if (word == "(") {
-            result &= parseExpression(buff, index, stack, variable_table, is_library, heap_table);
-            word = nextWord(buff, index);
+            result &= parseExpression(buff, idx, stack, varTable, isLib, heapTable);
+            word = nextWord(buff, idx);
             if (word == ")") {
                 if (stack != 255) stack -= 1;
-                result &= "jz if_" & last_flow_index & "_else\n";
+                result &= "jz if_" & flowidx & "_else\n";
 
-                result &= parseBlock(buff, index, stack, variable_table, 0, is_library, heap_table);
+                result &= parseBlock(buff, idx, stack, varTable, 0, isLib, heapTable);
 
-                stack = dup(old_stack);
+                stack = dup(oldstack);
 
-                last = dup(index);
+                last = dup(idx);
 
-                word = nextWord(buff, index);
+                word = nextWord(buff, idx);
                 if (word == "else") {
-                    result &= "jmp if_" & last_flow_index & "_end\n";
-                    result &= "if_" & last_flow_index & "_else:\n";
-                    result &= parseBlock(buff, index, stack, variable_table, 0, is_library, heap_table);
-                    result &= "if_" & last_flow_index & "_end:\n";
+                    result &= "jmp if_" & flowidx & "_end\n";
+                    result &= "if_" & flowidx & "_else:\n";
+                    result &= parseBlock(buff, idx, stack, varTable, 0, isLib, heapTable);
+                    result &= "if_" & flowidx & "_end:\n";
 
-                    stack = old_stack;
+                    stack = oldstack;
                 } else {
-                    result &= "if_" & last_flow_index & "_else:\n";
-                    index = last;
+                    result &= "if_" & flowidx & "_else:\n";
+                    idx = last;
                 }
 
-                stack = old_stack;
+                stack = oldstack;
 
                 return result;
             }
@@ -210,82 +204,83 @@ fn parseFlow(buff, index, stack, variable_table, is_library, heap_table) {
     }
 
     if (word == "while") {
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
-        result = "while_" & last_flow_index & "_loop:\n";
+        result = "while_" & flowidx & "_loop:\n";
         if (word != "(") error("for expected '('");
 
-        result &= parseExpression(buff, index, stack, variable_table, is_library, heap_table);
-        result &= "jz while_" & last_flow_index & "_end\n";
+        result &= parseExpression(buff, idx, stack, varTable, isLib, heapTable);
+        result &= "jz while_" & flowidx & "_end\n";
         if (stack != 255) stack -= 1;
 
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
         if (@word != ")") error("for expected ')' got " & word);
 
-        result &= parseBlock(buff, index, stack, variable_table, 0, is_library, heap_table);
+        result &= parseBlock(buff, idx, stack, varTable, 0, isLib, heapTable);
 
-        result &= "jmp while_" & last_flow_index & "_loop\nwhile_" & last_flow_index & "_end:\n";
+        result &= "jmp while_" & flowidx & "_loop\nwhile_" & flowidx & "_end:\n";
 
-        stack = old_stack;
+        stack = oldstack;
 
         return result;
     }
 
     if (word == "for") {
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
         if (word != "(") error("for expected '('");
 
-        result = parseStmt(buff, index, stack, variable_table, is_library, heap_table);
+        result = parseStmt(buff, idx, stack, varTable, isLib, heapTable);
 
-        result &= "for_" & last_flow_index & "_loop:\n";
+        result &= "for_" & flowidx & "_loop:\n";
 
-        result &= parseExpression(buff, index, stack, variable_table, is_library, heap_table);
+        result &= parseExpression(buff, idx, stack, varTable, isLib, heapTable);
 
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
         if (@word != 59) error("for expected 'sc2' got " & word);
 
-        result &= "jz for_" & last_flow_index & "_end\n";
+        result &= "jz for_" & flowidx & "_end\n";
 
         if (stack != 255) stack -= 1;
 
-        last = parseExpression(buff, index, stack, variable_table, is_library, heap_table);
+        last = parseExpression(buff, idx, stack, varTable, isLib, heapTable);
 
         if (stack != 255) stack -= 1;
 
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
         if (word != ")") error("for expected ')'");
 
-        result &= parseBlock(buff, index, stack, variable_table, 0, is_library, heap_table);
+        result &= parseBlock(buff, idx, stack, varTable, 0, isLib, heapTable);
 
-        result &= last & "disc 0\njmp for_" & last_flow_index & "_loop\nfor_" & last_flow_index & "_end:\n";
+        result &= last & "disc 0\njmp for_" & flowidx & "_loop\nfor_" & flowidx & "_end:\n";
 
         if (stack != 255) {
-            for (0; stack > old_stack; stack = stack - 1) {
+            for (0; stack > oldstack; stack = stack - 1) {
                 result &= "disc 0\n";
             }
         }
 
-        stack = old_stack;
-        variable_table = tableCopy;
+        stack = oldstack;
+        varTable = tableCopy;
 
         return result;
     }
 
-    index = last_index;
+    idx = lastidx;
 
     return "";
 }
 
-// parses a var statment:
-// var name [ = value ]
-fn parseVar(buff, index, stack, variable_table, is_library, heap_table) {
-    var last_index = dup(index);
-    var word = nextWord(buff, index);
+fn parseVar(buff, idx, stack, varTable, isLib, heapTable) {
+    // parses a var statment:
+    // var i [ = v ]
+
+    var lastidx = dup(idx);
+    var word = nextWord(buff, idx);
     var next = "";
-    var old_index;
+    var oldidx;
 
     if (word == "var") {
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
         if (stack != 255) stack += 1;
 
@@ -293,38 +288,39 @@ fn parseVar(buff, index, stack, variable_table, is_library, heap_table) {
             word = word & @0;
         }
 
-        _TablePut(variable_table, word, @stack);
+        _TablePut(varTable, word, @stack);
 
-        old_index = dup(index);
+        oldidx = dup(idx);
 
-        next = nextWord(buff, index);
+        next = nextWord(buff, idx);
 
         if (next == "=") {
            if (stack != 255) stack -= 1;
 
-            return parseExpression(buff, index, stack, variable_table, is_library, heap_table);
+            return parseExpression(buff, idx, stack, varTable, isLib, heapTable);
         }
 
-        index = old_index;
+        idx = oldidx;
 
         return "push 0\n";
     }
 
-    index = last_index;
+    idx = lastidx;
 
     return "";
 }
 
-// parses a builtin expression:
-// return expr
-// asm "expr"
-fn parseBuiltin(buff, index, stack, variable_table, is_library, heap_table) {
-    var last_index = dup(index);
-    var word = nextWord(buff, index);
+fn parseBuiltin(buff, idx, stack, varTable, isLib, heapTable) {
+    // parses a builtin expression:
+    // return expr
+    // asm "expr"
+
+    var lastidx = dup(idx);
+    var word = nextWord(buff, idx);
     var result = "";
 
     if (word == "return") {
-        result = parseExpression(buff, index, stack, variable_table, is_library, heap_table);
+        result = parseExpression(buff, idx, stack, varTable, isLib, heapTable);
 
         for (0; stack > 1; stack -= 1) {
             result &= "disc 1\n";
@@ -336,32 +332,32 @@ fn parseBuiltin(buff, index, stack, variable_table, is_library, heap_table) {
     }
 
     if (word == "asm") {
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
         return ((word + 1) - 1) & "\n";
     }
 
 
-    index = last_index;
+    idx = lastidx;
 
     return "";
 }
 
-fn parseFactor(buff, index, stack, variable_table, is_library, heap_table) {
-    var last_index = dup(index);
-    var word = nextWord(buff, index);
+fn parseFactor(buff, idx, stack, varTable, isLib, heapTable) {
+    var lastidx = dup(idx);
+    var word = nextWord(buff, idx);
     var result = "";
 
     if (word == "return") {
-        index = last_index;
+        idx = lastidx;
 
         return "";
     }
 
     if (word == "(") {
-        result = parseExpression(buff, index, stack, variable_table, is_library, heap_table);
+        result = parseExpression(buff, idx, stack, varTable, isLib, heapTable);
 
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
         if (word == ")") {
             return result;
@@ -369,13 +365,13 @@ fn parseFactor(buff, index, stack, variable_table, is_library, heap_table) {
     }
     
     if (word == "$") {
-       result = parseFactor(buff, index, stack, variable_table, is_library, heap_table);
+       result = parseFactor(buff, idx, stack, varTable, isLib, heapTable);
 
        return result & "sys 15\n";
     }
 
     if (word == "@") {
-       result = parseFactor(buff, index, stack, variable_table, is_library, heap_table);
+       result = parseFactor(buff, idx, stack, varTable, isLib, heapTable);
 
        return result & "getb\n";
     }
@@ -396,7 +392,7 @@ fn parseFactor(buff, index, stack, variable_table, is_library, heap_table) {
         newWord = newWord & @0;
     }
 
-    var variable = _TableGet(variable_table, newWord);
+    var variable = _TableGet(varTable, newWord);
     var index = 0;
 
     if (variable != "") {
@@ -408,7 +404,7 @@ fn parseFactor(buff, index, stack, variable_table, is_library, heap_table) {
         return "copy " & index & "\n";
     }
     
-    variable = _TableGet(heap_table, newWord);
+    variable = _TableGet(heapTable, newWord);
 
     if (variable != "") {
         index = numberToString(@variable);
@@ -418,13 +414,13 @@ fn parseFactor(buff, index, stack, variable_table, is_library, heap_table) {
         return "push " & index & "\n";
     }
 
-    var next = nextWord(buff, index);
-    var old_stack = dup(stack);
+    var next = nextWord(buff, idx);
+    var oldStack = dup(stack);
     var tmp = @34;
 
     if (next == "(") {
-        result = parseCall(buff, index, stack, variable_table, is_library, heap_table);
-        next = nextWord(buff, index);
+        result = parseCall(buff, idx, stack, varTable, isLib, heapTable);
+        next = nextWord(buff, idx);
 
         if (next == ")") {
             if (word == "dup") {
@@ -432,138 +428,138 @@ fn parseFactor(buff, index, stack, variable_table, is_library, heap_table) {
             } else if (@word == 95) {
                 word = word + 1;
                 word = tmp & word & tmp;
-            } else if (is_library) {
+            } else if (isLib) {
                 word = tmp & word & tmp;
             }
 
-            if (old_stack != 255) stack = old_stack + 1;
+            if (oldStack != 255) stack = oldStack + 1;
 
             return result & "call " & word & "\n";
         }
     }
 
-    index = last_index;
+    idx = lastidx;
 
     return "";
 }
 
-fn parseTerm(buff, index, stack, variable_table, is_library, heap_table) {
+fn parseTerm(buff, idx, stack, varTable, isLib, heapTable) {
     var term = "";
     var word = "";
     var done = 0;
 
-    var last_index;
+    var lastidx;
 
-    var result = parseFactor(buff, index, stack, variable_table, is_library, heap_table);
+    var result = parseFactor(buff, idx, stack, varTable, isLib, heapTable);
 
     while (done == 0) {
-        last_index = dup(index);
+        lastidx = dup(idx);
 
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
         if (word == "*") {
-            term = parseFactor(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseFactor(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "mul\n";
             if (stack != 255) stack -= 1;
         } else if (word == "/") {
-            term = parseFactor(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseFactor(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "div\n";
             if (stack != 255) stack -= 1;
         } else if (word == "%") {
-            term = parseFactor(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseFactor(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "mod\n";
             if (stack != 255) stack -= 1;
         } else {
             done = 1;
-            index = last_index;
+            idx = lastidx;
         }
     }
 
     return result;
 }
 
-fn parseSum(buff, index, stack, variable_table, is_library, heap_table) {
+fn parseSum(buff, idx, stack, varTable, isLib, heapTable) {
     var term = "";
     var word = "";
     var done = 0;
 
-    var last_index;
+    var lastidx;
 
-    var result = parseTerm(buff, index, stack, variable_table, is_library, heap_table);
+    var result = parseTerm(buff, idx, stack, varTable, isLib, heapTable);
 
     while (done == 0) {
-        last_index = dup(index);
+        lastidx = dup(idx);
 
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
         if (word == "-") {
-            term = parseTerm(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseTerm(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "sub\n";
             if (stack != 255) stack -= 1;
         } else if (word == "+") {
-            term = parseTerm(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseTerm(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "add\n";
             if (stack != 255) stack -= 1;
         } else if (word == "&") {
-            term = parseTerm(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseTerm(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "cat\n";
             if (stack != 255) stack -= 1;
         } else {
             done = 1;
-            index = last_index;
+            idx = lastidx;
         }
     }
 
     return result;
 }
 
-fn parseExpression(buff, index, stack, variable_table, is_library, heap_table) {
+fn parseExpression(buff, idx, stack, varTable, isLib, heapTable) {
     var term = "";
     var word = "";
     var done = 0;
 
-    var last_index;
+    var lastidx;
 
-    var result = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+    var result = parseSum(buff, idx, stack, varTable, isLib, heapTable);
 
     while (done == 0) {
-        last_index = dup(index);
+        lastidx = dup(idx);
 
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
         if (word == "==") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "eq\n";
             if (stack != 255) stack = stack - 1;
         } else if (word == ":=") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "sys 16\n";
             if (stack != 255) stack = stack - 1;
         } else if (word == "<") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "lt\n";
             if (stack != 255) stack = stack - 1;
         } else if (word == ">") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "gt\n";
             if (stack != 255) stack = stack - 1;
         } else if (word == "=") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "set\n";
             if (stack != 255) stack = stack - 1;
         } else if (word == "+=") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "copy 1\n"; // a b a
             result &= "copy 1\n"; // a b a b
@@ -572,7 +568,7 @@ fn parseExpression(buff, index, stack, variable_table, is_library, heap_table) {
             result &= "set\n";    // a
             if (stack != 255) stack = stack - 1;
         } else if (word == "&=") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term; // b a
             result &= "copy 1\n"; // a b a
             result &= "copy 1\n"; // a b a b
@@ -581,7 +577,7 @@ fn parseExpression(buff, index, stack, variable_table, is_library, heap_table) {
             result &= "set\n";    // a 
             if (stack != 255) stack = stack - 1;
         } else if (word == "-=") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "copy 1\n"; // a b a
             result &= "copy 1\n"; // a b a b
@@ -590,49 +586,49 @@ fn parseExpression(buff, index, stack, variable_table, is_library, heap_table) {
             result &= "set\n";    // a
             if (stack != 255) stack = stack - 1;
         } else if (word == "!=") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "eq\nnot\n";
             if (stack != 255) stack = stack - 1;
         } else if (word == "&&") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "and\n";
             if (stack != 255) stack = stack - 1;
         } else if (word == "||") {
-            term = parseSum(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseSum(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
             result &= "or\n";
             if (stack != 255) stack = stack - 1;
         } else {
             done = 1;
-            index = last_index;
+            idx = lastidx;
         }
     }
 
     return result;
 }
 
-fn parseCall(buff, index, stack, variable_table, is_library, heap_table) {
+fn parseCall(buff, idx, stack, varTable, isLib, heapTable) {
     var term = "";
     var word = "";
     var done = 0;
 
-    var last_index;
+    var lastidx;
 
-    var result = parseExpression(buff, index, stack, variable_table, is_library, heap_table);
+    var result = parseExpression(buff, idx, stack, varTable, isLib, heapTable);
 
     while (done == 0) {
-        last_index = dup(index);
+        lastidx = dup(idx);
 
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
         if (word == ",") {
-            term = parseExpression(buff, index, stack, variable_table, is_library, heap_table);
+            term = parseExpression(buff, idx, stack, varTable, isLib, heapTable);
             result &= term;
         } else {
             done = 1;
-            index = last_index;
+            idx = lastidx;
         }
     }
 
@@ -650,100 +646,100 @@ fn verifyStmtStack(stack, start) {
     return "";
 }
 
-fn parseStmt(buff, index, stack, variable_table, is_library, heap_table) {
-    var last_index;
+fn parseStmt(buff, idx, stack, varTable, isLib, heapTable) {
+    var lastidx;
     var parsed = "";
     var next = "";
-    var old_stack = dup(stack);
+    var oldStack = dup(stack);
 
-    last_index = dup(index);
+    lastidx = dup(idx);
 
-    parsed = parseExpression(buff, index, stack, variable_table, is_library, heap_table);
+    parsed = parseExpression(buff, idx, stack, varTable, isLib, heapTable);
 
     if (parsed != "") {
-        next = nextWord(buff, index);
+        next = nextWord(buff, idx);
 
         if (@next == 59) {
-           parsed = parsed & verifyStmtStack(stack, old_stack);
+           parsed = parsed & verifyStmtStack(stack, oldStack);
            return parsed;
         }
     }
 
-    index = dup(last_index);
-    stack = dup(old_stack);
+    idx = dup(lastidx);
+    stack = dup(oldStack);
 
-    parsed = parseBuiltin(buff, index, stack, variable_table, is_library, heap_table);
+    parsed = parseBuiltin(buff, idx, stack, varTable, isLib, heapTable);
 
     if (parsed != "") {
-        next = nextWord(buff, index);
+        next = nextWord(buff, idx);
 
         if (@next == 59) {
-           parsed = parsed & verifyStmtStack(stack, old_stack);
+           parsed = parsed & verifyStmtStack(stack, oldStack);
            return parsed;
         }
     }
 
-    index = dup(last_index);
-    stack = dup(old_stack);
+    idx = dup(lastidx);
+    stack = dup(oldStack);
 
-    parsed = parseVar(buff, index, stack, variable_table, is_library, heap_table);
+    parsed = parseVar(buff, idx, stack, varTable, isLib, heapTable);
 
     if (parsed != "") {
-        next = nextWord(buff, index);
+        next = nextWord(buff, idx);
 
         if (@next == 59) {
            return parsed;
         }
     }
 
-    index = dup(last_index);
-    stack = dup(old_stack);
+    idx = dup(lastidx);
+    stack = dup(oldStack);
 
-    parsed = parseFlow(buff, index, stack, variable_table, is_library, heap_table);
+    parsed = parseFlow(buff, idx, stack, varTable, isLib, heapTable);
 
     if (parsed != "") {
         return parsed;
     }
 
-    index = last_index;
-    stack = old_stack;
+    idx = lastidx;
+    stack = oldStack;
 
     return "";
 }
 
-fn parseBlock(buff, index, stack, variable_table, function, is_library, heap_table) {
-    var old = dup(index);
-    var word = nextWord(buff, index);
-    var old_stack = dup(stack);
+fn parseBlock(buff, idx, stack, varTable, function, isLib, heapTable) {
+    var old = dup(idx);
+    var word = nextWord(buff, idx);
+    var oldStack = dup(stack);
     var code = "";
     var done = 0;
-    var statement_data;
-    var last_index;
+    var stmtdata;
+    var lastidx;
     var stackCopy;
 
-    var tableCopy = dup(variable_table);
+    var tableCopy = dup(varTable);
 
     if (word != "{") {
-        index = dup(old);
+        idx = dup(old);
 
-        var result = parseStmt(buff, index, stack, variable_table, is_library, heap_table);
+        var result = parseStmt(buff, idx, stack, varTable, isLib, heapTable);
 
         if ((stack != 255) && (function == 0)) {
-            for (0; stack > old_stack; stack = stack - 1) {
+            for (0; stack > oldStack; stack = stack - 1) {
                 result &= "disc 0\n";
             }
         }
 
-        stack = old_stack;
+        stack = oldStack;
 
-        variable_table = dup(tableCopy);
+        varTable = dup(tableCopy);
 
         return result;
     }
 
     while (done == 0) {
-        last_index = dup(index);
-        word = nextWord(buff, index);
+        lastidx = dup(idx);
+        word = nextWord(buff, idx);
         stackCopy = dup(stack);
 
         if (word != "}") {
@@ -753,51 +749,51 @@ fn parseBlock(buff, index, stack, variable_table, function, is_library, heap_tab
 
             if (word == "") error("Early EOF Encountered");
 
-            index = dup(last_index);
-            statement_data = parseStmt(buff, index, stack, variable_table, is_library, heap_table);
+            idx = dup(lastidx);
+            stmtdata = parseStmt(buff, idx, stack, varTable, isLib, heapTable);
 
-            if (statement_data == "") {
+            if (stmtdata == "") {
                 done = 1;
             }
 
-            code = code & statement_data;
+            code = code & stmtdata;
         } else {
             done = 1;
         }
     }
 
-    variable_table = tableCopy;
+    varTable = tableCopy;
 
     if ((stack != 255) && (function == 0)) {
-        for (0; stack > old_stack; stack = stack - 1) {
+        for (0; stack > oldStack; stack = stack - 1) {
             code = code & "disc 0\n";
         }
     }
 
-    stack = old_stack;
+    stack = oldStack;
 
     return code;
 }
 
-fn parseFunction(buff, index, is_library, heap_table) {
+fn parseFunction(buff, idx, isLib, heapTable) {
     var word;
     
-    word = nextWord(buff, index);
+    word = nextWord(buff, idx);
 
     if (word != "fn") error("Expected 'fn' got '" & word & "'");
-    var name = nextWord(buff, index);
+    var name = nextWord(buff, idx);
 
-    if (is_library) name = "_" & name;
+    if (isLib) name = "_" & name;
 
-    word = nextWord(buff, index);
+    word = nextWord(buff, idx);
     if (word != "(") error("Expected '(' got '" & word & "'");
 
     var done = 0;
     var stack = 0;
-    var variable_table = _TableCreate(20, 1);
+    var varTable = _TableCreate(20, 1);
 
     while (done == 0) {
-        word = nextWord(buff, index);
+        word = nextWord(buff, idx);
 
         if (word != ")") {
             while (_StringLength(word) < 20) {
@@ -806,9 +802,9 @@ fn parseFunction(buff, index, is_library, heap_table) {
 
             if (stack != 255) stack = stack + 1;
 
-            _TablePut(variable_table, word, @stack);
+            _TablePut(varTable, word, @stack);
 
-            word = nextWord(buff, index);
+            word = nextWord(buff, idx);
 
             if (word == ")") {
                 done = 1;
@@ -820,41 +816,41 @@ fn parseFunction(buff, index, is_library, heap_table) {
 
     if (word != ")") error("Expected ')' got '" & word & "'");
 
-    var block = parseBlock(buff, index, stack, variable_table, 1, is_library, heap_table);
+    var block = parseBlock(buff, idx, stack, varTable, 1, isLib, heapTable);
 
     if (block == "") return "";
 
     return name & ":\n" & block;
 }
 
-fn parseFile(buff, index, is_library) {
+fn parseFile(buff, idx, isLib) {
     var code = "";
-    if (is_library == 0) code &= "call main\nsys 1\n";
+    if (isLib == 0) code &= "call main\nsys 1\n";
     var func = "";
     var word = "";
     var done = 0;
-    var last_index = 0;
-    var heap_index = 0;
-    var heap_table = _TableCreate(20, 1);
+    var lastidx = 0;
+    var heapIdx = 0;
+    var heapTable = _TableCreate(20, 1);
 
     while (done == 0) {
-        last_index = dup(index);
-        word = nextWord(buff, index);
+        lastidx = dup(idx);
+        word = nextWord(buff, idx);
 
         if (word == "fn") {
-            index = dup(last_index);
+            idx = dup(lastidx);
     
-            func = parseFunction(buff, index, is_library, heap_table);
+            func = parseFunction(buff, idx, isLib, heapTable);
 
             code = code & func;
         } else if (word == "var") {
-            word = nextWord(buff, index);
+            word = nextWord(buff, idx);
             while (_StringLength(word) < 20) {
                 word = word & @0;
             }
-            _TablePut(heap_table, word, @heap_index);
-            heap_index += 1;
-            word = nextWord(buff, index);
+            _TablePut(heapTable, word, @heapIdx);
+            heapIdx += 1;
+            word = nextWord(buff, idx);
             if (word != @59) {
                 error("Expected semicolon");
             }
@@ -865,13 +861,13 @@ fn parseFile(buff, index, is_library) {
         }
     }
 
-    return "push " & numberToString(_TableLen(heap_table)) & "\nsys 14\n" & code;
+    return "push " & numberToString(_TableLen(heapTable)) & "\nsys 14\n" & code;
 }
 
 fn split(conts, delim) {
     var done = 0;
     var start = dup(conts);
-    var index = 0;
+    var idx = 0;
     var chars;
     var delimSize = _StringLength(delim);
 
@@ -880,7 +876,7 @@ fn split(conts, delim) {
         chars = setSize(chars, delimSize);
 
         if (chars == delim) {
-            start = setSize(start, index);
+            start = setSize(start, idx);
             conts = conts + 1;
 
             return start;
@@ -891,7 +887,7 @@ fn split(conts, delim) {
         }
 
         conts = conts + 1;
-        index = index + 1;
+        idx = idx + 1;
     }
 
     return start;
@@ -928,20 +924,18 @@ fn preprocess(name, conts) {
     return result;
 }
 
-fn eonFile(path, output_name, is_library) {
+fn eonFile(path, outName, isLib) {
     var asmName = path & ".asm";
-    var index = 0;
+    var idx = 0;
 
     var fileConts = readAll(path);
     var finalConts = preprocess(path, fileConts);
 
     var asmTmp = createOpen(asmName);
-    write(asmTmp, parseFile(finalConts, index, is_library));
+    write(asmTmp, parseFile(finalConts, idx, isLib));
     close(asmTmp);
 
-    _asmFile(asmName, output_name, is_library);
+    _asmFile(asmName, outName, isLib);
 
     return 0;
 }
-
-// --- EEE Sees all ---

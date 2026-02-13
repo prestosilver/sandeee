@@ -16,6 +16,24 @@
 				"recursive" "1"
 			}
 		}
+		"4124372" // Windows depot
+		{
+			"FileMapping"
+			{
+				"LocalPath" "./windows_demo/*"
+				"DepotPath" "./windows_demo"
+				"recursive" "1"
+			}
+		}
+		"4124373" // Linux depot
+		{
+			"FileMapping"
+			{
+				"LocalPath" "./linux_demo/*"
+				"DepotPath" "./linux_demo"
+				"recursive" "1"
+			}
+		}
 	}
 
 	// END TEMPLATE

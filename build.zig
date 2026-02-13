@@ -1026,9 +1026,11 @@ pub fn build(b: *std.Build) !void {
 
     // public builds step
     const pub_step = b.step("pub", "Build all public builds");
+
     {
+        // Steam build
         const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
-        
+
         const steam_vdf_game_conts = @embedFile("steam/upload_4124360.vdf");
         const steam_vdf_game_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_game_conts, "// END TEMPLATE") orelse steam_vdf_game_conts.len;
         const steam_desc_game_file = disk_meta_step.add("steam_game.vdf", b.fmt(
@@ -1036,28 +1038,13 @@ pub fn build(b: *std.Build) !void {
             \\    "ContentRoot" "./"
             \\    "Desc" "{s}"
             \\}}
-            , .{ steam_vdf_game_conts[0..steam_vdf_game_semi_idx], steam_desc }
-        ));
-
-        const steam_vdf_demo_conts = @embedFile("steam/upload_4124370.vdf");
-        const steam_vdf_demo_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_demo_conts, "// END TEMPLATE") orelse steam_vdf_demo_conts.len;
-        const steam_desc_demo_file = disk_meta_step.add("steam_demo.vdf", b.fmt(
-            \\{s}
-            \\    "ContentRoot" "./"
-            \\    "Desc" "{s}"
-            \\}}
-            , .{ steam_vdf_demo_conts[0..steam_vdf_demo_semi_idx], steam_desc }
-        ));
+        , .{ steam_vdf_game_conts[0..steam_vdf_game_semi_idx], steam_desc }));
 
         const install_desc_game_vdf_step = b.addInstallFileWithDir(steam_desc_game_file, steam_pub_path, "upload_4124360.vdf");
-        const install_desc_demo_vdf_step = b.addInstallFileWithDir(steam_desc_demo_file, steam_pub_path, "upload_4124370.vdf");
         const install_recovery_step = b.addInstallFileWithDir(steam_install_disk_image_path, steam_pub_path, "content/recovery.eee");
-        const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery_demo.eee");
 
         pub_step.dependOn(&install_recovery_step.step);
-        pub_step.dependOn(&install_demo_recovery_step.step);
         pub_step.dependOn(&install_desc_game_vdf_step.step);
-        pub_step.dependOn(&install_desc_demo_vdf_step.step);
 
         const public_options = b.addOptions();
         public_options.addOption(Version, "SANDEEE_VERSION", version);
@@ -1190,13 +1177,165 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
-    var itch_install_disk_image_step = b.addRunArtifact(image_builder_exe);
-    const itch_install_disk_image_path = itch_install_disk_image_step.addOutputFileArg("disk_itch_full.eee");
-    itch_install_disk_image_step.addFileInput(disk_image_path);
-    itch_install_disk_image_step.addArg("--disk");
-    itch_install_disk_image_step.addFileArg(disk_image_path);
+    {
+        // Steam demo build
+        const steam_pub_path: std.Build.InstallDir = .{ .custom = "pub/steam" };
+
+        const steam_vdf_demo_conts = @embedFile("steam/upload_4124370.vdf");
+        const steam_vdf_demo_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_demo_conts, "// END TEMPLATE") orelse steam_vdf_demo_conts.len;
+        const steam_desc_demo_file = disk_meta_step.add("steam_demo.vdf", b.fmt(
+            \\{s}
+            \\    "ContentRoot" "./"
+            \\    "Desc" "{s}"
+            \\}}
+        , .{ steam_vdf_demo_conts[0..steam_vdf_demo_semi_idx], steam_desc }));
+
+        const install_desc_demo_vdf_step = b.addInstallFileWithDir(steam_desc_demo_file, steam_pub_path, "upload_4124370.vdf");
+        const install_demo_recovery_step = b.addInstallFileWithDir(steam_demo_install_disk_image_path, steam_pub_path, "content_demo/recovery_demo.eee");
+
+        pub_step.dependOn(&install_demo_recovery_step.step);
+        pub_step.dependOn(&install_desc_demo_vdf_step.step);
+
+        const public_options = b.addOptions();
+        public_options.addOption(Version, "SANDEEE_VERSION", version);
+        public_options.addOption([]const u8, "VERSION_TEXT", version_text);
+        public_options.addOption(bool, "is_demo", true);
+        public_options.addOption(bool, "disable_audio", true);
+        public_options.addOption(bool, "is_steam", true);
+        public_options.addOption(bool, "fake_steam", false);
+        public_options.addOption(bool, "default_panic", false);
+        public_options.addOption(bool, "enable_email", false);
+
+        const public_options_module = public_options.createModule();
+
+        const exe_mod_pub_linux = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+            .link_libc = true,
+        });
+        exe_mod_pub_linux.addImport("options", public_options_module);
+        exe_mod_pub_linux.addImport("network", network_module);
+        exe_mod_pub_linux.addImport("glfw", glfw_module);
+        exe_mod_pub_linux.addImport("flags", flags_module);
+        exe_mod_pub_linux.addImport("zgl", zgl_module);
+        exe_mod_pub_linux.addImport("steam", steam_module);
+        addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+
+        const exe_pub_linux = b.addExecutable(.{
+            .name = "SandEEE Demo (Steam Linux)",
+            .root_module = exe_mod_pub_linux,
+            .use_llvm = true,
+        });
+        exe_pub_linux.addIncludePath(b.path("deps/include"));
+        exe_pub_linux.addIncludePath(b.path("deps/steam_sdk/public/"));
+        exe_pub_linux.addLibraryPath(b.path("deps/lib"));
+        exe_pub_linux.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
+        exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
+        exe_pub_linux.linkSystemLibrary("steam_api");
+
+        const pub_linux_step = b.addInstallArtifact(
+            exe_pub_linux,
+            .{
+                .dest_dir = .{ .override = steam_pub_path },
+                .dest_sub_path = "linux_demo/SandEEE",
+            },
+        );
+
+        const exe_mod_pub_windows = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
+            .optimize = .ReleaseFast,
+            .link_libc = true,
+        });
+        exe_mod_pub_windows.addImport("options", public_options_module);
+        exe_mod_pub_windows.addImport("network", network_module);
+        exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("flags", flags_module);
+        exe_mod_pub_windows.addImport("zgl", zgl_module);
+        exe_mod_pub_windows.addImport("steam", steam_module);
+        addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+
+        const exe_pub_windows = b.addExecutable(.{
+            .name = "SandEEE Demo (Steam Windows)",
+            .root_module = exe_mod_pub_windows,
+            .use_llvm = true,
+        });
+        exe_pub_windows.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.addIncludePath(b.path("deps/steam_sdk/public/"));
+
+        exe_pub_windows.addObjectFile(rc_file);
+        exe_pub_windows.addLibraryPath(b.path("deps/dll"));
+        exe_pub_windows.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
+        exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe_pub_windows.subsystem = .Windows;
+
+        exe_pub_windows.linkSystemLibrary("steam_api64");
+
+        const pub_windows_step = b.addInstallArtifact(
+            exe_pub_windows,
+            .{
+                .dest_dir = .{ .override = steam_pub_path },
+                .dest_sub_path = "windows_demo/SandEEE.exe",
+            },
+        );
+
+        pub_step.dependOn(&pub_linux_step.step);
+        pub_step.dependOn(&pub_windows_step.step);
+
+        const run_script_step = b.addInstallFileWithDir(b.path("runSandEEE"), steam_pub_path, "linux_demo/runSandEEE");
+
+        pub_step.dependOn(&run_script_step.step);
+
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libglfw3.dll"), steam_pub_path, "windows_demo/glfw3.dll");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libgcc_s_seh-1.dll"), steam_pub_path, "windows_demo/libgcc_s_seh-1.dll");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libstdc++-6.dll"), steam_pub_path, "windows_demo/libstdc++-6.dll");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libopenal.dll"), steam_pub_path, "windows_demo/OpenAL32.dll");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libssp-0.dll"), steam_pub_path, "windows_demo/libssp-0.dll");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/libwinpthread-1.dll"), steam_pub_path, "windows_demo/libwinpthread-1.dll");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/dll/steam_api64.dll"), steam_pub_path, "windows_demo/steam_api64.dll");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/lib/libsteam_api.so"), steam_pub_path, "linux_demo/libsteam_api.so");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+        {
+            const tmp_file_step = b.addInstallFileWithDir(b.path("deps/lib/libglfw.so"), steam_pub_path, "linux_demo/libglfw.so.3");
+            pub_step.dependOn(&tmp_file_step.step);
+        }
+    }
 
     {
+        // Itch build
+
+        var itch_install_disk_image_step = b.addRunArtifact(image_builder_exe);
+        const itch_install_disk_image_path = itch_install_disk_image_step.addOutputFileArg("disk_itch_full.eee");
+        itch_install_disk_image_step.addFileInput(disk_image_path);
+        itch_install_disk_image_step.addArg("--disk");
+        itch_install_disk_image_step.addFileArg(disk_image_path);
+
         const itch_pub_path: std.Build.InstallDir = .{ .custom = "pub/itch" };
         const install_recovery_linux_step = b.addInstallFileWithDir(itch_install_disk_image_path, itch_pub_path, "linux/content/recovery.eee");
         const install_recovery_windows_step = b.addInstallFileWithDir(itch_install_disk_image_path, itch_pub_path, "windows/content/recovery.eee");
@@ -1292,7 +1431,7 @@ pub fn build(b: *std.Build) !void {
     // upload step
     const upload_step = b.step("upload", "Uploads a build to all platforms");
     const upload_steam_step = b.step("upload_steam", "Uploads a build to steam");
-    
+
     const steamcmd_step = b.addSystemCommand(&.{ "steamcmd", "+login", "preston3410" });
     steamcmd_step.addArgs(&.{ "+run_app_build", "-desc", steam_desc });
     steamcmd_step.addFileInput(b.path("zig-out/pub/steam/upload_4124360.vdf"));
