@@ -1205,7 +1205,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
-        exe_pub_windows.subsystem = .Windows;
+        //exe_pub_windows.subsystem = .Windows;
 
         exe_pub_windows.linkSystemLibrary("steam_api64");
 
