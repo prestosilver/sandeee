@@ -115,7 +115,7 @@ jobs:
         shell: bash
       - name: Build game
         run: |
-          zig build pub
+          zig build steam
       - name: Upload to steam (release)
         uses: RageAgainstThePixel/upload-steam@v2
         with:
