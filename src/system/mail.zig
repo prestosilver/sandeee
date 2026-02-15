@@ -656,7 +656,7 @@ pub const EmailManager = struct {
             std.sort.insertion(Email, self.emails.items[start..], false, Email.lessThan);
         }
 
-        std.log.info("emails count: {}", .{self.emails.items.len});
+        log.info("emails count: {}", .{self.emails.items.len});
 
         self.boxes[self.boxes.len - 1] = "outbox";
     }

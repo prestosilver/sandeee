@@ -36,7 +36,7 @@ pub fn sandEEELogFn(
     }
 
     const scope_prefix = "(" ++ switch (scope) {
-        .SandEEE, .Steam, std.log.default_log_scope => @tagName(scope),
+        .SandEEE, .Steam, .OpenGL, std.log.default_log_scope => @tagName(scope),
         else => if (@intFromEnum(level) <= @intFromEnum(std.log.Level.err))
             @tagName(scope)
         else

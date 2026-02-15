@@ -27,6 +27,6 @@ pub fn load(self: *const Self) anyerror!void {
 pub fn unload(_: *const Self) void {
     // save email data
     mail.EmailManager.instance.saveStateFile(strings.EMAIL_DATA_PATH) catch |err|
-        std.log.err("email save failed {}", .{err});
+        log.err("email save failed {}", .{err});
     mail.EmailManager.instance.deinit();
 }

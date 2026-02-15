@@ -524,7 +524,7 @@ pub const Folder = struct {
         };
 
         telem.Telem.save() catch |err|
-            std.log.err("telem save failed {}", .{err});
+            log.err("telem save failed {}", .{err});
 
         const file = try std.fs.cwd().createFile(out, .{});
         defer file.close();
@@ -1156,5 +1156,5 @@ pub fn deinit() void {
     if (FolderLink.resolve(.root)) |root|
         root.deinit()
     else |_|
-        std.log.warn("root is null on deinit", .{});
+        log.warn("root is null on deinit", .{});
 }

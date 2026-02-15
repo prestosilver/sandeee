@@ -952,7 +952,7 @@ pub const WebData = struct {
             self.path = child;
         } else |err| {
             self.path = try self.path.dupe();
-            std.log.warn("{} bad sub path '{}'/'{s}'", .{ err, self.path, targ });
+            log.warn("{} bad sub path '{}'/'{s}'", .{ err, self.path, targ });
         }
 
         if (self.conts) |conts| {

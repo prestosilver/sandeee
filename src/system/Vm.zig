@@ -851,12 +851,12 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(
             return error.InvalidAsm;
         }
         const code: Operation.Code = std.meta.intToEnum(Operation.Code, conts[parse_ptr]) catch {
-            std.log.warn("couldnt grab code", .{});
+            log.warn("couldnt grab code", .{});
             return error.InvalidAsm;
         };
         parse_ptr += 1;
         if (parse_ptr >= conts.len) {
-            std.log.warn("Half made op", .{});
+            log.warn("Half made op", .{});
             return error.InvalidAsm;
         }
         const kind = conts[parse_ptr];
@@ -892,7 +892,7 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(
         } else if (kind == 0) {
             try ops.append(Vm.Operation{ .code = code });
         } else {
-            std.log.warn("Invalid op kind", .{});
+            log.warn("Invalid op kind", .{});
             return error.InvalidAsm;
         }
     }

@@ -83,7 +83,7 @@ pub fn flush(self: *Stream) StreamError!void {
 
 pub fn deinit(self: *Stream) void {
     if (self.updated)
-        std.log.warn("Deinit stream before flush", .{});
+        log.warn("Deinit stream before flush", .{});
 
     allocator.free(self.contents);
     allocator.free(self.path);
