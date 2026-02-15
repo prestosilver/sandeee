@@ -72,15 +72,16 @@ pub const Context = struct {
 
         const mode = glfw.getVideoMode(monitor).?;
 
-        glfw.windowHint(glfw.RedBits, mode.redBits);
-        glfw.windowHint(glfw.GreenBits, mode.greenBits);
-        glfw.windowHint(glfw.BlueBits, mode.blueBits);
-        glfw.windowHint(glfw.RefreshRate, mode.refreshRate);
-
-        const win = if (real_fullscreen)
-            try glfw.createWindow(mode.width, mode.height, name, monitor, null)
-        else
-            try glfw.createWindow(mode.width, mode.height, name, null, null);
+        const win = if (real_fullscreen) create: {
+            glfw.windowHint(glfw.RedBits, mode.redBits);
+            glfw.windowHint(glfw.GreenBits, mode.greenBits);
+            glfw.windowHint(glfw.BlueBits, mode.blueBits);
+            glfw.windowHint(glfw.RefreshRate, mode.refreshRate);
+            break :create try glfw.createWindow(mode.width, mode.height, name, monitor, null);
+        } else create: {
+            glfw.windowHint(glfw.Decorated, 0);
+            break :create try glfw.createWindow(mode.width, mode.height, name, null, null);
+        };
 
         glfw.makeContextCurrent(win);
 
