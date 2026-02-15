@@ -474,8 +474,10 @@ pub const WebData = struct {
         }
 
         // Returns a handle
-        _ = ugc.startPlaytimeTracking(&.{id});
-        self.steam_loaded_file_id = id;
+        if (options.is_steam) {
+            _ = ugc.startPlaytimeTracking(&.{id});
+            self.steam_loaded_file_id = id;
+        }
 
         return conts;
     }
