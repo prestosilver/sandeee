@@ -201,11 +201,11 @@ fn processClick(imgX, imgY, imgS, w, h, oldX, oldY) {
     var x = @(clickData + 2);
     var y = @(clickData + 4);
 
-    var offsetY = @(clickData + 1);
-    var offsetY = @(clickData + 3);
+    var offset_x = @(clickData + 1);
+    var offset_y = @(clickData + 3);
 
-    x += offsetY * 256;
-    y += offsetY * 256;
+    x += offset_y * 256;
+    y += offset_y * 256;
 
     if ((y < 40) && (btn == 0)) {
         if (x < 44) {
@@ -231,46 +231,46 @@ fn processClick(imgX, imgY, imgS, w, h, oldX, oldY) {
     var startX = dup(x);
     var startY = dup(y);
 
-    offsetY = imgX * imgS;
-    offsetY = offsetY / 1000;
-    x -= offsetY;
+    offset_y = imgX * imgS;
+    offset_y = offset_y / 1000;
+    x -= offset_y;
     x = x * 1000;
     x = x / imgS;
 
-    offsetY = imgY * imgS;
-    offsetY = offsetY / 1000;
-    y -= offsetY;
+    offset_y = imgY * imgS;
+    offset_y = offset_y / 1000;
+    y -= offset_y;
     y = y * 1000;
     y = y / imgS;
 
-    offsetX = oldX - x;
-    offsetY = oldY - y;
+    offset_x = oldX - x;
+    offset_y = oldY - y;
 
     if (btn == 0) {
         drawLine(oldX, oldY, x, y, "\x01\x01\x01\xff");
     } else if (btn == 1) {
         drawLine(oldX, oldY, x, y, "\xff\xff\xff\xff");
     } else if (btn == 2) {
-        if ((imgX - offsetX) < 65535) {
-            imgX -= offsetX;
+        if ((imgX - offset_x) < 65535) {
+            imgX -= offset_x;
         }
 
-        if ((imgY - offsetY) < 65535) {
-            imgY -= offsetY;
+        if ((imgY - offset_y) < 65535) {
+            imgY -= offset_y;
         }
 
         x = startX;
         y = startY;
 
-        offsetX = imgX * imgS;
-        offsetX = offsetX / 1000;
-        x -= offsetX;
+        offset_x = imgX * imgS;
+        offset_x = offset_x / 1000;
+        x -= offset_x;
         x = x * 1000;
         x = x / imgS;
 
-        offsetY = imgY * imgS;
-        offsetY = offsetY / 1000;
-        y -= offsetY;
+        offset_y = imgY * imgS;
+        offset_y = offset_y / 1000;
+        y -= offset_y;
         y = y * 1000;
         y = y / imgS;
     }
