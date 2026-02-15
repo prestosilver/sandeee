@@ -1044,7 +1044,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(Version, "SANDEEE_VERSION", version);
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", false);
-        public_options.addOption(bool, "disable_audio", true);
+        public_options.addOption(bool, "disable_audio", false);
         public_options.addOption(bool, "is_steam", true);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
@@ -1142,7 +1142,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(Version, "SANDEEE_VERSION", version);
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", true);
-        public_options.addOption(bool, "disable_audio", true);
+        public_options.addOption(bool, "disable_audio", false);
         public_options.addOption(bool, "is_steam", true);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
@@ -1239,7 +1239,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(Version, "SANDEEE_VERSION", version);
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", false);
-        public_options.addOption(bool, "disable_audio", true);
+        public_options.addOption(bool, "disable_audio", false);
         public_options.addOption(bool, "is_steam", false);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
