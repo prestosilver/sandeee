@@ -479,6 +479,10 @@ pub fn build(b: *std.Build) !void {
     const debug_image_path = debug_image_step.addOutputFileArg("debug_recovery.eee");
     var steam_image_step = b.addRunArtifact(image_builder_exe);
     const steam_image_path = steam_image_step.addOutputFileArg("steam_recovery.eee");
+    var email_demo_image_step = b.addRunArtifact(image_builder_exe);
+    const email_demo_image_path = email_demo_image_step.addOutputFileArg("email_demo_recovery.eee");
+    var email_image_step = b.addRunArtifact(image_builder_exe);
+    const email_image_path = email_image_step.addOutputFileArg("email_recovery.eee");
 
     const overlays_path = content_path.path(b, "overlays");
     const eon_lib_path = content_path.path(b, "eon");
@@ -630,18 +634,14 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{disk_image_step}, &.{}, &.{}, content_path.path(b, "eon/libs/incl/libload.eon"), "/libs/incl/libload.eon");
     addConvertFile(b, &.{disk_image_step}, &.{}, &.{}, content_path.path(b, "asm/libs/incl/libload.asm"), "/libs/incl/libload.asm");
 
-    if (enable_email) {
-        try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/inbox", "/cont/mail/inbox.eme");
-        try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/private", "/cont/mail/private.eme");
-        try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/spam", "/cont/mail/spam.eme");
-        try addEmails(b, eme_builder_exe, disk_image_step, content_path, "mail/work", "/cont/mail/work.eme");
+    // base emails
+    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/inbox", "/cont/mail/inbox.eme");
+    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/private", "/cont/mail/private.eme");
+    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/spam", "/cont/mail/spam.eme");
+    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/work", "/cont/mail/work.eme");
 
-        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/demo", "/cont/mail/demo.eme");
-        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/inbox", "/cont/mail/inbox.eme");
-        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/private", "/cont/mail/private.eme");
-        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/spam", "/cont/mail/spam.eme");
-        try addEmails(b, eme_builder_exe, demo_image_step, content_path, "mail/work", "/cont/mail/work.eme");
-    }
+    // demo only emails
+    try addEmails(b, eme_builder_exe, email_demo_image_step, content_path, "mail/demo", "/cont/mail/demo.eme");
 
     addOverlay(b, &.{steam_image_step}, overlays_path.path(b, "steam"));
 
@@ -696,6 +696,24 @@ pub fn build(b: *std.Build) !void {
     full_debug_disk_image_step.addFileInput(disk_image_path);
     full_debug_disk_image_step.addArg("--disk");
     full_debug_disk_image_step.addFileArg(disk_image_path);
+
+    if (enable_email) {
+        full_base_disk_image_step.addFileInput(email_image_path);
+        full_base_disk_image_step.addArg("--disk");
+        full_base_disk_image_step.addFileArg(email_image_path);
+        full_debug_disk_image_step.addFileInput(email_image_path);
+        full_debug_disk_image_step.addArg("--disk");
+        full_debug_disk_image_step.addFileArg(email_image_path);
+
+        if (is_demo) {
+            full_base_disk_image_step.addFileInput(email_demo_image_path);
+            full_base_disk_image_step.addArg("--disk");
+            full_base_disk_image_step.addFileArg(email_demo_image_path);
+            full_debug_disk_image_step.addFileInput(email_demo_image_path);
+            full_debug_disk_image_step.addArg("--disk");
+            full_debug_disk_image_step.addFileArg(email_demo_image_path);
+        }
+    }
 
     if (is_demo) {
         full_base_disk_image_step.addFileInput(demo_image_path);
@@ -1011,6 +1029,9 @@ pub fn build(b: *std.Build) !void {
     steam_install_disk_image_step.addFileInput(steam_image_path);
     steam_install_disk_image_step.addArg("--disk");
     steam_install_disk_image_step.addFileArg(steam_image_path);
+    steam_install_disk_image_step.addFileInput(email_image_path);
+    steam_install_disk_image_step.addArg("--disk");
+    steam_install_disk_image_step.addFileArg(email_image_path);
 
     var steam_demo_install_disk_image_step = b.addRunArtifact(image_builder_exe);
     const steam_demo_install_disk_image_path = steam_demo_install_disk_image_step.addOutputFileArg("disk_steam_demo_full.eee");
@@ -1023,6 +1044,12 @@ pub fn build(b: *std.Build) !void {
     steam_demo_install_disk_image_step.addFileInput(steam_image_path);
     steam_demo_install_disk_image_step.addArg("--disk");
     steam_demo_install_disk_image_step.addFileArg(steam_image_path);
+    steam_demo_install_disk_image_step.addFileInput(email_image_path);
+    steam_demo_install_disk_image_step.addArg("--disk");
+    steam_demo_install_disk_image_step.addFileArg(email_image_path);
+    steam_demo_install_disk_image_step.addFileInput(email_demo_image_path);
+    steam_demo_install_disk_image_step.addArg("--disk");
+    steam_demo_install_disk_image_step.addFileArg(email_demo_image_path);
 
     const steam_directory_step = b.addWriteFiles();
     const itch_directory_step = b.addWriteFiles();
@@ -1258,6 +1285,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
+        exe_mod_pub_linux.addImport("steam", steam_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1284,6 +1312,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("glfw", glfw_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
+        exe_mod_pub_windows.addImport("steam", steam_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
