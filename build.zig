@@ -1153,7 +1153,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_linux = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
-            .optimize = .Debug,
+            .optimize = .ReleaseFast,
             .link_libc = true,
         });
         exe_mod_pub_linux.addImport("options", public_options_module);
@@ -1182,7 +1182,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_windows = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
-            .optimize = .Debug,
+            .optimize = .ReleaseFast,
             .link_libc = true,
         });
         exe_mod_pub_windows.addImport("options", public_options_module);
