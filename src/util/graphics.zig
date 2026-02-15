@@ -84,7 +84,10 @@ pub const Context = struct {
 
         glfw.makeContextCurrent(win);
 
-        try zgl.loadExtensions(void{}, getGlFn);
+        zgl.loadExtensions(void{}, getGlFn) catch |err| switch (err) {
+            error.EntryPointNotFound => {},
+            else => return err,
+        };
         zgl.debugMessageCallback(void{}, glDebug);
 
         glfw.swapInterval(1);
