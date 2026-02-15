@@ -85,6 +85,8 @@ pub const std_options = std.Options{
     .log_level = .debug,
 };
 
+pub const opengl_error_handling = .log;
+
 pub const steam_options = struct {
     pub const fake_steam = options.fake_steam;
     pub const use_steam = options.is_steam;
@@ -607,7 +609,7 @@ pub fn main() void {
     }
     if (cli.cwd) |new_cwd| {
         std.process.changeCurDir(new_cwd) catch |err| {
-            std.log.err("Failed to change cwd to '{s}', {}", .{ new_cwd, err });
+            log.log.err("Failed to change cwd to '{s}', {}", .{ new_cwd, err });
             return;
         };
         cwd_change = true;
@@ -615,14 +617,14 @@ pub fn main() void {
 
     if (cli.headless_script) |script| {
         var file = std.fs.cwd().openFile(script, .{}) catch |err| {
-            std.log.err("Failed to load headless script '{s}', {}", .{ script, err });
+            log.log.err("Failed to load headless script '{s}', {}", .{ script, err });
             return;
         };
         defer file.close();
 
         var reader = file.reader(&.{});
         headless_cmd = reader.interface.allocRemaining(allocator, .unlimited) catch {
-            std.log.err("Out of memory", .{});
+            log.log.err("Out of memory", .{});
             return;
         };
     }
@@ -664,7 +666,7 @@ pub fn main() void {
         std.debug.panic("{s}\n{s}", .{ @errorName(err), name });
     };
 
-    std.log.info("Done", .{});
+    log.log.info("Done", .{});
 }
 
 pub fn runGame() anyerror!void {

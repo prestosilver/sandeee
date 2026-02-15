@@ -1048,7 +1048,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(bool, "is_steam", true);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
-        public_options.addOption(bool, "enable_email", false);
+        public_options.addOption(bool, "enable_email", true);
 
         const public_options_module = public_options.createModule();
 
@@ -1146,7 +1146,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(bool, "is_steam", true);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
-        public_options.addOption(bool, "enable_email", false);
+        public_options.addOption(bool, "enable_email", true);
 
         const public_options_module = public_options.createModule();
 
@@ -1205,7 +1205,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
-        //exe_pub_windows.subsystem = .Windows;
+        exe_pub_windows.subsystem = .Windows;
 
         exe_pub_windows.linkSystemLibrary("steam_api64");
 
@@ -1243,7 +1243,7 @@ pub fn build(b: *std.Build) !void {
         public_options.addOption(bool, "is_steam", false);
         public_options.addOption(bool, "fake_steam", false);
         public_options.addOption(bool, "default_panic", false);
-        public_options.addOption(bool, "enable_email", false);
+        public_options.addOption(bool, "enable_email", true);
 
         const public_options_module = public_options.createModule();
 

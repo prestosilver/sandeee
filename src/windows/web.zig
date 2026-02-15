@@ -50,7 +50,7 @@ const STEAM_ITEM_NAME = "item";
 pub const WebData = struct {
     const Self = @This();
 
-    pub fn getConts(_: *Self, url: Url) ![]const u8 {
+    pub fn getConts(self: *Self, url: Url) ![]const u8 {
         switch (url.kind) {
             .Steam => {
                 if (options.is_steam) {
@@ -68,7 +68,7 @@ pub const WebData = struct {
                             return try allocator.dupe(u8, "Error: Invalid item page");
                         };
 
-                        return steamItem(@enumFromInt(page_idx), url) catch |err|
+                        return self.steamItem(@enumFromInt(page_idx), url) catch |err|
                             try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
                     } else {
                         return try allocator.dupe(u8, "Error: Bad steam link");
@@ -277,6 +277,7 @@ pub const WebData = struct {
 
     link_lock: std.Thread.Mutex = .{},
     image_lock: std.Thread.Mutex = .{},
+    steam_loaded_file_id: ?steam.PublishedFileId = null,
 
     pub fn resetLinks(self: *Self) void {
         self.link_lock.lock();
@@ -293,9 +294,9 @@ pub const WebData = struct {
     pub fn steamList(page: u32, mine: bool, query_text: [:0]const u8) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const query = if (mine)
-            ugc.createUserQueryRequest(steam.getUser().getSteamId(), .published, 0, .create_asc, .none, .ugc_app, page + 1)
+            ugc.createUserQueryRequest(steam.getUser().getSteamId(), .published, 0, .create_asc, .none, .this_app, page + 1)
         else
-            ugc.createQueryRequest(.ranked_by_vote, .items, .none, .ugc_app, page + 1);
+            ugc.createQueryRequest(.ranked_by_vote, .items, .none, .this_app, page + 1);
 
         defer query.deinit(ugc);
 
@@ -312,7 +313,7 @@ pub const WebData = struct {
         }
 
         if (failed) {
-            return try std.fmt.allocPrint(allocator, "{}", .{failed});
+            return try std.fmt.allocPrint(allocator, "{s}", .{"Error: Steam query failed"});
         }
 
         const details = try allocator.create(steam.UGC.ItemDetails);
@@ -382,7 +383,7 @@ pub const WebData = struct {
         return conts;
     }
 
-    pub fn steamItem(id: steam.UGC.PubFileId, url: Url) ![]const u8 {
+    pub fn steamItem(self: *Self, id: steam.PublishedFileId, url: Url) ![]const u8 {
         const ugc = steam.getSteamUGC();
         const BUFFER_SIZE = 256;
 
@@ -427,6 +428,10 @@ pub const WebData = struct {
             var reader = file.reader(&.{});
             const cont = try reader.interface.allocRemaining(allocator, .unlimited);
 
+            // Returns a handle
+            _ = ugc.startPlaytimeTracking(&.{id});
+            self.steam_loaded_file_id = id;
+
             return cont;
         };
 
@@ -443,6 +448,10 @@ pub const WebData = struct {
 
             var reader = file.reader(&.{});
             const cont = try reader.interface.allocRemaining(allocator, .unlimited);
+
+            // Returns a handle
+            _ = ugc.startPlaytimeTracking(&.{id});
+            self.steam_loaded_file_id = id;
 
             return cont;
         }
@@ -464,7 +473,22 @@ pub const WebData = struct {
                 try std.fmt.allocPrint(allocator, "{s}\n> {s}: @/{s}", .{ old, item.name, item.name });
         }
 
+        // Returns a handle
+        _ = ugc.startPlaytimeTracking(&.{id});
+        self.steam_loaded_file_id = id;
+
         return conts;
+    }
+
+    pub fn clearPlaying(self: *Self) !void {
+        if (options.is_steam) {
+            if (self.steam_loaded_file_id) |file_id| {
+                const ugc = steam.getSteamUGC();
+                // Returns a handle
+                _ = ugc.stopPlaytimeTracking(&.{file_id});
+                self.steam_loaded_file_id = null;
+            }
+        }
     }
 
     pub fn loadPage(self: *Self) !void {
@@ -478,6 +502,7 @@ pub const WebData = struct {
             self.loading = false;
         }
 
+        try self.clearPlaying();
         try self.resetStyles();
 
         if (std.mem.containsAtLeast(u8, self.path.path, 1, ".") and !std.mem.endsWith(u8, self.path.path, ".edf")) {
@@ -1034,6 +1059,8 @@ pub const WebData = struct {
             self.image_lock.lock();
             defer self.image_lock.unlock();
         }
+
+        try self.clearPlaying();
 
         if (self.load_thread) |load_thread| {
             std.Thread.join(load_thread);
