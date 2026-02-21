@@ -16,6 +16,7 @@
 - [X] Unify double click
 - [X] Switch to proper versioning everywhere
 - [X] Fix random mem leak on tests
+- [ ] Load progress on web
 - [ ] Control the dithering, and crt of the shader separately
 - [ ] Add actual pickers to settings ui
 - [ ] Steam in web can lag the game
@@ -23,6 +24,8 @@
 - [ ] Separate builds for demo and debug bc different appids!
 - [ ] Don't copy _*_meta files on disk install
 - [ ] SandEEE install should be configurable somehow, cli flag probably.
+- [ ] Add consistent id type
+- [ ] Recheck changelog items
 
 ## General tentative todo
 

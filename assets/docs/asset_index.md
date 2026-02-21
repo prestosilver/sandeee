@@ -20,6 +20,7 @@
 |[software_list.md](../docs/software_list.md)|A list of all EEE programs|
 |[todo.md](../docs/todo.md)|A rolling todo list of repo wide todos|
 |[trailer_devlog.md](../docs/trailer_devlog.md)|A draft for a devlog about the trailer|
+|[eee_org.md](../docs/eee_org.md)|The EEE org chart.|
 
 ## Presentations
 
