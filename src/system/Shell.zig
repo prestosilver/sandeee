@@ -339,6 +339,7 @@ pub const ShellCommand = struct {
 
     pub fn fromImport(comptime I: anytype) ShellCommand {
         return .{
+            .gui = @hasDecl(I, "GUI") and I.GUI == true,
             .name = I.NAME,
             .desc = I.DESCRIPTION,
             .help = I.HELP,
@@ -371,50 +372,7 @@ pub const window_commands = .{
             }
         }.cmd,
     } },
-    .{ "edit", ShellCommand{
-        .gui = true,
-        .name = "edit",
-        .help = "edit [:help] [file]",
-        .desc = "Opens the text editor",
-        .func = struct {
-            pub fn edit(shell: *Shell, param: *Params) !Result {
-                const window: Window = .atlas("win", .{
-                    .source = Rect{ .w = 1, .h = 1 },
-                    .contents = try windows.editor.init(shader),
-                    .active = true,
-                });
-                if (param.next()) |file_name| {
-                    const ed_self: *windows.editor.EditorData = @ptrCast(@alignCast(window.data.contents.ptr));
-                    const root_link: files.FolderLink = if (std.mem.startsWith(u8, file_name, "/"))
-                        .root
-                    else
-                        shell.root;
-                    const root = try root_link.resolve();
-                    ed_self.file = try root.getFile(file_name);
-                    if (ed_self.file) |file| {
-                        const file_conts = try file.read(null);
-                        const lines = std.mem.count(u8, file_conts, "\n") + 1;
-                        ed_self.buffer = if (ed_self.buffer) |buffer|
-                            try allocator.realloc(buffer, lines)
-                        else
-                            try allocator.alloc(windows.editor.EditorData.Row, lines);
-                        var iter = std.mem.splitScalar(u8, file_conts, '\n');
-                        var idx: usize = 0;
-                        while (iter.next()) |line| : (idx += 1) {
-                            ed_self.buffer.?[idx] = .{
-                                .text = try allocator.dupe(u8, line),
-                                .render = null,
-                            };
-                        }
-                    } else {
-                        return .{};
-                    }
-                }
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
-                return .{};
-            }
-        }.edit,
-    } },
+    .{ "edit", ShellCommand.fromImport(@import("Shell/edit.zig")) },
     .{ "web", ShellCommand{
         .gui = true,
         .name = "web",

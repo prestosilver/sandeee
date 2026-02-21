@@ -15,6 +15,7 @@ const Popup = drawers.Popup;
 
 const Rect = math.Rect;
 const Vec2 = math.Vec2;
+const IVec2 = math.IVec2;
 const Color = math.Color;
 
 const popups = windows.popups;
@@ -64,6 +65,11 @@ pub const EditorData = struct {
             }
         }
 
+        pub fn deinit(self: *Row) void {
+            self.clearRender();
+            allocator.free(self.text);
+        }
+
         pub fn getRenderLine(self: *const Row) ![]const u8 {
             return if (self.render) |render|
                 if (self.err) |e|
@@ -91,7 +97,7 @@ pub const EditorData = struct {
         }
     };
 
-    buffer: ?[]Row = null,
+    buffer: ?std.array_list.Managed(Row) = null,
     menubar: Sprite,
     num_left: Sprite,
     num_right: Sprite,
@@ -99,14 +105,12 @@ pub const EditorData = struct {
     icons: [3]Sprite,
     shader: *Shader,
 
-    click_pos: ?Vec2 = null,
-    click_done: ?Vec2 = null,
     click_down: bool = false,
+    click_done: Vec2 = .{},
+    click_pos: Vec2 = .{},
 
-    cursorx: usize = 0,
-    cursory: usize = 0,
-    cursor_len: i32 = 0,
-    linex: usize = 0,
+    abs_cursor_pos: IVec2 = .{},
+    abs_cursor_end: IVec2 = .{},
 
     modified: bool = false,
     file: ?*files.File = null,
@@ -165,7 +169,7 @@ pub const EditorData = struct {
 
         {
             const replacement = try std.mem.concat(allocator, u8, &.{
-                strings.COLOR_WHITE,
+                strings.COLOR_GRAY,
                 COMMENT_START,
             });
             defer allocator.free(replacement);
@@ -280,74 +284,56 @@ pub const EditorData = struct {
 
         // draw file text
         if (self.buffer) |buffer| {
-            if (self.click_done) |click_done| blk: {
-                defer self.click_done = null;
+            if (self.click_down) {
+                var y = bnds.y + 40 - props.scroll.?.value;
 
-                if (click_done.x > bnds.w) break :blk;
-                if (click_done.y - props.scroll.?.value > bnds.h) break :blk;
-                if (click_done.x < 0) break :blk;
-                if (click_done.y - props.scroll.?.value < 0) break :blk;
+                var click_start: bool = false;
+                var click_stop: bool = false;
 
-                const click_pos = self.click_pos.?;
+                for (buffer.items, 0..) |*line, lineidx| {
+                    if (self.click_pos.y < y + font.size - bnds.y - 40 and !click_start) {
+                        self.abs_cursor_pos.y = lineidx;
 
-                const done_big = if (@abs(@round(click_pos.y / font.size) - @round((click_done.y - props.scroll.?.value) / font.size)) < 1)
-                    @round(click_pos.x / char_size) < @round(click_done.x / char_size)
-                else
-                    @round(click_pos.y / font.size) < @round((click_done.y - props.scroll.?.value) / font.size);
+                        const x_pos: usize = @intFromFloat(@max(0, self.click_pos.x - 0.5 * char_size) / char_size);
+                        self.abs_cursor_pos.x = @min(x_pos, line.text.len);
 
-                const start = if (done_big) click_pos else click_done.sub(.{ .x = 0, .y = props.scroll.?.value });
-                const end = if (done_big) click_done.sub(.{ .x = 0, .y = props.scroll.?.value }) else click_pos;
-
-                self.cursory = @as(usize, @intFromFloat((start.y + props.scroll.?.value) / font.size));
-                self.cursorx = @as(usize, @intFromFloat(start.x / font.chars[0].ax));
-
-                if (self.cursory >= buffer.len) {
-                    self.cursory = buffer.len - 1;
-                }
-
-                if (self.cursorx >= buffer[self.cursory].text.len) {
-                    self.cursorx = buffer[self.cursory].text.len;
-                }
-
-                const endy = @min(@as(usize, @intFromFloat((end.y + props.scroll.?.value) / font.size)), buffer.len - 1);
-                const endx = @as(usize, @intFromFloat(end.x / font.chars[0].ax));
-
-                self.cursor_len = 0;
-                if (self.cursorx != endx or self.cursory != endy) {
-                    for (buffer[self.cursory .. endy + 1], self.cursory..endy + 1) |line, y| {
-                        for (0..line.text.len) |x| {
-                            if (!((y == self.cursory and x < self.cursorx) or
-                                y == endy and x > endx))
-                            {
-                                self.cursor_len += 1;
-                            }
-                        }
-                        if (y > self.cursory and y < endy)
-                            self.cursor_len += 1;
+                        click_start = true;
                     }
+
+                    if (self.click_done.y < y + font.size - bnds.y - 40 + props.scroll.?.value and !click_stop) {
+                        self.abs_cursor_end.y = lineidx;
+
+                        const x_pos: usize = @intFromFloat(@max(0, self.click_done.x - 0.5 * char_size) / char_size);
+                        self.abs_cursor_end.x = @min(x_pos, line.text.len);
+
+                        click_stop = true;
+                    }
+
+                    y += font.size;
                 }
-
-                if (done_big) {
-                    self.cursor_len *= -1;
-                }
             }
 
-            if (self.cursory >= buffer.len) {
-                self.cursory = buffer.len - 1;
-            }
+            if (self.abs_cursor_pos.y >= buffer.items.len)
+                self.abs_cursor_pos.y = buffer.items.len - 1;
+            if (self.abs_cursor_end.y >= buffer.items.len)
+                self.abs_cursor_end.y = buffer.items.len - 1;
 
-            if (self.cursorx >= buffer[self.cursory].text.len) {
-                self.cursorx = buffer[self.cursory].text.len;
-            }
+            var cursor_pos = self.abs_cursor_pos;
+            var cursor_end = self.abs_cursor_end;
+
+            if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
+                cursor_pos.x = buffer.items[cursor_pos.y].text.len;
+            if (cursor_end.x >= buffer.items[cursor_end.y].text.len)
+                cursor_end.x = buffer.items[cursor_end.y].text.len;
 
             // draw lines
             var y = bnds.y + 40 - props.scroll.?.value;
 
             props.scroll.?.maxy = -bnds.h + 40;
 
-            var sel_remaining: usize = @intCast(@abs(self.cursor_len));
+            var sel: bool = false;
 
-            for (buffer, 0..) |*line, lineidx| {
+            for (buffer.items, 0..) |*line, lineidx| {
                 if (line.render == null)
                     try hlLine(line);
 
@@ -370,52 +356,94 @@ pub const EditorData = struct {
                     .pos = .{ .x = bnds.x + 6, .y = y },
                 });
 
-                if (self.cursory == lineidx) {
-                    const render_len = try Row.getRenderLen(render_text, self.cursorx);
+                const min = @min(cursor_pos.x, cursor_end.x);
+                const max = @max(cursor_pos.x, cursor_end.x);
 
-                    const posx = font.sizeText(.{
-                        .text = render_text[0..render_len],
-                        .cursor = true,
-                    }).x;
+                if (cursor_end.y == lineidx) {
+                    const end_render_len = try Row.getRenderLen(render_text, cursor_end.x);
 
-                    const width = @min(sel_remaining, line.text.len - self.cursorx + 1);
+                    if (cursor_pos.y != lineidx) {
+                        if (sel) {
+                            // case 1: it started in a previous line
+                            self.sel.data.size.x = char_size * @as(f32, @floatFromInt(cursor_end.x));
+                            self.sel.data.size.y = font.size;
 
-                    self.sel.data.size.x = char_size * @as(f32, @floatFromInt(width));
-                    self.sel.data.size.y = font.size;
+                            try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
+                        } else {
+                            // case 2: it started this line
+                            self.sel.data.size.x = char_size * @as(f32, @floatFromInt(render_text.len - cursor_end.x + 1));
+                            self.sel.data.size.y = font.size;
 
-                    sel_remaining -= width;
+                            const end_posx = font.sizeText(.{
+                                .text = render_text[0..end_render_len],
+                                .cursor = true,
+                            }).x;
 
-                    try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + posx, .y = y });
-
-                    if (self.cursor_len >= 0) {
-                        try font.draw(.{
-                            .shader = shader,
-                            .text = "|",
-                            .pos = .{ .x = bnds.x + 82 + posx - 6, .y = y },
-                        });
+                            try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + end_posx, .y = y });
+                        }
                     }
-                } else if (sel_remaining > 0 and self.cursory < lineidx) {
-                    const width = @min(sel_remaining, line.text.len + 1);
-                    self.sel.data.size.x = char_size * @as(f32, @floatFromInt(width));
-                    self.sel.data.size.y = font.size;
 
-                    sel_remaining -= width;
+                    sel = !sel;
+                }
 
-                    try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
-                    if (self.cursor_len < 0 and sel_remaining == 0) {
-                        const render_len = try Row.getRenderLen(render_text, width);
+                if (cursor_pos.y == lineidx) {
+                    const start_render_len = try Row.getRenderLen(render_text, cursor_pos.x);
+                    const min_render_len = try Row.getRenderLen(render_text, min);
 
-                        const posx = font.sizeText(.{
-                            .text = render_text[0..render_len],
+                    if (cursor_end.y == lineidx) {
+                        // case 1: it started and ended this line
+                        const width = max - min;
+                        self.sel.data.size.x = char_size * @as(f32, @floatFromInt(width));
+                        self.sel.data.size.y = font.size;
+
+                        const min_posx = font.sizeText(.{
+                            .text = render_text[0..min_render_len],
                             .cursor = true,
                         }).x;
 
-                        try font.draw(.{
-                            .shader = shader,
-                            .text = "|",
-                            .pos = .{ .x = bnds.x + 82 + posx - 6, .y = y },
-                        });
+                        try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + min_posx, .y = y });
+                    } else if (sel) {
+                        // case 2: it started in a previous line
+                        self.sel.data.size.x = char_size * @as(f32, @floatFromInt(cursor_pos.x));
+                        self.sel.data.size.y = font.size;
+
+                        try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
+                    } else {
+                        // case 3: it started this line
+                        self.sel.data.size.x = char_size * @as(f32, @floatFromInt(line.text.len - cursor_pos.x + 1));
+                        self.sel.data.size.y = font.size;
+
+                        const end_posx = font.sizeText(.{
+                            .text = render_text[0..start_render_len],
+                            .cursor = true,
+                        }).x;
+
+                        try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82 + end_posx, .y = y });
                     }
+
+                    sel = !sel;
+                }
+
+                if (cursor_end.y == lineidx) {
+                    const end_render_len = try Row.getRenderLen(render_text, cursor_end.x);
+
+                    const posx = font.sizeText(.{
+                        .text = render_text[0..end_render_len],
+                        .cursor = true,
+                    }).x;
+
+                    try font.draw(.{
+                        .shader = shader,
+                        .text = "|",
+                        .pos = .{ .x = bnds.x + 82 + posx - 6, .y = y },
+                    });
+                }
+
+                if (sel and cursor_pos.y != lineidx and cursor_end.y != lineidx) {
+                    self.sel.data.size.x = char_size * @as(f32, @floatFromInt(line.text.len + 1));
+                    self.sel.data.size.y = font.size;
+
+                    try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
                 }
 
                 y += font.size;
@@ -472,7 +500,7 @@ pub const EditorData = struct {
                 }
 
                 if (self.buffer) |buffer| {
-                    if (buffer.len != 0 and
+                    if (buffer.items.len != 0 and
                         mousepos.y > 40 and mousepos.x > 82)
                     {
                         if (kind == .down) {
@@ -480,7 +508,6 @@ pub const EditorData = struct {
                                 .y = 40,
                                 .x = 82,
                             });
-                            self.click_done = self.click_pos;
                             self.click_down = true;
                         }
                     }
@@ -491,77 +518,89 @@ pub const EditorData = struct {
     }
 
     pub fn deleteSel(self: *Self) !void {
-        if (self.cursor_len == 0) return;
+        if (self.buffer) |*buffer| {
+            var start = self.abs_cursor_pos;
+            var end = self.abs_cursor_end;
 
-        var idx: usize = 0;
+            if (start.x >= buffer.items[start.y].text.len)
+                start.x = buffer.items[start.y].text.len;
+            if (end.x >= buffer.items[end.y].text.len)
+                end.x = buffer.items[end.y].text.len;
 
-        if (self.buffer) |buffer| {
-            var new_buffer = std.array_list.Managed(Row).init(allocator);
-            defer new_buffer.deinit();
+            if (start.y > end.y) {
+                const temp = end;
+                end = start;
+                start = temp;
+            } else if (start.y == end.y) {
+                if (start.x == end.x)
+                    return;
 
-            const abs_sel: usize = @intCast(@abs(self.cursor_len));
-
-            for (buffer[self.cursory..]) |line| {
-                var new_line = Row{
-                    .text = &.{},
-                };
-
-                for (line.text) |ch| {
-                    if (!(idx >= self.cursorx and idx < self.cursorx + abs_sel)) {
-                        new_line.text = try allocator.realloc(new_line.text, new_line.text.len + 1);
-                        new_line.text[new_line.text.len - 1] = ch;
-                    }
-                    idx += 1;
+                if (start.x > end.x) {
+                    const temp = end;
+                    end = start;
+                    start = temp;
                 }
 
-                // new line
-                idx += 1;
+                const removal_len = end.x - start.x;
 
-                if ((!(idx >= self.cursorx and idx < self.cursorx + abs_sel)) or new_line.text.len != 0) {
-                    try new_buffer.append(new_line);
-                } else {
-                    allocator.free(new_line.text);
-                }
+                const line = &buffer.items[start.y];
+                @memmove(line.text[start.x .. line.text.len - removal_len], line.text[end.x..]);
+
+                line.text = try allocator.realloc(line.text, line.text.len - removal_len);
+                line.clearRender();
+            } else {
+                const new_text = try std.mem.concat(allocator, u8, &.{
+                    buffer.items[start.y].text[0..start.x],
+                    buffer.items[end.y].text[end.x..],
+                });
+                for (buffer.items[start.y .. end.y + 1]) |*line|
+                    line.deinit();
+
+                buffer.replaceRangeAssumeCapacity(start.y, end.y - start.y + 1, &.{.{
+                    .text = new_text,
+                }});
             }
 
-            self.clearBuffer();
+            self.abs_cursor_pos = start;
+            self.abs_cursor_end = start;
 
-            self.buffer = if (self.buffer) |old_buffer|
-                try allocator.realloc(old_buffer, new_buffer.items.len)
-            else
-                try allocator.alloc(Row, new_buffer.items.len);
-
-            @memcpy(self.buffer.?, new_buffer.items);
+            self.modified = true;
         }
-
-        self.cursor_len = 0;
     }
 
     pub fn getSel(self: *Self) ![]const u8 {
-        const abs_sel: usize = @intCast(@abs(self.cursor_len));
-
-        var result = try std.array_list.Managed(u8).initCapacity(allocator, abs_sel);
+        var result = std.array_list.Managed(u8).init(allocator);
         defer result.deinit();
 
-        var idx: usize = 0;
+        if (self.buffer) |buffer| sel_block: {
+            var start = self.abs_cursor_pos;
+            var end = self.abs_cursor_end;
 
-        if (self.buffer) |buffer| {
-            for (buffer[self.cursory..]) |line| {
-                for (line.text) |ch| {
-                    if (idx >= self.cursorx and idx < self.cursorx + abs_sel) {
-                        result.appendAssumeCapacity(ch);
-                    }
+            if (start.x >= buffer.items[start.y].text.len)
+                start.x = buffer.items[start.y].text.len;
+            if (end.x >= buffer.items[end.y].text.len)
+                end.x = buffer.items[end.y].text.len;
 
-                    idx += 1;
-                }
-
-                // new line
-                if (idx >= self.cursorx and idx < self.cursorx + abs_sel) {
-                    result.appendAssumeCapacity('\n');
-                }
-
-                idx += 1;
+            if (start.y > end.y) {
+                const temp = end;
+                start = temp;
+                end = temp;
+            } else if (start.y == end.y) {
+                try result.appendSlice(buffer.items[start.y].text[@min(start.x, end.x)..@max(start.x, end.x)]);
+                break :sel_block;
             }
+
+            for (start.y..end.y) |line_idx| {
+                const line = buffer.items[line_idx];
+                if (line_idx == start.y)
+                    try result.appendSlice(line.text[start.x..])
+                else
+                    try result.appendSlice(line.text);
+
+                try result.append('\n');
+            }
+
+            try result.appendSlice(buffer.items[end.y].text[0..end.x]);
         }
 
         return try allocator.dupe(u8, result.items);
@@ -573,7 +612,7 @@ pub const EditorData = struct {
                 var buff = std.array_list.Managed(u8).init(allocator);
                 defer buff.deinit();
 
-                for (buffer) |line| {
+                for (buffer.items) |line| {
                     try buff.appendSlice(line.text);
                     try buff.append('\n');
                 }
@@ -626,16 +665,14 @@ pub const EditorData = struct {
 
             self.clearBuffer();
 
-            if (self.buffer) |buffer| {
-                self.buffer = try allocator.realloc(buffer, lines);
-            } else {
-                self.buffer = try allocator.alloc(Row, lines);
-            }
+            if (self.buffer == null)
+                self.buffer = try .initCapacity(allocator, lines);
+            try self.buffer.?.resize(lines);
 
             var iter = std.mem.splitScalar(u8, file_conts, '\n');
             var idx: usize = 0;
             while (iter.next()) |line| {
-                self.buffer.?[idx] = .{
+                self.buffer.?.items[idx] = .{
                     .text = try allocator.dupe(u8, line),
                     .render = null,
                 };
@@ -646,8 +683,6 @@ pub const EditorData = struct {
     }
 
     pub fn move(self: *Self, x: f32, y: f32) !void {
-        if (!self.click_down) return;
-
         self.click_done = .{
             .x = x - 82,
             .y = y - 40,
@@ -664,7 +699,7 @@ pub const EditorData = struct {
 
     pub fn clearBuffer(self: *Self) void {
         if (self.buffer) |buffer| {
-            for (buffer) |*line| {
+            for (buffer.items) |*line| {
                 if (line.render) |render| {
                     allocator.free(render);
                 }
@@ -672,7 +707,7 @@ pub const EditorData = struct {
                 allocator.free(line.text);
             }
 
-            allocator.free(buffer);
+            buffer.deinit();
 
             self.buffer = null;
         }
@@ -682,18 +717,19 @@ pub const EditorData = struct {
         if (self.modified) return;
 
         self.clearBuffer();
+        self.buffer = .init(allocator);
 
-        self.buffer = try allocator.dupe(Row, &[_]Row{Row{
+        try self.buffer.?.append(.{
             .text = &.{},
-        }});
+        });
 
         self.file = null;
     }
 
     pub fn deinit(self: *Self) void {
         self.clearBuffer();
-        if (self.buffer) |buffer|
-            allocator.free(buffer);
+        if (self.buffer) |*buffer|
+            buffer.deinit();
 
         allocator.destroy(self);
     }
@@ -701,20 +737,37 @@ pub const EditorData = struct {
     pub fn char(self: *Self, code: u32, _: i32) !void {
         if (code == '\n') return;
 
-        try self.deleteSel();
-
         if (self.buffer) |buffer| {
-            const line = &buffer[self.cursory];
+            try self.deleteSel();
+
+            var cursor_pos = self.abs_cursor_pos;
+            var cursor_end = self.abs_cursor_end;
+
+            if (cursor_pos.y >= buffer.items.len)
+                cursor_pos.y = buffer.items.len;
+            if (cursor_end.y >= buffer.items.len)
+                cursor_end.y = buffer.items.len;
+
+            if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
+                cursor_pos.x = buffer.items[cursor_pos.y].text.len;
+            if (cursor_end.x >= buffer.items[cursor_end.y].text.len)
+                cursor_end.x = buffer.items[cursor_end.y].text.len;
+
+            const line = &buffer.items[cursor_pos.y];
 
             line.text = try allocator.realloc(line.text, line.text.len + 1);
 
-            std.mem.copyBackwards(u8, line.text[self.cursorx + 1 ..], line.text[self.cursorx .. line.text.len - 1]);
-            line.text[self.cursorx] = @intCast(@rem(code, 255));
+            @memmove(line.text[cursor_pos.x + 1 ..], line.text[cursor_pos.x .. line.text.len - 1]);
 
+            line.text[cursor_pos.x] = @intCast(@rem(code, 255));
             line.clearRender();
 
-            self.cursorx += 1;
-            self.cursor_len = 0;
+            cursor_pos.x += 1;
+            cursor_end = cursor_pos;
+
+            self.abs_cursor_pos = cursor_pos;
+            self.abs_cursor_end = cursor_end;
+
             self.modified = true;
         }
     }
@@ -730,16 +783,14 @@ pub const EditorData = struct {
 
         switch (keycode) {
             glfw.KeyA => {
-                if (mods == glfw.ModifierControl) {
-                    self.cursorx = 0;
-                    self.cursory = 0;
-                    self.cursor_len = 0;
-                    if (self.buffer) |buffer|
-                        for (buffer) |line| {
-                            self.cursor_len -= @intCast(line.text.len + 1);
+                if (self.buffer) |buffer| {
+                    if (mods == glfw.ModifierControl) {
+                        self.abs_cursor_pos = .{};
+                        self.abs_cursor_end = .{
+                            .y = buffer.items.len,
+                            .x = buffer.getLast().text.len,
                         };
-
-                    return;
+                    }
                 }
             },
             glfw.KeyC => {
@@ -767,156 +818,204 @@ pub const EditorData = struct {
             },
             glfw.KeyEnter => {
                 if (self.buffer) |*buffer| {
-                    buffer.* = try allocator.realloc(buffer.*, buffer.len + 1);
-                    std.mem.copyBackwards(Row, buffer.*[self.cursory + 1 ..], buffer.*[self.cursory .. buffer.len - 1]);
+                    try self.deleteSel();
 
-                    const line = &buffer.*[self.cursory];
-                    buffer.*[self.cursory + 1] = .{
-                        .text = try allocator.dupe(u8, line.text[self.cursorx..]),
-                    };
+                    var cursor_pos = self.abs_cursor_pos;
+                    var cursor_end = self.abs_cursor_end;
 
-                    line.text = try allocator.realloc(line.text, self.cursorx);
+                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
+                        cursor_pos.x = buffer.items[cursor_pos.y].text.len;
+                    if (cursor_end.x >= buffer.items[cursor_end.y].text.len)
+                        cursor_end.x = buffer.items[cursor_end.y].text.len;
 
-                    line.clearRender();
+                    if (cursor_pos.y > cursor_end.y or (cursor_pos.y == cursor_end.y and cursor_pos.x > cursor_pos.x)) {
+                        const temp = cursor_pos;
+                        cursor_pos = cursor_end;
+                        cursor_end = temp;
+                    }
 
-                    self.cursorx = 0;
-                    self.cursory += 1;
+                    try buffer.insert(cursor_pos.y + 1, .{
+                        .text = try allocator.dupe(u8, buffer.items[cursor_pos.y].text[cursor_pos.x..]),
+                    });
+
+                    buffer.items[cursor_pos.y].text = try allocator.realloc(buffer.items[cursor_pos.y].text, cursor_pos.x);
+
+                    buffer.items[cursor_pos.y].clearRender();
+
+                    cursor_pos.x = 0;
+                    cursor_pos.y += 1;
+                    cursor_end = cursor_pos;
+
+                    self.abs_cursor_pos = cursor_pos;
+                    self.abs_cursor_end = cursor_pos;
 
                     self.modified = true;
                 }
             },
             glfw.KeyDelete => {
-                if (self.buffer) |buffer| {
-                    if (self.cursor_len != 0) {
+                if (self.buffer) |*buffer| {
+                    if (self.abs_cursor_pos.y != self.abs_cursor_end.y or
+                        self.abs_cursor_pos.x != self.abs_cursor_end.x)
+                    {
                         try self.deleteSel();
 
                         return;
                     }
 
-                    const line = &buffer[self.cursory];
+                    var cursor_pos = self.abs_cursor_pos;
 
-                    if (self.cursorx < line.text.len) {
-                        std.mem.copyForwards(u8, line.text[self.cursorx .. line.text.len - 1], line.text[self.cursorx + 1 ..]);
+                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
+                        cursor_pos.x = buffer.items[cursor_pos.y].text.len;
+
+                    const line = &buffer.items[cursor_pos.y];
+
+                    if (cursor_pos.x < line.text.len) {
+                        @memmove(line.text[cursor_pos.x .. line.text.len - 1], line.text[cursor_pos.x + 1 ..]);
+
                         line.text = try allocator.realloc(line.text, line.text.len - 1);
-
                         line.clearRender();
 
                         self.modified = true;
+                    } else if (cursor_pos.y < buffer.items.len - 1) {
+                        var old_line = buffer.items[cursor_pos.y + 1];
+                        defer old_line.deinit();
+
+                        buffer.items[cursor_pos.y].text = try allocator.realloc(
+                            buffer.items[cursor_pos.y].text,
+                            buffer.items[cursor_pos.y].text.len + buffer.items[cursor_pos.y + 1].text.len,
+                        );
+                        @memmove(
+                            buffer.items[cursor_pos.y].text[buffer.items[cursor_pos.y].text.len - buffer.items[cursor_pos.y + 1].text.len ..],
+                            buffer.items[cursor_pos.y + 1].text,
+                        );
+
+                        buffer.items[cursor_pos.y].clearRender();
+
+                        @memmove(buffer.items[cursor_pos.y + 1 .. buffer.items.len - 1], buffer.items[cursor_pos.y + 2 ..]);
+                        buffer.shrinkRetainingCapacity(buffer.items.len - 1);
                     }
                 }
             },
             glfw.KeyBackspace => {
-                if (self.buffer) |buffer| {
-                    if (self.cursor_len != 0) {
+                if (self.buffer) |*buffer| {
+                    if (self.abs_cursor_pos.y != self.abs_cursor_end.y or
+                        self.abs_cursor_pos.x != self.abs_cursor_end.x)
+                    {
                         try self.deleteSel();
 
                         return;
                     }
 
-                    if (self.cursorx > 0) {
-                        const line = &buffer[self.cursory];
+                    var cursor_pos = self.abs_cursor_pos;
 
-                        std.mem.copyForwards(u8, line.text[self.cursorx - 1 .. line.text.len - 1], line.text[self.cursorx..]);
+                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
+                        cursor_pos.x = buffer.items[cursor_pos.y].text.len;
+
+                    const line = &buffer.items[cursor_pos.y];
+
+                    if (cursor_pos.x > 0) {
+                        @memmove(line.text[cursor_pos.x - 1 .. line.text.len - 1], line.text[cursor_pos.x..]);
+
                         line.text = try allocator.realloc(line.text, line.text.len - 1);
-
                         line.clearRender();
 
                         self.modified = true;
 
-                        self.cursorx -= 1;
-                    } else if (self.cursory > 0) {
-                        const old_line = buffer[self.cursory - 1].text;
-                        defer allocator.free(old_line);
+                        self.abs_cursor_pos.x = cursor_pos.x - 1;
+                        self.abs_cursor_end.x = cursor_pos.x - 1;
+                    } else if (cursor_pos.y > 0) {
+                        self.abs_cursor_pos.x = buffer.items[cursor_pos.y - 1].text.len;
+                        self.abs_cursor_end.x = buffer.items[cursor_pos.y - 1].text.len;
+                        self.abs_cursor_pos.y -= 1;
+                        self.abs_cursor_end.y -= 1;
 
-                        buffer[self.cursory - 1].text = try std.mem.concat(allocator, u8, &.{
-                            buffer[self.cursory - 1].text,
-                            buffer[self.cursory].text,
-                        });
-                        std.mem.copyForwards(Row, buffer[self.cursory .. buffer.len - 1], buffer[self.cursory + 1 ..]);
+                        var old_line = buffer.items[cursor_pos.y];
+                        defer old_line.deinit();
 
-                        buffer[self.cursory - 1].clearRender();
+                        buffer.items[cursor_pos.y - 1].text = try allocator.realloc(
+                            buffer.items[cursor_pos.y - 1].text,
+                            buffer.items[cursor_pos.y - 1].text.len + buffer.items[cursor_pos.y].text.len,
+                        );
+                        @memmove(
+                            buffer.items[cursor_pos.y - 1].text[buffer.items[cursor_pos.y - 1].text.len - buffer.items[cursor_pos.y].text.len ..],
+                            buffer.items[cursor_pos.y].text,
+                        );
 
-                        self.buffer = try allocator.realloc(buffer, buffer.len - 1);
+                        buffer.items[cursor_pos.y - 1].clearRender();
 
-                        self.modified = true;
-
-                        self.cursorx = old_line.len;
-                        self.cursory -= 1;
+                        @memmove(buffer.items[cursor_pos.y .. buffer.items.len - 1], buffer.items[cursor_pos.y + 1 ..]);
+                        buffer.shrinkRetainingCapacity(buffer.items.len - 1);
                     }
                 }
             },
             glfw.KeyLeft => {
                 if (self.buffer) |buffer| {
-                    if (mods == glfw.ModifierShift and self.cursor_len < 0) {
-                        self.cursor_len += 1;
-                    } else if (mods == glfw.ModifierShift and self.cursor_len > 0) {
-                        if (self.cursorx > 0) {
-                            self.cursorx -= 1;
-                            self.cursor_len += 1;
-                        }
-                    } else if (mods == glfw.ModifierShift) {
-                        if (self.cursorx > 0) {
-                            self.cursorx -= 1;
-                            self.cursor_len += 1;
+                    if (mods == glfw.ModifierShift) {
+                        if (self.abs_cursor_end.x > 0) {
+                            self.abs_cursor_end.x -= 1;
+                        } else if (self.abs_cursor_end.y != 0) {
+                            self.abs_cursor_end.y -= 1;
+                            self.abs_cursor_end.x = buffer.items[self.abs_cursor_end.y].text.len;
                         }
                     } else {
-                        if (self.cursor_len == 0) {
-                            if (self.cursorx == 0) {
-                                if (self.cursory != 0) {
-                                    self.cursory -= 1;
-                                    self.cursorx = buffer[self.cursory].text.len;
-                                }
-                            } else {
-                                self.cursorx -= 1;
-                            }
-                        } else {
-                            self.cursor_len = 0;
+                        if (self.abs_cursor_pos.x > 0) {
+                            self.abs_cursor_pos.x -= 1;
+                        } else if (self.abs_cursor_pos.y != 0) {
+                            self.abs_cursor_pos.y -= 1;
+                            self.abs_cursor_pos.x = buffer.items[self.abs_cursor_pos.y].text.len;
                         }
+
+                        self.abs_cursor_end = self.abs_cursor_pos;
                     }
                 }
             },
             glfw.KeyRight => {
                 if (self.buffer) |buffer| {
-                    if (mods == glfw.ModifierShift and self.cursor_len > 0) {
-                        if (self.cursorx < buffer[self.cursory].text.len) {
-                            self.cursorx += 1;
-                            self.cursor_len -= 1;
-                        }
-                    } else if (mods == glfw.ModifierShift and self.cursor_len < 0) {
-                        self.cursor_len -= 1;
-                    } else if (mods == glfw.ModifierShift) {
-                        self.cursor_len -= 1;
-                    } else {
-                        if (self.cursor_len == 0) {
-                            if (self.cursorx >= buffer[self.cursory].text.len) {
-                                if (self.cursory < buffer.len) {
-                                    self.cursory += 1;
-                                    self.cursorx = 0;
-                                }
-                            } else {
-                                self.cursorx += 1;
+                    if (mods == glfw.ModifierShift) {
+                        if (self.abs_cursor_end.x >= buffer.items[self.abs_cursor_end.y].text.len) {
+                            if (self.abs_cursor_end.y < buffer.items.len - 1) {
+                                self.abs_cursor_end.y += 1;
+                                self.abs_cursor_end.x = 0;
                             }
                         } else {
-                            if (self.cursor_len < 0) {
-                                self.cursorx += @intCast(-self.cursor_len);
-                                self.cursor_len = 0;
-                            } else {
-                                self.cursor_len = 0;
-                            }
+                            self.abs_cursor_end.x += 1;
                         }
+                    } else {
+                        if (self.abs_cursor_pos.x >= buffer.items[self.abs_cursor_pos.y].text.len) {
+                            if (self.abs_cursor_pos.y < buffer.items.len - 1) {
+                                self.abs_cursor_pos.y += 1;
+                                self.abs_cursor_pos.x = 0;
+                            }
+                        } else {
+                            self.abs_cursor_pos.x += 1;
+                        }
+
+                        self.abs_cursor_end = self.abs_cursor_pos;
                     }
                 }
             },
             glfw.KeyUp => {
-                if (self.cursory > 0)
-                    self.cursory -= 1;
-                self.cursor_len = 0;
+                if (self.buffer) |_| {
+                    if (mods == glfw.ModifierShift) {
+                        if (self.abs_cursor_end.y > 0)
+                            self.abs_cursor_end.y -= 1;
+                    } else {
+                        if (self.abs_cursor_pos.y > 0)
+                            self.abs_cursor_pos.y -= 1;
+                        self.abs_cursor_end = self.abs_cursor_pos;
+                    }
+                }
             },
             glfw.KeyDown => {
                 if (self.buffer) |buffer| {
-                    if (self.cursory < buffer.len - 1)
-                        self.cursory += 1;
-                    self.cursor_len = 0;
+                    if (mods == glfw.ModifierShift) {
+                        if (self.abs_cursor_end.y < buffer.items.len - 1)
+                            self.abs_cursor_end.y += 1;
+                    } else {
+                        if (self.abs_cursor_pos.y < buffer.items.len - 1)
+                            self.abs_cursor_pos.y += 1;
+                        self.abs_cursor_end = self.abs_cursor_pos;
+                    }
                 }
             },
             else => {},
