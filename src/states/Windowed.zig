@@ -141,6 +141,7 @@ fn spawnWindow(event: window_events.EventCreateWindow) !void {
     window.data.pos.x = target.x;
     window.data.pos.y = target.y;
     window.data.idx = global_self.windows.items.len;
+    window.data.active = true;
 
     global_self.open_window.x = target.x + 25;
     global_self.open_window.y = target.y + 25;
@@ -579,9 +580,11 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
             .h = window_pos.h + 20,
         };
 
-        if (pos.contains(self.mousepos)) {
-            new_top = @as(u32, @intCast(idx));
-        } else self.windows.items[idx].data.active = false;
+        if (kind == .down) {
+            if (pos.contains(self.mousepos)) {
+                new_top = @as(u32, @intCast(idx));
+            } else self.windows.items[idx].data.active = false;
+        }
     }
 
     switch (kind) {
