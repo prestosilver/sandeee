@@ -44,7 +44,7 @@ pub fn cat(self: Rope, other: Rope) !Rope {
 
 pub fn subString(rope: *const Rope, start: usize, end: ?usize) !Rope {
     const start_idx = @min(start, rope.data.len);
-    const end_idx = if (end) |e| @max(start_idx, rope.data.len - e) else rope.data.len;
+    const end_idx = if (end) |e| @max(start_idx, rope.data.len - @min(e, rope.data.len)) else rope.data.len;
 
     return try .init(rope.data[start_idx..end_idx]);
 }
