@@ -13,14 +13,17 @@ pub const Self = @This();
 disk: []const u8,
 
 pub fn load(self: *const Self) anyerror!void {
-    log.debug("load files: {s}", .{self.disk});
-
     try files.Folder.init(self.disk);
+
+    log.debug("Loaded disk file {s}", .{self.disk});
 }
 
 pub fn unload(self: *const Self) void {
     // save the disk
     files.write();
     files.deinit();
+
+    log.debug("Unloaded disk file {s}", .{self.disk});
+
     allocator.free(self.disk);
 }

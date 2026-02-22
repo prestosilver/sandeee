@@ -527,23 +527,23 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
         const state = game_states.getPtr(.Crash);
 
         state.update(1.0 / graphics.Context.instance.refresh_rate) catch |err| {
-            log.log.err("crash draw failed, {any}", .{err});
+            log.log.err("The crash state failed to update {}", .{err});
 
             break;
         };
         state.draw(graphics.Context.instance.size) catch |err| {
-            log.log.err("crash draw failed, {any}", .{err});
+            log.log.err("The crash state failed to draw {}", .{err});
 
             break;
         };
         blit() catch |err| {
-            log.log.err("crash blit failed {any}", .{err});
+            log.log.err("The crash state failed to blit {}", .{err});
 
             break;
         };
     }
 
-    log.log.info("Exiting", .{});
+    log.log.info("Exiting durring panic state", .{});
 
     std.process.exit(1);
 }
@@ -609,7 +609,7 @@ pub fn main() void {
     }
     if (cli.cwd) |new_cwd| {
         std.process.changeCurDir(new_cwd) catch |err| {
-            log.log.err("Failed to change cwd to '{s}', {}", .{ new_cwd, err });
+            log.log.err("Failed to change cwd to '{s}' {}", .{ new_cwd, err });
             return;
         };
         cwd_change = true;
@@ -617,7 +617,7 @@ pub fn main() void {
 
     if (cli.headless_script) |script| {
         var file = std.fs.cwd().openFile(script, .{}) catch |err| {
-            log.log.err("Failed to load headless script '{s}', {}", .{ script, err });
+            log.log.err("Failed to load headless script '{s}' {}", .{ script, err });
             return;
         };
         defer file.close();
@@ -666,13 +666,13 @@ pub fn main() void {
         std.debug.panic("{s}\n{s}", .{ @errorName(err), name });
     };
 
-    log.log.info("Done", .{});
+    log.log.info("Process done exiting", .{});
 }
 
 pub fn runGame() anyerror!void {
     if (options.is_steam) {
         if (steam.restartIfNeeded(.this_app)) {
-            log.log.err("Restarting for steam", .{});
+            log.log.err("Steam requires a restart, doing so", .{});
             return; // steam will relaunch the game from the steam client.
         }
 
@@ -689,12 +689,12 @@ pub fn runGame() anyerror!void {
 
     try log.setLogFile("SandEEE.log");
 
-    log.log.info("Sandeee " ++ strings.SANDEEE_VERSION_TEXT, .{});
+    log.log.info("SandEEE " ++ strings.SANDEEE_VERSION_TEXT, .{});
 
     try audio.AudioManager.init();
 
     // init graphics
-    var graphics_loader: Loader = try .init(loaders.Graphics{ .real_fullscreen = real_fullscreen });
+    var graphics_loader: Loader = try .init(loaders.Graphics{ .real_fullscreen = real_fullscreen }, null);
 
     // setup fonts deinit
     bios_font.setup = false;
@@ -707,28 +707,28 @@ pub fn runGame() anyerror!void {
     var base_shader_loader: Loader = try .init(loaders.Shader{
         .files = SHADER_FILES,
         .out = &shader,
-    });
+    }, null);
     try base_shader_loader.require(&graphics_loader);
 
     var font_shader_loader: Loader = try .init(loaders.Shader{
         .files = FONT_SHADER_FILES,
         .out = &font_shader,
-    });
+    }, null);
     try font_shader_loader.require(&graphics_loader);
 
     var crt_shader_loader: Loader = try .init(loaders.Shader{
         .files = CRT_SHADER_FILES,
         .out = &crt_shader,
-    });
+    }, null);
     try crt_shader_loader.require(&graphics_loader);
 
     var clear_shader_loader: Loader = try .init(loaders.Shader{
         .files = CLEAR_SHADER_FILES,
         .out = &clear_shader,
-    });
+    }, null);
     try clear_shader_loader.require(&graphics_loader);
 
-    var texture_loader: Loader = try .init(loaders.Group{});
+    var texture_loader: Loader = try .init(loaders.Group{}, null);
     try texture_loader.require(&base_shader_loader);
     try texture_loader.require(&font_shader_loader);
     try texture_loader.require(&crt_shader_loader);
@@ -738,10 +738,10 @@ pub fn runGame() anyerror!void {
     var font_loader: Loader = try .init(loaders.Font{
         .data = .{ .mem = BIOS_FONT_DATA },
         .output = &bios_font,
-    });
+    }, null);
     try font_loader.require(&graphics_loader);
 
-    var loader: Loader = try .init(loaders.Group{});
+    var loader: Loader = try .init(loaders.Group{}, "Initialized");
     try loader.require(&texture_loader);
     try loader.require(&font_loader);
 
@@ -1061,7 +1061,7 @@ pub fn runGame() anyerror!void {
     // deinit textures
     TextureManager.instance.deinit();
 
-    log.log.info("graceful deinit", .{});
+    log.log.info("Deinit succeeded", .{});
 }
 
 test {

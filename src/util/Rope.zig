@@ -55,7 +55,7 @@ pub fn initRef(rope: Rope) !Rope {
 
     rope.data.refs += 1;
 
-    log.info("init rope ref: {f}", .{Rope{ .data = data }});
+    log.debug("Init a new rope {f}", .{Rope{ .data = data }});
 
     return .{ .data = data };
 }

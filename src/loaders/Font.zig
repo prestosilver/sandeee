@@ -31,20 +31,20 @@ pub fn load(self: *const Self) anyerror!void {
         .path => |p| {
             const path = config.SettingManager.instance.get(p) orelse p;
 
-            log.debug("load font: {s}", .{path});
-
             graphics.Context.makeCurrent();
             defer graphics.Context.makeNotCurrent();
 
             self.output.* = try .init(path);
+
+            log.debug("Loaded font {s}", .{p});
         },
         .mem => |m| {
-            log.debug("load font in mem", .{});
-
             graphics.Context.makeCurrent();
             defer graphics.Context.makeNotCurrent();
 
             self.output.* = try .initMem(m);
+
+            log.debug("Loaded font from memory", .{});
         },
     }
 }
@@ -52,4 +52,9 @@ pub fn load(self: *const Self) anyerror!void {
 pub fn unload(self: *const Self) void {
     // deinit font
     self.output.deinit();
+
+    switch (self.data) {
+        .path => |p| log.debug("Unloaded font {s}", .{p}),
+        .mem => log.debug("Unloaded font from memory", .{}),
+    }
 }

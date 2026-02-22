@@ -16,15 +16,18 @@ pub fn load(self: *const Self) anyerror!void {
     graphics.Context.makeCurrent();
     defer graphics.Context.makeNotCurrent();
 
-    log.debug("load shader", .{});
     self.out.* = try Shader.init(2, self.files);
     try graphics.Context.regShader(self.out.*);
+
+    log.debug("Loaded a shader", .{});
 }
 
 pub fn unload(self: *const Self) void {
     graphics.Context.makeCurrent();
     defer graphics.Context.makeNotCurrent();
 
-    // save email data
+    // deinit the shader
     self.out.deinit();
+
+    log.debug("Unloaded a shader", .{});
 }

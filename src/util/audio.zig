@@ -32,7 +32,7 @@ pub const Sound = struct {
         al.alGenBuffers(1, &buffer);
         al.alBufferData(buffer, al.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
 
-        log.debug("Load sound len {0}", .{data.len});
+        log.debug("Load sound data with length {0}", .{data.len});
 
         return .{
             .buffer = buffer,

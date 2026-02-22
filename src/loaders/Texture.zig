@@ -26,13 +26,12 @@ pub fn load(self: *const Self) anyerror!void {
 
     var loaded_tex = Texture.init();
 
-    log.debug("load tex: {s}", .{path});
     if (loaded_tex.loadFile(path)) {
-        log.debug("upload tex: {s}", .{path});
         try loaded_tex.upload();
         try TextureManager.instance.put(self.name, loaded_tex);
+        log.debug("Loaded texture {s}", .{self.path});
     } else |err| {
-        log.err("Could not load image {s}, {s}", .{ path, @errorName(err) });
+        log.err("Could not load texture {s}, {s}", .{ self.path, @errorName(err) });
     }
 }
 
@@ -41,4 +40,6 @@ pub fn unload(self: *const Self) void {
     defer graphics.Context.makeNotCurrent();
 
     TextureManager.instance.remove(self.name);
+
+    log.debug("Unloaded texture {s}", .{self.path});
 }

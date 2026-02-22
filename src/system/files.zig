@@ -401,7 +401,7 @@ pub const Folder = struct {
             root.newFolder(namebuffer, true) catch |e| {
                 switch (e) {
                     error.FolderExists => {
-                        log.warn("folder exists on load {s}", .{namebuffer});
+                        log.warn("Folder exists in load_disk {s}", .{namebuffer});
                     },
                     else => return e,
                 }
@@ -756,7 +756,7 @@ pub const Folder = struct {
 
     pub fn newFile(self: *Folder, name: []const u8) FileError!void {
         if (std.mem.containsAtLeast(u8, name, 1, " ")) {
-            log.err("space in file name '{s}'", .{name});
+            log.err("Space in file name {s}", .{name});
 
             return error.InvalidFileName;
         }
@@ -1147,10 +1147,10 @@ pub fn write() void {
 
         if (FolderLink.resolve(.root)) |root|
             root.write(file) catch |err| {
-                @panic(std.fmt.allocPrint(allocator, "failed to save game {}", .{err}) catch "");
+                @panic(std.fmt.allocPrint(allocator, "Failed to save game {}", .{err}) catch "");
             }
         else |_|
-            log.warn("root is null on write", .{});
+            log.warn("Disk root is null on write", .{});
     }
 }
 
@@ -1158,5 +1158,5 @@ pub fn deinit() void {
     if (FolderLink.resolve(.root)) |root|
         root.deinit()
     else |_|
-        log.warn("root is null on deinit", .{});
+        log.warn("Disk root is null on deinit", .{});
 }

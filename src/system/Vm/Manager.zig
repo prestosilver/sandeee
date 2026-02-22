@@ -142,7 +142,7 @@ pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []co
 
     try self.vms.put(id, vm_instance);
 
-    log.debug("Spawned vm id: {}", .{id});
+    log.debug("Spawned vm #{}", .{@intFromEnum(id)});
 
     return id;
 }
@@ -152,9 +152,9 @@ pub fn destroy(self: *Self, handle: Handle) void {
         entry.deinit();
         _ = self.vms.remove(handle);
 
-        log.debug("Destroy vm id: {}", .{handle});
+        log.debug("Destroy vm #{}", .{@intFromEnum(handle)});
     } else {
-        log.warn("Failed to destroy empty vm id: {}", .{handle});
+        log.warn("Failed to destroy empty vm #{}", .{@intFromEnum(handle)});
     }
 }
 

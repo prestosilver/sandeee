@@ -20,8 +20,9 @@ vtable: *const Vtable,
 loaded: bool = false,
 deps: std.array_list.Managed(*Self) = .init(allocator),
 name: []const u8,
+log_text: ?[]const u8,
 
-pub fn init(data: anytype) !Self {
+pub fn init(data: anytype, log_text: ?[]const u8) !Self {
     const Ptr = @TypeOf(data);
     const ptr_info = @typeInfo(*Ptr);
 
@@ -53,6 +54,7 @@ pub fn init(data: anytype) !Self {
         .ptr = ptr,
         .vtable = &gen.vtable,
         .name = @typeName(Ptr),
+        .log_text = log_text,
     };
 }
 
@@ -81,7 +83,9 @@ pub fn load(self: *Self, prog: *f32, start: f32, total: f32) !Unloader {
     try self.vtable.load(self.ptr);
     self.loaded = true;
 
-    log.debug("loaded {s} ({}%)", .{ self.name, @as(usize, @intFromFloat(total * 100)) });
+    if (self.log_text) |name| {
+        log.debug("{s} {}%", .{ name, @as(usize, @intFromFloat(total * 100)) });
+    }
 
     prog.* = total;
 
@@ -102,8 +106,6 @@ pub const Unloader = struct {
 
     pub fn run(self: *Unloader) void {
         self.vtable.unload(self.ptr);
-
-        log.debug("unloaded {s}", .{self.name});
 
         var iter = std.mem.reverseIterator(self.deps.items);
 

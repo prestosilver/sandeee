@@ -82,9 +82,8 @@ pub const SettingManager = struct {
     }
 
     pub fn deinit() void {
-        instance.save() catch {
-            log.err("failed to save settings", .{});
-        };
+        instance.save() catch |err|
+            log.err("Failed to save settings {}", .{err});
 
         var iter = instance.settings.iterator();
 

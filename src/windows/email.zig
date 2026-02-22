@@ -607,7 +607,7 @@ const EmailData = struct {
                 if (std.mem.eql(u8, self.login_text[1], login.password)) {
                     self.login = login.user;
                     self.login_error = "";
-                    log.debug("Logged into email `{s}`", .{login.user});
+                    log.debug("Logged into email as `{s}`", .{login.user});
                 } else {
                     self.login_error = "Invalid Password";
                 }

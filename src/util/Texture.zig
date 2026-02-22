@@ -79,7 +79,7 @@ pub fn loadMem(self: *Texture, mem: []const u8) !void {
     const height = @as(c_int, @intCast(mem[6])) + @as(c_int, @intCast(mem[7])) * 256;
 
     if (mem.len / 4 - 2 != width * height) {
-        log.err("new expected {} got {}", .{ width * height, mem.len / 4 - 2 });
+        log.err("New texture expected size {} got {}", .{ width * height, mem.len / 4 - 2 });
 
         return error.WrongSize;
     }

@@ -268,7 +268,7 @@ pub fn deinit(self: *GSWindowed) void {
 
     // save telem data
     telem.Telem.save() catch |err|
-        log.err("telem save failed {}", .{err});
+        log.err("Telem save failed {}", .{err});
 
     // close all windows
     for (self.windows.items) |window| {

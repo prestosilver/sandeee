@@ -389,7 +389,7 @@ pub const WebData = struct {
 
         {
             const state = ugc.getItemState(id);
-            log.debug("steam item {} state: {}", .{ id, state });
+            log.debug("Steam item {} has state {}", .{ @intFromEnum(id), state });
         }
 
         if (!ugc.downloadItem(id, true)) {
@@ -400,7 +400,6 @@ pub const WebData = struct {
             const state = ugc.getItemState(id);
 
             if (!state.downloading and !state.downloadpending) {
-                log.debug("item {} state: {}", .{ id, state });
                 break;
             }
 
@@ -419,7 +418,7 @@ pub const WebData = struct {
         const file_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ folder_pointer, url.path });
         defer allocator.free(file_path);
 
-        log.debug("file_path: {s}", .{file_path});
+        log.debug("Rendering steam item path {s}", .{file_path});
 
         var walker = std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch {
             const file = try std.fs.openFileAbsolute(file_path, .{});
@@ -571,7 +570,7 @@ pub const WebData = struct {
                 continue;
 
             const colon_index = std.mem.indexOfScalar(u8, comment_line, ':') orelse {
-                log.warn("style line invalid: `{s}`", .{comment_line});
+                log.warn("Failed to parse style line `{s}`", .{comment_line});
 
                 continue;
             };
@@ -587,7 +586,8 @@ pub const WebData = struct {
                 } else if (std.ascii.eqlIgnoreCase(prop_value, "right")) {
                     current_style.ali = .Right;
                 } else {
-                    log.warn("unknown align: `{s}`", .{prop_value});
+                    log.warn("Unknown align style value `{s}`", .{prop_value});
+                    continue;
                 }
             } else if (std.mem.eql(u8, prop_name, "suffix")) {
                 current_style.suffix = try allocator.dupe(u8, prop_value);
@@ -595,20 +595,20 @@ pub const WebData = struct {
                 current_style.prefix = try allocator.dupe(u8, prop_value);
             } else if (std.mem.eql(u8, prop_name, "scale")) {
                 current_style.scale = std.fmt.parseFloat(f32, prop_value) catch {
-                    log.warn("cannot parse style scale: f32({s})", .{prop_value});
+                    log.warn("Cannot parse style scale f32({s})", .{prop_value});
                     continue;
                 };
             } else if (std.mem.eql(u8, prop_name, "color")) {
                 if (prop_value.len == 6) {
                     current_style.color = Color.parseColor(prop_value[0..6].*) catch {
-                        log.warn("cannot parse style color: Color({s})", .{prop_value});
+                        log.warn("Cannot parse style color '{s}'", .{prop_value});
                         continue;
                     };
                 } else {
-                    log.warn("cannot parse style color: Color({s})", .{prop_value});
+                    log.warn("Cannot parse style color '{s}'", .{prop_value});
                 }
             } else {
-                log.warn("unknown style prop: `{s}`", .{prop_name});
+                log.warn("Unknown style property '{s}'", .{prop_name});
             }
         }
     }
@@ -979,7 +979,7 @@ pub const WebData = struct {
             self.path = child;
         } else |err| {
             self.path = try self.path.dupe();
-            log.warn("{} bad sub path '{}'/'{s}'", .{ err, self.path, targ });
+            log.warn("{} bad url path '{}'/'{s}'", .{ err, self.path, targ });
         }
 
         if (self.conts) |conts| {
@@ -1107,7 +1107,7 @@ pub const WebData = struct {
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.create(WebData);
 
-    log.debug("opening web homepage {s}", .{config.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
+    log.debug("Opening homepage {s}", .{config.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf"});
 
     self.* = .{
         .highlight = .atlas("ui", .{

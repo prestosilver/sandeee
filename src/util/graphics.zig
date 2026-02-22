@@ -58,8 +58,8 @@ pub const Context = struct {
         _ = id;
         _ = msg_type;
         switch (severity) {
-            .high => log.err("{}, {s}", .{ source, message }),
-            else => |x| log.info("{}_{} {s} ", .{ x, source, message }),
+            .high => log.err("OpenGL error in {s}: {s}", .{ @tagName(source), message }),
+            else => |x| log.info("OpenGL info level {s} in {s}: {s} ", .{ @tagName(x), @tagName(source), message }),
         }
     }
 

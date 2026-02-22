@@ -54,7 +54,7 @@ pub const ObjectRef = enum(usize) {
         defer free_lock.unlock();
 
         if (objects.items[self.id()].data == .free) {
-            log.err("Double Free", .{});
+            log.err("Double Free occured #{}", .{self.id()});
             return;
         }
 
@@ -148,6 +148,8 @@ pub fn collect() !void {
     }
 
     if (free_count != 0) {
+        log.debug("Vm freed {} objects", .{free_count});
+
         const total = objects.items.len;
         var free_total: usize = 0;
 
@@ -159,8 +161,8 @@ pub fn collect() !void {
         const pc =
             @as(f64, @floatFromInt(free_total)) / @as(f64, @floatFromInt(total));
 
-        log.debug("free pc: {:0.2} ({}/{})", .{
-            pc,
+        log.debug("Unused object percentage {:0.2} ({}/{})", .{
+            pc * 100,
             free_total,
             total,
         });
@@ -168,10 +170,8 @@ pub fn collect() !void {
         if (pc > 0.50) {
             try clean();
 
-            log.debug("cleaned pool to length {}", .{objects.items.len});
+            log.debug("Cleaned pool to length {}", .{objects.items.len});
         }
-
-        log.debug("freed: {}", .{free_count});
     }
 }
 

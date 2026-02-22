@@ -107,13 +107,13 @@ pub fn parse(file: *files.File) !Eln {
                         var texture = Texture.init();
 
                         texture.loadFile(value) catch |err| {
-                            log.err("Failed to load image {s}: {}", .{ value, err });
+                            log.err("Failed to load image {s} {}", .{ value, err });
                             texture.deinit();
                             break :load_tex;
                         };
 
                         texture.upload() catch |err| {
-                            log.err("Failed to upload image {s}: {}", .{ value, err });
+                            log.err("Failed to upload image {s} {}", .{ value, err });
                             texture.deinit();
                             break :load_tex;
                         };
@@ -133,13 +133,13 @@ pub fn parse(file: *files.File) !Eln {
                 var texture = Texture.init();
 
                 texture.loadFile(file.name) catch |err| {
-                    log.err("Failed to load image {s}: {}", .{ file.name, err });
+                    log.err("Failed to load image {s} {}", .{ file.name, err });
                     texture.deinit();
                     break :load_tex;
                 };
 
                 texture.upload() catch |err| {
-                    log.err("Failed to upload image {s}: {}", .{ file.name, err });
+                    log.err("Failed to upload image {s} {}", .{ file.name, err });
                     texture.deinit();
                     break :load_tex;
                 };

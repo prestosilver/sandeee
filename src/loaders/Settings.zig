@@ -14,8 +14,6 @@ const Self = @This();
 path: []const u8,
 
 pub fn load(self: *const Self) anyerror!void {
-    log.debug("load settings", .{});
-
     config.SettingManager.instance = .{};
 
     const root = try files.FolderLink.resolve(.root);
@@ -42,9 +40,13 @@ pub fn load(self: *const Self) anyerror!void {
 
     try Opener.instance.setup();
     try files.Folder.setupExtr();
+
+    log.debug("Loaded settings {s}", .{self.path});
 }
 
-pub fn unload(_: *const Self) void {
+pub fn unload(self: *const Self) void {
     config.SettingManager.deinit();
     Opener.instance.deinit();
+
+    log.debug("Unloaded settings {s}", .{self.path});
 }

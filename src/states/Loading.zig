@@ -88,31 +88,31 @@ loading_thread: ?std.Thread = null,
 fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
     return struct {
         fn load(self: *GSLoading) !void {
-            var loader: Loader = try .init(loaders.Group{});
+            var loader: Loader = try .init(loaders.Group{}, "Loaded everything");
 
             // files
             var files: Loader = try .init(loaders.Files{
                 .disk = self.disk.*.?,
-            });
+            }, null);
 
             // settings
             var settings: Loader = try .init(loaders.Settings{
                 .path = settings_path,
-            });
+            }, null);
 
             try settings.require(&files);
 
             try loader.require(&files);
             try loader.require(&settings);
 
-            var textures: Loader = try .init(loaders.Group{});
+            var textures: Loader = try .init(loaders.Group{}, "Loaded textures");
 
             var texture_loaders: [TEXTURE_NAMES.len]Loader = undefined;
             inline for (TEXTURE_NAMES, 0..) |texture_entry, i| {
                 texture_loaders[i] = try .init(loaders.Texture{
                     .path = texture_entry[0],
                     .name = texture_entry[1],
-                });
+                }, null);
 
                 try textures.require(&texture_loaders[i]);
             }
@@ -125,25 +125,25 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
                     .path = font_path,
                 },
                 .output = self.face,
-            });
+            }, null);
 
             try face.require(&settings);
             try loader.require(&face);
 
             //// sounds
-            var sounds: Loader = try .init(loaders.Group{});
+            var sounds: Loader = try .init(loaders.Group{}, "Loaded sounds");
 
             var login_sound_load: Loader = try .init(loaders.Sound{
                 .path = login_sound_path,
                 .output = &self.login_snd,
-            });
+            }, null);
 
             try sounds.require(&login_sound_load);
 
             var logout_sound_load: Loader = try .init(loaders.Sound{
                 .path = logout_sound_path,
                 .output = self.logout_snd,
-            });
+            }, null);
 
             try logout_sound_load.require(&settings);
             try sounds.require(&logout_sound_load);
@@ -151,7 +151,7 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
             var message_sound_load: Loader = try .init(loaders.Sound{
                 .path = message_sound_path,
                 .output = self.message_snd,
-            });
+            }, null);
 
             try sounds.require(&message_sound_load);
 
@@ -162,7 +162,7 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
             if (options.enable_email) {
                 var email: Loader = try .init(loaders.Mail{
                     .folder = mail_path,
-                });
+                }, null);
 
                 try email.require(&settings);
                 try loader.require(&email);
@@ -171,7 +171,7 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
             LogoutState.unloader = try loader.load(&self.load_progress, 0.0, 1.0);
         }
     }.load(in_self) catch |err| {
-        log.err("loading error: {s}", .{@errorName(err)});
+        log.err("Loading error {s}", .{@errorName(err)});
         load_error.* = @errorName(err);
         @panic(@errorName(err));
     };

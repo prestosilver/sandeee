@@ -208,7 +208,7 @@ fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param:
         param.rest(),
     });
     defer allocator.free(new_cmd);
-    log.debug("Run {s} instead of {s} {s}", .{ new_cmd, cmd, param.rest() });
+    log.debug("Running '{s}' instead of '{s} {s}'", .{ new_cmd, cmd, param.rest() });
 
     return self.run(new_cmd);
 }

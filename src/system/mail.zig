@@ -505,7 +505,7 @@ pub const EmailManager = struct {
         }) {
             self.boxes = try allocator.realloc(self.boxes, self.boxes.len + 1);
 
-            log.info("load emails: {s}", .{file.name});
+            log.info("Load email file {s}", .{file.name});
 
             self.boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
 
@@ -619,7 +619,7 @@ pub const EmailManager = struct {
                     };
 
                     if (self.emails.items[idx].condition[cond_idx] != cond_kind)
-                        log.debug("email condition {} '{s}'", .{ cond_kind, data.items });
+                        log.debug("Email {} has condition {} with data '{s}'", .{ idx, cond_kind, data.items });
                 }
 
                 var len = @as(*align(1) const u32, @ptrCast(&conts[fidx])).*;
@@ -656,7 +656,7 @@ pub const EmailManager = struct {
             std.sort.insertion(Email, self.emails.items[start..], false, Email.lessThan);
         }
 
-        log.info("emails count: {}", .{self.emails.items.len});
+        log.debug("Loaded {} total emails", .{self.emails.items.len});
 
         self.boxes[self.boxes.len - 1] = "outbox";
     }

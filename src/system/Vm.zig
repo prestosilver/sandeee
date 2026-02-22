@@ -442,7 +442,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
                                         return;
                                     }
 
-                                    log.warn("password dosent match {s}", .{dbg_pass});
+                                    log.warn("Debug password dosent match {s}", .{dbg_pass});
 
                                     return error.InvalidPassword;
                                 },
@@ -841,7 +841,7 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(
         }
         tmp.print("}}", .{}) catch unreachable;
 
-        log.warn("Vm ops failed at {s}", .{tmp.items});
+        log.warn("Vm operation parsing failed at {s}", .{tmp.items});
         ops.deinit();
     }
 
@@ -851,12 +851,12 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(
             return error.InvalidAsm;
         }
         const code: Operation.Code = std.meta.intToEnum(Operation.Code, conts[parse_ptr]) catch {
-            log.warn("couldnt grab code", .{});
+            log.warn("Couldnt grab operation code", .{});
             return error.InvalidAsm;
         };
         parse_ptr += 1;
         if (parse_ptr >= conts.len) {
-            log.warn("Half made op", .{});
+            log.warn("Incomplete operation parameters", .{});
             return error.InvalidAsm;
         }
         const kind = conts[parse_ptr];
@@ -892,7 +892,7 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(
         } else if (kind == 0) {
             try ops.append(Vm.Operation{ .code = code });
         } else {
-            log.warn("Invalid op kind", .{});
+            log.warn("Invalid operation kind", .{});
             return error.InvalidAsm;
         }
     }
@@ -959,7 +959,9 @@ pub fn getOper(self: *Vm) !?Operation {
 
             return func.*.ops[self.pc];
         }
-        log.err("'{s}', {any}", .{ inside, self.functions.get(inside) });
+
+        log.err("Could not find function '{s}' while inside {any}", .{ inside, self.functions.get(inside) });
+
         return error.UnknownFunction;
     } else {
         return if (self.code) |code|

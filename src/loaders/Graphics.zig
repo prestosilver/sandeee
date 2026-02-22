@@ -19,8 +19,11 @@ pub fn load(self: *const Self) anyerror!void {
     TextureManager.instance = .{};
 
     try graphics.Context.init("SandEEE", self.real_fullscreen);
+    log.debug("Init graphics context", .{});
 }
 
 pub fn unload(_: *const Self) void {
     graphics.Context.deinit();
+
+    log.debug("Deinit graphics context", .{});
 }

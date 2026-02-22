@@ -575,7 +575,7 @@ fn sysSteam(self: *Vm) VmError!void {
             if (split.next() != null) break :set_data;
 
             const item_id = std.fmt.parseInt(usize, item_str, 10) catch {
-                log.warn("bad steam metadata id set: '{s}'", .{data[1..]});
+                log.warn("Bad steam metadata id {s} in set", .{data[1..]});
 
                 return error.UnknownError;
             };
@@ -628,7 +628,7 @@ fn sysSteam(self: *Vm) VmError!void {
             }
         }
 
-        log.warn("bad steam metadata set: '{s}'", .{data[1..]});
+        log.warn("Bad steam metadata id {s} in set", .{data[1..]});
 
         return error.UnknownError;
     } else if (data[0] == 'f' and data.len > 1) {
@@ -658,7 +658,7 @@ fn sysSteam(self: *Vm) VmError!void {
                 for (folder_list.items) |item| {
                     if (item.name.len < folder.name.len) continue;
 
-                    log.debug("creating Steam folder {s}", .{item.name[folder.name.len..]});
+                    log.debug("Creating Steam upload temp folder {s}", .{item.name[folder.name.len..]});
 
                     upload.makePath(item.name[folder.name.len..]) catch |err|
                         if (err != error.PathAlreadyExists)
@@ -674,7 +674,7 @@ fn sysSteam(self: *Vm) VmError!void {
                 for (file_list.items) |item| {
                     if (item.name.len < folder.name.len) continue;
 
-                    log.debug("creating Steam file {s}", .{item.name[folder.name.len..]});
+                    log.debug("Creating Steam upload temp file {s}", .{item.name[folder.name.len..]});
 
                     upload.writeFile(.{
                         .sub_path = item.name[folder.name.len..],
@@ -684,7 +684,7 @@ fn sysSteam(self: *Vm) VmError!void {
             }
 
             const item_id = std.fmt.parseInt(usize, item_str, 10) catch {
-                log.warn("bad steam upload files id: '{s}'", .{data[1..]});
+                log.warn("Bad steam upload files id {s}", .{data[1..]});
 
                 return error.UnknownError;
             };
@@ -699,7 +699,7 @@ fn sysSteam(self: *Vm) VmError!void {
             return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle, .folder = upload });
         }
 
-        log.warn("bad steam upload files: '{s}'", .{data[1..]});
+        log.warn("Bad steam upload files id {s}", .{data[1..]});
 
         return error.UnknownError;
     } else if (data[0] == 'g' and data.len > 1) {
@@ -714,7 +714,7 @@ fn sysSteam(self: *Vm) VmError!void {
             _ = path;
         }
 
-        log.warn("bad steam download files: '{s}'", .{data[1..]});
+        log.warn("bad steam download files id {s}", .{data[1..]});
 
         return error.UnknownError;
     }
