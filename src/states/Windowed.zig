@@ -199,8 +199,6 @@ pub fn setup(self: *GSWindowed) !void {
 
     graphics.Context.instance.color = self.color;
 
-    pseudo.win.windows_ptr = &self.windows;
-
     global_self = self;
 
     Window.Data.WindowContents.scroll_sp[0] = .atlas("ui", .{
@@ -679,10 +677,11 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
                             },
                             else => {
                                 try self.windows.append(swap);
+                                self.dragging_window = null;
                                 drag: {
                                     self.dragging_mode = mode;
-                                    self.dragging_window = self.windows.items[self.windows.items.len - 1];
-                                    const start = self.dragging_window.?.data.pos;
+                                    const dragging_window = self.windows.items[self.windows.items.len - 1];
+                                    const start = dragging_window.data.pos;
                                     self.dragging_start = switch (self.dragging_mode) {
                                         .None => break :drag,
                                         .Close => break :drag,
@@ -695,6 +694,7 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
                                         .ResizeRB => .{ .x = start.w - self.mousepos.x, .y = start.h - self.mousepos.y },
                                         .ResizeLB => .{ .x = start.w + start.x, .y = start.h - self.mousepos.y },
                                     };
+                                    self.dragging_window = dragging_window;
 
                                     try swap.data.contents.moveResize(swap.data.pos);
                                 }

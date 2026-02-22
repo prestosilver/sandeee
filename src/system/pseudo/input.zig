@@ -70,27 +70,20 @@ pub const char = struct {
 
 pub const win = struct {
     pub fn read(vm_instance: ?*Vm) ![]const u8 {
-        var result: []u8 = &.{};
-        if (vm_instance == null) return result;
+        if (vm_instance == null) return &.{};
 
         if (vm_instance.?.misc_data.get("window")) |aid| {
-            for (pWindows.windows_ptr.*.items) |item| {
-                if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                    const self: *VmWindow.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
-
-                    if (self.idx == aid[0]) {
-                        result = try allocator.realloc(result, self.input.len * 2);
-                        for (self.input, 0..) |in, index| {
-                            result[index * 2] = std.mem.toBytes(in)[0];
-                            result[index * 2 + 1] = std.mem.toBytes(in)[1];
-                        }
-                        return result;
-                    }
+            if (VmWindow.VMData.used_ids[aid[0]]) |self| {
+                const result = try allocator.alloc(u8, self.input.len * 2);
+                for (self.input, 0..) |in, index| {
+                    result[index * 2] = std.mem.toBytes(in)[0];
+                    result[index * 2 + 1] = std.mem.toBytes(in)[1];
                 }
+                return result;
             }
         }
 
-        return result;
+        return &.{};
     }
 };
 
@@ -102,24 +95,18 @@ pub const mouse = struct {
         if (vm_instance == null) return result;
 
         if (vm_instance.?.misc_data.get("window")) |aid| {
-            for (pWindows.windows_ptr.*.items) |item| {
-                if (std.mem.eql(u8, item.data.contents.props.info.kind, "vm")) {
-                    const self: *VmWindow.VMData = @ptrCast(@alignCast(item.data.contents.ptr));
-
-                    if (self.idx == aid[0]) {
-                        result[0] = 255;
-                        if (self.mousebtn) |mousebtn| {
-                            result[0] = @as(u8, @intCast(mousebtn));
-                        }
-                        if (self.mousepos.y > 0 and self.mousepos.y < 20000)
-                            std.mem.writeInt(u16, result[3..5], @as(u16, @intFromFloat(self.mousepos.y)), .big);
-
-                        if (self.mousepos.x > 0 and self.mousepos.x < 20000)
-                            std.mem.writeInt(u16, result[1..3], @as(u16, @intFromFloat(self.mousepos.x)), .big);
-
-                        return result;
-                    }
+            if (VmWindow.VMData.used_ids[aid[0]]) |self| {
+                result[0] = 255;
+                if (self.mousebtn) |mousebtn| {
+                    result[0] = @as(u8, @intCast(mousebtn));
                 }
+                if (self.mousepos.y > 0 and self.mousepos.y < 20000)
+                    std.mem.writeInt(u16, result[3..5], @as(u16, @intFromFloat(self.mousepos.y)), .big);
+
+                if (self.mousepos.x > 0 and self.mousepos.x < 20000)
+                    std.mem.writeInt(u16, result[1..3], @as(u16, @intFromFloat(self.mousepos.x)), .big);
+
+                return result;
             }
         }
 

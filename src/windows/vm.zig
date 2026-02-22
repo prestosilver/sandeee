@@ -33,8 +33,13 @@ const files = system.files;
 
 const DEFAULT_SIZE: Vec2 = .{ .x = 600, .y = 400 };
 
+const WindowId = u8;
+
 pub const VMData = struct {
     const Self = @This();
+
+    pub var used_ids = [_]?*VMData{null} ** std.math.maxInt(WindowId);
+    var last_id: WindowId = 0;
 
     texture: Texture,
     framebuffer: zgl.Framebuffer,
@@ -47,7 +52,7 @@ pub const VMData = struct {
     font_shader: ?*Shader = null,
     font: ?*Font = null,
 
-    idx: u8,
+    id: WindowId,
     shader: *Shader,
 
     total_counter: usize = 0,
@@ -58,6 +63,17 @@ pub const VMData = struct {
     input: []i32 = &.{},
     mousebtn: ?i32 = null,
     mousepos: Vec2 = .{},
+
+    tags: struct {
+        should_close: bool = false,
+        title_ptr: ?*[]const u8 = null,
+        set_title: ?[]const u8 = null,
+        pos: ?Vec2 = null,
+        size: ?Vec2 = null,
+        min_size: ?Vec2 = null,
+        max_size: ?Vec2 = null,
+        color: ?Color = null,
+    } = .{},
 
     const VMDataKind = enum {
         rect,
@@ -151,7 +167,49 @@ pub const VMData = struct {
         });
     }
 
-    pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, _: *Window.Data.WindowContents.WindowProps) !void {
+    pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
+        props.close = self.tags.should_close;
+        self.tags.title_ptr = &props.info.name;
+
+        if (self.tags.set_title) |title_value| {
+            try props.setTitle(title_value);
+            allocator.free(title_value);
+
+            self.tags.set_title = null;
+        }
+
+        if (self.tags.pos) |target_pos| {
+            bnds.x = target_pos.x;
+            bnds.y = target_pos.y;
+
+            self.tags.pos = null;
+        }
+
+        if (self.tags.size) |target_size| {
+            bnds.w = target_size.x;
+            bnds.h = target_size.y;
+
+            self.tags.size = null;
+        }
+
+        if (self.tags.min_size) |target_min_size| {
+            props.size.min = target_min_size;
+
+            self.tags.min_size = null;
+        }
+
+        if (self.tags.max_size) |target_max_size| {
+            props.size.max = target_max_size;
+
+            self.tags.max_size = null;
+        }
+
+        if (self.tags.color) |target_color| {
+            props.clear_color = target_color;
+
+            self.tags.color = null;
+        }
+
         self.font_shader = font_shader;
         self.font = font;
 
@@ -251,6 +309,8 @@ pub const VMData = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        VMData.used_ids[self.id] = null;
+
         allocator.free(self.input);
 
         self.spritebatch.deinit();
@@ -269,7 +329,7 @@ pub const VMData = struct {
     }
 };
 
-pub fn init(idx: u8, shader: *Shader) !Window.Data.WindowContents {
+pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.create(VMData);
 
     {
@@ -312,8 +372,15 @@ pub fn init(idx: u8, shader: *Shader) !Window.Data.WindowContents {
                 return error.OutOfMemory;
         }
 
+        if (VMData.used_ids[VMData.last_id +% 1] != null)
+            return error.WindowLimitReached;
+
+        VMData.last_id +%= 1;
+
+        VMData.used_ids[VMData.last_id] = self;
+
         self.* = .{
-            .idx = idx,
+            .id = VMData.last_id,
             .shader = shader,
             .size = DEFAULT_SIZE,
             .spritebatch = .{ .size = &self.texture.size },

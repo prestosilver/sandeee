@@ -286,8 +286,8 @@ pub fn keyDown(event: input_events.EventKeyDown) !void {
     }
 
     if (event.key == glfw.KeyF12 and event.mods & glfw.ModifierControl != 0) {
-        const fdsa: ?*u32 = null;
-        log.log.info("{}", fdsa.?);
+        const foo: ?*u32 = null;
+        log.log.info("{}", foo.?);
     }
 
     if (event.key == glfw.KeyV and event.mods == glfw.ModifierControl) {

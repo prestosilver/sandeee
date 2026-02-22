@@ -98,7 +98,12 @@ pub const SysCall = struct {
 
     run_fn: *const fn (*Vm) VmError!void,
 
+    var sys_mutex: std.Thread.Mutex = .{};
+
     pub fn run(self: *Vm, index: u64) VmError!void {
+        sys_mutex.lock();
+        defer sys_mutex.unlock();
+
         if (index < @intFromEnum(SyscallId.Last)) {
             return SYS_CALLS.get(@enumFromInt(index)).run_fn(self);
         }

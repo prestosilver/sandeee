@@ -96,6 +96,8 @@ pub const FileError = error{
     FolderExists,
     FileExists,
 
+    WindowLimitReached,
+
     OutOfMemory,
 } || std.fs.File.SeekError || std.fs.File.ReadError || std.fs.File.WriteError || error{StreamTooLong};
 
