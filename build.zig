@@ -1338,6 +1338,8 @@ pub fn build(b: *std.Build) !void {
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libssp-0.dll"), "windows/libssp-0.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libwinpthread-1.dll"), "windows/libwinpthread-1.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/lib/libglfw.so"), "linux/libglfw.so.3");
+
+        _ = itch_directory_step.addCopyFile(iversion_file, "VERSION");
     }
 
     // public builds step

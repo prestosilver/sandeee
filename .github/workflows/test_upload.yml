@@ -1,5 +1,5 @@
 name: Test and upload
-run-name: Run tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }} and upload to steam.
+run-name: Run tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }} and upload to stores.
 on: [push]
 jobs:
   tests-dbg:
@@ -130,6 +130,63 @@ jobs:
             username: preston3410
             password: ${{ secrets.STEAM_PASSWORD }}
             app_build: ${{github.workspace}}/zig-out/pub/steam/upload_4124370.vdf
+  itch-upload:
+    runs-on: ubuntu-latest
+    name: Itch Upload
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/steam_upload' 
+    needs: [tests-dbg, tests-rel]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ${{github.workspace}}/.cache/zig
+            ${{github.workspace}}/.zig-cache
+          key: zig-build-itch-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
+          restore-keys: |
+            zig-build-itch-${{ runner.os }}-
+            zig-build-itch-
+            zig-build-
+            zig-
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.15.2
+      - name: Install glfw
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
+      - name: Install mingw
+        run: sudo apt-get install gcc-mingw-w64 binutils-mingw-w64-x86-64
+        shell: bash
+      - name: Build game
+        run: |
+          zig build itch
+      - name: Set Version
+        run: |
+          echo "version=$(cat pub/itch/VERSION)" >> $GITHUB_ENV
+      - name: Upload windows build to itch.io project
+        uses: robpc/itchio-upload-action@v1
+        with:
+          path: zig-out/pub/itch/windows
+          project: sandeee-alpha
+          channel: win
+          version: ${{ env.version }}
+          api-key: ${{ secrets.ITCH_API_KEY }}
+      - name: Upload linux build to itch.io project
+        uses: robpc/itchio-upload-action@v1
+        with:
+          path: zig-out/pub/itch/linux
+          project: sandeee-alpha
+          channel: linux
+          version: ${{ env.version }}
+          api-key: ${{ secrets.ITCH_API_KEY }}
   gen-changelog:
     runs-on: ubuntu-latest
     name: Generate changelog
