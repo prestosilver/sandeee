@@ -1482,7 +1482,7 @@ pub fn build(b: *std.Build) !void {
     butler_linux_step.addFileInput(iversion_file);
     butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_linux_step.addDirectoryArg(b.path("zig-out/pub/itch/linux/"));
-    butler_linux_step.addArg(b.fmt("prestosilver/sandeee:linux-nightly", .{}));
+    butler_linux_step.addArg(b.fmt("prestosilver/sandeee-os:linux-nightly", .{}));
 
     butler_linux_step.step.dependOn(&install_itch_directory_step.step);
 
@@ -1490,7 +1490,7 @@ pub fn build(b: *std.Build) !void {
     butler_windows_step.addFileInput(iversion_file);
     butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_windows_step.addDirectoryArg(b.path("zig-out/pub/itch/windows/"));
-    butler_windows_step.addArg(b.fmt("prestosilver/sandeee:win-nightly", .{}));
+    butler_windows_step.addArg(b.fmt("prestosilver/sandeee-os:win-nightly", .{}));
 
     butler_windows_step.step.dependOn(&install_itch_directory_step.step);
 
@@ -1498,7 +1498,7 @@ pub fn build(b: *std.Build) !void {
     butler_linux_demo_step.addFileInput(iversion_file);
     butler_linux_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_linux_demo_step.addDirectoryArg(b.path("zig-out/pub/itch/linux-demo/"));
-    butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee:linux-demo-nightly", .{}));
+    butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-os:linux-demo-nightly", .{}));
 
     butler_linux_demo_step.step.dependOn(&install_itch_directory_step.step);
 
@@ -1506,7 +1506,7 @@ pub fn build(b: *std.Build) !void {
     butler_windows_demo_step.addFileInput(iversion_file);
     butler_windows_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_windows_demo_step.addDirectoryArg(b.path("zig-out/pub/itch/windows-demo/"));
-    butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee:win-demo-nightly", .{}));
+    butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-os:win-demo-nightly", .{}));
 
     butler_windows_demo_step.step.dependOn(&install_itch_directory_step.step);
 
