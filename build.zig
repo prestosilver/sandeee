@@ -7,7 +7,6 @@ var version: Version = .{
     .index = 9,
 };
 
-// this will need to be readded, its for assets embeded in the executable
 const INTERNAL_IMAGE_FILES = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const INTERNAL_SOUND_FILES = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 
