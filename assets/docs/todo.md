@@ -47,3 +47,6 @@
 - [ ] Inter email conditions
 - [ ] Email notification text is cut off a bit.
 - [ ] Consistent color parsing
+- [ ] zig build upload_itch_release
+- [ ] zig build steam_changelog
+- [ ] zig build itch_changelog

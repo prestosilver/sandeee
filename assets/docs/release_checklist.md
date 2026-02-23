@@ -1,0 +1,115 @@
+# Release Checklist
+
+## os:seed#9 (3-3-26)
+
+- [ ] Going into release day
+    - [ ] Grammar
+        - [ ] Check spelling in all emails
+        - [ ] Ensure no bad commits are in changelog
+    - [ ] Automatic
+        - [ ] Pass all zig tests
+        - [ ] Successfully fuzz for 2 hours
+    - [ ] Manual tests
+        - [ ] Run steam demo on windows vm
+            - [ ] Test all disks in /disks
+            - [ ] Make a disk
+        - [ ] Run steam demo on linux vm
+            - [ ] Test all disks in /disks
+            - [ ] Make a disk
+        - [ ] Run itch demo on windows vm
+            - [ ] Test all disks in /disks
+            - [ ] Make a disk
+        - [ ] Run itch demo on linux vm
+            - [ ] Test all disks in /disks
+            - [ ] Make a disk
+        - [ ] Run steam on windows vm
+            - [ ] Test all disks in /disks
+            - [ ] Transfer a demo disk
+            - [ ] Make a disk
+        - [ ] Run steam on linux vm
+            - [ ] Test all disks in /disks
+            - [ ] Transfer a demo disk
+            - [ ] Make a disk
+        - [ ] Run itch on windows vm
+            - [ ] Test all disks in /disks
+            - [ ] Transfer a demo disk
+            - [ ] Make a disk
+        - [ ] Run itch on linux vm
+            - [ ] Test all disks in /disks
+            - [ ] Transfer a demo disk
+            - [ ] Make a disk
+- [ ] On release
+    - [ ] Incremenet version number
+        - [ ] Inside VERSION
+        - [ ] Regenerate chagelog
+        - [ ] Git push (Make sure meta)
+    - [ ] Upload website
+        - [ ] Run `zig builld www`
+        - [ ] Push www submodule to github
+    - [ ] Actually release
+        - [ ] Move steam build from alpha to default
+        - [ ] Run `zig build upload_itch_release`
+    - [X] ~~Publish steam cangelog~~
+        - [X] ~~Run `zig build steam_changelog`~~
+        - [X] ~~Copy paste `zig-out/pub/steam/changelog`~~
+    - [X] ~~Publish itch cangelog~~
+        - [X] ~~Run `zig build itch_changelog`~~
+        - [X] ~~Copy paste `zig-out/pub/itch/changelog`~~
+    - [ ] Announce on discord
+
+## template
+
+- [ ] Going into release day
+    - [ ] Grammar
+        - [ ] Check spelling in all emails
+        - [ ] Ensure no bad commits are in changelog
+    - [ ] Automatic
+        - [ ] Pass all zig tests
+        - [ ] Successfully fuzz for 2 hours
+    - [ ] Manual tests
+        - [ ] Run steam demo on windows vm
+            - [ ] Test all disks in /disks
+            - [ ] Make a disk
+        - [ ] Run steam demo on linux vm
+            - [ ] Test all disks in /disks
+            - [ ] Make a disk
+        - [ ] Run itch demo on windows vm
+            - [ ] Test all disks in /disks
+            - [ ] Make a disk
+        - [ ] Run itch demo on linux vm
+            - [ ] Test all disks in /disks
+            - [ ] Make a disk
+        - [ ] Run steam on windows vm
+            - [ ] Test all disks in /disks
+            - [ ] Transfer a demo disk
+            - [ ] Make a disk
+        - [ ] Run steam on linux vm
+            - [ ] Test all disks in /disks
+            - [ ] Transfer a demo disk
+            - [ ] Make a disk
+        - [ ] Run itch on windows vm
+            - [ ] Test all disks in /disks
+            - [ ] Transfer a demo disk
+            - [ ] Make a disk
+        - [ ] Run itch on linux vm
+            - [ ] Test all disks in /disks
+            - [ ] Transfer a demo disk
+            - [ ] Make a disk
+- [ ] On release
+    - [ ] Incremenet version number
+        - [ ] Inside VERSION
+        - [ ] Regenerate chagelog
+        - [ ] Git push (Make sure meta)
+    - [ ] Upload website
+        - [ ] Run `zig builld www`
+        - [ ] Push www submodule to github
+    - [ ] Actually release
+        - [ ] Move steam build from alpha to default
+        - [ ] Run `zig build upload_itch_release`
+    - [ ] Publish steam cangelog
+        - [ ] Run `zig build steam_changelog`
+        - [ ] Copy paste `zig-out/pub/steam/changelog`
+    - [ ] Publish itch cangelog
+        - [ ] Run `zig build itch_changelog`
+        - [ ] Copy paste `zig-out/pub/itch/changelog`
+    - [ ] Announce on discord

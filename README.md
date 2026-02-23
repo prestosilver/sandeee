@@ -47,13 +47,14 @@ Jokes aside, SandEEE is a programming game meant to be as immersive as possible.
 
 ## Important docs and quick-links
 
-* [The meta-documentation](assets/docs/meta.md)
-* [Lore sheet & reference](assets/docs/lore.md)
-* [Trailer plans (GPT Generated)](assets/docs/gpt/gpt_trailer.md)
 * [Rolling Bug/Todo List](assets/docs/todo.md)
-* [Various **low pri** optimization ideas](assets/docs/opt_ideas.md)
+* [Lore sheet & reference](assets/docs/lore.md)
 * [Important asset listing](assets/docs/asset_index.md)
 * [Content asset listing](assets/docs/content_index.md)
+* [The meta-documentation](assets/docs/meta.md)
+* [Trailer plans (GPT Generated)](assets/docs/gpt/gpt_trailer.md)
+* [Various **low pri** optimization ideas](assets/docs/opt_ideas.md)
+* [The release checklist](assets/docs/content_index.md)
 
 ### Repo root
 
