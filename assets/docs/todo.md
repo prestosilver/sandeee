@@ -38,7 +38,11 @@
 ## General tentative todo
 
 - [X] New partial disk scripted recovery system
+- [ ] Double check wording in demo emails
+- [ ] Update email content
 - [ ] Embed file fix
 - [ ] Change email unlocked to key based
 - [ ] Move runSandEEE to a subfolder somewhere (in repo)
 - [ ] Steam tool transfer from demo.
+- [ ] Inter email conditions
+- [ ] Email notification text is cut off a bit.
