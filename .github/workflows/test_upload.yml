@@ -163,10 +163,7 @@ jobs:
           packages: libglfw3 libglfw3-dev
           version: glfw
       - name: Install butler
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: butler
-          version: glfw
+        uses: remarkablegames/setup-butler@v2
       - name: Install mingw
         run: sudo apt-get install gcc-mingw-w64 binutils-mingw-w64-x86-64
         shell: bash
