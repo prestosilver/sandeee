@@ -1341,6 +1341,99 @@ pub fn build(b: *std.Build) !void {
 
         _ = itch_directory_step.addCopyFile(iversion_file, "VERSION");
     }
+    
+    {
+        // Itch demo build
+
+        var itch_install_disk_image_step = b.addRunArtifact(image_builder_exe);
+        const itch_install_disk_image_path = itch_install_disk_image_step.addOutputFileArg("disk_itch_full.eee");
+        itch_install_disk_image_step.addArg("--disk");
+        itch_install_disk_image_step.addFileInput(disk_image_path);
+        itch_install_disk_image_step.addFileArg(disk_image_path);
+        itch_install_disk_image_step.addArg("--disk");
+        itch_install_disk_image_step.addFileInput(demo_image_path);
+        itch_install_disk_image_step.addFileArg(demo_image_path);
+
+        _ = itch_directory_step.addCopyFile(itch_install_disk_image_path, "linux-demo/content/recovery.eee");
+        _ = itch_directory_step.addCopyFile(itch_install_disk_image_path, "windows-demo/content/recovery.eee");
+
+        const public_options = b.addOptions();
+        public_options.addOption(Version, "SANDEEE_VERSION", version);
+        public_options.addOption([]const u8, "VERSION_TEXT", version_text);
+        public_options.addOption(bool, "is_demo", true);
+        public_options.addOption(bool, "disable_audio", false);
+        public_options.addOption(bool, "is_steam", false);
+        public_options.addOption(bool, "fake_steam", false);
+        public_options.addOption(bool, "default_panic", false);
+        public_options.addOption(bool, "enable_email", true);
+
+        const public_options_module = public_options.createModule();
+
+        const exe_mod_pub_linux = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+            .link_libc = true,
+        });
+        exe_mod_pub_linux.addImport("options", public_options_module);
+        exe_mod_pub_linux.addImport("network", network_module);
+        exe_mod_pub_linux.addImport("glfw", glfw_module);
+        exe_mod_pub_linux.addImport("flags", flags_module);
+        exe_mod_pub_linux.addImport("zgl", zgl_module);
+        exe_mod_pub_linux.addImport("steam", steam_module);
+        addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+
+        const exe_pub_linux = b.addExecutable(.{
+            .name = "SandEEE (Itch Linux)",
+            .root_module = exe_mod_pub_linux,
+            .use_llvm = true,
+        });
+        exe_pub_linux.addIncludePath(b.path("deps/include"));
+
+        exe_pub_linux.addLibraryPath(b.path("deps/lib"));
+        exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
+
+        _ = itch_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux-demo/SandEEE");
+
+        const exe_mod_pub_windows = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
+            .optimize = .ReleaseFast,
+            .link_libc = true,
+        });
+        exe_mod_pub_windows.addImport("options", public_options_module);
+        exe_mod_pub_windows.addImport("network", network_module);
+        exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("flags", flags_module);
+        exe_mod_pub_windows.addImport("zgl", zgl_module);
+        exe_mod_pub_windows.addImport("steam", steam_module);
+        addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+
+        const exe_pub_windows = b.addExecutable(.{
+            .name = "SandEEE (Itch Windows)",
+            .root_module = exe_mod_pub_windows,
+            .use_llvm = true,
+        });
+        exe_pub_windows.addIncludePath(b.path("deps/include"));
+
+        exe_pub_windows.addObjectFile(rc_file);
+        exe_pub_windows.addLibraryPath(b.path("deps/dll"));
+        exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe_pub_windows.subsystem = .Windows;
+
+        _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows-demo/SandEEE.exe");
+
+        _ = itch_directory_step.addCopyFile(b.path("runSandEEE"), "linux-demo/runSandEEE");
+        _ = itch_directory_step.addCopyFile(b.path("deps/dll/libglfw3.dll"), "windows-demo/glfw3.dll");
+        _ = itch_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows-demo/libgcc_s_seh-1.dll");
+        _ = itch_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows-demo/libstdc++-6.dll");
+        _ = itch_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows-demo/OpenAL32.dll");
+        _ = itch_directory_step.addCopyFile(b.path("deps/dll/libssp-0.dll"), "windows-demo/libssp-0.dll");
+        _ = itch_directory_step.addCopyFile(b.path("deps/dll/libwinpthread-1.dll"), "windows-demo/libwinpthread-1.dll");
+        _ = itch_directory_step.addCopyFile(b.path("deps/lib/libglfw.so"), "linux-demo/libglfw.so.3");
+    }
 
     // public builds step
     const install_steam_directory_step = b.addInstallDirectory(.{
@@ -1389,7 +1482,7 @@ pub fn build(b: *std.Build) !void {
     butler_linux_step.addFileInput(iversion_file);
     butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_linux_step.addDirectoryArg(b.path("zig-out/pub/itch/linux/"));
-    butler_linux_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux", .{}));
+    butler_linux_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux-nightly", .{}));
 
     butler_linux_step.step.dependOn(&install_itch_directory_step.step);
 
@@ -1397,12 +1490,30 @@ pub fn build(b: *std.Build) !void {
     butler_windows_step.addFileInput(iversion_file);
     butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_windows_step.addDirectoryArg(b.path("zig-out/pub/itch/windows/"));
-    butler_windows_step.addArg(b.fmt("prestosilver/sandeee-alpha:win", .{}));
+    butler_windows_step.addArg(b.fmt("prestosilver/sandeee-alpha:win-nightly", .{}));
 
     butler_windows_step.step.dependOn(&install_itch_directory_step.step);
 
+    const butler_linux_demo_step = b.addSystemCommand(&.{ "butler", "push" });
+    butler_linux_demo_step.addFileInput(iversion_file);
+    butler_linux_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
+    butler_linux_demo_step.addDirectoryArg(b.path("zig-out/pub/itch/linux-demo/"));
+    butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux-demo-nightly", .{}));
+
+    butler_linux_demo_step.step.dependOn(&install_itch_directory_step.step);
+
+    const butler_windows_demo_step = b.addSystemCommand(&.{ "butler", "push" });
+    butler_windows_demo_step.addFileInput(iversion_file);
+    butler_windows_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
+    butler_windows_demo_step.addDirectoryArg(b.path("zig-out/pub/itch/windows-demo/"));
+    butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-alpha:win-demo-nightly", .{}));
+
+    butler_windows_demo_step.step.dependOn(&install_itch_directory_step.step);
+
     upload_itch_step.dependOn(&butler_windows_step.step);
     upload_itch_step.dependOn(&butler_linux_step.step);
+    upload_itch_step.dependOn(&butler_windows_demo_step.step);
+    upload_itch_step.dependOn(&butler_linux_demo_step.step);
 
     upload_step.dependOn(upload_itch_step);
 }
