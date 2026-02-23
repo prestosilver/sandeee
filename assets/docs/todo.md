@@ -30,9 +30,9 @@
 - [ ] Add actual pickers to settings ui
 - [ ] Steam in web can lag the game
 - [ ] All buttons should look disabled when disabled
-- [ ] Don't copy _*_meta files on disk install
 - [ ] SandEEE install should be configurable somehow, cli flag probably.
-- [ ] Add consistent id type
+- [ ] Don't copy _*_meta files on disk install
+- [ ] Add consistent id iota type utility
 - [ ] Crash screen should be relative paths
 
 ## General tentative todo
@@ -46,3 +46,4 @@
 - [ ] Steam tool transfer from demo.
 - [ ] Inter email conditions
 - [ ] Email notification text is cut off a bit.
+- [ ] Consistent color parsing
