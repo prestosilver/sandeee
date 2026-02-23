@@ -7,3 +7,6 @@ Password: 12345
 I kinda feel bad for the guy who put 12345 as their password, but serves them right.
 
 Epsilon
+
+PS: I was able to dump some emails sent by the company, however they are encrypted by response.
+If you reenact what went durring DunEEE development SandEEE should be able to decrypt as you go.
