@@ -170,7 +170,7 @@ jobs:
           zig build itch
       - name: Set Version
         run: |
-          echo "version=$(cat pub/itch/VERSION)" >> $GITHUB_ENV
+          echo "version=$(cat zig-out/pub/itch/VERSION)" >> $GITHUB_ENV
       - name: Upload windows build to itch.io project
         uses: robpc/itchio-upload-action@v1
         with:
