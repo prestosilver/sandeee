@@ -63,12 +63,13 @@ pub const Disk = struct {
     const CacheIdx = u6;
     const CacheBlockIdx = u4;
 
+    // Alignment needs to be 4096
     allocator: std.mem.Allocator,
-    cache: [std.math.maxInt(CacheIdx)]struct {
+    cache_meta: [std.math.maxInt(CacheIdx)]struct {
         valid: bool,
         idx: CacheIdx,
-        blocks: *[std.math.maxInt(CacheBlockIdx)]Block,
     },
+    cache_data: *align(4096) [std.math.maxInt(CacheIdx)][std.math.maxInt(CacheBlockIdx)]Block,
     disk_file: std.fs.File,
 
     /// A folder object
@@ -159,18 +160,16 @@ pub const Disk = struct {
     }
 
     /// an empty disk object, for fast creation
-    const BLANK_DISK: Disk = .{
-        .blocks = .{
-            .{
-                .root = .{
-                    .root_empty = 2,
-                    .root_folder = 3,
-                },
+    const BLANK_DISK = [_]Block{
+        .{
+            .root = .{
+                .root_empty = 2,
+                .root_folder = 3,
             },
-            .{ .meta = .init_comptime(NAME) },
-            .{ .empty = .{} },
-            .{ .folder = .{} },
         },
+        .{ .meta = .init_comptime(NAME) },
+        .{ .empty = .{} },
+        .{ .folder = .{} },
     };
 };
 
