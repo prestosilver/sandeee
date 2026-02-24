@@ -13,7 +13,7 @@ jobs:
         id: list-caches
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.ACTION_TOKEN }}
+          GH_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
           PAGE_SIZE: 100
         run: |
           function list_caches {
@@ -50,7 +50,7 @@ jobs:
         id: wipe
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.ACTION_TOKEN }}
+          GH_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
         run: |
           for id in ${{ steps.list-caches.outputs.cache_ids }}; do
             if [[ "$id" != 'steamcmd-config-linux-x64' ]]; then
