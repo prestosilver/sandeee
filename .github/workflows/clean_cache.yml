@@ -35,7 +35,7 @@ jobs:
           while [[ $remaining > 0 ]]; do
             pageindex="$((pageindex+1))"
             echo "fetching page ${pageindex}..."
-            ids="$(list_caches "${pageindex}" | jq '.actions_caches[].id' | tr '\n' ' ')"
+            ids="$(list_caches "${pageindex}" | jq '.actions_caches.[] | select(.name != "steamcmd-config-linux-x64") | .id' | tr '\n' ' ')"
 
             all_ids="${all_ids} ${ids}"
             remaining="$((remaining-PAGE_SIZE))"
