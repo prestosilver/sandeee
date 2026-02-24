@@ -28,16 +28,15 @@ jobs:
 
           echo "fetching page ${pageindex}..."
           first="$(list_caches "${pageindex}")"
-          echo $first
           total_count="$(jq -r '.total_count' <<< "${first}")"
-          all_ids="$(jq '.actions_caches.[] | select(.name != "steamcmd-config-linux-x64") | .id' <<< "${first}" | tr '\n' ' ')"
+          all_ids="$(jq '.actions_caches.[] | select(.key != "steamcmd-config-linux-x64") | .id' <<< "${first}" | tr '\n' ' ')"
 
           remaining="$((total_count-PAGE_SIZE))"
           echo "  cache ids in page ${pageindex}: ${all_ids}, ${remaining} remaining."
           while [[ $remaining > 0 ]]; do
             pageindex="$((pageindex+1))"
             echo "fetching page ${pageindex}..."
-            ids="$(list_caches "${pageindex}" | jq '.actions_caches.[] | select(.name != "steamcmd-config-linux-x64") | .id' | tr '\n' ' ')"
+            ids="$(list_caches "${pageindex}" | jq '.actions_caches.[] | select(.key != "steamcmd-config-linux-x64") | .id' | tr '\n' ' ')"
 
             all_ids="${all_ids} ${ids}"
             remaining="$((remaining-PAGE_SIZE))"
