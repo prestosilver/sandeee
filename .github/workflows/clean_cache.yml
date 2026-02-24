@@ -12,10 +12,11 @@ jobs:
       - name: Clear caches
         uses: easimon/wipe-cache@main
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.ACTIONS_TOKEN }}
   tests-dbg:
     runs-on: ubuntu-latest
     name: Cache tests 
+    needs: [clear-caches]
     steps:
       - uses: actions/checkout@v3
       - name: Cache zig build
@@ -48,6 +49,7 @@ jobs:
   tests-rel:
     runs-on: ubuntu-latest
     name: Cache tests (release)
+    needs: [clear-caches]
     steps:
       - uses: actions/checkout@v3
       - name: Cache zig build
@@ -80,6 +82,7 @@ jobs:
   steam-upload:
     runs-on: ubuntu-latest
     name: Cache steam upload 
+    needs: [clear-caches]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -119,6 +122,7 @@ jobs:
   itch-upload:
     runs-on: ubuntu-latest
     name: Cache itch upload 
+    needs: [clear-caches]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -157,6 +161,7 @@ jobs:
   gen-changelog:
     runs-on: ubuntu-latest
     name: Cache generate changelog
+    needs: [clear-caches]
     steps:
       - uses: actions/checkout@v3
         with:
