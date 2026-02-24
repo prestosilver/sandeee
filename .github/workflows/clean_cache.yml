@@ -1,0 +1,191 @@
+name: Clean the zig cache folder
+# this cleared the .zig-cache in caches since itll grow if it dosent get cleared
+# it regenerates stuff too just to avoid having long builds
+on:
+  schedule:
+    - cron: '0 0 */7 * *'
+  workflow_dispatch:
+jobs:
+  clear-caches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clear caches
+        uses: easimon/wipe-cache@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+  tests-dbg:
+    runs-on: ubuntu-latest
+    name: Cache tests 
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ${{github.workspace}}/.cache/zig
+            ${{github.workspace}}/.zig-cache
+          key: zig-tests-dbg-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
+          restore-keys: |
+            zig-tests-dbg-${{ runner.os }}-
+            zig-tests-dbg-
+            zig-tests-
+            zig-
+
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.15.2
+      - name: Install glfw
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
+      - name: Run tests
+        run: |
+          zig build test
+  tests-rel:
+    runs-on: ubuntu-latest
+    name: Cache tests (release)
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ${{github.workspace}}/.cache/zig
+            ${{github.workspace}}/.zig-cache
+          key: zig-tests-rel-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
+          restore-keys: |
+            zig-tests-rel-${{ runner.os }}-
+            zig-tests-rel-
+            zig-tests-
+            zig-
+
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.15.2
+      - name: Install glfw
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
+      - name: Run tests
+        run: |
+          zig build test -Doptimize=ReleaseFast
+  steam-upload:
+    runs-on: ubuntu-latest
+    name: Cache steam upload 
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup SteamCMD
+        id: steamcmd
+        uses: RageAgainstThePixel/setup-steamcmd@v1
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ${{github.workspace}}/.cache/zig
+            ${{github.workspace}}/.zig-cache
+          key: zig-build-steam-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
+          restore-keys: |
+            zig-build-steam-${{ runner.os }}-
+            zig-build-steam-
+            zig-build-
+            zig-
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.15.2
+      - name: Install glfw
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
+      - name: Install mingw
+        run: sudo apt-get install gcc-mingw-w64 binutils-mingw-w64-x86-64
+        shell: bash
+      - name: Build game
+        run: |
+          zig build steam
+  itch-upload:
+    runs-on: ubuntu-latest
+    name: Cache itch upload 
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ${{github.workspace}}/.cache/zig
+            ${{github.workspace}}/.zig-cache
+          key: zig-build-itch-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
+          restore-keys: |
+            zig-build-itch-${{ runner.os }}-
+            zig-build-itch-
+            zig-build-
+            zig-
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.15.2
+      - name: Install glfw
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
+      - name: Install butler
+        uses: remarkablegames/setup-butler@v2
+      - name: Install mingw
+        run: sudo apt-get install gcc-mingw-w64 binutils-mingw-w64-x86-64
+        shell: bash
+      - name: Build game
+        run: |
+          zig build itch
+  gen-changelog:
+    runs-on: ubuntu-latest
+    name: Cache generate changelog
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ${{github.workspace}}/.cache/zig
+            ${{github.workspace}}/.zig-cache
+          key: zig-build-changelog-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
+          restore-keys: |
+            zig-build-changelog-${{ runner.os }}-
+            zig-build-changelog-
+            zig-build-
+            zig-
+
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.15.2
+
+      - name: Install glfw
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libglfw3 libglfw3-dev
+          version: glfw
+      - name: Generate changelog
+        run: |
+          zig build changelog

@@ -798,6 +798,7 @@ pub fn build(b: *std.Build) !void {
         debug_image_step.addArg("/prof/tests/rand/random.esh");
     }
 
+    // TODO: no dependOn, just a --cwd b.Directory step
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     run_cmd.addArgs(&[_][]const u8{"--cwd"});
@@ -806,6 +807,7 @@ pub fn build(b: *std.Build) !void {
         run_cmd.addArgs(args);
     }
 
+    // TODO: no dependOn, just a --cwd b.Directory step
     const headless_cmd = b.addRunArtifact(exe);
     headless_cmd.step.dependOn(b.getInstallStep());
     headless_cmd.addArgs(&[_][]const u8{"--cwd"});
@@ -833,8 +835,6 @@ pub fn build(b: *std.Build) !void {
     if (steam_mode == .On)
         b.installFile("steam_appid.txt", "bin/steam_appid.txt");
 
-    const www_misc_step = b.step("www_misc", "Build www misc");
-
     const changelog_step = b.addRunArtifact(changelog_builder_exe);
     changelog_step.addFileInput(b.path("VERSION"));
     changelog_step.addFileArg(b.path("VERSION"));
@@ -843,21 +843,15 @@ pub fn build(b: *std.Build) !void {
     changelog_step.addFileArg(content_path.path(b, "data/os_versions.csv"));
     changelog_step.addFileInput(content_path.path(b, "data/changelog_ignore.txt"));
     changelog_step.addFileArg(content_path.path(b, "data/changelog_ignore.txt"));
-
     const changelog_file_path = changelog_step.addOutputFileArg("changelog.edf");
+
     const install_changelog = b.addInstallFileWithDir(changelog_file_path, www_path, "changelog.edf");
-
     const install_changelog_out = b.addInstallFile(changelog_file_path, "changelog.edf");
-    www_misc_step.dependOn(&install_changelog.step);
-
-    const changelog_gen_step = b.step("changelog", "Generates only a changelog");
-    changelog_gen_step.dependOn(&install_changelog_out.step);
 
     const docs_step = b.addRunArtifact(docs_builder_exe);
     docs_step.addArg("@/docs/");
     docs_step.addDirectoryArg(b.path("docs"));
     docs_step.addDirectoryArg(b.path("www/docs"));
-    www_misc_step.dependOn(&docs_step.step);
 
     const wood_wallpaper_step = b.addRunArtifact(eia_builder_exe);
     wood_wallpaper_step.addFileInput(content_path.path(b, "images/wood.png"));
@@ -983,11 +977,15 @@ pub fn build(b: *std.Build) !void {
 
     const install_downloads = b.addInstallFileWithDir(downloads_file_path, www_path, "downloads.edf");
     const install_downloads_dir = b.addInstallDirectory(.{ .source_dir = downloads_dir_path, .install_dir = www_path, .install_subdir = "downloads" });
-    www_misc_step.dependOn(&install_downloads.step);
-    www_misc_step.dependOn(&install_downloads_dir.step);
 
     const www_step = b.step("www", "Build the website");
-    www_step.dependOn(www_misc_step);
+    www_step.dependOn(&docs_step.step);
+    www_step.dependOn(&install_downloads.step);
+    www_step.dependOn(&install_downloads_dir.step);
+    www_step.dependOn(&install_changelog.step);
+
+    const changelog_gen_step = b.step("changelog", "Generates only a changelog");
+    changelog_gen_step.dependOn(&install_changelog_out.step);
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
