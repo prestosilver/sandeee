@@ -1,5 +1,7 @@
 # SandEEE task list
 
+> This is sorted by priority, please keep it that way :wink:.
+
 ## Known Bugs
 
 - [X] Editor selection color wrong
@@ -8,13 +10,14 @@
 - [X] Editor selection acts really weird
 - [X] Window IDs limit at 255, but game keeps making windows
 - [ ] Steamtool item id is not labeled right
+- [ ] Scroll bars arent scrolling
 - [ ] Wordwrap in console
+- [ ] VMS dont close on crash, meaning they can lag the crash state.
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
 - [ ] Restoring and installing a disk drops frames
-- [ ] VMS dont close on crash
 - [ ] Disk files are unordered everywhere, sort on save
-- [ ] Scroll bars arent scrolling
 - [ ] Task manager can fullscreen and renders wrong
+- [ ] Steam in web can lag the game
 
 ## Minor non bug fixes
 
@@ -24,30 +27,32 @@
 - [X] Fix random mem leak on tests
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
-- [ ] Separate build for debug bc different appids!
+- [ ] Add actual pickers to settings ui
+- [ ] All buttons should look disabled when disabled
+- [ ] Add consistent id iota type utility
 - [ ] Load progress on web
 - [ ] Control the dithering, and crt of the shader separately
-- [ ] Add actual pickers to settings ui
-- [ ] Steam in web can lag the game
-- [ ] All buttons should look disabled when disabled
-- [ ] SandEEE install should be configurable somehow, cli flag probably.
-- [ ] Don't copy _*_meta files on disk install
-- [ ] Add consistent id iota type utility
-- [ ] Crash screen should be relative paths
+- [ ] Separate build for debug bc different appids!
 
 ## General tentative todo
 
 - [X] New partial disk scripted recovery system
 - [ ] Double check wording in demo emails
-- [ ] Update email content
-- [ ] Embed file fix
-- [ ] Merge BootEEE
-- [ ] Change email unlocked to key based
-- [ ] Move runSandEEE to a subfolder somewhere (in repo)
-- [ ] Steam tool transfer from demo.
-- [ ] Inter email conditions
-- [ ] Email notification text is cut off a bit.
-- [ ] Consistent color parsing
 - [ ] zig build upload_itch_release
 - [ ] zig build steam_changelog
 - [ ] zig build itch_changelog
+- [ ] Workshop previews
+- [ ] Workshop favorites
+- [ ] SandEEE install should be configurable somehow, cli flag probably.
+- [ ] Merge BootEEE
+- [ ] Inter emailbox conditions
+- [ ] Embed file fix
+- [ ] Update email content
+- [ ] steam screenshots
+- [ ] Change email unlocked to key based
+- [ ] Consistent color parsing
+- [ ] Email notification text is cut off a bit.
+- [ ] Don't copy _*_meta files on disk install
+- [ ] Crash screen should be relative paths
+- [ ] Move runSandEEE to a subfolder somewhere (in repo)
+- [ ] Steam tool transfer from demo.

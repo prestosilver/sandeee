@@ -3,6 +3,12 @@
 ## os:seed#10 (3-3-26)
 
 - [ ] Going into release day
+    - [ ] Update specific
+        - [ ] Steamtool item id is not listed right
+        - [ ] Scroll bars arent scrolling
+        - [ ] zig build upload_itch_release
+        - [ ] zig build steam_changelog
+        - [ ] zig build itch_changelog
     - [ ] Grammar
         - [ ] Check spelling in all emails
         - [ ] Ensure no bad commits are in changelog
