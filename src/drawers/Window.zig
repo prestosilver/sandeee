@@ -158,7 +158,6 @@ pub const WindowData = struct {
         pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: i32, kind: ClickKind) !void {
             if (kind == .down) {
                 if (self.props.scroll) |*scroll_data| {
-                    self.scrolling = false;
                     if (mousepos.x > size.x - 28 and mousepos.x < size.x and mousepos.y > scroll_data.offset_start + 14) {
                         const pc = (mousepos.y - 14 - scroll_data.offset_start) / (size.y - 28 - scroll_data.offset_start);
                         scroll_data.value = std.math.round(scroll_data.maxy * pc);
@@ -166,6 +165,8 @@ pub const WindowData = struct {
                         return;
                     }
                 }
+            } else if (kind == .up) {
+                self.scrolling = false;
             }
 
             return self.vtable.click(self.ptr, size, mousepos, btn, kind);

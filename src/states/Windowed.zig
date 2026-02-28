@@ -704,6 +704,8 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
                 },
                 else => {},
             }
+
+            self.down = true;
         },
         .up => {
             if (self.dragging_window) |dragging| {
@@ -720,15 +722,19 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
         else => {},
     }
 
+    var clicked: bool = false;
+
     for (self.windows.items) |window| {
         if (!window.data.active) continue;
 
         try self.desk.data.click(self.shader, null, btn, kind);
 
-        return window.data.click(self.mousepos, btn, kind);
+        try window.data.click(self.mousepos, btn, kind);
+        clicked = true;
     }
 
-    try self.desk.data.click(self.shader, self.mousepos, btn, kind);
+    if (!clicked)
+        try self.desk.data.click(self.shader, self.mousepos, btn, kind);
 }
 
 pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
@@ -825,9 +831,12 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
             }
         }
     }
-    if (self.down and self.dragging_mode == .None) {
+
+    if (self.down) {
         for (self.windows.items) |window| {
             if (!window.data.active) continue;
+
+            log.info("drag", .{});
 
             try window.data.contents.drag(.{
                 .x = window.data.pos.w,
@@ -837,11 +846,10 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
                 .y = window.data.pos.y + 36,
             }));
         }
-    }
-
-    if (self.dragging_mode == .None) {
+    } else {
         for (self.windows.items) |window| {
             if (window.data.min) continue;
+
             try window.data.contents.move(self.mousepos.x - window.data.pos.x, self.mousepos.y - window.data.pos.y - 36);
         }
     }
