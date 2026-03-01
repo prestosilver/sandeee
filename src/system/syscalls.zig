@@ -508,7 +508,7 @@ const SteamYieldCreate = struct {
         ))
             return error.UnknownError;
 
-        try vm_instance.pushStackI(@byteSwap(@intFromEnum(result.file_id)));
+        try vm_instance.pushStackI(@intFromEnum(result.file_id));
 
         return true;
     }
@@ -642,9 +642,17 @@ fn sysSteam(self: *Vm) VmError!void {
             std.fs.cwd().deleteTree(".steam_upload") catch {};
 
             std.fs.cwd().makeDir(".steam_upload") catch |err|
-                if (err != error.PathAlreadyExists)
-                    return error.UnknownError;
-            var upload = std.fs.cwd().openDir(".steam_upload", .{}) catch return error.UnknownError;
+                switch (err) {
+                    error.PathAlreadyExists => {},
+                    else => {
+                        log.warn("Failed to make directory {}", .{err});
+                        return error.UnknownError;
+                    },
+                };
+            var upload = std.fs.cwd().openDir(".steam_upload", .{}) catch |err| {
+                log.warn("Failed to open directory {}", .{err});
+                return error.UnknownError;
+            };
             defer upload.close();
 
             const root = try self.root.resolve();
@@ -656,13 +664,18 @@ fn sysSteam(self: *Vm) VmError!void {
 
                 try folder.getFoldersRec(&folder_list);
                 for (folder_list.items) |item| {
-                    if (item.name.len < folder.name.len) continue;
+                    if (item.name.len <= folder.name.len) continue;
 
-                    log.debug("Creating Steam upload temp folder {s}", .{item.name[folder.name.len..]});
+                    log.debug("Creating Steam upload temp folder '{s}'", .{item.name[folder.name.len..]});
 
                     upload.makePath(item.name[folder.name.len..]) catch |err|
-                        if (err != error.PathAlreadyExists)
-                            return error.UnknownError;
+                        switch (err) {
+                            error.PathAlreadyExists => {},
+                            else => {
+                                log.warn("Failed to make directory '{s}' {}", .{ item.name[folder.name.len..], err });
+                                return error.UnknownError;
+                            },
+                        };
                 }
             }
 
@@ -672,14 +685,17 @@ fn sysSteam(self: *Vm) VmError!void {
 
                 try folder.getFilesRec(&file_list);
                 for (file_list.items) |item| {
-                    if (item.name.len < folder.name.len) continue;
+                    if (item.name.len <= folder.name.len) continue;
 
                     log.debug("Creating Steam upload temp file {s}", .{item.name[folder.name.len..]});
 
                     upload.writeFile(.{
                         .sub_path = item.name[folder.name.len..],
                         .data = try item.read(self),
-                    }) catch return error.UnknownError;
+                    }) catch |err| {
+                        log.warn("Failed to make file '{s}' {}", .{ item.name[folder.name.len..], err });
+                        return error.UnknownError;
+                    };
                 }
             }
 
@@ -691,8 +707,11 @@ fn sysSteam(self: *Vm) VmError!void {
 
             const update = ugc.startUpdate(.this_app, @enumFromInt(item_id));
 
-            if (!update.setContent(ugc, upload))
+            if (!update.setContent(ugc, upload)) {
+                log.warn("Failed to upload content", .{});
+
                 return error.UnknownError;
+            }
 
             const handle = update.submit(ugc, "Update files");
 

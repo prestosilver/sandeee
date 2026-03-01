@@ -12,10 +12,10 @@ fn main() {
         var item = runSteam("");
         var workshop_id = numberToString(item);
         
-        print("Created item: " & workshop_id);
-        print("Run `steamtool metadata " & workshop_id & " title [Title]` to set the items title.");
-        print("And `steamtool metadata " & workshop_id & " description [Desc]` to set the items description.");
-        print("Then `steamtool upload " & workshop_id & "` in a folder to upload it.");
+        print("Created item: " & workshop_id & "\n");
+        print("Run `steamtool metadata " & workshop_id & " title [Title]` to set the items title.\n");
+        print("And `steamtool metadata " & workshop_id & " description [Desc]` to set the items description.\n");
+        print("Then `steamtool upload " & workshop_id & "` in a folder to upload it.\n");
 
         return 0;
     } else if (cmd == "metadata") {

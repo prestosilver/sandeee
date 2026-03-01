@@ -171,13 +171,13 @@ pub fn build(b: *std.Build) !void {
 
     const disable_audio = b.option(bool, "no_audio", "Disables audio") orelse false;
     const is_demo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
-    const enable_email = b.option(bool, "email_app", "Enables the email app") orelse false;
+    const enable_email = b.option(bool, "email_app", "Enables/disables the email app") orelse true;
     const steam_mode = b.option(enum { Off, On, Fake }, "steam", "Makes SandEEE build a steam build") orelse .Off;
     const default_panic = b.option(bool, "default_panic", "Force the default zig panic handler") orelse false;
     const random_tests = b.option(usize, "random", "Makes SandEEE write some random files") orelse 0;
     const version_suffix = switch (optimize) {
-        .Debug => if (is_demo) "D0DE" else "00DE",
-        else => if (is_demo) "D000" else "0000",
+        .Debug => if (is_demo) "DFD" else "FFD",
+        else => if (is_demo) "DFR" else "FFR",
     };
 
     const version_create_write = std.Build.Step.WriteFile.create(b);
@@ -1064,8 +1064,15 @@ pub fn build(b: *std.Build) !void {
 
         _ = steam_directory_step.addCopyFile(steam_install_disk_image_path, "content/recovery.eee");
 
+        const steam_meta = b.fmt("{X:0>4}_{s}", .{ std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0, "FSR" });
+
         const public_options = b.addOptions();
-        public_options.addOption(Version, "SANDEEE_VERSION", version);
+        public_options.addOption(Version, "SANDEEE_VERSION", .{
+            .program = version.program,
+            .phase = version.phase,
+            .index = version.index,
+            .meta = steam_meta,
+        });
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", false);
         public_options.addOption(bool, "disable_audio", false);
@@ -1162,8 +1169,15 @@ pub fn build(b: *std.Build) !void {
 
         _ = steam_directory_step.addCopyFile(steam_demo_install_disk_image_path, "content_demo/recovery.eee");
 
+        const steam_meta = b.fmt("{X:0>4}_{s}", .{ std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0, "FSD" });
+
         const public_options = b.addOptions();
-        public_options.addOption(Version, "SANDEEE_VERSION", version);
+        public_options.addOption(Version, "SANDEEE_VERSION", .{
+            .program = version.program,
+            .phase = version.phase,
+            .index = version.index,
+            .meta = steam_meta,
+        });
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", true);
         public_options.addOption(bool, "disable_audio", false);
@@ -1259,8 +1273,15 @@ pub fn build(b: *std.Build) !void {
         _ = itch_directory_step.addCopyFile(itch_install_disk_image_path, "linux/content/recovery.eee");
         _ = itch_directory_step.addCopyFile(itch_install_disk_image_path, "windows/content/recovery.eee");
 
+        const itch_meta = b.fmt("{X:0>4}_{s}", .{ std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0, "FIR" });
+
         const public_options = b.addOptions();
-        public_options.addOption(Version, "SANDEEE_VERSION", version);
+        public_options.addOption(Version, "SANDEEE_VERSION", .{
+            .program = version.program,
+            .phase = version.phase,
+            .index = version.index,
+            .meta = itch_meta,
+        });
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", false);
         public_options.addOption(bool, "disable_audio", false);
@@ -1354,8 +1375,15 @@ pub fn build(b: *std.Build) !void {
         _ = itch_directory_step.addCopyFile(itch_install_disk_image_path, "linux-demo/content/recovery.eee");
         _ = itch_directory_step.addCopyFile(itch_install_disk_image_path, "windows-demo/content/recovery.eee");
 
+        const itch_meta = b.fmt("{X:0>4}_{s}", .{ std.fmt.parseInt(u64, commit[0 .. commit.len - 1], 0) catch 0, "FID" });
+
         const public_options = b.addOptions();
-        public_options.addOption(Version, "SANDEEE_VERSION", version);
+        public_options.addOption(Version, "SANDEEE_VERSION", .{
+            .program = version.program,
+            .phase = version.phase,
+            .index = version.index,
+            .meta = itch_meta,
+        });
         public_options.addOption([]const u8, "VERSION_TEXT", version_text);
         public_options.addOption(bool, "is_demo", true);
         public_options.addOption(bool, "disable_audio", false);

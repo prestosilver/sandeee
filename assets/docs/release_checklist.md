@@ -5,7 +5,7 @@
 - [ ] Going into release day
     - [ ] Update specific
         - [X] Scroll bars arent scrolling
-        - [ ] Steamtool item id is not listed right
+        - [X] Steamtool item id is not listed right
         - [X] zig build upload_itch_release
         - [ ] zig build steam_changelog
         - [ ] zig build itch_changelog
