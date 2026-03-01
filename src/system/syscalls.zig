@@ -1,5 +1,6 @@
 const std = @import("std");
 const options = @import("options");
+const builtin = @import("builtin");
 const steam = @import("steam");
 
 const system = @import("../system.zig");
@@ -508,7 +509,17 @@ const SteamYieldCreate = struct {
         ))
             return error.UnknownError;
 
-        try vm_instance.pushStackI(@intFromEnum(result.file_id));
+        if (result.result != .ok) {
+            log.info("{}", .{result.result});
+
+            return error.UnknownError;
+        }
+
+        if (builtin.target.os.tag == .windows and !steam.fake_api) {
+            try vm_instance.pushStackI(@byteSwap(@intFromEnum(result.file_id)));
+        } else {
+            try vm_instance.pushStackI(@intFromEnum(result.file_id));
+        }
 
         return true;
     }

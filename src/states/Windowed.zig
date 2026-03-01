@@ -836,8 +836,6 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
         for (self.windows.items) |window| {
             if (!window.data.active) continue;
 
-            log.info("drag", .{});
-
             try window.data.contents.drag(.{
                 .x = window.data.pos.w,
                 .y = window.data.pos.h - 36,
