@@ -2,9 +2,11 @@ const std = @import("std");
 const options = @import("options");
 const builtin = @import("builtin");
 const steam = @import("steam");
+const zigimg = @import("zigimg");
 
 const system = @import("../system.zig");
 const util = @import("../util.zig");
+const windows = @import("../windows.zig");
 
 const log = util.log;
 
@@ -652,19 +654,35 @@ fn sysSteam(self: *Vm) VmError!void {
 
             std.fs.cwd().deleteTree(".steam_upload") catch {};
 
-            std.fs.cwd().makeDir(".steam_upload") catch |err|
-                switch (err) {
-                    error.PathAlreadyExists => {},
-                    else => {
-                        log.warn("Failed to make directory {}", .{err});
-                        return error.UnknownError;
-                    },
-                };
-            var upload = std.fs.cwd().openDir(".steam_upload", .{}) catch |err| {
+            inline for (.{
+                ".steam_upload",
+                ".steam_upload/content",
+                ".steam_upload/meta",
+            }) |dir_path|
+                std.fs.cwd().makeDir(dir_path) catch |err|
+                    switch (err) {
+                        error.PathAlreadyExists => {},
+                        else => {
+                            log.warn("Failed to make directory {}", .{err});
+                            return error.UnknownError;
+                        },
+                    };
+
+            var temp_folder = std.fs.cwd().openDir(".steam_upload", .{}) catch |err| {
                 log.warn("Failed to open directory {}", .{err});
                 return error.UnknownError;
             };
-            defer upload.close();
+            defer temp_folder.close();
+            var content_folder = temp_folder.openDir("content", .{}) catch |err| {
+                log.warn("Failed to open directory {}", .{err});
+                return error.UnknownError;
+            };
+            defer content_folder.close();
+            var meta_folder = temp_folder.openDir("meta", .{}) catch |err| {
+                log.warn("Failed to open directory {}", .{err});
+                return error.UnknownError;
+            };
+            defer meta_folder.close();
 
             const root = try self.root.resolve();
             const folder = try root.getFolder(path);
@@ -679,7 +697,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
                     log.debug("Creating Steam upload temp folder '{s}'", .{item.name[folder.name.len..]});
 
-                    upload.makePath(item.name[folder.name.len..]) catch |err|
+                    content_folder.makePath(item.name[folder.name.len..]) catch |err|
                         switch (err) {
                             error.PathAlreadyExists => {},
                             else => {
@@ -700,7 +718,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
                     log.debug("Creating Steam upload temp file {s}", .{item.name[folder.name.len..]});
 
-                    upload.writeFile(.{
+                    content_folder.writeFile(.{
                         .sub_path = item.name[folder.name.len..],
                         .data = try item.read(self),
                     }) catch |err| {
@@ -718,15 +736,40 @@ fn sysSteam(self: *Vm) VmError!void {
 
             const update = ugc.startUpdate(.this_app, @enumFromInt(item_id));
 
-            if (!update.setContent(ugc, upload)) {
-                log.warn("Failed to upload content", .{});
+            if (!update.setContent(ugc, content_folder)) {
+                log.warn("failed to upload content", .{});
 
                 return error.UnknownError;
             }
 
+            const window_path = try std.mem.concat(self.allocator, u8, &.{ path, ":index.edf" });
+            defer self.allocator.free(window_path);
+
+            var window_frame = try windows.web.renderFrame(window_path, system.Shell.shader);
+
+            var image = zigimg.Image.fromRawPixelsOwned(640, 480, @ptrCast(&window_frame), .rgba32) catch |err| {
+                log.warn("failed to write image {}", .{err});
+
+                return error.UnknownError;
+            };
+
+            var write_buffer: [zigimg.io.DEFAULT_BUFFER_SIZE]u8 = undefined;
+            image.writeToFilePath(self.allocator, ".steam_upload/meta/preview.png", write_buffer[0..], .{ .png = .{} }) catch |err| {
+                log.warn("failed to write image {}", .{err});
+
+                return error.UnknownError;
+            };
+
+            var path_buffer: [256]u8 = undefined;
+            if (meta_folder.realpath("preview.png", &path_buffer) catch null) |preview_path| {
+                if (!update.setPreview(ugc, preview_path)) {
+                    log.warn("Failed to add content preview", .{});
+                }
+            }
+
             const handle = update.submit(ugc, "Update files");
 
-            return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle, .folder = upload });
+            return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle, .folder = temp_folder });
         }
 
         log.warn("Bad steam upload files id {s}", .{data[1..]});

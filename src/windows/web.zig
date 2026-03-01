@@ -1,6 +1,7 @@
 const std = @import("std");
 const steam = @import("steam");
 const options = @import("options");
+const zgl = @import("zgl");
 const glfw = @import("glfw");
 
 const windows = @import("../windows.zig");
@@ -1103,6 +1104,76 @@ pub const WebData = struct {
         allocator.destroy(self);
     }
 };
+
+pub fn renderFrame(path: []const u8, shader: *Shader) ![640 * 480]u32 {
+    var result: [640 * 480]u32 = undefined;
+    @memset(&result, 0xFF000000); // fill with white
+
+    var self: WebData = .{
+        .highlight = .atlas("ui", .{
+            .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+            .size = .{ .x = 2, .y = 28 },
+        }),
+        .menubar = .atlas("ui", .{
+            .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
+            .size = .{ .y = 40 },
+        }),
+        .text_box = .{
+            .atlas("ui", .{
+                .source = .{ .x = 2.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 32 },
+            }),
+            .atlas("ui", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 2, .y = 28 },
+            }),
+        },
+        .icons = .{
+            .atlas("icons", .{
+                .source = .{ .x = 3.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32, .y = 32 },
+            }),
+            .atlas("icons", .{
+                .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
+                .size = .{ .x = 32, .y = 32 },
+            }),
+        },
+        .path = Url.parse(path) catch return result,
+        .conts = null,
+        .shader = shader,
+        .links = .init(allocator),
+        .hist = .init(allocator),
+        .web_idx = web_idx,
+        .styles = .init(allocator),
+    };
+
+    web_idx += 1;
+
+    try self.styles.put("center", .{
+        .ali = .Center,
+        .locked = true,
+    });
+
+    try self.styles.put("left", .{
+        .ali = .Left,
+        .locked = true,
+    });
+
+    try self.styles.put("right", .{
+        .ali = .Right,
+        .locked = true,
+    });
+
+    {
+        graphics.Context.makeCurrent();
+        defer graphics.Context.makeNotCurrent();
+        zgl.bindFramebuffer(.invalid, .read_buffer);
+        zgl.readBuffer(.back);
+        zgl.readPixels(0, 0, 640, 480, .rgba, .unsigned_int, @ptrCast(&result));
+    }
+
+    return result;
+}
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.create(WebData);

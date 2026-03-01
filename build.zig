@@ -245,6 +245,12 @@ pub fn build(b: *std.Build) !void {
     });
     const zigimg_host_module = zigimg_host_dependency.module("zigimg");
 
+    const zigimg_dependency = b.dependency("zigimg", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zigimg_module = zigimg_dependency.module("zigimg");
+
     const steam_dependency = b.dependency("zig_steamworks_fake", .{
         .target = target,
         .optimize = optimize,
@@ -295,6 +301,7 @@ pub fn build(b: *std.Build) !void {
     exe_module.addImport("flags", flags_module);
     exe_module.addImport("zgl", zgl_module);
     exe_module.addImport("steam", steam_module);
+    exe_module.addImport("zigimg", zigimg_module);
 
     exe_host_module.addImport("options", options_host_module);
     exe_host_module.addImport("network", network_host_module);
@@ -302,6 +309,7 @@ pub fn build(b: *std.Build) !void {
     exe_host_module.addImport("flags", flags_host_module);
     exe_host_module.addImport("zgl", zgl_host_module);
     exe_host_module.addImport("steam", steam_host_module);
+    exe_host_module.addImport("zigimg", zigimg_host_module);
 
     const image_builder_mod = b.createModule(.{
         .root_source_file = b.path("tools/disk.zig"),
