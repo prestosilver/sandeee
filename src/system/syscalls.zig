@@ -516,7 +516,7 @@ const SteamYieldCreate = struct {
         }
 
         if (builtin.target.os.tag == .windows and !steam.fake_api) {
-            try vm_instance.pushStackI(@byteSwap(@intFromEnum(result.file_id)));
+            try vm_instance.pushStackI(@intFromEnum(result.file_id));
         } else {
             try vm_instance.pushStackI(@intFromEnum(result.file_id));
         }
