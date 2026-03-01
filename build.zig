@@ -1338,7 +1338,7 @@ pub fn build(b: *std.Build) !void {
 
         _ = itch_directory_step.addCopyFile(iversion_file, "VERSION");
     }
-    
+
     {
         // Itch demo build
 
@@ -1472,40 +1472,32 @@ pub fn build(b: *std.Build) !void {
     upload_steam_step.dependOn(&steamcmd_step.step);
     upload_step.dependOn(upload_steam_step);
 
-    // upload step
-    const upload_itch_step = b.step("upload_itch", "Uploads a build to itch");
-
     const butler_linux_step = b.addSystemCommand(&.{ "butler", "push" });
     butler_linux_step.addFileInput(iversion_file);
     butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
-    butler_linux_step.addDirectoryArg(b.path("zig-out/pub/itch/linux/"));
+    butler_linux_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux"));
     butler_linux_step.addArg(b.fmt("prestosilver/sandeee-os:linux-nightly", .{}));
-
-    butler_linux_step.step.dependOn(&install_itch_directory_step.step);
 
     const butler_windows_step = b.addSystemCommand(&.{ "butler", "push" });
     butler_windows_step.addFileInput(iversion_file);
     butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
-    butler_windows_step.addDirectoryArg(b.path("zig-out/pub/itch/windows/"));
+    butler_windows_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows"));
     butler_windows_step.addArg(b.fmt("prestosilver/sandeee-os:win-nightly", .{}));
-
-    butler_windows_step.step.dependOn(&install_itch_directory_step.step);
 
     const butler_linux_demo_step = b.addSystemCommand(&.{ "butler", "push" });
     butler_linux_demo_step.addFileInput(iversion_file);
     butler_linux_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
-    butler_linux_demo_step.addDirectoryArg(b.path("zig-out/pub/itch/linux-demo/"));
+    butler_linux_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux-demo"));
     butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-os:linux-demo-nightly", .{}));
-
-    butler_linux_demo_step.step.dependOn(&install_itch_directory_step.step);
 
     const butler_windows_demo_step = b.addSystemCommand(&.{ "butler", "push" });
     butler_windows_demo_step.addFileInput(iversion_file);
     butler_windows_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
-    butler_windows_demo_step.addDirectoryArg(b.path("zig-out/pub/itch/windows-demo/"));
+    butler_windows_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows-demo"));
     butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-os:win-demo-nightly", .{}));
 
-    butler_windows_demo_step.step.dependOn(&install_itch_directory_step.step);
+    // upload step
+    const upload_itch_step = b.step("upload_itch", "Uploads a build to itch");
 
     upload_itch_step.dependOn(&butler_windows_step.step);
     upload_itch_step.dependOn(&butler_linux_step.step);
@@ -1513,4 +1505,36 @@ pub fn build(b: *std.Build) !void {
     upload_itch_step.dependOn(&butler_linux_demo_step.step);
 
     upload_step.dependOn(upload_itch_step);
+
+    const rel_butler_linux_step = b.addSystemCommand(&.{ "butler", "push" });
+    rel_butler_linux_step.addFileInput(iversion_file);
+    rel_butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
+    rel_butler_linux_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux"));
+    rel_butler_linux_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux", .{}));
+
+    const rel_butler_windows_step = b.addSystemCommand(&.{ "butler", "push" });
+    rel_butler_windows_step.addFileInput(iversion_file);
+    rel_butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
+    rel_butler_windows_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows"));
+    rel_butler_windows_step.addArg(b.fmt("prestosilver/sandeee-alpha:win", .{}));
+
+    const rel_butler_linux_demo_step = b.addSystemCommand(&.{ "butler", "push" });
+    rel_butler_linux_demo_step.addFileInput(iversion_file);
+    rel_butler_linux_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
+    rel_butler_linux_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux-demo"));
+    rel_butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux-demo", .{}));
+
+    const rel_butler_windows_demo_step = b.addSystemCommand(&.{ "butler", "push" });
+    rel_butler_windows_demo_step.addFileInput(iversion_file);
+    rel_butler_windows_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
+    rel_butler_windows_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows-demo"));
+    rel_butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-alpha:win-demo", .{}));
+
+    // upload step
+    const upload_itch_rel_step = b.step("upload_itch_release", "Uploads a release build to itch");
+
+    upload_itch_rel_step.dependOn(&rel_butler_windows_step.step);
+    upload_itch_rel_step.dependOn(&rel_butler_linux_step.step);
+    upload_itch_rel_step.dependOn(&rel_butler_windows_demo_step.step);
+    upload_itch_rel_step.dependOn(&rel_butler_linux_demo_step.step);
 }

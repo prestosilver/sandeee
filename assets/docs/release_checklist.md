@@ -6,7 +6,7 @@
     - [ ] Update specific
         - [X] Scroll bars arent scrolling
         - [ ] Steamtool item id is not listed right
-        - [ ] zig build upload_itch_release
+        - [X] zig build upload_itch_release
         - [ ] zig build steam_changelog
         - [ ] zig build itch_changelog
     - [ ] Grammar

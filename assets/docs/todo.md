@@ -37,8 +37,8 @@
 ## General tentative todo
 
 - [X] New partial disk scripted recovery system
+- [X] zig build upload_itch_release
 - [ ] Double check wording in demo emails
-- [ ] zig build upload_itch_release
 - [ ] zig build steam_changelog
 - [ ] zig build itch_changelog
 - [ ] Workshop previews
