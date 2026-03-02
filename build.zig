@@ -1103,6 +1103,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1132,6 +1133,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1208,6 +1210,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1237,6 +1240,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1312,6 +1316,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1339,6 +1344,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1414,6 +1420,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1441,6 +1448,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
