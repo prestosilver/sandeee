@@ -3,17 +3,17 @@
 ## os:seed#10 (3-3-26)
 
 - [ ] Going into release day
-    - [ ] Update specific
+    - [X] Update specific
         - [X] Scroll bars arent scrolling
         - [X] Steamtool item id is not listed right
         - [X] zig build upload_itch_release
-        - [ ] zig build steam_changelog
-        - [ ] zig build itch_changelog
-    - [ ] Grammar
-        - [ ] Check spelling in all emails
-        - [ ] Ensure no bad commits are in changelog
+        - [X] ~~zig build steam_changelog~~
+        - [X] ~~zig build itch_changelog~~
+    - [X] Grammar
+        - [X] Check spelling in all emails
+        - [X] Ensure no bad commits are in changelog
     - [ ] Automatic
-        - [ ] Pass all zig tests
+        - [X] Pass all zig tests
         - [ ] Successfully fuzz for 2 hours
     - [ ] Manual tests
         - [ ] Run steam demo on windows vm

@@ -31,6 +31,7 @@
 - [ ] All buttons should look disabled when disabled
 - [ ] Add consistent id iota type utility
 - [ ] Load progress on web
+- [ ] Auto fix capitalization in changelog gen
 - [ ] Control the dithering, and crt of the shader separately
 - [ ] Separate build for debug bc different appids!
 
@@ -38,7 +39,7 @@
 
 - [X] New partial disk scripted recovery system
 - [X] zig build upload_itch_release
-- [ ] Double check wording in demo emails
+- [X] Double check wording in demo emails
 - [ ] zig build steam_changelog
 - [ ] zig build itch_changelog
 - [ ] Workshop previews
