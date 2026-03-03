@@ -12,43 +12,45 @@
     - [X] Grammar
         - [X] Check spelling in all emails
         - [X] Ensure no bad commits are in changelog
-    - [ ] Automatic
+    - [X] Automatic
         - [X] Pass all zig tests
-        - [ ] Successfully fuzz for 2 hours
-    - [ ] Manual tests
-        - [ ] Run steam demo on windows vm
-            - [ ] Test all disks in /disks
-            - [ ] Make a disk
-        - [ ] Run steam demo on linux vm
-            - [ ] Test all disks in /disks
-            - [ ] Make a disk
-        - [ ] Run itch demo on windows vm
-            - [ ] Test all disks in /disks
-            - [ ] Make a disk
-        - [ ] Run itch demo on linux vm
-            - [ ] Test all disks in /disks
-            - [ ] Make a disk
-        - [ ] Run steam on windows vm
-            - [ ] Test all disks in /disks
-            - [ ] Transfer a demo disk
-            - [ ] Make a disk
-        - [ ] Run steam on linux vm
-            - [ ] Test all disks in /disks
-            - [ ] Transfer a demo disk
-            - [ ] Make a disk
-        - [ ] Run itch on windows vm
-            - [ ] Test all disks in /disks
-            - [ ] Transfer a demo disk
-            - [ ] Make a disk
-        - [ ] Run itch on linux vm
-            - [ ] Test all disks in /disks
-            - [ ] Transfer a demo disk
-            - [ ] Make a disk
+        - [X] Successfully fuzz for 2 hours
+    - [X] Manual tests
+        - [X] Run steam demo on windows vm
+            - [X] Test all disks in /disks
+            - [X] Make a disk
+        - [X] Run steam demo on linux vm
+            - [X] Test all disks in /disks
+            - [X] Make a disk
+        - [X] Run itch demo on windows vm
+            - [X] Test all disks in /disks
+            - [X] Make a disk
+        - [X] Run itch demo on linux vm
+            - [X] Test all disks in /disks
+            - [X] Make a disk
+        - [X] Run steam on windows vm
+            - [X] Test all disks in /disks
+            - [X] Transfer a demo disk
+            - [X] Make a disk
+        - [X] Run steam on linux vm
+            - [X] Test all disks in /disks
+            - [X] Transfer a demo disk
+            - [X] Make a disk
+        - [X] Run itch on windows vm
+            - [X] Test all disks in /disks
+            - [X] Transfer a demo disk
+            - [X] Make a disk
+        - [X] Run itch on linux vm
+            - [X] Test all disks in /disks
+            - [X] Transfer a demo disk
+            - [X] Make a disk
 - [ ] On release
     - [ ] Incremenet version number
-        - [ ] Inside VERSION
+        - [X] For code
+            - [X] Inside VERSION
+            - [X] Inside build.zig
+        - [X] Git push (Make sure meta)
         - [ ] Regenerate chagelog
-        - [ ] Git push (Make sure meta)
     - [ ] Upload website
         - [ ] Run `zig builld www`
         - [ ] Push www submodule to github

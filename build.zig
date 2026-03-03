@@ -4,7 +4,7 @@ const Version = @import("src/data/version.zig");
 var version: Version = .{
     .program = "os",
     .phase = .seed,
-    .index = 9,
+    .index = 10,
 };
 
 const INTERNAL_IMAGE_FILES = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
