@@ -50,10 +50,7 @@
             - [X] Inside VERSION
             - [X] Inside build.zig
         - [X] Git push (Make sure meta)
-        - [ ] Regenerate chagelog
-    - [ ] Upload website
-        - [ ] Run `zig builld www`
-        - [ ] Push www submodule to github
+        - [X] Regenerate chagelog
     - [ ] Actually release
         - [ ] Move steam build from alpha to default
         - [ ] Run `zig build upload_itch_release`
@@ -64,6 +61,9 @@
         - [X] ~~Run `zig build itch_changelog`~~
         - [X] ~~Copy paste `zig-out/pub/itch/changelog`~~
     - [ ] Announce on discord
+    - [ ] Upload website
+        - [ ] Run `zig builld www`
+        - [ ] Push www submodule to github
 
 ## template
 

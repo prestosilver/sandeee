@@ -1554,25 +1554,25 @@ pub fn build(b: *std.Build) !void {
     rel_butler_linux_step.addFileInput(iversion_file);
     rel_butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_linux_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux"));
-    rel_butler_linux_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux", .{}));
+    rel_butler_linux_step.addArg(b.fmt("prestosilver/sandeee-os:linux", .{}));
 
     const rel_butler_windows_step = b.addSystemCommand(&.{ "butler", "push" });
     rel_butler_windows_step.addFileInput(iversion_file);
     rel_butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_windows_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows"));
-    rel_butler_windows_step.addArg(b.fmt("prestosilver/sandeee-alpha:win", .{}));
+    rel_butler_windows_step.addArg(b.fmt("prestosilver/sandeee-os:win", .{}));
 
     const rel_butler_linux_demo_step = b.addSystemCommand(&.{ "butler", "push" });
     rel_butler_linux_demo_step.addFileInput(iversion_file);
     rel_butler_linux_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_linux_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux-demo"));
-    rel_butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux-demo", .{}));
+    rel_butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-os:linux-demo-three", .{}));
 
     const rel_butler_windows_demo_step = b.addSystemCommand(&.{ "butler", "push" });
     rel_butler_windows_demo_step.addFileInput(iversion_file);
     rel_butler_windows_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_windows_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows-demo"));
-    rel_butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-alpha:win-demo", .{}));
+    rel_butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-os:win-demo-three", .{}));
 
     // upload step
     const upload_itch_rel_step = b.step("upload_itch_release", "Uploads a release build to itch");
