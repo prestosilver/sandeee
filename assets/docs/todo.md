@@ -11,6 +11,7 @@
 - [X] Window IDs limit at 255, but game keeps making windows
 - [X] Scroll bars arent scrolling
 - [X] Steamtool item id is not labeled right
+- [ ] Keyboard localization is screwed
 - [ ] Wordwrap in console
 - [ ] VMS dont close on crash, meaning they can lag the crash state.
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
