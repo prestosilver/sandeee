@@ -67,6 +67,24 @@ status: Status = .Naming,
 disk_name: std.array_list.Managed(u8) = .init(allocator),
 offset: f32 = 0,
 
+pub fn keychar(self: *GSInstaller, code: u32, _: c_int) !void {
+    switch (code) {
+        'a'...'z', 'A'...'Z', '0'...'9' => {
+            try self.appendChar(@intCast(code));
+        },
+        '.' => {
+            try self.appendChar('.');
+        },
+        '-' => {
+            try self.appendChar('-');
+        },
+        '_' => {
+            try self.appendChar('_');
+        },
+        else => {},
+    }
+}
+
 pub fn setup(self: *GSInstaller) !void {
     graphics.Context.instance.color = .{ .r = 0, .g = 0, .b = 0.5 };
 
@@ -251,30 +269,11 @@ pub fn removeChar(self: *GSInstaller) !void {
     }
 }
 
-pub fn keypress(self: *GSInstaller, keycode: c_int, mods: c_int, down: bool) !void {
+pub fn keypress(self: *GSInstaller, keycode: c_int, _: c_int, down: bool) !void {
     if (!down) return;
     switch (keycode) {
-        glfw.KeyA...glfw.KeyZ => {
-            if ((mods & glfw.ModifierShift) != 0) {
-                try self.appendChar(@as(u8, @intCast(keycode - glfw.KeyA)) + 'A');
-            } else {
-                try self.appendChar(@as(u8, @intCast(keycode - glfw.KeyA)) + 'a');
-            }
-        },
-        glfw.KeyNum0...glfw.KeyNum9 => {
-            try self.appendChar(@as(u8, @intCast(keycode - glfw.KeyNum0)) + '0');
-        },
-        glfw.KeyPeriod => {
-            try self.appendChar('.');
-        },
         glfw.KeyBackspace => {
             try self.removeChar();
-        },
-        glfw.KeyMinus => {
-            try self.appendChar('-');
-        },
-        glfw.KeySpace => {
-            try self.appendChar('_');
         },
         glfw.KeyEnter => {
             switch (self.status) {
