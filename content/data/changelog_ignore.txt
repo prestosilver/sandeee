@@ -1,3 +1,7 @@
+dbb2823
+283ed40 Rework strings in the heap
+a8c8422 Remove 60fps limiter
+8df48c0
 10b1073
 83f3d29
 c257f66
@@ -41,3 +45,4 @@ bde344e Add /fake/gfx/row for faster rle image compression
 362a6cc
 b9f29bb
 11f5d81
+41202e7 Release on steam

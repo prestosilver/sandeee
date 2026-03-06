@@ -4,7 +4,7 @@ const Version = @import("src/data/version.zig");
 var version: Version = .{
     .program = "os",
     .phase = .seed,
-    .index = 9,
+    .index = 10,
 };
 
 const INTERNAL_IMAGE_FILES = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
@@ -1103,6 +1103,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1132,6 +1133,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1208,6 +1210,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1237,6 +1240,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1312,6 +1316,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1339,6 +1344,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1414,6 +1420,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
+        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
@@ -1441,6 +1448,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
+        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1546,25 +1554,25 @@ pub fn build(b: *std.Build) !void {
     rel_butler_linux_step.addFileInput(iversion_file);
     rel_butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_linux_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux"));
-    rel_butler_linux_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux", .{}));
+    rel_butler_linux_step.addArg(b.fmt("prestosilver/sandeee-os:linux", .{}));
 
     const rel_butler_windows_step = b.addSystemCommand(&.{ "butler", "push" });
     rel_butler_windows_step.addFileInput(iversion_file);
     rel_butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_windows_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows"));
-    rel_butler_windows_step.addArg(b.fmt("prestosilver/sandeee-alpha:win", .{}));
+    rel_butler_windows_step.addArg(b.fmt("prestosilver/sandeee-os:win", .{}));
 
     const rel_butler_linux_demo_step = b.addSystemCommand(&.{ "butler", "push" });
     rel_butler_linux_demo_step.addFileInput(iversion_file);
     rel_butler_linux_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_linux_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux-demo"));
-    rel_butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-alpha:linux-demo", .{}));
+    rel_butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-os:linux-demo-three", .{}));
 
     const rel_butler_windows_demo_step = b.addSystemCommand(&.{ "butler", "push" });
     rel_butler_windows_demo_step.addFileInput(iversion_file);
     rel_butler_windows_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_windows_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows-demo"));
-    rel_butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-alpha:win-demo", .{}));
+    rel_butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-os:win-demo-three", .{}));
 
     // upload step
     const upload_itch_rel_step = b.step("upload_itch_release", "Uploads a release build to itch");
