@@ -31,7 +31,7 @@ pub const PopupData = struct {
         const VTable = struct {
             draw: *const fn (*anyopaque, *Shader, bnds: Rect, font: *Font) anyerror!void,
             key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
-            char: *const fn (*anyopaque, u32, i32) anyerror!void,
+            char: *const fn (*anyopaque, []const u8, i32) anyerror!void,
             click: *const fn (*anyopaque, Vec2) anyerror!void,
             deinit: *const fn (*anyopaque) void,
         };
@@ -43,7 +43,7 @@ pub const PopupData = struct {
             return self.vtable.draw(self.ptr, shader, bnds, font);
         }
 
-        pub fn char(self: *Self, keycode: u32, mods: i32) !void {
+        pub fn char(self: *Self, keycode: []const u8, mods: i32) !void {
             return self.vtable.char(self.ptr, keycode, mods);
         }
 
@@ -83,7 +83,7 @@ pub const PopupData = struct {
                     }
                 }
 
-                fn charImpl(pointer: *anyopaque, keycode: u32, mods: i32) !void {
+                fn charImpl(pointer: *anyopaque, keycode: []const u8, mods: i32) !void {
                     if (std.meta.hasMethod(child_t, "char")) {
                         const self: Ptr = @ptrCast(@alignCast(pointer));
 

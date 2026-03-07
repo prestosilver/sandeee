@@ -91,7 +91,7 @@ pub const WindowData = struct {
             draw: *const fn (*anyopaque, *Shader, *Rect, *Font, *WindowProps) anyerror!void,
             click: *const fn (*anyopaque, Vec2, Vec2, i32, ClickKind) anyerror!void,
             key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
-            char: *const fn (*anyopaque, u32, i32) anyerror!void,
+            char: *const fn (*anyopaque, []const u8, i32) anyerror!void,
             scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
             move: *const fn (*anyopaque, f32, f32) anyerror!void,
 
@@ -151,7 +151,7 @@ pub const WindowData = struct {
             }
         }
 
-        pub fn char(self: *Self, codepoint: u32, mods: i32) !void {
+        pub fn char(self: *Self, codepoint: []const u8, mods: i32) !void {
             return self.vtable.char(self.ptr, codepoint, mods);
         }
 
@@ -253,7 +253,7 @@ pub const WindowData = struct {
                     }
                 }
 
-                fn charImpl(pointer: *anyopaque, codepoint: u32, mods: i32) !void {
+                fn charImpl(pointer: *anyopaque, codepoint: []const u8, mods: i32) !void {
                     if (std.meta.hasMethod(child_t, "char")) {
                         const self: Ptr = @ptrCast(@alignCast(pointer));
 
@@ -540,7 +540,7 @@ pub const WindowData = struct {
         return true;
     }
 
-    pub fn char(self: *WindowData, codepoint: u32, mods: i32) !void {
+    pub fn char(self: *WindowData, codepoint: []const u8, mods: i32) !void {
         if (self.min) return;
 
         var bnds = self.pos;

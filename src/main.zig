@@ -304,7 +304,11 @@ pub fn keyUp(event: input_events.EventKeyUp) !void {
 }
 
 pub fn keyChar(event: input_events.EventKeyChar) !void {
-    try game_states.getPtr(current_state).keychar(event.codepoint, event.mods);
+    const char_string: []const u8 = std.mem.asBytes(&event.codepoint);
+    const encoded_string = try strings.encode(char_string, .ansi, .eeech);
+    defer allocator.free(encoded_string);
+
+    try game_states.getPtr(current_state).keychar(encoded_string, event.mods);
 }
 
 pub fn mouseClick(event: input_events.EventMouseClick) !void {
@@ -324,19 +328,25 @@ pub fn notification(_: window_events.EventNotification) !void {
 }
 
 pub fn copy(event: system_events.EventCopy) !void {
-    const to_copy = try allocator.dupeZ(u8, event.value);
+    const to_copy = try strings.encode(event.value, .eeech, .unicode);
     defer allocator.free(to_copy);
 
-    glfw.setClipboardString(graphics.Context.instance.window, to_copy);
+    const to_copyz = try allocator.dupeZ(u8, to_copy);
+    defer allocator.free(to_copyz);
+
+    glfw.setClipboardString(graphics.Context.instance.window, to_copyz);
 }
 
 pub fn paste(_: system_events.EventPaste) !void {
-    if (glfw.getClipboardString(graphics.Context.instance.window)) |clipboard_text| {
+    if (glfw.getClipboardString(graphics.Context.instance.window)) |clipboard_text_ansi| {
+        const clipboard_text = try strings.encode(clipboard_text_ansi, .unicode, .eeech);
+        defer allocator.free(clipboard_text);
+
         for (clipboard_text) |ch| {
             if (ch == '\n') {
                 try game_states.getPtr(current_state).keypress(glfw.KeyEnter, 0, true);
                 try game_states.getPtr(current_state).keypress(glfw.KeyEnter, 0, false);
-            } else try game_states.getPtr(current_state).keychar(ch, 0);
+            } else try game_states.getPtr(current_state).keychar(&.{ch}, 0);
         }
     }
 }

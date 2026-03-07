@@ -64,61 +64,64 @@ pub const COLOR_MAGENTA = "\xFF";
 pub const EEE = E ** 3;
 
 const CharReplacement = struct {
+    pub const StringKind = enum { eeech, ansi, unicode, ascii };
+
     eeech: []const u8,
-    ansi: []const u8,
+    ansi: []const u8 = "",
+    unicode: []const u8 = "",
+    ascii: []const u8 = "",
 };
 
 const REPLACEMENT_TABLE = [_]CharReplacement{
-    .{ .eeech = BULLET, .ansi = "•" },
-    .{ .eeech = LEFT, .ansi = "▶" },
-    .{ .eeech = E, .ansi = "Ⲉ" },
-    .{ .eeech = CHECK, .ansi = "✓" },
-    .{ .eeech = NOTEQUAL, .ansi = "≠" },
-    .{ .eeech = META, .ansi = "ϻ" },
-    .{ .eeech = FRAME, .ansi = "ℱ" },
-    .{ .eeech = DOWN, .ansi = "▼" },
-    .{ .eeech = BLOCK(0), .ansi = " " },
-    .{ .eeech = BLOCK(1), .ansi = "▁" },
-    .{ .eeech = BLOCK(2), .ansi = "▂" },
-    .{ .eeech = BLOCK(3), .ansi = "▃" },
-    .{ .eeech = BLOCK(4), .ansi = "▄" },
-    .{ .eeech = BLOCK(5), .ansi = "▅" },
-    .{ .eeech = BLOCK(6), .ansi = "▆" },
-    .{ .eeech = BLOCK(7), .ansi = "▇" },
+    .{ .eeech = BULLET, .ansi = "•", .unicode = "•", .ascii = "-" },
+    .{ .eeech = RIGHT, .ansi = "▶", .unicode = "▶", .ascii = ">" },
+    .{ .eeech = E, .ansi = "Ⲉ", .unicode = "Ⲉ", .ascii = "E" },
+    .{ .eeech = CHECK, .ansi = "✓", .unicode = "✓", .ascii = "X" },
+    .{ .eeech = NOTEQUAL, .ansi = "≠", .unicode = "≠", .ascii = "!=" },
+    .{ .eeech = META, .ansi = "ϻ", .unicode = "ϻ", .ascii = "Mb" },
+    .{ .eeech = FRAME, .ansi = "ℱ", .unicode = "ℱ", .ascii = "Fr" },
+    .{ .eeech = DOWN, .ansi = "▼", .unicode = "▼", .ascii = "V" },
+    .{ .eeech = BLOCK(0), .ansi = " ", .unicode = " ", .ascii = " " },
+    .{ .eeech = BLOCK(1), .ansi = "▁", .unicode = "▁", .ascii = "-" },
+    .{ .eeech = BLOCK(2), .ansi = "▂", .unicode = "▂", .ascii = "-" },
+    .{ .eeech = BLOCK(3), .ansi = "▃", .unicode = "▃", .ascii = "+" },
+    .{ .eeech = BLOCK(4), .ansi = "▄", .unicode = "▄", .ascii = "+" },
+    .{ .eeech = BLOCK(5), .ansi = "▅", .unicode = "▅", .ascii = "#" },
+    .{ .eeech = BLOCK(6), .ansi = "▆", .unicode = "▆", .ascii = "#" },
+    .{ .eeech = BLOCK(7), .ansi = "▇", .unicode = "▇", .ascii = "#" },
 
-    .{ .eeech = DOTS, .ansi = "…" },
-    .{ .eeech = RIGHT, .ansi = "◀" },
-    .{ .eeech = SMILE, .ansi = "🙂" },
-    .{ .eeech = STRAIGHT, .ansi = "😐" },
-    .{ .eeech = SAD, .ansi = "🙁" },
-    .{ .eeech = UP, .ansi = "▲" },
-} ++ if (builtin.is_test) [_]CharReplacement{
-    .{ .eeech = COLOR_BLACK, .ansi = "" },
-    .{ .eeech = COLOR_GRAY, .ansi = "" },
-    .{ .eeech = COLOR_DARK_RED, .ansi = "" },
-    .{ .eeech = COLOR_DARK_YELLOW, .ansi = "" },
-    .{ .eeech = COLOR_DARK_GREEN, .ansi = "" },
-    .{ .eeech = COLOR_DARK_CYAN, .ansi = "" },
-    .{ .eeech = COLOR_DARK_BLUE, .ansi = "" },
-    .{ .eeech = COLOR_DARK_MAGENTA, .ansi = "" },
-
-    .{ .eeech = COLOR_WHITE, .ansi = "" },
-    .{ .eeech = COLOR_RED, .ansi = "" },
-    .{ .eeech = COLOR_YELLOW, .ansi = "" },
-    .{ .eeech = COLOR_GREEN, .ansi = "" },
-    .{ .eeech = COLOR_CYAN, .ansi = "" },
-    .{ .eeech = COLOR_BLUE, .ansi = "" },
-    .{ .eeech = COLOR_MAGENTA, .ansi = "" },
-
-    .{ .eeech = CLEAR, .ansi = "" },
-    .{ .eeech = UNDO, .ansi = "" },
-
-    .{ .eeech = "\xf8", .ansi = "" },
-
-    .{ .eeech = "\r", .ansi = "" },
-    .{ .eeech = "\n", .ansi = "\n" },
+    .{ .eeech = DOTS, .ansi = "…", .unicode = "…", .ascii = "..." },
+    .{ .eeech = LEFT, .ansi = "◀", .unicode = "◀", .ascii = "<" },
+    .{ .eeech = SMILE, .ansi = "☺", .unicode = "☺", .ascii = ":)" },
+    .{ .eeech = STRAIGHT, .ansi = "😐", .unicode = "😐", .ascii = ":|" },
+    .{ .eeech = SAD, .ansi = "☹", .unicode = "☹", .ascii = ":(" },
+    .{ .eeech = UP, .ansi = "▲", .unicode = "▲", .ascii = "^" },
 
     .{ .eeech = "\x1b", .ansi = "^[" },
+} ++ if (builtin.is_test) [_]CharReplacement{
+    .{ .eeech = COLOR_BLACK },
+    .{ .eeech = COLOR_GRAY },
+    .{ .eeech = COLOR_DARK_RED },
+    .{ .eeech = COLOR_DARK_YELLOW },
+    .{ .eeech = COLOR_DARK_GREEN },
+    .{ .eeech = COLOR_DARK_CYAN },
+    .{ .eeech = COLOR_DARK_BLUE },
+    .{ .eeech = COLOR_DARK_MAGENTA },
+
+    .{ .eeech = COLOR_WHITE },
+    .{ .eeech = COLOR_RED },
+    .{ .eeech = COLOR_YELLOW },
+    .{ .eeech = COLOR_GREEN },
+    .{ .eeech = COLOR_CYAN },
+    .{ .eeech = COLOR_BLUE },
+    .{ .eeech = COLOR_MAGENTA },
+
+    .{ .eeech = CLEAR },
+    .{ .eeech = UNDO },
+
+    .{ .eeech = "\xf8" },
+
+    .{ .eeech = "\r" },
 } else [_]CharReplacement{
     .{ .eeech = COLOR_BLACK, .ansi = "\x1b[0;30m" },
     .{ .eeech = COLOR_GRAY, .ansi = "\x1b[0;90m" },
@@ -143,35 +146,92 @@ const REPLACEMENT_TABLE = [_]CharReplacement{
     .{ .eeech = "\xf8", .ansi = "\x1b[m" },
 
     .{ .eeech = "\r", .ansi = "\r\x1b[0K" },
-    .{ .eeech = "\n", .ansi = "\n\r\x1b[0K" },
-
-    .{ .eeech = "\x1b", .ansi = "^[" },
+    .{ .eeech = "\n", .ansi = "\n\r\x1b[0K", .unicode = "\n" },
 };
 
-pub fn eeeCHToANSI(input: []const u8) ![]const u8 {
+pub fn encode(
+    input: []const u8,
+    comptime input_kind: CharReplacement.StringKind,
+    comptime output_kind: CharReplacement.StringKind,
+) ![]const u8 {
     var len: usize = 0;
-    for (input) |ch| {
-        inline for (REPLACEMENT_TABLE) |entry| {
-            if (ch == entry.eeech[0]) {
-                len += entry.ansi.len;
-
-                break;
+    {
+        var idx: usize = 0;
+        outer: while (idx < input.len) {
+            // Hack: zero is non printing in all formats here
+            if (input[idx] == 0) {
+                idx += 1;
+                continue;
             }
-        } else len += 1;
+
+            inline for (REPLACEMENT_TABLE) |entry| {
+                const entry_input = switch (input_kind) {
+                    .eeech => entry.eeech,
+                    .ansi => entry.ansi,
+                    .ascii => entry.ascii,
+                    .unicode => entry.unicode,
+                };
+                const entry_output = switch (output_kind) {
+                    .eeech => entry.eeech,
+                    .ansi => entry.ansi,
+                    .ascii => entry.ascii,
+                    .unicode => entry.unicode,
+                };
+
+                if (entry_input.len == 0) continue;
+
+                if (std.mem.startsWith(u8, input[idx..], entry_input)) {
+                    len += entry_output.len;
+                    idx += entry_input.len;
+
+                    continue :outer;
+                }
+            }
+
+            len += 1;
+            idx += 1;
+        }
     }
 
     var result = try allocator.alloc(u8, len);
-    var idx: usize = 0;
-    for (input) |ch| {
-        inline for (REPLACEMENT_TABLE) |entry| {
-            if (ch == entry.eeech[0]) {
-                @memcpy(result[idx .. idx + entry.ansi.len], entry.ansi);
-                idx += entry.ansi.len;
 
-                break;
+    {
+        var out_idx: usize = 0;
+        var idx: usize = 0;
+        outer: while (idx < input.len) {
+            // Hack: zero is non printing in all formats here
+            if (input[idx] == 0) {
+                idx += 1;
+                continue;
             }
-        } else {
-            result[idx] = if (ch > 0x80) ' ' else ch;
+
+            inline for (REPLACEMENT_TABLE) |entry| {
+                const entry_input = switch (input_kind) {
+                    .eeech => entry.eeech,
+                    .ansi => entry.ansi,
+                    .ascii => entry.ascii,
+                    .unicode => entry.unicode,
+                };
+                const entry_output = switch (output_kind) {
+                    .eeech => entry.eeech,
+                    .ansi => entry.ansi,
+                    .ascii => entry.ascii,
+                    .unicode => entry.unicode,
+                };
+
+                if (entry_input.len == 0) continue;
+
+                if (std.mem.startsWith(u8, input[idx..], entry_input)) {
+                    @memcpy(result[out_idx .. out_idx + entry_output.len], entry_output);
+                    out_idx += entry_output.len;
+                    idx += entry_input.len;
+
+                    continue :outer;
+                }
+            }
+
+            result[out_idx] = input[idx];
+            out_idx += 1;
             idx += 1;
         }
     }

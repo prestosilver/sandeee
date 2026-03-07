@@ -45,6 +45,8 @@ const ESCAPE_CHAR = '\\';
 
 const STRING_ERROR = "{s}  " ++ strings.COLOR_RED ++ strings.LEFT ++ " {s}";
 
+const TAB_WIDTH = 2;
+
 pub const EditorData = struct {
     const Self = @This();
 
@@ -583,8 +585,8 @@ pub const EditorData = struct {
 
             if (start.y > end.y) {
                 const temp = end;
+                end = start;
                 start = temp;
-                end = temp;
             } else if (start.y == end.y) {
                 try result.appendSlice(buffer.items[start.y].text[@min(start.x, end.x)..@max(start.x, end.x)]);
                 break :sel_block;
@@ -734,8 +736,11 @@ pub const EditorData = struct {
         allocator.destroy(self);
     }
 
-    pub fn char(self: *Self, code: u32, _: i32) !void {
-        if (code == '\n') return;
+    pub fn char(self: *Self, char_string: []const u8, _: i32) !void {
+        if (std.mem.eql(u8, char_string, "\n")) return;
+
+        // TODO: figure out support for this
+        if (char_string.len > 1) return;
 
         if (self.buffer) |buffer| {
             try self.deleteSel();
@@ -759,7 +764,7 @@ pub const EditorData = struct {
 
             @memmove(line.text[cursor_pos.x + 1 ..], line.text[cursor_pos.x .. line.text.len - 1]);
 
-            line.text[cursor_pos.x] = @intCast(@rem(code, 255));
+            line.text[cursor_pos.x] = char_string[0];
             line.clearRender();
 
             cursor_pos.x += 1;
@@ -813,8 +818,9 @@ pub const EditorData = struct {
                 }
             },
             glfw.KeyTab => {
-                try self.char(' ', mods);
-                try self.char(' ', mods);
+                inline for (0..TAB_WIDTH) |_| {
+                    try self.char(" ", mods);
+                }
             },
             glfw.KeyEnter => {
                 if (self.buffer) |*buffer| {

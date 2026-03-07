@@ -171,21 +171,24 @@ pub const CMDData = struct {
         return;
     }
 
-    pub fn char(self: *Self, code: u32, mods: i32) !void {
+    pub fn char(self: *Self, char_string: []const u8, _: i32) !void {
+        // TODO: better multi char support
+        if (std.mem.eql(u8, char_string, "\n")) return;
+        if (char_string.len > 1) return;
+
         if (self.shell.vm != null) {
-            try self.shell.appendVMIn(@as(u8, @intCast(code)));
+            for (char_string) |ch|
+                try self.shell.appendVMIn(ch);
 
             return;
         }
 
-        if (code == '\n') return;
         if (self.input_len < 255) {
             std.mem.copyBackwards(u8, self.input_buffer[self.input_idx + 1 ..], self.input_buffer[self.input_idx..255]);
-            self.input_buffer[self.input_idx] = @as(u8, @intCast(code));
+            self.input_buffer[self.input_idx] = char_string[0];
             self.input_len += 1;
             self.input_idx += 1;
         }
-        _ = mods;
     }
 
     pub fn key(self: *Self, code: i32, mods: i32, down: bool) !void {

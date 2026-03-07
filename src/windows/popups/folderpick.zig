@@ -107,15 +107,17 @@ pub const PopupFolderPick = struct {
         }
     }
 
-    pub fn char(self: *Self, keycode: u32, _: i32) !void {
-        if (keycode < 256) {
-            if (self.err) |err|
-                allocator.free(err);
-            self.err = null;
+    pub fn char(self: *Self, char_string: []const u8, _: i32) !void {
+        // TODO: better multi char support
+        if (std.mem.eql(u8, char_string, "\n")) return;
+        if (char_string.len > 1) return;
 
-            self.path = try allocator.realloc(self.path, self.path.len + 1);
-            self.path[self.path.len - 1] = @as(u8, @intCast(keycode));
-        }
+        if (self.err) |err|
+            allocator.free(err);
+        self.err = null;
+
+        self.path = try allocator.realloc(self.path, self.path.len + 1);
+        self.path[self.path.len - 1] = char_string[0];
     }
 
     pub fn deinit(self: *Self) void {

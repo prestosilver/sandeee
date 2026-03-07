@@ -4,12 +4,16 @@ const glfw = @import("glfw");
 const math = @import("../math.zig");
 const events = @import("../events.zig");
 const util = @import("../util.zig");
+const sandeee_data = @import("../data.zig");
+
+const strings = sandeee_data.strings;
 
 const Vec2 = math.Vec2;
 
 const EventManager = events.EventManager;
 
 const graphics = util.graphics;
+const allocator = util.allocator;
 
 pub fn setup(win: ?*glfw.Window, enabled: bool) void {
     if (!enabled) return;

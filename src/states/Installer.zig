@@ -59,7 +59,7 @@ load_sprite: Sprite,
 select_sound: *audio.Sound,
 
 setting_values: [SETTINGS.len][MAX_VALUE_LEN]u8 = .{[_]u8{0} ** MAX_VALUE_LEN} ** SETTINGS.len,
-setting_lengths: [SETTINGS.len]u8 = [_]u8{0} ** SETTINGS.len,
+setting_lengths: [SETTINGS.len]usize = [_]usize{0} ** SETTINGS.len,
 setting_id: usize = 0,
 
 timer: f32 = 1,
@@ -67,22 +67,17 @@ status: Status = .Naming,
 disk_name: std.array_list.Managed(u8) = .init(allocator),
 offset: f32 = 0,
 
-pub fn keychar(self: *GSInstaller, code: u32, _: c_int) !void {
-    switch (code) {
-        'a'...'z', 'A'...'Z', '0'...'9' => {
-            try self.appendChar(@intCast(code));
-        },
-        '.' => {
-            try self.appendChar('.');
-        },
-        '-' => {
-            try self.appendChar('-');
-        },
-        '_' => {
-            try self.appendChar('_');
-        },
-        else => {},
-    }
+pub fn keychar(self: *GSInstaller, code: []const u8, _: c_int) !void {
+    if (code.len == 0)
+        switch (code[0]) {
+            'a'...'z', 'A'...'Z', '0'...'9', '.', '-', '_' => {
+                try self.appendChar(code);
+            },
+            ' ' => {
+                try self.appendChar("_");
+            },
+            else => {},
+        };
 }
 
 pub fn setup(self: *GSInstaller) !void {
@@ -239,16 +234,17 @@ pub fn update(self: *GSInstaller, dt: f32) !void {
     }
 }
 
-pub fn appendChar(self: *GSInstaller, char: u8) !void {
+// TODO: fuzz this
+pub fn appendChar(self: *GSInstaller, char: []const u8) !void {
     switch (self.status) {
         .Naming => {
             if (self.disk_name.items.len < MAX_VALUE_LEN)
-                try self.disk_name.append(char);
+                try self.disk_name.appendSlice(char);
         },
         .Settings => {
-            if (self.setting_lengths[self.setting_id] < MAX_VALUE_LEN) {
-                self.setting_values[self.setting_id][self.setting_lengths[self.setting_id]] = char;
-                self.setting_lengths[self.setting_id] += 1;
+            if (self.setting_lengths[self.setting_id] + char.len < MAX_VALUE_LEN) {
+                @memcpy(self.setting_values[self.setting_id][self.setting_lengths[self.setting_id]..][0..char.len], char);
+                self.setting_lengths[self.setting_id] += char.len;
             }
         },
         else => {},

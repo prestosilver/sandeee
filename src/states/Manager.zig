@@ -17,7 +17,7 @@ pub const GameState = struct {
         draw: *const fn (*anyopaque, Vec2) anyerror!void,
         update: *const fn (*anyopaque, f32) anyerror!void,
         keypress: *const fn (*anyopaque, c_int, c_int, bool) anyerror!void,
-        keychar: *const fn (*anyopaque, u32, i32) anyerror!void,
+        keychar: *const fn (*anyopaque, []const u8, i32) anyerror!void,
         mousepress: *const fn (*anyopaque, c_int, ClickKind) anyerror!void,
         mousemove: *const fn (*anyopaque, Vec2) anyerror!void,
         mousescroll: *const fn (*anyopaque, Vec2) anyerror!void,
@@ -55,8 +55,8 @@ pub const GameState = struct {
         return state.vtable.keypress(state.ptr, key, mods, down);
     }
 
-    pub fn keychar(state: *Self, codepoint: u32, mods: c_int) anyerror!void {
-        return state.vtable.keychar(state.ptr, codepoint, mods);
+    pub fn keychar(state: *Self, char_string: []const u8, mods: c_int) anyerror!void {
+        return state.vtable.keychar(state.ptr, char_string, mods);
     }
 
     pub fn mousepress(state: *Self, btn: c_int, kind: ClickKind) anyerror!void {
@@ -125,7 +125,7 @@ pub const GameState = struct {
                 }
             }
 
-            fn keycharImpl(pointer: *anyopaque, codepoint: u32, mods: c_int) anyerror!void {
+            fn keycharImpl(pointer: *anyopaque, codepoint: []const u8, mods: c_int) anyerror!void {
                 if (std.meta.hasMethod(child_t, "keychar")) {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 

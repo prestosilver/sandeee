@@ -525,7 +525,7 @@ pub fn keypress(self: *GSWindowed, key: c_int, mods: c_int, down: bool) !void {
     }
 }
 
-pub fn keychar(self: *GSWindowed, code: u32, mods: c_int) !void {
+pub fn keychar(self: *GSWindowed, code: []const u8, mods: c_int) !void {
     if (self.bar.data.btn_active) return;
 
     if (self.popups.items.len != 0) {

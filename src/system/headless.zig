@@ -22,7 +22,7 @@ else
     "";
 
 pub fn write_console(stdout: *std.fs.File.Writer, input: []const u8) !void {
-    const text = try sandeee_data.strings.eeeCHToANSI(input);
+    const text = try sandeee_data.strings.encode(input, .eeech, .ansi);
     defer allocator.free(text);
 
     try stdout.interface.writeAll(text);

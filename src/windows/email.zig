@@ -744,8 +744,10 @@ const EmailData = struct {
         }
     }
 
-    pub fn char(self: *Self, codepoint: u32, _: i32) !void {
-        if (codepoint > 128) return;
+    pub fn char(self: *Self, char_string: []const u8, _: i32) !void {
+        // TODO: better multi char support
+        if (std.mem.eql(u8, char_string, "\n")) return;
+        if (char_string.len > 1) return;
 
         if (self.login == null) {
             if (self.login_input) |input|
@@ -755,7 +757,7 @@ const EmailData = struct {
                         defer allocator.free(old);
                         self.login_text[0] = try std.mem.concat(allocator, u8, &.{
                             self.login_text[0],
-                            &.{@as(u8, @intCast(codepoint))},
+                            char_string,
                         });
                     },
                     .Password => {
@@ -763,7 +765,7 @@ const EmailData = struct {
                         defer allocator.free(old);
                         self.login_text[1] = try std.mem.concat(allocator, u8, &.{
                             self.login_text[1],
-                            &.{@as(u8, @intCast(codepoint))},
+                            char_string,
                         });
                     },
                 };
