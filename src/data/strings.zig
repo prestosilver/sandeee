@@ -157,14 +157,11 @@ pub fn encode(
     var len: usize = 0;
     {
         var idx: usize = 0;
-        outer: while (idx < input.len) {
+        while (idx < input.len) {
             // Hack: zero is non printing in all formats here
             if (input[idx] == 0) {
                 idx += 1;
-                continue;
-            }
-
-            inline for (REPLACEMENT_TABLE) |entry| {
+            } else inline for (REPLACEMENT_TABLE) |entry| {
                 const entry_input = switch (input_kind) {
                     .eeech => entry.eeech,
                     .ansi => entry.ansi,
@@ -184,12 +181,12 @@ pub fn encode(
                     len += entry_output.len;
                     idx += entry_input.len;
 
-                    continue :outer;
+                    break;
                 }
+            } else {
+                len += 1;
+                idx += 1;
             }
-
-            len += 1;
-            idx += 1;
         }
     }
 
@@ -198,14 +195,11 @@ pub fn encode(
     {
         var out_idx: usize = 0;
         var idx: usize = 0;
-        outer: while (idx < input.len) {
+        while (idx < input.len) {
             // Hack: zero is non printing in all formats here
             if (input[idx] == 0) {
                 idx += 1;
-                continue;
-            }
-
-            inline for (REPLACEMENT_TABLE) |entry| {
+            } else inline for (REPLACEMENT_TABLE) |entry| {
                 const entry_input = switch (input_kind) {
                     .eeech => entry.eeech,
                     .ansi => entry.ansi,
@@ -226,13 +220,13 @@ pub fn encode(
                     out_idx += entry_output.len;
                     idx += entry_input.len;
 
-                    continue :outer;
+                    break;
                 }
+            } else {
+                result[out_idx] = input[idx];
+                out_idx += 1;
+                idx += 1;
             }
-
-            result[out_idx] = input[idx];
-            out_idx += 1;
-            idx += 1;
         }
     }
 
