@@ -21,6 +21,7 @@
 |[todo.md](../docs/todo.md)|A rolling todo list of repo wide todos|
 |[trailer_devlog.md](../docs/trailer_devlog.md)|A draft for a devlog about the trailer|
 |[eee_org.md](../docs/eee_org.md)|The EEE org chart.|
+|[disk_update.md](../docs/disk_update.md)|Plans for the disk format update.|
 
 ## Presentations
 

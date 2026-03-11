@@ -1,0 +1,29 @@
+# The new EEEch plan
+
+- Control characters 00-1F
+  - 00 Unknown
+  - 01 Clear screen
+  - 02 Clear line
+  - 03 Backspace
+  - 04 Newline
+  - 05 Tab
+  - 06 Space
+- Puncuation 20-2F
+  - 21 Period
+  - 22 Comma
+  - 23 Colon
+  - 24 Semi colon
+  - 25 Question mark
+  - 26 Exclamation mark
+- Alphanum 30-5F
+  - 30-39 0-9
+  - 3A-43 a-z
+  - 44-5E A-Z
+- Comparisons 60-6F
+  - 60 Less than
+  - 61 Equal
+  - 62 Greater than
+  - 63 Not equal
+- Symbols 70-8F
+  - 70 Tilde
+  - 71 Hashtag

@@ -2,7 +2,7 @@
 
 ## Timeline
 
-| Date      | Event           | Notes 
+| Date      | Event           | Notes
 |-----------|-----------------|-|
 | 03/03/1993  | EEE is founded. | - Their goal was to make programming a universal right, something as common as reading/writing. <br/> - They start with simple programs for normal machines, but in the background are developing a "string efficient cpu". <br/>
 | 04/07/2000  | Desktop release | EEE finishes their machine, and decide to make it public, it gains wide support.

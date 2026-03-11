@@ -1,0 +1,33 @@
+#style @/docs/style.eds
+
+:center: -- EEEch --
+-- Character list --
+
+00-0F Reserved for control
+20    Space
+21    Exclamation point
+22    Double quote
+23    Hashtag
+24    Dollar
+25    Percent
+26    Ampersand
+27    Single quote
+28    Open parenthesis
+29    Close parenthesis
+2A    Asterisk
+2B    Plus
+2C    Comma
+2D    Minus
+2E    Period
+2F    Forward Slash
+30-39 Digits
+3A    Colon
+3B    Semi colon
+3C    Less than
+3D    Equals
+3E    Greater than
+3F    Questionmark
+
+:reference: [eeech.eia]
+
+:center: --- EEE Sees all ---

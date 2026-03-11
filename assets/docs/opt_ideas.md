@@ -1,4 +1,4 @@
-# general sandeee optimization ideas
+# general SandEEE optimization ideas
 
 These are all time consuming and non trivial but do offer benefit so tracking them.
 

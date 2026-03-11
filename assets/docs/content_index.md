@@ -2,7 +2,7 @@
 
 |path|Desc|
 |----|---:|
-|[content/](../../content/)|All content that can appear in game |
+|[content/](../../content/)|All content that can appear in game|
 |&emsp;[asm/](../../content/asm)|All code written in EEE Assembly|
 |&emsp;&emsp;[exec/](../../content/asm/exec/)|Executables written in EEE Assembly|
 |&emsp;&emsp;&emsp;[aplay.asm](../../content/asm/exec/aplay.asm)|The terminal audio player|
@@ -21,7 +21,7 @@
 |&emsp;&emsp;&emsp;[window.asm](../../content/asm/libs/window.asm)|Basic window utilities|
 |&emsp;&emsp;[tests/](../../content/asm/tests/)|Tests written in EEE Assembly|
 |&emsp;[audio/](../../content/audio)|All audio files|
-|&emsp;&emsp;[bg.wav](../../content/audio/bg.wav)|Some background noise<br/> meant to sound like a pc fan|
+|&emsp;&emsp;[bg.wav](../../content/audio/bg.wav)|Some background noise<br/>meant to sound like a pc fan|
 |&emsp;&emsp;[bios-blip.wav](../../content/audio/bios-blip.wav)|Played when a option is hovered in BootEEE|
 |&emsp;&emsp;[bios-select.wav](../../content/audio/bios-select.wav)|Played when a option is selected in BootEEE|
 |&emsp;&emsp;[fart.wav](../../content/audio/fart.wav)|A sound used for testing short multi second sfx|

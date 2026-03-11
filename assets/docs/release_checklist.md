@@ -3,121 +3,121 @@
 ## os:seed#10 (3-3-26)
 
 - [ ] Going into release day
-    - [X] Update specific
-        - [X] Scroll bars arent scrolling
-        - [X] Steamtool item id is not listed right
-        - [X] zig build upload_itch_release
-        - [X] ~~zig build steam_changelog~~
-        - [X] ~~zig build itch_changelog~~
-    - [X] Grammar
-        - [X] Check spelling in all emails
-        - [X] Ensure no bad commits are in changelog
-    - [X] Automatic
-        - [X] Pass all zig tests
-        - [X] Successfully fuzz for 2 hours
-    - [X] Manual tests
-        - [X] Run steam demo on windows vm
-            - [X] Test all disks in /disks
-            - [X] Make a disk
-        - [X] Run steam demo on linux vm
-            - [X] Test all disks in /disks
-            - [X] Make a disk
-        - [X] Run itch demo on windows vm
-            - [X] Test all disks in /disks
-            - [X] Make a disk
-        - [X] Run itch demo on linux vm
-            - [X] Test all disks in /disks
-            - [X] Make a disk
-        - [X] Run steam on windows vm
-            - [X] Test all disks in /disks
-            - [X] Transfer a demo disk
-            - [X] Make a disk
-        - [X] Run steam on linux vm
-            - [X] Test all disks in /disks
-            - [X] Transfer a demo disk
-            - [X] Make a disk
-        - [X] Run itch on windows vm
-            - [X] Test all disks in /disks
-            - [X] Transfer a demo disk
-            - [X] Make a disk
-        - [X] Run itch on linux vm
-            - [X] Test all disks in /disks
-            - [X] Transfer a demo disk
-            - [X] Make a disk
-- [ ] On release
-    - [ ] Incremenet version number
-        - [X] For code
-            - [X] Inside VERSION
-            - [X] Inside build.zig
-        - [X] Git push (Make sure meta)
-        - [X] Regenerate chagelog
-    - [ ] Actually release
-        - [ ] Move steam build from alpha to default
-        - [ ] Run `zig build upload_itch_release`
-    - [X] ~~Publish steam cangelog~~
-        - [X] ~~Run `zig build steam_changelog`~~
-        - [X] ~~Copy paste `zig-out/pub/steam/changelog`~~
-    - [X] ~~Publish itch cangelog~~
-        - [X] ~~Run `zig build itch_changelog`~~
-        - [X] ~~Copy paste `zig-out/pub/itch/changelog`~~
-    - [ ] Announce on discord
-    - [ ] Upload website
-        - [ ] Run `zig builld www`
-        - [ ] Push www submodule to github
+  - [X] Update specific
+    - [X] Scroll bars arent scrolling
+    - [X] Steamtool item id is not listed right
+    - [X] zig build upload_itch_release
+    - [X] ~~zig build steam_changelog~~
+    - [X] ~~zig build itch_changelog~~
+  - [X] Grammar
+    - [X] Check spelling in all emails
+    - [X] Ensure no bad commits are in changelog
+  - [X] Automatic
+    - [X] Pass all zig tests
+    - [X] Successfully fuzz for 2 hours
+  - [X] Manual tests
+    - [X] Run steam demo on windows vm
+      - [X] Test all disks in /disks
+      - [X] Make a disk
+    - [X] Run steam demo on linux vm
+      - [X] Test all disks in /disks
+      - [X] Make a disk
+    - [X] Run itch demo on windows vm
+      - [X] Test all disks in /disks
+      - [X] Make a disk
+    - [X] Run itch demo on linux vm
+      - [X] Test all disks in /disks
+      - [X] Make a disk
+    - [X] Run steam on windows vm
+      - [X] Test all disks in /disks
+      - [X] Transfer a demo disk
+      - [X] Make a disk
+    - [X] Run steam on linux vm
+      - [X] Test all disks in /disks
+      - [X] Transfer a demo disk
+      - [X] Make a disk
+    - [X] Run itch on windows vm
+      - [X] Test all disks in /disks
+      - [X] Transfer a demo disk
+      - [X] Make a disk
+    - [X] Run itch on linux vm
+      - [X] Test all disks in /disks
+      - [X] Transfer a demo disk
+      - [X] Make a disk
+- [X] On release
+  - [X] Increment version number
+    - [X] For code
+      - [X] Inside VERSION
+      - [X] Inside build.zig
+    - [X] Git push (Make sure meta)
+    - [X] Regenerate changelog
+  - [X] Actually release
+    - [X] Move steam build from alpha to default
+    - [X] Run `zig build upload_itch_release`
+  - [X] ~~Publish steam changelog~~
+    - [X] ~~Run `zig build steam_changelog`~~
+    - [X] ~~Copy paste `zig-out/pub/steam/changelog`~~
+  - [X] ~~Publish itch changelog~~
+    - [X] ~~Run `zig build itch_changelog`~~
+    - [X] ~~Copy paste `zig-out/pub/itch/changelog`~~
+  - [X] Announce on discord
+  - [X] Upload website
+    - [X] Run `zig build www`
+    - [X] Push www submodule to github
 
 ## template
 
 - [ ] Going into release day
-    - [ ] Grammar
-        - [ ] Check spelling in all emails
-        - [ ] Ensure no bad commits are in changelog
-    - [ ] Automatic
-        - [ ] Pass all zig tests
-        - [ ] Successfully fuzz for 2 hours
-    - [ ] Manual tests
-        - [ ] Run steam demo on windows vm
-            - [ ] Test all disks in /disks
-            - [ ] Make a disk
-        - [ ] Run steam demo on linux vm
-            - [ ] Test all disks in /disks
-            - [ ] Make a disk
-        - [ ] Run itch demo on windows vm
-            - [ ] Test all disks in /disks
-            - [ ] Make a disk
-        - [ ] Run itch demo on linux vm
-            - [ ] Test all disks in /disks
-            - [ ] Make a disk
-        - [ ] Run steam on windows vm
-            - [ ] Test all disks in /disks
-            - [ ] Transfer a demo disk
-            - [ ] Make a disk
-        - [ ] Run steam on linux vm
-            - [ ] Test all disks in /disks
-            - [ ] Transfer a demo disk
-            - [ ] Make a disk
-        - [ ] Run itch on windows vm
-            - [ ] Test all disks in /disks
-            - [ ] Transfer a demo disk
-            - [ ] Make a disk
-        - [ ] Run itch on linux vm
-            - [ ] Test all disks in /disks
-            - [ ] Transfer a demo disk
-            - [ ] Make a disk
+  - [ ] Grammar
+    - [ ] Check spelling in all emails
+    - [ ] Ensure no bad commits are in changelog
+  - [ ] Automatic
+    - [ ] Pass all zig tests
+    - [ ] Successfully fuzz for 2 hours
+  - [ ] Manual tests
+    - [ ] Run steam demo on windows vm
+      - [ ] Test all disks in /disks
+      - [ ] Make a disk
+    - [ ] Run steam demo on linux vm
+      - [ ] Test all disks in /disks
+      - [ ] Make a disk
+    - [ ] Run itch demo on windows vm
+      - [ ] Test all disks in /disks
+      - [ ] Make a disk
+    - [ ] Run itch demo on linux vm
+      - [ ] Test all disks in /disks
+      - [ ] Make a disk
+    - [ ] Run steam on windows vm
+      - [ ] Test all disks in /disks
+      - [ ] Transfer a demo disk
+      - [ ] Make a disk
+    - [ ] Run steam on linux vm
+      - [ ] Test all disks in /disks
+      - [ ] Transfer a demo disk
+      - [ ] Make a disk
+    - [ ] Run itch on windows vm
+      - [ ] Test all disks in /disks
+      - [ ] Transfer a demo disk
+      - [ ] Make a disk
+    - [ ] Run itch on linux vm
+      - [ ] Test all disks in /disks
+      - [ ] Transfer a demo disk
+      - [ ] Make a disk
 - [ ] On release
-    - [ ] Incremenet version number
-        - [ ] Inside VERSION
-        - [ ] Regenerate chagelog
-        - [ ] Git push (Make sure meta)
-    - [ ] Upload website
-        - [ ] Run `zig builld www`
-        - [ ] Push www submodule to github
-    - [ ] Actually release
-        - [ ] Move steam build from alpha to default
-        - [ ] Run `zig build upload_itch_release`
-    - [ ] Publish steam cangelog
-        - [ ] Run `zig build steam_changelog`
-        - [ ] Copy paste `zig-out/pub/steam/changelog`
-    - [ ] Publish itch cangelog
-        - [ ] Run `zig build itch_changelog`
-        - [ ] Copy paste `zig-out/pub/itch/changelog`
-    - [ ] Announce on discord
+  - [ ] Increment version number
+    - [ ] Inside VERSION
+    - [ ] Regenerate changelog
+    - [ ] Git push (Make sure meta)
+  - [ ] Upload website
+    - [ ] Run `zig build www`
+    - [ ] Push www submodule to github
+  - [ ] Actually release
+    - [ ] Move steam build from alpha to default
+    - [ ] Run `zig build upload_itch_release`
+  - [ ] Publish steam changelog
+    - [ ] Run `zig build steam_changelog`
+    - [ ] Copy paste `zig-out/pub/steam/changelog`
+  - [ ] Publish itch changelog
+    - [ ] Run `zig build itch_changelog`
+    - [ ] Copy paste `zig-out/pub/itch/changelog`
+  - [ ] Announce on discord

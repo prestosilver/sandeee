@@ -9,14 +9,14 @@
 - [X] !!!!144hz bs
 - [X] Editor selection acts really weird
 - [X] Window IDs limit at 255, but game keeps making windows
-- [X] Scroll bars arent scrolling
+- [X] Scroll bars aren't scrolling
 - [X] Steamtool item id is not labeled right
 - [X] Keyboard localization is screwed
 - [ ] Wordwrap in console
-- [ ] VMS dont close on crash, meaning they can lag the crash state.
+- [ ] VMS don't close on crash, meaning they can lag the crash state.
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
 - [ ] Restoring and installing a disk drops frames
-- [ ] Disk files are unordered everywhere, sort on save
+- [ ] Disks files are unordered everywhere, sort on save
 - [ ] Task manager can fullscreen and renders wrong
 - [ ] Steam in web can lag the game
 
@@ -28,7 +28,10 @@
 - [X] Fix random mem leak on tests
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
+- [ ] Fix program names and versions
+  - [ ] Merge BootEEE
 - [ ] Add actual pickers to settings ui
+- [ ] <=> should not connect at all
 - [ ] All buttons should look disabled when disabled
 - [ ] Add consistent id iota type utility
 - [ ] Load progress on web
@@ -41,13 +44,14 @@
 - [X] New partial disk scripted recovery system
 - [X] zig build upload_itch_release
 - [X] Double check wording in demo emails
-- [ ] zig build steam_changelog
-- [ ] zig build itch_changelog
+- [ ] EDS Background color
 - [ ] Workshop previews
 - [ ] Workshop favorites
 - [ ] SandEEE install should be configurable somehow, cli flag probably.
-- [ ] Merge BootEEE
-- [ ] Inter emailbox conditions
+- [ ] zig test should check www for dead links
+- [ ] zig build steam_changelog
+- [ ] zig build itch_changelog
+- [ ] Inter email box conditions
 - [ ] Embed file fix
 - [ ] Update email content
 - [ ] steam screenshots

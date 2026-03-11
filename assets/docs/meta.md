@@ -123,7 +123,7 @@ This is documenting stuff
     - www/docs/assembly/instructions/nop.edf
 - www/docs/encodings/
   - www/docs/encodings/index.edf
-  - www/docs/encodings/EEEch.eia
+  - www/docs/encodings/eeech.edf
 - www/docs/binaries/
   - www/docs/binaries/index.edf
   - www/docs/binaries/eia.edf
@@ -630,10 +630,8 @@ os:tree#0_30545   -> Initial stable release
 |SandEEE OS  |os     |
 |EEEdt       |text   |
 |EEEmail     |mail   |
-|Explorer    |web    |
+|DiscoverEEE |web    |
 |BootEEE     |boot   |
-|RecoverEEE  |health |
-|EEEInstaller|install|
 
 ## Final Notes
 
