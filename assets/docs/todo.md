@@ -12,6 +12,7 @@
 - [X] Scroll bars aren't scrolling
 - [X] Steamtool item id is not labeled right
 - [X] Keyboard localization is screwed
+- [ ] Possible crash on email VM calls
 - [ ] Wordwrap in console
 - [ ] VMS don't close on crash, meaning they can lag the crash state.
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
