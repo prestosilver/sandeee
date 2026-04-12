@@ -1071,10 +1071,11 @@ test "Vm input fuzzing" {
         vm: *Vm,
 
         fn testStringToOps(context: @This(), input: []const u8) anyerror!void {
-            (context.vm.stringToOps(input) catch |err| switch (err) {
+            const ops = context.vm.stringToOps(input) catch |err| switch (err) {
                 error.InvalidAsm => return,
                 else => |e| return e,
-            }).deinit();
+            };
+            defer std.testing.allocator.free(ops);
         }
     };
 
