@@ -640,7 +640,7 @@ pub const WebData = struct {
 
         const adds = try allocator.create(popups.textpick.PopupTextPick);
         adds.* = .{
-            .text = try std.mem.concat(allocator, u8, &.{ home.name, name }),
+            .text = .fromOwnedSlice(allocator, try std.mem.concat(allocator, u8, &.{ home.name, name })),
             .data = @as(*anyopaque, @ptrCast(output)),
             .submit = &submit,
             .prompt = try allocator.dupe(u8, "Pick a path to save the file"),

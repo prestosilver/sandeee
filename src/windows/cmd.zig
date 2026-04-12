@@ -35,7 +35,7 @@ const MAX_SIZE = 100000;
 pub const CMDData = struct {
     const Self = @This();
 
-    bt: []u8,
+    bt: std.array_list.Managed(u8),
     input_buffer: [256]u8 = undefined,
     input_len: u8 = 0,
     input_idx: u8 = 0,
@@ -47,35 +47,29 @@ pub const CMDData = struct {
     close: bool = false,
 
     pub fn processBT(self: *Self) !void {
-        const oldbt = self.bt;
-        defer allocator.free(oldbt);
+        const old_items = self.bt.items;
+        self.bt.shrinkRetainingCapacity(0);
 
-        self.bt = try allocator.alloc(u8, self.bt.len);
-        var idx: usize = 0;
-
-        for (oldbt) |ch| {
+        for (old_items) |ch| {
             switch (ch) {
                 '\x08' => {
-                    if (self.bt.len >= 0)
-                        idx -= 1;
+                    if (self.bt.items.len >= 0)
+                        _ = self.bt.pop();
                 },
                 '\x01' => {
-                    idx = 0;
+                    self.bt.clearRetainingCapacity();
                 },
                 '\r' => {
-                    if (std.mem.lastIndexOf(u8, self.bt[0..idx], "\n")) |newidx|
-                        idx = newidx + 1
+                    if (std.mem.lastIndexOf(u8, self.bt.items, "\n")) |newidx|
+                        self.bt.shrinkRetainingCapacity(newidx + 1)
                     else
-                        idx = 0;
+                        self.bt.clearRetainingCapacity();
                 },
                 else => {
-                    self.bt[idx] = ch;
-                    idx += 1;
+                    try self.bt.append(ch);
                 },
             }
         }
-
-        self.bt = try allocator.realloc(self.bt, idx);
     }
 
     pub fn draw(self: *Self, shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
@@ -87,10 +81,9 @@ pub const CMDData = struct {
 
         props.close = self.close;
 
-        if (self.bt.len > MAX_SIZE) {
-            const newbt = try allocator.dupe(u8, self.bt[self.bt.len - MAX_SIZE ..]);
-            allocator.free(self.bt);
-            self.bt = newbt;
+        if (self.bt.items.len > MAX_SIZE) {
+            @memmove(self.bt.items[0..MAX_SIZE], self.bt.items[self.bt.items.len - MAX_SIZE ..]);
+            self.bt.shrinkRetainingCapacity(MAX_SIZE);
         }
 
         var idx: usize = 0;
@@ -130,10 +123,7 @@ pub const CMDData = struct {
             if (result) |result_data| {
                 defer result_data.deinit();
 
-                const start = self.bt.len;
-                self.bt = try allocator.realloc(self.bt, self.bt.len + result_data.data.len);
-
-                @memcpy(self.bt[start..], result_data.data);
+                try self.bt.appendSlice(result_data.data);
                 try self.processBT();
 
                 idx += 1;
@@ -142,7 +132,7 @@ pub const CMDData = struct {
             }
         }
 
-        var lines = std.mem.splitBackwardsScalar(u8, self.bt, '\n');
+        var lines = std.mem.splitBackwardsScalar(u8, self.bt.items, '\n');
 
         var y = bnds.y + bnds.h - @as(f32, @floatFromInt(idx)) * font.size - 6 + offset;
 
@@ -150,8 +140,12 @@ pub const CMDData = struct {
 
         while (lines.next()) |line| {
             height += font.sizeText(.{ .text = line, .wrap = bnds.w - 30 }).y;
+
             if (y < bnds.y) continue;
+
             y -= font.sizeText(.{ .text = line, .wrap = bnds.w - 30 }).y;
+
+            if (y > bnds.y + bnds.h) continue;
 
             try font.draw(.{
                 .shader = shader,
@@ -226,21 +220,14 @@ pub const CMDData = struct {
 
                 const prompt = try std.fmt.allocPrint(allocator, "\n{s}{s}\n", .{ shell_prompt, self.input_buffer[0..self.input_len] });
                 defer allocator.free(prompt);
-                var start = self.bt.len;
 
-                self.bt = try allocator.realloc(self.bt, self.bt.len + prompt.len);
-                @memcpy(self.bt[start .. start + prompt.len], prompt);
+                try self.bt.appendSlice(prompt);
 
                 const al = self.shell.run(self.input_buffer[0..self.input_len]) catch |err| {
                     const msg = @errorName(err);
 
-                    start = self.bt.len;
-                    self.bt = try allocator.realloc(self.bt, self.bt.len + 7);
-                    @memcpy(self.bt[start..], "Error: ");
-
-                    start = self.bt.len;
-                    self.bt = try allocator.realloc(self.bt, self.bt.len + msg.len);
-                    @memcpy(self.bt[start..], msg);
+                    try self.bt.appendSlice("Error: ");
+                    try self.bt.appendSlice(msg);
 
                     self.input_len = 0;
                     self.input_idx = 0;
@@ -254,16 +241,12 @@ pub const CMDData = struct {
                 defer allocator.free(al.data);
 
                 if (al.data.len == 0 and self.shell.vm == null)
-                    self.bt = try allocator.realloc(self.bt, self.bt.len - 1);
+                    _ = self.bt.pop();
 
                 if (al.clear) {
-                    allocator.free(self.bt);
-                    self.bt = &.{};
+                    self.bt.clearAndFree();
                 } else {
-                    start = self.bt.len;
-
-                    self.bt = try allocator.realloc(self.bt, self.bt.len + al.data.len);
-                    @memcpy(self.bt[start..], al.data);
+                    try self.bt.appendSlice(al.data);
                 }
 
                 self.input_len = 0;
@@ -322,7 +305,7 @@ pub const CMDData = struct {
 
     pub fn deinit(self: *Self) void {
         // free backtrace
-        allocator.free(self.bt);
+        self.bt.deinit();
 
         // free vm
         self.shell.deinit();
@@ -342,7 +325,10 @@ pub fn init() !Window.Data.WindowContents {
     const self = try allocator.create(CMDData);
 
     self.* = .{
-        .bt = try std.fmt.allocPrint(allocator, "Welcome to Sh" ++ strings.EEE ++ "l\nUse help to list possible commands\n", .{}),
+        .bt = .fromOwnedSlice(
+            allocator,
+            try std.fmt.allocPrint(allocator, "Welcome to Sh" ++ strings.EEE ++ "l\nUse help to list possible commands\n", .{}),
+        ),
         .history = try .initCapacity(allocator, 32),
         .shell = .{
             .root = .home,

@@ -183,19 +183,22 @@ fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param:
                 defer allocator.free(res.data);
                 try result_data.appendSlice(res.data);
                 if (result_data.items.len != 0)
-                    if (result_data.getLast() != '\n') try result_data.append('\n');
+                    if (result_data.getLast() != '\n')
+                        try result_data.append('\n');
                 try line.resize(0);
             } else {
                 try line.append(char);
             }
         }
+
         const res = try self.runLine(line.items);
         defer allocator.free(res.data);
         try result_data.appendSlice(res.data);
-        if (result_data.items.len != 0 and result_data.getLast() != '\n') try result_data.append('\n');
+        if (result_data.items.len != 0 and result_data.getLast() != '\n')
+            try result_data.append('\n');
 
         return .{
-            .data = try allocator.dupe(u8, result_data.items),
+            .data = try result_data.toOwnedSlice(),
         };
     }
 
@@ -260,7 +263,7 @@ pub fn getVMResult(self: *Shell) !?Result {
 
         return .{
             .failure = data.failed,
-            .data = try allocator.dupe(u8, data.data),
+            .data = try allocator.dupe(u8, data.getData()),
         };
     }
 
@@ -543,196 +546,19 @@ pub const email_commands = .{
     } },
 };
 
-pub const shell_commands = .{
-    .{ "help", ShellCommand{
-        .name = "help",
-        .desc = "Prints a help message",
-        .help = "help [:help]",
-        .func = struct {
-            pub fn help(shell: *Shell, _: *Params) !Result {
-                var data: std.array_list.Managed(u8) = .init(allocator);
-                defer data.deinit();
-                try data.appendSlice("Sh" ++ strings.EEE ++ "ll Help:\n" ++ "=============\n");
-                if (shell.headless or builtin.is_test) {
-                    inline for (headless_help_data) |help_group| {
-                        try data.append('\n');
-                        try data.appendSlice(help_group.name ++ "\n");
-                        try data.appendNTimes('-', help_group.name.len);
-                        try data.append('\n');
-                        inline for (help_group.cmds) |command| {
-                            try data.appendSlice(std.fmt.comptimePrint("{s} - {s}\n", .{ command.@"1".name, command.@"1".desc }));
-                        }
-                    }
-                } else {
-                    inline for (help_data) |help_group| {
-                        try data.append('\n');
-                        try data.appendSlice(help_group.name ++ "\n");
-                        try data.appendNTimes('-', help_group.name.len);
-                        try data.append('\n');
-                        inline for (help_group.cmds) |command| {
-                            try data.appendSlice(std.fmt.comptimePrint("{s} - {s}\n", .{ command.@"1".name, command.@"1".desc }));
-                        }
-                    }
-                }
-                return .{
-                    .data = try allocator.dupe(u8, data.items),
-                };
-            }
-        }.help,
-    } },
-    .{ "ls", ShellCommand{
-        .name = "ls",
-        .desc = "Lists files and folders in a directory",
-        .help = "ls [:help] [path]",
-        .func = struct {
-            pub fn ls(shell: *Shell, params: *Params) !Result {
-                const root = try shell.root.resolve();
-                if (params.next()) |path| {
-                    const folder = try root.getFolder(path);
-                    var result_data: std.array_list.Managed(u8) = .init(allocator);
-                    defer result_data.deinit();
-                    const rootlen = folder.name.len;
-                    var sub_folder = try folder.getFolders();
-                    while (sub_folder) |item| : (sub_folder = item.next_sibling) {
-                        try result_data.appendSlice(item.name[rootlen..]);
-                        try result_data.append(' ');
-                    }
-                    var sub_file = try folder.getFiles();
-                    while (sub_file) |item| : (sub_file = item.next_sibling) {
-                        try result_data.appendSlice(item.name[rootlen..]);
-                        try result_data.append(' ');
-                    }
-                    return .{
-                        .data = try allocator.dupe(u8, result_data.items),
-                    };
-                } else {
-                    const folder = try shell.root.resolve();
-                    var result_data: std.array_list.Managed(u8) = .init(allocator);
-                    defer result_data.deinit();
-                    const rootlen = folder.name.len;
-                    var sub_folder = try folder.getFolders();
-                    while (sub_folder) |item| : (sub_folder = item.next_sibling) {
-                        try result_data.appendSlice(item.name[rootlen..]);
-                        try result_data.append(' ');
-                    }
-                    var sub_file = try folder.getFiles();
-                    while (sub_file) |item| : (sub_file = item.next_sibling) {
-                        try result_data.appendSlice(item.name[rootlen..]);
-                        try result_data.append(' ');
-                    }
-                    return .{
-                        .data = try allocator.dupe(u8, result_data.items),
-                    };
-                }
-            }
-        }.ls,
-    } },
-    .{ "Eln", ShellCommand{
-        .name = "Eln",
-        .help = "Eln [:help] file",
-        .desc = "Opens a Eln file",
-        .func = struct {
-            pub fn cmd(shell: *Shell, param: *Params) !Result {
-                if (param.next()) |path| {
-                    const root = try shell.root.resolve();
-                    const file = try root.getFile(path);
-                    const data = try Eln.parse(file);
-                    try data.run(shell, shader);
-                    return .{};
-                }
-                return error.MissingParameter;
-            }
-        }.cmd,
-    } },
-    .{ "cd", ShellCommand{
-        .name = "cd",
-        .desc = "Changes the current directory",
-        .help = "cd [:help] [path]",
-        .func = struct {
-            pub fn cd(shell: *Shell, params: *Params) !Result {
-                if (params.next()) |child| {
-                    if (std.mem.eql(u8, child, "/")) {
-                        shell.root = .root;
-                        return .{};
-                    }
-                    const root_link: files.FolderLink = if (std.mem.startsWith(u8, child, "/"))
-                        .root
-                    else
-                        shell.root;
-                    const root = try root_link.resolve();
-                    const folder = try root.getFolder(child);
-                    shell.root = .link(folder);
-                    return .{};
-                } else {
-                    shell.root = .home;
-                    return .{};
-                }
-            }
-        }.cd,
-    } },
-    .{ "stop", ShellCommand{
-        .name = "stop",
-        .desc = "Stops a background vm process",
-        .help = "stop [:help] id",
-        .func = struct {
-            pub fn stop(_: *Shell, params: *Params) !Result {
-                if (params.next()) |id_string| {
-                    const id = try std.fmt.parseInt(u8, id_string, 16);
-                    Vm.Manager.instance.destroy(@enumFromInt(id));
-                    return .{
-                        .data = try allocator.dupe(u8, "Stopped"),
-                    };
-                }
-                return error.MissingParameter;
-            }
-        }.stop,
-    } },
-    .{
-        "new", ShellCommand{
-            .name = "new",
-            .desc = "Creates a new file",
-            .help = "new [:help] path",
-            .func = struct {
-                fn new(self: *Shell, param: *Params) !Result {
-                    if (param.next()) |path| {
-                        // TODO: /root
-                        const root = try self.root.resolve();
-                        try root.newFile(path);
-                        return .{
-                            .data = try allocator.dupe(u8, "Created"),
-                        };
-                    }
-                    return error.MissingParameter;
-                }
-            }.new,
-        },
-    },
-    .{ "dnew", ShellCommand.fromImport(@import("Shell/dnew.zig")) },
-    .{
-        "rem", ShellCommand{
-            .name = "rem",
-            .desc = "Deletes a file",
-            .help = "rem [:help] paths+",
-            .func = struct {
-                fn rem(self: *Shell, params: *Params) !Result {
-                    if (params.peek() == null)
-                        return error.MissingParameter;
-                    // TODO: /root
-                    const root = try self.root.resolve();
-                    while (params.next()) |path| {
-                        try root.removeFile(path);
-                    }
-                    return .{
-                        .data = try allocator.dupe(u8, "Removed"),
-                    };
-                }
-            }.rem,
-        },
-    },
-    .{ "drem", ShellCommand.fromImport(@import("Shell/drem.zig")) },
-    .{ "cpy", ShellCommand.fromImport(@import("Shell/cpy.zig")) },
+pub const shell_commands = [_](struct { []const u8, ShellCommand }){
+    .{ "help", .fromImport(@import("Shell/help.zig")) },
+    .{ "ls", .fromImport(@import("Shell/ls.zig")) },
+    .{ "eln", .fromImport(@import("Shell/eln.zig")) },
+    .{ "cd", .fromImport(@import("Shell/cd.zig")) },
+    .{ "stop", .fromImport(@import("Shell/stop.zig")) },
+    .{ "new", .fromImport(@import("Shell/new.zig")) },
+    .{ "dnew", .fromImport(@import("Shell/dnew.zig")) },
+    .{ "rem", .fromImport(@import("Shell/rem.zig")) },
+    .{ "drem", .fromImport(@import("Shell/drem.zig")) },
+    .{ "cpy", .fromImport(@import("Shell/cpy.zig")) },
     todo("dcpy"),
-    .{ "bg", ShellCommand{
+    .{ "bg", .{
         .name = "bg",
         .desc = "Runs a command in the background",
         .help = "bg [:help] command",
@@ -752,7 +578,7 @@ pub const shell_commands = .{
             }
         }.bg,
     } },
-    .{ "cls", ShellCommand{
+    .{ "cls", .{
         .name = "cls",
         .desc = "Clears the console",
         .help = "cls [:help]",
@@ -766,7 +592,7 @@ pub const shell_commands = .{
             }
         }.clear,
     } },
-    .{ "exit", ShellCommand{
+    .{ "exit", .{
         .name = "exit",
         .desc = "Exits the console",
         .help = "exit [:help]",

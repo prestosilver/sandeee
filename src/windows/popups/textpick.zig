@@ -34,7 +34,7 @@ pub const PopupTextPick = struct {
 
     err: ?[]const u8 = null,
 
-    text: []u8,
+    text: std.array_list.Managed(u8) = .init(allocator),
     prompt: []const u8,
     data: *anyopaque,
 
@@ -49,10 +49,10 @@ pub const PopupTextPick = struct {
             .text = "A",
         }).x);
 
-        const text = if (self.text.len > maxlen)
-            try std.fmt.allocPrint(allocator, strings.DOTS ++ "{s}", .{self.text[self.text.len - maxlen + 1 ..]})
+        const text = if (self.text.items.len > maxlen)
+            try std.fmt.allocPrint(allocator, strings.DOTS ++ "{s}", .{self.text.items[self.text.items.len - maxlen + 1 ..]})
         else
-            try allocator.dupe(u8, self.text);
+            try allocator.dupe(u8, self.text.items);
         defer allocator.free(text);
 
         const text_background: Sprite = .atlas("ui", .{
@@ -89,15 +89,15 @@ pub const PopupTextPick = struct {
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
         if (!down) return;
 
-        if (keycode == glfw.KeyBackspace and self.text.len != 0) {
-            self.text = try allocator.realloc(self.text, self.text.len - 1);
+        if (keycode == glfw.KeyBackspace) {
+            _ = self.text.pop();
             if (self.err) |err|
                 allocator.free(err);
             self.err = null;
         }
 
         if (keycode == glfw.KeyEnter) {
-            self.submit(self.text, self.data) catch |err| {
+            self.submit(try self.text.toOwnedSlice(), self.data) catch |err| {
                 if (self.err) |err_i|
                     allocator.free(err_i);
                 self.err = try allocator.dupe(u8, @errorName(err));
@@ -119,16 +119,15 @@ pub const PopupTextPick = struct {
             allocator.free(err);
         self.err = null;
 
-        self.text = try allocator.realloc(self.text, self.text.len + 1);
-        self.text[self.text.len - 1] = char_string[0];
+        try self.text.appendSlice(char_string);
     }
 
     pub fn deinit(self: *Self) void {
         if (self.err) |err|
             allocator.free(err);
-
+        self.text.deinit();
         allocator.free(self.prompt);
-        allocator.free(self.text);
+
         allocator.destroy(self);
     }
 };

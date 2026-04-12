@@ -39,9 +39,10 @@ pub var shader: *Shader = undefined;
 
 pub const new = struct {
     pub fn read(vm_instance: ?*Vm) files.FileError![]const u8 {
-        const result = try allocator.alloc(u8, 1);
-        const window_data = try VmWindow.init(shader);
+        var result: std.array_list.Managed(u8) = try .initCapacity(allocator, 1);
+        defer result.deinit();
 
+        const window_data = try VmWindow.init(shader);
         const window: Window = .atlas("win", .{
             .source = Rect{ .w = 1, .h = 1 },
             .contents = window_data,
@@ -52,12 +53,14 @@ pub const new = struct {
             return error.InvalidPsuedoData;
         };
 
-        result[0] = @as(*VmWindow.VMData, @ptrCast(@alignCast(window_data.ptr))).id;
+        result.appendAssumeCapacity(
+            @as(*VmWindow.VMData, @ptrCast(@alignCast(window_data.ptr))).id,
+        );
 
-        const window_id = try allocator.dupe(u8, result);
+        const window_id = try allocator.dupe(u8, result.items);
         try vm_instance.?.misc_data.put("window", window_id);
 
-        return result;
+        return try result.toOwnedSlice();
     }
 };
 

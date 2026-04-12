@@ -202,7 +202,7 @@ const EmailData = struct {
                 if (std.mem.eql(u8, email.from, self.login.?)) {
                     inbox = true;
 
-                    if (self.box != mail.EmailManager.instance.boxes.len - 1) continue;
+                    if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
                 } else if (email.box != self.box) continue;
                 var color = Color{ .r = 0, .g = 0, .b = 0 };
                 if (builtin.mode == .Debug) {
@@ -297,7 +297,7 @@ const EmailData = struct {
             }).y;
         }
 
-        for (mail.EmailManager.instance.boxes, 0..) |box, idx| {
+        for (mail.EmailManager.instance.boxes.items, 0..) |box, idx| {
             if (idx == self.box) {
                 const text = try std.fmt.allocPrint(allocator, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
                 defer allocator.free(text);
@@ -333,7 +333,7 @@ const EmailData = struct {
 
         const adds = try allocator.create(popups.filepick.PopupFilePick);
         adds.* = .{
-            .path = try allocator.dupe(u8, home.name),
+            .path = .fromOwnedSlice(allocator, try allocator.dupe(u8, home.name)),
             .data = self,
             .submit = @ptrCast(&submit),
         };
@@ -693,7 +693,7 @@ const EmailData = struct {
 
                     for (mail.EmailManager.instance.emails.items) |*email| {
                         if (std.mem.eql(u8, email.from, self.login.?)) {
-                            if (self.box != mail.EmailManager.instance.boxes.len - 1) continue;
+                            if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
                         } else if (email.box != self.box) continue;
 
                         if (builtin.mode != .Debug) {
@@ -733,8 +733,8 @@ const EmailData = struct {
                         if (kind == .single) {
                             if (self.box < 0) {
                                 self.box = 0;
-                            } else if (self.box > mail.EmailManager.instance.boxes.len - 1) {
-                                self.box = mail.EmailManager.instance.boxes.len - 1;
+                            } else if (self.box > mail.EmailManager.instance.boxes.items.len - 1) {
+                                self.box = mail.EmailManager.instance.boxes.items.len - 1;
                             }
                         }
                     }

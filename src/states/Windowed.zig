@@ -547,18 +547,24 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
     //       maybe to a state machine structure or something
     //       idk i'll research
     if (self.popups.items.len != 0) {
-        if (kind == .down) {
-            switch (try self.popups.items[0].data.click(self.mousepos)) {
-                .Close => try events.EventManager.instance.sendEvent(window_events.EventClosePopup{ .popup_conts = self.popups.items[0].data.contents.ptr }),
-                .Move => {
+        switch (try self.popups.items[0].data.click(self.mousepos)) {
+            .Close => {
+                if (kind == .single) {
+                    try events.EventManager.instance.sendEvent(window_events.EventClosePopup{ .popup_conts = self.popups.items[0].data.contents.ptr });
+
+                    return;
+                }
+            },
+            .Move => {
+                if (kind == .down) {
                     self.dragging_popup = self.popups.items[0];
                     self.dragging_mode = .Move;
 
                     const start = self.dragging_popup.?.data.pos;
                     self.dragging_start = .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y };
-                },
-                .None => {},
-            }
+                }
+            },
+            .None => {},
         }
 
         if (kind != .up)

@@ -143,8 +143,8 @@ pub const BarData = struct {
 
         var iter = std.mem.splitScalar(u8, list, '\n');
 
-        var result: []Eln = &.{};
-        errdefer allocator.free(result);
+        var result: std.array_list.Managed(Eln) = .init(allocator);
+        defer result.deinit();
 
         while (iter.next()) |eln_name| {
             const file_name = try std.fmt.allocPrint(allocator, "{s}.eln", .{eln_name});
@@ -152,11 +152,10 @@ pub const BarData = struct {
 
             const eln_file = apps.getFile(file_name) catch continue;
             const eln_data = Eln.parse(eln_file) catch continue;
-            result = try allocator.realloc(result, result.len + 1);
-            result[result.len - 1] = eln_data;
+            try result.append(eln_data);
         }
 
-        return result;
+        return result.toOwnedSlice();
     }
 
     pub fn doClick(self: *BarData, window_list: *std.array_list.Managed(*Window), shader: *Shader, pos: Vec2) !bool {

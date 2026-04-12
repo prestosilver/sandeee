@@ -58,32 +58,38 @@ font_shader: *Shader,
 load_sprite: Sprite,
 select_sound: *audio.Sound,
 
-setting_values: [SETTINGS.len][MAX_VALUE_LEN]u8 = .{[_]u8{0} ** MAX_VALUE_LEN} ** SETTINGS.len,
-setting_lengths: [SETTINGS.len]usize = [_]usize{0} ** SETTINGS.len,
+setting_values: [SETTINGS.len]std.ArrayList(u8) = undefined,
+setting_buffers: [SETTINGS.len][MAX_VALUE_LEN]u8 = undefined,
 setting_id: usize = 0,
 
 timer: f32 = 1,
 status: Status = .Naming,
-disk_name: std.array_list.Managed(u8) = .init(allocator),
+disk_name: std.ArrayList(u8) = undefined,
+// 4 bytes for the .eee
+disk_buffer: [MAX_VALUE_LEN + 4]u8 = undefined,
 offset: f32 = 0,
 
-pub fn keychar(self: *GSInstaller, code: []const u8, _: c_int) !void {
-    if (code.len == 0)
-        switch (code[0]) {
-            'a'...'z', 'A'...'Z', '0'...'9', '.', '-', '_' => {
-                try self.appendChar(code);
-            },
-            ' ' => {
-                try self.appendChar("_");
-            },
-            else => {},
-        };
+pub fn keychar(self: *GSInstaller, char_string: []const u8, _: c_int) !void {
+    if (std.mem.eql(u8, char_string, "\n")) return;
+    if (char_string.len > 1) return;
+
+    switch (char_string[0]) {
+        'a'...'z', 'A'...'Z', '0'...'9', '.', '-', '_' => {
+            try self.appendChar(char_string);
+        },
+        ' ' => {
+            try self.appendChar("_");
+        },
+        else => {},
+    }
 }
 
 pub fn setup(self: *GSInstaller) !void {
     graphics.Context.instance.color = .{ .r = 0, .g = 0, .b = 0.5 };
 
-    @memset(&self.setting_lengths, 0);
+    self.disk_name = .initBuffer(&self.disk_buffer);
+    for (&self.setting_values, &self.setting_buffers) |*value, *buffer|
+        value.* = .initBuffer(buffer);
 
     self.setting_id = 0;
     self.offset = 0;
@@ -96,22 +102,25 @@ pub fn updateSettingsVals(self: *GSInstaller) ![]const u8 {
     const ts = std.time.timestamp();
     const system_hours = @as(u64, @intCast(ts)) / std.time.s_per_hour % 24;
     const system_minutes = @as(u64, @intCast(ts)) / std.time.s_per_min % 60;
-    const input_hours = std.fmt.parseInt(i8, self.setting_values[0][0..self.setting_lengths[0]], 0) catch 0;
-    const input_minutes = std.fmt.parseInt(i8, self.setting_values[1][0..self.setting_lengths[1]], 0) catch 0;
+    const input_hours = std.fmt.parseInt(i8, self.setting_values[0].items, 0) catch 0;
+    const input_minutes = std.fmt.parseInt(i8, self.setting_values[1].items, 0) catch 0;
 
     const hours_offset = @as(i8, @intCast(system_hours)) - input_hours;
     const minutes_offset = @as(i8, @intCast(system_minutes)) - input_minutes;
 
-    var result = try std.fmt.allocPrint(allocator, "hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hours_offset, minutes_offset });
-    for (SETTINGS[2..], self.setting_values[2..], self.setting_lengths[2..]) |setting, value, len| {
-        const old_result = result;
-        defer allocator.free(old_result);
+    var result: std.io.Writer.Allocating = .init(allocator);
+    defer result.deinit();
+    const writer = &result.writer;
 
-        const val = if (len == 0) setting[2] else value[0..len];
-        result = try std.fmt.allocPrint(allocator, "{s}{s} = \"{s}\"\n", .{ old_result, setting[1], val });
+    try writer.print("hours_offset = \"{}\"\nminutes_offset = \"{}\"\n", .{ hours_offset, minutes_offset });
+
+    for (SETTINGS[2..], self.setting_values[2..]) |setting, value| {
+        const val = if (value.items.len == 0) setting[2] else value.items;
+
+        try writer.print("{s} = \"{s}\"\n", .{ setting[1], val });
     }
 
-    return result;
+    return result.toOwnedSlice();
 }
 
 pub fn draw(self: *GSInstaller, size: Vec2) !void {
@@ -151,7 +160,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
         const text = try std.fmt.allocPrint(allocator, "{s}?\n  [Def: {s}] {s}", .{
             SETTINGS[idx][0],
             SETTINGS[idx][2],
-            self.setting_values[idx][0..self.setting_lengths[idx]],
+            self.setting_values[idx].items,
         });
         defer allocator.free(text);
 
@@ -239,13 +248,12 @@ pub fn appendChar(self: *GSInstaller, char: []const u8) !void {
     switch (self.status) {
         .Naming => {
             if (self.disk_name.items.len < MAX_VALUE_LEN)
-                try self.disk_name.appendSlice(char);
+                self.disk_name.appendSliceAssumeCapacity(char);
         },
         .Settings => {
-            if (self.setting_lengths[self.setting_id] + char.len < MAX_VALUE_LEN) {
-                @memcpy(self.setting_values[self.setting_id][self.setting_lengths[self.setting_id]..][0..char.len], char);
-                self.setting_lengths[self.setting_id] += char.len;
-            }
+            // just ignore the input if the array is full
+            if (self.setting_values[self.setting_id].items.len < MAX_VALUE_LEN)
+                self.setting_values[self.setting_id].appendSliceAssumeCapacity(char);
         },
         else => {},
     }
@@ -257,9 +265,7 @@ pub fn removeChar(self: *GSInstaller) !void {
             _ = self.disk_name.pop();
         },
         .Settings => {
-            if (self.setting_lengths[self.setting_id] > 0) {
-                self.setting_lengths[self.setting_id] -= 1;
-            }
+            _ = self.setting_values[self.setting_id].pop();
         },
         else => {},
     }
@@ -280,16 +286,16 @@ pub fn keypress(self: *GSInstaller, keycode: c_int, _: c_int, down: bool) !void 
                     if (std.mem.containsAtLeast(u8, self.disk_name.items, 1, ".")) {
                         if (!std.mem.endsWith(u8, self.disk_name.items, ".eee")) return;
                     } else {
-                        try self.disk_name.appendSlice(".eee");
+                        // The other append always has 4 bytes free
+                        self.disk_name.appendSliceAssumeCapacity(".eee");
                     }
                     self.status = .Settings;
                 },
                 .Settings => {
                     try audio.instance.playSound(self.select_sound.*);
 
-                    if (self.setting_lengths[self.setting_id] == 0) {
-                        self.setting_lengths[self.setting_id] = @as(u8, @intCast(SETTINGS[self.setting_id][2].len));
-                        @memcpy(self.setting_values[self.setting_id][0..self.setting_lengths[self.setting_id]], SETTINGS[self.setting_id][2]);
+                    if (self.setting_values[self.setting_id].items.len == 0) {
+                        self.setting_values[self.setting_id].appendSliceAssumeCapacity(SETTINGS[self.setting_id][2]);
                     }
 
                     self.setting_id += 1;
@@ -306,5 +312,5 @@ pub fn keypress(self: *GSInstaller, keycode: c_int, _: c_int, down: bool) !void 
 }
 
 pub fn deinit(self: *GSInstaller) void {
-    self.disk_name.clearAndFree();
+    _ = self;
 }

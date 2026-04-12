@@ -30,7 +30,7 @@ const DrawerTexture = union(DrawerTextureKind) {
     atlas: []const u8,
     texture: Texture,
 
-    pub fn equals(self: *DrawerTexture, other: DrawerTexture) bool {
+    pub fn equals(self: *const DrawerTexture, other: DrawerTexture) bool {
         if (@as(DrawerTextureKind, self.*) != other) return false;
 
         return switch (self.*) {
@@ -120,8 +120,8 @@ pub const QueueEntry = struct {
 
 pub var global: Self = .{};
 
-prev_queue: []QueueEntry = &.{},
-queue: []QueueEntry = &.{},
+prev_queue: std.array_list.Managed(QueueEntry) = .init(allocator),
+queue: std.array_list.Managed(QueueEntry) = .init(allocator),
 buffers: []zgl.Buffer = &.{},
 qbuffers: []zgl.Buffer = &.{},
 scissor: ?Rect = null,
@@ -151,28 +151,26 @@ pub fn draw(sb: *Self, comptime T: type, drawer: *const T, shader: *Shader, pos:
 
 pub fn addEntry(sb: *Self, entry: *const QueueEntry) !void {
     var new_entry = entry.*;
-
     new_entry.scissor = sb.scissor;
 
     sb.queue_lock.lock();
     defer sb.queue_lock.unlock();
 
-    if (sb.queue.len != 0 and sb.queue[sb.queue.len - 1].texture.equals(entry.texture) and
-        sb.queue[sb.queue.len - 1].shader.program == new_entry.shader.program and
-        std.meta.eql(new_entry.scissor, sb.queue[sb.queue.len - 1].scissor) and
-        new_entry.clear == null and sb.queue[sb.queue.len - 1].clear == null)
+    if (sb.queue.items.len != 0 and sb.queue.getLast().texture.equals(entry.texture) and
+        sb.queue.getLast().shader.program == new_entry.shader.program and
+        std.meta.eql(new_entry.scissor, sb.queue.getLast().scissor) and
+        new_entry.clear == null and sb.queue.getLast().clear == null)
     {
-        try sb.queue[sb.queue.len - 1].verts.array.appendSlice(new_entry.verts.items());
-        try sb.queue[sb.queue.len - 1].verts.qarray.appendSlice(new_entry.verts.quads());
+        try sb.queue.items[sb.queue.items.len - 1].verts.array.appendSlice(new_entry.verts.items());
+        try sb.queue.items[sb.queue.items.len - 1].verts.qarray.appendSlice(new_entry.verts.quads());
 
         new_entry.verts.deinit();
 
         return;
+    } else {
+        new_entry.texture = try entry.texture.dupe();
+        try sb.queue.append(new_entry);
     }
-
-    new_entry.texture = try entry.texture.dupe();
-    sb.queue = try allocator.realloc(sb.queue, sb.queue.len + 1);
-    sb.queue[sb.queue.len - 1] = new_entry;
 }
 
 pub fn render(sb: *Self) !void {
@@ -183,8 +181,8 @@ pub fn render(sb: *Self) !void {
         sb.queue_lock.lock();
         defer sb.queue_lock.unlock();
 
-        if (sb.qbuffers.len != sb.queue.len) {
-            const target = sb.queue.len;
+        if (sb.qbuffers.len != sb.queue.items.len) {
+            const target = sb.queue.items.len;
 
             if (target < sb.qbuffers.len) {
                 zgl.deleteBuffers(sb.qbuffers[target + 1 ..]);
@@ -197,8 +195,8 @@ pub fn render(sb: *Self) !void {
             }
         }
 
-        if (sb.buffers.len != sb.queue.len) {
-            const target = sb.queue.len;
+        if (sb.buffers.len != sb.queue.items.len) {
+            const target = sb.queue.items.len;
 
             if (target < sb.buffers.len) {
                 zgl.deleteBuffers(sb.buffers[target + 1 ..]);
@@ -215,7 +213,7 @@ pub fn render(sb: *Self) !void {
         var cshader: zgl.Program = .invalid;
         var cscissor: ?Rect = null;
 
-        for (sb.queue, 0..) |entry, idx| {
+        for (sb.queue.items, 0..) |entry, idx| {
             var uscissor = false;
 
             if (((cscissor != null) != (entry.scissor != null))) {
@@ -333,29 +331,33 @@ pub fn clear(sb: *Self) !void {
     sb.queue_lock.lock();
     defer sb.queue_lock.unlock();
 
-    for (sb.prev_queue) |*e| {
+    for (sb.prev_queue.items) |*e| {
         e.verts.deinit();
         e.texture.deinit();
     }
 
-    allocator.free(sb.prev_queue);
-    sb.prev_queue = sb.queue;
-    sb.queue = &.{};
+    sb.prev_queue.clearRetainingCapacity();
+
+    {
+        const tmp = sb.queue;
+        sb.queue = sb.prev_queue;
+        sb.prev_queue = tmp;
+    }
 }
 
 pub fn deinit(self: *const Self) void {
-    for (self.prev_queue) |*e| {
+    for (self.prev_queue.items) |*e| {
         e.verts.deinit();
         e.texture.deinit();
     }
+    self.prev_queue.deinit();
 
-    for (self.queue) |*e| {
+    for (self.queue.items) |*e| {
         e.verts.deinit();
         e.texture.deinit();
     }
+    self.queue.deinit();
 
     allocator.free(self.qbuffers);
     allocator.free(self.buffers);
-    allocator.free(self.queue);
-    allocator.free(self.prev_queue);
 }

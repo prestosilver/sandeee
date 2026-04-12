@@ -314,9 +314,10 @@ fn sysRegFunc(self: *Vm) VmError!void {
     const dup = try std.fmt.allocPrint(self.allocator, "{f}", .{func.data().string});
 
     const ops = try self.stringToOps(dup);
-    defer ops.deinit();
 
-    const final_ops = try self.allocator.dupe(Operation, ops.items);
+    // TODO: this should free children too
+    errdefer self.allocator.free(ops);
+
     const final_name = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
 
     if (self.functions.fetchRemove(final_name)) |entry| {
@@ -327,7 +328,7 @@ fn sysRegFunc(self: *Vm) VmError!void {
 
     try self.functions.put(final_name, .{
         .string = dup,
-        .ops = final_ops,
+        .ops = ops,
     });
 }
 

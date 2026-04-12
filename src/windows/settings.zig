@@ -184,8 +184,8 @@ const SettingsData = struct {
                                 self.value = config.SettingManager.instance.get(item.key) orelse "";
                                 const adds = try allocator.create(popups.textpick.PopupTextPick);
                                 adds.* = .{
+                                    .text = .fromOwnedSlice(allocator, try allocator.dupe(u8, self.value)),
                                     .prompt = try allocator.dupe(u8, item.setting),
-                                    .text = try allocator.dupe(u8, self.value),
                                     .data = self,
                                     .submit = &submit,
                                 };
@@ -207,7 +207,7 @@ const SettingsData = struct {
                                 self.value = config.SettingManager.instance.get(item.key) orelse "";
                                 const adds = try allocator.create(popups.filepick.PopupFilePick);
                                 adds.* = .{
-                                    .path = try allocator.dupe(u8, self.value),
+                                    .path = .fromOwnedSlice(allocator, try allocator.dupe(u8, self.value)),
                                     .data = self,
                                     .submit = &submitFile,
                                 };
@@ -229,7 +229,7 @@ const SettingsData = struct {
                                 self.value = config.SettingManager.instance.get(item.key) orelse "";
                                 const adds = try allocator.create(popups.folderpick.PopupFolderPick);
                                 adds.* = .{
-                                    .path = try allocator.dupe(u8, self.value),
+                                    .path = .fromOwnedSlice(allocator, try allocator.dupe(u8, self.value)),
                                     .data = self,
                                     .submit = &submitFolder,
                                 };

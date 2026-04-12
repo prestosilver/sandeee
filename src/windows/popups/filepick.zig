@@ -30,7 +30,7 @@ const strings = sandeee_data.strings;
 pub const PopupFilePick = struct {
     const Self = @This();
 
-    path: []u8,
+    path: std.array_list.Managed(u8) = .init(allocator),
     submit: *const fn (?*files.File, *anyopaque) anyerror!void,
     err: ?[]const u8 = null,
     data: *anyopaque,
@@ -46,10 +46,10 @@ pub const PopupFilePick = struct {
             .text = "A",
         }).x);
 
-        const text = if (self.path.len > maxlen)
-            try std.fmt.allocPrint(allocator, strings.DOTS ++ "{s}", .{self.path[self.path.len - maxlen + 1 ..]})
+        const text = if (self.path.items.len > maxlen)
+            try std.fmt.allocPrint(allocator, strings.DOTS ++ "{s}", .{self.path.items[self.path.items.len - maxlen + 1 ..]})
         else
-            try allocator.dupe(u8, self.path);
+            try allocator.dupe(u8, self.path.items);
         defer allocator.free(text);
 
         const text_background: Sprite = .atlas("ui", .{
@@ -86,17 +86,18 @@ pub const PopupFilePick = struct {
     pub fn key(self: *Self, keycode: c_int, _: c_int, down: bool) !void {
         if (!down) return;
 
-        if (keycode == glfw.KeyBackspace and self.path.len != 0) {
-            self.path = try allocator.realloc(self.path, self.path.len - 1);
+        if (keycode == glfw.KeyBackspace) {
             if (self.err) |err|
                 allocator.free(err);
             self.err = null;
+
+            _ = self.path.pop();
         }
 
         if (keycode == glfw.KeyEnter) {
             const root = try files.FolderLink.resolve(.root);
 
-            const file = root.getFile(self.path) catch {
+            const file = root.getFile(self.path.items) catch {
                 if (self.err) |err|
                     allocator.free(err);
                 self.err = try allocator.dupe(u8, "File Not Found");
@@ -119,14 +120,14 @@ pub const PopupFilePick = struct {
             allocator.free(err);
         self.err = null;
 
-        self.path = try allocator.realloc(self.path, self.path.len + 1);
-        self.path[self.path.len - 1] = char_string[0];
+        try self.path.appendSlice(char_string);
     }
 
     pub fn deinit(self: *Self) void {
         if (self.err) |err|
             allocator.free(err);
-        allocator.free(self.path);
+        self.path.deinit();
+
         allocator.destroy(self);
     }
 };

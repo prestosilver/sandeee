@@ -74,7 +74,7 @@ pub const RetStackEntry = struct {
 
 pub const VmFunc = struct {
     string: []const u8,
-    ops: []Operation,
+    ops: []const Operation,
 };
 
 const Vm = @This();
@@ -808,7 +808,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
     }
 }
 
-pub fn loadList(self: *Vm, ops: []Operation) !void {
+pub fn loadList(self: *Vm, ops: []const Operation) !void {
     const list = try self.allocator.alloc(Operation, ops.len);
 
     for (ops, 0..) |_, idx| {
@@ -824,24 +824,26 @@ pub fn loadList(self: *Vm, ops: []Operation) !void {
             list[idx].string = str;
         }
     }
+
     self.code = list;
 }
 
-pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(Operation) {
+pub fn stringToOps(self: *Vm, conts: []const u8) VmError![]const Operation {
     var ops: std.array_list.Managed(Operation) = .init(self.allocator);
+    defer ops.clearAndFree();
     errdefer {
-        var tmp: std.array_list.Managed(u8) = .init(self.allocator);
-        defer tmp.deinit();
-        tmp.print("{{", .{}) catch unreachable;
+        var temp: std.array_list.Managed(u8) = .init(self.allocator);
+        defer temp.deinit();
+        temp.print("{{", .{}) catch unreachable;
         for (ops.items, 0..) |item, idx| {
             if (idx != 0)
-                tmp.print(", ", .{}) catch unreachable;
+                temp.print(", ", .{}) catch unreachable;
 
-            tmp.print("{f}", .{item}) catch unreachable;
+            temp.print("{f}", .{item}) catch unreachable;
         }
-        tmp.print("}}", .{}) catch unreachable;
+        temp.print("}}", .{}) catch unreachable;
 
-        log.warn("Vm operation parsing failed at {s}", .{tmp.items});
+        log.warn("Vm operation parsing failed at {s}", .{temp.items});
         ops.deinit();
     }
 
@@ -897,14 +899,14 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError!std.array_list.Managed(
         }
     }
 
-    return ops;
+    return try ops.toOwnedSlice();
 }
 
 pub fn loadString(self: *Vm, conts: []const u8) !void {
     const ops = try self.stringToOps(conts);
-    defer ops.deinit();
+    defer self.allocator.free(ops);
 
-    try self.loadList(ops.items);
+    try self.loadList(ops);
 }
 
 pub fn done(self: *Vm) bool {

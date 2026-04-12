@@ -81,9 +81,9 @@ const REPLACEMENT_TABLE = [_]CharReplacement{
     .{ .eeech = META, .ansi = "ϻ", .unicode = "ϻ", .ascii = "Mb" },
     .{ .eeech = FRAME, .ansi = "ℱ", .unicode = "ℱ", .ascii = "Fr" },
     .{ .eeech = DOWN, .ansi = "▼", .unicode = "▼", .ascii = "V" },
-    .{ .eeech = BLOCK(0), .ansi = " ", .unicode = " ", .ascii = " " },
+    .{ .eeech = BLOCK(0), .ansi = "⎽", .unicode = "⎽", .ascii = "-" },
     .{ .eeech = BLOCK(1), .ansi = "▁", .unicode = "▁", .ascii = "-" },
-    .{ .eeech = BLOCK(2), .ansi = "▂", .unicode = "▂", .ascii = "-" },
+    .{ .eeech = BLOCK(2), .ansi = "▂", .unicode = "▂", .ascii = "+" },
     .{ .eeech = BLOCK(3), .ansi = "▃", .unicode = "▃", .ascii = "+" },
     .{ .eeech = BLOCK(4), .ansi = "▄", .unicode = "▄", .ascii = "+" },
     .{ .eeech = BLOCK(5), .ansi = "▅", .unicode = "▅", .ascii = "#" },
@@ -154,83 +154,45 @@ pub fn encode(
     comptime input_kind: CharReplacement.StringKind,
     comptime output_kind: CharReplacement.StringKind,
 ) ![]const u8 {
-    var len: usize = 0;
-    {
-        var idx: usize = 0;
-        while (idx < input.len) {
+    // small optimization, init with input length capacity since this works with no
+    // reallocations in most cases
+    var result: std.array_list.Managed(u8) = try .initCapacity(allocator, input.len);
+
+    var idx: usize = 0;
+    while (idx < input.len) {
+        if (input[idx] == 0) {
             // Hack: zero is non printing in all formats here
-            if (input[idx] == 0) {
-                idx += 1;
-            } else inline for (REPLACEMENT_TABLE) |entry| {
-                const entry_input = switch (input_kind) {
-                    .eeech => entry.eeech,
-                    .ansi => entry.ansi,
-                    .ascii => entry.ascii,
-                    .unicode => entry.unicode,
-                };
-                const entry_output = switch (output_kind) {
-                    .eeech => entry.eeech,
-                    .ansi => entry.ansi,
-                    .ascii => entry.ascii,
-                    .unicode => entry.unicode,
-                };
+            idx += 1;
+        } else inline for (REPLACEMENT_TABLE) |entry| {
+            // Check if the remaining text starts with a formattable block
+            const entry_input = comptime switch (input_kind) {
+                .eeech => entry.eeech,
+                .ansi => entry.ansi,
+                .ascii => entry.ascii,
+                .unicode => entry.unicode,
+            };
+            const entry_output = comptime switch (output_kind) {
+                .eeech => entry.eeech,
+                .ansi => entry.ansi,
+                .ascii => entry.ascii,
+                .unicode => entry.unicode,
+            };
 
-                if (entry_input.len == 0) continue;
+            if (entry_input.len == 0) continue;
 
-                if (std.mem.startsWith(u8, input[idx..], entry_input)) {
-                    len += entry_output.len;
-                    idx += entry_input.len;
+            if (std.mem.startsWith(u8, input[idx..], entry_input)) {
+                try result.appendSlice(entry_output);
+                idx += entry_input.len;
 
-                    break;
-                }
-            } else {
-                len += 1;
-                idx += 1;
+                break;
             }
+        } else {
+            try result.append(input[idx]);
+            idx += 1;
         }
     }
 
-    var result = try allocator.alloc(u8, len);
-
-    {
-        var out_idx: usize = 0;
-        var idx: usize = 0;
-        while (idx < input.len) {
-            // Hack: zero is non printing in all formats here
-            if (input[idx] == 0) {
-                idx += 1;
-            } else inline for (REPLACEMENT_TABLE) |entry| {
-                const entry_input = switch (input_kind) {
-                    .eeech => entry.eeech,
-                    .ansi => entry.ansi,
-                    .ascii => entry.ascii,
-                    .unicode => entry.unicode,
-                };
-                const entry_output = switch (output_kind) {
-                    .eeech => entry.eeech,
-                    .ansi => entry.ansi,
-                    .ascii => entry.ascii,
-                    .unicode => entry.unicode,
-                };
-
-                if (entry_input.len == 0) continue;
-
-                if (std.mem.startsWith(u8, input[idx..], entry_input)) {
-                    @memcpy(result[out_idx .. out_idx + entry_output.len], entry_output);
-                    out_idx += entry_output.len;
-                    idx += entry_input.len;
-
-                    break;
-                }
-            } else {
-                result[out_idx] = input[idx];
-                out_idx += 1;
-                idx += 1;
-            }
-        }
-    }
-
-    return result;
+    return result.toOwnedSlice();
 }
 
 pub const ASM_HEADER = "EEEp";

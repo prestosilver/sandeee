@@ -51,7 +51,7 @@ pub const EditorData = struct {
     const Self = @This();
 
     pub const Row = struct {
-        text: []u8,
+        text: std.array_list.Managed(u8),
         render: ?[]const u8 = null,
         err: ?[]const u8 = null,
 
@@ -67,9 +67,13 @@ pub const EditorData = struct {
             }
         }
 
-        pub fn deinit(self: *Row) void {
-            self.clearRender();
-            allocator.free(self.text);
+        pub fn deinit(self: Row) void {
+            if (self.render) |r|
+                allocator.free(r);
+            if (self.err) |e|
+                allocator.free(e);
+
+            self.text.deinit();
         }
 
         pub fn getRenderLine(self: *const Row) ![]const u8 {
@@ -119,134 +123,91 @@ pub const EditorData = struct {
     bnds: Rect = .{ .w = 0, .h = 0 },
 
     pub fn hlLine(row: *Row) !void {
-        var line = try allocator.dupe(u8, row.text);
+        var line: std.array_list.Managed(u8) = try row.text.clone();
+        defer line.deinit();
+        var line_b: std.array_list.Managed(u8) = .init(allocator);
+        defer line_b.deinit();
+
         var err: ?[]u8 = null;
 
-        if (line.len == 0) {
-            row.render = line;
+        if (line.items.len == 0) {
+            row.render = try line.toOwnedSlice();
 
             return;
         }
 
-        for (line) |*ch| {
+        for (line.items) |*ch| {
             if (ch.* >= 0xF0) {
                 ch.* = 0x8F;
             }
         }
 
-        for (HL_KEYWORD1) |keyword| {
-            const comment = std.mem.indexOf(u8, line, COMMENT_START) orelse line.len;
+        inline for (HL_KEYWORD1) |keyword| {
+            const comment_start = std.mem.indexOf(u8, line.items, COMMENT_START) orelse line.items.len;
 
-            const replacement = try std.mem.concat(allocator, u8, &.{
-                strings.COLOR_BLUE,
-                keyword,
-                strings.COLOR_BLACK,
-            });
-            defer allocator.free(replacement);
+            const replacement = strings.COLOR_BLUE ++ keyword ++ strings.COLOR_BLACK;
 
-            const old_line = line;
-            defer allocator.free(old_line);
-
-            const rep_size = std.mem.replacementSize(u8, line[0..comment], keyword, replacement);
-
-            line = try allocator.alloc(u8, rep_size + (line.len - comment));
-            _ = std.mem.replace(u8, old_line[0..comment], keyword, replacement, line);
-            @memcpy(line[rep_size..], old_line[comment..]);
-        }
-
-        for (HL_KEYWORD2) |keyword| {
-            const replacement = try std.mem.concat(allocator, u8, &.{
-                strings.COLOR_DARK_CYAN,
-                keyword,
-                strings.COLOR_BLACK,
-            });
-            defer allocator.free(replacement);
-
-            const old_line = line;
-            defer allocator.free(old_line);
-
-            line = try allocator.alloc(u8, std.mem.replacementSize(u8, line, keyword, replacement));
-            _ = std.mem.replace(u8, old_line, keyword, replacement, line);
-        }
-
-        {
-            const replacement = try std.mem.concat(allocator, u8, &.{
-                strings.COLOR_GRAY,
-                COMMENT_START,
-            });
-            defer allocator.free(replacement);
-
-            const old_line = line;
-            defer allocator.free(old_line);
-
-            line = try allocator.alloc(u8, std.mem.replacementSize(u8, line, COMMENT_START, replacement));
-            _ = std.mem.replace(u8, old_line, COMMENT_START, replacement, line);
-        }
-
-        {
-            const old_line = line;
-            defer allocator.free(old_line);
-
-            var count: usize = 0;
+            const replacement_size = std.mem.replacementSize(u8, line.items[0..comment_start], keyword, replacement);
+            try line_b.resize(replacement_size);
+            _ = std.mem.replace(u8, line.items[0..comment_start], keyword, replacement, line_b.items);
+            try line_b.appendSlice(line.items[comment_start..]);
 
             {
-                var in_string = false;
-                var idx: usize = 0;
+                const tmp = line;
+                line = line_b;
+                line_b = tmp;
 
-                for (old_line) |ch| {
-                    if (ch == STRING_START and !in_string) {
-                        in_string = !in_string;
-                        count += 2;
-                        idx += 1;
-                        continue;
-                    }
-                    count += 1;
-                    idx += 1;
-                    if (ch == STRING_START and in_string) {
-                        if (idx < 2 or old_line[idx - 2] == ESCAPE_CHAR)
-                            continue;
-
-                        in_string = !in_string;
-                        count += 1;
-                        idx += 1;
-                    }
-                }
-
-                if (in_string) {
-                    err = try allocator.dupe(u8, "missing \"");
-                }
-
-                line = try allocator.alloc(u8, count);
+                line_b.clearRetainingCapacity();
             }
+        }
 
-            var idx: usize = 0;
+        inline for (HL_KEYWORD2) |keyword| {
+            if (std.mem.startsWith(u8, line.items, keyword)) {
+                try line.insertSlice(keyword.len, strings.COLOR_BLACK);
+                try line.insertSlice(0, strings.COLOR_DARK_CYAN);
+            }
+        }
+
+        if (std.mem.indexOf(u8, line.items, COMMENT_START)) |idx|
+            try line.insertSlice(idx, strings.COLOR_GRAY);
+
+        {
             var in_string = false;
             var prev: u8 = 0;
 
-            for (old_line) |ch| {
+            for (line.items, 0..) |ch, idx| {
                 defer prev = ch;
+
                 if (ch == STRING_START and !in_string) {
                     in_string = !in_string;
-                    line[idx] = strings.COLOR_DARK_GREEN[0];
-                    idx = idx + 1;
-                    line[idx] = ch;
-                    idx = idx + 1;
+                    try line_b.appendSlice(strings.COLOR_DARK_GREEN);
+                    try line_b.append(ch);
                     continue;
                 }
-                line[idx] = ch;
-                idx = idx + 1;
+                try line_b.append(ch);
+
                 if (ch == STRING_START and in_string) {
                     if (idx < 2 or prev == ESCAPE_CHAR)
                         continue;
 
                     in_string = !in_string;
-                    line[idx] = strings.COLOR_BLACK[0];
-                    idx = idx + 1;
+                    try line_b.appendSlice(strings.COLOR_BLACK);
                 }
             }
+
+            {
+                const tmp = line;
+                line = line_b;
+                line_b = tmp;
+
+                line_b.clearRetainingCapacity();
+            }
+
+            if (in_string)
+                err = try allocator.dupe(u8, "missing \"");
         }
 
-        row.render = line;
+        row.render = try line.toOwnedSlice();
         row.err = err;
     }
 
@@ -297,7 +258,7 @@ pub const EditorData = struct {
                         self.abs_cursor_pos.y = lineidx;
 
                         const x_pos: usize = @intFromFloat(@max(0, self.click_pos.x - 0.5 * char_size) / char_size);
-                        self.abs_cursor_pos.x = @min(x_pos, line.text.len);
+                        self.abs_cursor_pos.x = @min(x_pos, line.text.items.len);
 
                         click_start = true;
                     }
@@ -306,7 +267,7 @@ pub const EditorData = struct {
                         self.abs_cursor_end.y = lineidx;
 
                         const x_pos: usize = @intFromFloat(@max(0, self.click_done.x - 0.5 * char_size) / char_size);
-                        self.abs_cursor_end.x = @min(x_pos, line.text.len);
+                        self.abs_cursor_end.x = @min(x_pos, line.text.items.len);
 
                         click_stop = true;
                     }
@@ -323,10 +284,10 @@ pub const EditorData = struct {
             var cursor_pos = self.abs_cursor_pos;
             var cursor_end = self.abs_cursor_end;
 
-            if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
-                cursor_pos.x = buffer.items[cursor_pos.y].text.len;
-            if (cursor_end.x >= buffer.items[cursor_end.y].text.len)
-                cursor_end.x = buffer.items[cursor_end.y].text.len;
+            if (cursor_pos.x >= buffer.items[cursor_pos.y].text.items.len)
+                cursor_pos.x = buffer.items[cursor_pos.y].text.items.len;
+            if (cursor_end.x >= buffer.items[cursor_end.y].text.items.len)
+                cursor_end.x = buffer.items[cursor_end.y].text.items.len;
 
             // draw lines
             var y = bnds.y + 40 - props.scroll.?.value;
@@ -412,7 +373,7 @@ pub const EditorData = struct {
                         try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
                     } else {
                         // case 3: it started this line
-                        self.sel.data.size.x = char_size * @as(f32, @floatFromInt(line.text.len - cursor_pos.x + 1));
+                        self.sel.data.size.x = char_size * @as(f32, @floatFromInt(line.text.items.len - cursor_pos.x + 1));
                         self.sel.data.size.y = font.size;
 
                         const end_posx = font.sizeText(.{
@@ -442,7 +403,7 @@ pub const EditorData = struct {
                 }
 
                 if (sel and cursor_pos.y != lineidx and cursor_end.y != lineidx) {
-                    self.sel.data.size.x = char_size * @as(f32, @floatFromInt(line.text.len + 1));
+                    self.sel.data.size.x = char_size * @as(f32, @floatFromInt(line.text.items.len + 1));
                     self.sel.data.size.y = font.size;
 
                     try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 82, .y = y });
@@ -475,7 +436,7 @@ pub const EditorData = struct {
 
                         const adds = try allocator.create(popups.filepick.PopupFilePick);
                         adds.* = .{
-                            .path = try allocator.dupe(u8, home.name),
+                            .path = .fromOwnedSlice(allocator, try allocator.dupe(u8, home.name)),
                             .data = self,
                             .submit = &submitOpen,
                         };
@@ -524,10 +485,10 @@ pub const EditorData = struct {
             var start = self.abs_cursor_pos;
             var end = self.abs_cursor_end;
 
-            if (start.x >= buffer.items[start.y].text.len)
-                start.x = buffer.items[start.y].text.len;
-            if (end.x >= buffer.items[end.y].text.len)
-                end.x = buffer.items[end.y].text.len;
+            if (start.x >= buffer.items[start.y].text.items.len)
+                start.x = buffer.items[start.y].text.items.len;
+            if (end.x >= buffer.items[end.y].text.items.len)
+                end.x = buffer.items[end.y].text.items.len;
 
             if (start.y > end.y) {
                 const temp = end;
@@ -546,20 +507,18 @@ pub const EditorData = struct {
                 const removal_len = end.x - start.x;
 
                 const line = &buffer.items[start.y];
-                @memmove(line.text[start.x .. line.text.len - removal_len], line.text[end.x..]);
-
-                line.text = try allocator.realloc(line.text, line.text.len - removal_len);
+                line.text.replaceRangeAssumeCapacity(start.x, removal_len, "");
                 line.clearRender();
             } else {
                 const new_text = try std.mem.concat(allocator, u8, &.{
-                    buffer.items[start.y].text[0..start.x],
-                    buffer.items[end.y].text[end.x..],
+                    buffer.items[start.y].text.items[0..start.x],
+                    buffer.items[end.y].text.items[end.x..],
                 });
-                for (buffer.items[start.y .. end.y + 1]) |*line|
+                for (buffer.items[start.y .. end.y + 1]) |line|
                     line.deinit();
 
                 buffer.replaceRangeAssumeCapacity(start.y, end.y - start.y + 1, &.{.{
-                    .text = new_text,
+                    .text = .fromOwnedSlice(allocator, new_text),
                 }});
             }
 
@@ -571,41 +530,41 @@ pub const EditorData = struct {
     }
 
     pub fn getSel(self: *Self) ![]const u8 {
-        var result = std.array_list.Managed(u8).init(allocator);
+        var result: std.array_list.Managed(u8) = .init(allocator);
         defer result.deinit();
 
         if (self.buffer) |buffer| sel_block: {
             var start = self.abs_cursor_pos;
             var end = self.abs_cursor_end;
 
-            if (start.x >= buffer.items[start.y].text.len)
-                start.x = buffer.items[start.y].text.len;
-            if (end.x >= buffer.items[end.y].text.len)
-                end.x = buffer.items[end.y].text.len;
+            if (start.x >= buffer.items[start.y].text.items.len)
+                start.x = buffer.items[start.y].text.items.len;
+            if (end.x >= buffer.items[end.y].text.items.len)
+                end.x = buffer.items[end.y].text.items.len;
 
             if (start.y > end.y) {
                 const temp = end;
                 end = start;
                 start = temp;
             } else if (start.y == end.y) {
-                try result.appendSlice(buffer.items[start.y].text[@min(start.x, end.x)..@max(start.x, end.x)]);
+                try result.appendSlice(buffer.items[start.y].text.items[@min(start.x, end.x)..@max(start.x, end.x)]);
                 break :sel_block;
             }
 
             for (start.y..end.y) |line_idx| {
                 const line = buffer.items[line_idx];
                 if (line_idx == start.y)
-                    try result.appendSlice(line.text[start.x..])
+                    try result.appendSlice(line.text.items[start.x..])
                 else
-                    try result.appendSlice(line.text);
+                    try result.appendSlice(line.text.items);
 
                 try result.append('\n');
             }
 
-            try result.appendSlice(buffer.items[end.y].text[0..end.x]);
+            try result.appendSlice(buffer.items[end.y].text.items[0..end.x]);
         }
 
-        return try allocator.dupe(u8, result.items);
+        return try result.toOwnedSlice();
     }
 
     pub fn save(self: *Self) !void {
@@ -615,7 +574,7 @@ pub const EditorData = struct {
                 defer buff.deinit();
 
                 for (buffer.items) |line| {
-                    try buff.appendSlice(line.text);
+                    try buff.appendSlice(line.text.items);
                     try buff.append('\n');
                 }
 
@@ -628,7 +587,7 @@ pub const EditorData = struct {
 
                 const adds = try allocator.create(popups.textpick.PopupTextPick);
                 adds.* = .{
-                    .text = try allocator.dupe(u8, home.name),
+                    .text = .fromOwnedSlice(allocator, try allocator.dupe(u8, home.name)),
                     .submit = &submitSave,
                     .prompt = try allocator.dupe(u8, "Enter the file path"),
                     .data = self,
@@ -675,7 +634,7 @@ pub const EditorData = struct {
             var idx: usize = 0;
             while (iter.next()) |line| {
                 self.buffer.?.items[idx] = .{
-                    .text = try allocator.dupe(u8, line),
+                    .text = .fromOwnedSlice(allocator, try allocator.dupe(u8, line)),
                     .render = null,
                 };
 
@@ -701,13 +660,8 @@ pub const EditorData = struct {
 
     pub fn clearBuffer(self: *Self) void {
         if (self.buffer) |buffer| {
-            for (buffer.items) |*line| {
-                if (line.render) |render| {
-                    allocator.free(render);
-                }
-
-                allocator.free(line.text);
-            }
+            for (buffer.items) |line|
+                line.deinit();
 
             buffer.deinit();
 
@@ -722,7 +676,7 @@ pub const EditorData = struct {
         self.buffer = .init(allocator);
 
         try self.buffer.?.append(.{
-            .text = &.{},
+            .text = .init(allocator),
         });
 
         self.file = null;
@@ -730,8 +684,6 @@ pub const EditorData = struct {
 
     pub fn deinit(self: *Self) void {
         self.clearBuffer();
-        if (self.buffer) |*buffer|
-            buffer.deinit();
 
         allocator.destroy(self);
     }
@@ -753,18 +705,14 @@ pub const EditorData = struct {
             if (cursor_end.y >= buffer.items.len)
                 cursor_end.y = buffer.items.len;
 
-            if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
-                cursor_pos.x = buffer.items[cursor_pos.y].text.len;
-            if (cursor_end.x >= buffer.items[cursor_end.y].text.len)
-                cursor_end.x = buffer.items[cursor_end.y].text.len;
+            if (cursor_pos.x >= buffer.items[cursor_pos.y].text.items.len)
+                cursor_pos.x = buffer.items[cursor_pos.y].text.items.len;
+            if (cursor_end.x >= buffer.items[cursor_end.y].text.items.len)
+                cursor_end.x = buffer.items[cursor_end.y].text.items.len;
 
             const line = &buffer.items[cursor_pos.y];
 
-            line.text = try allocator.realloc(line.text, line.text.len + 1);
-
-            @memmove(line.text[cursor_pos.x + 1 ..], line.text[cursor_pos.x .. line.text.len - 1]);
-
-            line.text[cursor_pos.x] = char_string[0];
+            try line.text.insertSlice(cursor_pos.x, char_string);
             line.clearRender();
 
             cursor_pos.x += 1;
@@ -793,7 +741,7 @@ pub const EditorData = struct {
                         self.abs_cursor_pos = .{};
                         self.abs_cursor_end = .{
                             .y = buffer.items.len,
-                            .x = buffer.getLast().text.len,
+                            .x = buffer.getLast().text.items.len,
                         };
                     }
                 }
@@ -829,10 +777,10 @@ pub const EditorData = struct {
                     var cursor_pos = self.abs_cursor_pos;
                     var cursor_end = self.abs_cursor_end;
 
-                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
-                        cursor_pos.x = buffer.items[cursor_pos.y].text.len;
-                    if (cursor_end.x >= buffer.items[cursor_end.y].text.len)
-                        cursor_end.x = buffer.items[cursor_end.y].text.len;
+                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.items.len)
+                        cursor_pos.x = buffer.items[cursor_pos.y].text.items.len;
+                    if (cursor_end.x >= buffer.items[cursor_end.y].text.items.len)
+                        cursor_end.x = buffer.items[cursor_end.y].text.items.len;
 
                     if (cursor_pos.y > cursor_end.y or (cursor_pos.y == cursor_end.y and cursor_pos.x > cursor_pos.x)) {
                         const temp = cursor_pos;
@@ -841,11 +789,13 @@ pub const EditorData = struct {
                     }
 
                     try buffer.insert(cursor_pos.y + 1, .{
-                        .text = try allocator.dupe(u8, buffer.items[cursor_pos.y].text[cursor_pos.x..]),
+                        .text = .fromOwnedSlice(
+                            allocator,
+                            try allocator.dupe(u8, buffer.items[cursor_pos.y].text.items[cursor_pos.x..]),
+                        ),
                     });
 
-                    buffer.items[cursor_pos.y].text = try allocator.realloc(buffer.items[cursor_pos.y].text, cursor_pos.x);
-
+                    buffer.items[cursor_pos.y].text.shrinkRetainingCapacity(cursor_pos.x);
                     buffer.items[cursor_pos.y].clearRender();
 
                     cursor_pos.x = 0;
@@ -870,35 +820,22 @@ pub const EditorData = struct {
 
                     var cursor_pos = self.abs_cursor_pos;
 
-                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
-                        cursor_pos.x = buffer.items[cursor_pos.y].text.len;
+                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.items.len)
+                        cursor_pos.x = buffer.items[cursor_pos.y].text.items.len;
 
                     const line = &buffer.items[cursor_pos.y];
 
-                    if (cursor_pos.x < line.text.len) {
-                        @memmove(line.text[cursor_pos.x .. line.text.len - 1], line.text[cursor_pos.x + 1 ..]);
-
-                        line.text = try allocator.realloc(line.text, line.text.len - 1);
+                    if (cursor_pos.x < line.text.items.len) {
+                        _ = line.text.orderedRemove(cursor_pos.x);
                         line.clearRender();
 
                         self.modified = true;
                     } else if (cursor_pos.y < buffer.items.len - 1) {
-                        var old_line = buffer.items[cursor_pos.y + 1];
-                        defer old_line.deinit();
-
-                        buffer.items[cursor_pos.y].text = try allocator.realloc(
-                            buffer.items[cursor_pos.y].text,
-                            buffer.items[cursor_pos.y].text.len + buffer.items[cursor_pos.y + 1].text.len,
-                        );
-                        @memmove(
-                            buffer.items[cursor_pos.y].text[buffer.items[cursor_pos.y].text.len - buffer.items[cursor_pos.y + 1].text.len ..],
-                            buffer.items[cursor_pos.y + 1].text,
-                        );
-
+                        try buffer.items[cursor_pos.y].text.appendSlice(buffer.items[cursor_pos.y + 1].text.items);
                         buffer.items[cursor_pos.y].clearRender();
 
-                        @memmove(buffer.items[cursor_pos.y + 1 .. buffer.items.len - 1], buffer.items[cursor_pos.y + 2 ..]);
-                        buffer.shrinkRetainingCapacity(buffer.items.len - 1);
+                        var old_line = buffer.orderedRemove(cursor_pos.y + 1);
+                        old_line.deinit();
                     }
                 }
             },
@@ -914,15 +851,13 @@ pub const EditorData = struct {
 
                     var cursor_pos = self.abs_cursor_pos;
 
-                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.len)
-                        cursor_pos.x = buffer.items[cursor_pos.y].text.len;
+                    if (cursor_pos.x >= buffer.items[cursor_pos.y].text.items.len)
+                        cursor_pos.x = buffer.items[cursor_pos.y].text.items.len;
 
                     const line = &buffer.items[cursor_pos.y];
 
                     if (cursor_pos.x > 0) {
-                        @memmove(line.text[cursor_pos.x - 1 .. line.text.len - 1], line.text[cursor_pos.x..]);
-
-                        line.text = try allocator.realloc(line.text, line.text.len - 1);
+                        _ = line.text.orderedRemove(cursor_pos.x - 1);
                         line.clearRender();
 
                         self.modified = true;
@@ -930,27 +865,16 @@ pub const EditorData = struct {
                         self.abs_cursor_pos.x = cursor_pos.x - 1;
                         self.abs_cursor_end.x = cursor_pos.x - 1;
                     } else if (cursor_pos.y > 0) {
-                        self.abs_cursor_pos.x = buffer.items[cursor_pos.y - 1].text.len;
-                        self.abs_cursor_end.x = buffer.items[cursor_pos.y - 1].text.len;
+                        self.abs_cursor_pos.x = buffer.items[cursor_pos.y - 1].text.items.len;
+                        self.abs_cursor_end.x = buffer.items[cursor_pos.y - 1].text.items.len;
                         self.abs_cursor_pos.y -= 1;
                         self.abs_cursor_end.y -= 1;
 
-                        var old_line = buffer.items[cursor_pos.y];
-                        defer old_line.deinit();
-
-                        buffer.items[cursor_pos.y - 1].text = try allocator.realloc(
-                            buffer.items[cursor_pos.y - 1].text,
-                            buffer.items[cursor_pos.y - 1].text.len + buffer.items[cursor_pos.y].text.len,
-                        );
-                        @memmove(
-                            buffer.items[cursor_pos.y - 1].text[buffer.items[cursor_pos.y - 1].text.len - buffer.items[cursor_pos.y].text.len ..],
-                            buffer.items[cursor_pos.y].text,
-                        );
-
+                        try buffer.items[cursor_pos.y - 1].text.appendSlice(buffer.items[cursor_pos.y].text.items);
                         buffer.items[cursor_pos.y - 1].clearRender();
 
-                        @memmove(buffer.items[cursor_pos.y .. buffer.items.len - 1], buffer.items[cursor_pos.y + 1 ..]);
-                        buffer.shrinkRetainingCapacity(buffer.items.len - 1);
+                        const old_line = buffer.orderedRemove(cursor_pos.y);
+                        old_line.deinit();
                     }
                 }
             },
@@ -961,14 +885,14 @@ pub const EditorData = struct {
                             self.abs_cursor_end.x -= 1;
                         } else if (self.abs_cursor_end.y != 0) {
                             self.abs_cursor_end.y -= 1;
-                            self.abs_cursor_end.x = buffer.items[self.abs_cursor_end.y].text.len;
+                            self.abs_cursor_end.x = buffer.items[self.abs_cursor_end.y].text.items.len;
                         }
                     } else {
                         if (self.abs_cursor_pos.x > 0) {
                             self.abs_cursor_pos.x -= 1;
                         } else if (self.abs_cursor_pos.y != 0) {
                             self.abs_cursor_pos.y -= 1;
-                            self.abs_cursor_pos.x = buffer.items[self.abs_cursor_pos.y].text.len;
+                            self.abs_cursor_pos.x = buffer.items[self.abs_cursor_pos.y].text.items.len;
                         }
 
                         self.abs_cursor_end = self.abs_cursor_pos;
@@ -978,7 +902,7 @@ pub const EditorData = struct {
             glfw.KeyRight => {
                 if (self.buffer) |buffer| {
                     if (mods == glfw.ModifierShift) {
-                        if (self.abs_cursor_end.x >= buffer.items[self.abs_cursor_end.y].text.len) {
+                        if (self.abs_cursor_end.x >= buffer.items[self.abs_cursor_end.y].text.items.len) {
                             if (self.abs_cursor_end.y < buffer.items.len - 1) {
                                 self.abs_cursor_end.y += 1;
                                 self.abs_cursor_end.x = 0;
@@ -987,7 +911,7 @@ pub const EditorData = struct {
                             self.abs_cursor_end.x += 1;
                         }
                     } else {
-                        if (self.abs_cursor_pos.x >= buffer.items[self.abs_cursor_pos.y].text.len) {
+                        if (self.abs_cursor_pos.x >= buffer.items[self.abs_cursor_pos.y].text.items.len) {
                             if (self.abs_cursor_pos.y < buffer.items.len - 1) {
                                 self.abs_cursor_pos.y += 1;
                                 self.abs_cursor_pos.x = 0;

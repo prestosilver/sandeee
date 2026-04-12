@@ -52,7 +52,7 @@ pub fn edit(self: *Shell, params: *Shell.Params) !Shell.Result {
             var idx: usize = 0;
             while (iter.next()) |line| : (idx += 1) {
                 ed_self.buffer.?.items[idx] = .{
-                    .text = try allocator.dupe(u8, line),
+                    .text = .fromOwnedSlice(allocator, try allocator.dupe(u8, line)),
                     .render = null,
                 };
             }

@@ -60,7 +60,7 @@ pub const VMData = struct {
     time: f32 = 0,
     fps: f32 = 0,
     debug: bool = false,
-    input: []i32 = &.{},
+    input: std.array_list.Managed(i32) = .init(allocator),
     mousebtn: ?i32 = null,
     mousepos: Vec2 = .{},
 
@@ -278,17 +278,14 @@ pub const VMData = struct {
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
         if (!down) {
-            const old_input = self.input;
-            defer allocator.free(old_input);
-
-            self.input = try allocator.alloc(i32, std.mem.replacementSize(i32, self.input, &.{keycode}, &.{}));
-            _ = std.mem.replace(i32, old_input, &.{keycode}, &.{}, self.input);
+            const len = std.mem.replacementSize(i32, self.input.items, &.{keycode}, &.{});
+            _ = std.mem.replace(i32, self.input.items, &.{keycode}, &.{}, self.input.items);
+            self.input.shrinkRetainingCapacity(len);
 
             return;
         }
 
-        self.input = try allocator.realloc(self.input, self.input.len + 1);
-        self.input[self.input.len - 1] = keycode;
+        try self.input.append(keycode);
 
         if (keycode == glfw.KeyF10) {
             self.debug = !self.debug;
@@ -311,8 +308,7 @@ pub const VMData = struct {
     pub fn deinit(self: *Self) void {
         VMData.used_ids[self.id] = null;
 
-        allocator.free(self.input);
-
+        self.input.deinit();
         self.spritebatch.deinit();
         self.texture.deinit();
 
@@ -391,5 +387,5 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         };
     }
 
-    return Window.Data.WindowContents.init(self, "vm", "VM Window", .{ .r = 1, .g = 1, .b = 1 });
+    return .init(self, "vm", "VM Window", .{ .r = 1, .g = 1, .b = 1 });
 }

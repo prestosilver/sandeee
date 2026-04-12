@@ -74,8 +74,8 @@ pub const win = struct {
 
         if (vm_instance.?.misc_data.get("window")) |aid| {
             if (VmWindow.VMData.used_ids[aid[0]]) |self| {
-                const result = try allocator.alloc(u8, self.input.len * 2);
-                for (self.input, 0..) |in, index| {
+                const result = try allocator.alloc(u8, self.input.items.len * 2);
+                for (self.input.items, 0..) |in, index| {
                     result[index * 2] = std.mem.toBytes(in)[0];
                     result[index * 2 + 1] = std.mem.toBytes(in)[1];
                 }

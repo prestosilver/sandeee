@@ -54,8 +54,8 @@
 - [ ] Inter email box conditions
 - [ ] Embed file fix
 - [ ] Update email content
-- [ ] steam screenshots
 - [ ] Change email unlocked to key based
+- [ ] Accessibility settings in bios somewhere!
 - [ ] Consistent color parsing
 - [ ] Email notification text is cut off a bit.
 - [ ] Don't copy _*_meta files on disk install

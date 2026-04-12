@@ -139,9 +139,10 @@ pub const EmailManager = struct {
 
             var reader_buffer: [1024]u8 = undefined;
             var reader = file.reader(&reader_buffer);
-            var contents = std.array_list.Managed(u8).init(allocator);
-            defer contents.deinit();
+            var contents: std.array_list.Managed(u8) = .init(allocator);
             var input: ?[]const u8 = null;
+            var deps: std.array_list.Managed(u8) = .init(allocator);
+            var condition: std.array_list.Managed(Condition) = .init(allocator);
 
             while (try reader.interface.takeDelimiter('\n')) |line| {
                 _ = std.mem.replace(u8, line, "EEE", strings.EEE, line);
@@ -158,102 +159,83 @@ pub const EmailManager = struct {
                 } else if (std.mem.startsWith(u8, line, "sub: ")) {
                     result.subject = try allocator.dupe(u8, line[5..]);
                 } else if (std.mem.startsWith(u8, line, "deps: ")) {
-                    result.deps = try allocator.realloc(result.deps, result.deps.len + 1);
-                    result.deps[result.deps.len - 1] = try std.fmt.parseInt(u8, line[6..], 0);
+                    try deps.append(try std.fmt.parseInt(u8, line[6..], 0));
                 } else if (std.mem.startsWith(u8, line, "submit: ")) {
                     return error.BadParse;
                 } else if (std.mem.startsWith(u8, line, "input: ")) {
                     input = try allocator.dupe(u8, line[7..]);
                 } else if (std.mem.startsWith(u8, line, "shell: ")) {
-                    result.condition = try allocator.realloc(result.condition, result.condition.len + 1);
-
-                    result.condition[result.condition.len - 1] = .{
+                    try condition.append(.{
                         .ShellRun = .{
                             .cmd = try allocator.dupe(u8, line[7..]),
                         },
-                    };
+                    });
                 } else if (std.mem.startsWith(u8, line, "runs: ")) {
-                    result.condition = try allocator.realloc(result.condition, result.condition.len + 1);
-
-                    result.condition[result.condition.len - 1] = .{
+                    try condition.append(.{
                         .SubmitRuns = .{
                             .input = input,
                             .conts = try allocator.dupe(u8, line[6..]),
                         },
-                    };
+                    });
 
                     input = null;
                 } else if (std.mem.startsWith(u8, line, "libruns: ")) {
                     if (std.mem.indexOf(u8, line[9..], ":")) |idx| {
-                        result.condition = try allocator.realloc(result.condition, result.condition.len + 1);
-
-                        result.condition[result.condition.len - 1] = .{
+                        try condition.append(.{
                             .SubmitLib = .{
                                 .input = input,
                                 .libfn = try allocator.dupe(u8, line[9 .. 9 + idx]),
                                 .conts = try allocator.dupe(u8, line[9 + idx + 1 ..]),
                             },
-                        };
+                        });
                     }
 
                     input = null;
                 } else if (std.mem.startsWith(u8, line, "contains: ")) {
-                    result.condition = try allocator.realloc(result.condition, result.condition.len + 1);
-
-                    result.condition[result.condition.len - 1] = .{
+                    try condition.append(.{
                         .SubmitContains = .{
                             .conts = try allocator.dupe(u8, line[10..]),
                         },
-                    };
+                    });
                 } else if (std.mem.startsWith(u8, line, "sys: ")) {
-                    result.condition = try allocator.realloc(result.condition, result.condition.len + 1);
-
-                    result.condition[result.condition.len - 1] = .{
+                    try condition.append(.{
                         .SysCall = .{
                             .id = try std.fmt.parseInt(u8, line[5..], 10),
                         },
-                    };
+                    });
                 } else if (std.mem.startsWith(u8, line, "logins: ")) {
-                    result.condition = try allocator.realloc(result.condition, result.condition.len + 1);
-
-                    result.condition[result.condition.len - 1] = .{
+                    try condition.append(.{
                         .Logins = .{
                             .count = try std.fmt.parseInt(u64, line[8..], 10),
                         },
-                    };
+                    });
                 } else if (std.mem.eql(u8, line, "view")) {
-                    result.condition = try allocator.realloc(result.condition, result.condition.len + 1);
-
-                    result.condition[result.condition.len - 1] = .{
+                    try condition.append(.{
                         .View = .{},
-                    };
+                    });
                 } else if (std.mem.eql(u8, line, "hide")) {
                     result.show = false;
                 } else if (std.mem.eql(u8, line, "debug")) {
-                    result.condition = try allocator.realloc(result.condition, result.condition.len + 1);
-
-                    result.condition[result.condition.len - 1] = .Debug;
+                    try condition.append(.Debug);
                 } else {
                     try contents.appendSlice(line);
                     try contents.appendSlice("\n");
                 }
             }
 
-            const str_contents = try allocator.dupe(u8, contents.items);
-
-            result.contents = str_contents;
+            result.contents = try contents.toOwnedSlice();
+            result.deps = try deps.toOwnedSlice();
+            result.condition = try condition.toOwnedSlice();
 
             return result;
         }
     };
 
     emails: std.array_list.Managed(Email) = .init(allocator),
-    boxes: [][]const u8 = &.{},
+    boxes: std.array_list.Managed([]const u8) = .init(allocator),
 
     pub fn init() !void {
-        EmailManager.instance = .{
-            .boxes = try allocator.dupe([]const u8, &.{}),
-        };
+        EmailManager.instance = .{};
     }
 
     pub fn deinit(self: *EmailManager) void {
@@ -268,8 +250,7 @@ pub const EmailManager = struct {
             allocator.free(email.condition);
         }
 
-        allocator.free(self.boxes);
-
+        self.boxes.clearAndFree();
         self.emails.clearAndFree();
     }
 
@@ -363,31 +344,33 @@ pub const EmailManager = struct {
     }
 
     pub fn saveStateFile(self: *EmailManager, path: []const u8) !void {
-        var start = try allocator.alloc(u8, 1);
-        defer allocator.free(start);
+        var start: std.array_list.Managed(u8) = .init(allocator);
+        defer start.deinit();
 
-        start[0] = @as(u8, @intCast(self.boxes.len));
+        try start.append(@intCast(self.boxes.items.len));
 
-        for (self.boxes) |boxname| {
-            const sidx = start.len;
-            start = try allocator.realloc(start, start.len + boxname.len + 1);
-            start[sidx] = @as(u8, @intCast(boxname.len));
-            @memcpy(start[sidx + 1 ..], boxname);
+        for (self.boxes.items) |boxname| {
+            try start.append(@intCast(boxname.len));
+            try start.appendSlice(boxname);
         }
 
-        const conts = try allocator.alloc(u8, start.len + 256 * self.boxes.len);
+        const conts = try allocator.alloc(u8, start.items.len + 256 * self.boxes.items.len);
         defer allocator.free(conts);
-        @memset(conts, 0);
-        @memcpy(conts[0..start.len], start);
+        @memcpy(conts[0..start.items.len], start.items);
+        @memset(conts[start.items.len..], 0);
 
         for (self.emails.items) |*email| {
-            if (email.viewed) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 0;
-            if (email.is_complete) conts[start.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 1;
+            if (email.viewed) conts[start.items.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 0;
+            if (email.is_complete) conts[start.items.len + @as(usize, @intCast(email.box)) * 256 + email.id] |= 1 << 1;
         }
 
         const root = try files.FolderLink.resolve(.root);
 
-        _ = try root.newFile(path);
+        _ = root.newFile(path) catch |err| switch (err) {
+            error.FileExists => {},
+            else => return err,
+        };
+
         try root.writeFile(path, conts, null);
     }
 
@@ -415,7 +398,7 @@ pub const EmailManager = struct {
         const startidx = idx;
 
         for (names, 0..) |name, nameidx| {
-            for (self.boxes, 0..) |boxname, boxidx| {
+            for (self.boxes.items, 0..) |boxname, boxidx| {
                 if (std.mem.eql(u8, boxname, name)) {
                     for (self.emails.items) |*email| {
                         if (email.box != boxidx) continue;
@@ -433,24 +416,12 @@ pub const EmailManager = struct {
     }
 
     pub fn exportData(self: *EmailManager) ![]u8 {
-        var result = try allocator.alloc(u8, 4);
+        var result: std.array_list.Managed(u8) = .init(allocator);
 
         const len = std.mem.toBytes(self.emails.items.len)[0..4];
-        @memcpy(result, len);
+        try result.appendSlice(len);
+
         for (self.emails.items) |email| {
-            const start = result.len;
-
-            var cond_list = std.array_list.Managed(u8).init(allocator);
-            defer cond_list.deinit();
-
-            for (email.condition) |input| {
-                const t = try input.toString();
-                defer allocator.free(t);
-
-                try cond_list.appendSlice(t);
-                try cond_list.append(0);
-            }
-
             // TODO: fix conds
             const id_string = std.mem.toBytes(email.id);
             const show = std.mem.toBytes(email.show);
@@ -461,40 +432,38 @@ pub const EmailManager = struct {
             const subject_length = std.mem.toBytes(email.subject.len)[0..4];
             const content_length = std.mem.toBytes(email.contents.len)[0..4];
 
-            const appends = try std.mem.concat(
-                allocator,
-                u8,
-                &[_][]const u8{
-                    &id_string,
-                    &show,
-                    conds_length,
-                    cond_list.items,
-                    deps_length,
-                    email.deps,
-                    to_length,
-                    email.to,
-                    from_length,
-                    email.from,
-                    subject_length,
-                    email.subject,
-                    content_length,
-                    email.contents,
-                },
-            );
-            defer allocator.free(appends);
+            try result.appendSlice(&id_string);
+            try result.appendSlice(&show);
 
-            result = try allocator.realloc(result, start + appends.len);
+            try result.appendSlice(conds_length);
+            for (email.condition) |input| {
+                const t = try input.toString();
+                defer allocator.free(t);
 
-            @memcpy(result[start..], appends);
+                try result.appendSlice(t);
+                try result.append(0);
+            }
+
+            try result.appendSlice(deps_length);
+            try result.appendSlice(email.deps);
+            try result.appendSlice(to_length);
+            try result.appendSlice(email.to);
+            try result.appendSlice(from_length);
+            try result.appendSlice(email.from);
+            try result.appendSlice(subject_length);
+            try result.appendSlice(email.subject);
+            try result.appendSlice(content_length);
+            try result.appendSlice(email.contents);
         }
-        return result;
+
+        return try result.toOwnedSlice();
     }
 
     pub fn loadFromFolder(self: *EmailManager, path: []const u8) !void {
         const root_path = try files.FolderLink.resolve(.root);
         const folder = try root_path.getFolder(path);
 
-        self.boxes = try allocator.alloc([]const u8, 1);
+        self.boxes.clearAndFree();
 
         var current: ?*files.File = folder.files;
         var boxid: usize = 0;
@@ -503,11 +472,9 @@ pub const EmailManager = struct {
             boxid += 1;
             current = file.next_sibling;
         }) {
-            self.boxes = try allocator.realloc(self.boxes, self.boxes.len + 1);
-
             log.info("Load email file {s}", .{file.name});
 
-            self.boxes[boxid] = file.name[folder.name.len .. file.name.len - 4];
+            try self.boxes.append(file.name[folder.name.len .. file.name.len - 4]);
 
             const conts = try file.read(null);
 
@@ -656,8 +623,8 @@ pub const EmailManager = struct {
             std.sort.insertion(Email, self.emails.items[start..], false, Email.lessThan);
         }
 
-        log.debug("Loaded {} total emails", .{self.emails.items.len});
+        try self.boxes.append("outbox");
 
-        self.boxes[self.boxes.len - 1] = "outbox";
+        log.debug("Loaded {} total emails", .{self.emails.items.len});
     }
 };
