@@ -24,25 +24,17 @@ jobs:
               
           }
 
-          pageindex=1
-
-          echo "fetching page ${pageindex}..."
-          first="$(list_caches "${pageindex}")"
-          total_count="$(jq -r '.total_count' <<< "${first}")"
-          all_ids="$(jq '.actions_caches.[] | select(.key != "steamcmd-config-linux-x64") | .id' <<< "${first}" | tr '\n' ' ')"
-
-          remaining="$((total_count-PAGE_SIZE))"
-          echo "  cache ids in page ${pageindex}: ${all_ids}, ${remaining} remaining."
-          while [[ $remaining > 0 ]]; do
+          pageindex=0
+          while
             pageindex="$((pageindex+1))"
-            echo "fetching page ${pageindex}..."
             ids="$(list_caches "${pageindex}" | jq '.actions_caches.[] | select(.key != "steamcmd-config-linux-x64") | .id' | tr '\n' ' ')"
+            echo "$(list_caches "${pageindex}" | jq '.actions_caches.[] | select(.key != "steamcmd-config-linux-x64") | (.id|tostring) + " (" + .key + ")"')"
 
             all_ids="${all_ids} ${ids}"
             remaining="$((remaining-PAGE_SIZE))"
             if [[ $remaining < 0 ]]; then remaining=0; fi
-            echo "  cache ids in page ${pageindex}: ${ids}, ${remaining} remaining."
-          done
+            [[ $remaining > 0 ]]
+          do; done
 
           echo "cache ids total: ${all_ids}"
           echo "cache_ids=$all_ids" >> "$GITHUB_OUTPUT"
@@ -55,10 +47,10 @@ jobs:
         run: |
           for id in ${{ steps.list-caches.outputs.cache_ids }}; do
             echo "deleting cache $id"
-            gh api \
-              --method DELETE \
-              -H 'Accept: application/vnd.github+json' \
-              "/repos/${GITHUB_REPOSITORY}/actions/caches/$id"
+            # gh api \
+            #   --method DELETE \
+            #   -H 'Accept: application/vnd.github+json' \
+            #   "/repos/${GITHUB_REPOSITORY}/actions/caches/$id"
           done
   tests-dbg:
     runs-on: ubuntu-latest
