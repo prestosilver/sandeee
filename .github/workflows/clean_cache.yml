@@ -32,8 +32,7 @@ jobs:
 
             all_ids="${all_ids} ${ids}"
             remaining="$((remaining-PAGE_SIZE))"
-            if [[ $remaining < 0 ]]; then remaining=0; fi
-            if [[ $remaining > 0 ]]; then break; fi
+            if [[ $remaining < 1 ]]; then break; fi
           done
 
           echo "cache ids total: ${all_ids}"
