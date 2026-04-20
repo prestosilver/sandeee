@@ -25,7 +25,7 @@ jobs:
           }
 
           pageindex=0
-          while
+          while true; do
             pageindex="$((pageindex+1))"
             ids="$(list_caches "${pageindex}" | jq '.actions_caches.[] | select(.key != "steamcmd-config-linux-x64") | .id' | tr '\n' ' ')"
             echo "$(list_caches "${pageindex}" | jq '.actions_caches.[] | select(.key != "steamcmd-config-linux-x64") | (.id|tostring) + " (" + .key + ")"')"
@@ -33,8 +33,7 @@ jobs:
             all_ids="${all_ids} ${ids}"
             remaining="$((remaining-PAGE_SIZE))"
             if [[ $remaining < 0 ]]; then remaining=0; fi
-            [[ $remaining > 0 ]]
-          do
+            if [[ $remaining > 0 ]]; then break; fi
           done
 
           echo "cache ids total: ${all_ids}"
