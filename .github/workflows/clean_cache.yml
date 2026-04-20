@@ -46,10 +46,10 @@ jobs:
         run: |
           for id in ${{ steps.list-caches.outputs.cache_ids }}; do
             echo "deleting cache $id"
-            # gh api \
-            #   --method DELETE \
-            #   -H 'Accept: application/vnd.github+json' \
-            #   "/repos/${GITHUB_REPOSITORY}/actions/caches/$id"
+            gh api \
+              --method DELETE \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/actions/caches/$id"
           done
   tests-dbg:
     runs-on: ubuntu-latest
