@@ -51,6 +51,9 @@ jobs:
               -H 'Accept: application/vnd.github+json' \
               "/repos/${GITHUB_REPOSITORY}/actions/caches/$id"
           done
+      - name: Renew SteamCMD
+        id: renew-steam
+        uses: RageAgainstThePixel/setup-steamcmd@v1
   tests-dbg:
     runs-on: ubuntu-latest
     name: Cache tests 
