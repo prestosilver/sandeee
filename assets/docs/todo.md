@@ -32,9 +32,9 @@
 - [ ] Fix program names and versions
   - [ ] Merge BootEEE
 - [ ] Add actual pickers to settings ui
-- [ ] <=> should not connect at all
+- [ ] <=> in font should not connect at all
 - [ ] All buttons should look disabled when disabled
-- [ ] Add consistent id iota type utility
+- [ ] Add consistent id+iota type utility
 - [ ] Load progress on web
 - [ ] Auto fix capitalization in changelog gen
 - [ ] Control the dithering, and crt of the shader separately
@@ -45,6 +45,7 @@
 - [X] New partial disk scripted recovery system
 - [X] zig build upload_itch_release
 - [X] Double check wording in demo emails
+- [ ] Breakout UI for consistency!!!
 - [ ] EDS Background color
 - [ ] Workshop previews
 - [ ] Workshop favorites
@@ -63,3 +64,4 @@
 - [ ] Crash screen should be relative paths
 - [ ] Move runSandEEE to a subfolder somewhere (in repo)
 - [ ] Steam tool transfer from demo.
+- [ ] Zig 0.16
