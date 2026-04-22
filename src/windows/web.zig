@@ -1168,7 +1168,10 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font: *Font) ![640 * 480]u
         graphics.Context.makeCurrent();
         defer graphics.Context.makeNotCurrent();
         try self.loadPage();
-        var props: Window.Data.WindowContents.WindowProps = .{};
+        var props: Window.Data.WindowContents.WindowProps = .{
+            .info = .{ .kind = "web", .name = "Steam Renderer" },
+            .clear_color = .{ .r = 1, .g = 1 , .b = 1 },
+        };
         try  self.draw(shader, .{ .x = 0, .y = 0, .w = 640, .h = 480 }, font, &props);
 
         zgl.bindFramebuffer(.invalid, .read_buffer);
