@@ -702,6 +702,7 @@ pub fn runGame() anyerror!void {
     log.log.info("SandEEE " ++ strings.SANDEEE_VERSION_TEXT, .{});
 
     try audio.AudioManager.init();
+    system.syscalls.main_font = &main_font;
 
     // init graphics
     var graphics_loader: Loader = try .init(loaders.Graphics{ .real_fullscreen = real_fullscreen }, null);

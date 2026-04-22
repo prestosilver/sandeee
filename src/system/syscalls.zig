@@ -9,6 +9,7 @@ const util = @import("../util.zig");
 const windows = @import("../windows.zig");
 
 const log = util.log;
+const Font = util.Font;
 
 const Stream = system.Stream;
 const Vm = system.Vm;
@@ -49,6 +50,8 @@ const SyscallId = enum(u64) {
     Steam = 24,
     Last = 25,
 };
+
+pub var main_font: *Font = undefined;
 
 pub const SysCall = struct {
     const Self = @This();
@@ -746,7 +749,7 @@ fn sysSteam(self: *Vm) VmError!void {
             const window_path = try std.mem.concat(self.allocator, u8, &.{ path, ":index.edf" });
             defer self.allocator.free(window_path);
 
-            var window_frame = try windows.web.renderFrame(window_path, system.Shell.shader);
+            var window_frame = try windows.web.renderFrame(window_path, system.Shell.shader, main_font);
 
             var image = zigimg.Image.fromRawPixelsOwned(640, 480, @ptrCast(&window_frame), .rgba32) catch |err| {
                 log.warn("failed to write image {}", .{err});
