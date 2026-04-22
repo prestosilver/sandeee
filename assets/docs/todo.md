@@ -20,6 +20,7 @@
 - [ ] Disks files are unordered everywhere, sort on save
 - [ ] Task manager can fullscreen and renders wrong
 - [ ] Steam in web can lag the game
+- [ ] Github actions doesnt test `-Dsteam=On`
 
 ## Minor non bug fixes
 
