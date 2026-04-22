@@ -18,6 +18,7 @@ pub const SettingEntry = struct {
         folder: void,
 
         pub const boolean = @This(){ .dropdown = &.{ "No", "Yes" } };
+        pub const percent = @This(){ .slider = .{ .min = 0, .max = 100 } };
     },
 };
 
@@ -31,7 +32,8 @@ pub const SETTINGS = [_]Panel{
         .{ .setting = "CRT Shader", .key = "crt_shader", .kind = .boolean },
     } },
     .{ .name = "Sounds", .icon = 1, .entries = &.{
-        .{ .setting = "Sound Volume", .key = "sound_volume", .kind = .string },
+        .{ .setting = "Sound Volume", .key = "sound_volume", .kind = .percent },
+        .{ .setting = "Background Volume", .key = "background_volume", .kind = .percent },
         .{ .setting = "Sound Muted", .key = "sound_muted", .kind = .boolean },
         .{ .setting = "Login Sound", .key = "login_sound_path", .kind = .file },
         .{ .setting = "Message Sound", .key = "message_sound_path", .kind = .file },
