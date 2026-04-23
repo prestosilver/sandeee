@@ -20,6 +20,7 @@
 - [ ] Disks files are unordered everywhere, sort on save
 - [ ] Task manager can fullscreen and renders wrong
 - [ ] Steam in web can lag the game
+- [ ] Github actions doesnt test `-Dsteam=On`
 
 ## Minor non bug fixes
 
@@ -30,11 +31,12 @@
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
 - [ ] Fix program names and versions
-  - [ ] Merge BootEEE
+  - [X] Merge BootEEE
+  - [ ] Breakout other versions to `strings.zig`
 - [ ] Add actual pickers to settings ui
-- [ ] <=> should not connect at all
+- [ ] <=> in font should not connect at all
 - [ ] All buttons should look disabled when disabled
-- [ ] Add consistent id iota type utility
+- [ ] Add consistent id+iota type utility
 - [ ] Load progress on web
 - [ ] Auto fix capitalization in changelog gen
 - [ ] Control the dithering, and crt of the shader separately
@@ -45,6 +47,7 @@
 - [X] New partial disk scripted recovery system
 - [X] zig build upload_itch_release
 - [X] Double check wording in demo emails
+- [ ] Breakout UI for consistency!!!
 - [ ] EDS Background color
 - [ ] Workshop previews
 - [ ] Workshop favorites
@@ -64,3 +67,4 @@
 - [ ] Move runSandEEE to a subfolder somewhere (in repo)
 - [ ] Steam tool transfer from demo.
 - [ ] Some sort of credits.
+- [ ] Zig 0.16

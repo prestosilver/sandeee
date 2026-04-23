@@ -1105,7 +1105,7 @@ pub const WebData = struct {
     }
 };
 
-pub fn renderFrame(path: []const u8, shader: *Shader) ![640 * 480]u32 {
+pub fn renderFrame(path: []const u8, shader: *Shader, font: *Font) ![640 * 480]u32 {
     var result: [640 * 480]u32 = undefined;
     @memset(&result, 0xFF000000); // fill with white
 
@@ -1167,6 +1167,14 @@ pub fn renderFrame(path: []const u8, shader: *Shader) ![640 * 480]u32 {
     {
         graphics.Context.makeCurrent();
         defer graphics.Context.makeNotCurrent();
+        self.loadPage() catch return result;
+        var props: Window.Data.WindowContents.WindowProps = .{
+            .info = .{ .kind = "web", .name = "Steam Renderer" },
+            .clear_color = .{ .r = 1, .g = 1 , .b = 1 },
+        };
+        var bounds: Rect = .{ .x = 0, .y = 0, .w = 640, .h = 480 };
+        self.draw(shader, &bounds, font, &props) catch return result;
+
         zgl.bindFramebuffer(.invalid, .read_buffer);
         zgl.readBuffer(.back);
         zgl.readPixels(0, 0, 640, 480, .rgba, .unsigned_int, @ptrCast(&result));

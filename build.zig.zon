@@ -33,6 +33,7 @@
         },
     },
     .paths = .{
+        "tools",
         "assets",
         "content",
         "build.zig",

@@ -30,8 +30,6 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
-const VERSION = "seed#2_0";
-
 const GSRecovery = @This();
 
 const RecoveryChoice = struct {
@@ -190,7 +188,7 @@ const CONFIRM = [_][*:0]const u8{
 pub fn draw(self: *GSRecovery, _: Vec2) !void {
     var y: f32 = 100;
 
-    const title_text = try std.fmt.allocPrint(allocator, "Recover" ++ strings.EEE ++ " v_{s}", .{VERSION});
+    const title_text = try std.fmt.allocPrint(allocator, "BootEEE v_{s}", .{strings.BOOTEEE_VERSION_TEXT});
     defer allocator.free(title_text);
     try self.face.draw(.{
         .shader = self.font_shader,

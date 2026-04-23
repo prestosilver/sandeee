@@ -15,4 +15,4 @@ I heard your getting into Eon, I recently needed a program that reverses it's in
 If I remember right there's a function in sys.eon that will read a single char of input. You can convert an ASCII number to a char string with the @ operator. Just make the program print the reversed string after it reads a new line.
 A new lines char has the value of 10. String concatenation might also be helpful, you can use the & operation for that.
 
-- Sticher
+- Stitcher

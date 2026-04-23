@@ -35,7 +35,6 @@ const strings = data.strings;
 
 const GSDisks = @This();
 
-const VERSION = std.fmt.comptimePrint("Boot" ++ strings.EEE ++ " seed#3_0\nFor Sand" ++ strings.EEE ++ " " ++ strings.SANDEEE_VERSION_TEXT, .{});
 const TEXT_COLOR = Color{ .r = 0.75, .g = 0.75, .b = 0.75 };
 const TOTAL_LINES = 10;
 
@@ -181,9 +180,9 @@ pub fn draw(self: *GSDisks, _: Vec2) !void {
     pos.y += self.logo_sprite.data.size.y;
 
     if (self.auto) {
-        line = try std.fmt.allocPrint(allocator, "{s}\nBooting to default in {}s", .{ VERSION, @as(i32, @intFromFloat(self.remaining + 0.5)) });
+        line = try std.fmt.allocPrint(allocator, "{s}\nFor SandEEE v_{s}\nBooting to default in {}s", .{ strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT, @as(i32, @intFromFloat(self.remaining + 0.5)) });
     } else {
-        line = try std.fmt.allocPrint(allocator, "{s}\nAutoboot canceled", .{VERSION});
+        line = try std.fmt.allocPrint(allocator, "{s}\nFor SandEEE v_{s}\nAutoboot canceled", .{strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT});
     }
 
     try self.face.draw(.{
