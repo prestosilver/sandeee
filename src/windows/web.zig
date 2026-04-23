@@ -1174,10 +1174,11 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font: *Font) ![640 * 480]u
         };
         var bounds: Rect = .{ .x = 0, .y = 0, .w = 640, .h = 480 };
         self.draw(shader, &bounds, font, &props) catch return result;
-
+        zgl.flush();
         zgl.bindFramebuffer(.invalid, .read_buffer);
         zgl.readBuffer(.back);
         zgl.readPixels(0, 0, 640, 480, .rgba, .unsigned_int, @ptrCast(&result));
+        zgl.flush();
     }
 
     return result;
