@@ -246,7 +246,7 @@ fn todo(name: []const u8) std.meta.Tuple(&.{ []const u8, ShellCommand }) {
             .func = struct {
                 fn todo(_: *Shell, _: *Params) !Result {
                     return .{
-                        .data = try std.mem.concat(allocator, u8, &.{ "Command `", name, "` Not yet implemented!" }),
+                        .data = try std.mem.concat(allocator, u8, &.{ "Command `", name, "` is Not yet implemented!" }),
                     };
                 }
             }.todo,
@@ -558,54 +558,9 @@ pub const shell_commands = [_](struct { []const u8, ShellCommand }){
     .{ "drem", .fromImport(@import("Shell/drem.zig")) },
     .{ "cpy", .fromImport(@import("Shell/cpy.zig")) },
     todo("dcpy"),
-    .{ "bg", .{
-        .name = "bg",
-        .desc = "Runs a command in the background",
-        .help = "bg [:help] command",
-        .func = struct {
-            fn bg(self: *Shell, params: *Params) !Result {
-                if (params.peek()) |_| {
-                    try self.runBg(params.rest());
-                    const result: Result = Result{
-                        .data = try allocator.dupe(u8, "Running"),
-                    };
-                    return result;
-                }
-                const result: Result = Result{
-                    .data = try allocator.dupe(u8, "No Command Specified"),
-                };
-                return result;
-            }
-        }.bg,
-    } },
-    .{ "cls", .{
-        .name = "cls",
-        .desc = "Clears the console",
-        .help = "cls [:help]",
-        .func = struct {
-            fn clear(_: *Shell, _: *Params) !Result {
-                const result: Result = Result{
-                    .data = &.{},
-                    .clear = true,
-                };
-                return result;
-            }
-        }.clear,
-    } },
-    .{ "exit", .{
-        .name = "exit",
-        .desc = "Exits the console",
-        .help = "exit [:help]",
-        .func = struct {
-            fn exit(_: *Shell, _: *Params) !Result {
-                const result: Result = Result{
-                    .data = &.{},
-                    .exit = true,
-                };
-                return result;
-            }
-        }.exit,
-    } },
+    .{ "bg", .fromImport(@import("Shell/bg.zig")) },
+    .{ "cls", .fromImport(@import("Shell/cls.zig")) },
+    .{ "exit", .fromImport(@import("Shell/exit.zig")) },
 };
 
 pub const headless_help_data = .{
@@ -647,5 +602,3 @@ pub fn deinit(self: *Shell) void {
         self.vm = null;
     }
 }
-
-test "Shell fuzz" {}

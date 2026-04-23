@@ -1,12 +1,10 @@
-Im glad you found the recovery file I sent you.
-I was also able to get some EEEMail account credentials for you.
+Im glad you found the RecoverEEE image I sent you. I was also able to crack the password for one of the backed up EEEMail accounts for you, try this:
 
 Login: rob_r@eee.org
 Password: 12345
 
-I kinda feel bad for the guy who put 12345 as their password, but serves them right.
+...wow, I guess that is why most people dont use 12345 as a password.
 
-Epsilon
+- Epsilon
 
-PS: I was able to dump some emails sent by the company, however they are encrypted by response.
-If you reenact what went durring DunEEE development SandEEE should be able to decrypt as you go.
+PS: I was able to decrypt some emails sent by the company, however they are encrypted incrementally. If you reenact what was sent while DunEEE was in development SandEEE should be able to decrypt the lost emails as you go. Let me know if you find anything cool!

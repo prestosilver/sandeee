@@ -63,3 +63,4 @@
 - [ ] Crash screen should be relative paths
 - [ ] Move runSandEEE to a subfolder somewhere (in repo)
 - [ ] Steam tool transfer from demo.
+- [ ] Some sort of credits.
