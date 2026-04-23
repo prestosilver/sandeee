@@ -31,7 +31,8 @@
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
 - [ ] Fix program names and versions
-  - [ ] Merge BootEEE
+  - [X] Merge BootEEE
+  - [ ] Breakout other versions to `strings.zig`
 - [ ] Add actual pickers to settings ui
 - [ ] <=> in font should not connect at all
 - [ ] All buttons should look disabled when disabled

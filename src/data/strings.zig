@@ -37,7 +37,7 @@ pub const BOOTEEE_VERSION = Version{
     .index = 5,
     .meta = null,
 };
-pub const BOOTEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{BOOTEEE_VERSION_TEXT});
+pub const BOOTEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{BOOTEEE_VERSION});
 
 pub fn BLOCK(comptime id: u8) []const u8 {
     if (id > 7) @compileError("Bad Block char");
