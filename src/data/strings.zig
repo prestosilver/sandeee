@@ -31,6 +31,14 @@ const SANDEEE_VERSION = Version{
 };
 pub const SANDEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{SANDEEE_VERSION});
 
+pub const BOOTEEE_VERSION = Version{
+    .program = "boot",
+    .phase = .seed,
+    .index = 5,
+    .meta = null,
+};
+pub const BOOTEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{BOOTEEE_VERSION_TEXT});
+
 pub fn BLOCK(comptime id: u8) []const u8 {
     if (id > 7) @compileError("Bad Block char");
 

@@ -31,7 +31,6 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
-const VERSION = "seed#3_1";
 const INSTALL_TIME = if (builtin.mode == .Debug) 0.0 else 1.5;
 
 const GSInstaller = @This();
@@ -127,7 +126,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
     var y: f32 = 100 - self.offset;
     defer self.offset = @max(@as(f32, 0), (y + self.offset) - (size.y - 100));
 
-    const title_text = try std.fmt.allocPrint(allocator, "Sand" ++ strings.EEE ++ " Installer v_{s}", .{VERSION});
+    const title_text = try std.fmt.allocPrint(allocator, "BootEEE Installer v_{s}", .{strings.BOOTEEE_VERSION_TEXT});
     defer allocator.free(title_text);
     try self.face.draw(.{
         .shader = self.font_shader,
