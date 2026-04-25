@@ -270,6 +270,7 @@ pub const WebData = struct {
     loading: bool = false,
     add_imgs: bool = false,
     add_links: bool = false,
+    hide_urlbar: bool = false,
     web_idx: u8,
 
     bnds: Rect = .{ .w = 1, .h = 1 },
@@ -674,7 +675,7 @@ pub const WebData = struct {
 
         if (props.scroll == null) {
             props.scroll = .{
-                .offset_start = 40,
+                .offset_start = if (self.hide_urlbar) 0 else 40,
             };
         }
 
@@ -699,15 +700,14 @@ pub const WebData = struct {
 
             const web_width = bnds.w - 14;
 
-            var pos = Vec2{ .y = -props.scroll.?.value + 50 };
+            var pos: Vec2 = .{ .y = -props.scroll.?.value + 10 };
+            if (!self.hide_urlbar) pos.y += 40;
 
-            if (self.conts == null) {
+            const cont = self.conts orelse {
                 self.load_thread = try std.Thread.spawn(.{}, loadPage, .{self});
 
                 break :drawConts;
-            }
-
-            const cont = self.conts orelse "Error Loading Page";
+            };
 
             var iter = std.mem.splitScalar(u8, cont, '\n');
 
@@ -752,8 +752,12 @@ pub const WebData = struct {
                         TextureManager.instance.get(&texid).?.size =
                             TextureManager.instance.get(&texid).?.size.div(4);
 
-                        const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try self.path.child(line[1 .. line.len - 1]), try allocator.dupe(u8, &texid) });
-                        img_thread.detach();
+                        if (self.hide_urlbar) {
+                            try self.loadimage(try self.path.child(line[1 .. line.len - 1]), try allocator.dupe(u8, &texid));
+                        } else {
+                            const img_thread = try std.Thread.spawn(.{}, loadimage, .{ self, try self.path.child(line[1 .. line.len - 1]), try allocator.dupe(u8, &texid) });
+                            img_thread.detach();
+                        }
                     }
 
                     const size = TextureManager.instance.get(&texid).?.size.mul(2 * style.scale);
@@ -911,30 +915,32 @@ pub const WebData = struct {
         }
 
         // draw menubar
-        self.menubar.data.size.x = bnds.w;
-        try SpriteBatch.global.draw(Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
+        if (!self.hide_urlbar) {
+            self.menubar.data.size.x = bnds.w;
+            try SpriteBatch.global.draw(Sprite, &self.menubar, self.shader, .{ .x = bnds.x, .y = bnds.y });
 
-        self.text_box[0].data.size.x = bnds.w - 76;
-        self.text_box[1].data.size.x = bnds.w - 80;
-        try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
-        try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
+            self.text_box[0].data.size.x = bnds.w - 76;
+            self.text_box[1].data.size.x = bnds.w - 80;
+            try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
+            try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
 
-        const text = try std.fmt.allocPrint(allocator, "{c}{s}:{s}", .{ @as(u8, @intFromEnum(self.path.kind)), self.path.domain, self.path.path });
-        defer allocator.free(text);
+            const text = try std.fmt.allocPrint(allocator, "{c}{s}:{s}", .{ @as(u8, @intFromEnum(self.path.kind)), self.path.domain, self.path.path });
+            defer allocator.free(text);
 
-        const tmp = SpriteBatch.global.scissor;
-        SpriteBatch.global.scissor = .{ .x = bnds.x + 34, .y = bnds.y + 4, .w = bnds.w - 8 - 32, .h = 28 };
-        try font.draw(.{
-            .shader = font_shader,
-            .text = text,
-            .pos = .{ .x = bnds.x + 82, .y = bnds.y + 8 },
-            .wrap = bnds.w - 90,
-            .maxlines = 1,
-        });
-        SpriteBatch.global.scissor = tmp;
+            const tmp = SpriteBatch.global.scissor;
+            SpriteBatch.global.scissor = .{ .x = bnds.x + 34, .y = bnds.y + 4, .w = bnds.w - 8 - 32, .h = 28 };
+            try font.draw(.{
+                .shader = font_shader,
+                .text = text,
+                .pos = .{ .x = bnds.x + 82, .y = bnds.y + 8 },
+                .wrap = bnds.w - 90,
+                .maxlines = 1,
+            });
+            SpriteBatch.global.scissor = tmp;
 
-        try SpriteBatch.global.draw(Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
-        try SpriteBatch.global.draw(Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 2 });
+            try SpriteBatch.global.draw(Sprite, &self.icons[0], self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
+            try SpriteBatch.global.draw(Sprite, &self.icons[1], self.shader, .{ .x = bnds.x + 38, .y = bnds.y + 2 });
+        }
     }
 
     pub fn move(self: *Self, x: f32, y: f32) void {
@@ -1105,9 +1111,11 @@ pub const WebData = struct {
     }
 };
 
-pub fn renderFrame(path: []const u8, shader: *Shader, font: *Font) ![640 * 480]u32 {
+pub fn renderFrame(path: []const u8, shader: *Shader, font_shader: *Shader, font: *Font) ![640 * 480]u32 {
     var result: [640 * 480]u32 = undefined;
-    @memset(&result, 0xFF000000); // fill with white
+    @memset(&result, 0xFF0000FF); // fill with white
+
+    log.info("{s}", .{path});
 
     var self: WebData = .{
         .highlight = .atlas("ui", .{
@@ -1138,13 +1146,18 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font: *Font) ![640 * 480]u
                 .size = .{ .x = 32, .y = 32 },
             }),
         },
-        .path = Url.parse(path) catch return result,
+        .path = Url.parse(path) catch |err| {
+            // TODO: add an override or smth
+            log.err("Failed to parse url '{s}' {s}", .{ path, @errorName(err) });
+            return result;
+        },
         .conts = null,
         .shader = shader,
         .links = .init(allocator),
         .hist = .init(allocator),
         .web_idx = web_idx,
         .styles = .init(allocator),
+        .hide_urlbar = true,
     };
 
     web_idx += 1;
@@ -1164,21 +1177,51 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font: *Font) ![640 * 480]u
         .locked = true,
     });
 
+    self.loadPage() catch |err| {
+        self.conts = try allocator.dupe(u8, @errorName(err));
+    };
+
+    // first render the window
+    {
+        var props: Window.Data.WindowContents.WindowProps = .{
+            .info = .{ .kind = "web", .name = "Steam Renderer" },
+            .clear_color = .{ .r = 1, .g = 1, .b = 1 },
+        };
+        var bounds: Rect = .{ .x = 0, .y = 0, .w = 640, .h = 480 };
+        self.bnds = bounds;
+
+        SpriteBatch.global.addEntry(&.{
+            .shader = shader.*,
+            .texture = .none,
+            .verts = try .init(0),
+            .clear = .{ .r = 1, .g = 1, .b = 1 },
+        }) catch |err| {
+            log.err("Failed to blit frame {s}", .{@errorName(err)});
+            return result;
+        };
+        self.draw(font_shader, &bounds, font, &props) catch |err| {
+            log.err("Failed to render frame {s}", .{@errorName(err)});
+            return result;
+        };
+    }
+
     {
         graphics.Context.makeCurrent();
         defer graphics.Context.makeNotCurrent();
-        self.loadPage() catch return result;
-        var props: Window.Data.WindowContents.WindowProps = .{
-            .info = .{ .kind = "web", .name = "Steam Renderer" },
-            .clear_color = .{ .r = 1, .g = 1 , .b = 1 },
+
+        const size = graphics.Context.instance.size;
+        defer graphics.Context.resize(@intFromFloat(size.x), @intFromFloat(size.y));
+        graphics.Context.resize(640, 480);
+
+        SpriteBatch.global.render() catch |err| {
+            log.err("Failed to blit frame {s}", .{@errorName(err)});
+            return result;
         };
-        var bounds: Rect = .{ .x = 0, .y = 0, .w = 640, .h = 480 };
-        self.draw(shader, &bounds, font, &props) catch return result;
-        zgl.flush();
-        zgl.bindFramebuffer(.invalid, .read_buffer);
+        zgl.pixelStore(.unpack_alignment, 1);
+        zgl.pixelStore(.pack_alignment, 1);
         zgl.readBuffer(.back);
-        zgl.readPixels(0, 0, 640, 480, .rgba, .unsigned_int, @ptrCast(&result));
         zgl.flush();
+        zgl.readPixels(0, 0, 640, 480, .rgba, .unsigned_byte, @ptrCast(&result));
     }
 
     return result;

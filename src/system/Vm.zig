@@ -100,6 +100,7 @@ code: ?[]const Operation = null,
 stopped: bool = false,
 errored: bool = false,
 yield: bool = false,
+yield_timer: u64 = 0,
 misc_data: std.StringHashMap([]const u8),
 input: std.array_list.Managed(u8),
 last_exec: usize = 0,
@@ -1001,10 +1002,14 @@ pub fn runTime(self: *Vm, ns: u64, comptime _: bool) !bool {
     }
 
     if (self.yield_data) |yield_data| {
-        if (try yield_data.check(yield_data.data, self)) {
-            yield_data.deinit(yield_data.data, self);
+        self.yield_timer += ns;
+        if (self.yield_timer > 500_000_000) {
+            self.yield_timer -= 500_000_000;
+            if (try yield_data.check(yield_data.data, self)) {
+                yield_data.deinit(yield_data.data, self);
 
-            self.yield_data = null;
+                self.yield_data = null;
+            } else return self.done();
         } else return self.done();
     }
 

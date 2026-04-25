@@ -703,6 +703,8 @@ pub fn runGame() anyerror!void {
 
     try audio.AudioManager.init();
     system.syscalls.main_font = &main_font;
+    system.Shell.font_shader = &font_shader;
+    system.Shell.shader = &shader;
 
     // init graphics
     var graphics_loader: Loader = try .init(loaders.Graphics{ .real_fullscreen = real_fullscreen }, null);

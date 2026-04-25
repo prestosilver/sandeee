@@ -56,7 +56,7 @@ pub fn main() !void {
 
             var folder_list = std.array_list.Managed(*const files.Folder).init(allocator);
             defer folder_list.deinit();
-            try overlay_disk.getFoldersRec(&folder_list);
+            try overlay_disk.getFoldersRec(&folder_list, false);
 
             for (folder_list.items) |folder| {
                 files_root.newFolder(folder.name, true) catch |err| switch (err) {
@@ -67,7 +67,7 @@ pub fn main() !void {
 
             var file_list = std.array_list.Managed(*files.File).init(allocator);
             defer file_list.deinit();
-            try overlay_disk.getFilesRec(&file_list);
+            try overlay_disk.getFilesRec(&file_list, false);
 
             for (file_list.items) |file| {
                 if (file.data != .disk) continue;

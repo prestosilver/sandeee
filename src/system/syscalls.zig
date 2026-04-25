@@ -695,9 +695,10 @@ fn sysSteam(self: *Vm) VmError!void {
                 var folder_list: std.array_list.Managed(*const files.Folder) = .init(self.allocator);
                 defer folder_list.deinit();
 
-                try folder.getFoldersRec(&folder_list);
+                try folder.getFoldersRec(&folder_list, true);
                 for (folder_list.items) |item| {
                     if (item.name.len <= folder.name.len) continue;
+                    if (std.mem.eql(u8, item.name[folder.name.len..], "/")) continue;
 
                     log.debug("Creating Steam upload temp folder '{s}'", .{item.name[folder.name.len..]});
 
@@ -716,7 +717,7 @@ fn sysSteam(self: *Vm) VmError!void {
                 var file_list: std.array_list.Managed(*files.File) = .init(self.allocator);
                 defer file_list.deinit();
 
-                try folder.getFilesRec(&file_list);
+                try folder.getFilesRec(&file_list, true);
                 for (file_list.items) |item| {
                     if (item.name.len <= folder.name.len) continue;
 
@@ -738,21 +739,19 @@ fn sysSteam(self: *Vm) VmError!void {
                 return error.UnknownError;
             };
 
-            const update = ugc.startUpdate(.this_app, @enumFromInt(item_id));
-
-            if (!update.setContent(ugc, content_folder)) {
-                log.warn("failed to upload content", .{});
-
-                return error.UnknownError;
-            }
-
-            const window_path = try std.mem.concat(self.allocator, u8, &.{ path, ":index.edf" });
+            const window_path = try std.mem.concat(self.allocator, u8, &.{ "//:", folder.name, "index.edf" });
             defer self.allocator.free(window_path);
 
-            var window_frame = try windows.web.renderFrame(window_path, system.Shell.shader, main_font);
+            var window_frame = try windows.web.renderFrame(window_path, system.Shell.shader, system.Shell.font_shader, main_font);
 
             var image = zigimg.Image.fromRawPixelsOwned(640, 480, @ptrCast(&window_frame), .rgba32) catch |err| {
-                log.warn("failed to write image {}", .{err});
+                log.warn("failed to create image {}", .{err});
+
+                return error.UnknownError;
+            };
+
+            image.flipVertically(self.allocator) catch |err| {
+                log.warn("failed to flip image {}", .{err});
 
                 return error.UnknownError;
             };
@@ -764,6 +763,14 @@ fn sysSteam(self: *Vm) VmError!void {
                 return error.UnknownError;
             };
 
+            const update = ugc.startUpdate(.this_app, @enumFromInt(item_id));
+
+            if (!update.setContent(ugc, content_folder)) {
+                log.warn("failed to upload content", .{});
+
+                return error.UnknownError;
+            }
+
             var path_buffer: [256]u8 = undefined;
             if (meta_folder.realpath("preview.png", &path_buffer) catch null) |preview_path| {
                 if (!update.setPreview(ugc, preview_path)) {
@@ -771,7 +778,7 @@ fn sysSteam(self: *Vm) VmError!void {
                 }
             }
 
-            const handle = update.submit(ugc, "Update files");
+            const handle = update.submit(ugc, "Upload files");
 
             return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle, .folder = temp_folder });
         }

@@ -486,7 +486,7 @@ pub const Folder = struct {
 
             var files = std.array_list.Managed(*File).init(allocator);
             defer files.deinit();
-            try rec_disk.getFilesRec(&files);
+            try rec_disk.getFilesRec(&files, false);
 
             for (files.items) |file| {
                 if (file.data != .disk) continue;
@@ -508,7 +508,7 @@ pub const Folder = struct {
         } else {
             var files = std.array_list.Managed(*File).init(allocator);
             defer files.deinit();
-            try rec_disk.getFilesRec(&files);
+            try rec_disk.getFilesRec(&files, false);
 
             for (files.items) |file| {
                 if (file.data != .disk) continue;
@@ -601,7 +601,7 @@ pub const Folder = struct {
     pub fn write(self: *Folder, file: std.fs.File) !void {
         var folders = std.array_list.Managed(*const Folder).init(allocator);
         defer folders.deinit();
-        try self.getFoldersRec(&folders);
+        try self.getFoldersRec(&folders, false);
 
         var writer = file.writer(&.{});
 
@@ -613,7 +613,7 @@ pub const Folder = struct {
 
         var files = std.array_list.Managed(*File).init(allocator);
         defer files.deinit();
-        try self.getFilesRec(&files);
+        try self.getFilesRec(&files, false);
 
         try writer.interface.writeInt(u32, @intCast(files.items.len), .big);
         for (files.items) |subfile| {
@@ -713,21 +713,22 @@ pub const Folder = struct {
         return self.folders;
     }
 
-    pub fn getFoldersRec(self: *const Folder, folders: *std.array_list.Managed(*const Folder)) !void {
+    pub fn getFoldersRec(self: *const Folder, folders: *std.array_list.Managed(*const Folder), ignore_siblings: bool) !void {
         if (self.ext == null and !self.protected) {
             try folders.append(self);
         }
 
-        if (self.next_sibling) |sibling|
-            try sibling.getFoldersRec(folders);
+        if (!ignore_siblings)
+            if (self.next_sibling) |sibling|
+                try sibling.getFoldersRec(folders, false);
 
         if (self.ext == null and !self.protected) {
             if (self.folders) |folder|
-                try folder.getFoldersRec(folders);
+                try folder.getFoldersRec(folders, false);
         }
     }
 
-    pub fn getFilesRec(self: *const Folder, files: *std.array_list.Managed(*File)) !void {
+    pub fn getFilesRec(self: *const Folder, files: *std.array_list.Managed(*File), ignore_siblings: bool) !void {
         if (self.ext == null and !self.protected) {
             if (self.protected) return;
             if (self.ext != null) return;
@@ -739,11 +740,12 @@ pub const Folder = struct {
             }
 
             if (self.folders) |folder|
-                try folder.getFilesRec(files);
+                try folder.getFilesRec(files, false);
         }
 
-        if (self.next_sibling) |sibling|
-            try sibling.getFilesRec(files);
+        if (!ignore_siblings)
+            if (self.next_sibling) |sibling|
+                try sibling.getFilesRec(files, false);
     }
 
     fn sortFiles(_: bool, a: *File, b: *File) bool {
@@ -1099,7 +1101,7 @@ pub const Folder = struct {
 
         var folders = std.array_list.Managed(*const Folder).init(allocator);
         defer folders.deinit();
-        try self.getFoldersRec(&folders);
+        try self.getFoldersRec(&folders, false);
 
         var len = [4]u8{ 0, 0, 0, 0 };
 
@@ -1113,7 +1115,7 @@ pub const Folder = struct {
 
         var files = std.array_list.Managed(*File).init(allocator);
         defer files.deinit();
-        try self.getFilesRec(&files);
+        try self.getFilesRec(&files, false);
 
         std.mem.writeInt(u32, &len, @as(u32, @intCast(files.items.len)), .big);
         try result.appendSlice(&len);

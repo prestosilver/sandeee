@@ -54,6 +54,7 @@ pub const Result = struct {
 };
 
 pub var shader: *Shader = undefined;
+pub var font_shader: *Shader = undefined;
 
 const ShellError = error{
     MissingParameter,
