@@ -47,10 +47,10 @@
 - [X] New partial disk scripted recovery system
 - [X] zig build upload_itch_release
 - [X] Double check wording in demo emails
-- [ ] Breakout UI for consistency!!!
+- [X] Workshop previews
 - [ ] EDS Background color
-- [ ] Workshop previews
 - [ ] Workshop favorites
+- [ ] Breakout UI for consistency!!!
 - [ ] SandEEE install should be configurable somehow, cli flag probably.
 - [ ] zig test should check www for dead links
 - [ ] zig build steam_changelog
