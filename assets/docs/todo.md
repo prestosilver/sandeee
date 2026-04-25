@@ -48,7 +48,7 @@
 - [X] zig build upload_itch_release
 - [X] Double check wording in demo emails
 - [X] Workshop previews
-- [ ] EDS Background color
+- [X] EDS Background color
 - [ ] Workshop favorites
 - [ ] Breakout UI for consistency!!!
 - [ ] SandEEE install should be configurable somehow, cli flag probably.

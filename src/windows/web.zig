@@ -235,6 +235,7 @@ pub const WebData = struct {
         ali: Align = .Left,
         scale: f32 = 1.0,
         color: Color = .{ .r = 0, .g = 0, .b = 0 },
+        background: Color = .{ .r = 1, .g = 1, .b = 1 },
         locked: bool = false,
         suffix: ?[]const u8 = null,
         prefix: ?[]const u8 = null,
@@ -254,6 +255,7 @@ pub const WebData = struct {
 
     highlight: Sprite,
     menubar: Sprite,
+    white_box: Sprite,
     text_box: [2]Sprite,
     icons: [2]Sprite,
     path: Url,
@@ -600,6 +602,15 @@ pub const WebData = struct {
                     log.warn("Cannot parse style scale f32({s})", .{prop_value});
                     continue;
                 };
+            } else if (std.mem.eql(u8, prop_name, "background")) {
+                if (prop_value.len == 6) {
+                    current_style.background = Color.parseColor(prop_value[0..6].*) catch {
+                        log.warn("Cannot parse style background '{s}'", .{prop_value});
+                        continue;
+                    };
+                } else {
+                    log.warn("Cannot parse style background '{s}'", .{prop_value});
+                }
             } else if (std.mem.eql(u8, prop_name, "color")) {
                 if (prop_value.len == 6) {
                     current_style.color = Color.parseColor(prop_value[0..6].*) catch {
@@ -679,6 +690,12 @@ pub const WebData = struct {
             };
         }
 
+        {
+            const style: Style = self.styles.get("") orelse .{};
+
+            props.clear_color = style.background;
+        }
+
         if (self.scroll_top) {
             props.scroll.?.value = 0;
             self.scroll_top = false;
@@ -714,6 +731,8 @@ pub const WebData = struct {
             var texid = [_]u8{ 'w', 'e', 'b', '_', 0, 0 };
             texid[4] = 0;
             texid[5] = self.web_idx;
+
+            self.white_box.data.size.x = self.bnds.w;
 
             // draw text
             while (iter.next()) |full_line| {
@@ -761,6 +780,10 @@ pub const WebData = struct {
                     }
 
                     const size = TextureManager.instance.get(&texid).?.size.mul(2 * style.scale);
+
+                    self.white_box.data.color = style.background;
+                    self.white_box.data.size.y = size.y;
+                    try SpriteBatch.global.draw(Sprite, &self.white_box, self.shader, .{ .x = bnds.x, .y = bnds.y + 6 + pos.y });
 
                     switch (style.ali) {
                         .Center => {
@@ -852,6 +875,10 @@ pub const WebData = struct {
                 defer allocator.free(aline);
 
                 const size = font.sizeText(.{ .text = aline, .scale = style.scale, .wrap = web_width });
+
+                self.white_box.data.color = style.background;
+                self.white_box.data.size.y = size.y;
+                try SpriteBatch.global.draw(Sprite, &self.white_box, self.shader, .{ .x = bnds.x, .y = bnds.y + 6 + pos.y });
 
                 if (pos.y > 0 and pos.y + size.y - 20 < bnds.h) {
                     switch (style.ali) {
@@ -1115,8 +1142,7 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font_shader: *Shader, font
     var result: [640 * 480]u32 = undefined;
     @memset(&result, 0xFF0000FF); // fill with white
 
-    log.info("{s}", .{path});
-
+    // TODO: This should be freed
     var self: WebData = .{
         .highlight = .atlas("ui", .{
             .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
@@ -1125,6 +1151,10 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font_shader: *Shader, font
         .menubar = .atlas("ui", .{
             .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
             .size = .{ .y = 40 },
+        }),
+        .white_box = .atlas("white", .{
+            .source = .{ .x = 0.0, .y = 0.0, .w = 1.0, .h = 1.0 },
+            .size = .{ .x = 1, .y = 1 },
         }),
         .text_box = .{
             .atlas("ui", .{
@@ -1190,11 +1220,19 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font_shader: *Shader, font
         var bounds: Rect = .{ .x = 0, .y = 0, .w = 640, .h = 480 };
         self.bnds = bounds;
 
+        self.draw(font_shader, &bounds, font, &props) catch |err| {
+            log.err("Failed to render frame {s}", .{@errorName(err)});
+            return result;
+        };
+        SpriteBatch.global.clear() catch |err| {
+            log.err("Failed to blit frame {s}", .{@errorName(err)});
+            return result;
+        };
         SpriteBatch.global.addEntry(&.{
             .shader = shader.*,
             .texture = .none,
             .verts = try .init(0),
-            .clear = .{ .r = 1, .g = 1, .b = 1 },
+            .clear = props.clear_color,
         }) catch |err| {
             log.err("Failed to blit frame {s}", .{@errorName(err)});
             return result;
@@ -1240,6 +1278,10 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         .menubar = .atlas("ui", .{
             .source = .{ .x = 4.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 4.0 / 8.0 },
             .size = .{ .y = 40 },
+        }),
+        .white_box = .atlas("white", .{
+            .source = .{ .x = 0.0, .y = 0.0, .w = 1.0, .h = 1.0 },
+            .size = .{ .x = 1, .y = 1 },
         }),
         .text_box = .{
             .atlas("ui", .{
