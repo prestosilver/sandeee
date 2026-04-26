@@ -302,26 +302,22 @@ pub const WebData = struct {
             .initAll(.ranked_by_vote, .items, .none, .this_app, page + 1);
         defer query.deinit();
 
-        if (query_text.len != 0 and !mine) {
+        if (query_text.len != 0 and !mine)
             try query.setSearchText(query_text);
-        }
 
         const handle = query.send();
-
         if (handle.isInvalid())
+            // TODO: remove
             return error.UnknownError;
 
         var failed = true;
-        while (!handle.isComplete(&failed)) {
+        while (!handle.isComplete(&failed))
             std.Thread.sleep(200_000_000);
-        }
 
-        if (failed) {
-            return try std.fmt.allocPrint(allocator, "{s}", .{"Error: Steam query failed"});
-        }
+        if (failed) return try std.fmt.allocPrint(allocator, "{s}", .{"Error: Steam query failed"});
 
-        const details = try allocator.create(steam.UGC.ItemDetails);
-        defer allocator.destroy(details);
+        var details: steam.UGC.ItemDetails = undefined;
+        details.result = @enumFromInt(0);
 
         var conts_writer: std.Io.Writer.Allocating = .init(allocator);
         errdefer conts_writer.deinit();
@@ -334,7 +330,7 @@ pub const WebData = struct {
 
         var added = false;
         var idx: u32 = 0;
-        while (query.getResult(idx, details)) : (idx += 1) {
+        while (query.getResult(idx, &details)) : (idx += 1) {
             if (details.result != .ok) {
                 log.warn("Query error: {s}", .{@tagName(details.result)});
                 break;
@@ -363,8 +359,11 @@ pub const WebData = struct {
             \\-- No Results --
             \\
             \\
-            \\ > Return to page 1: $list0:{s}
+            \\> Return to page 1: $list0:{s}
         , .{query_text}) else {
+            // no navigation when no results since
+            // previous and next page dont make sense
+
             if (page != 0) try conts_writer.writer.print(
                 \\> Previous page: $list{}:{s}
                 \\
