@@ -12,6 +12,7 @@
 - [X] Scroll bars aren't scrolling
 - [X] Steamtool item id is not labeled right
 - [X] Keyboard localization is screwed
+- [ ] Steam web crashes game on unknown page
 - [ ] Possible crash on email VM calls
 - [ ] Wordwrap in console
 - [ ] VMS don't close on crash, meaning they can lag the crash state.
@@ -50,6 +51,9 @@
 - [X] Workshop previews
 - [X] EDS Background color
 - [ ] Workshop favorites
+    - [X] Show in list
+    - [ ] Dedicated list
+- [ ] Workshop versions
 - [ ] Breakout UI for consistency!!!
 - [ ] SandEEE install should be configurable somehow, cli flag probably.
 - [ ] zig test should check www for dead links

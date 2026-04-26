@@ -281,7 +281,7 @@ pub const WebData = struct {
 
     link_lock: std.Thread.Mutex = .{},
     image_lock: std.Thread.Mutex = .{},
-    steam_loaded_file_id: ?steam.PublishedFileId = null,
+    steam_loaded_file_id: ?steam.UGC.PublishedFile = null,
 
     pub fn resetLinks(self: *Self) void {
         self.link_lock.lock();
@@ -296,23 +296,23 @@ pub const WebData = struct {
     }
 
     pub fn steamList(page: u32, mine: bool, query_text: [:0]const u8) ![]const u8 {
-        const ugc = steam.getSteamUGC();
-        const query = if (mine)
-            ugc.createUserQueryRequest(steam.getUser().getSteamId(), .published, 0, .create_asc, .none, .this_app, page + 1)
+        const query: steam.UGC.Query = if (mine)
+            .initUser(steam.getUser().getSteamId(), .published, 0, .create_asc, .none, .this_app, page + 1)
         else
-            ugc.createQueryRequest(.ranked_by_vote, .items, .none, .this_app, page + 1);
-
-        defer query.deinit(ugc);
+            .initAll(.ranked_by_vote, .items, .none, .this_app, page + 1);
+        defer query.deinit();
 
         if (query_text.len != 0 and !mine) {
-            try query.setSearchText(ugc, query_text);
+            try query.setSearchText(query_text);
         }
 
-        const handle = ugc.sendQueryRequest(query);
-        const steam_utils = steam.getSteamUtils();
+        const handle = query.send();
+
+        if (handle.isInvalid())
+            return error.UnknownError;
 
         var failed = true;
-        while (!steam_utils.isCallComplete(handle, &failed)) {
+        while (!handle.isComplete(&failed)) {
             std.Thread.sleep(200_000_000);
         }
 
@@ -323,85 +323,76 @@ pub const WebData = struct {
         const details = try allocator.create(steam.UGC.ItemDetails);
         defer allocator.destroy(details);
 
-        const prev = try std.fmt.allocPrint(allocator, "> prev: $list{}:{s}\n", .{ if (page == 0) 0 else page - 1, query_text });
-        const next = try std.fmt.allocPrint(allocator, "> next: $list{}:{s}\n", .{ page + 1, query_text });
-        defer allocator.free(prev);
-        defer allocator.free(next);
+        var conts_writer: std.Io.Writer.Allocating = .init(allocator);
+        errdefer conts_writer.deinit();
 
-        const nav = try std.mem.concat(allocator, u8, &.{
-            if (page != 0) prev else "prev\n",
-            next,
-        });
-        defer allocator.free(nav);
-
-        var conts = try std.fmt.allocPrint(allocator, "- Steam List -\n-- Page {} --\n", .{page + 1});
-        var idx: u32 = 0;
+        try conts_writer.writer.print(
+            \\- Steam List -
+            \\-- Page {} --
+            \\
+        , .{page + 1});
 
         var added = false;
+        var idx: u32 = 0;
+        while (query.getResult(idx, details)) : (idx += 1) {
+            if (details.result != .ok) {
+                log.warn("Query error: {s}", .{@tagName(details.result)});
+                break;
+            }
 
-        while (ugc.getQueryResult(query, idx, details)) : (idx += 1) {
             added = true;
 
-            if (steam.fake_api) {
-                const old = conts;
-                defer allocator.free(old);
+            const state = details.file_id.getItemState();
 
-                const title_text = try std.fmt.allocPrint(allocator, "--- {s} ---", .{details.title});
-                defer allocator.free(title_text);
-
-                const desc_text = try std.fmt.allocPrint(allocator, "{s}\n> link: $item{}:", .{ details.desc, @intFromEnum(details.file_id) });
-                defer allocator.free(desc_text);
-
-                conts = try std.mem.concat(allocator, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
-            } else {
-                const old = conts;
-                defer allocator.free(old);
-
-                const title: [*:0]u8 = @ptrCast(&details.title);
-
-                const title_text = try std.fmt.allocPrint(allocator, "--- {s} ---", .{std.mem.span(title)});
-                defer allocator.free(title_text);
-
-                const desc: [*:0]u8 = @ptrCast(&details.desc);
-                const desc_text = try std.fmt.allocPrint(allocator, "{s}\n> link: $item{}:", .{ std.mem.span(desc), @intFromEnum(details.file_id) });
-                defer allocator.free(desc_text);
-
-                conts = try std.mem.concat(allocator, u8, &.{ old, title_text, "\n", desc_text, "\n\n" });
-            }
+            try conts_writer.writer.print(
+                \\--- {s} --- {s}
+                \\{s}
+                \\> link: $item{}:
+                \\
+                \\
+            , .{
+                details.titleSlice(),
+                if (state.subscribed) "Favorite " ++ strings.SMILE else "",
+                details.descSlice(),
+                @intFromEnum(details.file_id),
+            });
         }
 
-        if (!added) {
-            const old = conts;
-            defer allocator.free(old);
+        if (!added) try conts_writer.writer.print(
+            \\
+            \\-- No Results --
+            \\
+            \\
+            \\ > Return to page 1: $list0:{s}
+        , .{query_text}) else {
+            if (page != 0) try conts_writer.writer.print(
+                \\> Previous page: $list{}:{s}
+                \\
+            , .{ if (page == 0) 0 else page - 1, query_text }) else try conts_writer.writer.writeAll("prev\n");
 
-            conts = try std.mem.concat(allocator, u8, &.{ old, "\n-- No Results --\n> Page 1: $list0:\n\n", query_text });
+            try conts_writer.writer.print(
+                \\> Next page: $list{}:{s}
+                \\
+            , .{ page + 1, query_text });
         }
 
-        {
-            const old = conts;
-            defer allocator.free(old);
-
-            conts = try std.mem.concat(allocator, u8, &.{ old, nav });
-        }
-
-        return conts;
+        return conts_writer.toOwnedSlice();
     }
 
-    pub fn steamItem(self: *Self, id: steam.PublishedFileId, url: Url) ![]const u8 {
-        const ugc = steam.getSteamUGC();
+    pub fn steamItem(self: *Self, id: steam.UGC.PublishedFile, url: Url) ![]const u8 {
         const BUFFER_SIZE = 256;
 
         {
-            const state = ugc.getItemState(id);
+            const state = id.getItemState();
             log.debug("Steam item {} has state {}", .{ @intFromEnum(id), state });
         }
 
-        if (!ugc.downloadItem(id, true)) {
+        if (!id.download(true)) {
             return try std.fmt.allocPrint(allocator, "Error: Failed to start steam download.", .{});
         }
 
         while (true) {
-            const state = ugc.getItemState(id);
+            const state = id.getItemState();
 
             if (!state.downloading and !state.downloadpending) {
                 break;
@@ -414,7 +405,7 @@ pub const WebData = struct {
         var timestamp: u32 = 0;
         var folder = std.mem.zeroes([BUFFER_SIZE + 1]u8);
 
-        if (!ugc.getItemInstallInfo(id, &size, &folder, &timestamp))
+        if (!id.getInstallInfo(&size, &folder, &timestamp))
             return error.SteamDownloadError;
 
         const folder_pointer = std.mem.span(@as([*:0]u8, @ptrCast(&folder)));
@@ -432,7 +423,7 @@ pub const WebData = struct {
             const cont = try reader.interface.allocRemaining(allocator, .unlimited);
 
             // Returns a handle
-            _ = ugc.startPlaytimeTracking(&.{id});
+            _ = steam.UGC.startPlaytimeTracking(&.{id});
             self.steam_loaded_file_id = id;
 
             return cont;
@@ -453,7 +444,7 @@ pub const WebData = struct {
             const cont = try reader.interface.allocRemaining(allocator, .unlimited);
 
             // Returns a handle
-            _ = ugc.startPlaytimeTracking(&.{id});
+            _ = steam.UGC.startPlaytimeTracking(&.{id});
             self.steam_loaded_file_id = id;
 
             return cont;
@@ -478,7 +469,7 @@ pub const WebData = struct {
 
         // Returns a handle
         if (options.is_steam) {
-            _ = ugc.startPlaytimeTracking(&.{id});
+            _ = steam.UGC.startPlaytimeTracking(&.{id});
             self.steam_loaded_file_id = id;
         }
 
@@ -488,9 +479,7 @@ pub const WebData = struct {
     pub fn clearPlaying(self: *Self) !void {
         if (options.is_steam) {
             if (self.steam_loaded_file_id) |file_id| {
-                const ugc = steam.getSteamUGC();
-                // Returns a handle
-                _ = ugc.stopPlaytimeTracking(&.{file_id});
+                _ = steam.UGC.stopPlaytimeTracking(&.{file_id});
                 self.steam_loaded_file_id = null;
             }
         }

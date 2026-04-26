@@ -97,7 +97,7 @@ pub const steam_options = struct {
     else
         4124360;
     pub const ugc_app_id = 4124360;
-    pub const alloc = allocator;
+    pub const allocator = util.allocator;
 };
 
 // embed shaders
@@ -195,10 +195,6 @@ var depth_render_buffer: zgl.Renderbuffer = .invalid;
 // fps tracking
 var final_fps: f32 = 60;
 var show_fps: bool = false;
-
-// steam
-var steam_user_stats: *const steam.UserStats = undefined;
-var steam_utils: *const steam.Utils = undefined;
 
 var crt_enable = true;
 
@@ -687,9 +683,6 @@ pub fn runGame() anyerror!void {
         }
 
         try steam.init();
-
-        steam_utils = steam.getSteamUtils();
-        steam_user_stats = steam.getUserStats();
 
         // TODO: cleanup downloads maybe?
     }
