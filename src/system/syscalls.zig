@@ -495,29 +495,8 @@ const SteamYieldCreate = struct {
     handle: steam.APIHandle,
 
     pub fn check(self: *SteamYieldCreate, vm_instance: *Vm) VmError!bool {
-        var failed: bool = false;
-
-        if (!self.handle.isComplete(&failed))
-            return false;
-
-        if (failed)
-            return error.UnknownError;
-        failed = false;
-
-        var result: steam.callback.CreateItem = undefined;
-        if (!self.handle.getResult(
-            steam.callback.CreateItem,
-            &result,
-            &failed,
-        ))
-            return error.UnknownError;
-
-        if (result.result != .ok) {
-            log.info("{}", .{result.result});
-
-            return error.UnknownError;
-        }
-
+        if (!self.handle.isComplete()) return false;
+        const result = try self.handle.getResult(steam.callback.CreateItem);
         try vm_instance.pushStackI(@intFromEnum(result.file_id));
 
         return true;
@@ -529,24 +508,9 @@ const SteamYieldUpdate = struct {
     folder: ?std.fs.Dir = null,
 
     pub fn check(self: *SteamYieldUpdate, vm_instance: *Vm) VmError!bool {
-        var failed: bool = false;
-
-        if (!self.handle.isComplete(&failed))
-            return false;
-
-        if (failed)
-            return error.UnknownError;
-
-        failed = false;
-
-        var result: steam.callback.UpdateItem = undefined;
-
-        if (!self.handle.getResult(
-            steam.callback.UpdateItem,
-            &result,
-            &failed,
-        ))
-            return error.UnknownError;
+        if (!self.handle.isComplete()) return false;
+        const result = try self.handle.getResult(steam.callback.UpdateItem);
+        try result.result.check();
 
         try vm_instance.pushStackI(0);
 
@@ -579,30 +543,32 @@ fn sysSteam(self: *Vm) VmError!void {
 
             if (split.next() != null) break :set_data;
 
-            const item_id: steam.UGC.PublishedFile = @enumFromInt(std.fmt.parseInt(usize, item_str, 10) catch {
+            const item: steam.UGC.PublishedFile = @enumFromInt(std.fmt.parseInt(usize, item_str, 10) catch {
                 log.warn("Bad steam metadata id {s} in set", .{data[1..]});
 
                 return error.UnknownError;
             });
 
             if (std.mem.eql(u8, prop, "title")) {
-                const update = item_id.startUpdate(.this_app);
+                const title = try self.allocator.dupeZ(u8, value);
+                defer self.allocator.free(title);
 
-                if (!update.setTitle(value))
-                    return error.UnknownError;
+                const update = try item.startUpdate(.this_app);
+                try update.setTitle(title);
 
-                const handle = update.submit("Update Title");
+                const handle = try update.submit("Update title");
 
                 return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle });
             }
 
             if (std.mem.eql(u8, prop, "description")) {
-                const update = item_id.startUpdate(.this_app);
+                const desc = try self.allocator.dupeZ(u8, value);
+                defer self.allocator.free(desc);
 
-                if (!update.setDescription(value))
-                    return error.UnknownError;
+                const update = try item.startUpdate(.this_app);
+                try update.setDescription(desc);
 
-                const handle = update.submit("Update Desc");
+                const handle = try update.submit("Update description");
 
                 return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle });
             }
@@ -622,12 +588,10 @@ fn sysSteam(self: *Vm) VmError!void {
                     return error.UnknownError;
                 };
 
-                const update = item_id.startUpdate(.this_app);
+                const update = try item.startUpdate(.this_app);
+                try update.setVisibility(parsed);
 
-                if (!update.setVisibility(parsed))
-                    return error.UnknownError;
-
-                const handle = update.submit("Update Desc");
+                const handle = try update.submit("Update visibility");
 
                 return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle });
             }
@@ -721,7 +685,7 @@ fn sysSteam(self: *Vm) VmError!void {
                 }
             }
 
-            const item_id: steam.UGC.PublishedFile = @enumFromInt(std.fmt.parseInt(usize, item_str, 10) catch {
+            const item: steam.UGC.PublishedFile = @enumFromInt(std.fmt.parseInt(usize, item_str, 10) catch {
                 log.warn("Bad steam upload files id {s}", .{data[1..]});
 
                 return error.UnknownError;
@@ -751,22 +715,18 @@ fn sysSteam(self: *Vm) VmError!void {
                 return error.UnknownError;
             };
 
-            const update = item_id.startUpdate(.this_app);
-
-            if (!update.setContent(content_folder)) {
-                log.warn("failed to upload content", .{});
-
-                return error.UnknownError;
-            }
+            const update = try item.startUpdate(.this_app);
+            try update.setContent(content_folder);
 
             var path_buffer: [256]u8 = undefined;
-            if (meta_folder.realpath("preview.png", &path_buffer) catch null) |preview_path| {
-                if (!update.setPreview(preview_path)) {
-                    log.warn("Failed to add content preview", .{});
-                }
-            }
+            if (meta_folder.realpath("preview.png", &path_buffer)) |preview_path| {
+                const preview_file = try self.allocator.dupeZ(u8, preview_path);
+                defer self.allocator.free(preview_file);
 
-            const handle = update.submit("Upload files");
+                try update.setPreview(preview_file);
+            } else |_| {}
+
+            const handle = try update.submit("Upload files");
 
             return self.yieldUntil(SteamYieldUpdate, .{ .handle = handle, .folder = temp_folder });
         }

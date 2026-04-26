@@ -306,15 +306,11 @@ pub const WebData = struct {
             try query.setSearchText(query_text);
 
         const handle = query.send();
-        if (handle.isInvalid())
-            // TODO: remove
-            return error.UnknownError;
 
-        var failed = true;
-        while (!handle.isComplete(&failed))
+        while (!handle.isComplete())
             std.Thread.sleep(200_000_000);
 
-        if (failed) return try std.fmt.allocPrint(allocator, "{s}", .{"Error: Steam query failed"});
+        const query_result = try handle.getResult(steam.callback.UGCQueryCompleted);
 
         var details: steam.UGC.ItemDetails = undefined;
         details.result = @enumFromInt(0);
@@ -328,51 +324,50 @@ pub const WebData = struct {
             \\
         , .{page + 1});
 
+        log.info("{}", .{query_result});
+
         var added = false;
         var idx: u32 = 0;
-        while (query.getResult(idx, &details)) : (idx += 1) {
-            if (details.result != .ok) {
-                log.warn("Query error: {s}", .{@tagName(details.result)});
-                break;
+        if (query_result.num_results > 0) {
+            while (query.getResult(idx, &details)) : (idx += 1) {
+                added = true;
+
+                const state = details.file_id.getItemState();
+
+                try conts_writer.writer.print(
+                    \\--- {s} --- {s}
+                    \\{s}
+                    \\> link: $item{}:
+                    \\
+                    \\
+                , .{
+                    details.titleSlice(),
+                    if (state.subscribed) "Favorite " ++ strings.SMILE else "",
+                    details.descSlice(),
+                    @intFromEnum(details.file_id),
+                });
             }
 
-            added = true;
-
-            const state = details.file_id.getItemState();
-
-            try conts_writer.writer.print(
-                \\--- {s} --- {s}
-                \\{s}
-                \\> link: $item{}:
+            if (!added) try conts_writer.writer.print(
+                \\
+                \\-- No Results --
                 \\
                 \\
-            , .{
-                details.titleSlice(),
-                if (state.subscribed) "Favorite " ++ strings.SMILE else "",
-                details.descSlice(),
-                @intFromEnum(details.file_id),
-            });
-        }
+                \\> Return to page 1: $list0:{s}
+            , .{query_text}) else {
+                // no navigation when no results since
+                // previous and next page dont make sense
 
-        if (!added) try conts_writer.writer.print(
-            \\
-            \\-- No Results --
-            \\
-            \\
-            \\> Return to page 1: $list0:{s}
-        , .{query_text}) else {
-            // no navigation when no results since
-            // previous and next page dont make sense
+                if (page != 0) try conts_writer.writer.print(
+                    \\> Previous page: $list{}:{s}
+                    \\
+                , .{ if (page == 0) 0 else page - 1, query_text }) else try conts_writer.writer.writeAll("prev\n");
 
-            if (page != 0) try conts_writer.writer.print(
-                \\> Previous page: $list{}:{s}
-                \\
-            , .{ if (page == 0) 0 else page - 1, query_text }) else try conts_writer.writer.writeAll("prev\n");
-
-            try conts_writer.writer.print(
-                \\> Next page: $list{}:{s}
-                \\
-            , .{ page + 1, query_text });
+                try conts_writer.writer.print(
+                    \\> Next page: $list{}:{s}
+                    \\
+                , .{ page + 1, query_text });
+            }
         }
 
         return conts_writer.toOwnedSlice();
@@ -405,7 +400,7 @@ pub const WebData = struct {
         var folder = std.mem.zeroes([BUFFER_SIZE + 1]u8);
 
         if (!id.getInstallInfo(&size, &folder, &timestamp))
-            return error.SteamDownloadError;
+            return error.FileNotFound;
 
         const folder_pointer = std.mem.span(@as([*:0]u8, @ptrCast(&folder)));
 

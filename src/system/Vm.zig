@@ -1,5 +1,7 @@
 const std = @import("std");
+const steam = @import("steam");
 const builtin = @import("builtin");
+const options = @import("options");
 const c = @import("../c.zig");
 
 const system = @import("../system.zig");
@@ -59,8 +61,9 @@ pub const VmError = error{
 
     NotImplemented,
     UnknownFunction,
+
     Todo,
-} || Stream.StreamError;
+} || Stream.StreamError || if (options.is_steam) steam.Error else error{};
 
 const StackEntryKind = enum {
     string,
