@@ -608,8 +608,12 @@ fn main() {
 - Every version starts with a codeword for the program its representing
   - This is lowercase
 - This is followed by a colon(`:`)
-- This is followed by the state of the program, in our world there is alpha, beta, release, in SandEEE there is Seed, Sapling, Tree
+- This is followed by the state of the program, in our world there is alpha, beta, release, and final, in SandEEE there is Seed, Sapling, Tree, and Ash
   - This is lowercase
+  - Tree shall be used for releases that are not yet a minimal viable build
+  - Tree shall be used for releases that are fully functional but not feature complete
+  - Tree shall be used for releases that are feature complete, subsequent trees are security or major updates.
+  - Ash shall be used to specify an application is sunset and will not recieve even security updates.
 - Finally there is a hashtag(`#`) followed by the current public build, and a underscore(`_`) for the build number
 - On a major increment seed->sapling the number resets
 - Bug fixes shall not increment the version, but they shall increment the build
@@ -621,6 +625,7 @@ Examples:
 os:seed#3_542     -> Development build 542 of third public seed build
 os:sapling#0_1034 -> First sapling release (reset)
 os:tree#0_30545   -> Initial stable release
+os:ash#0_543825   -> A sunsetting release
 ```
 
 ### Programs internal ids

@@ -1123,6 +1123,7 @@ pub const WebData = struct {
 
 pub fn renderFrame(path: []const u8, shader: *Shader, font_shader: *Shader, font: *Font) ![640 * 480]u32 {
     var result: [640 * 480]u32 = undefined;
+    // TODO: default image
     @memset(&result, 0xFF0000FF); // fill with white
 
     // TODO: This should be freed
