@@ -2,7 +2,11 @@
 
 > This is sorted by priority, please keep it that way :wink:.
 
+List priority goes Bugs->Fixes->Todo
+
 ## Known Bugs
+
+These are fixes for behaviours that are implemented wrong.
 
 - [X] Editor selection color wrong
 - [X] Back button works in web when no history exists
@@ -12,18 +16,23 @@
 - [X] Scroll bars aren't scrolling
 - [X] Steamtool item id is not labeled right
 - [X] Keyboard localization is screwed
+- [ ] Wth is up with popups!!
 - [ ] Steam web crashes game on unknown page
 - [ ] Possible crash on email VM calls
 - [ ] Wordwrap in console
-- [ ] VMS don't close on crash, meaning they can lag the crash state.
+- [ ] Disks files are unordered everywhere, sort on save
+- [ ] VMS don't stop on crash, meaning they can lag the crash state.
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
 - [ ] Restoring and installing a disk drops frames
-- [ ] Disks files are unordered everywhere, sort on save
 - [ ] Task manager can fullscreen and renders wrong
 - [ ] Steam in web can lag the game
-- [ ] Github actions doesnt test `-Dsteam=On`
+- [ ] Notification text can cut off
+- [ ] _*_meta files should not copy to disk on install
+- [ ] Crash screen should display relative paths
 
 ## Minor non bug fixes
+
+These are tasks that dont fix existing behaviour, but improve accessability for any demograhic (Including everyone).
 
 - [X] Error when web content type is not either "application/octet-stream" or "text/eeedocument"
 - [X] Unify double click
@@ -31,44 +40,52 @@
 - [X] Fix random mem leak on tests
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
-- [ ] Fix program names and versions
-  - [X] Merge BootEEE
-  - [ ] Breakout other versions to `strings.zig`
 - [ ] Add actual pickers to settings ui
+- [ ] Accessibility wizard
+  - [ ] In BootEEE
+  - [ ] On first boot
 - [ ] <=> in font should not connect at all
 - [ ] All buttons should look disabled when disabled
-- [ ] Add consistent id+iota type utility
-- [ ] Load progress on web
-- [ ] Auto fix capitalization in changelog gen
+- [ ] Show load progress on web
+- [ ] Workshop item SandEEE version tags
 - [ ] Control the dithering, and crt of the shader separately
+- [ ] Auto fix capitalization in changelog gen
+- [ ] SandEEE install disk cli flags
 - [ ] Separate build for debug bc different appids!
+- [ ] Translation system
+- [ ] Consistent color parsing
+- [ ] Steam tool transfer from demo.
+
+## Refactor todo
+
+These are tasks that only affect the codebase.
+
+- [ ] zig test should check www for dead links
+- [ ] Breakout UI for consistency!!!
+- [ ] Add consistent id+iota type utility
+- [X] zig build upload_itch_release
+- [ ] zig build steam_changelog
+- [ ] zig build itch_changelog
+- [ ] Move runSandEEE to a subfolder somewhere (in repo)
+- [ ] Github actions doesnt test `-Dsteam=On`
+- [ ] Zig 0.16
+
 
 ## General tentative todo
 
+These are tasks that include adding new features to the game, or arent covered by the other two lists.
+
 - [X] New partial disk scripted recovery system
-- [X] zig build upload_itch_release
 - [X] Double check wording in demo emails
 - [X] Workshop previews
 - [X] EDS Background color
 - [ ] Workshop favorites
     - [X] Show in list
     - [ ] Dedicated list
-- [ ] Workshop versions
-- [ ] Breakout UI for consistency!!!
-- [ ] SandEEE install should be configurable somehow, cli flag probably.
-- [ ] zig test should check www for dead links
-- [ ] zig build steam_changelog
-- [ ] zig build itch_changelog
+- [ ] Fix program names and versions
+  - [X] Merge BootEEE
+  - [ ] Breakout other versions to `strings.zig`
+- [ ] Add a credits app
 - [ ] Inter email box conditions
 - [ ] Embed file fix
 - [ ] Update email content
-- [ ] Change email unlocked to key based
-- [ ] Accessibility settings in bios somewhere!
-- [ ] Consistent color parsing
-- [ ] Email notification text is cut off a bit.
-- [ ] Don't copy _*_meta files on disk install
-- [ ] Crash screen should be relative paths
-- [ ] Move runSandEEE to a subfolder somewhere (in repo)
-- [ ] Steam tool transfer from demo.
-- [ ] Some sort of credits.
-- [ ] Zig 0.16

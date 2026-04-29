@@ -65,6 +65,69 @@
     - [X] Run `zig build www`
     - [X] Push www submodule to github
 
+## os:seed#11
+
+- [ ] Planned features
+  - [ ] Fixed pupups
+  - [ ] New versions
+  - [ ] Fix email bug?
+  - [ ] Reword README
+  - [ ] Fix steam upload bugs
+- [ ] Going into release day
+  - [ ] Grammar
+    - [ ] Check spelling in all emails
+    - [ ] Ensure no bad commits are in changelog
+  - [ ] Automatic
+    - [ ] Pass all zig tests
+    - [ ] Successfully fuzz for 2 hours
+  - [ ] Manual tests
+    - [ ] Run steam demo on windows vm
+      - [ ] Test all disks in /disks
+      - [ ] Make a disk
+    - [ ] Run steam demo on linux vm
+      - [ ] Test all disks in /disks
+      - [ ] Make a disk
+    - [ ] Run itch demo on windows vm
+      - [ ] Test all disks in /disks
+      - [ ] Make a disk
+    - [ ] Run itch demo on linux vm
+      - [ ] Test all disks in /disks
+      - [ ] Make a disk
+    - [ ] Run steam on windows vm
+      - [ ] Test all disks in /disks
+      - [ ] Transfer a demo disk
+      - [ ] Make a disk
+    - [ ] Run steam on linux vm
+      - [ ] Test all disks in /disks
+      - [ ] Transfer a demo disk
+      - [ ] Make a disk
+    - [ ] Run itch on windows vm
+      - [ ] Test all disks in /disks
+      - [ ] Transfer a demo disk
+      - [ ] Make a disk
+    - [ ] Run itch on linux vm
+      - [ ] Test all disks in /disks
+      - [ ] Transfer a demo disk
+      - [ ] Make a disk
+- [ ] On release
+  - [ ] Increment version number
+    - [ ] Inside VERSION
+    - [ ] Regenerate changelog
+    - [ ] Git push (Make sure meta)
+  - [ ] Upload website
+    - [ ] Run `zig build www`
+    - [ ] Push www submodule to github
+  - [ ] Actually release
+    - [ ] Move steam build from alpha to default
+    - [ ] Run `zig build upload_itch_release`
+  - [ ] Publish steam changelog
+    - [ ] Run `zig build steam_changelog`
+    - [ ] Copy paste `zig-out/pub/steam/changelog`
+  - [ ] Publish itch changelog
+    - [ ] Run `zig build itch_changelog`
+    - [ ] Copy paste `zig-out/pub/itch/changelog`
+  - [ ] Announce on discord
+
 ## template
 
 - [ ] Going into release day
