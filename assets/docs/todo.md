@@ -16,8 +16,8 @@ These are fixes for behaviours that are implemented wrong.
 - [X] Scroll bars aren't scrolling
 - [X] Steamtool item id is not labeled right
 - [X] Keyboard localization is screwed
+- [X] Steam web crashes game on unknown page
 - [ ] Wth is up with popups!!
-- [ ] Steam web crashes game on unknown page
 - [ ] Possible crash on email VM calls
 - [ ] Wordwrap in console
 - [ ] Disks files are unordered everywhere, sort on save
@@ -26,6 +26,7 @@ These are fixes for behaviours that are implemented wrong.
 - [ ] Restoring and installing a disk drops frames
 - [ ] Task manager can fullscreen and renders wrong
 - [ ] Steam in web can lag the game
+- [ ] Steam upload can lag game
 - [ ] Notification text can cut off
 - [ ] _*_meta files should not copy to disk on install
 - [ ] Crash screen should display relative paths
