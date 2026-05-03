@@ -500,7 +500,10 @@ const EmailData = struct {
                         .SubmitRuns => |runs| blk: {
                             if (!std.mem.startsWith(u8, conts, "EEEp")) break :blk;
 
-                            var vm_instance: Vm = .init(allocator, .home, &.{}, true);
+                            const name = try allocator.dupe(u8, "runs.eep");
+                            const args = try allocator.dupe([]const u8, &.{name});
+
+                            var vm_instance: Vm = .init(allocator, .home, args, true);
                             defer vm_instance.deinit();
 
                             if (runs.input) |input|
