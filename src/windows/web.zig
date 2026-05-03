@@ -863,7 +863,7 @@ pub const WebData = struct {
                 self.white_box.data.size.y = size.y;
                 try SpriteBatch.global.draw(Sprite, &self.white_box, self.shader, .{ .x = bnds.x, .y = bnds.y + 6 + pos.y });
 
-                if (pos.y > 0 and pos.y + size.y - 20 < bnds.h) {
+                if (pos.y > 0 and pos.y - 20 < bnds.h) {
                     switch (style.ali) {
                         .Left => {
                             try font.draw(.{

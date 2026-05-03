@@ -17,8 +17,10 @@ These are fixes for behaviours that are implemented wrong.
 - [X] Steamtool item id is not labeled right
 - [X] Keyboard localization is screwed
 - [X] Steam web crashes game on unknown page
+- [X] Possible crash on email VM calls
+- [X] Web slighty cuts off paragraphs
+- [ ] Crash dosent save sometimes
 - [ ] Wth is up with popups!!
-- [ ] Possible crash on email VM calls
 - [ ] Wordwrap in console
 - [ ] Disks files are unordered everywhere, sort on save
 - [ ] VMS don't stop on crash, meaning they can lag the crash state.
@@ -61,10 +63,10 @@ These are tasks that dont fix existing behaviour, but improve accessability for 
 
 These are tasks that only affect the codebase.
 
+- [X] zig build upload_itch_release
 - [ ] zig test should check www for dead links
 - [ ] Breakout UI for consistency!!!
 - [ ] Add consistent id+iota type utility
-- [X] zig build upload_itch_release
 - [ ] zig build steam_changelog
 - [ ] zig build itch_changelog
 - [ ] Move runSandEEE to a subfolder somewhere (in repo)
