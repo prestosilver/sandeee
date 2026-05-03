@@ -178,6 +178,7 @@ pub const PopupData = struct {
     }
 
     pub const ClickKind = enum {
+        Contents,
         Close,
         Move,
         None,
@@ -205,7 +206,7 @@ pub const PopupData = struct {
 
         try self.contents.click(click_pos);
 
-        return .None;
+        return .Contents;
     }
 
     pub inline fn scissor(self: *const PopupData) Rect {

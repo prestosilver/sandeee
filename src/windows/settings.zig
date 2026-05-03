@@ -72,6 +72,9 @@ const SettingsData = struct {
                 // check click
                 if ((Rect{ .x = pos.x, .y = pos.y, .w = bnds.w, .h = font.size }).contains(self.mousepos)) {
                     self.hover_idx = idx;
+                    self.icons[4].data.size.x = bnds.w;
+                    self.icons[4].data.size.y = font.size;
+                    try SpriteBatch.global.draw(Sprite, &self.icons[4], self.shader, .{ .x = bnds.x + pos.x, .y = bnds.y + pos.y });
                 }
 
                 // draw value
@@ -110,8 +113,12 @@ const SettingsData = struct {
 
                 try SpriteBatch.global.draw(Sprite, &self.icons[panel.icon], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
 
-                if (idx == self.selected)
+                if (idx == self.selected) {
+                    self.icons[4].data.size.x = 64;
+                    self.icons[4].data.size.y = 64;
+
                     try SpriteBatch.global.draw(Sprite, &self.icons[4], self.shader, .{ .x = bnds.x + x + 6 + 16, .y = bnds.y + y + 6 });
+                }
 
                 if ((Rect{ .x = x + 2 + 16, .y = y + 2, .w = 64, .h = 64 }).contains(self.mousepos)) {
                     self.hover_idx = idx;

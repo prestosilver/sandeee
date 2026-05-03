@@ -19,8 +19,8 @@ These are fixes for behaviours that are implemented wrong.
 - [X] Steam web crashes game on unknown page
 - [X] Possible crash on email VM calls
 - [X] Web slighty cuts off paragraphs
+- [X] Wth is up with popups!!
 - [ ] Crash dosent save sometimes
-- [ ] Wth is up with popups!!
 - [ ] Wordwrap in console
 - [ ] Disks files are unordered everywhere, sort on save
 - [ ] VMS don't stop on crash, meaning they can lag the crash state.
@@ -43,6 +43,7 @@ These are tasks that dont fix existing behaviour, but improve accessability for 
 - [X] Fix random mem leak on tests
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
+- [ ] Rework popups to be owned by windows instead of state.
 - [ ] Add actual pickers to settings ui
 - [ ] Accessibility wizard
   - [ ] In BootEEE
@@ -82,7 +83,7 @@ These are tasks that include adding new features to the game, or arent covered b
 - [X] Double check wording in demo emails
 - [X] Workshop previews
 - [X] EDS Background color
-- [ ] Workshop favorites
+- [.] Workshop favorites
     - [X] Show in list
     - [ ] Dedicated list
 - [ ] Fix program names and versions

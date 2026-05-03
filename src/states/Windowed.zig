@@ -499,7 +499,7 @@ pub fn keypress(self: *GSWindowed, key: c_int, mods: c_int, down: bool) !void {
     }
 
     if (self.popups.items.len != 0) {
-        const top_popup = self.popups.items[0];
+        const top_popup = self.popups.getLast();
         try top_popup.data.contents.key(key, mods, down);
 
         return;
@@ -529,7 +529,7 @@ pub fn keychar(self: *GSWindowed, code: []const u8, mods: c_int) !void {
     if (self.bar.data.btn_active) return;
 
     if (self.popups.items.len != 0) {
-        const top_popup = self.popups.items[0];
+        const top_popup = self.popups.getLast();
         try top_popup.data.contents.char(code, mods);
 
         return;
@@ -546,29 +546,47 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
     // TODO: This function feels hacky, clean it up
     //       maybe to a state machine structure or something
     //       idk i'll research
-    if (self.popups.items.len != 0) {
-        switch (try self.popups.items[0].data.click(self.mousepos)) {
+    if (kind == .up) {
+        if (self.dragging_window) |dragging| {
+            try dragging.data.contents.moveResize(dragging.data.pos);
+            self.dragging_window = null;
+
+            self.down = false;
+            return;
+        }
+
+        if (self.dragging_popup) |_| {
+            self.dragging_popup = null;
+
+            self.down = false;
+            return;
+        }
+    }
+
+    if (self.popups.items.len != 0) popup: {
+        switch (try self.popups.getLast().data.click(self.mousepos)) {
+            .Contents => {},
             .Close => {
                 if (kind == .single) {
-                    try events.EventManager.instance.sendEvent(window_events.EventClosePopup{ .popup_conts = self.popups.items[0].data.contents.ptr });
-
-                    return;
+                    try events.EventManager.instance.sendEvent(window_events.EventClosePopup{ .popup_conts = self.popups.getLast().data.contents.ptr });
                 }
             },
             .Move => {
                 if (kind == .down) {
-                    self.dragging_popup = self.popups.items[0];
+                    self.dragging_popup = self.popups.getLast();
                     self.dragging_mode = .Move;
 
                     const start = self.dragging_popup.?.data.pos;
                     self.dragging_start = .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y };
                 }
             },
-            .None => {},
+            .None => break :popup,
         }
 
         if (kind != .up)
-            return;
+            self.down = false;
+
+        return;
     }
 
     var new_top: ?u32 = null;
@@ -714,15 +732,6 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
             self.down = true;
         },
         .up => {
-            if (self.dragging_window) |dragging| {
-                try dragging.data.contents.moveResize(dragging.data.pos);
-                self.dragging_window = null;
-            }
-
-            if (self.dragging_popup) |_| {
-                self.dragging_popup = null;
-            }
-
             self.down = false;
         },
         else => {},
