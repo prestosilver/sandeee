@@ -2,7 +2,7 @@
 
 ## os:seed#10 (3-3-26)
 
-- [ ] Going into release day
+- [X] Going into release day
   - [X] Update specific
     - [X] Scroll bars arent scrolling
     - [X] Steamtool item id is not listed right
@@ -65,14 +65,23 @@
     - [X] Run `zig build www`
     - [X] Push www submodule to github
 
-## os:seed#11
+## os:seed#11 - A big accessibility update
 
 - [ ] Planned features
-  - [ ] Fixed pupups
-  - [ ] New versions
-  - [ ] Fix email bug?
-  - [ ] Reword README
-  - [ ] Fix steam upload bugs
+  - [X] #10_588
+    - [X] Fixed pupups
+    - [X] New versions
+    - [X] Fix email bug?
+    - [X] Reword README
+    - [X] Fix steam upload bugs
+  - [ ] Accessibility wizard
+  - [ ] Control the dithering, and crt of the shader separately
+  - [ ] Add actual pickers to settings ui
+  - [ ] Consistent color parsing
+  - [ ] Fix program names and versions
+  - [ ] Add a about SandEEE app
+  - [ ] Fix Wordwrap in console
+  - [ ] Fix disk ordering
 - [ ] Going into release day
   - [ ] Grammar
     - [ ] Check spelling in all emails

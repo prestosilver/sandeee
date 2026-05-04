@@ -4,6 +4,8 @@
 
 List priority goes Bugs->Fixes->Todo
 
+Though this is listed by priority, I do order by difficulty aswell. My logic has alwasy been along the lines of "Why waist time fix one big bug when you can fix 20 small ones while thinking about whats causes it". If an issue/task is stopped ill take a break and get it done when I know I can schmoove through it. For a list organized by date/implementation order see [The release checklist](release_checklist.md).
+
 ## Known Bugs
 
 These are fixes for behaviours that are implemented wrong.
@@ -20,9 +22,9 @@ These are fixes for behaviours that are implemented wrong.
 - [X] Possible crash on email VM calls
 - [X] Web slighty cuts off paragraphs
 - [X] Wth is up with popups!!
-- [ ] Crash dosent save sometimes
 - [ ] Wordwrap in console
 - [ ] Disks files are unordered everywhere, sort on save
+- [ ] Crash dosent save sometimes
 - [ ] VMS don't stop on crash, meaning they can lag the crash state.
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
 - [ ] Restoring and installing a disk drops frames
@@ -43,21 +45,20 @@ These are tasks that dont fix existing behaviour, but improve accessability for 
 - [X] Fix random mem leak on tests
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
-- [ ] Rework popups to be owned by windows instead of state.
 - [ ] Add actual pickers to settings ui
+- [ ] Control the dithering, and crt of the shader separately
 - [ ] Accessibility wizard
   - [ ] In BootEEE
   - [ ] On first boot
+- [ ] Consistent color parsing
+  - [ ] Design new format
 - [ ] <=> in font should not connect at all
 - [ ] All buttons should look disabled when disabled
-- [ ] Show load progress on web
 - [ ] Workshop item SandEEE version tags
-- [ ] Control the dithering, and crt of the shader separately
+- [ ] Translation system
+- [ ] Show load progress on web
 - [ ] Auto fix capitalization in changelog gen
 - [ ] SandEEE install disk cli flags
-- [ ] Separate build for debug bc different appids!
-- [ ] Translation system
-- [ ] Consistent color parsing
 - [ ] Steam tool transfer from demo.
 
 ## Refactor todo
@@ -68,6 +69,8 @@ These are tasks that only affect the codebase.
 - [ ] zig test should check www for dead links
 - [ ] Breakout UI for consistency!!!
 - [ ] Add consistent id+iota type utility
+- [ ] Rework popups to be owned by windows instead of state
+- [ ] Separate build for debug bc different appids!
 - [ ] zig build steam_changelog
 - [ ] zig build itch_changelog
 - [ ] Move runSandEEE to a subfolder somewhere (in repo)
@@ -83,13 +86,13 @@ These are tasks that include adding new features to the game, or arent covered b
 - [X] Double check wording in demo emails
 - [X] Workshop previews
 - [X] EDS Background color
-- [.] Workshop favorites
+- [ ] Workshop favorites
     - [X] Show in list
     - [ ] Dedicated list
 - [ ] Fix program names and versions
   - [X] Merge BootEEE
   - [ ] Breakout other versions to `strings.zig`
-- [ ] Add a credits app
+- [ ] Add a about SandEEE app with creator credits
 - [ ] Inter email box conditions
 - [ ] Embed file fix
 - [ ] Update email content
