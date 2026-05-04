@@ -171,7 +171,7 @@ pub fn build(b: *std.Build) !void {
 
     const disable_audio = b.option(bool, "no_audio", "Disables audio") orelse false;
     const is_demo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
-    const enable_email = b.option(bool, "email_app", "Enables/disables the email app") orelse true;
+    const disable_email = b.option(bool, "no_email_app", "Disables adding the email app into the vm") orelse false;
     const steam_mode = b.option(enum { Off, On, Fake }, "steam", "Makes SandEEE build a steam build") orelse .Off;
     const default_panic = b.option(bool, "default_panic", "Force the default zig panic handler") orelse false;
     const random_tests = b.option(usize, "random", "Makes SandEEE write some random files") orelse 0;
@@ -277,7 +277,7 @@ pub fn build(b: *std.Build) !void {
     options.addOption(bool, "is_steam", steam_mode != .Off);
     options.addOption(bool, "fake_steam", steam_mode == .Fake);
     options.addOption(bool, "default_panic", default_panic);
-    options.addOption(bool, "enable_email", enable_email);
+    options.addOption(bool, "enable_email", !disable_email);
     const options_module = options.createModule();
 
     const options_host = b.addOptions();
@@ -312,7 +312,7 @@ pub fn build(b: *std.Build) !void {
     exe_host_module.addImport("zigimg", zigimg_host_module);
 
     const image_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/disk.zig"),
+        .root_source_file = b.path("build/eee/eee_packer.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -325,7 +325,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const eme_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/eme.zig"),
+        .root_source_file = b.path("build/eme/txt_to_mailbox.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -338,7 +338,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const eon_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/eon.zig"),
+        .root_source_file = b.path("build/asm/eon.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -351,7 +351,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const asm_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/asm.zig"),
+        .root_source_file = b.path("build/eep/assembler.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -366,7 +366,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const random_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/random.zig"),
+        .root_source_file = b.path("build/eep/random_program.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -379,7 +379,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const eia_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/eia.zig"),
+        .root_source_file = b.path("build/eia/image_to_eia.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -393,7 +393,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const epk_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/epk.zig"),
+        .root_source_file = b.path("build/epk/epk_packager.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -407,7 +407,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const eff_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/eff.zig"),
+        .root_source_file = b.path("build/eff/image_to_eff.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -421,7 +421,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const era_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/era.zig"),
+        .root_source_file = b.path("build/era/wav_to_era.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -434,7 +434,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const changelog_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/edf/changelog.zig"),
+        .root_source_file = b.path("build/edf/changelog.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -447,7 +447,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const downloads_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/edf/downloads.zig"),
+        .root_source_file = b.path("build/edf/downloads.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -460,7 +460,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const docs_builder_mod = b.createModule(.{
-        .root_source_file = b.path("tools/edf/docs.zig"),
+        .root_source_file = b.path("build/edf/docs.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
@@ -704,7 +704,7 @@ pub fn build(b: *std.Build) !void {
     full_debug_disk_image_step.addArg("--disk");
     full_debug_disk_image_step.addFileArg(disk_image_path);
 
-    if (enable_email) {
+    if (!disable_email) {
         full_base_disk_image_step.addFileInput(email_image_path);
         full_base_disk_image_step.addArg("--disk");
         full_base_disk_image_step.addFileArg(email_image_path);
