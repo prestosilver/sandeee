@@ -1,5 +1,4 @@
 const std = @import("std");
-const assembler = @import("asm.zig");
 
 pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
 pub const allocator = gpa.allocator();
