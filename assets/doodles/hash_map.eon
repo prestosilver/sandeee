@@ -1,0 +1,43 @@
+group TableEntry is key,value,next;
+
+const TABLE_SIZE = 1000;
+
+fn TableCreate() {
+    return new [TABLE_SIZE];
+}
+
+fn TablePut(table, key, value) {
+    var index = hash(key) % TABLE_SIZE;
+    var entry = table[index];
+    
+    while (true) {
+        if (entry.TableEntry:key == key) {
+            entry.TableEntry:value = value;
+
+            return 0;
+        }
+
+        // end of while loop
+        if (entry.TableEntry:next == "") {
+            entry.TableEntry:next = new TableEntry;
+            entry.TableEntry:next.TableEntry:key = key;
+            entry.TableEntry:next.TableEntry:value = value;
+
+            return 0;
+        }
+
+        entry = entry.TableEntry:next;
+    }
+}
+
+fn TableGet(table, key) {
+    var index = hash(key) % TABLE_SIZE;
+    var entry = table[index];
+    
+    foreach (TableEntry entry in table) {
+        if (entry.TableEntry:key == key)
+            return entry.TableEntry:value;
+    }
+
+    return "";
+}
