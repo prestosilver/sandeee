@@ -55,7 +55,7 @@ tmp.Example:b = "5";
 ```
 
 This would look something like this for a structure like tables
-```
+```eon
 group TableEntry is key,value,next;
 
 fn TableCreate() {
@@ -98,11 +98,31 @@ fn TableGet(table, key) {
 
 This system shouldnt be too hard to implement in the zig->eon compiler. And since it improves the ergonomics so much itll make its way into the game quite easily. The only clear temporal downside is documentation.
 
+Something that comes up with this is how child objects are set
+```eon
+group Foo is bar;
+group Bar is baz;
+group Baz is a;
+
+var foo = new Foo; // good so far
+foo.Foo:bar = new Bar; // ok.
+
+foo.Foo:bar.Bar:Baz = new Baz; // Weird behaviour terretory
+```
+In this example foo.bar is a substring, so it has to be a dup of foo.
+This means setting foo.bar.bas is like:
+```eon
+var tmp = setlen(dup(foo+0), 8)
+tmp.bar = new Baz;
+```
+
+To fix this "I dont think":tm: I will need to modify the vm. If I make eon treat refs differently I should be able to store these as offsets on the stack, and then reify if I need to get, or append if I need to set. Though this is quite cumbersome, and it may make more sense to put a ref slice function into the vm.
+
 # Arrays
 
 This is similar to classes Ill just add a [] operator that can work with arrays. And then a `new [Length]` function for init. Like classes the set is slow, and the concat would not work with this.
 
-```
+```eon
 main() {
     var a = new [10];
     
