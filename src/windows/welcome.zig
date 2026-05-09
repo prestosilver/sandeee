@@ -83,10 +83,7 @@ pub const WelcomeData = struct {
 
         try font.draw(.{
             .shader = font_shader,
-            .text = if (options.is_demo)
-                "  " ++ strings.BULLET ++ " This demo will not save progress."
-            else
-                "  " ++ strings.BULLET ++ " You can open Xplore anytime for help",
+            .text = "  " ++ strings.BULLET ++ " You can open Xplore anytime for help",
             .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
             .scale = 1,
         });
