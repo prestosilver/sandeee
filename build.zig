@@ -152,6 +152,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
         .link_libc = true,
+        .error_tracing = true,
     });
 
     const exe = b.addExecutable(.{
@@ -1096,6 +1097,7 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = .ReleaseFast,
             .link_libc = true,
+            .error_tracing = true,
         });
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
@@ -1126,6 +1128,7 @@ pub fn build(b: *std.Build) !void {
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .ReleaseFast,
             .link_libc = true,
+            .error_tracing = true,
         });
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
@@ -1203,6 +1206,7 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = .ReleaseFast,
             .link_libc = true,
+            .error_tracing = true,
         });
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
@@ -1233,6 +1237,7 @@ pub fn build(b: *std.Build) !void {
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .ReleaseFast,
             .link_libc = true,
+            .error_tracing = true,
         });
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
@@ -1309,6 +1314,7 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = .ReleaseFast,
             .link_libc = true,
+            .error_tracing = true,
         });
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
@@ -1337,6 +1343,7 @@ pub fn build(b: *std.Build) !void {
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .ReleaseFast,
             .link_libc = true,
+            .error_tracing = true,
         });
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
@@ -1413,6 +1420,7 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = .ReleaseFast,
             .link_libc = true,
+            .error_tracing = true,
         });
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
@@ -1441,6 +1449,7 @@ pub fn build(b: *std.Build) !void {
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .ReleaseFast,
             .link_libc = true,
+            .error_tracing = true,
         });
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
