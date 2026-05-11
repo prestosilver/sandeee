@@ -167,13 +167,18 @@ pub fn build(b: *std.Build) !void {
         .use_llvm = true,
     });
 
+    const glfw_host = b.dependency("glfw", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const exe_host_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = b.graph.host,
         .optimize = .Debug,
         .link_libc = true,
     });
-    exe_host_module.linkLibrary(glfw.artifact("glfw"));
+    exe_host_module.linkLibrary(glfw_host.artifact("glfw"));
 
     var commit = b.run(&.{ "git", "rev-list", "HEAD", "--count" });
 
@@ -1061,6 +1066,16 @@ pub fn build(b: *std.Build) !void {
     const steam_directory_step = b.addWriteFiles();
     const itch_directory_step = b.addWriteFiles();
 
+    const glfw_pub_linux = b.dependency("glfw", .{
+        .target = target,
+        .optimize = .ReleaseFast,
+    });
+
+    const glfw_pub_windows = b.dependency("glfw", .{
+        .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
+        .optimize = .ReleaseFast,
+    });
+
     {
         // Steam build
         const steam_vdf_game_conts = @embedFile("steam/upload_4124360.vdf");
@@ -1100,7 +1115,7 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
-        exe_mod_pub_linux.linkLibrary(glfw.artifact("glfw"));
+        exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
@@ -1129,7 +1144,7 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
-        exe_mod_pub_windows.linkLibrary(glfw.artifact("glfw"));
+        exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
@@ -1203,7 +1218,7 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
-        exe_mod_pub_linux.linkLibrary(glfw.artifact("glfw"));
+        exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
@@ -1232,7 +1247,7 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
-        exe_mod_pub_windows.linkLibrary(glfw.artifact("glfw"));
+        exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
@@ -1305,7 +1320,7 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
-        exe_mod_pub_linux.linkLibrary(glfw.artifact("glfw"));
+        exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
@@ -1334,7 +1349,7 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
-        exe_mod_pub_windows.linkLibrary(glfw.artifact("glfw"));
+        exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
@@ -1409,7 +1424,7 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
-        exe_mod_pub_linux.linkLibrary(glfw.artifact("glfw"));
+        exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
@@ -1438,7 +1453,7 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
-        exe_mod_pub_windows.linkLibrary(glfw.artifact("glfw"));
+        exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
