@@ -18,7 +18,7 @@
         },
         .glfw = .{
             .url = "git+https://github.com/allyourcodebase/glfw#79e7ba3d082765954b59c4f11a2f9b4ff1ecb350",
-            .hash = "glfw-0.0.0-a_9h3pxvAAA6wPndlO7ktfrpZUmhQu1y8aDm0lTi5ATR",
+            .hash = "glfw-0.0.0-R5AeUo0JGgBvENV2Oz-u0V_unpWhEJTfK4qckBH5da6e",
         },
         .zglfw = .{
             .url = "git+https://github.com/prestosilver/zglfw#bae61173266d923b0c07f9bc9cc703a8f5a96219",
