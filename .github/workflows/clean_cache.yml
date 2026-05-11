@@ -220,12 +220,6 @@ jobs:
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.15.2
-
-      - name: Install glfw
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libglfw3 libglfw3-dev
-          version: glfw
       - name: Generate changelog
         run: |
           zig build changelog

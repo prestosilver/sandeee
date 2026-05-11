@@ -767,16 +767,13 @@ pub fn build(b: *std.Build) !void {
     
     // Includes
     exe.addIncludePath(b.path("deps/include"));
-    exe.addIncludePath(b.path("deps/steam_sdk/public/"));
     if (target.result.os.tag == .windows) {
         exe.addObjectFile(rc_file);
         exe.addLibraryPath(b.path("deps/dll"));
-        exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
         exe.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe.subsystem = .Windows;
     } else {
         exe.addLibraryPath(b.path("deps/lib"));
-        exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
         exe.addObjectFile(b.path("deps/lib/libopenal.so"));
     }
 
@@ -1119,9 +1116,7 @@ pub fn build(b: *std.Build) !void {
             .use_llvm = true,
         });
         exe_pub_linux.addIncludePath(b.path("deps/include"));
-        exe_pub_linux.addIncludePath(b.path("deps/steam_sdk/public/"));
         exe_pub_linux.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
         exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
         exe_pub_linux.linkSystemLibrary("steam_api");
 
@@ -1149,11 +1144,9 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_windows,
         });
         exe_pub_windows.addIncludePath(b.path("deps/include"));
-        exe_pub_windows.addIncludePath(b.path("deps/steam_sdk/public/"));
 
         exe_pub_windows.addObjectFile(rc_file);
         exe_pub_windows.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
 
@@ -1226,9 +1219,7 @@ pub fn build(b: *std.Build) !void {
             .use_llvm = true,
         });
         exe_pub_linux.addIncludePath(b.path("deps/include"));
-        exe_pub_linux.addIncludePath(b.path("deps/steam_sdk/public/"));
         exe_pub_linux.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
         exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
         exe_pub_linux.linkSystemLibrary("steam_api");
 
@@ -1256,11 +1247,9 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_windows,
         });
         exe_pub_windows.addIncludePath(b.path("deps/include"));
-        exe_pub_windows.addIncludePath(b.path("deps/steam_sdk/public/"));
 
         exe_pub_windows.addObjectFile(rc_file);
         exe_pub_windows.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
         exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
 
