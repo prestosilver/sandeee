@@ -1,11 +1,25 @@
 // Typed eon changes
 // - Replaced is in group with ::, and now use a named tuple syntax
-//   since types are optional (including children) where is also optional
 // - Renamed group to contract as thats how EEE treats them
+//   since types are optional (including children) where is also optional
 // - types as contracts, not as kinds
 // - switched const keyword to template as itll be raw ast insertion
 // - array elements are still untyped, gdscript ftw
-// - as keyword should be a thing, not nessesary here though
+// - as keyword should be a thing for explicit casts, not nessesary in this example though
+// - NOTE: any type is string type and number type is int, implicit variance for any contracts C,D is:
+//    - number X any
+//    - number X C
+//    - number X D
+//    - any → C
+//    - any → D
+//    - C X D
+//   while explicit is:
+//    - number → any
+//    - number → C
+//    - number → D
+//    - any ⇄ C
+//    - any ⇄ D
+//    - C ⇄ D
 // - GOING FOR WORDY, EON EXISTS WHERE STRINGS ARE GOOD.
 
 template TABLE_SIZE = 1000;
@@ -16,11 +30,11 @@ contract TableEntry :: (key, value, next) where
 contract Table :: (entries) where
     entries: [TABLE_SIZE];
 
-function TableCreate() :: Table {
+function TableCreate() -> Table {
     return new Table;
 }
 
-function TablePut(table, key, value) -> any where
+function TablePut(table, key, value) where
     table: Table {
     var index = hash(key) % TABLE_SIZE;
     var entry: TableEntry = table.entries[index];
@@ -45,7 +59,7 @@ function TablePut(table, key, value) -> any where
     }
 }
 
-function TableGet(table, key) :: any where
+function TableGet(table, key) where
     table: Table {
     var index = hash(key) % TABLE_SIZE;
     var entry: TableEntry = table.entries[index];
