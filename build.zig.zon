@@ -16,6 +16,10 @@
             .url = "git+https://github.com/ziglibs/zgl#6ee54c287f3c4f176bd05a92746828bb791a1ad0",
             .hash = "zgl-1.1.0-p_NpAJNECgCzUGx0aF5KFsmD5VOwfw8LaOsN0fcoU2bi",
         },
+        .glfw = .{
+            .url = "git+https://github.com/allyourcodebase/glfw#74b53d74a79f66af4e0c620dd37a38796f015770",
+            .hash = "glfw-0.0.0-R5AeUroIGgByZTBiH9I-eE2y7IQ5H3Vmqi9_67OFLOZ2",
+        },
         .zglfw = .{
             .url = "git+https://github.com/prestosilver/zglfw#bae61173266d923b0c07f9bc9cc703a8f5a96219",
             .hash = "zglfw-0.1.0-BghZXaTUAACGayXkH2tKJKfpr_CpHpDyIxTbPKjquaXC",
@@ -24,9 +28,6 @@
             .url = "git+https://github.com/prestosilver/zig-steamworks-fake#5d701c877460149405b01eef417112bdda687e15",
             .hash = "zig_steamworks_fake-0.0.0-3i7XFnh8AAD5jRoQlSDTPbxt0KXu_LCsv2GGr3UI3Lbd",
         },
-        // .zig_steamworks_fake = .{
-        //     .path = "../zig-steamworks-fake",
-        // },
         .flags = .{
             .url = "git+https://github.com/EnzyZero/flags#547932a6a9d6d4b640cb1c915c7feec268d9199d",
             .hash = "flags-0.10.0-a_9h3iFxAABV7KdWNJPcsNrvQeSw2Ui_hm3CvTdNCSqU",

@@ -1,12 +1,12 @@
-group TableEntry is key,value,next;
+contract TableEntry :: (key,value,next);
 
 const TABLE_SIZE = 1000;
 
-fn TableCreate() {
+function TableCreate() {
     return new [TABLE_SIZE];
 }
 
-fn TablePut(table, key, value) {
+function TablePut(table, key, value) {
     var index = hash(key) % TABLE_SIZE;
     var entry = table[index];
     
@@ -30,7 +30,7 @@ fn TablePut(table, key, value) {
     }
 }
 
-fn TableGet(table, key) {
+function TableGet(table, key) {
     var index = hash(key) % TABLE_SIZE;
     var entry = table[index];
     
