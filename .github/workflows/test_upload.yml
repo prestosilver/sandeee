@@ -25,7 +25,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.15.2
+          zig-version: 0.16.0
       - name: Run tests
         run: |
           zig build test
@@ -57,7 +57,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.15.2
+          zig-version: 0.16.0
       - name: Run tests
         run: |
           zig build test -Doptimize=ReleaseFast
@@ -95,7 +95,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.15.2
+          zig-version: 0.16.0
       - name: Install mingw
         run: sudo apt-get install gcc-mingw-w64 binutils-mingw-w64-x86-64
         shell: bash
@@ -140,7 +140,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.15.2
+          zig-version: 0.16.0
       - name: Install butler
         uses: remarkablegames/setup-butler@v2
       - name: Install mingw
@@ -180,7 +180,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.15.2
+          zig-version: 0.16.0
       - name: Generate changelog
         run: |
           zig build changelog
