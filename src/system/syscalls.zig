@@ -505,7 +505,7 @@ const SteamYieldCreate = struct {
 
 const SteamYieldUpdate = struct {
     handle: steam.APIHandle,
-    folder: ?std.fs.Dir = null,
+    folder: ?std.Io.Dir = null,
 
     pub fn check(self: *SteamYieldUpdate, vm_instance: *Vm) VmError!bool {
         if (!self.handle.isComplete()) return false;

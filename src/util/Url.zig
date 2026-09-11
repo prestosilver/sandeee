@@ -106,8 +106,12 @@ test "Url steam works" {
 
 test "Url parse fuzzing" {
     const Context = struct {
-        fn testSplitpath(context: @This(), input: []const u8) anyerror!void {
+        fn testUrl(context: @This(), smith: *std.testing.Smith) anyerror!void {
             _ = context;
+
+            var input_buf: [1024]u8 = undefined;
+            const input_len = smith.slice(&input_buf);
+            const input = input_buf[0..input_len];
 
             for (input, 0..) |_, i| {
                 const url = Self.parse(input[0..i]) catch continue;
@@ -119,5 +123,5 @@ test "Url parse fuzzing" {
         }
     };
 
-    try std.testing.fuzz(Context{}, Context.testSplitpath, .{});
+    try std.testing.fuzz(Context{}, Context.testUrl, .{});
 }

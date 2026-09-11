@@ -59,8 +59,13 @@ pub fn splitPath(path: []const u8) SplitResult {
 
 test "Path split fuzzing" {
     const Context = struct {
-        fn testSplitpath(context: @This(), input: []const u8) anyerror!void {
+        fn testSplitpath(context: @This(), smith: *std.testing.Smith) anyerror!void {
             _ = context;
+
+            var input_buf: [1024]u8 = undefined;
+            const input_len = smith.slice(&input_buf);
+            const input = input_buf[0..input_len];
+
             const split = splitPath(input);
             if (split.file) |file| {
                 try std.testing.expectFmt(input, "{s}/{s}", .{ split.path, file });

@@ -305,34 +305,34 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
 }
 
 test "Headless scripts" {
-    std.fs.cwd().access("zig-out/bin/disks", .{}) catch
-        std.fs.cwd().makeDir("zig-out/bin/disks") catch
+    std.Io.Dir.cwd().access(std.testing.io, "zig-out/bin/disks", .{}) catch
+        std.Io.Dir.cwd().createDir(std.testing.io, "zig-out/bin/disks", .default_dir) catch
         @panic("Cannot make disks directory.");
 
     Vm.Manager.vm_time = 1.0;
     Vm.Manager.last_frame_time = 10.0;
 
-    var logging_file = try std.fs.cwd().createFile("zig-out/test_output.md", .{});
-    defer logging_file.close();
+    var logging_file = try std.Io.Dir.cwd().createFile(std.testing.io, "zig-out/test_output.md", .{});
+    defer logging_file.close(std.testing.io);
 
-    var logging = logging_file.writer(&.{});
+    var logging = logging_file.writer(std.testing.io, &.{});
 
-    var start_cwd = try std.fs.cwd().openDir("tests", .{
+    var start_cwd = try std.Io.Dir.cwd().openDir(std.testing.io, "tests", .{
         .iterate = true,
     });
-    defer start_cwd.close();
+    defer start_cwd.close(std.testing.io);
 
     var iter = try start_cwd.walk(std.testing.allocator);
     defer iter.deinit();
 
     var err: ?anyerror = null;
 
-    while (try iter.next()) |entry| {
+    while (try iter.next(std.testing.io)) |entry| {
         if (entry.kind != .file) continue;
 
         try Vm.Manager.instance.runGc();
 
-        std.fs.cwd().deleteFile("zig-out/bin/disks/headless.eee") catch {};
+        std.Io.Dir.cwd().deleteFile(std.testing.io, "zig-out/bin/disks/headless.eee") catch {};
 
         // deinit vm manager
 
@@ -340,10 +340,10 @@ test "Headless scripts" {
         try logging.interface.writeAll(entry.path);
         try logging.interface.writeAll("\n```\n");
 
-        var file = try start_cwd.openFile(entry.path, .{});
-        defer file.close();
+        var file = try start_cwd.openFile(std.testing.io, entry.path, .{});
+        defer file.close(std.testing.io);
 
-        var reader = file.reader(&.{});
+        var reader = file.reader(std.testing.io, &.{});
 
         const conts = try reader.interface.allocRemaining(std.testing.allocator, .unlimited);
         defer std.testing.allocator.free(conts);

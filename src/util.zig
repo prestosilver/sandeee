@@ -1,7 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub var io: std.Io = undefined;
+pub var io: std.Io = if (builtin.is_test)
+    std.testing.io
+else
+    undefined;
 
 pub const graphics = @import("util/graphics.zig");
 pub const storage = @import("util/storage.zig");
@@ -21,7 +24,10 @@ pub const Font = @import("util/Font.zig");
 pub const Url = @import("util/Url.zig");
 pub const Eln = @import("util/Eln.zig");
 
-pub const allocator = Allocator.allocator;
+pub const allocator = if (builtin.is_test)
+    std.testing.allocator
+else
+    Allocator.allocator;
 
 pub inline fn deinitAllocator() void {
     if (!builtin.link_libc or !Allocator.useclib) {

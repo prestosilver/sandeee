@@ -1080,7 +1080,11 @@ test "Vm input fuzzing" {
     const Context = struct {
         vm: *Vm,
 
-        fn testStringToOps(context: @This(), input: []const u8) anyerror!void {
+        fn testStringToOps(context: @This(), smith: *std.testing.Smith) anyerror!void {
+            var input_buf: [1024]u8 = undefined;
+            const input_len = smith.slice(&input_buf);
+            const input = input_buf[0..input_len];
+
             const ops = context.vm.stringToOps(input) catch |err| switch (err) {
                 error.InvalidAsm => return,
                 else => |e| return e,
