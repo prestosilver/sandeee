@@ -18,26 +18,24 @@ const FormatSection = struct {
     bits: u16,
 };
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
 // Converts a wav file to a era file
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
+
     const input_file = args.next() orelse return error.MissingInputFile;
     const output_file = args.next() orelse return error.MissingOutputFile;
 
-    var file = try std.fs.createFileAbsolute(output_file, .{});
-    defer file.close();
+    var file = try std.Io.Dir.createFileAbsolute(init.io, output_file, .{});
+    defer file.close(init.io);
 
-    var writer = file.writer(&.{});
+    var writer = file.writer(init.io, &.{});
 
-    var inreader = try std.fs.openFileAbsolute(input_file, .{});
-    defer inreader.close();
+    var inreader = try std.Io.Dir.openFileAbsolute(init.io, input_file, .{});
+    defer inreader.close(init.io);
 
     var reader_buffer: [1024]u8 = undefined;
-    var reader_stream = inreader.reader(&reader_buffer);
+    var reader_stream = inreader.reader(init.io, &reader_buffer);
 
     var name: [4]u8 = undefined;
 
@@ -52,15 +50,15 @@ pub fn main() !void {
         };
 
         const size = try reader_stream.interface.takeInt(u32, .little);
-        const section = try allocator.alloc(u8, size);
-        defer allocator.free(section);
+        const section = try init.gpa.alloc(u8, size);
+        defer init.gpa.free(section);
         try reader_stream.interface.readSliceAll(section);
 
         if (std.mem.eql(u8, &name, "fmt ")) {
             format = @as(*align(1) FormatSection, @ptrCast(&section[0])).*;
         } else if (std.mem.eql(u8, &name, "data")) {
-            const tmp_out = try allocator.alloc(u8, section.len / format.channels / (format.bits / 8));
-            defer allocator.free(tmp_out);
+            const tmp_out = try init.gpa.alloc(u8, section.len / format.channels / (format.bits / 8));
+            defer init.gpa.free(tmp_out);
 
             for (0.., tmp_out) |idx, *sample| {
                 var in_sample: f32 = 0;

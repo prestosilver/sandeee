@@ -87,7 +87,7 @@ pub const WebData = struct {
                 if (url.domain.len == 0)
                     return try allocator.dupe(u8, "Error: Bad Remote");
 
-                var client = std.http.Client{ .allocator = allocator };
+                var client = std.http.Client{ .io = util.io, .allocator = allocator };
                 defer client.deinit();
 
                 const uri = std.Uri{
@@ -104,7 +104,7 @@ pub const WebData = struct {
                 const header_buffer = try allocator.alloc(u8, HEADER_SIZE);
                 defer allocator.free(header_buffer);
 
-                var body_writer: std.io.Writer.Allocating = .init(allocator);
+                var body_writer: std.Io.Writer.Allocating = .init(allocator);
                 defer body_writer.deinit();
 
                 {
@@ -277,15 +277,15 @@ pub const WebData = struct {
 
     bnds: Rect = .{ .w = 1, .h = 1 },
 
-    styles: std.StringArrayHashMap(Style),
+    styles: std.StringHashMap(Style),
 
-    link_lock: std.Thread.Mutex = .{},
-    image_lock: std.Thread.Mutex = .{},
+    link_lock: std.Io.Mutex = .init,
+    image_lock: std.Io.Mutex = .init,
     steam_loaded_file_id: ?steam.UGC.PublishedFile = null,
 
     pub fn resetLinks(self: *Self) void {
-        self.link_lock.lock();
-        defer self.link_lock.unlock();
+        self.link_lock.lock(util.io) catch unreachable;
+        defer self.link_lock.unlock(util.io);
 
         for (self.links.items) |link| {
             allocator.free(link.url);
@@ -519,8 +519,8 @@ pub const WebData = struct {
     }
 
     pub fn loadimage(self: *Self, url: Url, target: []const u8) !void {
-        self.image_lock.lock();
-        defer self.image_lock.unlock();
+        try self.image_lock.lock(util.io);
+        defer self.image_lock.unlock(util.io);
 
         defer allocator.free(target);
         defer url.deinit();
@@ -685,8 +685,8 @@ pub const WebData = struct {
         }
 
         if (self.scroll_link) {
-            self.link_lock.lock();
-            defer self.link_lock.unlock();
+            try self.link_lock.lock(util.io);
+            defer self.link_lock.unlock(util.io);
             if (self.highlight_idx != 0)
                 props.scroll.?.value = std.math.clamp(self.links.items[self.highlight_idx - 1].pos.y - (bnds.h / 2), 0, props.scroll.?.maxy);
             self.scroll_link = false;
@@ -817,8 +817,8 @@ pub const WebData = struct {
                         const url = try allocator.dupe(u8, std.mem.trim(u8, linkcont[linkidx + 1 ..], &std.ascii.whitespace));
                         const size = font.sizeText(.{ .text = line, .scale = style.scale });
 
-                        self.link_lock.lock();
-                        defer self.link_lock.unlock();
+                        self.link_lock.lock(util.io) catch unreachable;
+                        defer self.link_lock.unlock(util.io);
 
                         switch (style.ali) {
                             .Left => {
@@ -1075,8 +1075,10 @@ pub const WebData = struct {
 
     pub fn deinit(self: *Self) void {
         {
-            self.image_lock.lock();
-            defer self.image_lock.unlock();
+            // make sure lock is unlocked
+
+            self.image_lock.lock(util.io) catch unreachable;
+            defer self.image_lock.unlock(util.io);
         }
 
         try self.clearPlaying();

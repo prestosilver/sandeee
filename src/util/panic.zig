@@ -13,6 +13,8 @@ var panicking = std.atomic.Value(u8).init(0);
 pub fn log(msg: []const u8, first_trace_addr: ?usize) []const u8 {
     @branchHint(.cold);
 
+    _ = first_trace_addr;
+
     var alloc: std.heap.DebugAllocator(.{}) = .init;
     const allocator = alloc.allocator();
 
@@ -38,17 +40,21 @@ pub fn log(msg: []const u8, first_trace_addr: ?usize) []const u8 {
                     writer.print("Unable to dump stack trace: Unable to open debug info: {s}\n", .{@errorName(err)}) catch break :trace;
                     break :trace;
                 };
-                if (@errorReturnTrace()) |t| if (t.index > 0) {
-                    writer.writeAll("error return context:\n") catch break :trace;
-                    std.debug.writeStackTrace(t.*, writer, debug_info, .no_color) catch break :trace;
-                    writer.writeAll("\nstack trace:\n") catch break :trace;
-                };
-                std.debug.writeCurrentStackTrace(
-                    writer,
-                    debug_info,
-                    .no_color,
-                    first_trace_addr orelse @returnAddress(),
-                ) catch break :trace;
+                _ = debug_info;
+
+                //var buff: [128]usize = undefined;
+                // if (std.debug.captureCurrentStackTrace(.{}, &buff)) |t| if (t.index > 0) {
+                //     writer.writeAll("error return context:\n") catch break :trace;
+                //     std.debug.writeStackTrace(t, .{
+                //         .writer = writer,
+                //         .mode = .no_color,
+                //     }) catch break :trace;
+                //     writer.writeAll("\nstack trace:\n") catch break :trace;
+                // };
+                std.debug.writeCurrentStackTrace(.{}, .{
+                    .writer = writer,
+                    .mode = .no_color,
+                }) catch break :trace;
             }
         },
         1 => {
@@ -56,7 +62,7 @@ pub fn log(msg: []const u8, first_trace_addr: ?usize) []const u8 {
             // A panic happened while trying to print a previous panic message.
             // We're still holding the mutex but that's fine as we're going to
             // call abort().
-            std.fs.File.stderr().writeAll("aborting due to recursive panic :()\n") catch {};
+            //            std.fs.File.stderr().writeAll("aborting due to recursive panic :()\n") catch {};
         },
         else => {}, // Panicked while printing the recursive panic message.
     }

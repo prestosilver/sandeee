@@ -98,7 +98,7 @@ pub fn setup(self: *GSInstaller) !void {
 }
 
 pub fn updateSettingsVals(self: *GSInstaller) ![]const u8 {
-    const ts = std.time.timestamp();
+    const ts = std.Io.Clock.real.now(util.io).toSeconds();
     const system_hours = @as(u64, @intCast(ts)) / std.time.s_per_hour % 24;
     const system_minutes = @as(u64, @intCast(ts)) / std.time.s_per_min % 60;
     const input_hours = std.fmt.parseInt(i8, self.setting_values[0].items, 0) catch 0;
@@ -107,7 +107,7 @@ pub fn updateSettingsVals(self: *GSInstaller) ![]const u8 {
     const hours_offset = @as(i8, @intCast(system_hours)) - input_hours;
     const minutes_offset = @as(i8, @intCast(system_minutes)) - input_minutes;
 
-    var result: std.io.Writer.Allocating = .init(allocator);
+    var result: std.Io.Writer.Allocating = .init(allocator);
     defer result.deinit();
     const writer = &result.writer;
 

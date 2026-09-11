@@ -50,8 +50,8 @@ pub const ObjectRef = enum(usize) {
     }
 
     pub fn deinit(self: ObjectRef) void {
-        free_lock.lock();
-        defer free_lock.unlock();
+        free_lock.lock(util.io) catch unreachable;
+        defer free_lock.unlock(util.io);
 
         if (objects.items[self.id()].data == .free) {
             log.err("Double Free occured #{}", .{self.id()});
@@ -76,7 +76,7 @@ pub const ObjectRef = enum(usize) {
 
 var objects = std.array_list.Managed(Object).init(allocator);
 var free_ref: ?ObjectRef = null;
-var free_lock = std.Thread.Mutex{};
+var free_lock: std.Io.Mutex = .init;
 
 pub fn find(addr: usize) ?ObjectRef {
     if (addr >= objects.items.len) return null;
@@ -86,8 +86,8 @@ pub fn find(addr: usize) ?ObjectRef {
 }
 
 pub fn new(data: ObjectData) !ObjectRef {
-    free_lock.lock();
-    defer free_lock.unlock();
+    try free_lock.lock(util.io);
+    defer free_lock.unlock(util.io);
 
     if (free_ref) |result| {
         free_ref = objects.items[result.id()].data.free;

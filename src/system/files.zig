@@ -99,7 +99,7 @@ pub const FileError = error{
     WindowLimitReached,
 
     OutOfMemory,
-} || std.fs.File.SeekError || std.fs.File.ReadError || std.fs.File.WriteError || error{StreamTooLong};
+} || std.Io.File.StatError || std.Io.File.SeekError || std.Io.Reader.Error || std.Io.Writer.Error || error{StreamTooLong};
 
 pub const DiskError = error{
     BadDiskSize,
@@ -111,7 +111,7 @@ pub const DiskError = error{
     Unexpected,
     Unseekable,
     EndOfStream,
-} || std.io.Reader.Error || FileError;
+} || std.Io.Reader.Error || std.Io.File.LengthError || FileError;
 
 pub const File = struct {
     const FileKind = enum {
@@ -129,7 +129,7 @@ pub const File = struct {
     };
 
     const FileData = union(FileKind) {
-        os: std.fs.File,
+        os: std.Io.File,
         disk: []u8,
         pseudo: PseudoData,
 
@@ -151,7 +151,7 @@ pub const File = struct {
         }
     };
 
-    lock: std.Thread.Mutex = .{},
+    lock: std.Io.Mutex = .init,
     parent: FolderLink,
     name: []const u8,
     next_sibling: ?*File = null,
@@ -165,7 +165,7 @@ pub const File = struct {
     pub fn size(self: *const File) FileError!usize {
         switch (self.data) {
             .os => |os_file| {
-                const stat = try os_file.stat();
+                const stat = try os_file.stat(util.io);
                 return @intCast(stat.size);
             },
             .disk => |disk_file| {
@@ -178,12 +178,13 @@ pub const File = struct {
     }
 
     pub inline fn write(self: *File, contents: []const u8, vm_instance: ?*Vm) FileError!void {
-        self.lock.lock();
-        defer self.lock.unlock();
+        try self.lock.lock(util.io);
+        defer self.lock.unlock(util.io);
 
         switch (self.data) {
             .os => |os_file| {
-                try os_file.writeAll(contents);
+                var writer = os_file.writer(util.io, &.{});
+                try writer.interface.writeAll(contents);
             },
             .disk => |*disk_file| {
                 disk_file.* = try allocator.realloc(disk_file.*, contents.len);
@@ -196,16 +197,18 @@ pub const File = struct {
     }
 
     pub inline fn read(self: *File, vm_instance: ?*Vm) FileError![]const u8 {
-        self.lock.lock();
-        defer self.lock.unlock();
+        try self.lock.lock(util.io);
+        defer self.lock.unlock(util.io);
 
         switch (self.data) {
             .os => |os_file| {
-                const stat = try os_file.stat();
+                const stat = try os_file.stat(util.io);
                 const result = try allocator.alloc(u8, @intCast(stat.size));
 
-                try os_file.seekTo(0);
-                _ = try os_file.readAll(result);
+                var buf: [128]u8 = undefined;
+                var reader = os_file.reader(util.io, &buf);
+
+                _ = try reader.interface.readSliceAll(result);
 
                 return result;
             },
@@ -225,7 +228,7 @@ pub const File = struct {
         allocator.free(self.name);
         switch (self.data) {
             .os => |os_file| {
-                os_file.close();
+                os_file.close(util.io);
             },
             .disk => |disk_file| {
                 allocator.free(disk_file);
@@ -272,7 +275,7 @@ pub const Folder = struct {
     next_sibling: ?*Folder = null,
     protected: bool = false,
     ext: ?struct {
-        dir: std.fs.Dir,
+        dir: std.Io.Dir,
         files_visited: bool = false,
         folders_visited: bool = false,
     } = null,
@@ -343,11 +346,11 @@ pub const Folder = struct {
         return root;
     }
 
-    pub fn diskRecoveryInfo(file: std.fs.File) DiskError!?[]const u8 {
-        if (try file.getEndPos() < 4) return error.BadDiskSize;
+    pub fn diskRecoveryInfo(file: std.Io.File) DiskError!?[]const u8 {
+        if (try file.length(util.io) < 4) return error.BadDiskSize;
 
         var reader_buffer: [1024]u8 = undefined;
-        var reader = file.reader(&reader_buffer);
+        var reader = file.reader(util.io, &reader_buffer);
 
         // Dont care about folders
         const folder_count = try reader.interface.takeInt(u32, .big);
@@ -377,11 +380,11 @@ pub const Folder = struct {
         return null;
     }
 
-    pub fn loadDisk(file: std.fs.File) DiskError!*Folder {
-        if (try file.getEndPos() < 4) return error.BadDiskSize;
+    pub fn loadDisk(file: std.Io.File) DiskError!*Folder {
+        if (try file.length(util.io) < 4) return error.BadDiskSize;
 
         var reader_buffer: [1024]u8 = undefined;
-        var reader = file.reader(&reader_buffer);
+        var reader = file.reader(util.io, &reader_buffer);
 
         const root = try allocator.create(Folder);
         errdefer root.deinit();
@@ -428,10 +431,10 @@ pub const Folder = struct {
     }
 
     pub fn setupDisk(disk_name: []const u8, settings: []const u8) !void {
-        const d = std.fs.cwd();
+        const d: std.Io.Dir = .cwd();
 
-        const recovery = try d.openFile(root_prefix ++ "content/recovery.eee", .{});
-        defer recovery.close();
+        const recovery = try d.openFile(util.io, root_prefix ++ "content/recovery.eee", .{});
+        defer recovery.close(util.io);
 
         var root = try loadDisk(recovery);
         defer root.deinit();
@@ -449,20 +452,20 @@ pub const Folder = struct {
         const out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{disk_name});
         defer allocator.free(out);
 
-        const file = try std.fs.cwd().createFile(out, .{});
-        defer file.close();
+        const file = try std.Io.Dir.cwd().createFile(util.io, out, .{});
+        defer file.close(util.io);
 
         try root.write(file);
     }
 
     pub fn recoverDisk(disk_name: []const u8, source_disk: []const u8, override_settings: bool) !void {
-        const d = std.fs.cwd();
+        const cwd: std.Io.Dir = .cwd();
 
         const out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{disk_name});
         defer allocator.free(out);
 
-        const out_file = try d.openFile(out, .{ .mode = .read_write });
-        defer out_file.close();
+        const out_file = try cwd.openFile(util.io, out, .{ .mode = .read_write });
+        defer out_file.close(util.io);
 
         var root_disk = try loadDisk(out_file);
         defer root_disk.deinit();
@@ -470,8 +473,8 @@ pub const Folder = struct {
         const source_disk_path = try std.fmt.allocPrint(allocator, root_prefix ++ "content/{s}", .{source_disk});
         defer allocator.free(source_disk_path);
 
-        const recovery = try d.openFile(source_disk_path, .{});
-        defer recovery.close();
+        const recovery = try cwd.openFile(util.io, source_disk_path, .{});
+        defer recovery.close(util.io);
 
         var rec_disk = try loadDisk(recovery);
         defer rec_disk.deinit();
@@ -528,8 +531,8 @@ pub const Folder = struct {
         telem.Telem.save() catch |err|
             log.err("telem save failed {}", .{err});
 
-        const file = try std.fs.cwd().createFile(out, .{});
-        defer file.close();
+        const file = try std.Io.Dir.cwd().createFile(util.io, out, .{});
+        defer file.close(util.io);
 
         try root_disk.write(file);
     }
@@ -544,8 +547,8 @@ pub const Folder = struct {
             const user_disk_out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{diskPath});
             defer allocator.free(user_disk_out);
 
-            var user_disk = try std.fs.cwd().openFile(user_disk_out, .{});
-            defer user_disk.close();
+            var user_disk = try std.Io.Dir.cwd().openFile(util.io, user_disk_out, .{});
+            defer user_disk.close(util.io);
 
             var root = try loadDisk(user_disk);
             errdefer root.deinit();
@@ -574,9 +577,9 @@ pub const Folder = struct {
     pub fn setupExtr() !void {
         const extr_path = getExtrPath() orelse return;
         const path = if (std.fs.path.isAbsolute(extr_path))
-            std.fs.openDirAbsolute(extr_path, .{}) catch null
+            std.Io.Dir.openDirAbsolute(util.io, extr_path, .{}) catch null
         else
-            std.fs.cwd().openDir(extr_path, .{}) catch null;
+            std.Io.Dir.cwd().openDir(util.io, extr_path, .{}) catch null;
 
         const root = try FolderLink.resolve(.root);
 
@@ -598,12 +601,12 @@ pub const Folder = struct {
         }
     }
 
-    pub fn write(self: *Folder, file: std.fs.File) !void {
+    pub fn write(self: *Folder, file: std.Io.File) !void {
         var folders = std.array_list.Managed(*const Folder).init(allocator);
         defer folders.deinit();
         try self.getFoldersRec(&folders, false);
 
-        var writer = file.writer(&.{});
+        var writer = file.writer(util.io, &.{});
 
         try writer.interface.writeInt(u32, @as(u32, @intCast(folders.items.len)), .big);
         for (folders.items) |folder| {
@@ -631,24 +634,24 @@ pub const Folder = struct {
                 return self.files;
             }
 
-            const dir = try ext_path.dir.openDir(".", .{
+            const dir = try ext_path.dir.openDir(util.io, ".", .{
                 .access_sub_paths = false,
                 .iterate = true,
             });
 
             var iter = dir.iterate();
 
-            while (iter.next() catch null) |file| {
+            while (iter.next(util.io) catch null) |file| {
                 const fullname = try std.fmt.allocPrint(allocator, "{s}{s}", .{ self.name, file.name });
                 defer allocator.free(fullname);
 
                 switch (file.kind) {
                     .file => {
-                        const fs_file = try ext_path.dir.openFile(file.name, .{});
-                        defer fs_file.close();
+                        const fs_file = try ext_path.dir.openFile(util.io, file.name, .{});
+                        defer fs_file.close(util.io);
 
                         var reader_buffer: [256]u8 = undefined;
-                        var file_reader = fs_file.reader(&reader_buffer);
+                        var file_reader = fs_file.reader(util.io, &reader_buffer);
 
                         const sub_file = try allocator.create(File);
                         sub_file.* = .{
@@ -678,14 +681,14 @@ pub const Folder = struct {
                 return self.folders;
             }
 
-            const dir = try ext_path.dir.openDir(".", .{
+            const dir = try ext_path.dir.openDir(util.io, ".", .{
                 .access_sub_paths = false,
                 .iterate = true,
             });
 
             var iter = dir.iterate();
 
-            while (iter.next() catch null) |file| {
+            while (iter.next(util.io) catch null) |file| {
                 const fullname = try std.fmt.allocPrint(allocator, "{s}{s}/", .{ self.name, file.name });
                 defer allocator.free(fullname);
 
@@ -695,7 +698,7 @@ pub const Folder = struct {
                         sub_folder.* = .{
                             .parent = .link(self),
                             .ext = .{
-                                .dir = try ext_path.dir.openDir(file.name, .{}),
+                                .dir = try ext_path.dir.openDir(util.io, file.name, .{}),
                             },
                             .name = try allocator.dupe(u8, fullname),
                         };
@@ -965,7 +968,7 @@ pub const Folder = struct {
                     return subfile;
             }
 
-            if (os_folder.dir.openFile(name, .{}) catch null) |os_file| {
+            if (os_folder.dir.openFile(util.io, name, .{}) catch null) |os_file| {
                 const file = try allocator.create(File);
                 file.* = .{
                     .parent = .link(self),
@@ -1023,7 +1026,7 @@ pub const Folder = struct {
             }
 
             if (self.ext) |os_folder| {
-                if (os_folder.dir.openDir(name[index + 1 ..], .{}) catch null) |os_sub_folder| {
+                if (os_folder.dir.openDir(util.io, name[index + 1 ..], .{}) catch null) |os_sub_folder| {
                     const tmp_folder = try allocator.create(Folder);
                     tmp_folder.* = .{
                         .name = try allocator.dupe(u8, fullname),
@@ -1052,7 +1055,7 @@ pub const Folder = struct {
         }
 
         if (self.ext) |os_folder| {
-            if (os_folder.dir.openDir(name, .{}) catch null) |os_sub_folder| {
+            if (os_folder.dir.openDir(util.io, name, .{}) catch null) |os_sub_folder| {
                 const folder = try allocator.create(Folder);
                 folder.* = .{
                     .name = try allocator.dupe(u8, fullname),
@@ -1084,7 +1087,7 @@ pub const Folder = struct {
             file.deinit();
 
         if (self.ext) |*ext_path|
-            ext_path.dir.close();
+            ext_path.dir.close(util.io);
 
         if (self.parent == null)
             if (root_out) |out| {
@@ -1142,10 +1145,10 @@ pub fn write() void {
     // if (options.is_demo) return;
 
     if (root_out) |output| {
-        const file = std.fs.cwd().createFile(output, .{}) catch {
+        const file = std.Io.Dir.cwd().createFile(util.io, output, .{}) catch {
             @panic("couldnt make save");
         };
-        defer file.close();
+        defer file.close(util.io);
 
         if (FolderLink.resolve(.root)) |root|
             root.write(file) catch |err| {

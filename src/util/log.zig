@@ -5,9 +5,9 @@ const util = @import("../util.zig");
 
 const allocator = util.allocator;
 
-var log_file: ?std.fs.File = null;
-var log_file_writer: std.fs.File.Writer = undefined;
-var log_lock: std.Thread.Mutex = .{};
+var log_file: ?std.Io.File = null;
+var log_file_writer: std.Io.File.Writer = undefined;
+var log_lock: std.Io.Mutex = .init;
 
 pub const log = std.log.scoped(.SandEEE);
 
@@ -54,17 +54,16 @@ pub fn sandEEELogFn(
 
     // Print the message to stderr, silently ignoring any errors
     if (@import("builtin").mode == .Debug) {
-        std.debug.lockStdErr();
-        defer std.debug.unlockStdErr();
+        const writer = util.io.lockStderr(&.{}, null) catch unreachable;
+        defer util.io.unlockStderr();
 
-        var stderr: std.fs.File = .stderr();
-        var stderr_writer = stderr.writer(&.{});
+        var stderr_writer = writer.file_writer;
         stderr_writer.interface.print(color ++ prefix ++ format ++ "\x1b[m\n", args) catch {};
     }
 
     if (log_file) |_| {
-        log_lock.lock();
-        defer log_lock.unlock();
+        log_lock.lock(util.io) catch unreachable;
+        defer log_lock.unlock(util.io);
 
         log_file_writer.interface.print(prefix ++ format ++ "\n", args) catch return;
     }
@@ -104,8 +103,8 @@ pub fn getLogs() [2][]const LogData {
 }
 
 pub fn setLogFile(file: []const u8) !void {
-    log_file = try std.fs.cwd().createFile(file, .{});
-    log_file_writer = log_file.?.writer(&.{});
+    log_file = try std.Io.Dir.cwd().createFile(util.io, file, .{});
+    log_file_writer = log_file.?.writer(util.io, &.{});
 
     stop_logs = false;
 }
@@ -113,7 +112,7 @@ pub fn setLogFile(file: []const u8) !void {
 pub fn deinit() void {
     if (stop_logs) return;
 
-    log_file.?.close();
+    log_file.?.close(util.io);
     log_file = null;
 
     stop_logs = true;

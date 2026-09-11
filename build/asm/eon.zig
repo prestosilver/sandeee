@@ -1,8 +1,5 @@
 const std = @import("std");
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
 var lib_path: []const u8 = undefined;
 
 const TokenKind = enum {
@@ -93,12 +90,12 @@ const Expression = struct {
     op: ?*Token,
     b: []Expression,
 
-    fn toAsm(self: *Expression, map: *VarMap, heap: *const std.array_list.Managed([]const u8), idx: *usize) ![]const u8 {
+    fn toAsm(self: *Expression, allocator: std.mem.Allocator, map: *VarMap, heap: *const std.array_list.Managed([]const u8), idx: *usize) ![]const u8 {
         var result: []u8 = try allocator.alloc(u8, 0);
         if (self.op != null and self.op.?.kind == .TOKEN_OPEN_PAREN) {
             const start = idx.*;
             for (self.a) |*item| {
-                const adds = try item.toAsm(map, heap, idx);
+                const adds = try item.toAsm(allocator, map, heap, idx);
                 const start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 @memcpy(result[start_res..], adds);
@@ -124,14 +121,14 @@ const Expression = struct {
         }
 
         for (self.a, 0..) |_, index| {
-            const adds = try self.a[index].toAsm(map, heap, idx);
+            const adds = try self.a[index].toAsm(allocator, map, heap, idx);
             defer allocator.free(adds);
             const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
             @memcpy(result[start_res..], adds);
         }
         for (self.b, 0..) |_, index| {
-            const adds = try self.b[index].toAsm(map, heap, idx);
+            const adds = try self.b[index].toAsm(allocator, map, heap, idx);
             defer allocator.free(adds);
             const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
@@ -396,7 +393,7 @@ const Statement = struct {
     exprs: ?[]Expression,
     blks: ?[][]Statement,
 
-    fn toAsm(self: *Statement, map: *VarMap, heap: *const std.array_list.Managed([]const u8), idx: *usize) ![]const u8 {
+    fn toAsm(self: *Statement, allocator: std.mem.Allocator, map: *VarMap, heap: *const std.array_list.Managed([]const u8), idx: *usize) ![]const u8 {
         switch (self.kind) {
             .STMT_INVALID => {
                 return try std.fmt.allocPrint(allocator, "    nop\n", .{});
@@ -405,7 +402,7 @@ const Statement = struct {
                 var result = try allocator.alloc(u8, 0);
 
                 if (self.exprs != null) {
-                    const adds = try self.exprs.?[0].toAsm(map, heap, idx);
+                    const adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                     defer allocator.free(adds);
                     const start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
@@ -429,7 +426,7 @@ const Statement = struct {
 
                 var result = try allocator.alloc(u8, 0);
 
-                var adds = try self.exprs.?[0].toAsm(map, heap, idx);
+                var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
@@ -444,7 +441,7 @@ const Statement = struct {
 
                 for (self.blks.?[0]) |*stmt| {
                     allocator.free(adds);
-                    adds = try stmt.toAsm(map, heap, idx);
+                    adds = try stmt.toAsm(allocator, map, heap, idx);
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     @memcpy(result[start_res..], adds);
@@ -476,7 +473,7 @@ const Statement = struct {
                 if (self.blks.?.len > 1) {
                     for (self.blks.?[1]) |*stmt| {
                         allocator.free(adds);
-                        adds = try stmt.toAsm(map, heap, idx);
+                        adds = try stmt.toAsm(allocator, map, heap, idx);
                         start_res = result.len;
                         result = try allocator.realloc(result, result.len + adds.len);
                         @memcpy(result[start_res..], adds);
@@ -513,7 +510,7 @@ const Statement = struct {
             .STMT_RETURN => {
                 var result = try allocator.alloc(u8, 0);
 
-                var adds = try self.exprs.?[0].toAsm(map, heap, idx);
+                var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
@@ -559,7 +556,7 @@ const Statement = struct {
                 @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
-                adds = try self.exprs.?[0].toAsm(map, heap, idx);
+                adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 @memcpy(result[start_res..], adds);
@@ -573,7 +570,7 @@ const Statement = struct {
 
                 for (self.blks.?[0]) |*stmt| {
                     allocator.free(adds);
-                    adds = try stmt.toAsm(map, heap, idx);
+                    adds = try stmt.toAsm(allocator, map, heap, idx);
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     @memcpy(result[start_res..], adds);
@@ -614,7 +611,7 @@ const Statement = struct {
 
                 var result = try allocator.alloc(u8, 0);
 
-                var adds = try self.blks.?[0][0].toAsm(map, heap, idx);
+                var adds = try self.blks.?[0][0].toAsm(allocator, map, heap, idx);
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
@@ -627,7 +624,7 @@ const Statement = struct {
                 @memcpy(result[start_res..], adds);
 
                 allocator.free(adds);
-                adds = try self.exprs.?[0].toAsm(map, heap, idx);
+                adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 @memcpy(result[start_res..], adds);
@@ -641,14 +638,14 @@ const Statement = struct {
 
                 for (self.blks.?[1]) |*stmt| {
                     allocator.free(adds);
-                    adds = try stmt.toAsm(map, heap, idx);
+                    adds = try stmt.toAsm(allocator, map, heap, idx);
                     start_res = result.len;
                     result = try allocator.realloc(result, result.len + adds.len);
                     @memcpy(result[start_res..], adds);
                 }
 
                 allocator.free(adds);
-                adds = try self.exprs.?[1].toAsm(map, heap, idx);
+                adds = try self.exprs.?[1].toAsm(allocator, map, heap, idx);
                 start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
                 @memcpy(result[start_res..], adds);
@@ -690,7 +687,7 @@ const Statement = struct {
                 var result = try allocator.alloc(u8, 0);
                 const start = idx.*;
 
-                var adds = try self.exprs.?[0].toAsm(map, heap, idx);
+                var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                 defer allocator.free(adds);
                 var start_res = result.len;
                 result = try allocator.realloc(result, result.len + adds.len);
@@ -725,7 +722,7 @@ const FunctionDecl = struct {
     ident: []const u8,
     stmts: []Statement,
 
-    fn toAsm(self: *FunctionDecl, heap: *const std.array_list.Managed([]const u8), lib: bool) ![]const u8 {
+    fn toAsm(self: *FunctionDecl, allocator: std.mem.Allocator, heap: *const std.array_list.Managed([]const u8), lib: bool) ![]const u8 {
         const prefix = if (lib) "_" else "";
         var result = try std.fmt.allocPrint(allocator, "{s}{s}:\n", .{ prefix, self.ident });
         var map = VarMap{ .vars = try allocator.alloc(Var, self.params.len) };
@@ -739,7 +736,7 @@ const FunctionDecl = struct {
         var idx = self.params.len;
 
         for (self.stmts) |*stmt| {
-            const adds = try stmt.toAsm(&map, heap, &idx);
+            const adds = try stmt.toAsm(allocator, &map, heap, &idx);
             defer allocator.free(adds);
             const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
@@ -754,12 +751,12 @@ const Program = struct {
     funcs: []FunctionDecl,
     heap: std.array_list.Managed([]const u8),
 
-    fn toAsm(self: *Program, lib: bool) ![]const u8 {
+    fn toAsm(self: *Program, allocator: std.mem.Allocator, lib: bool) ![]const u8 {
         var result =
             if (!lib) try std.fmt.allocPrint(allocator, "    push {}\n    sys 14\n    call main\n    sys 1\n", .{self.heap.items.len}) else try std.fmt.allocPrint(allocator, "", .{});
 
         for (self.funcs) |*func| {
-            const adds = try func.toAsm(&self.heap, lib);
+            const adds = try func.toAsm(allocator, &self.heap, lib);
             defer allocator.free(adds);
             const start_res = result.len;
             result = try allocator.realloc(result, result.len + adds.len);
@@ -778,12 +775,12 @@ const VarMap = struct {
     vars: []Var,
 };
 
-pub fn lexFile(in: []const u8) !std.array_list.Managed(Token) {
-    var f = try std.fs.openFileAbsolute(in, .{});
-    defer f.close();
+pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) !std.array_list.Managed(Token) {
+    var f = try std.Io.Dir.openFileAbsolute(io, in, .{});
+    defer f.close(io);
 
     var reader_buff: [1024]u8 = undefined;
-    var reader = f.reader(&reader_buff);
+    var reader = f.reader(io, &reader_buff);
 
     var result = std.array_list.Managed(Token).init(allocator);
     var buff: [1]u8 = undefined;
@@ -815,7 +812,7 @@ pub fn lexFile(in: []const u8) !std.array_list.Managed(Token) {
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
                 const path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ lib_path, stmt[10 .. stmt.len - 1] });
 
-                var toks = try lexFile(path);
+                var toks = try lexFile(io, allocator, path);
                 defer toks.deinit();
 
                 _ = toks.pop();
@@ -1113,12 +1110,12 @@ pub fn lexFile(in: []const u8) !std.array_list.Managed(Token) {
             code = try allocator.alloc(u8, 0);
             _ = reader.interface.discardDelimiterInclusive('\n') catch |err| switch (err) {
                 error.EndOfStream => {
-                  try result.append(.{
-                      .kind = .TOKEN_EOF,
-                      .value = "EOF",
-                  });
+                    try result.append(.{
+                        .kind = .TOKEN_EOF,
+                        .value = "EOF",
+                    });
 
-                  return result;
+                    return result;
                 },
                 else => |e| return e,
             };
@@ -1140,7 +1137,7 @@ pub fn lexFile(in: []const u8) !std.array_list.Managed(Token) {
 
 const EMPTY_EXPR = [_]Expression{};
 
-pub fn parseFactor(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Expression {
+pub fn parseFactor(allocator: std.mem.Allocator, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Expression {
     var result: Expression = .{
         .a = &EMPTY_EXPR,
         .op = null,
@@ -1150,7 +1147,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.array_list.Managed([]const u8), i
     if (tokens[idx.*].kind == .TOKEN_OPEN_PAREN) {
         idx.* += 1;
         var a = try allocator.alloc(Expression, 1);
-        a[0] = try parseExpression(tokens, heap, idx);
+        a[0] = try parseExpression(allocator, tokens, heap, idx);
 
         if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
         idx.* += 1;
@@ -1180,7 +1177,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.array_list.Managed([]const u8), i
 
             idx.* += 2;
             var b = try allocator.alloc(Expression, 1);
-            b[0] = try parseFactor(tokens, heap, idx);
+            b[0] = try parseFactor(allocator, tokens, heap, idx);
             result = .{
                 .a = a,
                 .op = op,
@@ -1192,7 +1189,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.array_list.Managed([]const u8), i
             var ident = &tokens[idx.*];
             idx.* += 2;
             var b = try allocator.alloc(Expression, 0);
-            while (parseExpression(tokens, heap, idx) catch null) |expr| {
+            while (parseExpression(allocator, tokens, heap, idx) catch null) |expr| {
                 b = try allocator.realloc(b, b.len + 1);
                 b[b.len - 1] = expr;
                 if (tokens[idx.*].kind != .TOKEN_COMMA) break;
@@ -1222,7 +1219,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.array_list.Managed([]const u8), i
         const ident = &tokens[idx.*];
         idx.* += 1;
         var b = try allocator.alloc(Expression, 1);
-        b[0] = try parseFactor(tokens, heap, idx);
+        b[0] = try parseFactor(allocator, tokens, heap, idx);
 
         result = .{
             .a = &EMPTY_EXPR,
@@ -1237,7 +1234,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.array_list.Managed([]const u8), i
         const ident = &tokens[idx.*];
         idx.* += 1;
         var b = try allocator.alloc(Expression, 1);
-        b[0] = try parseFactor(tokens, heap, idx);
+        b[0] = try parseFactor(allocator, tokens, heap, idx);
 
         result = .{
             .a = &EMPTY_EXPR,
@@ -1249,7 +1246,7 @@ pub fn parseFactor(tokens: []Token, heap: *std.array_list.Managed([]const u8), i
     return error.NoFactor;
 }
 
-pub fn parseSum(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Expression {
+pub fn parseSum(allocator: std.mem.Allocator, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Expression {
     var result: Expression = .{
         .a = &EMPTY_EXPR,
         .op = null,
@@ -1257,7 +1254,7 @@ pub fn parseSum(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx:
     };
 
     var a = try allocator.alloc(Expression, 1);
-    a[0] = try parseFactor(tokens, heap, idx);
+    a[0] = try parseFactor(allocator, tokens, heap, idx);
 
     if (tokens[idx.*].kind == .TOKEN_ADD or
         tokens[idx.*].kind == .TOKEN_CAT or
@@ -1267,7 +1264,7 @@ pub fn parseSum(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx:
         idx.* += 1;
 
         var b = try allocator.alloc(Expression, 1);
-        b[0] = try parseExpression(tokens, heap, idx);
+        b[0] = try parseExpression(allocator, tokens, heap, idx);
         result = .{
             .a = a,
             .op = op,
@@ -1283,7 +1280,7 @@ pub fn parseSum(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx:
     return result;
 }
 
-pub fn parseExpression(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) anyerror!Expression {
+pub fn parseExpression(allocator: std.mem.Allocator, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) anyerror!Expression {
     var result: Expression = .{
         .a = &EMPTY_EXPR,
         .op = null,
@@ -1291,7 +1288,7 @@ pub fn parseExpression(tokens: []Token, heap: *std.array_list.Managed([]const u8
     };
 
     var a = try allocator.alloc(Expression, 1);
-    a[0] = try parseSum(tokens, heap, idx);
+    a[0] = try parseSum(allocator, tokens, heap, idx);
 
     if (tokens[idx.*].kind == .TOKEN_AND or
         tokens[idx.*].kind == .TOKEN_OR or
@@ -1309,7 +1306,7 @@ pub fn parseExpression(tokens: []Token, heap: *std.array_list.Managed([]const u8
         idx.* += 1;
 
         var b = try allocator.alloc(Expression, 1);
-        b[0] = try parseExpression(tokens, heap, idx);
+        b[0] = try parseExpression(allocator, tokens, heap, idx);
         result = .{
             .a = a,
             .op = op,
@@ -1326,7 +1323,7 @@ pub fn parseExpression(tokens: []Token, heap: *std.array_list.Managed([]const u8
     return result;
 }
 
-pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Statement {
+pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !Statement {
     var result: Statement = .{
         .kind = .STMT_INVALID,
         .name = null,
@@ -1349,7 +1346,7 @@ pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8)
         if (tokens[idx.*].kind == .TOKEN_ASSIGN) {
             idx.* += 1;
             var b = try allocator.alloc(Expression, 1);
-            b[0] = try parseExpression(tokens, heap, idx);
+            b[0] = try parseExpression(allocator, tokens, heap, idx);
 
             result.exprs = b;
         }
@@ -1360,7 +1357,7 @@ pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8)
     } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_RETURN) {
         idx.* += 1;
         var b = try allocator.alloc(Expression, 1);
-        b[0] = try parseExpression(tokens, heap, idx);
+        b[0] = try parseExpression(allocator, tokens, heap, idx);
 
         result = .{
             .kind = .STMT_RETURN,
@@ -1394,14 +1391,14 @@ pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8)
         var exprs = try allocator.alloc(Expression, 2);
         var blks = try allocator.alloc([]Statement, 2);
         blks[0] = try allocator.alloc(Statement, 1);
-        blks[0][0] = try parseStatement(tokens, heap, idx);
-        exprs[0] = try parseExpression(tokens, heap, idx);
+        blks[0][0] = try parseStatement(allocator, tokens, heap, idx);
+        exprs[0] = try parseExpression(allocator, tokens, heap, idx);
         if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.Semi;
         idx.* += 1;
-        exprs[1] = try parseExpression(tokens, heap, idx);
+        exprs[1] = try parseExpression(allocator, tokens, heap, idx);
         if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
         idx.* += 1;
-        blks[1] = try parseBlock(tokens, heap, idx);
+        blks[1] = try parseBlock(allocator, tokens, heap, idx);
 
         result = .{
             .kind = .STMT_FOR,
@@ -1416,11 +1413,11 @@ pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8)
         if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
         idx.* += 1;
         var exprs = try allocator.alloc(Expression, 1);
-        exprs[0] = try parseExpression(tokens, heap, idx);
+        exprs[0] = try parseExpression(allocator, tokens, heap, idx);
         if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
         idx.* += 1;
         var blks = try allocator.alloc([]Statement, 1);
-        blks[0] = try parseBlock(tokens, heap, idx);
+        blks[0] = try parseBlock(allocator, tokens, heap, idx);
 
         result = .{
             .kind = .STMT_WHILE,
@@ -1436,18 +1433,18 @@ pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8)
         idx.* += 1;
 
         var s = try allocator.alloc(Expression, 1);
-        s[0] = try parseExpression(tokens, heap, idx);
+        s[0] = try parseExpression(allocator, tokens, heap, idx);
 
         if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
         idx.* += 1;
 
         var b = try allocator.alloc([]Statement, 1);
-        b[0] = try parseBlock(tokens, heap, idx);
+        b[0] = try parseBlock(allocator, tokens, heap, idx);
 
         if (tokens[idx.*].kind == .TOKEN_KEYWORD_ELSE) {
             idx.* += 1;
             b = try allocator.realloc(b, 2);
-            b[1] = try parseBlock(tokens, heap, idx);
+            b[1] = try parseBlock(allocator, tokens, heap, idx);
         }
 
         result = .{
@@ -1460,7 +1457,7 @@ pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8)
         return result;
     } else {
         var b = try allocator.alloc(Expression, 1);
-        b[0] = try parseExpression(tokens, heap, idx);
+        b[0] = try parseExpression(allocator, tokens, heap, idx);
 
         result = .{
             .kind = .STMT_EXP,
@@ -1478,19 +1475,19 @@ pub fn parseStatement(tokens: []Token, heap: *std.array_list.Managed([]const u8)
     return error.NoStmt;
 }
 
-pub fn parseBlock(tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) anyerror![]Statement {
+pub fn parseBlock(allocator: std.mem.Allocator, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) anyerror![]Statement {
     var result: []Statement = undefined;
 
     if (tokens[idx.*].kind != .TOKEN_OPEN_BRACE) {
         result = try allocator.alloc(Statement, 1);
-        result[0] = try parseStatement(tokens, heap, idx);
+        result[0] = try parseStatement(allocator, tokens, heap, idx);
 
         return result;
     }
     idx.* += 1;
     result = try allocator.alloc(Statement, 0);
 
-    while (parseStatement(tokens, heap, idx) catch null) |stmt| {
+    while (parseStatement(allocator, tokens, heap, idx) catch null) |stmt| {
         result = try allocator.realloc(result, result.len + 1);
         result[result.len - 1] = stmt;
     }
@@ -1513,7 +1510,7 @@ pub fn parseFunctionParam(tokens: []Token, idx: *usize) !FunctionParam {
     return result;
 }
 
-pub fn parseFunctionDecl(fnPrefix: *[]const u8, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !FunctionDecl {
+pub fn parseFunctionDecl(allocator: std.mem.Allocator, fnPrefix: *[]const u8, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !FunctionDecl {
     var result: FunctionDecl = undefined;
     if (tokens[idx.*].kind != .TOKEN_KEYWORD_FN) return error.ExpectedType;
     idx.* += 1;
@@ -1537,12 +1534,12 @@ pub fn parseFunctionDecl(fnPrefix: *[]const u8, tokens: []Token, heap: *std.arra
         idx.* += 1;
     }
 
-    result.stmts = try parseBlock(tokens, heap, idx);
+    result.stmts = try parseBlock(allocator, tokens, heap, idx);
 
     return result;
 }
 
-pub fn parseProgram(fn_prefix: *[]const u8, tokens: []Token) !Program {
+pub fn parseProgram(allocator: std.mem.Allocator, fn_prefix: *[]const u8, tokens: []Token) !Program {
     var result: Program = .{
         .funcs = try allocator.alloc(FunctionDecl, 0),
         .heap = .init(allocator),
@@ -1550,7 +1547,7 @@ pub fn parseProgram(fn_prefix: *[]const u8, tokens: []Token) !Program {
 
     var idx: usize = 0;
     while (true) {
-        if (parseFunctionDecl(fn_prefix, tokens, &result.heap, &idx) catch null) |func| {
+        if (parseFunctionDecl(allocator, fn_prefix, tokens, &result.heap, &idx) catch null) |func| {
             result.funcs = try allocator.realloc(result.funcs, result.funcs.len + 1);
             result.funcs[result.funcs.len - 1] = func;
         } else if (tokens[idx].kind == .TOKEN_KEYWORD_VAR) {
@@ -1594,51 +1591,55 @@ pub fn parseProgram(fn_prefix: *[]const u8, tokens: []Token) !Program {
     return result;
 }
 
-pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void {
+pub fn compile_executable(io: std.Io, allocator: std.mem.Allocator, input_file: []const u8, output_file: []const u8) !void {
     var fn_prefix: []const u8 = "";
 
-    var tokens = try lexFile(input_file);
+    var tokens = try lexFile(io, allocator, input_file);
     defer tokens.deinit();
 
-    var prog = try parseProgram(&fn_prefix, tokens.items);
+    var prog = try parseProgram(allocator, &fn_prefix, tokens.items);
 
-    var file = try std.fs.createFileAbsolute(output_file, .{});
-    defer file.close();
+    var file = try std.Io.Dir.createFileAbsolute(io, output_file, .{});
+    defer file.close(io);
 
-    var writer = file.writer(&.{});
+    var writer = file.writer(io, &.{});
 
-    const adds = try prog.toAsm(false);
+    const adds = try prog.toAsm(allocator, false);
     try writer.interface.writeAll(adds);
 }
 
-pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
+pub fn compile_library(io: std.Io, allocator: std.mem.Allocator, input_file: []const u8, output_file: []const u8) !void {
     var fn_prefix: []const u8 = "";
 
-    var tokens = try lexFile(input_file);
+    var tokens = try lexFile(io, allocator, input_file);
     defer tokens.deinit();
 
-    var prog = try parseProgram(&fn_prefix, tokens.items);
+    var prog = try parseProgram(allocator, &fn_prefix, tokens.items);
 
-    var file = try std.fs.createFileAbsolute(output_file, .{});
-    defer file.close();
+    var file = try std.Io.Dir.createFileAbsolute(io, output_file, .{});
+    defer file.close(io);
 
-    var writer = file.writer(&.{});
+    var writer = file.writer(io, &.{});
 
-    const adds = try prog.toAsm(true);
+    const adds = try prog.toAsm(allocator, true);
     try writer.interface.writeAll(adds);
 }
 
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
     const mode = args.next() orelse return error.MissingMode;
     lib_path = args.next() orelse return error.MissingLibPath;
     const input_file = args.next() orelse return error.MissingInputFile;
     const output_file = args.next() orelse return error.MissingOutputFile;
 
+    var arena = std.heap.ArenaAllocator.init(init.gpa);
+    defer arena.deinit();
+
+    const alloc = arena.allocator();
     if (std.mem.eql(u8, mode, "exe")) {
-        try compile_executable(input_file, output_file);
+        try compile_executable(init.io, alloc, input_file, output_file);
     } else if (std.mem.eql(u8, mode, "lib")) {
-        try compile_library(input_file, output_file);
+        try compile_library(init.io, alloc, input_file, output_file);
     } else return error.BadBuildMode;
 }

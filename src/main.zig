@@ -155,7 +155,7 @@ const FULL_QUAD = [_]zgl.Float{
     0.5,  0.5,  0.0,
 };
 
-var state_refresh_rate: f64 = 0.5;
+var state_refresh_rate: std.Io.Duration = .fromMilliseconds(500);
 
 // misc state data
 var game_states: std.EnumArray(system_events.State, GameState) = .initUndefined();
@@ -371,7 +371,7 @@ pub fn settingSet(event: system_events.EventSetSetting) !void {
     }
 
     if (std.mem.eql(u8, event.setting, "refresh_rate")) {
-        state_refresh_rate = std.fmt.parseFloat(f64, event.value) catch 0.5;
+        state_refresh_rate = .fromMilliseconds(@intFromFloat(std.fmt.parseFloat(f64, event.value) catch 0.5 * std.time.ms_per_s));
 
         return;
     }
@@ -507,7 +507,7 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
         std.process.exit(1);
     };
 
-    std.fs.cwd().writeFile(.{
+    std.Io.Dir.cwd().writeFile(util.io, .{
         .sub_path = "CrashLog.txt",
         .data = error_message,
     }) catch {};
@@ -555,9 +555,11 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
 }
 
 var is_crt = true;
-var real_fullscreen = false;
+var fullscreen_mode: enum { disabled, enabled, real } = .enabled;
 
-pub fn main() void {
+pub fn main(init: std.process.Init) void {
+    util.io = init.io;
+
     defer {
         log.deinit();
 
@@ -568,10 +570,11 @@ pub fn main() void {
     var headless_cmd: ?[]const u8 = null;
     var cwd_change = false;
 
-    const args = std.process.argsAlloc(allocator) catch std.debug.panic("Out of memory", .{});
-    defer std.process.argsFree(allocator, args);
+    const args = init.minimal.args.toSlice(allocator) catch std.debug.panic("Out of memory", .{});
+    defer allocator.free(args);
 
     const cli = flags.parse(
+        init.io,
         args,
         "SandEEE",
 
@@ -584,6 +587,7 @@ pub fn main() void {
                 .no_crt = "Disable the crt filter.",
                 .no_threads = "Disable loading threads.",
                 .real_fullscreen = "Use real fullscreen instead of borderless windowed.",
+                .windowed = "Force windowed mode",
                 .cwd = "Set the working directory before loading anything.",
                 .disk = "Automatically load a disk.",
                 .extr_files = "Enable extr file system (Unsandboxed).",
@@ -594,6 +598,7 @@ pub fn main() void {
             no_crt: bool,
             no_threads: bool,
             real_fullscreen: bool,
+            windowed: bool,
             cwd: ?[]const u8,
             disk: ?[]const u8,
             extr_files: bool,
@@ -607,14 +612,21 @@ pub fn main() void {
     is_crt = !cli.no_crt;
     headless.is_headless = cli.headless;
     LoadingState.no_load_thread = cli.no_threads;
-    real_fullscreen = cli.real_fullscreen;
+
+    fullscreen_mode = if (cli.windowed) .disabled else if (cli.real_fullscreen) .real else .enabled;
     files.enable_extr = cli.extr_files;
     if (cli.disk) |new_disk| {
         headless.disk = new_disk;
         DiskState.autoload_disk = new_disk;
     }
     if (cli.cwd) |new_cwd| {
-        std.process.changeCurDir(new_cwd) catch |err| {
+        const dir = std.Io.Dir.cwd().openDir(init.io, new_cwd, .{}) catch |err| {
+            log.log.err("Failed to change cwd to '{s}' {}", .{ new_cwd, err });
+            return;
+        };
+        defer dir.close(init.io);
+
+        std.process.setCurrentDir(init.io, dir) catch |err| {
             log.log.err("Failed to change cwd to '{s}' {}", .{ new_cwd, err });
             return;
         };
@@ -622,13 +634,13 @@ pub fn main() void {
     }
 
     if (cli.headless_script) |script| {
-        var file = std.fs.cwd().openFile(script, .{}) catch |err| {
+        var file = std.Io.Dir.cwd().openFile(init.io, script, .{}) catch |err| {
             log.log.err("Failed to load headless script '{s}' {}", .{ script, err });
             return;
         };
-        defer file.close();
+        defer file.close(init.io);
 
-        var reader = file.reader(&.{});
+        var reader = file.reader(init.io, &.{});
         headless_cmd = reader.interface.allocRemaining(allocator, .unlimited) catch {
             log.log.err("Out of memory", .{});
             return;
@@ -653,8 +665,8 @@ pub fn main() void {
         };
     }
 
-    std.fs.cwd().access("disks", .{}) catch
-        std.fs.cwd().makeDir("disks") catch
+    std.Io.Dir.cwd().access(util.io, "disks", .{}) catch
+        std.Io.Dir.cwd().createDir(util.io, "disks", .default_dir) catch
         std.debug.panic("Cannot make disks directory.", .{});
 
     runGame() catch |err| {
@@ -700,7 +712,10 @@ pub fn runGame() anyerror!void {
     system.Shell.shader = &shader;
 
     // init graphics
-    var graphics_loader: Loader = try .init(loaders.Graphics{ .real_fullscreen = real_fullscreen }, null);
+    var graphics_loader: Loader = try .init(loaders.Graphics{
+        .fullscreen = fullscreen_mode != .disabled,
+        .real_fullscreen = fullscreen_mode == .real,
+    }, null);
 
     // setup fonts deinit
     bios_font.setup = false;
@@ -963,7 +978,7 @@ pub fn runGame() anyerror!void {
 
     // fps tracker stats
     var fps: f32 = 0;
-    var timer: std.time.Timer = try .start();
+    var last_tick: std.Io.Timestamp = std.Io.Clock.real.now(util.io);
     var last_frame_end: f64 = 0;
 
     glfw.setTime(0);
@@ -987,10 +1002,11 @@ pub fn runGame() anyerror!void {
         }
 
         // track fps
-        if (timer.read() > @as(u64, @intFromFloat(std.time.ns_per_s * state_refresh_rate))) {
+        const since_last_tick = last_tick.durationTo(.now(util.io, .real));
+        if (since_last_tick.toMilliseconds() > state_refresh_rate.toMilliseconds()) {
             try events.EventManager.instance.sendEvent(system_events.EventTelemUpdate{});
 
-            const lap: f32 = @floatFromInt(timer.lap());
+            last_tick = .now(util.io, .real);
 
             try state.refresh();
 
@@ -1006,7 +1022,7 @@ pub fn runGame() anyerror!void {
 
             try Vm.Manager.instance.runGc();
 
-            final_fps = fps / lap * std.time.ns_per_s;
+            final_fps = fps / @as(f32, @floatFromInt(since_last_tick.toMilliseconds())) / std.time.ms_per_s;
             if (Vm.Manager.instance.vms.count() != 0 and final_fps != 0) {
                 // TODO: move these into settings
                 if (final_fps < graphics.Context.instance.refresh_rate - 5.0) Vm.Manager.vm_time -= 0.01;

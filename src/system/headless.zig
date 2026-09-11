@@ -16,12 +16,14 @@ const strings = sandeee_data.strings;
 
 const USE_POSIX = builtin.os.tag == .linux;
 
+// TODO: Should not use std.Io.File.Writer here rather Std.Io.Terminal
+
 const root_prefix = if (builtin.is_test)
     "zig-out/bin/"
 else
     "";
 
-pub fn write_console(stdout: *std.fs.File.Writer, input: []const u8) !void {
+pub fn write_console(stdout: *std.Io.File.Writer, input: []const u8) !void {
     const text = try sandeee_data.strings.encode(input, .eeech, .ansi);
     defer allocator.free(text);
 
@@ -30,34 +32,36 @@ pub fn write_console(stdout: *std.fs.File.Writer, input: []const u8) !void {
 
 pub var is_headless = false;
 
-pub var input_mutex: std.Thread.Mutex = .{};
+pub var input_mutex: std.Io.Mutex = .init;
 pub var input_queue: std.array_list.Managed(u8) = .init(allocator);
 pub var last_input: usize = 0;
 pub var last_processed_input: usize = 0;
 pub var disk: []const u8 = "headless.eee";
 
 pub fn pushInput(input: u8) !void {
-    input_mutex.lock();
-    defer input_mutex.unlock();
+    try input_mutex.lock(util.io);
+    defer input_mutex.unlock(util.io);
 
     try input_queue.append(input);
 }
 
 pub fn popInput() ?u8 {
-    input_mutex.lock();
-    defer input_mutex.unlock();
+    input_mutex.lock(util.io) catch unreachable;
+    defer input_mutex.unlock(util.io);
 
     return input_queue.pop();
 }
 
-fn inputLoop() void {
-    var stdin_file = std.fs.File.stdin();
+fn inputLoop() noreturn {
+    var stdin_file: std.Io.File = .stdin();
     var t: [1]u8 = undefined;
 
+    var reader = stdin_file.reader(util.io, &.{});
+
     while (true) {
-        const c = stdin_file.read(&t) catch break;
+        const c = reader.interface.takeByte() catch unreachable;
         if (c == 0) {
-            std.Thread.sleep(100);
+            std.Io.sleep(util.io, .fromMilliseconds(100), .real) catch unreachable;
             continue;
         }
 
@@ -68,7 +72,7 @@ fn inputLoop() void {
     }
 }
 
-pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Writer) anyerror!void {
+pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Writer) anyerror!void {
     if (!USE_POSIX) {
         const c = @cImport({
             @cInclude("windows.h");
@@ -124,7 +128,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
     const diskpath = try storage.getContentPath(alloc_path);
     defer diskpath.deinit();
 
-    std.fs.cwd().access(diskpath.items, .{}) catch {
+    std.Io.Dir.cwd().access(util.io, diskpath.items, .{}) catch {
         try files.Folder.setupDisk(disk, "");
     };
 
@@ -135,12 +139,12 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
     var main_shell = Shell{ .root = .home, .headless = true };
     defer main_shell.deinit();
 
-    var stdout_file: std.fs.File = .stdout();
-    var stdout_file_writer = stdout_file.writer(&.{});
+    var stdout_file: std.Io.File = .stdout();
+    var stdout_file_writer = stdout_file.writer(util.io, &.{});
 
-    const stdout: *std.fs.File.Writer = logging orelse &stdout_file_writer;
+    const stdout: *std.Io.File.Writer = logging orelse &stdout_file_writer;
 
-    const stdin_file: std.fs.File = .stdin();
+    const stdin_file: std.Io.File = .stdin();
 
     const original = if (USE_POSIX and !builtin.is_test) try std.posix.tcgetattr(stdin_file.handle) else undefined;
     defer if (USE_POSIX and !builtin.is_test)
@@ -218,7 +222,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.fs.File.Wr
                 const ch = blk: {
                     break :blk popInput();
                 } orelse {
-                    std.Thread.sleep(100);
+                    try std.Io.sleep(util.io, .fromMilliseconds(100), .real);
                     continue;
                 };
 

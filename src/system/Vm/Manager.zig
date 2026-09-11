@@ -193,7 +193,7 @@ pub fn destroy(self: *Self, handle: Handle) void {
 }
 
 pub fn updateVmThread(vm_instance: *Vm, frame_end: u64) !void {
-    const time: u64 = @intCast(std.time.nanoTimestamp());
+    const time: u64 = @intCast(std.Io.Clock.real.now(util.io).toMilliseconds());
 
     if (frame_end < time) {
         return;
@@ -246,7 +246,7 @@ pub fn update(self: *Self) !void {
     const frame_end: u64 = if (builtin.is_test)
         std.math.maxInt(u64)
     else
-        @as(u64, @intCast(std.time.nanoTimestamp())) + @as(u64, @intFromFloat((last_frame_time) * std.time.ns_per_s * vm_time));
+        @as(u64, @intCast(std.Io.Clock.now(.real, util.io).toNanoseconds())) + @as(u64, @intFromFloat((last_frame_time) * std.time.ns_per_s * vm_time));
 
     var iter = self.vms.iterator();
 

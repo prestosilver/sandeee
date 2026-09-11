@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+pub var io: std.Io = undefined;
+
 pub const graphics = @import("util/graphics.zig");
 pub const storage = @import("util/storage.zig");
 pub const logger = @import("util/log.zig");

@@ -15,7 +15,7 @@ pub fn getContentPath(file: []const u8) !std.array_list.Managed(u8) {
         return result;
     }
 
-    const first = try std.process.getCwdAlloc(allocator);
+    const first = try std.process.currentPathAlloc(util.io, allocator);
     defer allocator.free(first);
 
     try result.appendSlice(first);

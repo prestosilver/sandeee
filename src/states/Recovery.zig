@@ -53,13 +53,17 @@ recovery_choices: std.array_list.Managed(RecoveryChoice) = .init(allocator),
 const DISK_LIST = "0123456789ABCDEF";
 const TEXT_COLOR = Color{ .r = 1, .g = 1, .b = 1 };
 
-pub fn getDate(name: []const u8) i128 {
-    const path = std.fmt.allocPrint(allocator, "disks/{s}", .{name}) catch return 0;
-    defer allocator.free(path);
-    const file = std.fs.cwd().openFile(path, .{}) catch return 0;
-    defer file.close();
+pub fn getDate(name: []const u8) std.Io.Timestamp {
+    const bad = std.Io.Clock.real.now(util.io);
 
-    return (file.stat() catch return 0).mtime;
+    const path = std.fmt.allocPrint(allocator, "disks/{s}", .{name}) catch return bad;
+    defer allocator.free(path);
+
+    // return is fine here as this is used to sort
+    const file = std.Io.Dir.cwd().openFile(util.io, path, .{}) catch return bad;
+    defer file.close(util.io);
+
+    return (file.stat(util.io) catch return bad).mtime;
 }
 
 pub fn sortRecoveryLt(_: void, a: RecoveryChoice, b: RecoveryChoice) bool {
@@ -67,7 +71,9 @@ pub fn sortRecoveryLt(_: void, a: RecoveryChoice, b: RecoveryChoice) bool {
 }
 
 pub fn sortDisksLt(_: void, a: []const u8, b: []const u8) bool {
-    return getDate(a) < getDate(b);
+
+    // TODO .compare here is better but not in zig 0.16.0. ty future me
+    return getDate(a).toSeconds() < getDate(b).toSeconds();
 }
 
 pub fn setup(self: *GSRecovery) !void {
@@ -79,14 +85,14 @@ pub fn setup(self: *GSRecovery) !void {
 
     // setup disk list
     {
-        var dir = try std.fs.cwd().openDir("disks", .{
+        var dir = try std.Io.Dir.cwd().openDir(util.io, "disks", .{
             .iterate = true,
         });
-        defer dir.close();
+        defer dir.close(util.io);
 
         var iter = dir.iterate();
 
-        while (try iter.next()) |item| {
+        while (try iter.next(util.io)) |item| {
             if (!std.mem.endsWith(u8, item.name, ".eee")) continue;
 
             const entry = try allocator.dupe(u8, item.name);
@@ -110,18 +116,18 @@ pub fn setup(self: *GSRecovery) !void {
 
     // setup recovery option list
     {
-        var dir = try std.fs.cwd().openDir("content", .{
+        var dir = try std.Io.Dir.cwd().openDir(util.io, "content", .{
             .iterate = true,
         });
-        defer dir.close();
+        defer dir.close(util.io);
 
         var iter = dir.iterate();
 
-        while (try iter.next()) |item| {
+        while (try iter.next(util.io)) |item| {
             if (!std.mem.endsWith(u8, item.name, ".eee")) continue;
 
-            var file = try dir.openFile(item.name, .{ .mode = .read_only });
-            defer file.close();
+            var file = try dir.openFile(util.io, item.name, .{ .mode = .read_only });
+            defer file.close(util.io);
 
             const disk = try allocator.dupe(u8, item.name);
             var name = try allocator.dupe(u8, item.name);
@@ -304,7 +310,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
 
                             self.status = "Deleted";
 
-                            try std.fs.cwd().deleteFile(path);
+                            try std.Io.Dir.cwd().deleteFile(util.io, path);
 
                             _ = self.disks.orderedRemove(self.sel);
 
@@ -404,7 +410,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
 
                         self.status = "Deleted";
 
-                        try std.fs.cwd().deleteFile(path);
+                        try std.Io.Dir.cwd().deleteFile(util.io, path);
 
                         _ = self.disks.orderedRemove(self.sel);
 

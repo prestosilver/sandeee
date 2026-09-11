@@ -15,23 +15,24 @@ const zigimg = @import("zigimg");
 
 const SPACING = 1;
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
+
     const input_file = args.next() orelse return error.MissingInputFile;
     const output_file = args.next() orelse return error.MissingOutputFile;
 
-    var file = try std.fs.createFileAbsolute(output_file, .{});
-    defer file.close();
+    var file = try std.Io.Dir.createFileAbsolute(init.io, output_file, .{});
+    defer file.close(init.io);
 
-    var writer = file.writer(&.{});
+    var writer = file.writer(init.io, &.{});
+
+    var tmp_file = try std.Io.Dir.openFileAbsolute(init.io, input_file, .{});
+    defer tmp_file.close(init.io);
 
     var reader_buffer: [1024]u8 = undefined;
-    var image = try zigimg.Image.fromFilePath(allocator, input_file, &reader_buffer);
-    defer image.deinit(allocator);
+    var image = try zigimg.Image.fromFile(init.gpa, init.io, tmp_file, &reader_buffer);
+    defer image.deinit(init.gpa);
 
     try writer.interface.writeAll("efnt");
 
@@ -46,8 +47,8 @@ pub fn main() !void {
 
     for (0..16) |x| {
         for (0..16) |y| {
-            var ch = try allocator.alloc(u8, chw * chh);
-            defer allocator.free(ch);
+            var ch = try init.gpa.alloc(u8, chw * chh);
+            defer init.gpa.free(ch);
             @memset(ch, 0);
 
             for (0..chw) |chx| {

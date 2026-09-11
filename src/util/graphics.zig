@@ -23,18 +23,18 @@ pub const Context = struct {
     window: ?*glfw.Window,
     color: Color,
     shaders: std.array_list.Managed(Shader),
-    lock: std.Thread.Mutex = .{},
+    lock: std.Io.Mutex = .init,
     size: Vec2,
     refresh_rate: f32,
 
     pub inline fn makeCurrent() void {
-        instance.lock.lock();
+        instance.lock.lock(util.io) catch unreachable;
         glfw.makeContextCurrent(instance.window);
     }
 
     pub inline fn makeNotCurrent() void {
         glfw.makeContextCurrent(null);
-        instance.lock.unlock();
+        instance.lock.unlock(util.io);
     }
 
     pub inline fn cursorMode(val: c_int) void {
@@ -63,7 +63,12 @@ pub const Context = struct {
         }
     }
 
-    pub fn init(name: [*:0]const u8, real_fullscreen: bool) !void {
+    pub const GraphicsOptions = struct {
+        real_fullscreen: bool,
+        fullscreen: bool,
+    };
+
+    pub fn init(name: [*:0]const u8, options: GraphicsOptions) !void {
         _ = glfw.setErrorCallback(errorCallback);
 
         try glfw.init();
@@ -72,7 +77,10 @@ pub const Context = struct {
 
         const mode = glfw.getVideoMode(monitor).?;
 
-        const win = if (real_fullscreen) create: {
+        const win = if (!options.fullscreen) create: {
+            glfw.windowHint(glfw.Resizable, 1);
+            break :create try glfw.createWindow(800, 600, name, null, null);
+        } else if (options.real_fullscreen) create: {
             break :create try glfw.createWindow(mode.width, mode.height, name, monitor, null);
         } else create: {
             glfw.windowHint(glfw.RedBits, mode.redBits);
@@ -86,7 +94,7 @@ pub const Context = struct {
 
         zgl.loadExtensions(void{}, getGlFn) catch |err| switch (err) {
             error.EntryPointNotFound => {},
-            else => return err,
+            // else => return err,
         };
         zgl.debugMessageCallback(void{}, glDebug);
 

@@ -15,11 +15,11 @@ pub inline fn addOverlay(
     disk_steps: []const *std.Build.Step.Run,
     overlay_path: std.Build.LazyPath,
 ) void {
-    var dir = std.fs.openDirAbsolute(overlay_path.getPath(b), .{ .iterate = true }) catch unreachable;
-    defer dir.close();
+    var dir = std.Io.Dir.openDirAbsolute(b.graph.io, overlay_path.getPath(b), .{ .iterate = true }) catch unreachable;
+    defer dir.close(b.graph.io);
 
     var iter = dir.walk(b.allocator) catch unreachable;
-    while (iter.next() catch unreachable) |path| {
+    while (iter.next(b.graph.io) catch unreachable) |path| {
         switch (path.kind) {
             .file => addConvertFile(b, disk_steps, &.{}, &.{}, overlay_path.path(b, path.path), b.fmt("/{s}", .{path.path})),
             else => {},
@@ -68,10 +68,10 @@ pub fn addEmails(
 
     const mail_path = content_path.path(b, box_path);
 
-    var root = try std.fs.cwd().openDir(mail_path.getPath(b), .{ .iterate = true });
+    var root = try std.Io.Dir.cwd().openDir(b.graph.io, mail_path.getPath(b), .{ .iterate = true });
     var walker = try root.walk(b.allocator);
 
-    while (try walker.next()) |file| {
+    while (try walker.next(b.graph.io)) |file| {
         switch (file.kind) {
             .file => {
                 email_step.addArg("--file");
@@ -390,6 +390,9 @@ pub fn build(b: *std.Build) !void {
     const eia_builder_exe = b.addExecutable(.{
         .name = "eia_builder",
         .root_module = eia_builder_mod,
+
+        // Workaround: https://github.com/zigimg/zigimg/issues/318
+        .use_llvm = true,
     });
 
     const epk_builder_mod = b.createModule(.{
@@ -418,6 +421,9 @@ pub fn build(b: *std.Build) !void {
     const eff_builder_exe = b.addExecutable(.{
         .name = "eff_builder",
         .root_module = eff_builder_mod,
+
+        // Workaround: https://github.com/zigimg/zigimg/issues/318
+        .use_llvm = true,
     });
 
     const era_builder_mod = b.createModule(.{
@@ -500,12 +506,12 @@ pub fn build(b: *std.Build) !void {
         disk_image_step.addFileInput(paths_file);
         debug_image_step.addFileInput(paths_file);
         steam_image_step.addFileInput(paths_file);
-        const skel_file = try std.fs.openFileAbsolute(paths_file.getPath(b), .{});
-        defer skel_file.close();
+        const skel_file = try std.Io.Dir.openFileAbsolute(b.graph.io, paths_file.getPath(b), .{});
+        defer skel_file.close(b.graph.io);
 
-        const read = try skel_file.readToEndAlloc(b.allocator, 1000000);
-        var iter = std.mem.splitScalar(u8, read, '\n');
-        while (iter.next()) |line| {
+        var buffer: [512]u8 = undefined;
+        var reader = skel_file.reader(b.graph.io, &buffer);
+        while (try reader.interface.takeDelimiter('\n')) |line| {
             if (line.len == 0)
                 continue;
 
@@ -758,27 +764,27 @@ pub fn build(b: *std.Build) !void {
     const rc_file = resFileStep.addOutputFileArg("app.rc.o");
 
     // Includes
-    exe.addIncludePath(b.path("deps/include"));
-    exe.addIncludePath(b.path("deps/steam_sdk/public/"));
+    exe.root_module.addIncludePath(b.path("deps/include"));
+    exe.root_module.addIncludePath(b.path("deps/steam_sdk/public/"));
     if (target.result.os.tag == .windows) {
-        exe.addObjectFile(rc_file);
-        exe.addLibraryPath(b.path("deps/dll"));
-        exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
-        exe.addObjectFile(b.path("deps/dll/libglfw3.dll"));
-        exe.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe.root_module.addObjectFile(rc_file);
+        exe.root_module.addLibraryPath(b.path("deps/dll"));
+        exe.root_module.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
+        exe.root_module.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe.subsystem = .Windows;
     } else {
-        exe.addLibraryPath(b.path("deps/lib"));
-        exe.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
-        exe.addObjectFile(b.path("deps/lib/libglfw.so"));
-        exe.addObjectFile(b.path("deps/lib/libopenal.so"));
+        exe.root_module.addLibraryPath(b.path("deps/lib"));
+        exe.root_module.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
+        exe.root_module.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
     }
 
     if (steam_mode == .On) {
         if (target.result.os.tag == .windows)
-            exe.linkSystemLibrary("steam_api64")
+            exe.root_module.linkSystemLibrary("steam_api64", .{})
         else
-            exe.linkSystemLibrary("steam_api");
+            exe.root_module.linkSystemLibrary("steam_api", .{});
     }
 
     b.installArtifact(exe);
@@ -1111,13 +1117,13 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
-        exe_pub_linux.addIncludePath(b.path("deps/include"));
-        exe_pub_linux.addIncludePath(b.path("deps/steam_sdk/public/"));
-        exe_pub_linux.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
-        exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
-        exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
-        exe_pub_linux.linkSystemLibrary("steam_api");
+        exe_pub_linux.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_linux.root_module.addIncludePath(b.path("deps/steam_sdk/public/"));
+        exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
+        exe_pub_linux.root_module.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
+        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
+        exe_pub_linux.root_module.linkSystemLibrary("steam_api", .{});
 
         _ = steam_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux/SandEEE");
 
@@ -1140,17 +1146,17 @@ pub fn build(b: *std.Build) !void {
             .name = "SandEEE (Steam Windows)",
             .root_module = exe_mod_pub_windows,
         });
-        exe_pub_windows.addIncludePath(b.path("deps/include"));
-        exe_pub_windows.addIncludePath(b.path("deps/steam_sdk/public/"));
+        exe_pub_windows.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.root_module.addIncludePath(b.path("deps/steam_sdk/public/"));
 
-        exe_pub_windows.addObjectFile(rc_file);
-        exe_pub_windows.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
-        exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
-        exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe_pub_windows.root_module.addObjectFile(rc_file);
+        exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
+        exe_pub_windows.root_module.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
+        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
 
-        exe_pub_windows.linkSystemLibrary("steam_api64");
+        exe_pub_windows.root_module.linkSystemLibrary("steam_api64", .{});
 
         _ = steam_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows/SandEEE.exe");
 
@@ -1218,13 +1224,13 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
-        exe_pub_linux.addIncludePath(b.path("deps/include"));
-        exe_pub_linux.addIncludePath(b.path("deps/steam_sdk/public/"));
-        exe_pub_linux.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
-        exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
-        exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
-        exe_pub_linux.linkSystemLibrary("steam_api");
+        exe_pub_linux.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_linux.root_module.addIncludePath(b.path("deps/steam_sdk/public/"));
+        exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
+        exe_pub_linux.root_module.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/linux64"));
+        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
+        exe_pub_linux.root_module.linkSystemLibrary("steam_api", .{});
 
         _ = steam_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux_demo/SandEEE");
 
@@ -1247,17 +1253,17 @@ pub fn build(b: *std.Build) !void {
             .name = "SandEEE Demo (Steam Windows)",
             .root_module = exe_mod_pub_windows,
         });
-        exe_pub_windows.addIncludePath(b.path("deps/include"));
-        exe_pub_windows.addIncludePath(b.path("deps/steam_sdk/public/"));
+        exe_pub_windows.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.root_module.addIncludePath(b.path("deps/steam_sdk/public/"));
 
-        exe_pub_windows.addObjectFile(rc_file);
-        exe_pub_windows.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
-        exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
-        exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe_pub_windows.root_module.addObjectFile(rc_file);
+        exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
+        exe_pub_windows.root_module.addLibraryPath(b.path("deps/steam_sdk/redistributable_bin/win64/"));
+        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
 
-        exe_pub_windows.linkSystemLibrary("steam_api64");
+        exe_pub_windows.root_module.linkSystemLibrary("steam_api64", .{});
 
         _ = steam_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows_demo/SandEEE.exe");
 
@@ -1324,11 +1330,11 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
-        exe_pub_linux.addIncludePath(b.path("deps/include"));
+        exe_pub_linux.root_module.addIncludePath(b.path("deps/include"));
 
-        exe_pub_linux.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
-        exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
+        exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
+        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
 
         _ = itch_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux/SandEEE");
 
@@ -1352,12 +1358,12 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_windows,
             .use_llvm = true,
         });
-        exe_pub_windows.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.root_module.addIncludePath(b.path("deps/include"));
 
-        exe_pub_windows.addObjectFile(rc_file);
-        exe_pub_windows.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
-        exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe_pub_windows.root_module.addObjectFile(rc_file);
+        exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
+        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
 
         _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows/SandEEE.exe");
@@ -1428,11 +1434,11 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
-        exe_pub_linux.addIncludePath(b.path("deps/include"));
+        exe_pub_linux.root_module.addIncludePath(b.path("deps/include"));
 
-        exe_pub_linux.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.addObjectFile(b.path("deps/lib/libglfw.so"));
-        exe_pub_linux.addObjectFile(b.path("deps/lib/libopenal.so"));
+        exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
+        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libglfw.so"));
+        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
 
         _ = itch_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux-demo/SandEEE");
 
@@ -1456,12 +1462,12 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_windows,
             .use_llvm = true,
         });
-        exe_pub_windows.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.root_module.addIncludePath(b.path("deps/include"));
 
-        exe_pub_windows.addObjectFile(rc_file);
-        exe_pub_windows.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.addObjectFile(b.path("deps/dll/libglfw3.dll"));
-        exe_pub_windows.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe_pub_windows.root_module.addObjectFile(rc_file);
+        exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
+        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libglfw3.dll"));
+        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .Windows;
 
         _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows-demo/SandEEE.exe");

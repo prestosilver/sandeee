@@ -9,8 +9,8 @@
             .hash = "network-0.1.0-Pm-Agl8xAQBmkwohveGOfTk4zQnuqDs0Ptfbms4KP5Ce",
         },
         .zigimg = .{
-            .url = "git+https://github.com/zigimg/zigimg.git#eab2522c023b9259db8b13f2f90d609b7437e5f6",
-            .hash = "zigimg-0.1.0-8_eo2vUZFgAAtN1c6dAO5DdqL0d4cEWHtn6iR5ucZJti",
+            .url = "git+https://github.com/zigimg/zigimg.git#a7440df3fc41cde7df078b1c5829646c13056d49",
+            .hash = "zigimg-0.1.0-8_eo2sPVFwAm8y-DVfaCHNKQIpv9oHl_mbcKbGQZRLrK",
         },
         .zgl = .{
             .url = "git+https://github.com/ziglibs/zgl#6ee54c287f3c4f176bd05a92746828bb791a1ad0",
@@ -28,8 +28,8 @@
         //     .path = "../zig-steamworks-fake",
         // },
         .flags = .{
-            .url = "git+https://github.com/joegm/flags#2d62be30ff33661a2a3c6743ac922a78302d78a0",
-            .hash = "flags-0.10.0-a_9h3pxvAAA6wPndlO7ktfrpZUmhQu1y8aDm0lTi5ATR",
+            .url = "git+https://github.com/EnzyZero/flags#547932a6a9d6d4b640cb1c915c7feec268d9199d",
+            .hash = "flags-0.10.0-a_9h3iFxAABV7KdWNJPcsNrvQeSw2Ui_hm3CvTdNCSqU",
         },
     },
     .paths = .{

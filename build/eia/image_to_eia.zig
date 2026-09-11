@@ -1,24 +1,22 @@
 const std = @import("std");
 const zigimg = @import("zigimg");
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
 // converts a png to a eia
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
+
     const input_file = args.next() orelse return error.MissingInputFile;
     const output_file = args.next() orelse return error.MissingOutputFile;
 
-    var file = try std.fs.createFileAbsolute(output_file, .{});
-    defer file.close();
+    var file = try std.Io.Dir.createFileAbsolute(init.io, output_file, .{});
+    defer file.close(init.io);
 
-    var writer = file.writer(&.{});
+    var writer = file.writer(init.io, &.{});
 
     var reader_buffer: [1024]u8 = undefined;
-    var image = try zigimg.Image.fromFilePath(allocator, input_file, &reader_buffer);
-    defer image.deinit(allocator);
+    var image = try zigimg.Image.fromFilePath(init.gpa, init.io, input_file, &reader_buffer);
+    defer image.deinit(init.gpa);
 
     try writer.interface.writeAll("eimg");
 

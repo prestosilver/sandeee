@@ -125,7 +125,7 @@ queue: std.array_list.Managed(QueueEntry) = .init(allocator),
 buffers: []zgl.Buffer = &.{},
 qbuffers: []zgl.Buffer = &.{},
 scissor: ?Rect = null,
-queue_lock: std.Thread.Mutex = .{},
+queue_lock: std.Io.Mutex = .init,
 quad: zgl.Buffer = .invalid,
 
 size: *Vec2 = undefined,
@@ -153,8 +153,8 @@ pub fn addEntry(sb: *Self, entry: *const QueueEntry) !void {
     var new_entry = entry.*;
     new_entry.scissor = sb.scissor;
 
-    sb.queue_lock.lock();
-    defer sb.queue_lock.unlock();
+    try sb.queue_lock.lock(util.io);
+    defer sb.queue_lock.unlock(util.io);
 
     if (sb.queue.items.len != 0 and sb.queue.getLast().texture.equals(entry.texture) and
         sb.queue.getLast().shader.program == new_entry.shader.program and
@@ -178,8 +178,8 @@ pub fn render(sb: *Self) !void {
     zgl.blendFunc(.src_alpha, .one_minus_src_alpha);
 
     {
-        sb.queue_lock.lock();
-        defer sb.queue_lock.unlock();
+        try sb.queue_lock.lock(util.io);
+        defer sb.queue_lock.unlock(util.io);
 
         if (sb.qbuffers.len != sb.queue.items.len) {
             const target = sb.queue.items.len;
@@ -328,8 +328,8 @@ pub fn render(sb: *Self) !void {
 }
 
 pub fn clear(sb: *Self) !void {
-    sb.queue_lock.lock();
-    defer sb.queue_lock.unlock();
+    try sb.queue_lock.lock(util.io);
+    defer sb.queue_lock.unlock(util.io);
 
     for (sb.prev_queue.items) |*e| {
         e.verts.deinit();

@@ -2,35 +2,37 @@ const std = @import("std");
 
 const Operation = @import("sandeee_operation");
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
     const mode = args.next() orelse return error.MissingMode;
     const input_file = args.next() orelse return error.MissingInputFile;
+
+    var arena = std.heap.ArenaAllocator.init(init.gpa);
+    defer arena.deinit();
+
+    const alloc = arena.allocator();
     const output_file = args.next() orelse return error.MissingOutputFile;
 
     if (std.mem.eql(u8, mode, "exe")) {
-        try compile_executable(input_file, output_file);
+        try compile_executable(alloc, init.io, input_file, output_file);
     } else if (std.mem.eql(u8, mode, "lib")) {
-        try compile_library(input_file, output_file);
+        try compile_library(alloc, init.io, input_file, output_file);
     } else return error.BadBuildMode;
 }
 
-pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void {
-    var inreader = try std.fs.cwd().openFile(input_file, .{});
-    defer inreader.close();
-    try inreader.sync();
+pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: []const u8, output_file: []const u8) !void {
+    var inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
+    defer inreader.close(io);
+    try inreader.sync(io);
 
-    var file = try std.fs.createFileAbsolute(output_file, .{});
-    defer file.close();
+    var file = try std.Io.Dir.createFileAbsolute(io, output_file, .{});
+    defer file.close(io);
 
-    var writer = file.writer(&.{});
+    var writer = file.writer(io, &.{});
 
     var reader_buffer: [1024]u8 = undefined;
-    var reader_stream = inreader.reader(&reader_buffer);
+    var reader_stream = inreader.reader(io, &reader_buffer);
 
     var consts = std.StringHashMap(u64).init(allocator);
     var idx: u64 = 0;
@@ -53,11 +55,11 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
         }
     }
 
-    inreader.close();
-    inreader = try std.fs.cwd().openFile(input_file, .{});
-    try inreader.sync();
+    inreader.close(io);
+    inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
+    try inreader.sync(io);
 
-    reader_stream = inreader.reader(&reader_buffer);
+    reader_stream = inreader.reader(io, &reader_buffer);
 
     try writer.interface.writeAll("EEEp");
 
@@ -169,22 +171,22 @@ pub fn compile_executable(input_file: []const u8, output_file: []const u8) !void
     }
 }
 
-pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
-    var inreader = try std.fs.cwd().openFile(input_file, .{});
-    defer inreader.close();
-    try inreader.sync();
+pub fn compile_library(allocator: std.mem.Allocator, io: std.Io, input_file: []const u8, output_file: []const u8) !void {
+    var inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
+    defer inreader.close(io);
+    try inreader.sync(io);
 
-    var file = try std.fs.createFileAbsolute(output_file, .{});
-    defer file.close();
+    var file = try std.Io.Dir.createFileAbsolute(io, output_file, .{});
+    defer file.close(io);
 
-    var writer = file.writer(&.{});
+    var writer = file.writer(io, &.{});
 
     var toc = std.array_list.Managed(u8).init(allocator);
     var data = std.array_list.Managed(u8).init(allocator);
     var funcs = std.array_list.Managed([]const u8).init(allocator);
 
     var reader_buffer: [1024]u8 = undefined;
-    var reader_stream = inreader.reader(&reader_buffer);
+    var reader_stream = inreader.reader(io, &reader_buffer);
 
     var consts = std.StringHashMap(u64).init(allocator);
     var idx: u64 = 0;
@@ -217,11 +219,11 @@ pub fn compile_library(input_file: []const u8, output_file: []const u8) !void {
 
     try toc.append(@as(u8, @intCast(toc_count)));
 
-    inreader.close();
-    inreader = try std.fs.cwd().openFile(input_file, .{});
-    try inreader.sync();
+    inreader.close(io);
+    inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
+    try inreader.sync(io);
 
-    reader_stream = inreader.reader(&reader_buffer);
+    reader_stream = inreader.reader(io, &reader_buffer);
     var prev_toc: usize = 0;
 
     try writer.interface.writeAll("elib");

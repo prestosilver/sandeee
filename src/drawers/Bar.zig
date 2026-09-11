@@ -56,7 +56,7 @@ pub const BarData = struct {
             .pos = pos.location(),
         });
 
-        const ts = std.time.timestamp();
+        const ts = std.Io.Clock.real.now(util.io).toSeconds();
         const hours = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_hour)) - (config.SettingManager.instance.getInt("hours_offset") orelse 0);
         const mins = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_min)) - (config.SettingManager.instance.getInt("minutes_offset") orelse 0);
         const clock_text = try std.fmt.allocPrint(allocator, "{d: >2}:{d:0>2}", .{

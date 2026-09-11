@@ -104,11 +104,11 @@ pub const SysCall = struct {
 
     run_fn: *const fn (*Vm) VmError!void,
 
-    var sys_mutex: std.Thread.Mutex = .{};
+    var sys_mutex: std.Io.Mutex = .init;
 
     pub fn run(self: *Vm, index: u64) VmError!void {
-        sys_mutex.lock();
-        defer sys_mutex.unlock();
+        sys_mutex.lock(util.io) catch unreachable;
+        defer sys_mutex.unlock(util.io);
 
         if (index < @intFromEnum(SyscallId.Last)) {
             return SYS_CALLS.get(@enumFromInt(index)).run_fn(self);
@@ -276,7 +276,7 @@ fn sysArg(self: *Vm) VmError!void {
 }
 
 fn sysTime(self: *Vm) VmError!void {
-    try self.pushStackI(@as(u64, @intCast(std.time.milliTimestamp())));
+    try self.pushStackI(@as(u64, @intCast(std.Io.Clock.now(.real, util.io).toMilliseconds())));
 }
 
 fn sysCheckFunc(self: *Vm) VmError!void {

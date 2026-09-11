@@ -1,18 +1,19 @@
 const std = @import("std");
 const files = @import("sandeee").system.files;
 const strings = @import("sandeee").data.strings;
-
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
+const util = @import("sandeee").util;
 
 var content: [100_000_000]u8 = undefined;
 
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
     const output_file = args.next() orelse return error.MissingOutputFile;
 
-    const files_root = try allocator.create(files.Folder);
+    util.io = init.io;
+
+    const files_root = try init.gpa.create(files.Folder);
+    defer init.gpa.destroy(files_root);
 
     files_root.* = .{
         .parent = null,
@@ -38,23 +39,25 @@ pub fn main() !void {
                 else => |e| return e,
             };
 
-            const file = try std.fs.cwd().openFile(input_path, .{});
-            defer file.close();
+            const file = try std.Io.Dir.cwd().openFile(init.io, input_path, .{});
+            defer file.close(init.io);
 
-            const content_len = try file.readAll(&content);
+            var tmp_buffer: [512]u8 = undefined;
+            var reader = file.reader(init.io, &tmp_buffer);
+            const content_len = try reader.interface.readSliceShort(&content);
 
             try files_root.writeFile(disk_path, content[0..content_len], null);
             count += 1;
         } else if (std.mem.eql(u8, kind, "--disk")) {
             const input_path = args.next() orelse return error.MissingFile;
 
-            const recovery = try std.fs.cwd().openFile(input_path, .{});
-            defer recovery.close();
+            const recovery = try std.Io.Dir.cwd().openFile(init.io, input_path, .{});
+            defer recovery.close(init.io);
 
             var overlay_disk = try files.Folder.loadDisk(recovery);
             defer overlay_disk.deinit();
 
-            var folder_list = std.array_list.Managed(*const files.Folder).init(allocator);
+            var folder_list = std.array_list.Managed(*const files.Folder).init(init.gpa);
             defer folder_list.deinit();
             try overlay_disk.getFoldersRec(&folder_list, false);
 
@@ -65,7 +68,7 @@ pub fn main() !void {
                 };
             }
 
-            var file_list = std.array_list.Managed(*files.File).init(allocator);
+            var file_list = std.array_list.Managed(*files.File).init(init.gpa);
             defer file_list.deinit();
             try overlay_disk.getFilesRec(&file_list, false);
 
@@ -84,7 +87,7 @@ pub fn main() !void {
         }
     }
 
-    try std.fs.cwd().writeFile(.{
+    try std.Io.Dir.cwd().writeFile(init.io, .{
         .sub_path = output_file,
         .data = (try files.toStr()).items,
     });

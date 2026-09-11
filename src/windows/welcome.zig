@@ -38,14 +38,13 @@ const window_events = events.windows;
 
 const strings = data.strings;
 
-// 30 minutes
-const DEMO_TIME = 30 * 60 * 1e+9;
+const DEMO_TIME: std.Io.Duration = .fromSeconds(30 * 60);
 
 pub const WelcomeData = struct {
     const Self = @This();
 
     shell: Shell,
-    timer: std.time.Timer,
+    stop_time: std.Io.Timestamp,
     check_box: [2]Sprite,
     cb_pos: Rect = .{ .w = 0, .h = 0 },
     shader: *Shader,
@@ -99,10 +98,10 @@ pub const WelcomeData = struct {
 
         if (options.is_demo) {
             props.no_close = true;
-            const remaining = DEMO_TIME - @as(f32, @floatFromInt(self.timer.read()));
+            const remaining = std.Io.Clock.real.now().durationTo(self.stop_time).toSeconds();
             if (remaining < 0) @panic("Trial Over");
 
-            const demo_text = try std.fmt.allocPrint(allocator, "Trial ends in {}m", .{@as(usize, @intFromFloat(remaining / (60 * 1e+9)))});
+            const demo_text = try std.fmt.allocPrint(allocator, "Trial ends in {}m", .{@as(usize, @intFromFloat(remaining / 60))});
             defer allocator.free(demo_text);
 
             try font.draw(.{
@@ -175,7 +174,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
             }),
         },
         .shader = shader,
-        .timer = try std.time.Timer.start(),
+        .stop_time = std.Io.Clock.real.now(util.io).addDuration(DEMO_TIME),
     };
 
     var result = try Window.Data.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ strings.EEE ++ if (options.is_demo) " (trial)" else "", .{ .r = 0.75, .g = 0.75, .b = 0.75 });

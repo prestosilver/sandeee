@@ -127,7 +127,7 @@ pub const EmailManager = struct {
             return a.id < b.id;
         }
 
-        pub fn parseTxt(file: std.fs.File) !Email {
+        pub fn parseTxt(file: std.Io.File) !Email {
             var result = Email{
                 .to = "",
                 .from = "",
@@ -138,7 +138,7 @@ pub const EmailManager = struct {
             };
 
             var reader_buffer: [1024]u8 = undefined;
-            var reader = file.reader(&reader_buffer);
+            var reader = file.reader(util.io, &reader_buffer);
             var contents: std.array_list.Managed(u8) = .init(allocator);
             var input: ?[]const u8 = null;
             var deps: std.array_list.Managed(u8) = .init(allocator);

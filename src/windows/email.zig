@@ -512,7 +512,7 @@ const EmailData = struct {
 
                             try vm_instance.loadString(conts[4..]);
                             try vm_instance.runAll();
-                            const trimmed = std.mem.trimLeft(u8, vm_instance.out.items, " \n");
+                            const trimmed = std.mem.trimStart(u8, vm_instance.out.items, " \n");
 
                             good = good and std.ascii.eqlIgnoreCase(trimmed, runs.conts);
                         },

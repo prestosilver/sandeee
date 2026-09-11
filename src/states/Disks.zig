@@ -33,6 +33,8 @@ const system_events = events.system;
 
 const strings = data.strings;
 
+const Recovery = states.Recovery;
+
 const GSDisks = @This();
 
 const TEXT_COLOR = Color{ .r = 0.75, .g = 0.75, .b = 0.75 };
@@ -56,16 +58,8 @@ auto: bool = true,
 disks: std.array_list.Managed([]const u8) = .init(allocator),
 start: usize = 0,
 
-pub fn getDate(name: []const u8) i128 {
-    const path = std.fmt.allocPrint(allocator, "disks/{s}", .{name}) catch return 0;
-    defer allocator.free(path);
-    const file = std.fs.cwd().openFile(path, .{}) catch return 0;
-    defer file.close();
-    return (file.stat() catch return 0).mtime;
-}
-
 pub fn sortDisksLt(_: u0, a: []const u8, b: []const u8) bool {
-    return getDate(b) < getDate(a);
+    return Recovery.getDate(b).toSeconds() < Recovery.getDate(a).toSeconds();
 }
 
 pub fn setup(self: *GSDisks) !void {
@@ -76,13 +70,13 @@ pub fn setup(self: *GSDisks) !void {
     self.remaining = 10;
     self.disks.clearAndFree();
 
-    var dir = try std.fs.cwd().openDir("disks", .{
+    var dir = try std.Io.Dir.cwd().openDir(util.io, "disks", .{
         .iterate = true,
     });
-    defer dir.close();
+    defer dir.close(util.io);
 
     var iter = dir.iterate();
-    while (try iter.next()) |item| {
+    while (try iter.next(util.io)) |item| {
         if (!std.mem.endsWith(u8, item.name, ".eee")) continue;
 
         const entry = try allocator.dupe(u8, item.name);
@@ -182,7 +176,7 @@ pub fn draw(self: *GSDisks, _: Vec2) !void {
     if (self.auto) {
         line = try std.fmt.allocPrint(allocator, "{s}\nFor SandEEE v_{s}\nBooting to default in {}s", .{ strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT, @as(i32, @intFromFloat(self.remaining + 0.5)) });
     } else {
-        line = try std.fmt.allocPrint(allocator, "{s}\nFor SandEEE v_{s}\nAutoboot canceled", .{strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT});
+        line = try std.fmt.allocPrint(allocator, "{s}\nFor SandEEE v_{s}\nAutoboot canceled", .{ strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT });
     }
 
     try self.face.draw(.{

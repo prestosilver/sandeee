@@ -856,7 +856,7 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError![]const Operation {
         if (parse_ptr >= conts.len) {
             return error.InvalidAsm;
         }
-        const code: Operation.Code = std.meta.intToEnum(Operation.Code, conts[parse_ptr]) catch {
+        const code: Operation.Code = std.enums.fromInt(Operation.Code, conts[parse_ptr]) orelse {
             log.warn("Couldnt grab operation code", .{});
             return error.InvalidAsm;
         };
@@ -1016,13 +1016,15 @@ pub fn runTime(self: *Vm, ns: u64, comptime _: bool) !bool {
         } else return self.done();
     }
 
-    var timer = try std.time.Timer.start();
-
-    timer.reset();
+    const start = std.Io.Clock.now(.real, util.io);
 
     var exec: usize = 0;
 
-    while (timer.read() < ns and !self.done() and !self.yield) {
+    while (!self.done() and !self.yield) {
+        const end = std.Io.Clock.now(.real, util.io);
+        if (start.durationTo(end).toNanoseconds() >= ns)
+            break;
+
         if (try self.runStep()) {
             self.stopped = true;
             return true;
