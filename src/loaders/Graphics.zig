@@ -12,13 +12,17 @@ const log = util.log;
 
 const Self = @This();
 
+fullscreen: bool,
 real_fullscreen: bool,
 
 pub fn load(self: *const Self) anyerror!void {
     // init texture manager
     TextureManager.instance = .{};
 
-    try graphics.Context.init("SandEEE", self.real_fullscreen);
+    try graphics.Context.init("SandEEE", .{
+        .fullscreen = self.fullscreen,
+        .real_fullscreen = self.real_fullscreen,
+    });
     log.debug("Init graphics context", .{});
 }
 
