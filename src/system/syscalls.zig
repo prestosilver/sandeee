@@ -608,14 +608,16 @@ fn sysSteam(self: *Vm) VmError!void {
             const path = split.next() orelse break :upload_data;
             if (split.next() != null) break :upload_data;
 
-            std.fs.cwd().deleteTree(".steam_upload") catch {};
+            std.Io.Dir.cwd().deleteTree(util.io, ".steam_upload") catch {
+                // ignored as this is not a mandatory delete
+            };
 
             inline for (.{
                 ".steam_upload",
                 ".steam_upload/content",
                 ".steam_upload/meta",
             }) |dir_path|
-                std.fs.cwd().makeDir(dir_path) catch |err|
+                std.Io.Dir.cwd().createDir(util.io, dir_path, .default_dir) catch |err|
                     switch (err) {
                         error.PathAlreadyExists => {},
                         else => {
@@ -624,21 +626,21 @@ fn sysSteam(self: *Vm) VmError!void {
                         },
                     };
 
-            var temp_folder = std.fs.cwd().openDir(".steam_upload", .{}) catch |err| {
+            var temp_folder = std.Io.Dir.cwd().openDir(util.io, ".steam_upload", .{}) catch |err| {
                 log.warn("Failed to open directory {}", .{err});
                 return error.UnknownError;
             };
-            defer temp_folder.close();
-            var content_folder = temp_folder.openDir("content", .{}) catch |err| {
+            defer temp_folder.close(util.io);
+            var content_folder = temp_folder.openDir(util.io, "content", .{}) catch |err| {
                 log.warn("Failed to open directory {}", .{err});
                 return error.UnknownError;
             };
-            defer content_folder.close();
-            var meta_folder = temp_folder.openDir("meta", .{}) catch |err| {
+            defer content_folder.close(util.io);
+            var meta_folder = temp_folder.openDir(util.io, "meta", .{}) catch |err| {
                 log.warn("Failed to open directory {}", .{err});
                 return error.UnknownError;
             };
-            defer meta_folder.close();
+            defer meta_folder.close(util.io);
 
             const root = try self.root.resolve();
             const folder = try root.getFolder(path);
@@ -654,7 +656,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
                     log.debug("Creating Steam upload temp folder '{s}'", .{item.name[folder.name.len..]});
 
-                    content_folder.makePath(item.name[folder.name.len..]) catch |err|
+                    content_folder.createDirPath(util.io, item.name[folder.name.len..]) catch |err|
                         switch (err) {
                             error.PathAlreadyExists => {},
                             else => {
@@ -675,7 +677,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
                     log.debug("Creating Steam upload temp file {s}", .{item.name[folder.name.len..]});
 
-                    content_folder.writeFile(.{
+                    content_folder.writeFile(util.io, .{
                         .sub_path = item.name[folder.name.len..],
                         .data = try item.read(self),
                     }) catch |err| {
@@ -709,18 +711,18 @@ fn sysSteam(self: *Vm) VmError!void {
             };
 
             var write_buffer: [zigimg.io.DEFAULT_BUFFER_SIZE]u8 = undefined;
-            image.writeToFilePath(self.allocator, ".steam_upload/meta/preview.png", write_buffer[0..], .{ .png = .{} }) catch |err| {
+            image.writeToFilePath(self.allocator, util.io, ".steam_upload/meta/preview.png", write_buffer[0..], .{ .png = .{} }) catch |err| {
                 log.warn("failed to write image {}", .{err});
 
                 return error.UnknownError;
             };
 
             const update = try item.startUpdate(.this_app);
-            try update.setContent(content_folder);
+            try update.setContent(util.io, content_folder);
 
             var path_buffer: [256]u8 = undefined;
-            if (meta_folder.realpath("preview.png", &path_buffer)) |preview_path| {
-                const preview_file = try self.allocator.dupeZ(u8, preview_path);
+            if (meta_folder.realPathFile(util.io, "preview.png", &path_buffer)) |preview_path| {
+                const preview_file = try self.allocator.dupeZ(u8, path_buffer[0..preview_path]);
                 defer self.allocator.free(preview_file);
 
                 try update.setPreview(preview_file);

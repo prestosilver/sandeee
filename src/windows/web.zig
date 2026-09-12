@@ -308,7 +308,7 @@ pub const WebData = struct {
         const handle = query.send();
 
         while (!handle.isComplete())
-            std.Thread.sleep(200_000_000);
+            try std.Io.sleep(util.io, .fromMilliseconds(200), .real);
 
         const query_result = try handle.getResult(steam.callback.UGCQueryCompleted);
 
@@ -392,7 +392,7 @@ pub const WebData = struct {
                 break;
             }
 
-            std.Thread.sleep(2_000);
+            std.Io.sleep(util.io, .fromMilliseconds(100), .real) catch unreachable;
         }
 
         var size: u64 = 0;
@@ -409,11 +409,11 @@ pub const WebData = struct {
 
         log.debug("Rendering steam item path {s}", .{file_path});
 
-        var walker = std.fs.openDirAbsolute(file_path, .{ .iterate = true }) catch {
-            const file = try std.fs.openFileAbsolute(file_path, .{});
-            defer file.close();
+        var walker = std.Io.Dir.openDirAbsolute(util.io, file_path, .{ .iterate = true }) catch {
+            const file = try std.Io.Dir.openFileAbsolute(util.io, file_path, .{});
+            defer file.close(util.io);
 
-            var reader = file.reader(&.{});
+            var reader = file.reader(util.io, &.{});
             const cont = try reader.interface.allocRemaining(allocator, .unlimited);
 
             // Returns a handle
@@ -424,17 +424,17 @@ pub const WebData = struct {
         };
 
         // if this is a directory give a file listing
-        defer walker.close();
+        defer walker.close(util.io);
 
         // if index exists open that instead
-        if (try (walker.access("index.edf", .{}) catch |err| switch (err) {
+        if (try (walker.access(util.io, "index.edf", .{}) catch |err| switch (err) {
             error.FileNotFound => null,
             else => err,
         })) |_| {
-            const file = try walker.openFile("index.edf", .{});
-            defer file.close();
+            const file = try walker.openFile(util.io, "index.edf", .{});
+            defer file.close(util.io);
 
-            var reader = file.reader(&.{});
+            var reader = file.reader(util.io, &.{});
             const cont = try reader.interface.allocRemaining(allocator, .unlimited);
 
             // Returns a handle
@@ -451,7 +451,7 @@ pub const WebData = struct {
         else
             try std.fmt.allocPrint(allocator, "Contents of $item{}:{s}", .{ @intFromEnum(id), url.path });
 
-        while (try iter.next()) |item| {
+        while (try iter.next(util.io)) |item| {
             const old = conts;
             defer allocator.free(old);
 

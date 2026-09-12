@@ -619,6 +619,7 @@ pub fn main(init: std.process.Init) void {
         headless.disk = new_disk;
         DiskState.autoload_disk = new_disk;
     }
+
     if (cli.cwd) |new_cwd| {
         const dir = std.Io.Dir.cwd().openDir(init.io, new_cwd, .{}) catch |err| {
             log.log.err("Failed to change cwd to '{s}' {}", .{ new_cwd, err });
@@ -665,8 +666,10 @@ pub fn main(init: std.process.Init) void {
         };
     }
 
-    std.Io.Dir.cwd().access(util.io, "disks", .{}) catch
-        std.Io.Dir.cwd().createDir(util.io, "disks", .default_dir) catch
+    const cwd: std.Io.Dir = .cwd();
+
+    cwd.access(util.io, "disks", .{}) catch
+        cwd.createDir(util.io, "disks", .default_dir) catch
         std.debug.panic("Cannot make disks directory.", .{});
 
     runGame() catch |err| {
@@ -698,7 +701,6 @@ pub fn runGame() anyerror!void {
 
         // TODO: cleanup downloads maybe?
     }
-
     defer if (options.is_steam)
         steam.deinit();
 
@@ -1022,7 +1024,7 @@ pub fn runGame() anyerror!void {
 
             try Vm.Manager.instance.runGc();
 
-            final_fps = fps / @as(f32, @floatFromInt(since_last_tick.toMilliseconds())) / std.time.ms_per_s;
+            final_fps = fps / (@as(f32, @floatFromInt(since_last_tick.toMilliseconds())) / std.time.ms_per_s);
             if (Vm.Manager.instance.vms.count() != 0 and final_fps != 0) {
                 // TODO: move these into settings
                 if (final_fps < graphics.Context.instance.refresh_rate - 5.0) Vm.Manager.vm_time -= 0.01;
