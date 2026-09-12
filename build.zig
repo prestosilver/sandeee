@@ -853,8 +853,12 @@ pub fn build(b: *std.Build) !void {
             b.installFile("deps/lib/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
 
-    if (steam_mode == .On)
-        b.installFile("steam_appid.txt", "bin/steam_appid.txt");
+    if (steam_mode == .On) {
+        if (optimize == .Debug)
+            b.installFile("steam_appid_debug.txt", "bin/steam_appid.txt")
+        else
+            b.installFile("steam_appid.txt", "bin/steam_appid.txt");
+    }
 
     const changelog_step = b.addRunArtifact(changelog_builder_exe);
     changelog_step.addFileInput(b.path("VERSION"));

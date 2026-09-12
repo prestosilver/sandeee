@@ -96,7 +96,7 @@ pub const steam_options = struct {
         4401090
     else
         4124360;
-    pub const ugc_app_id = 4124360;
+    pub const ugc_app_id = app_id;
     pub const allocator = util.allocator;
 };
 
