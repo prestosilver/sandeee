@@ -48,28 +48,30 @@ pub const CMDData = struct {
 
     pub fn processBT(self: *Self) !void {
         const old_items = self.bt.items;
-        self.bt.shrinkRetainingCapacity(0);
+        var idx: usize = 0;
 
         for (old_items) |ch| {
             switch (ch) {
                 '\x08' => {
-                    if (self.bt.items.len >= 0)
-                        _ = self.bt.pop();
+                    if (idx > 0) idx -= 1;
                 },
                 '\x01' => {
-                    self.bt.clearRetainingCapacity();
+                    idx = 0;
                 },
                 '\r' => {
-                    if (std.mem.lastIndexOf(u8, self.bt.items, "\n")) |newidx|
-                        self.bt.shrinkRetainingCapacity(newidx + 1)
+                    if (std.mem.lastIndexOf(u8, self.bt.items[0..idx], "\n")) |newidx|
+                        idx = newidx + 1
                     else
-                        self.bt.clearRetainingCapacity();
+                        idx = 0;
                 },
                 else => {
-                    try self.bt.append(ch);
+                    self.bt.items[idx] = ch;
+                    idx += 1;
                 },
             }
         }
+
+        self.bt.items.len = idx;
     }
 
     pub fn draw(self: *Self, shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
@@ -156,7 +158,7 @@ pub const CMDData = struct {
             });
         }
 
-        props.scroll.?.maxy = @max(height, bnds.h) - bnds.h;
+        props.scroll.?.maxy = @max(height, bnds.h) - bnds.h + font.size;
         if (self.bot) {
             self.bot = false;
             props.scroll.?.value = props.scroll.?.maxy;

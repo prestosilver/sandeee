@@ -392,7 +392,7 @@ pub const WebData = struct {
                 break;
             }
 
-            std.Io.sleep(util.io, .fromMilliseconds(100), .real) catch unreachable;
+            std.Io.sleep(util.io, .fromNanoseconds(2000), .real) catch unreachable;
         }
 
         var size: u64 = 0;
