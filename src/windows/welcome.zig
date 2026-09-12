@@ -98,10 +98,10 @@ pub const WelcomeData = struct {
 
         if (options.is_demo) {
             props.no_close = true;
-            const remaining = std.Io.Clock.real.now().durationTo(self.stop_time).toSeconds();
+            const remaining: f32 = @floatFromInt(std.Io.Clock.real.now(util.io).durationTo(self.stop_time).toSeconds());
             if (remaining < 0) @panic("Trial Over");
 
-            const demo_text = try std.fmt.allocPrint(allocator, "Trial ends in {}m", .{@as(usize, @intFromFloat(remaining / 60))});
+            const demo_text = try std.fmt.allocPrint(allocator, "Trial ends in {}m", .{@as(usize, @intFromFloat(remaining / 60.0))});
             defer allocator.free(demo_text);
 
             try font.draw(.{
