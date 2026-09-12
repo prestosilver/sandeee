@@ -1,19 +1,18 @@
 const std = @import("std");
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
 var data: [100_000_000]u8 = undefined;
 
 // converts a eep to a epk
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
+
     const output_file_path = args.next() orelse return error.MissingOutputFile;
 
-    var output_file = try std.fs.createFileAbsolute(output_file_path, .{});
+    var output_file = try std.Io.Dir.createFileAbsolute(init.io, output_file_path, .{});
+    var output_writer = output_file.writer(init.io, &.{});
 
-    try output_file.writeAll("epak");
+    try output_writer.interface.writeAll("epak");
 
     while (args.next()) |kind| {
         if (std.mem.eql(u8, kind, "--file")) {
@@ -21,18 +20,19 @@ pub fn main() !void {
             const source_file = args.next() orelse return error.MissingSourceFile;
             const name_len: u16 = @intCast(dest_path.len);
 
-            try output_file.writeAll(&.{std.mem.asBytes(&name_len)[1]});
-            try output_file.writeAll(&.{std.mem.asBytes(&name_len)[0]});
-            try output_file.writeAll(dest_path);
+            try output_writer.interface.writeAll(&.{std.mem.asBytes(&name_len)[1]});
+            try output_writer.interface.writeAll(&.{std.mem.asBytes(&name_len)[0]});
+            try output_writer.interface.writeAll(dest_path);
 
-            const input_file = try std.fs.cwd().openFile(source_file, .{});
-            defer input_file.close();
+            const input_file = try std.Io.Dir.cwd().openFile(init.io, source_file, .{});
+            defer input_file.close(init.io);
 
-            const data_len: u16 = @intCast(try input_file.readAll(&data));
+            var input_reader = input_file.reader(init.io, &.{});
+            const data_len: u16 = @intCast(try input_reader.interface.readSliceShort(&data));
 
-            try output_file.writeAll(&.{std.mem.asBytes(&data_len)[1]});
-            try output_file.writeAll(&.{std.mem.asBytes(&data_len)[0]});
-            try output_file.writeAll(data[0..data_len]);
+            try output_writer.interface.writeAll(&.{std.mem.asBytes(&data_len)[1]});
+            try output_writer.interface.writeAll(&.{std.mem.asBytes(&data_len)[0]});
+            try output_writer.interface.writeAll(data[0..data_len]);
         } else return error.UnknownArg;
     }
 }

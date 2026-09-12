@@ -18,16 +18,13 @@ const LOG_FOOTER: []const u8 =
     \\:center: --- EEE Sees All ---
 ;
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
-pub var version_table: std.StringHashMap([]const u8) = .init(allocator);
-
-var ignore_list: std.StringHashMap(?[]const u8) = .init(allocator);
-
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
+
+    var version_table: std.StringHashMap([]const u8) = .init(init.gpa);
+    var ignore_list: std.StringHashMap(?[]const u8) = .init(init.gpa);
+
     const version_path = args.next() orelse return error.MissingVersionFile;
     const version_convert_path = args.next() orelse return error.MissingConvFile;
     const changelog_ignore_path = args.next() orelse return error.MissingVersionFile;
@@ -36,79 +33,83 @@ pub fn main() !void {
     var reader_buffer: [1024]u8 = undefined;
 
     {
-        const version_convert_file = try std.fs.openFileAbsolute(version_convert_path, .{});
-        defer version_convert_file.close();
+        const version_convert_file = try std.Io.Dir.openFileAbsolute(init.io, version_convert_path, .{});
+        defer version_convert_file.close(init.io);
 
-        var reader = version_convert_file.reader(&reader_buffer);
+        var reader = version_convert_file.reader(init.io, &reader_buffer);
         while (try reader.interface.takeDelimiter('\n')) |raw_line| {
             const comma_idx = std.mem.indexOf(u8, raw_line, ",") orelse continue;
-            const line = try allocator.dupe(u8, raw_line);
+            const line = try init.gpa.dupe(u8, raw_line);
             try version_table.put(line[0..comma_idx], line[comma_idx + 1 ..]);
         }
     }
 
     {
-        const changelog_ignore_file = try std.fs.openFileAbsolute(changelog_ignore_path, .{});
-        defer changelog_ignore_file.close();
+        const changelog_ignore_file = try std.Io.Dir.openFileAbsolute(init.io, changelog_ignore_path, .{});
+        defer changelog_ignore_file.close(init.io);
 
-        var reader = changelog_ignore_file.reader(&reader_buffer);
+        var reader = changelog_ignore_file.reader(init.io, &reader_buffer);
         while (try reader.interface.takeDelimiter('\n')) |raw_line| {
             if (std.mem.indexOf(u8, raw_line, " ")) |space_idx|
-                try ignore_list.put(try allocator.dupe(u8, raw_line[0..space_idx]), try allocator.dupe(u8, raw_line[space_idx + 1 ..]))
+                try ignore_list.put(try init.gpa.dupe(u8, raw_line[0..space_idx]), try init.gpa.dupe(u8, raw_line[space_idx + 1 ..]))
             else
-                try ignore_list.put(try allocator.dupe(u8, raw_line), null);
+                try ignore_list.put(try init.gpa.dupe(u8, raw_line), null);
         }
     }
 
-    var file = try std.fs.createFileAbsolute(output_file, .{});
-    defer file.close();
+    var file = try std.Io.Dir.createFileAbsolute(init.io, output_file, .{});
+    defer file.close(init.io);
 
-    _ = try file.write(LOG_HEADER);
+    var file_writer = file.writer(init.io, &.{});
+    try file_writer.interface.writeAll(LOG_HEADER);
 
-    var child = std.process.Child.init(&.{ "git", "log", "master", "--pretty=format:%h" }, allocator);
-    child.stdout_behavior = .Pipe;
-
-    try child.spawn();
+    var child = try std.process.spawn(init.io, .{
+        .argv = &.{ "git", "log", "master", "--pretty=format:%h" },
+        .stdout = .pipe,
+    });
 
     // Wait for process to exit
     const stdout_file = child.stdout.?;
-    var stdout_stream = stdout_file.reader(&reader_buffer);
-    const stdout_buffer = try stdout_stream.interface.allocRemaining(allocator, .unlimited);
-    defer allocator.free(stdout_buffer);
+    var stdout_stream = stdout_file.reader(init.io, &reader_buffer);
+    const stdout_buffer = try stdout_stream.interface.allocRemaining(init.gpa, .unlimited);
+    defer init.gpa.free(stdout_buffer);
 
-    const term = try child.wait();
-    if (term.Exited != 0) return error.GitFailed;
+    const term = try child.wait(init.io);
+    if (term.exited != 0) return error.GitFailed;
 
     var lines = std.mem.splitScalar(u8, stdout_buffer, '\n');
 
     var current: [128]u8 = undefined;
 
-    const version_file = try std.fs.openFileAbsolute(version_path, .{});
-    defer version_file.close();
-    const current_len = try version_file.readAll(&current);
+    const version_file = try std.Io.Dir.openFileAbsolute(init.io, version_path, .{});
+    defer version_file.close(init.io);
 
-    var last: []const u8 = try allocator.alloc(u8, 0);
+    var reader = version_file.reader(init.io, &.{});
+    const current_len = try reader.interface.readSliceShort(&current);
+
+    var last: []const u8 = try init.gpa.alloc(u8, 0);
 
     while (lines.next()) |line| {
         if (ignore_list.get(line)) |new_name|
             if (new_name == null) continue;
 
-        const file_text = try std.fmt.allocPrint(allocator, "{s}:VERSION", .{line});
-        defer allocator.free(file_text);
+        const file_text = try std.fmt.allocPrint(init.gpa, "{s}:VERSION", .{line});
+        defer init.gpa.free(file_text);
 
-        var git_proc = std.process.Child.init(&.{ "git", "show", file_text }, allocator);
-        git_proc.stdout_behavior = .Pipe;
-        git_proc.stderr_behavior = .Ignore;
-        try git_proc.spawn();
+        var git_proc = try std.process.spawn(init.io, .{
+            .argv = &.{ "git", "show", file_text },
+            .stdout = .pipe,
+            .stderr = .ignore,
+        });
 
         const git_stdout_file = git_proc.stdout.?;
-        var git_stdout_stream = git_stdout_file.reader(&reader_buffer);
-        const git_stdout_buffer = try git_stdout_stream.interface.allocRemaining(allocator, .unlimited);
-        defer allocator.free(git_stdout_buffer);
+        var git_stdout_stream = git_stdout_file.reader(init.io, &reader_buffer);
+        const git_stdout_buffer = try git_stdout_stream.interface.allocRemaining(init.gpa, .unlimited);
+        defer init.gpa.free(git_stdout_buffer);
 
         // Wait for process to exit
-        const git_term = try git_proc.wait();
-        if (git_term.Exited != 0) continue;
+        const git_term = try git_proc.wait(init.io);
+        if (git_term.exited != 0) continue;
 
         const git_stdout_trimmed = std.mem.trim(u8, git_stdout_buffer, &std.ascii.whitespace);
 
@@ -124,41 +125,38 @@ pub fn main() !void {
             if (!std.mem.eql(u8, last, version)) {
                 if (!std.mem.eql(u8, current[0..current_len], version)) {
                     if (!std.mem.eql(u8, last, "")) {
-                        const text = try std.fmt.allocPrint(allocator,
+                        try file_writer.interface.print(
                             \\
                             \\-- {s} --
                             \\
                         , .{last});
-                        defer allocator.free(text);
-
-                        _ = try file.write(text);
                     }
                 }
-                allocator.free(last);
-                last = try allocator.dupe(u8, version);
+                init.gpa.free(last);
+                last = try init.gpa.dupe(u8, version);
             }
 
             const change_line = if (ignore_list.get(line)) |new_name|
                 new_name.?
             else blk: {
-                var log_child = std.process.Child.init(&.{ "git", "log", "-1", "--pretty=format:%s", line }, allocator);
-                log_child.stdout_behavior = .Pipe;
-
-                try log_child.spawn();
+                var log_child = try std.process.spawn(init.io, .{
+                    .argv = &.{ "git", "log", "-1", "--pretty=format:%s", line },
+                    .stdout = .pipe,
+                });
 
                 const log_stdout_file = log_child.stdout.?;
-                var log_stdout_stream = log_stdout_file.reader(&reader_buffer);
-                const change_line = try log_stdout_stream.interface.allocRemaining(allocator, .unlimited);
+                var log_stdout_stream = log_stdout_file.reader(init.io, &reader_buffer);
+                const change_line = try log_stdout_stream.interface.allocRemaining(init.gpa, .unlimited);
 
                 // Wait for process to exit
-                const log_term = try log_child.wait();
-                if (log_term.Exited != 0) return error.GitFailed;
+                const log_term = try log_child.wait(init.io);
+                if (log_term.exited != 0) return error.GitFailed;
 
                 break :blk change_line;
             };
 
-            const lower_line = try std.ascii.allocLowerString(allocator, change_line);
-            defer allocator.free(lower_line);
+            const lower_line = try std.ascii.allocLowerString(init.gpa, change_line);
+            defer init.gpa.free(lower_line);
 
             if (!std.mem.eql(u8, change_line, "")) {
                 var ch: [2]u8 = .{ '|', '*' };
@@ -178,14 +176,14 @@ pub fn main() !void {
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "merge branch")) ch[1] = ' ';
 
                 if (ch[1] != ' ') {
-                    _ = try file.write(&ch);
-                    _ = try file.write(" ");
-                    _ = try file.write(change_line);
-                    _ = try file.write("\n");
+                    try file_writer.interface.writeAll(&ch);
+                    try file_writer.interface.writeAll(" ");
+                    try file_writer.interface.writeAll(change_line);
+                    try file_writer.interface.writeAll("\n");
                 }
             }
         }
     }
 
-    _ = try file.write(LOG_FOOTER);
+    try file_writer.interface.writeAll(LOG_FOOTER);
 }

@@ -1,23 +1,25 @@
 const std = @import("std");
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
+
     const output_file = args.next() orelse return error.MissingOutputFile;
     const output_path = args.next() orelse return error.MissingOutputPath;
 
-    var out_file = try std.fs.createFileAbsolute(output_file, .{ .exclusive = true });
-    defer out_file.close();
+    var out_file = std.Io.Dir.createFileAbsolute(init.io, output_file, .{ .exclusive = true }) catch |err| switch (err) {
+        error.PathAlreadyExists => try std.Io.Dir.openFileAbsolute(init.io, output_file, .{}),
+        else => |e| return e,
+    };
+    defer out_file.close(init.io);
 
-    var writer = out_file.writer(&.{});
+    var writer = out_file.writer(init.io, &.{});
 
     try writer.interface.writeAll("#Style @/style.eds\n\n");
     try writer.interface.writeAll(":logo: [@/logo.eia]\n\n");
     try writer.interface.writeAll(":center: -- Downloads --\n\n");
     var section_folder: []const u8 = "";
+    defer init.gpa.free(section_folder);
 
     while (args.next()) |kind| {
         if (std.mem.eql(u8, kind, "--section")) {
@@ -27,12 +29,13 @@ pub fn main() !void {
             if (section_folder.len != 0)
                 try writer.interface.writeAll("\n");
 
-            section_folder = try allocator.dupe(u8, section_folder_name);
+            init.gpa.free(section_folder);
+            section_folder = try init.gpa.dupe(u8, section_folder_name);
 
-            const targ_path = try std.fmt.allocPrint(allocator, "{s}/{s}/", .{ output_path, section_folder });
-            defer allocator.free(targ_path);
+            const targ_path = try std.fmt.allocPrint(init.gpa, "{s}/{s}/", .{ output_path, section_folder });
+            defer init.gpa.free(targ_path);
 
-            try std.fs.makeDirAbsolute(targ_path);
+            try std.Io.Dir.createDirAbsolute(init.io, targ_path, .default_dir);
 
             try writer.interface.print(":hs: {s}\n\n", .{section_name});
         } else if (std.mem.eql(u8, kind, "--file")) {
@@ -40,10 +43,10 @@ pub fn main() !void {
             const file_path = args.next() orelse return error.MissingFilePath;
             const slash_index = std.mem.lastIndexOf(u8, file_path, "/") orelse return error.BadPath;
 
-            const targ_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ section_folder, file_path[slash_index + 1 ..] });
-            defer allocator.free(targ_path);
+            const targ_path = try std.fmt.allocPrint(init.gpa, "{s}/{s}", .{ section_folder, file_path[slash_index + 1 ..] });
+            defer init.gpa.free(targ_path);
 
-            try std.fs.cwd().copyFile(file_path, try std.fs.openDirAbsolute(output_path, .{}), targ_path, .{});
+            try std.Io.Dir.cwd().copyFile(file_path, try std.Io.Dir.openDirAbsolute(init.io, output_path, .{}), targ_path, init.io, .{});
 
             try writer.interface.print(":biglink: > {s}: @/downloads/{s}/{s}\n", .{ file_name, section_folder, file_path[slash_index + 1 ..] });
         } else return error.UnknownArg;
