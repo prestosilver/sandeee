@@ -1446,6 +1446,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
+        exe_pub_linux.root_module.addIncludePath(b.path("deps/include"));
         exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
         exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
 
