@@ -15,6 +15,7 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-tests-dbg-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-tests-dbg-${{ runner.os }}-
@@ -47,6 +48,7 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-tests-rel-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-tests-rel-${{ runner.os }}-
@@ -86,6 +88,7 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-build-steam-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-steam-${{ runner.os }}-
@@ -131,6 +134,7 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-build-itch-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-itch-${{ runner.os }}-
@@ -170,6 +174,7 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-build-changelog-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-changelog-${{ runner.os }}-
