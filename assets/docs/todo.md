@@ -66,6 +66,7 @@ These are tasks that dont fix existing behaviour, but improve accessability for 
 These are tasks that only affect the codebase.
 
 - [X] zig build upload_itch_release
+- [X] Zig 0.16
 - [ ] zig test should check www for dead links
 - [ ] Breakout UI for consistency!!!
 - [ ] Add consistent id+iota type utility
@@ -75,8 +76,6 @@ These are tasks that only affect the codebase.
 - [ ] zig build itch_changelog
 - [ ] Move runSandEEE to a subfolder somewhere (in repo)
 - [ ] Github actions doesnt test `-Dsteam=On`
-- [ ] Zig 0.16
-
 
 ## General tentative todo
 
