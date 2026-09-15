@@ -26,7 +26,7 @@
         },
         .zig_steamworks_fake = .{
             .url = "git+https://github.com/prestosilver/zig-steamworks-fake#f780457489a972e0160f7b4d5277cdcf4297638c",
-            .hash = "zig_steamworks_fake-0.0.0-3i7XFqR8AABfxkJwmYxeiHH_db9rpilKTZaYnj3ERy0p",
+            .hash = "zig_steamworks_fake-0.0.0-3i7XFqp8AACMjGsZ443s4c-6gBvWKedvXITRx-G_2KqD",
         },
         .flags = .{
             .url = "git+https://github.com/EnzyZero/flags#547932a6a9d6d4b640cb1c915c7feec268d9199d",
