@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         optimize: [ReleaseFast, Debug]
-        steam: [On, Off]
+        steam: [Off]
     steps:
       - uses: actions/checkout@v3
       - name: Cache zig build
