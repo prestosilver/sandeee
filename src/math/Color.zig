@@ -7,6 +7,15 @@ g: f32,
 b: f32,
 a: f32 = 1,
 
+pub const black: Color = .{ .r = 0.0, .g = 0.0, .b = 0.0 };
+pub const white: Color = .{ .r = 1.0, .g = 1.0, .b = 1.0 };
+pub const red: Color = .{ .r = 1.0, .g = 0.0, .b = 0.0 };
+pub const yellow: Color = .{ .r = 1.0, .g = 1.0, .b = 0.0 };
+pub const green: Color = .{ .r = 0.0, .g = 1.0, .b = 0.0 };
+pub const cyan: Color = .{ .r = 0.0, .g = 1.0, .b = 1.0 };
+pub const blue: Color = .{ .r = 0.0, .g = 0.0, .b = 1.0 };
+pub const magenta: Color = .{ .r = 1.0, .g = 0.0, .b = 1.0 };
+
 pub inline fn mix(a: Color, b: Color, pc: f32) Color {
     return .{
         .r = a.r + (b.r - a.r) * pc,
@@ -32,8 +41,8 @@ pub inline fn contrast(c: Color) Color {
     const luma = 0.2126 * std.math.pow(f32, c.r, gamma) + 0.7152 * std.math.pow(f32, c.g, gamma) + 0.0722 * std.math.pow(f32, c.b, gamma);
 
     if (luma > std.math.pow(f32, 0.5, gamma)) {
-        return .{ .r = 0, .g = 0, .b = 0 };
+        return .black;
     } else {
-        return .{ .r = 1, .g = 1, .b = 1 };
+        return .white;
     }
 }

@@ -81,7 +81,7 @@ desk: Desk,
 
 shell: Shell,
 
-color: Color = .{ .r = 0, .g = 0, .b = 0 },
+color: Color = .black,
 debug_enabled: bool = false,
 
 pub var global_self: *GSWindowed = undefined;
