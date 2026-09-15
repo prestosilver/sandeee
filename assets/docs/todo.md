@@ -68,6 +68,7 @@ These are tasks that only affect the codebase.
 
 - [X] zig build upload_itch_release
 - [X] Zig 0.16
+- [X] Github actions doesnt test `-Dsteam=On`
 - [ ] Magic number cleanup
   - [X] Colors
   - [ ] Sizes
@@ -83,7 +84,6 @@ These are tasks that only affect the codebase.
 - [ ] zig build steam_changelog
 - [ ] zig build itch_changelog
 - [ ] Move runSandEEE to a subfolder somewhere (in repo)
-- [ ] Github actions doesnt test `-Dsteam=On`
 
 ## General tentative todo
 
