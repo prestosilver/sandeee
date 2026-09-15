@@ -998,12 +998,12 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
             }),
         },
         .sel = .atlas("ui", .{
-            .color = .{ .r = 1, .g = 1, .b = 1 },
+            .color = .white,
             .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
             .size = .{ .y = 6 },
         }),
         .shader = shader,
     };
 
-    return Window.Data.WindowContents.init(self, "editor", strings.EEE ++ "DT", .{ .r = 1, .g = 1, .b = 1 });
+    return Window.Data.WindowContents.init(self, "editor", strings.EEE ++ "DT", .white);
 }

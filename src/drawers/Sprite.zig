@@ -15,7 +15,7 @@ const VertArray = util.VertArray;
 pub const SpriteData = struct {
     source: Rect,
     size: Vec2,
-    color: Color = .{ .r = 1, .g = 1, .b = 1 },
+    color: Color = .white,
 
     pub fn getVerts(self: *const SpriteData, pos: Vec3) !VertArray {
         var result = try VertArray.init(6);

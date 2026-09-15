@@ -90,7 +90,7 @@ const SettingsData = struct {
                         .shader = font_shader,
                         .text = "UNDEFINED",
                         .pos = .{ .x = 16 + bnds.x + pos.x + bnds.w / 3 * 2, .y = bnds.y + pos.y },
-                        .color = .{ .r = 1, .g = 0, .b = 0 },
+                        .color = .red,
                     });
                 }
 
@@ -330,5 +330,5 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         });
     }
 
-    return Window.Data.WindowContents.init(self, "settings", "Settings", .{ .r = 1, .g = 1, .b = 1 });
+    return Window.Data.WindowContents.init(self, "settings", "Settings", .white);
 }

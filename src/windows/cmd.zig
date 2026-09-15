@@ -105,7 +105,7 @@ pub const CMDData = struct {
                     .x = bnds.x + 6,
                     .y = bnds.y + bnds.h - font.size - 6 + offset,
                 },
-                .color = .{ .r = 1, .g = 1, .b = 1 },
+                .color = .white,
                 .wrap = bnds.w - 30,
             });
             try font.draw(.{
@@ -117,7 +117,7 @@ pub const CMDData = struct {
                     }).x,
                     .y = bnds.y + bnds.h - font.size - 6 + offset,
                 },
-                .color = .{ .r = 1, .g = 1, .b = 1 },
+                .color = .white,
             });
             idx += 1;
         } else {
@@ -153,7 +153,7 @@ pub const CMDData = struct {
                 .shader = shader,
                 .text = line,
                 .pos = .{ .x = bnds.x + 6, .y = y },
-                .color = .{ .r = 1, .g = 1, .b = 1 },
+                .color = .white,
                 .wrap = bnds.w - 30,
             });
         }
@@ -338,5 +338,5 @@ pub fn init() !Window.Data.WindowContents {
         },
     };
 
-    return Window.Data.WindowContents.init(self, "cmd", "CMD", .{ .r = 0, .g = 0, .b = 0 });
+    return Window.Data.WindowContents.init(self, "cmd", "CMD", .black);
 }

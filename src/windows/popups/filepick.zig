@@ -79,7 +79,7 @@ pub const PopupFilePick = struct {
                 .pos = bnds.location().add(.{ .x = 0, .y = font.size * 4 }),
                 .text = err,
                 .wrap = bnds.w - 60,
-                .color = .{ .r = 1, .g = 0, .b = 0 },
+                .color = .red,
             });
     }
 

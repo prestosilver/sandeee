@@ -109,7 +109,7 @@ pub const WelcomeData = struct {
                 .text = demo_text,
                 .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
                 .scale = 2,
-                .color = .{ .r = 1, .g = 0, .b = 0 },
+                .color = .red,
             });
 
             y += 3;
@@ -177,7 +177,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         .stop_time = std.Io.Clock.real.now(util.io).addDuration(DEMO_TIME),
     };
 
-    var result = try Window.Data.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ strings.EEE ++ if (options.is_demo) " (trial)" else "", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    var result = try Window.Data.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ strings.EEE ++ if (options.is_demo) " (trial)" else "", .gray(0.75));
     result.props.size.min = .{ .x = 600, .y = 350 };
     result.props.size.max = .{ .x = 600, .y = 350 };
 

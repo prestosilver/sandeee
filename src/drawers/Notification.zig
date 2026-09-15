@@ -29,7 +29,7 @@ pub const NotificationData = struct {
     title: []const u8,
     text: []const u8,
     source: Rect = .{ .w = 1, .h = 1 },
-    color: Color = .{ .r = 1, .g = 1, .b = 1 },
+    color: Color = .white,
 
     pub fn update(self: *NotificationData, dt: f32) !void {
         self.time = @max(@as(f32, 0), self.time - dt);
@@ -75,7 +75,7 @@ pub const NotificationData = struct {
             .shader = font_shader,
             .text = self.title,
             .pos = desk_size.sub(.{ .x = 180, .y = 100 + 80 * @as(f32, @floatFromInt(idx)) }),
-            .color = .{ .r = 0, .g = 0, .b = 0 },
+            .color = .black,
             .wrap = 160,
             .maxlines = 1,
         });
@@ -84,7 +84,7 @@ pub const NotificationData = struct {
             .shader = font_shader,
             .text = self.text,
             .pos = desk_size.sub(.{ .x = 180, .y = 100 - font.size + 80 * @as(f32, @floatFromInt(idx)) }),
-            .color = .{ .r = 0, .g = 0, .b = 0 },
+            .color = .black,
             .wrap = 160,
             .maxlines = 3,
         });

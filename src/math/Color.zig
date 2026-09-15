@@ -16,6 +16,10 @@ pub const cyan: Color = .{ .r = 0.0, .g = 1.0, .b = 1.0 };
 pub const blue: Color = .{ .r = 0.0, .g = 0.0, .b = 1.0 };
 pub const magenta: Color = .{ .r = 1.0, .g = 0.0, .b = 1.0 };
 
+pub inline fn gray(pc: f32) Color {
+    return .{ .r = pc, .g = pc, .b = pc };
+}
+
 pub inline fn mix(a: Color, b: Color, pc: f32) Color {
     return .{
         .r = a.r + (b.r - a.r) * pc,

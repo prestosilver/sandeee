@@ -149,7 +149,7 @@ pub const ExplorerData = struct {
                     .shader = font_shader,
                     .text = icon.name,
                     .pos = .{ .x = bnds.x + x + xo - 14, .y = bnds.y + 64 + y + 6 },
-                    .color = .{ .r = 0, .g = 0, .b = 0 },
+                    .color = .black,
                     .wrap = 100,
                     .maxlines = 1,
                 });
@@ -197,7 +197,7 @@ pub const ExplorerData = struct {
                     .x = bnds.x + 42,
                     .y = bnds.y + 8,
                 },
-                .color = .{ .r = 0, .g = 0, .b = 0 },
+                .color = .black,
             });
         }
 
@@ -386,5 +386,5 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
 
     try self.refresh();
 
-    return Window.Data.WindowContents.init(self, "explorer", "Files", .{ .r = 1, .g = 1, .b = 1 });
+    return Window.Data.WindowContents.init(self, "explorer", "Files", .white);
 }

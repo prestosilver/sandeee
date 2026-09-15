@@ -108,7 +108,7 @@ pub const LauncherData = struct {
                     .shader = font_shader,
                     .text = icon.name,
                     .pos = .{ .x = bnds.x + x + xo - 14, .y = bnds.y + 64 + y + 6 },
-                    .color = .{ .r = 0, .g = 0, .b = 0 },
+                    .color = .black,
                     .wrap = 100,
                     .maxlines = 1,
                 });
@@ -218,5 +218,5 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
 
     g_idx += 1;
 
-    return .init(self, "launcher", "Launcher", .{ .r = 1, .g = 1, .b = 1 });
+    return .init(self, "launcher", "Launcher", .white);
 }

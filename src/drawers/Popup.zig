@@ -131,7 +131,7 @@ pub const PopupData = struct {
             .shader = shader,
             .text = self.title,
             .pos = .{ .x = self.pos.x + 9, .y = self.pos.y + 8 },
-            .color = .{ .r = 1, .g = 1, .b = 1 },
+            .color = .white,
             .wrap = self.pos.w - 64,
             .maxlines = 1,
         });
@@ -142,7 +142,7 @@ pub const PopupData = struct {
             .texture = .none,
             .verts = try VertArray.init(0),
             .shader = shader.*,
-            .clear = .{ .r = 0.75, .g = 0.75, .b = 0.75 },
+            .clear = .gray(0.75),
         });
 
         try self.contents.draw(shader, self.scissor(), font);

@@ -141,7 +141,7 @@ pub const drawParams = struct {
     batch: ?*SpriteBatch = null,
     origin: ?*Vec2 = null,
     scale: f32 = 1,
-    color: Color = .{ .r = 0, .g = 0, .b = 0 },
+    color: Color = .black,
     wrap: ?f32 = null,
     maxlines: ?usize = null,
     newlines: bool = true,
