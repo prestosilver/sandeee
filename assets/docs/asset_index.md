@@ -58,6 +58,11 @@
 |![bg-1232x706.png](../steam/store/bg-920x430.png)|A background image possibly used for some steam stuff|
 |![bg-1232x706_crt_store.png](../steam/store/bg-920x430_crt_store.png)|A background image possibly used for some steam stuff, with the logo for steam|
 |![bg-948x203_crt.png](../steam/workshop/bg-948x203_crt.png)|A background image possibly used for some steam stuff, with the logo for steam|
+
+## Itch assets
+
+|File|Desc|
+|----|----|
 |![banner.png](../itch/banner.png)|The itch banner used.|
 
 ## Videos
