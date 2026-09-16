@@ -24,17 +24,26 @@
 - Full sandbox
 - Subtle inconsistencies in design
   - Should feel like it was made by a team but repurposed by individual
+  - Email will be encripted by rc4, however game will have multiple mentions of rsa.
 
 ### Lore drop 1
 
-- Base story, feels too neat
+- Base story, should feel too neat will not be too heavy on contradictions, mostly focusing on epsilon as an imfamous whistle blower, bringing down the all greedy EEE
 
 ### Lore drop 2
 
-- New recovery disk?
-- Epsilon starts to feel off
+- New recovery disk for DunEEE
+  - Its publically considered a "fake" image, an attempt to cover up the whistle blow. but is more real than SandEEE.
+  - Game will have a way to decript update images with a key.
+    - Encrypted with rsa.
+- Epsilon starts to feel off, hes an ass in this disk.
+- The disk is so focused on Epsilon it feels fake, theres no way a junior was the talk of the company.
+  - In reality, he was infact on everyones head everyone thought he was a prodigy.
+  - He is super manipulative, and is always going behind peoples back.
 
 ### Lore drop 3
 
+- Final disk image, also encrypted.
+  - This will be "epsilons personal disk", containing his diary of his job.
 - The reveal, epsilon was a spy dropped in by unnamed.
 - Have a draft for the entire plot accessible by now, "Wait this was all planned."
