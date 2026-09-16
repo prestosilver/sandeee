@@ -60,6 +60,8 @@
 |&emsp;&emsp;*.png|Png image assets in SandEEE[^2]|
 |&emsp;[mail/](../../content/mail)|Email raw text[^1]|
 |&emsp;[overlays/](../../content/overlays/)|Disk image overlays for special builds|
+|&emsp;[scripts/](../../content/scripts)|Scripts that ship with SandEEE|
+|&emsp;&emsp;[runSandEEE](../../content/scripts/runSandEEE)|A bash script used by steam to run sandeee|
 
 [^1]: Asset will be scrapped, however is cannon hence is being kept
 [^2]: Asset will be removed per duplication

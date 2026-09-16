@@ -848,7 +848,7 @@ pub fn build(b: *std.Build) !void {
         if (steam_mode == .On)
             b.installFile("deps/dll/steam_api64.dll", "bin/steam_api64.dll");
     } else if (target.result.os.tag == .linux) {
-        b.installFile("runSandEEE", "bin/runSandEEE");
+        b.installFile("content/scripts/runSandEEE", "bin/runSandEEE");
         if (steam_mode == .On)
             b.installFile("deps/lib/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
@@ -1179,7 +1179,7 @@ pub fn build(b: *std.Build) !void {
 
         _ = steam_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows/SandEEE.exe");
 
-        _ = steam_directory_step.addCopyFile(b.path("runSandEEE"), "linux/runSandEEE");
+        _ = steam_directory_step.addCopyFile(b.path("content/scripts/runSandEEE"), "linux/runSandEEE");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows/libgcc_s_seh-1.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows/libstdc++-6.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows/OpenAL32.dll");
@@ -1281,7 +1281,7 @@ pub fn build(b: *std.Build) !void {
 
         _ = steam_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows_demo/SandEEE.exe");
 
-        _ = steam_directory_step.addCopyFile(b.path("runSandEEE"), "linux_demo/runSandEEE");
+        _ = steam_directory_step.addCopyFile(b.path("content/scripts/runSandEEE"), "linux_demo/runSandEEE");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows_demo/libgcc_s_seh-1.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows_demo/libstdc++-6.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows_demo/OpenAL32.dll");
@@ -1380,7 +1380,7 @@ pub fn build(b: *std.Build) !void {
 
         _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows/SandEEE.exe");
 
-        _ = itch_directory_step.addCopyFile(b.path("runSandEEE"), "linux/runSandEEE");
+        _ = itch_directory_step.addCopyFile(b.path("content/scripts/runSandEEE"), "linux/runSandEEE");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows/libgcc_s_seh-1.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows/libstdc++-6.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows/OpenAL32.dll");
@@ -1482,7 +1482,7 @@ pub fn build(b: *std.Build) !void {
 
         _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows-demo/SandEEE.exe");
 
-        _ = itch_directory_step.addCopyFile(b.path("runSandEEE"), "linux-demo/runSandEEE");
+        _ = itch_directory_step.addCopyFile(b.path("content/scripts/runSandEEE"), "linux-demo/runSandEEE");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows-demo/libgcc_s_seh-1.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows-demo/libstdc++-6.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows-demo/OpenAL32.dll");
