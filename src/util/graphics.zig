@@ -115,7 +115,7 @@ pub const Context = struct {
 
         instance = Context{
             .window = win,
-            .color = .{ .r = 0, .g = 0, .b = 0 },
+            .color = .black,
             .shaders = .init(allocator),
             .size = .{ .x = @floatFromInt(w), .y = @floatFromInt(h) },
             .refresh_rate = @floatFromInt(mode.refreshRate),

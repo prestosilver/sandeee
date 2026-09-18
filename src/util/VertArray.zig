@@ -96,7 +96,7 @@ pub inline fn setQuadLen(va: *VertArray, len: usize) void {
 }
 
 const UiQuadParams = struct {
-    color: Color = .{ .r = 1, .g = 1, .b = 1 },
+    color: Color = .white,
     sheet_size: Vec2 = .{ .x = 1, .y = 1 },
     sprite_size: Vec2 = .{ .x = 1, .y = 1 },
     sprite: Vec2 = .{},
@@ -141,7 +141,7 @@ pub inline fn appendUiQuad(va: *VertArray, pos: Rect, params: UiQuadParams) !voi
 }
 
 const QuadParams = struct {
-    color: Color = .{ .r = 1, .g = 1, .b = 1 },
+    color: Color = .white,
     flip_x: bool = false,
     flip_y: bool = false,
 };

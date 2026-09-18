@@ -18,7 +18,7 @@ const VertArray = util.VertArray;
 
 pub const GraphData = struct {
     size: Vec2,
-    color: Color = .{ .r = 1, .g = 1, .b = 1 },
+    color: Color = .white,
     data: []f32,
     max: f32 = 1.0,
 

@@ -125,5 +125,13 @@ Signoff: `-- Epsilon Frees All --`
 
 - Giveaways
 - Traits
+    - Thinks hes perfect
+    - Becomes super egotistical over time, he thinks everyone is stupid for not discovering his secret.
+    - Corperate slave, cannot say no to his boss
+        - Even willing to throw morals
+    - Not actually a bad guy, outside of following malicious demands.
 - Common Swaps
+    - Hi -> Hia
 - Plot points
+    - The "antagonist"
+    - Works for Unnamed

@@ -43,7 +43,7 @@ sad_sprite: Sprite,
 
 pub fn setup(_: *GSCrash) !void {
     files.write();
-    graphics.Context.instance.color = .{ .r = 0.25, .g = 0, .b = 0 };
+    graphics.Context.instance.color = .mix(.red, .black, 0.5);
 }
 
 pub fn deinit(_: *GSCrash) void {}
@@ -57,7 +57,7 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
         .shader = self.font_shader,
         .text = "ERROR:",
         .pos = .{ .x = 300, .y = 100 },
-        .color = .{ .r = 1, .g = 1, .b = 1 },
+        .color = .white,
         .wrap = size.x - 400,
         .scale = 0.5,
     });
@@ -65,7 +65,7 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
         .shader = self.font_shader,
         .text = self.message.*,
         .pos = .{ .x = 300, .y = 100 + self.face.size * 0.5 },
-        .color = .{ .r = 1, .g = 1, .b = 1 },
+        .color = .white,
         .wrap = size.x - 400,
         .scale = 0.5,
     });
@@ -83,7 +83,7 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
         .shader = self.font_shader,
         .text = state_text,
         .pos = .{ .x = 300, .y = 100 + self.face.size * 1 + offset },
-        .color = .{ .r = 1, .g = 1, .b = 1 },
+        .color = .white,
         .wrap = size.x - 400,
         .scale = 0.5,
     });
@@ -92,7 +92,7 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
         .shader = self.font_shader,
         .text = "\nIF YOU SEE THIS CRASH YOUR FILES WERE SAVED :)",
         .pos = .{ .x = 300, .y = 100 + self.face.size * 3 + offset },
-        .color = .{ .r = 1, .g = 1, .b = 1 },
+        .color = .white,
         .wrap = size.x - 400,
         .scale = 0.5,
     });

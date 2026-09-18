@@ -2,9 +2,13 @@ name: Test and upload
 run-name: Run tests for commit '${{ github.event.head_commit.message }}' on ${{ github.ref_name }} and upload to stores.
 on: [push]
 jobs:
-  tests-dbg:
+  tests:
     runs-on: ubuntu-latest
     name: Run tests 
+    strategy:
+      matrix:
+        optimize: [ReleaseFast, Debug]
+        steam: [Off]
     steps:
       - uses: actions/checkout@v3
       - name: Cache zig build
@@ -15,10 +19,11 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-tests-dbg-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
-            zig-tests-dbg-${{ runner.os }}-
-            zig-tests-dbg-
+            zig-tests-${{ matrix.optimize }}-${{ runner.os }}-
+            zig-tests-${{ matrix.optimize }}-
             zig-tests-
             zig-
 
@@ -28,40 +33,8 @@ jobs:
           zig-version: 0.16.0
       - name: Run tests
         run: |
-          zig build test
+          zig build -Doptimize=${{ matrix.optimize }} -Dsteam=${{ matrix.steam }} test
 
-      - name: Summary results
-        if: always()
-        run: |
-          cat zig-out/test_output.md >> $GITHUB_STEP_SUMMARY
-  tests-rel:
-    runs-on: ubuntu-latest
-    name: Run tests (release)
-    steps:
-      - uses: actions/checkout@v3
-      - name: Cache zig build
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-zig
-        with:
-          path: |
-            ${{github.workspace}}/.cache/zig
-            ${{github.workspace}}/.zig-cache
-          key: zig-tests-rel-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
-          restore-keys: |
-            zig-tests-rel-${{ runner.os }}-
-            zig-tests-rel-
-            zig-tests-
-            zig-
-
-      - name: Setup Zig
-        uses: korandoru/setup-zig@v1
-        with:
-          zig-version: 0.16.0
-      - name: Run tests
-        run: |
-          zig build test -Doptimize=ReleaseFast
-        
       - name: Summary results
         if: always()
         run: |
@@ -70,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Steam Upload
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/steam_upload' 
-    needs: [tests-dbg, tests-rel]
+    needs: [tests]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -86,6 +59,7 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-build-steam-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-steam-${{ runner.os }}-
@@ -118,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Itch Upload
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/steam_upload' 
-    needs: [tests-dbg, tests-rel]
+    needs: [tests]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -131,6 +105,7 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-build-itch-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-itch-${{ runner.os }}-
@@ -157,7 +132,7 @@ jobs:
   gen-changelog:
     runs-on: ubuntu-latest
     name: Generate changelog
-    needs: [tests-dbg, tests-rel]
+    needs: [tests]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -170,6 +145,7 @@ jobs:
           path: |
             ${{github.workspace}}/.cache/zig
             ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
           key: zig-build-changelog-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-changelog-${{ runner.os }}-

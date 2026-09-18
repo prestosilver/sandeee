@@ -232,16 +232,16 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         .render_graph = .atlas("white", .{
             .size = .{ .x = 100, .y = 100 },
             .data = try allocator.dupe(f32, &(.{0} ** 20)),
-            .color = .{ .r = 0.5, .g = 0, .b = 0 },
+            .color = .mix(.black, .red, 0.5),
         }),
         .vm_graph = .atlas("white", .{
             .size = .{ .x = 100, .y = 100 },
             .data = try allocator.dupe(f32, &(.{0} ** 20)),
-            .color = .{ .r = 1, .g = 0.5, .b = 0.5 },
+            .color = .mix(.white, .red, 0.5),
         }),
     };
 
-    var result: Window.Data.WindowContents = try .init(self, "Tasks", "SandEEE Tasks", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    var result: Window.Data.WindowContents = try .init(self, "Tasks", "SandEEE Tasks", .gray(0.75));
     result.props.size.min = .{ .x = 400, .y = 500 };
     result.props.size.max = .{ .x = 400, .y = 500 };
 

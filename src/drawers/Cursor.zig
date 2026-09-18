@@ -17,7 +17,7 @@ const graphics = util.graphics;
 pub const CursorData = struct {
     source: Rect,
     size: Vec2 = .{ .x = 32, .y = 32 },
-    color: Color = .{ .r = 1, .g = 1, .b = 1 },
+    color: Color = .white,
     total: usize,
     index: usize = 0,
     flip: bool = false,

@@ -29,15 +29,36 @@ const SANDEEE_VERSION = Version{
     .index = options.SANDEEE_VERSION.index,
     .meta = options.SANDEEE_VERSION.meta,
 };
-pub const SANDEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{SANDEEE_VERSION});
-
 pub const BOOTEEE_VERSION = Version{
     .program = "boot",
     .phase = .seed,
     .index = 5,
     .meta = null,
 };
+pub const MAIL_VERSION = Version{
+    .program = "mail",
+    .phase = .seed,
+    .index = 1,
+    .meta = null,
+};
+pub const TEXT_VERSION = Version{
+    .program = "text",
+    .phase = .seed,
+    .index = 1,
+    .meta = null,
+};
+pub const WEB_VERSION = Version{
+    .program = "web",
+    .phase = .seed,
+    .index = 1,
+    .meta = null,
+};
+
+pub const SANDEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{SANDEEE_VERSION});
 pub const BOOTEEE_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{BOOTEEE_VERSION});
+pub const MAIL_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{MAIL_VERSION});
+pub const TEXT_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{TEXT_VERSION});
+pub const WEB_VERSION_TEXT = std.fmt.comptimePrint("{f}", .{WEB_VERSION});
 
 pub fn BLOCK(comptime id: u8) []const u8 {
     if (id > 7) @compileError("Bad Block char");

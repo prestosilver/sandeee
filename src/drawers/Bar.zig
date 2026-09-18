@@ -77,10 +77,7 @@ pub const BarData = struct {
         self.btns = 0;
 
         for (window_list.items) |window| {
-            const color = if (window.data.min)
-                Color{ .r = 0.5, .g = 0.5, .b = 0.5 }
-            else
-                Color{ .r = 0, .g = 0, .b = 0 };
+            const title_color: Color = .mix(.black, .white, if (window.data.min) 0.5 else 0.0);
 
             pos.x = 3 * self.height + 10 + 4 * (self.height * @as(f32, @floatFromInt(window.data.idx)));
             try font.draw(.{
@@ -89,7 +86,7 @@ pub const BarData = struct {
                 .pos = pos.location(),
                 .wrap = 4 * self.height - 16,
                 .maxlines = 1,
-                .color = color,
+                .color = title_color,
             });
 
             pos.x += 4 * self.height;

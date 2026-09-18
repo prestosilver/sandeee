@@ -100,7 +100,7 @@ pub const PopupConfirm = struct {
             .shader = shader,
             .pos = bnds.location(),
             .text = self.message,
-            .color = .{ .r = 0, .g = 0, .b = 0 },
+            .color = .black,
         });
 
         self.single_width = bnds.w / @as(f32, @floatFromInt(self.buttons.len));

@@ -62,12 +62,7 @@ pub const UpdateData = struct {
 
         try font.draw(.{
             .shader = font_shader,
-            .color = .{
-                .r = 0,
-                .g = 0,
-                .b = 1,
-                .a = 1,
-            },
+            .color = .blue,
             .text = "Click here to update now",
             .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + font.size * 10 },
             .wrap = bnds.w - 12,
@@ -113,7 +108,7 @@ pub fn init() !Window.Data.WindowContents {
 
     self.* = .{};
 
-    var result: Window.Data.WindowContents = try .init(self, "Updater", "Please update your disk!", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    var result: Window.Data.WindowContents = try .init(self, "Updater", "Please update your disk!", .gray(0.75));
     result.props.size.min = .{ .x = 600, .y = 350 };
     result.props.size.max = .{ .x = 600, .y = 350 };
 

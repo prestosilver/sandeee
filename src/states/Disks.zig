@@ -37,7 +37,7 @@ const Recovery = states.Recovery;
 
 const GSDisks = @This();
 
-const TEXT_COLOR = Color{ .r = 0.75, .g = 0.75, .b = 0.75 };
+const TEXT_COLOR: Color = .gray(0.75);
 const TOTAL_LINES = 10;
 
 const DISK_LIST = "0123456789ABCDEF";
@@ -63,7 +63,7 @@ pub fn sortDisksLt(_: u0, a: []const u8, b: []const u8) bool {
 }
 
 pub fn setup(self: *GSDisks) !void {
-    graphics.Context.instance.color = .{ .r = 0, .g = 0, .b = 0 };
+    graphics.Context.instance.color = .black;
 
     self.sel = 0;
     self.auto = true;

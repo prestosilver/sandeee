@@ -22,6 +22,7 @@ These are fixes for behaviours that are implemented wrong.
 - [X] Possible crash on email VM calls
 - [X] Web slighty cuts off paragraphs
 - [X] Wth is up with popups!!
+- [ ] Web threads crash on windows
 - [ ] Wordwrap in console
 - [ ] Disks files are unordered everywhere, sort on save
 - [ ] Crash dosent save sometimes
@@ -66,17 +67,23 @@ These are tasks that dont fix existing behaviour, but improve accessability for 
 These are tasks that only affect the codebase.
 
 - [X] zig build upload_itch_release
-- [ ] zig test should check www for dead links
+- [X] Zig 0.16
+- [x] Move runSandEEE to a subfolder somewhere (in repo)
+- [ ] Github actions doesnt test `-Dsteam=On`
+- [ ] Magic number cleanup
+  - [X] Colors
+  - [ ] Sizes
 - [ ] Breakout UI for consistency!!!
+  - [ ] data/sizes.zig
+  - [ ] ui namespace
+  - [ ] switch apps
+  - [ ] switch bar, desktop icons, and start menu
+- [ ] zig test should check www for dead links
 - [ ] Add consistent id+iota type utility
 - [ ] Rework popups to be owned by windows instead of state
 - [ ] Separate build for debug bc different appids!
 - [ ] zig build steam_changelog
 - [ ] zig build itch_changelog
-- [ ] Move runSandEEE to a subfolder somewhere (in repo)
-- [ ] Github actions doesnt test `-Dsteam=On`
-- [ ] Zig 0.16
-
 
 ## General tentative todo
 

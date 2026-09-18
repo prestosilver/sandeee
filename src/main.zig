@@ -234,7 +234,7 @@ pub fn blit() !void {
             .text = text,
             .shader = &font_shader,
             .pos = .{},
-            .color = .{ .r = 1, .g = 1, .b = 1 },
+            .color = .white,
         });
     }
 

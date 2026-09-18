@@ -39,11 +39,15 @@
     },
     .paths = .{
         "tools",
-        "assets",
+        "build",
         "content",
+        "deps",
+        "docs",
+        "src",
+        "steam",
+        "tests",
         "build.zig",
         "build.zig.zon",
-        "src",
-        "README.org",
+        "VERSION",
     },
 }

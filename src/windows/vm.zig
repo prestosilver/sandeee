@@ -378,5 +378,5 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         };
     }
 
-    return .init(self, "vm", "VM Window", .{ .r = 1, .g = 1, .b = 1 });
+    return .init(self, "vm", "VM Window", .white);
 }

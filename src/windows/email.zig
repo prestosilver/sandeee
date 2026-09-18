@@ -76,7 +76,7 @@ const EmailData = struct {
         self.bnds = bnds.*;
 
         if (self.login == null) {
-            props.clear_color = .{ .r = 0.75, .g = 0.75, .b = 0.75 };
+            props.clear_color = .gray(0.75);
             if (self.login_error) |err| {
                 try font.draw(.{
                     .shader = font_shader,
@@ -170,7 +170,7 @@ const EmailData = struct {
             return;
         }
 
-        props.clear_color = .{ .r = 1, .g = 1, .b = 1 };
+        props.clear_color = .white;
 
         if (props.scroll == null) {
             props.scroll = .{
@@ -204,7 +204,7 @@ const EmailData = struct {
 
                     if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
                 } else if (email.box != self.box) continue;
-                var color = Color{ .r = 0, .g = 0, .b = 0 };
+                var color: Color = .black;
                 if (builtin.mode == .Debug) {
                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) color.a = 0.5;
                 } else {
@@ -219,7 +219,7 @@ const EmailData = struct {
                         .shader = font_shader,
                         .text = strings.CHECK,
                         .pos = .{ .x = bnds.x + 108, .y = y - 2 },
-                        .color = .{ .r = 0, .g = 1, .b = 0 },
+                        .color = .green,
                     });
                 }
 
@@ -802,7 +802,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         .sel = .atlas("ui", .{
             .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
             .size = .{ .y = 6 },
-            .color = .{ .r = 1, .g = 0, .b = 0 },
+            .color = .red,
         }),
         .reply = .atlas("icons", .{
             .source = .{ .x = 1.0 / 8.0, .y = 1.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
@@ -834,12 +834,12 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
             .atlas("ui", .{
                 .source = .{ .x = 3.0 / 8.0, .y = 3.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
                 .size = .{ .x = 2, .y = 28 },
-                .color = .{ .r = 0.75, .g = 0.75, .b = 0.75 },
+                .color = .gray(0.75),
             }),
         },
         .shader = shader,
         .login_text = [2][]u8{ &.{}, &.{} },
     };
 
-    return Window.Data.WindowContents.init(self, "email", strings.EEE ++ "Mail", .{ .r = 0.75, .g = 0.75, .b = 0.75 });
+    return Window.Data.WindowContents.init(self, "email", strings.EEE ++ "Mail", .gray(0.75));
 }
