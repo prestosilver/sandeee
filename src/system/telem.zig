@@ -1,7 +1,6 @@
 const std = @import("std");
 const options = @import("options");
 const builtin = @import("builtin");
-const c = @import("../c.zig");
 
 const sandeee_data = @import("../data.zig");
 const system = @import("../system.zig");

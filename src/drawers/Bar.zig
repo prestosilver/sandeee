@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const al = @import("openal");
 
 const drawers = @import("../drawers.zig");
 const windows = @import("../windows.zig");
@@ -222,7 +222,7 @@ pub const BarData = struct {
     }
 
     pub fn submitPopup(_: ?*files.File, _: *anyopaque) !void {
-        c.glfwSetWindowShouldClose(graphics.gContext.window, 1);
+        graphics.gContext.window.setShouldClose(1);
     }
 
     pub fn getVerts(self: *const BarData, _: Vec3) !VertArray {

@@ -1,5 +1,4 @@
 const std = @import("std");
-const c = @import("../c.zig");
 
 const drawers = @import("../drawers.zig");
 const windows = @import("../windows.zig");

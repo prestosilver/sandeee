@@ -1,6 +1,5 @@
 const std = @import("std");
 const options = @import("options");
-const c = @import("../c.zig");
 
 const Windows = @import("../windows.zig");
 const drawers = @import("../drawers.zig");

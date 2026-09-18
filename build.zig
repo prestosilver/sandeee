@@ -168,7 +168,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const glfw_host = b.dependency("glfw", .{
-        .target = target,
+        .target = b.graph.host,
         .optimize = optimize,
     });
 
@@ -203,6 +203,25 @@ pub fn build(b: *std.Build) !void {
 
     const version_write = b.addInstallFile(version_file, "../VERSION");
     const iversion_write = b.addInstallFile(iversion_file, "../IVERSION");
+
+    const openal_source = b.addTranslateC(.{
+        .root_source_file = b.path("deps/include/AL/root.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    openal_source.addIncludePath(b.path("deps/include"));
+    const openal_module = openal_source.createModule();
+
+    const openal_host_source = b.addTranslateC(.{
+        .root_source_file = b.path("deps/include/AL/root.h"),
+        .target = b.graph.host,
+        .optimize = .Debug,
+    });
+    openal_host_source.addIncludePath(b.path("deps/include"));
+    const openal_host_module = openal_host_source.createModule();
+
+    const win32_dependency = b.dependency("win32", .{});
+    const win32_module = win32_dependency.module("win32");
 
     const flags_dependency = b.dependency("flags", .{
         .target = target,
@@ -316,6 +335,7 @@ pub fn build(b: *std.Build) !void {
     exe_module.addImport("steam", steam_module);
     exe_module.addImport("zigimg", zigimg_module);
 
+    exe_host_module.addImport("openal", openal_host_module);
     exe_host_module.addImport("options", options_host_module);
     exe_host_module.addImport("network", network_host_module);
     exe_host_module.addImport("glfw", glfw_host_module);
@@ -777,11 +797,12 @@ pub fn build(b: *std.Build) !void {
     const rc_file = resFileStep.addOutputFileArg("app.rc.o");
 
     // Includes
-    exe.root_module.addIncludePath(b.path("deps/include"));
+    exe.root_module.addImport("openal", openal_module);
     if (target.result.os.tag == .windows) {
         exe.root_module.addObjectFile(rc_file);
         exe.root_module.addLibraryPath(b.path("deps/dll"));
         exe.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
+        exe.root_module.addImport("win32", win32_module);
         exe.subsystem = .Windows;
     } else {
         exe.root_module.addLibraryPath(b.path("deps/lib"));
@@ -1140,7 +1161,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
-        exe_pub_linux.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_linux.root_module.addImport("openal", openal_module);
         exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
         exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
         exe_pub_linux.root_module.linkSystemLibrary("steam_api", .{});
@@ -1158,6 +1179,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("win32", win32_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
@@ -1169,7 +1191,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_windows,
         });
 
-        exe_pub_windows.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.root_module.addImport("openal", openal_module);
         exe_pub_windows.root_module.addObjectFile(rc_file);
         exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
@@ -1243,7 +1265,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
-        exe_pub_linux.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_linux.root_module.addImport("openal", openal_module);
         exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
         exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
         exe_pub_linux.root_module.linkSystemLibrary("steam_api", .{});
@@ -1263,6 +1285,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("glfw", glfw_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
+        exe_mod_pub_windows.addImport("win32", win32_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
         exe_mod_pub_windows.addImport("zigimg", zigimg_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
@@ -1271,7 +1294,7 @@ pub fn build(b: *std.Build) !void {
             .name = "SandEEE Demo (Steam Windows)",
             .root_module = exe_mod_pub_windows,
         });
-        exe_pub_windows.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.root_module.addImport("openal", openal_module);
         exe_pub_windows.root_module.addObjectFile(rc_file);
         exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
@@ -1344,7 +1367,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_linux,
             .use_llvm = true,
         });
-        exe_pub_linux.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_linux.root_module.addImport("openal", openal_module);
         exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
         exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
 
@@ -1365,6 +1388,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
         exe_mod_pub_windows.addImport("zigimg", zigimg_module);
+        exe_mod_pub_windows.addImport("win32", win32_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1372,7 +1396,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_windows,
             .use_llvm = true,
         });
-        exe_pub_windows.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.root_module.addImport("openal", openal_module);
         exe_pub_windows.root_module.addObjectFile(rc_file);
         exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
@@ -1466,6 +1490,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
         exe_mod_pub_windows.addImport("zigimg", zigimg_module);
+        exe_mod_pub_windows.addImport("win32", win32_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
@@ -1473,7 +1498,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = exe_mod_pub_windows,
             .use_llvm = true,
         });
-        exe_pub_windows.root_module.addIncludePath(b.path("deps/include"));
+        exe_pub_windows.root_module.addImport("openal", openal_module);
         exe_pub_windows.root_module.addObjectFile(rc_file);
         exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));

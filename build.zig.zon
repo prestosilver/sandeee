@@ -25,12 +25,16 @@
             .hash = "zglfw-0.1.0-BghZXaTUAACGayXkH2tKJKfpr_CpHpDyIxTbPKjquaXC",
         },
         .zig_steamworks_fake = .{
-            .url = "git+https://github.com/prestosilver/zig-steamworks-fake#4dea200686723f5952b45660fd7bc5dfb067d6f6",
-            .hash = "zig_steamworks_fake-0.0.0-3i7XFqR8AABfxkJwmYxeiHH_db9rpilKTZaYnj3ERy0p",
+            .url = "git+https://github.com/prestosilver/zig-steamworks-fake#9fd48422c8932e184027de220e6e3093a861b307",
+            .hash = "zig_steamworks_fake-0.0.0-3i7XFjR9AAA2K2k0BoftHWhwqrFJGtZCmjaMAqzf3lhN",
         },
         .flags = .{
             .url = "git+https://github.com/EnzyZero/flags#547932a6a9d6d4b640cb1c915c7feec268d9199d",
             .hash = "flags-0.10.0-a_9h3iFxAABV7KdWNJPcsNrvQeSw2Ui_hm3CvTdNCSqU",
+        },
+        .win32 = .{
+            .url = "git+https://github.com/marlersoft/zigwin32#9f15c276b4e9d05afd34a10d8662a7dfc34647ea",
+            .hash = "win32-42.0.39-preview-mX5pFS564gPTezZn4v3TMxRnfJUrZNx1B_F2p2HKXOeG",
         },
     },
     .paths = .{

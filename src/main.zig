@@ -17,7 +17,7 @@ pub const util = @import("util.zig");
 pub const data = @import("data.zig");
 
 // not-op programming lang
-const c = @import("c.zig");
+const al = @import("al");
 
 // states
 const GameState = states.GameState;
@@ -87,17 +87,15 @@ pub const std_options = std.Options{
 
 pub const opengl_error_handling = .log;
 
-pub const steam_options = struct {
-    pub const fake_steam = options.fake_steam;
-    pub const use_steam = options.is_steam;
-    pub const app_id = if (options.is_demo)
+pub const steam_options = steam.Options{
+    .fake_steam = options.fake_steam,
+    .app_id = if (options.is_demo)
         4124370
     else if (builtin.mode == .Debug)
         4401090
     else
-        4124360;
-    pub const ugc_app_id = app_id;
-    pub const allocator = util.allocator;
+        4124360,
+    .allocator = util.allocator,
 };
 
 // embed shaders

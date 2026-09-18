@@ -2,7 +2,6 @@ const std = @import("std");
 const steam = @import("steam");
 const builtin = @import("builtin");
 const options = @import("options");
-const c = @import("../c.zig");
 
 const system = @import("../system.zig");
 const windows = @import("../windows.zig");

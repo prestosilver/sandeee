@@ -74,48 +74,41 @@ fn inputLoop() noreturn {
 
 pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Writer) anyerror!void {
     if (!USE_POSIX) {
-        const c = @cImport({
-            @cInclude("windows.h");
-            @cInclude("winuser.h"); // for ShowWindow and GetConsoleWindow
-        });
+        const windows = @import("win32");
 
         // Try to attach to parent console; if that fails, allocate a new one.
-        if (c.AttachConsole(c.ATTACH_PARENT_PROCESS) == 0) {
-            _ = c.AllocConsole();
+        if (windows.kernel32.AttachConsole(windows.system.console.ATTACH_PARENT_PROCESS) == 0) {
+            _ = windows.kernel32.AllocConsole();
         }
 
         // Enable ANSI and UTF-8
-        const STD_OUTPUT_HANDLE: c.DWORD = @bitCast(@as(c_long, -11));
-        const STD_INPUT_HANDLE: c.DWORD = @bitCast(@as(c_long, -10));
+        const out_handle = windows.kernel32.GetStdHandle(windows.system.console.STD_OUTPUT_HANDLE);
+        const in_handle = windows.kernel32.GetStdHandle(windows.system.console.STD_INPUT_HANDLE);
 
-        const out_handle = c.GetStdHandle(STD_OUTPUT_HANDLE);
-        const in_handle = c.GetStdHandle(STD_INPUT_HANDLE);
+        var mode: windows.system.console.CONSOLE_MODE = undefined;
+        if (windows.kernel32.GetConsoleMode(out_handle, &mode) != 0) {
+            mode.ENABLE_ECHO_INPUT = 1;
+            mode.ENABLE_WINDOW_INPUT = 1;
 
-        var mode: c.DWORD = 0;
-        if (c.GetConsoleMode(out_handle, &mode) != 0) {
-            // Enable virtual terminal sequences (ANSI escapes)
-            const ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
-            const DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
-            _ = c.SetConsoleMode(out_handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);
+            _ = windows.kernel32.SetConsoleMode(out_handle, mode);
         }
 
-        if (c.GetConsoleMode(in_handle, &mode) != 0) {
-            const ENABLE_VIRTUAL_TERMINAL_INPUT = 0x0200;
-            const ENABLE_LINE_INPUT = 0x0002;
-            const ENABLE_ECHO_INPUT = 0x0004;
+        if (windows.kernel32.GetConsoleMode(in_handle, &mode) != 0) {
+            mode.ENABLE_VIRTUAL_TERMINAL_INPUT = 1;
+            mode.ENABLE_LINE_INPUT = 0;
+            mode.ENABLE_ECHO_INPUT = 0;
 
             // disable line buffering and echo
-            _ = c.SetConsoleMode(in_handle, (mode | ENABLE_VIRTUAL_TERMINAL_INPUT) &
-                ~@as(c.DWORD, (ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)));
+            _ = windows.kernel32.SetConsoleMode(in_handle, mode);
         }
 
         // Set UTF-8 code pages
-        const CP_UTF8: c.UINT = 65001;
-        _ = c.SetConsoleOutputCP(CP_UTF8);
-        _ = c.SetConsoleCP(CP_UTF8);
+        const CP_UTF8: u32 = 65001;
+        _ = windows.kernel32.SetConsoleOutputCP(CP_UTF8);
+        _ = windows.kernel32.SetConsoleCP(CP_UTF8);
 
-        _ = c.SetConsoleTitleA("SandEEE Console");
-        _ = c.ShowWindow(c.GetConsoleWindow(), c.SW_SHOW);
+        _ = windows.kernel32.SetConsoleTitleA("SandEEE Console");
+        _ = windows.user32.ShowWindow(windows.kernel32.GetConsoleWindow(), windows.ui.windows_and_messaging.SW_SHOW);
     }
 
     // no input thread on test builds

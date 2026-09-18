@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("../c.zig");
+const al = @import("openal");
 
 const drawers = @import("../drawers.zig");
 const util = @import("../util.zig");

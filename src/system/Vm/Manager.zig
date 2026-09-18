@@ -13,8 +13,6 @@ const log = util.log;
 const Vm = system.Vm;
 const files = system.files;
 
-const c = @import("../../c.zig");
-
 const Self = @This();
 
 pub var vm_time: f64 = 0.9;

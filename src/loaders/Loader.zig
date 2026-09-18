@@ -4,7 +4,6 @@ const util = @import("../util.zig");
 
 const allocator = util.allocator;
 const graphics = util.graphics;
-const c = @import("../c.zig");
 
 const log = util.log;
 

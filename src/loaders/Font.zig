@@ -1,5 +1,4 @@
 const std = @import("std");
-const c = @import("../c.zig");
 
 const system = @import("../system.zig");
 const math = @import("../math.zig");
@@ -15,12 +14,7 @@ const config = system.config;
 
 const Self = @This();
 
-const FontType = enum {
-    path,
-    mem,
-};
-
-data: union(FontType) {
+data: union(enum) {
     path: []const u8,
     mem: []const u8,
 },
