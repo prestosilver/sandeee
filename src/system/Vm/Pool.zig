@@ -6,13 +6,9 @@ const Rope = util.Rope;
 const allocator = util.allocator;
 const log = util.log;
 
-pub const ObjectType = enum {
-    free,
-    value,
-    string,
-};
+pub const ObjectState = enum { free, value, string };
 
-pub const ObjectData = union(ObjectType) {
+pub const ObjectData = union(ObjectState) {
     free: ?ObjectRef,
     value: u64,
     string: Rope,

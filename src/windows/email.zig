@@ -394,7 +394,7 @@ const EmailData = struct {
         if (keycode == glfw.KeyR) {
             if (self.viewing) |viewing| {
                 for (viewing.condition) |condition| {
-                    if (condition != .SubmitContains and condition != .SubmitRuns and condition != .SubmitLib) return;
+                    if (condition != .submit_contains and condition != .submit_runs and condition != .submit_lib) return;
 
                     try self.submitFile();
                     return;
@@ -491,13 +491,13 @@ const EmailData = struct {
 
                 for (selected.condition) |condition| {
                     switch (condition) {
-                        .SubmitContains => |contains| {
+                        .submit_contains => |contains| {
                             const target_text = contains.conts;
                             const target_conts = std.mem.trim(u8, conts, &.{'\n'});
 
                             good = good and std.ascii.eqlIgnoreCase(target_text, target_conts);
                         },
-                        .SubmitRuns => |runs| blk: {
+                        .submit_runs => |runs| blk: {
                             if (!std.mem.startsWith(u8, conts, "EEEp")) break :blk;
 
                             const name = try allocator.dupe(u8, "runs.eep");
@@ -516,7 +516,7 @@ const EmailData = struct {
 
                             good = good and std.ascii.eqlIgnoreCase(trimmed, runs.conts);
                         },
-                        .SubmitLib => |runs| blk: {
+                        .submit_lib => |runs| blk: {
                             if (!std.mem.startsWith(u8, conts, "elib")) break :blk;
                             var library_idx: usize = 7;
                             var start_idx: usize = 256 * @as(usize, @intCast(conts[4])) + @as(usize, @intCast(conts[5]));

@@ -12,12 +12,7 @@ anchorXMax: f32,
 anchorYMin: f32,
 anchorYMax: f32,
 
-parent: *union(Type) {
-    const Type = enum {
-        Rect,
-        UIRect,
-    };
-
+parent: *union(enum) {
     Rect: Rect,
     UIRect: UIRect,
 },

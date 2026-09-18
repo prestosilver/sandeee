@@ -5,12 +5,10 @@ pub const Panel = struct {
 };
 
 pub const SettingEntry = struct {
-    pub const Kind = enum(u8) { string, dropdown, slider, file, folder };
-
     setting: []const u8,
     key: []const u8,
 
-    kind: union(Kind) {
+    kind: union(enum) {
         string: void,
         dropdown: []const []const u8,
         slider: struct { min: f32, max: f32 },

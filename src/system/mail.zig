@@ -26,60 +26,60 @@ pub const EmailManager = struct {
 
     pub const Email = struct {
         const ConditionKind = enum(u8) {
-            None,
-            View,
-            SubmitContains,
-            SubmitRuns,
-            SubmitLib,
-            ShellRun,
-            Logins,
-            SysCall,
-            Debug,
+            none,
+            view,
+            submit_contains,
+            submit_runs,
+            submit_lib,
+            shell_run,
+            logins,
+            sys_call,
+            debug,
         };
 
         const Condition = union(ConditionKind) {
             const Self = @This();
 
-            None: struct {},
-            View: struct {},
-            SubmitContains: struct {
+            none,
+            view,
+            submit_contains: struct {
                 conts: []const u8,
             },
-            SubmitRuns: struct {
+            submit_runs: struct {
                 input: ?[]const u8,
                 conts: []const u8,
             },
-            SubmitLib: struct {
+            submit_lib: struct {
                 input: ?[]const u8,
                 libfn: []const u8,
                 conts: []const u8,
             },
-            ShellRun: struct {
+            shell_run: struct {
                 cmd: []const u8,
             },
-            Logins: struct {
+            logins: struct {
                 count: u64,
             },
-            SysCall: struct {
+            sys_call: struct {
                 id: u8,
             },
-            Debug: struct {},
+            debug,
 
             pub fn toString(self: *const Self) ![]const u8 {
                 const result = switch (self.*) {
-                    .None, .View, .Debug => try allocator.dupe(u8, ""),
-                    .SubmitContains => |r| try std.fmt.allocPrint(allocator, "{s}", .{r.conts}),
-                    .ShellRun => |r| try std.fmt.allocPrint(allocator, "{s}", .{r.cmd}),
-                    .SubmitRuns => |r| if (r.input) |input|
+                    .none, .view, .debug => try allocator.dupe(u8, ""),
+                    .submit_contains => |r| try std.fmt.allocPrint(allocator, "{s}", .{r.conts}),
+                    .shell_run => |r| try std.fmt.allocPrint(allocator, "{s}", .{r.cmd}),
+                    .submit_runs => |r| if (r.input) |input|
                         try std.fmt.allocPrint(allocator, ">{s}||{s}", .{ input, r.conts })
                     else
                         try std.fmt.allocPrint(allocator, "{s}", .{r.conts}),
-                    .SubmitLib => |r| if (r.input) |input|
+                    .submit_lib => |r| if (r.input) |input|
                         try std.fmt.allocPrint(allocator, ">{s}||{s}||{s}", .{ input, r.libfn, r.conts })
                     else
                         try std.fmt.allocPrint(allocator, "{s}||{s}", .{ r.libfn, r.conts }),
-                    .Logins => |r| try std.fmt.allocPrint(allocator, "{}", .{r.count}),
-                    .SysCall => |r| try std.fmt.allocPrint(allocator, "{}", .{r.id}),
+                    .logins => |r| try std.fmt.allocPrint(allocator, "{}", .{r.count}),
+                    .sys_call => |r| try std.fmt.allocPrint(allocator, "{}", .{r.id}),
                 };
                 defer allocator.free(result);
 
@@ -88,18 +88,18 @@ pub const EmailManager = struct {
 
             pub fn deinit(self: *const Self) void {
                 switch (self.*) {
-                    .ShellRun => |runs| {
+                    .shell_run => |runs| {
                         allocator.free(runs.cmd);
                     },
-                    .SubmitContains => |contains| {
+                    .submit_contains => |contains| {
                         allocator.free(contains.conts);
                     },
-                    .SubmitRuns => |runs| {
+                    .submit_runs => |runs| {
                         if (runs.input) |input|
                             allocator.free(input);
                         allocator.free(runs.conts);
                     },
-                    .SubmitLib => |lib| {
+                    .submit_lib => |lib| {
                         if (lib.input) |input|
                             allocator.free(input);
                         allocator.free(lib.libfn);
@@ -166,13 +166,13 @@ pub const EmailManager = struct {
                     input = try allocator.dupe(u8, line[7..]);
                 } else if (std.mem.startsWith(u8, line, "shell: ")) {
                     try condition.append(.{
-                        .ShellRun = .{
+                        .shell_run = .{
                             .cmd = try allocator.dupe(u8, line[7..]),
                         },
                     });
                 } else if (std.mem.startsWith(u8, line, "runs: ")) {
                     try condition.append(.{
-                        .SubmitRuns = .{
+                        .submit_runs = .{
                             .input = input,
                             .conts = try allocator.dupe(u8, line[6..]),
                         },
@@ -182,7 +182,7 @@ pub const EmailManager = struct {
                 } else if (std.mem.startsWith(u8, line, "libruns: ")) {
                     if (std.mem.indexOf(u8, line[9..], ":")) |idx| {
                         try condition.append(.{
-                            .SubmitLib = .{
+                            .submit_lib = .{
                                 .input = input,
                                 .libfn = try allocator.dupe(u8, line[9 .. 9 + idx]),
                                 .conts = try allocator.dupe(u8, line[9 + idx + 1 ..]),
@@ -193,30 +193,28 @@ pub const EmailManager = struct {
                     input = null;
                 } else if (std.mem.startsWith(u8, line, "contains: ")) {
                     try condition.append(.{
-                        .SubmitContains = .{
+                        .submit_contains = .{
                             .conts = try allocator.dupe(u8, line[10..]),
                         },
                     });
                 } else if (std.mem.startsWith(u8, line, "sys: ")) {
                     try condition.append(.{
-                        .SysCall = .{
+                        .sys_call = .{
                             .id = try std.fmt.parseInt(u8, line[5..], 10),
                         },
                     });
                 } else if (std.mem.startsWith(u8, line, "logins: ")) {
                     try condition.append(.{
-                        .Logins = .{
+                        .logins = .{
                             .count = try std.fmt.parseInt(u64, line[8..], 10),
                         },
                     });
                 } else if (std.mem.eql(u8, line, "view")) {
-                    try condition.append(.{
-                        .View = .{},
-                    });
+                    try condition.append(.view);
                 } else if (std.mem.eql(u8, line, "hide")) {
                     result.show = false;
                 } else if (std.mem.eql(u8, line, "debug")) {
-                    try condition.append(.Debug);
+                    try condition.append(.debug);
                 } else {
                     try contents.appendSlice(line);
                     try contents.appendSlice("\n");
@@ -316,7 +314,7 @@ pub const EmailManager = struct {
             email.viewed = true;
 
             for (email.condition) |condition| {
-                if (condition == .View) {
+                if (condition == .view) {
                     try self.setEmailComplete(email);
                 }
             }
@@ -326,7 +324,7 @@ pub const EmailManager = struct {
     pub fn updateDebug(self: *EmailManager) !void {
         for (self.emails.items) |*email| {
             for (email.condition) |condition| {
-                if (condition == .Debug) {
+                if (condition == .debug) {
                     try self.setEmailComplete(email);
                 }
             }
@@ -336,7 +334,7 @@ pub const EmailManager = struct {
     pub fn updateLogins(self: *EmailManager, logins: u64) !void {
         for (self.emails.items) |*email| {
             for (email.condition) |condition| {
-                if (condition == .Logins and logins >= condition.Logins.count) {
+                if (condition == .logins and logins >= condition.logins.count) {
                     try self.setEmailComplete(email);
                 }
             }
@@ -518,34 +516,32 @@ pub const EmailManager = struct {
                     fidx += 1;
 
                     self.emails.items[idx].condition[cond_idx] = switch (cond_kind) {
-                        .View => .{
-                            .View = .{},
-                        },
-                        .SubmitContains => .{
-                            .SubmitContains = .{
+                        .view => .view,
+                        .submit_contains => .{
+                            .submit_contains = .{
                                 .conts = try allocator.dupe(u8, data.items),
                             },
                         },
-                        .SubmitRuns => if (data.items[0] == '>') blk: {
+                        .submit_runs => if (data.items[0] == '>') blk: {
                             var iter = std.mem.splitSequence(u8, data.items[1..], "||");
 
                             break :blk .{
-                                .SubmitRuns = .{
+                                .submit_runs = .{
                                     .input = try allocator.dupe(u8, iter.next() orelse ""),
                                     .conts = try allocator.dupe(u8, iter.next() orelse ""),
                                 },
                             };
                         } else .{
-                            .SubmitRuns = .{
+                            .submit_runs = .{
                                 .input = null,
                                 .conts = try allocator.dupe(u8, data.items),
                             },
                         },
-                        .SubmitLib => if (data.items[0] == '>') blk: {
+                        .submit_lib => if (data.items[0] == '>') blk: {
                             var iter = std.mem.splitSequence(u8, data.items[1..], "||");
 
                             break :blk .{
-                                .SubmitLib = .{
+                                .submit_lib = .{
                                     .input = try allocator.dupe(u8, iter.next() orelse ""),
                                     .libfn = try allocator.dupe(u8, iter.next() orelse ""),
                                     .conts = try allocator.dupe(u8, iter.next() orelse ""),
@@ -555,34 +551,30 @@ pub const EmailManager = struct {
                             var iter = std.mem.splitSequence(u8, data.items, "||");
 
                             break :blk .{
-                                .SubmitLib = .{
+                                .submit_lib = .{
                                     .input = null,
                                     .libfn = try allocator.dupe(u8, iter.next() orelse ""),
                                     .conts = try allocator.dupe(u8, iter.next() orelse ""),
                                 },
                             };
                         },
-                        .ShellRun => .{
-                            .ShellRun = .{
+                        .shell_run => .{
+                            .shell_run = .{
                                 .cmd = try allocator.dupe(u8, data.items),
                             },
                         },
-                        .Logins => .{
-                            .Logins = .{
+                        .logins => .{
+                            .logins = .{
                                 .count = try std.fmt.parseInt(u64, data.items, 0),
                             },
                         },
-                        .SysCall => .{
-                            .SysCall = .{
+                        .sys_call => .{
+                            .sys_call = .{
                                 .id = try std.fmt.parseInt(u8, data.items, 0),
                             },
                         },
-                        .Debug => .{
-                            .Debug = .{},
-                        },
-                        else => .{
-                            .None = .{},
-                        },
+                        .debug => .debug,
+                        else => .none,
                     };
 
                     if (self.emails.items[idx].condition[cond_idx] != cond_kind)

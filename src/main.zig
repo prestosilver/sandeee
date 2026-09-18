@@ -410,9 +410,9 @@ pub fn runCmdEvent(event: system_events.EventRunCmd) !void {
         if (!mail.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
 
         for (email.condition) |condition| {
-            if (condition != .ShellRun) continue;
+            if (condition != .shell_run) continue;
 
-            if (std.ascii.eqlIgnoreCase(condition.ShellRun.cmd, event.cmd)) {
+            if (std.ascii.eqlIgnoreCase(condition.shell_run.cmd, event.cmd)) {
                 try mail.EmailManager.instance.setEmailComplete(email);
             }
         }
@@ -423,9 +423,9 @@ pub fn syscall(event: system_events.EventSys) !void {
     for (mail.EmailManager.instance.emails.items) |*email| {
         if (!mail.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
         for (email.condition) |condition| {
-            if (condition != .SysCall) continue;
+            if (condition != .sys_call) continue;
 
-            const num = condition.SysCall.id;
+            const num = condition.sys_call.id;
 
             if (num == event.sysId) {
                 try mail.EmailManager.instance.setEmailComplete(email);

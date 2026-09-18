@@ -75,24 +75,15 @@ pub const VMData = struct {
         color: ?Color = null,
     } = .{},
 
-    const VMDataKind = enum {
-        rect,
-        text,
-    };
-
-    const VMDataRect = struct {
-        loc: Vec3,
-        s: Sprite,
-    };
-
-    const VMDataText = struct {
-        pos: Vec2,
-        text: []const u8,
-    };
-
-    const VMDataEntry = union(VMDataKind) {
-        rect: VMDataRect,
-        text: VMDataText,
+    const VMDataEntry = union(enum) {
+        rect: struct {
+            loc: Vec3,
+            s: Sprite,
+        },
+        text: struct {
+            pos: Vec2,
+            text: []const u8,
+        },
     };
 
     pub fn addRect(self: *VMData, texture: []const u8, src: Rect, dst: Rect) !void {
