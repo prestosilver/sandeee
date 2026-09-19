@@ -7,7 +7,7 @@ else
     undefined;
 
 pub var env: *const std.process.Environ = if (builtin.is_test)
-    .empty
+    &.empty
 else
     undefined;
 
