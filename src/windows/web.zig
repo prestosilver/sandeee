@@ -87,7 +87,12 @@ pub const WebData = struct {
                 if (url.domain.len == 0)
                     return try allocator.dupe(u8, "Error: Bad Remote");
 
+                var map = util.env.createMap(allocator) catch unreachable;
+                defer map.deinit();
+
                 var client = std.http.Client{ .io = util.io, .allocator = allocator };
+                try client.initDefaultProxies(allocator, &map);
+
                 defer client.deinit();
 
                 const uri = std.Uri{
@@ -100,9 +105,6 @@ pub const WebData = struct {
                     .query = null,
                     .fragment = null,
                 };
-
-                const header_buffer = try allocator.alloc(u8, HEADER_SIZE);
-                defer allocator.free(header_buffer);
 
                 var body_writer: std.Io.Writer.Allocating = .init(allocator);
                 defer body_writer.deinit();
@@ -261,7 +263,8 @@ pub const WebData = struct {
     path: Url,
 
     shader: *Shader,
-    conts: ?[]const u8,
+    conts_lock: std.Io.Mutex = .init,
+    conts_value: ?[]const u8,
     links: std.array_list.Managed(WebLink),
     hist: std.array_list.Managed(Url),
 
@@ -269,7 +272,7 @@ pub const WebData = struct {
     scroll_link: bool = false,
 
     highlight_idx: usize = 0,
-    loading: bool = false,
+    loading: std.atomic.Value(bool) = .init(false),
     add_imgs: bool = false,
     add_links: bool = false,
     hide_urlbar: bool = false,
@@ -480,14 +483,14 @@ pub const WebData = struct {
     }
 
     pub fn loadPage(self: *Self) !void {
-        if (self.loading) return;
+        if (self.loading.load(.acquire)) return;
 
-        self.loading = true;
+        self.loading.store(true, .release);
         defer {
             self.resetLinks();
 
             self.add_imgs = true;
-            self.loading = false;
+            self.loading.store(false, .release);
         }
 
         try self.clearPlaying();
@@ -504,11 +507,18 @@ pub const WebData = struct {
             return;
         }
 
-        self.conts = try self.getConts(self.path);
+        {
+            try self.conts_lock.lock(util.io);
+            defer self.conts_lock.unlock(util.io);
 
-        var iter = std.mem.splitScalar(u8, self.conts.?, '\n');
+            self.conts_value = try self.getConts(self.path);
+        }
+
+        var iter = std.mem.splitScalar(u8, self.conts_value.?, '\n');
 
         while (iter.next()) |fullLine| {
+            try self.conts_lock.lock(util.io);
+            defer self.conts_lock.unlock(util.io);
             if (std.mem.startsWith(u8, fullLine, "#Style ")) {
                 const tmp_path = try self.path.child(fullLine["#Style ".len..]);
                 defer tmp_path.deinit();
@@ -692,7 +702,10 @@ pub const WebData = struct {
             self.scroll_link = false;
         }
 
-        if (!self.loading) drawConts: {
+        if (!self.loading.load(.acquire)) drawConts: {
+            try self.conts_lock.lock(util.io);
+            defer self.conts_lock.unlock(util.io);
+
             if (self.load_thread) |load_thread| {
                 load_thread.join();
                 self.load_thread = null;
@@ -703,7 +716,7 @@ pub const WebData = struct {
             var pos: Vec2 = .{ .y = -props.scroll.?.value + 10 };
             if (!self.hide_urlbar) pos.y += 40;
 
-            const cont = self.conts orelse {
+            const cont = self.conts_value orelse {
                 self.load_thread = try std.Thread.spawn(.{}, loadPage, .{self});
 
                 break :drawConts;
@@ -964,15 +977,18 @@ pub const WebData = struct {
     }
 
     pub fn back(self: *Self, force: bool) !void {
-        if (self.loading and !force) return;
+        if (self.loading.load(.acquire) and !force) return;
 
         if (self.hist.pop()) |last| {
+            try self.conts_lock.lock(util.io);
+            defer self.conts_lock.unlock(util.io);
+
             self.path.deinit();
 
             self.path = last;
-            if (self.conts) |conts| {
+            if (self.conts_value) |conts| {
                 allocator.free(conts);
-                self.conts = null;
+                self.conts_value = null;
             }
 
             self.resetLinks();
@@ -984,6 +1000,9 @@ pub const WebData = struct {
 
     // TODO: BUG possible leak
     pub fn followLink(self: *Self) !void {
+        try self.conts_lock.lock(util.io);
+        defer self.conts_lock.unlock(util.io);
+
         if (self.add_links) return;
 
         if (self.highlight_idx == 0) return;
@@ -999,9 +1018,9 @@ pub const WebData = struct {
             log.warn("{} bad url path '{}'/'{s}'", .{ err, self.path, targ });
         }
 
-        if (self.conts) |conts| {
+        if (self.conts_value) |conts| {
             allocator.free(conts);
-            self.conts = null;
+            self.conts_value = null;
         }
 
         self.highlight_idx = 0;
@@ -1018,10 +1037,13 @@ pub const WebData = struct {
 
             if ((Rect{ .x = 38, .w = 38, .h = 40 }).contains(pos)) {
                 if (btn == 0 and kind == .single) {
-                    if (self.conts) |conts| {
-                        if (!self.loading) {
+                    try self.conts_lock.lock(util.io);
+                    defer self.conts_lock.unlock(util.io);
+
+                    if (self.conts_value) |conts| {
+                        if (!self.loading.load(.acquire)) {
                             allocator.free(conts);
-                            self.conts = null;
+                            self.conts_value = null;
                             self.scroll_top = true;
                         }
                     }
@@ -1068,7 +1090,7 @@ pub const WebData = struct {
     }
 
     pub fn moveResize(self: *Self, _: Rect) !void {
-        if (self.loading) return;
+        if (self.loading.load(.acquire)) return;
 
         self.resetLinks();
     }
@@ -1100,7 +1122,7 @@ pub const WebData = struct {
 
         self.styles.deinit();
 
-        if (self.conts) |conts| {
+        if (self.conts_value) |conts| {
             allocator.free(conts);
         }
 
@@ -1167,7 +1189,7 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font_shader: *Shader, font
             log.err("Failed to parse url '{s}' {s}", .{ path, @errorName(err) });
             return result;
         },
-        .conts = null,
+        .conts_value = null,
         .shader = shader,
         .links = .init(allocator),
         .hist = .init(allocator),
@@ -1194,7 +1216,10 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font_shader: *Shader, font
     });
 
     self.loadPage() catch |err| {
-        self.conts = try allocator.dupe(u8, @errorName(err));
+        try self.conts_lock.lock(util.io);
+        defer self.conts_lock.unlock(util.io);
+
+        self.conts_value = try allocator.dupe(u8, @errorName(err));
     };
 
     // first render the window
@@ -1291,7 +1316,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         },
         .path = Url.parse(config.SettingManager.instance.get("web_home") orelse "@sandeee.prestosilver.info:/index.edf") catch
             try Url.parse("@sandeee.prestosilver.info:/index.edf"),
-        .conts = null,
+        .conts_value = null,
         .shader = shader,
         .links = .init(allocator),
         .hist = .init(allocator),

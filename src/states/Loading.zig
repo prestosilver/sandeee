@@ -71,7 +71,8 @@ pub var no_load_thread: bool = false;
 wait: f32 = LOAD_WAIT,
 load_progress: f32 = 0,
 login_snd: audio.Sound = .{},
-done: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
+load_done: std.atomic.Value(bool) = undefined,
+anim_done: std.atomic.Value(bool) = undefined,
 load_error: ?[]const u8 = null,
 logout_snd: *audio.Sound,
 message_snd: *audio.Sound,
@@ -86,6 +87,8 @@ disk: *?[]u8,
 loading_thread: ?std.Thread = null,
 
 fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
+    defer in_self.load_done.store(true, .release);
+
     return struct {
         fn load(self: *GSLoading) !void {
             var loader: Loader = try .init(loaders.Group{}, "Loaded everything");
@@ -178,8 +181,8 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
 }
 
 pub fn setup(self: *GSLoading) !void {
-    self.done.store(false, .monotonic);
-    defer self.done.store(true, .monotonic);
+    self.anim_done = .init(false);
+    self.load_done = .init(false);
 
     self.wait = LOAD_WAIT;
 
@@ -209,7 +212,7 @@ pub fn deinit(self: *GSLoading) void {
 }
 
 pub fn update(self: *GSLoading, dt: f32) !void {
-    if (!self.done.load(.monotonic))
+    if (!self.load_done.load(.acquire) and !self.anim_done.load(.acquire))
         return;
 
     self.wait -= dt;
@@ -242,5 +245,5 @@ pub fn draw(self: *GSLoading, size: Vec2) !void {
     try SpriteBatch.global.draw(Sprite, &self.load_sprite, self.shader, .{ .x = logo_offset.x, .y = logo_offset.y + 100 });
 
     if (self.load_sprite.data.size.x > 319)
-        self.done.store(true, .monotonic);
+        self.load_done.store(true, .release);
 }

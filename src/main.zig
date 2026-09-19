@@ -557,6 +557,7 @@ var fullscreen_mode: enum { disabled, enabled, real } = .enabled;
 
 pub fn main(init: std.process.Init) void {
     util.io = init.io;
+    util.env = &init.minimal.environ;
 
     defer {
         log.deinit();

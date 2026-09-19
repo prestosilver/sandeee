@@ -6,6 +6,11 @@ pub var io: std.Io = if (builtin.is_test)
 else
     undefined;
 
+pub var env: *const std.process.Environ = if (builtin.is_test)
+    .empty
+else
+    undefined;
+
 pub const graphics = @import("util/graphics.zig");
 pub const storage = @import("util/storage.zig");
 pub const logger = @import("util/log.zig");

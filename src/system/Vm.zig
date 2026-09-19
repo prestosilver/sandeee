@@ -833,7 +833,6 @@ pub fn loadList(self: *Vm, ops: []const Operation) !void {
 
 pub fn stringToOps(self: *Vm, conts: []const u8) VmError![]const Operation {
     var ops: std.array_list.Managed(Operation) = .init(self.allocator);
-    defer ops.clearAndFree();
     errdefer {
         var temp: std.array_list.Managed(u8) = .init(self.allocator);
         defer temp.deinit();
