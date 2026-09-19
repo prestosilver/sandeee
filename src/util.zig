@@ -24,6 +24,7 @@ pub const Allocator = @import("util/Allocator.zig");
 pub const VertArray = @import("util/VertArray.zig");
 pub const Shader = @import("util/Shader.zig");
 pub const Texture = @import("util/Texture.zig");
+pub const Crypt = @import("util/Crypt.zig");
 pub const Rope = @import("util/RopeOld.zig");
 pub const Font = @import("util/Font.zig");
 pub const Url = @import("util/Url.zig");
@@ -45,4 +46,5 @@ test {
     _ = Rope;
     _ = storage;
     _ = Url;
+    _ = Crypt;
 }
