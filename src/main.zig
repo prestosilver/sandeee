@@ -978,10 +978,12 @@ pub fn runGame() !void {
 
     // fps tracker stats
     var fps: f32 = 0;
-    var last_tick: std.Io.Timestamp = std.Io.Clock.real.now(util.io);
+    var last_tick: std.Io.Timestamp = std.Io.Clock.awake.now(util.io);
     var last_frame_end: f64 = 0;
 
     glfw.setTime(0);
+
+    log.log.info("Target fps = {}", .{graphics.Context.instance.refresh_rate});
 
     // main loop
     while (graphics.Context.poll()) {
@@ -1002,11 +1004,12 @@ pub fn runGame() !void {
         }
 
         // track fps
-        const since_last_tick = last_tick.durationTo(.now(util.io, .real));
+        const time = std.Io.Clock.awake.now(util.io);
+        const since_last_tick = last_tick.durationTo(time);
         if (since_last_tick.toMilliseconds() > state_refresh_rate.toMilliseconds()) {
-            try events.EventManager.instance.sendEvent(system_events.EventTelemUpdate{});
+            try events.EventManager.event_telem_update.send(.{});
 
-            last_tick = .now(util.io, .real);
+            last_tick = time;
 
             try state.refresh();
 
@@ -1022,14 +1025,15 @@ pub fn runGame() !void {
 
             try Vm.Manager.instance.runGc();
 
-            final_fps = fps / (@as(f32, @floatFromInt(since_last_tick.toMilliseconds())) / std.time.ms_per_s);
+            // (ms / 1) / (ms / s) = s / 1
+            final_fps = fps / @as(f32, @floatFromInt(since_last_tick.toMilliseconds())) * std.time.ms_per_s;
             if (Vm.Manager.instance.vms.count() != 0 and final_fps != 0) {
                 // TODO: move these into settings
-                if (final_fps < graphics.Context.instance.refresh_rate - 5.0) Vm.Manager.vm_time -= 0.01;
-                if (final_fps > graphics.Context.instance.refresh_rate - 1.0) Vm.Manager.vm_time += 0.01;
+                if (final_fps < graphics.Context.instance.refresh_rate - 10.0) Vm.Manager.vm_time -= 0.01;
+                if (final_fps > graphics.Context.instance.refresh_rate + 1.0) Vm.Manager.vm_time += 0.01;
 
                 // limit goals for auto vm time calibration
-                Vm.Manager.vm_time = std.math.clamp(Vm.Manager.vm_time, 0.25, 0.9);
+                Vm.Manager.vm_time = std.math.clamp(Vm.Manager.vm_time, 0.1, 0.9);
             }
 
             fps = 0;
