@@ -22,7 +22,9 @@ These are fixes for behaviours that are implemented wrong.
 - [X] Possible crash on email VM calls
 - [X] Web slighty cuts off paragraphs
 - [X] Wth is up with popups!!
-- [ ] Web threads crash on windows
+- [X] Web threads crash on windows
+    - Wine only
+- [ ] Windows get mouse move event when covered.
 - [ ] Wordwrap in console
 - [ ] Disks files are unordered everywhere, sort on save
 - [ ] Crash dosent save sometimes
@@ -68,8 +70,9 @@ These are tasks that only affect the codebase.
 
 - [X] zig build upload_itch_release
 - [X] Zig 0.16
-- [x] Move runSandEEE to a subfolder somewhere (in repo)
-- [ ] Github actions doesnt test `-Dsteam=On`
+- [X] Move runSandEEE to a subfolder somewhere (in repo)
+- [X] Github actions doesnt test `-Dsteam=On`
+- [X] Remove anyerror
 - [ ] Magic number cleanup
   - [X] Colors
   - [ ] Sizes
@@ -96,9 +99,9 @@ These are tasks that include adding new features to the game, or arent covered b
 - [ ] Workshop favorites
     - [X] Show in list
     - [ ] Dedicated list
-- [ ] Fix program names and versions
+- [X] Fix program names and versions
   - [X] Merge BootEEE
-  - [ ] Breakout other versions to `strings.zig`
+  - [X] Breakout other versions to `strings.zig`
 - [ ] Add a about SandEEE app with creator credits
 - [ ] Inter email box conditions
 - [ ] Embed file fix

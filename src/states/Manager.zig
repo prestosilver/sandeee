@@ -1,4 +1,6 @@
 const std = @import("std");
+const options = @import("options");
+const steam = @import("steam");
 
 const math = @import("../math.zig");
 const util = @import("../util.zig");
@@ -24,7 +26,10 @@ pub const GameState = struct {
         InvalidFormat,
         InvalidPort,
         UnsupportedCompressionMethod,
-    };
+        Overflow,
+        InvalidCharacter,
+    } || if (options.is_steam) steam.Error else error{};
+
     pub const StateUpdateError = loaders.Loader.LoaderError || std.mem.Allocator.Error || system.files.FileError || system.files.DiskError || std.Io.File.OpenError;
     pub const StateSetupError = std.mem.Allocator.Error || system.files.FileError || system.files.DiskError || error{
         ThreadQuotaExceeded,

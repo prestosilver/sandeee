@@ -1,5 +1,7 @@
 const std = @import("std");
 const glfw = @import("glfw");
+const steam = @import("steam");
+const options = @import("options");
 
 const drawers = @import("../drawers.zig");
 const util = @import("../util.zig");
@@ -99,7 +101,9 @@ pub const WindowData = struct {
             InvalidFormat,
             InvalidPort,
             UnsupportedCompressionMethod,
-        };
+            Overflow,
+            InvalidCharacter,
+        } || if (options.is_steam) steam.Error else error{};
 
         const Vtable = struct {
             draw: *const fn (*anyopaque, *Shader, *Rect, *Font, *WindowProps) DrawError!void,

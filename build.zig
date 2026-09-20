@@ -169,7 +169,7 @@ pub fn build(b: *std.Build) !void {
 
     const glfw_host = b.dependency("glfw", .{
         .target = b.graph.host,
-        .optimize = optimize,
+        .optimize = .Debug,
     });
 
     const exe_host_module = b.createModule(.{
