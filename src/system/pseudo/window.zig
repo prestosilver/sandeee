@@ -48,7 +48,7 @@ pub const new = struct {
             .active = true,
         });
 
-        events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window }) catch {
+        events.EventManager.event_window_create.send(.{ .window = window }) catch {
             return error.InvalidPsuedoData;
         };
 

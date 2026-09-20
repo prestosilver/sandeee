@@ -219,9 +219,7 @@ pub fn update(self: *GSLoading, dt: f32) !void {
 
     if (self.wait > 0) return;
 
-    try events.EventManager.instance.sendEvent(system_events.EventStateChange{
-        .target_state = .Windowed,
-    });
+    try events.EventManager.event_state_change.send(.{ .target_state = .Windowed });
 
     // play login sound
     try audio.instance.playSound(self.login_snd);

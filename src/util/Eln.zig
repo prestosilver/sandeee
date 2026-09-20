@@ -62,7 +62,7 @@ pub fn run(self: *const Eln, shell_instance: *Shell, shd: *Shader) !void {
             .buttons = popups.confirm.PopupConfirm.initButtonsFromStruct(errorData),
         };
 
-        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+        try events.EventManager.event_popup_create.send(.{
             .global = true,
             .popup = .atlas("win", .{
                 .title = "Error",

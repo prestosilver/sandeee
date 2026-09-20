@@ -27,17 +27,17 @@ pub const Context = struct {
     size: Vec2,
     refresh_rate: f32,
 
-    pub inline fn makeCurrent() void {
+    pub fn makeCurrent() void {
         instance.lock.lock(util.io) catch unreachable;
         glfw.makeContextCurrent(instance.window);
     }
 
-    pub inline fn makeNotCurrent() void {
+    pub fn makeNotCurrent() void {
         glfw.makeContextCurrent(null);
         instance.lock.unlock(util.io);
     }
 
-    pub inline fn cursorMode(val: c_int) void {
+    pub fn cursorMode(val: c_int) void {
         glfw.SetInputMode(instance.window, glfw._CURSOR, val);
     }
 
@@ -122,17 +122,17 @@ pub const Context = struct {
         };
     }
 
-    pub inline fn poll() bool {
+    pub fn poll() bool {
         glfw.pollEvents();
         return !glfw.windowShouldClose(instance.window);
     }
 
-    pub inline fn clear() void {
+    pub fn clear() void {
         zgl.clearColor(instance.color.r, instance.color.g, instance.color.b, instance.color.a);
         zgl.clear(.{ .color = true });
     }
 
-    pub inline fn swap() void {
+    pub fn swap() void {
         zgl.flush();
 
         glfw.swapBuffers(instance.window);

@@ -39,7 +39,7 @@ pub const DeskData = struct {
     sel: ?usize = null,
     shell: Shell,
 
-    inline fn addQuad(arr: *VertArray, sprite: u8, pos: Rect, src: Rect) !void {
+    fn addQuad(arr: *VertArray, sprite: u8, pos: Rect, src: Rect) !void {
         const source = Rect{
             .x = src.x / 8 + 1.0 / 8.0 * @as(f32, @floatFromInt(sprite)),
             .y = src.y / 8,
@@ -103,7 +103,7 @@ pub const DeskData = struct {
 
                     explorer_self.shell.root = .link(folder);
 
-                    try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                    try events.EventManager.event_window_create.send(.{ .window = window });
 
                     self.sel = null;
 
@@ -140,7 +140,7 @@ pub const DeskData = struct {
                             .buttons = popups.confirm.PopupConfirm.initButtonsFromStruct(errorData),
                         };
 
-                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                        try events.EventManager.event_popup_create.send(.{
                             .global = true,
                             .popup = .atlas("win", .{
                                 .title = "File Picker",
@@ -170,18 +170,18 @@ pub const DeskData = struct {
     }
 
     pub const errorData = struct {
-        pub fn ok(_: *align(@alignOf(Self)) const anyopaque) anyerror!void {}
+        pub fn ok(_: *align(@alignOf(Self)) const anyopaque) !void {}
     };
 
-    pub fn getVerts(self: *const DeskData, _: Vec3) !VertArray {
+    pub fn getVerts(self: *const DeskData, _: Vec3) SpriteBatch.Error!VertArray {
         var result = try VertArray.init(0);
 
         var position = Vec2{};
         var idx: usize = 0;
 
-        const home = try files.FolderLink.resolve(.home);
+        const home = files.FolderLink.resolve(.home) catch return result;
 
-        var sub_folder = try home.getFolders();
+        var sub_folder = home.getFolders() catch return result;
         while (sub_folder) |folder| : (sub_folder = folder.next_sibling) {
             if (!checkIconSkip(folder.name[0 .. folder.name.len - 1])) continue;
 
@@ -205,7 +205,7 @@ pub const DeskData = struct {
             updatePos(&position);
         }
 
-        var sub_file = try home.getFiles();
+        var sub_file = home.getFiles() catch return result;
         while (sub_file) |file| : (sub_file = file.next_sibling) {
             if (!checkIconSkip(file.name)) continue;
 

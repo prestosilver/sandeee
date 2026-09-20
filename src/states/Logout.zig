@@ -101,16 +101,11 @@ pub fn update(self: *GSLogout, dt: f32) !void {
                 glfw.setWindowShouldClose(graphics.Context.instance.window, true);
             },
             .Bios => {
-                try events.EventManager.instance.sendEvent(system_events.EventStateChange{
-                    .target_state = .Disks,
-                });
+                try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
             },
             .Update => {
                 try files.Folder.recoverDisk(target_file, "recovery.eee", false);
-
-                try events.EventManager.instance.sendEvent(system_events.EventStateChange{
-                    .target_state = .Disks,
-                });
+                try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
 
                 allocator.free(target_file);
                 target_file = "";

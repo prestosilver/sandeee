@@ -14,7 +14,7 @@ const Self = @This();
 
 folder: []const u8,
 
-pub fn load(self: *const Self) anyerror!void {
+pub fn load(self: *const Self) !void {
     try mail.EmailManager.init();
 
     try mail.EmailManager.instance.loadFromFolder(self.folder);

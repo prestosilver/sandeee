@@ -14,4 +14,5 @@ test {
     _ = headless;
     _ = Shell;
     _ = Vm;
+    _ = config;
 }

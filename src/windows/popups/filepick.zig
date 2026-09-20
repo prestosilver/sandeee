@@ -27,11 +27,13 @@ const window_events = events.windows;
 
 const strings = sandeee_data.strings;
 
+const SubmitError = std.mem.Allocator.Error || system.files.FileError;
+
 pub const PopupFilePick = struct {
     const Self = @This();
 
     path: std.array_list.Managed(u8) = .init(allocator),
-    submit: *const fn (?*files.File, *anyopaque) anyerror!void,
+    submit: *const fn (?*files.File, *anyopaque) SubmitError!void,
     err: ?[]const u8 = null,
     data: *anyopaque,
 
@@ -105,9 +107,7 @@ pub const PopupFilePick = struct {
             };
 
             try self.submit(file, self.data);
-            try events.EventManager.instance.sendEvent(window_events.EventClosePopup{
-                .popup_conts = self,
-            });
+            try events.EventManager.event_popup_close.send(.{ .popup_conts = self });
         }
     }
 

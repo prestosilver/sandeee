@@ -1,8 +1,10 @@
 const std = @import("std");
 
 const drawers = @import("../drawers.zig");
+const system = @import("../system.zig");
 const util = @import("../util.zig");
 const math = @import("../math.zig");
+const events = @import("../events.zig");
 
 const Window = drawers.Window;
 
@@ -27,11 +29,22 @@ pub const PopupData = struct {
     pub const PopupContents = struct {
         const Self = @This();
 
+        const DrawError = util.Url.Error || std.mem.Allocator.Error || system.files.FileError || std.http.Client.RequestError || error{
+            ThreadQuotaExceeded,
+            LockedMemoryLimitExceeded,
+            InvalidHostName,
+            WrongSize,
+            UnexpectedCharacter,
+            InvalidFormat,
+            InvalidPort,
+            UnsupportedCompressionMethod,
+        };
+
         const VTable = struct {
-            draw: *const fn (*anyopaque, *Shader, bnds: Rect, font: *Font) anyerror!void,
-            key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
-            char: *const fn (*anyopaque, []const u8, i32) anyerror!void,
-            click: *const fn (*anyopaque, Vec2) anyerror!void,
+            draw: *const fn (*anyopaque, *Shader, bnds: Rect, font: *Font) DrawError!void,
+            key: *const fn (*anyopaque, i32, i32, bool) events.input.EventKeyDown.Error!void,
+            char: *const fn (*anyopaque, []const u8, i32) events.input.EventKeyChar.Error!void,
+            click: *const fn (*anyopaque, Vec2) events.input.EventMouseClick.Error!void,
             deinit: *const fn (*anyopaque) void,
         };
 
@@ -208,7 +221,7 @@ pub const PopupData = struct {
         return .Contents;
     }
 
-    pub inline fn scissor(self: *const PopupData) Rect {
+    pub fn scissor(self: *const PopupData) Rect {
         return .{
             .x = self.pos.x + 6,
             .y = self.pos.y + 34,

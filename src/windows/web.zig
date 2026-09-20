@@ -311,7 +311,7 @@ pub const WebData = struct {
         const handle = query.send();
 
         while (!handle.isComplete())
-            try std.Io.sleep(util.io, .fromMilliseconds(200), .real);
+            try std.Io.sleep(util.io, .fromMilliseconds(200), .awake);
 
         const query_result = try handle.getResult(steam.callback.UGCQueryCompleted);
 
@@ -395,7 +395,7 @@ pub const WebData = struct {
                 break;
             }
 
-            std.Io.sleep(util.io, .fromNanoseconds(2000), .real) catch unreachable;
+            std.Io.sleep(util.io, .fromNanoseconds(2000), .awake) catch unreachable;
         }
 
         var size: u64 = 0;
@@ -651,7 +651,7 @@ pub const WebData = struct {
             .prompt = try allocator.dupe(u8, "Pick a path to save the file"),
         };
 
-        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+        try events.EventManager.event_popup_create.send(.{
             .popup = .atlas("win", .{
                 .title = "Save As",
                 .source = .{ .w = 1, .h = 1 },

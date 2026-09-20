@@ -18,7 +18,11 @@ kind: UrlKind,
 domain: []const u8,
 path: []const u8,
 
-pub fn parse(path: []const u8) !Self {
+pub const Error = std.mem.Allocator.Error || error{
+    InvalidUrl,
+};
+
+pub fn parse(path: []const u8) Error!Self {
     if (std.mem.count(u8, path, ":") > 1)
         return error.InvalidUrl;
 
@@ -43,7 +47,7 @@ pub fn parse(path: []const u8) !Self {
     return error.InvalidUrl;
 }
 
-pub fn child(self: *const Self, path: []const u8) !Self {
+pub fn child(self: *const Self, path: []const u8) Error!Self {
     // for compat
     if (path.len > 1 and @as(UrlKind, @enumFromInt(path[0])) == .Web)
         return self.child(path[1..]);
@@ -80,7 +84,7 @@ pub fn deinit(self: *const Self) void {
     allocator.free(self.path);
 }
 
-pub fn dupe(self: *const Self) !Self {
+pub fn dupe(self: *const Self) Error!Self {
     return .{
         .kind = self.kind,
         .domain = try allocator.dupe(u8, self.domain),

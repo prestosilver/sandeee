@@ -27,11 +27,13 @@ const window_events = events.windows;
 
 const strings = sandeee_data.strings;
 
+const SubmitError = std.mem.Allocator.Error || system.files.FileError;
+
 pub const PopupFolderPick = struct {
     const Self = @This();
 
     path: std.array_list.Managed(u8) = .init(allocator),
-    submit: *const fn (?*files.Folder, *anyopaque) anyerror!void,
+    submit: *const fn (?*files.Folder, *anyopaque) SubmitError!void,
     err: ?[]const u8 = null,
     data: *anyopaque,
 
@@ -97,9 +99,7 @@ pub const PopupFolderPick = struct {
 
             if (root.getFolder(self.path.items) catch null) |folder| {
                 try self.submit(folder, self.data);
-                try events.EventManager.instance.sendEvent(window_events.EventClosePopup{
-                    .popup_conts = self,
-                });
+                try events.EventManager.event_popup_close.send(.{ .popup_conts = self });
             } else {
                 if (self.err) |err|
                     allocator.free(err);

@@ -86,7 +86,7 @@ debug_enabled: bool = false,
 
 pub var global_self: *GSWindowed = undefined;
 
-fn spawnPopup(event: window_events.EventCreatePopup) !void {
+fn spawnPopup(event: window_events.EventPopupCreate) !void {
     const popup = try allocator.create(Popup);
     errdefer allocator.destroy(popup);
 
@@ -95,7 +95,7 @@ fn spawnPopup(event: window_events.EventCreatePopup) !void {
     try global_self.popups.append(popup);
 }
 
-fn closePopup(event: window_events.EventClosePopup) !void {
+fn closePopup(event: window_events.EventPopupClose) !void {
     const idx = for (global_self.popups.items, 0..) |_, idx| {
         if (global_self.popups.items[idx].data.contents.ptr == event.popup_conts) {
             break idx;
@@ -109,7 +109,7 @@ fn closePopup(event: window_events.EventClosePopup) !void {
     }
 }
 
-fn spawnWindow(event: window_events.EventCreateWindow) !void {
+fn spawnWindow(event: window_events.EventWindowCreate) !void {
     const dragging_idx = if (global_self.dragging_window) |dragging| blk: {
         for (global_self.windows.items, 0..) |window, idx| {
             if (window == dragging) break :blk idx;
@@ -151,7 +151,7 @@ fn spawnWindow(event: window_events.EventCreateWindow) !void {
     try global_self.windows.items[global_self.windows.items.len - 1].data.refresh();
 }
 
-pub fn notification(event: window_events.EventNotification) !void {
+pub fn notification(event: system_events.EventNotificationSend) !void {
     const notif = try allocator.create(Notification);
     errdefer allocator.destroy(notif);
 
@@ -171,7 +171,7 @@ pub fn debugSet(event: system_events.EventDebugSet) !void {
     try mail.EmailManager.instance.updateDebug();
 }
 
-pub fn settingSet(event: system_events.EventSetSetting) !void {
+pub fn settingSet(event: system_events.EventSettingSet) !void {
     if (!global_self.init) return;
 
     if (std.mem.eql(u8, event.setting, "wallpaper_color")) {
@@ -224,12 +224,12 @@ pub fn setup(self: *GSWindowed) !void {
     Window.Data.WindowContents.shader = self.shader;
     Shell.shader = self.shader;
 
-    try events.EventManager.instance.registerListener(window_events.EventCreatePopup, spawnPopup);
-    try events.EventManager.instance.registerListener(window_events.EventClosePopup, closePopup);
-    try events.EventManager.instance.registerListener(window_events.EventCreateWindow, spawnWindow);
-    try events.EventManager.instance.registerListener(window_events.EventNotification, notification);
-    try events.EventManager.instance.registerListener(system_events.EventSetSetting, settingSet);
-    try events.EventManager.instance.registerListener(system_events.EventDebugSet, debugSet);
+    events.EventManager.event_popup_create.attach(spawnPopup);
+    events.EventManager.event_popup_close.attach(closePopup);
+    events.EventManager.event_window_create.attach(spawnWindow);
+    events.EventManager.event_notification_send.attach(notification);
+    events.EventManager.event_setting_set.attach(settingSet);
+    events.EventManager.event_debug_set.attach(debugSet);
 
     if (config.SettingManager.instance.getBool("show_welcome") orelse true) {
         const window: Window = .atlas("win", .{
@@ -239,7 +239,7 @@ pub fn setup(self: *GSWindowed) !void {
             .active = true,
         });
 
-        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = true });
+        try events.EventManager.event_window_create.send(.{ .window = window, .center = true });
     }
 
     self.desk.data.shell.root = .home;
@@ -284,6 +284,13 @@ pub fn deinit(self: *GSWindowed) void {
 
     // deinit the Eln loader
     Eln.reset();
+
+    events.EventManager.event_popup_create.detach(spawnPopup);
+    events.EventManager.event_popup_close.detach(closePopup);
+    events.EventManager.event_window_create.detach(spawnWindow);
+    events.EventManager.event_notification_send.detach(notification);
+    events.EventManager.event_setting_set.detach(settingSet);
+    events.EventManager.event_debug_set.detach(debugSet);
 
     // deinit lists
     self.windows.clearAndFree();
@@ -513,7 +520,7 @@ pub fn keypress(self: *GSWindowed, key: c_int, mods: c_int, down: bool) !void {
             .active = true,
         });
 
-        try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window, .center = false });
+        try events.EventManager.event_window_create.send(.{ .window = window, .center = false });
 
         return;
     }
@@ -568,7 +575,7 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
             .Contents => {},
             .Close => {
                 if (kind == .single) {
-                    try events.EventManager.instance.sendEvent(window_events.EventClosePopup{ .popup_conts = self.popups.getLast().data.contents.ptr });
+                    try events.EventManager.event_popup_close.send(.{ .popup_conts = self.popups.getLast().data.contents.ptr });
                 }
             },
             .Move => {

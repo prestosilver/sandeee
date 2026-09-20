@@ -338,7 +338,7 @@ const EmailData = struct {
             .submit = @ptrCast(&submit),
         };
 
-        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+        try events.EventManager.event_popup_create.send(.{
             .popup = .atlas("win", .{
                 .title = "Send Attachment",
                 .source = .{ .w = 1, .h = 1 },

@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const system = @import("../system.zig");
 const events = @import("../events.zig");
 const drawers = @import("../drawers.zig");
 const math = @import("../math.zig");
@@ -12,7 +13,27 @@ const Rect = math.Rect;
 
 const EventManager = events.EventManager;
 
-pub const EventCreateWindow = struct { window: Window, center: bool = false };
-pub const EventCreatePopup = struct { popup: Popup, global: bool = false };
-pub const EventClosePopup = struct { popup_conts: *const anyopaque };
-pub const EventNotification = struct { title: []const u8, text: []const u8 = "", icon: ?Sprite = null };
+const WindowEventError = std.mem.Allocator.Error || std.Io.Writer.Error || std.Io.File.Writer.Error || std.Io.File.Reader.Error || system.files.FileError;
+
+pub const EventWindowCreate = struct {
+    pub const Error = WindowEventError;
+
+    window: Window,
+    center: bool = false,
+};
+pub const EventWindowClose = struct {
+    pub const Error = WindowEventError;
+
+    window: Window,
+};
+pub const EventPopupCreate = struct {
+    pub const Error = WindowEventError;
+
+    popup: Popup,
+    global: bool = false,
+};
+pub const EventPopupClose = struct {
+    pub const Error = WindowEventError;
+
+    popup_conts: *const anyopaque,
+};

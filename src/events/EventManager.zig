@@ -1,58 +1,76 @@
 const std = @import("std");
 
 const util = @import("../util.zig");
+const events = @import("../events.zig");
 
 const allocator = util.allocator;
 
-const Manager = @This();
-
-pub var instance: Manager = .{};
-
-subs: std.StringHashMap(std.array_list.Managed(Listener(*void))) = .init(allocator),
+const MAX_EVENTS = 8;
 
 // TODO: really this should be a linked list and stored by event
 
-pub fn deinit() void {
-    var iter = instance.subs.iterator();
-    while (iter.next()) |item|
-        item.value_ptr.deinit();
-    instance.subs.deinit();
-}
-
-fn Listener(comptime T: type) type {
+fn Event(comptime T: type) type {
     return struct {
-        calls: *const fn (T) anyerror!void,
-    };
-}
+        const Handler = *const fn (T) T.Error!void;
 
-pub fn registerListener(self: *Manager, comptime T: type, callee: *const fn (T) anyerror!void) !void {
-    const call = @as(*const fn (*void) anyerror!void, @ptrCast(callee));
+        events: [MAX_EVENTS]Handler = undefined,
+        count: usize = 0,
 
-    if (self.subs.getPtr(@typeName(T))) |list| {
-        for (list.*.items) |*item| {
-            if (@intFromPtr(item.calls) == @intFromPtr(callee)) {
-                // Ignore a reregistered event
+        const Self = @This();
 
-                return;
+        pub fn attach(self: *Self, handler: Handler) void {
+            if (self.count == MAX_EVENTS)
+                @panic("Max events attached");
+
+            for (self.events[0..self.count]) |event| {
+                if (event == handler)
+                    @panic("Double event attach");
+            }
+
+            self.events[self.count] = handler;
+            self.count += 1;
+        }
+
+        pub fn detach(self: *Self, handler: Handler) void {
+            var idx: usize = 0;
+            while (idx < self.count) : (idx += 1) {
+                if (self.events[idx] == handler) {
+                    const tmp = self.events[self.count];
+                    self.events[self.count] = self.events[idx];
+                    self.events[idx] = tmp;
+                    self.count -= 1;
+                }
             }
         }
 
-        try list.append(.{ .calls = call });
-    } else {
-        var new_list: std.array_list.Managed(Listener(*void)) = .init(allocator);
-
-        try new_list.append(.{ .calls = call });
-
-        try self.subs.put(@typeName(T), new_list);
-    }
+        pub fn send(self: *const Self, data: T) T.Error!void {
+            for (self.events[0..self.count]) |event| {
+                try event(data);
+            }
+        }
+    };
 }
 
-pub inline fn sendEvent(self: *Manager, data: anytype) !void {
-    const T = @TypeOf(data);
-    const name: []const u8 = @typeName(T);
+pub var event_mouse_move: Event(events.input.EventMouseMove) = .{};
+pub var event_key_down: Event(events.input.EventKeyDown) = .{};
+pub var event_key_up: Event(events.input.EventKeyUp) = .{};
+pub var event_key_char: Event(events.input.EventKeyChar) = .{};
+pub var event_mouse_click: Event(events.input.EventMouseClick) = .{};
+pub var event_mouse_scroll: Event(events.input.EventMouseScroll) = .{};
+pub var event_display_resize: Event(events.input.EventDisplayResize) = .{};
+pub var event_clipboard_copy: Event(events.input.EventClipboardCopy) = .{};
+pub var event_clipboard_paste: Event(events.input.EventClipboardPaste) = .{};
 
-    for ((self.subs.get(name) orelse return).items) |sub| {
-        const call = @as(*const fn (T) anyerror!void, @ptrCast(sub.calls));
-        try call(data);
-    }
-}
+pub var event_window_create: Event(events.windows.EventWindowCreate) = .{};
+pub var event_window_close: Event(events.windows.EventWindowClose) = .{};
+pub var event_popup_create: Event(events.windows.EventPopupCreate) = .{};
+pub var event_popup_close: Event(events.windows.EventPopupClose) = .{};
+
+pub var event_telem_update: Event(events.system.EventTelemUpdate) = .{};
+pub var event_syscall_run: Event(events.system.EventSyscallRun) = .{};
+pub var event_cmd_run: Event(events.system.EventCmdRun) = .{};
+pub var event_debug_set: Event(events.system.EventDebugSet) = .{};
+pub var event_notification_send: Event(events.system.EventNotificationSend) = .{};
+pub var event_email_recv: Event(events.system.EventEmailRecv) = .{};
+pub var event_setting_set: Event(events.system.EventSettingSet) = .{};
+pub var event_state_change: Event(events.system.EventStateChange) = .{};

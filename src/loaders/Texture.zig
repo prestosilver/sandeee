@@ -19,7 +19,7 @@ const Self = @This();
 name: []const u8,
 path: []const u8,
 
-pub fn load(self: *const Self) anyerror!void {
+pub fn load(self: *const Self) !void {
     const path = config.SettingManager.instance.get(self.path) orelse
         self.path;
 

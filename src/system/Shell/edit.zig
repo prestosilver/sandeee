@@ -59,7 +59,7 @@ pub fn edit(self: *Shell, params: *Shell.Params) !Shell.Result {
         } else return .{};
     }
 
-    try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+    try events.EventManager.event_window_create.send(.{ .window = window });
 
     return .{};
 }

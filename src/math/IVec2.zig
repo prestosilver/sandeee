@@ -9,28 +9,28 @@ y: usize = 0.0,
 
 const IVec2 = @This();
 
-pub inline fn add(a: IVec2, b: IVec2) IVec2 {
+pub fn add(a: IVec2, b: IVec2) IVec2 {
     return IVec2{
         .x = a.x + b.x,
         .y = a.y + b.y,
     };
 }
 
-pub inline fn mul(a: IVec2, b: f32) IVec2 {
+pub fn mul(a: IVec2, b: f32) IVec2 {
     return IVec2{
         .x = a.x * b,
         .y = a.y * b,
     };
 }
 
-pub inline fn sub(a: IVec2, b: IVec2) IVec2 {
+pub fn sub(a: IVec2, b: IVec2) IVec2 {
     return IVec2{
         .x = a.x - b.x,
         .y = a.y - b.y,
     };
 }
 
-pub inline fn div(a: IVec2, b: f32) IVec2 {
+pub fn div(a: IVec2, b: f32) IVec2 {
     return IVec2{
         .x = a.x / b,
         .y = a.y / b,
@@ -38,27 +38,27 @@ pub inline fn div(a: IVec2, b: f32) IVec2 {
 }
 
 // misc stuff
-pub inline fn magSq(a: IVec2) f32 {
+pub fn magSq(a: IVec2) f32 {
     return @abs((a.x * a.x) + (a.y * a.y));
 }
 
-pub inline fn mag(a: IVec2) f32 {
+pub fn mag(a: IVec2) f32 {
     return std.math.sqrt(magSq(a));
 }
 
-pub inline fn distSq(a: IVec2, b: IVec2) f32 {
+pub fn distSq(a: IVec2, b: IVec2) f32 {
     return magSq(sub(a, b));
 }
 
-pub inline fn dist(a: IVec2, b: IVec2) f32 {
+pub fn dist(a: IVec2, b: IVec2) f32 {
     return mag(sub(a, b));
 }
 
-pub inline fn getAngle(a: IVec2) f32 {
+pub fn getAngle(a: IVec2) f32 {
     return std.math.atan2(f32, a.x, a.y);
 }
 
-pub inline fn setAngle(a: IVec2, angle: f32) f32 {
+pub fn setAngle(a: IVec2, angle: f32) f32 {
     const magnitude = a.mag;
 
     const x = @cos(angle);

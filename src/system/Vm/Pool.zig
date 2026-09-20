@@ -22,15 +22,15 @@ pub const Object = struct {
 pub const ObjectRef = enum(usize) {
     _,
 
-    pub inline fn id(self: ObjectRef) usize {
+    pub fn id(self: ObjectRef) usize {
         return @intFromEnum(self);
     }
 
-    pub inline fn new(value: usize) ObjectRef {
+    pub fn new(value: usize) ObjectRef {
         return @enumFromInt(value);
     }
 
-    pub inline fn data(self: ObjectRef) *ObjectData {
+    pub fn data(self: ObjectRef) *ObjectData {
         const result = &objects.items[self.id()].data;
 
         if (result.* == .free) {
@@ -41,7 +41,7 @@ pub const ObjectRef = enum(usize) {
         return result;
     }
 
-    pub inline fn mark(self: ObjectRef) !void {
+    pub fn mark(self: ObjectRef) !void {
         objects.items[self.id()].marked = true;
     }
 

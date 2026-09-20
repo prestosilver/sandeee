@@ -297,14 +297,14 @@ pub const EmailManager = struct {
                 if (dep.box != email.box) continue;
                 if (std.mem.indexOf(u8, dep.deps, &.{email.id})) |_| {
                     if (self.getEmailVisible(dep, "admin@eee.org"))
-                        try events.EventManager.instance.sendEvent(window_events.EventNotification{
+                        try events.EventManager.event_notification_send.send(.{
                             .title = "New mail decrypted",
                             .text = dep.subject,
                             .icon = email_window.notif,
                         });
                 }
             }
-            try events.EventManager.instance.sendEvent(system_events.EventEmailRecv{});
+            try events.EventManager.event_email_recv.send(.{});
         }
     }
 

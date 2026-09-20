@@ -137,7 +137,7 @@ pub fn init(alloc: std.mem.Allocator, root: files.FolderLink, args: [][]const u8
     };
 }
 
-pub inline fn yieldUntil(self: *Vm, comptime T: type, child: T) !void {
+pub fn yieldUntil(self: *Vm, comptime T: type, child: T) !void {
     const data = try self.allocator.create(T);
     data.* = child;
 
@@ -164,38 +164,38 @@ pub inline fn yieldUntil(self: *Vm, comptime T: type, child: T) !void {
     self.yield = true;
 }
 
-pub inline fn pushStack(self: *Vm, entry: Pool.ObjectRef) VmError!void {
+pub fn pushStack(self: *Vm, entry: Pool.ObjectRef) VmError!void {
     if (self.rsp == STACK_MAX) return error.StackOverflow;
     self.stack[self.rsp] = entry;
     self.rsp += 1;
 }
 
-pub inline fn pushStackI(self: *Vm, value: u64) VmError!void {
+pub fn pushStackI(self: *Vm, value: u64) VmError!void {
     if (self.rsp == STACK_MAX) return error.StackOverflow;
 
     self.stack[self.rsp] = try Pool.new(.{ .value = value });
     self.rsp += 1;
 }
 
-pub inline fn pushStackS(self: *Vm, string: Rope) VmError!void {
+pub fn pushStackS(self: *Vm, string: Rope) VmError!void {
     if (self.rsp == STACK_MAX) return error.StackOverflow;
 
     self.stack[self.rsp] = try Pool.new(.{ .string = string });
     self.rsp += 1;
 }
 
-pub inline fn popStack(self: *Vm) VmError!Pool.ObjectRef {
+pub fn popStack(self: *Vm) VmError!Pool.ObjectRef {
     if (self.rsp == 0) return error.StackUnderflow;
     self.rsp -= 1;
     return self.stack[self.rsp];
 }
 
-pub inline fn findStack(self: *Vm, idx: u64) VmError!Pool.ObjectRef {
+pub fn findStack(self: *Vm, idx: u64) VmError!Pool.ObjectRef {
     if (self.rsp <= idx) return error.StackUnderflow;
     return self.stack[self.rsp - 1 - @as(usize, @intCast(idx))];
 }
 
-pub inline fn replaceStack(self: *Vm, a: Pool.ObjectRef, b: Pool.ObjectRef) VmError!void {
+pub fn replaceStack(self: *Vm, a: Pool.ObjectRef, b: Pool.ObjectRef) VmError!void {
     for (self.stack[0..self.rsp]) |*entry| {
         if (entry.* == a) {
             entry.* = b;
@@ -250,7 +250,7 @@ pub fn deinit(self: *Vm) void {
     self.out.deinit();
 }
 
-pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
+pub fn runOp(self: *Vm, op: Operation) VmError!void {
     telem.Telem.instance.instruction_calls += 1;
 
     self.pc += 1;
@@ -410,7 +410,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
                                 },
                                 // secret
                                 255 => {
-                                    events.EventManager.instance.sendEvent(system_events.EventSys{
+                                    events.EventManager.event_syscall_run.send(.{
                                         .sysId = index,
                                     }) catch return error.InvalidSys;
 
@@ -436,7 +436,7 @@ pub inline fn runOp(self: *Vm, op: Operation) VmError!void {
                                     if (std.mem.eql(u8, input, dbg_pass)) {
                                         try self.out.appendSlice("Debug Mode Enabled\n");
 
-                                        events.EventManager.instance.sendEvent(system_events.EventDebugSet{
+                                        events.EventManager.event_debug_set.send(.{
                                             .enabled = true,
                                         }) catch {
                                             return error.InvalidSys;
@@ -845,7 +845,9 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError![]const Operation {
         }
         temp.print("}}", .{}) catch unreachable;
 
-        log.warn("Vm operation parsing failed at {s}", .{temp.items});
+        // Dont need this log when im testing as the test implies it works
+        if (!builtin.is_test)
+            log.warn("Vm operation parsing failed at {s}", .{temp.items});
         ops.deinit();
     }
 
@@ -1014,12 +1016,12 @@ pub fn runTime(self: *Vm, ns: u64, comptime _: bool) !bool {
         } else return self.done();
     }
 
-    const start = std.Io.Clock.now(.real, util.io);
+    const start = std.Io.Clock.now(.awake, util.io);
 
     var exec: usize = 0;
 
     while (!self.done() and !self.yield) {
-        const end = std.Io.Clock.now(.real, util.io);
+        const end = std.Io.Clock.now(.awake, util.io);
         if (start.durationTo(end).toNanoseconds() >= ns)
             break;
 
@@ -1078,7 +1080,7 @@ test "Vm input fuzzing" {
     const Context = struct {
         vm: *Vm,
 
-        fn testStringToOps(context: @This(), smith: *std.testing.Smith) anyerror!void {
+        fn testStringToOps(context: @This(), smith: *std.testing.Smith) !void {
             var input_buf: [1024]u8 = undefined;
             const input_len = smith.slice(&input_buf);
             const input = input_buf[0..input_len];

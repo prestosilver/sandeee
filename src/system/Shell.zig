@@ -59,7 +59,9 @@ pub var font_shader: *Shader = undefined;
 const ShellError = error{
     MissingParameter,
     BadASMFile,
-};
+    InvalidFileType,
+    CommandNotFound,
+} || std.mem.Allocator.Error || system.files.FileError || system.Vm.VmError;
 
 // TODO: move to data module
 const TOTAL_BAR_SPRITES: f32 = 13;
@@ -371,7 +373,7 @@ pub const window_commands = .{
                     cmd_self.input_len = @intCast(command.len);
                     try cmd_self.key(glfw.KeyEnter, 0, true);
                 }
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                try events.EventManager.event_window_create.send(.{ .window = window });
                 return .{};
             }
         }.cmd,
@@ -416,7 +418,7 @@ pub const window_commands = .{
                         webself.path = try Url.parse(url);
                     }
                 }
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                try events.EventManager.event_window_create.send(.{ .window = window });
                 return .{};
             }
         }.web,
@@ -432,7 +434,7 @@ pub const window_commands = .{
                     .contents = try windows.tasks.init(shader),
                     .active = true,
                 });
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                try events.EventManager.event_window_create.send(.{ .window = window });
                 return .{};
             }
         }.task,
@@ -448,7 +450,7 @@ pub const window_commands = .{
                     .contents = try windows.settings.init(shader),
                     .active = true,
                 });
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                try events.EventManager.event_window_create.send(.{ .window = window });
                 return .{};
             }
         }.settings,
@@ -464,7 +466,7 @@ pub const window_commands = .{
                     .contents = try windows.apps.init(shader),
                     .active = true,
                 });
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                try events.EventManager.event_window_create.send(.{ .window = window });
                 return .{};
             }
         }.launch,
@@ -490,7 +492,7 @@ pub const window_commands = .{
                         }),
                     },
                 };
-                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                try events.EventManager.event_popup_create.send(.{
                     .global = true,
                     .popup = .atlas("win", .{
                         .title = "Quit SandEEE",
@@ -521,7 +523,7 @@ pub const window_commands = .{
                     .contents = try windows.explorer.init(shader),
                     .active = true,
                 });
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                try events.EventManager.event_window_create.send(.{ .window = window });
                 return .{};
             }
         }.files,
@@ -540,7 +542,7 @@ pub const email_commands = .{
                     .contents = try windows.email.init(shader),
                     .active = true,
                 });
-                try events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = window });
+                try events.EventManager.event_window_create.send(.{ .window = window });
                 return .{};
             }
         }.mail,
@@ -579,10 +581,8 @@ pub const command_map = std.StaticStringMap(ShellCommand).initComptime(
         (if (!builtin.is_test) window_commands else .{}),
 );
 
-pub fn run(self: *Shell, params: []const u8) anyerror!Result {
-    try events.EventManager.instance.sendEvent(system_events.EventRunCmd{
-        .cmd = params,
-    });
+pub fn run(self: *Shell, params: []const u8) ShellError!Result {
+    try events.EventManager.event_cmd_run.send(.{ .cmd = params });
 
     if (params.len == 0)
         return error.MissingParameter;
@@ -592,7 +592,12 @@ pub fn run(self: *Shell, params: []const u8) anyerror!Result {
 
     if (command_map.get(cmd)) |runs|
         if (!runs.gui or !self.headless and !builtin.is_test)
-            return runs.run(self, &iter);
+            return runs.run(self, &iter) catch |err| {
+                return .{
+                    .failure = true,
+                    .data = try allocator.dupe(u8, @errorName(err)),
+                };
+            };
 
     return self.runFile(cmd, &iter);
 }

@@ -61,7 +61,7 @@ fn inputLoop() noreturn {
     while (true) {
         const c = reader.interface.takeByte() catch unreachable;
         if (c == 0) {
-            std.Io.sleep(util.io, .fromMilliseconds(100), .real) catch unreachable;
+            std.Io.sleep(util.io, .fromMilliseconds(100), .awake) catch unreachable;
             continue;
         }
 
@@ -72,7 +72,7 @@ fn inputLoop() noreturn {
     }
 }
 
-pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Writer) anyerror!void {
+pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Writer) !void {
     if (!USE_POSIX) {
         const windows = @import("win32");
 
@@ -215,7 +215,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
                 const ch = blk: {
                     break :blk popInput();
                 } orelse {
-                    try std.Io.sleep(util.io, .fromMilliseconds(100), .real);
+                    try std.Io.sleep(util.io, .fromMilliseconds(100), .awake);
                     continue;
                 };
 

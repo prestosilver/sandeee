@@ -27,7 +27,7 @@ pub var last_render_time: f64 = 0;
 pub const Handle = enum(u32) {
     _,
 
-    pub inline fn inc(self: Handle) Handle {
+    pub fn inc(self: Handle) Handle {
         const id = @intFromEnum(self);
         return @enumFromInt(id +% 1);
     }

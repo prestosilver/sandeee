@@ -11,7 +11,7 @@ const Self = @This();
 files: [2]Shader.ShaderFile,
 out: *Shader,
 
-pub fn load(self: *const Self) anyerror!void {
+pub fn load(self: *const Self) !void {
     graphics.Context.makeCurrent();
     defer graphics.Context.makeNotCurrent();
 

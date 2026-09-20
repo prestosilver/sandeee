@@ -222,7 +222,7 @@ pub const BarData = struct {
         graphics.gContext.window.setShouldClose(1);
     }
 
-    pub fn getVerts(self: *const BarData, _: Vec3) !VertArray {
+    pub fn getVerts(self: *const BarData, _: Vec3) SpriteBatch.Error!VertArray {
         var result = try VertArray.init(9 * 6 * 2);
         const pos = Rect{ .y = self.screendims.y - self.height, .w = self.screendims.x, .h = self.height };
 
@@ -254,7 +254,7 @@ pub const BarData = struct {
         try result.appendQuad(icon, .{ .y = 3.0 / TOTAL_SPRITES, .w = 1, .h = 1.0 / TOTAL_SPRITES }, .{});
 
         if (self.btn_active) {
-            const apps = try getApps();
+            const apps = getApps() catch return result;
             defer allocator.free(apps);
 
             const total_height: f32 = @floatFromInt(apps.len * (ICON_SIZE + ICON_SPACE));

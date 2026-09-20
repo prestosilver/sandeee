@@ -27,10 +27,12 @@ const window_events = events.windows;
 
 const strings = sandeee_data.strings;
 
+const SubmitError = std.mem.Allocator.Error || system.files.FileError;
+
 pub const PopupTextPick = struct {
     const Self = @This();
 
-    submit: *const fn ([]u8, *anyopaque) anyerror!void,
+    submit: *const fn ([]const u8, *anyopaque) SubmitError!void,
 
     err: ?[]const u8 = null,
 
@@ -97,16 +99,17 @@ pub const PopupTextPick = struct {
         }
 
         if (keycode == glfw.KeyEnter) {
-            self.submit(try self.text.toOwnedSlice(), self.data) catch |err| {
+            const text = try self.text.toOwnedSlice();
+            defer allocator.free(text);
+
+            self.submit(text, self.data) catch |err| {
                 if (self.err) |err_i|
                     allocator.free(err_i);
                 self.err = try allocator.dupe(u8, @errorName(err));
                 return;
             };
 
-            try events.EventManager.instance.sendEvent(window_events.EventClosePopup{
-                .popup_conts = self,
-            });
+            try events.EventManager.event_popup_close.send(.{ .popup_conts = self });
         }
     }
 

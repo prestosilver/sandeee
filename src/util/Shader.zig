@@ -18,6 +18,10 @@ pub const ShaderFile = struct {
 
 const Shader = @This();
 
+pub const ShaderError = error{
+    ShaderCompileError,
+};
+
 program: zgl.Program = .invalid,
 
 pub fn init(comptime total: u32, files: [total]ShaderFile) !Shader {
@@ -37,7 +41,7 @@ pub fn init(comptime total: u32, files: [total]ShaderFile) !Shader {
 
             log.info("{s}", .{info_log});
 
-            return error.CompileError;
+            return error.ShaderCompileError;
         }
 
         program.attach(shader);
@@ -51,7 +55,7 @@ pub fn init(comptime total: u32, files: [total]ShaderFile) !Shader {
 
         log.info("{s}", .{info_log});
 
-        return error.CompileError;
+        return error.ShaderCompileError;
     }
 
     return Shader{

@@ -22,7 +22,7 @@ pub const CursorData = struct {
     index: usize = 0,
     flip: bool = false,
 
-    pub fn getVerts(self: *const CursorData, pos: Vec3) !VertArray {
+    pub fn getVerts(self: *const CursorData, pos: Vec3) SpriteBatch.Error!VertArray {
         var result = try VertArray.init(6);
 
         var xo: f64 = 0;

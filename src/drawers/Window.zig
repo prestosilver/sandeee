@@ -43,7 +43,7 @@ pub const WindowData = struct {
         ResizeRB,
     };
 
-    pub inline fn scroll_mul() f32 {
+    pub fn scroll_mul() f32 {
         return 30 * (config.SettingManager.instance.getFloat("scroll_speed") orelse 1.0);
     }
 
@@ -87,18 +87,32 @@ pub const WindowData = struct {
             }
         };
 
+        const MoveError = error{};
+        const RefreshError = std.mem.Allocator.Error || system.files.FileError;
+        const FocusError = std.mem.Allocator.Error || system.files.FileError;
+        const DrawError = util.Url.Error || std.mem.Allocator.Error || system.files.FileError || std.http.Client.RequestError || error{
+            ThreadQuotaExceeded,
+            LockedMemoryLimitExceeded,
+            InvalidHostName,
+            WrongSize,
+            UnexpectedCharacter,
+            InvalidFormat,
+            InvalidPort,
+            UnsupportedCompressionMethod,
+        };
+
         const Vtable = struct {
-            draw: *const fn (*anyopaque, *Shader, *Rect, *Font, *WindowProps) anyerror!void,
-            click: *const fn (*anyopaque, Vec2, Vec2, i32, ClickKind) anyerror!void,
-            key: *const fn (*anyopaque, i32, i32, bool) anyerror!void,
-            char: *const fn (*anyopaque, []const u8, i32) anyerror!void,
-            scroll: *const fn (*anyopaque, f32, f32) anyerror!void,
-            move: *const fn (*anyopaque, f32, f32) anyerror!void,
+            draw: *const fn (*anyopaque, *Shader, *Rect, *Font, *WindowProps) DrawError!void,
+            click: *const fn (*anyopaque, Vec2, Vec2, i32, ClickKind) events.input.EventMouseClick.Error!void,
+            scroll: *const fn (*anyopaque, f32, f32) events.input.EventMouseScroll.Error!void,
+            key: *const fn (*anyopaque, i32, i32, bool) events.input.EventKeyDown.Error!void,
+            char: *const fn (*anyopaque, []const u8, i32) events.input.EventKeyChar.Error!void,
+            move: *const fn (*anyopaque, f32, f32) events.input.EventMouseMove.Error!void,
 
-            moveResize: *const fn (*anyopaque, Rect) anyerror!void,
+            moveResize: *const fn (*anyopaque, Rect) MoveError!void,
 
-            refresh: *const fn (*anyopaque) anyerror!void,
-            focus: *const fn (*anyopaque) anyerror!void,
+            refresh: *const fn (*anyopaque) RefreshError!void,
+            focus: *const fn (*anyopaque) FocusError!void,
             deinit: *const fn (*anyopaque) void,
         };
 
@@ -147,7 +161,7 @@ pub const WindowData = struct {
                 if (self.props.scroll) |*scroll_data|
                     scroll_data.value += 1 * scroll_mul();
             } else {
-                return self.vtable.key(self.ptr, keycode, mods, down);
+                try self.vtable.key(self.ptr, keycode, mods, down);
             }
         }
 
@@ -169,7 +183,7 @@ pub const WindowData = struct {
                 self.scrolling = false;
             }
 
-            return self.vtable.click(self.ptr, size, mousepos, btn, kind);
+            try self.vtable.click(self.ptr, size, mousepos, btn, kind);
         }
 
         pub fn drag(self: *Self, size: Vec2, mousepos: Vec2) !void {
@@ -188,25 +202,25 @@ pub const WindowData = struct {
                 scroll_data.value -= y * scroll_mul();
             }
 
-            return self.vtable.scroll(self.ptr, x, y);
+            try self.vtable.scroll(self.ptr, x, y);
         }
 
         pub fn move(self: *Self, x: f32, y: f32) !void {
             if (self.props.scroll) |*scroll_data|
                 return self.vtable.move(self.ptr, x, y + scroll_data.value);
-            return self.vtable.move(self.ptr, x, y);
+            try self.vtable.move(self.ptr, x, y);
         }
 
         pub fn focus(self: *Self) !void {
-            return self.vtable.focus(self.ptr);
+            try self.vtable.focus(self.ptr);
         }
 
         pub fn refresh(self: *Self) !void {
-            return self.vtable.refresh(self.ptr);
+            try self.vtable.refresh(self.ptr);
         }
 
         pub fn moveResize(self: *Self, bnds: Rect) !void {
-            return self.vtable.moveResize(self.ptr, bnds);
+            try self.vtable.moveResize(self.ptr, bnds);
         }
 
         pub fn deinit(self: *Self) void {
@@ -233,7 +247,7 @@ pub const WindowData = struct {
                     bnds: *Rect,
                     font: *Font,
                     props: *WindowProps,
-                ) anyerror!void {
+                ) !void {
                     const self: Ptr = @ptrCast(@alignCast(pointer));
 
                     return @call(.always_inline, ptr_info.pointer.child.draw, .{ self, font_shader, bnds, font, props });

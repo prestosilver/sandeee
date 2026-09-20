@@ -15,7 +15,7 @@ output: *audio.Sound,
 
 const Self = @This();
 
-pub fn load(self: *const Self) anyerror!void {
+pub fn load(self: *const Self) !void {
     const path = config.SettingManager.instance.get(self.path) orelse self.path;
 
     const root = try files.FolderLink.resolve(.root);

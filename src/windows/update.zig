@@ -92,9 +92,7 @@ pub const UpdateData = struct {
             const idx = std.mem.lastIndexOf(u8, files.root_out.?, "/") orelse unreachable;
             LogoutState.target_file = try allocator.dupe(u8, files.root_out.?[idx + 1 ..]);
             LogoutState.target = .Update;
-            try events.EventManager.instance.sendEvent(system_events.EventStateChange{
-                .target_state = .Logout,
-            });
+            try events.EventManager.event_state_change.send(.{ .target_state = .Logout });
         }
     }
 

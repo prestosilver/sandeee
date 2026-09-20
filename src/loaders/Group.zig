@@ -10,8 +10,8 @@ sleep: std.Io.Duration = if (builtin.mode == .Debug)
 else
     .fromMilliseconds(100),
 
-pub fn load(self: *const Self) anyerror!void {
-    try std.Io.sleep(util.io, self.sleep, .real);
+pub fn load(self: *const Self) !void {
+    try std.Io.sleep(util.io, self.sleep, .awake);
 }
 
 pub fn unload(_: *const Self) void {}

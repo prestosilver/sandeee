@@ -270,7 +270,7 @@ pub fn blit() !void {
     graphics.Context.swap();
 }
 
-pub fn changeState(event: system_events.EventStateChange) !void {
+pub fn stateChange(event: system_events.EventStateChange) !void {
     current_state = event.target_state;
 }
 
@@ -285,7 +285,7 @@ pub fn keyDown(event: input_events.EventKeyDown) !void {
     }
 
     if (event.key == glfw.KeyV and event.mods == glfw.ModifierControl) {
-        try events.EventManager.instance.sendEvent(system_events.EventPaste{});
+        try events.EventManager.event_clipboard_paste.send(.{});
 
         return;
     }
@@ -317,11 +317,11 @@ pub fn mouseScroll(event: input_events.EventMouseScroll) !void {
     try game_states.getPtr(current_state).mousescroll(.{ .x = @floatCast(event.x), .y = @floatCast(event.y) });
 }
 
-pub fn notification(_: window_events.EventNotification) !void {
+pub fn notificationSend(_: system_events.EventNotificationSend) !void {
     try audio.instance.playSound(message_snd);
 }
 
-pub fn copy(event: system_events.EventCopy) !void {
+pub fn copy(event: input_events.EventClipboardCopy) !void {
     const to_copy = try strings.encode(event.value, .eeech, .unicode);
     defer allocator.free(to_copy);
 
@@ -331,7 +331,7 @@ pub fn copy(event: system_events.EventCopy) !void {
     glfw.setClipboardString(graphics.Context.instance.window, to_copyz);
 }
 
-pub fn paste(_: system_events.EventPaste) !void {
+pub fn paste(_: input_events.EventClipboardPaste) !void {
     if (glfw.getClipboardString(graphics.Context.instance.window)) |clipboard_text_ansi| {
         const clipboard_text = try strings.encode(clipboard_text_ansi, .unicode, .eeech);
         defer allocator.free(clipboard_text);
@@ -345,7 +345,7 @@ pub fn paste(_: system_events.EventPaste) !void {
     }
 }
 
-pub fn settingSet(event: system_events.EventSetSetting) !void {
+pub fn settingSet(event: system_events.EventSettingSet) !void {
     if (std.mem.eql(u8, event.setting, "wallpaper_mode")) {
         wallpaper.data.mode = .Color;
 
@@ -403,7 +403,7 @@ pub fn settingSet(event: system_events.EventSetSetting) !void {
     }
 }
 
-pub fn runCmdEvent(event: system_events.EventRunCmd) !void {
+pub fn cmdRunEvent(event: system_events.EventCmdRun) !void {
     for (mail.EmailManager.instance.emails.items) |*email| {
         if (!mail.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
 
@@ -417,7 +417,7 @@ pub fn runCmdEvent(event: system_events.EventRunCmd) !void {
     }
 }
 
-pub fn syscall(event: system_events.EventSys) !void {
+pub fn syscallRunEvent(event: system_events.EventSyscallRun) !void {
     for (mail.EmailManager.instance.emails.items) |*email| {
         if (!mail.EmailManager.instance.getEmailVisible(email, "admin@eee.org")) continue;
         for (email.condition) |condition| {
@@ -456,7 +456,7 @@ pub fn drawLoading(self: *LoadingState) void {
     }
 }
 
-pub fn windowResize(event: input_events.EventWindowResize) !void {
+pub fn displayResize(event: input_events.EventDisplayResize) !void {
     graphics.Context.makeCurrent();
     defer graphics.Context.makeNotCurrent();
 
@@ -651,13 +651,6 @@ pub fn main(init: std.process.Init) void {
     if (headless.is_headless) {
         return headless.main(headless_cmd orelse &.{}, false, null) catch |err| {
             const name = switch (err) {
-                error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",
-                error.AudioInit => "Your audio hardware might not support SandEEE.",
-                error.WrongSize, error.TextureMissing => "Failed to load an internal texture.",
-                error.LoadError => "Failed to load something.",
-                error.NoProfFolder => "There is no prof folder on your disk.",
-                error.NoExecFolder => "There is no exec folder on your disk.",
-                error.BadFile => "Your disk is problaby corrupt.",
                 else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
             };
 
@@ -673,13 +666,15 @@ pub fn main(init: std.process.Init) void {
 
     runGame() catch |err| {
         const name = switch (err) {
-            error.FramebufferSetupFail, error.CompileError, error.GLADInitFailed => "Your GPU might not support SandEEE.",
-            error.AudioInit => "Your audio hardware might not support SandEEE.",
+            error.FramebufferSetupFail, error.ShaderCompileError, error.APIUnavailable => "Your GPU might not support SandEEE.",
+            error.AudioInit, error.NoDevice => "Your audio hardware might not support SandEEE.",
             error.WrongSize, error.TextureMissing => "Failed to load an internal texture.",
-            error.LoadError => "Failed to load something.",
-            error.NoProfFolder => "There is no prof folder on your disk.",
-            error.NoExecFolder => "There is no exec folder on your disk.",
+            error.ThreadQuotaExceeded => "Your cpu does not support sandEEE",
+            error.LockedMemoryLimitExceeded, error.OutOfMemory => "You do not have enough memory for sandeee",
+            // error.NoProfFolder => "There is no prof folder on your disk.",
+            // error.NoExecFolder => "There is no exec folder on your disk.",
             error.BadFile => "Your disk is problaby corrupt.",
+            error.InvalidCharacter, error.Overflow => "Unhandlable error",
             else => "PLEASE REPORT THIS ERROR, EEE HAS NOT SEEN IT.",
         };
 
@@ -689,7 +684,7 @@ pub fn main(init: std.process.Init) void {
     log.log.info("Process done exiting", .{});
 }
 
-pub fn runGame() anyerror!void {
+pub fn runGame() !void {
     if (options.is_steam) {
         if (steam.restartIfNeeded(.this_app)) {
             log.log.err("Steam requires a restart, doing so", .{});
@@ -750,7 +745,9 @@ pub fn runGame() anyerror!void {
     }, null);
     try clear_shader_loader.require(&graphics_loader);
 
-    var texture_loader: Loader = try .init(loaders.Group{}, null);
+    var texture_loader: Loader = try .init(loaders.Group{
+        .sleep = .fromMilliseconds(0),
+    }, null);
     try texture_loader.require(&base_shader_loader);
     try texture_loader.require(&font_shader_loader);
     try texture_loader.require(&crt_shader_loader);
@@ -763,7 +760,9 @@ pub fn runGame() anyerror!void {
     }, null);
     try font_loader.require(&graphics_loader);
 
-    var loader: Loader = try .init(loaders.Group{}, "Initialized");
+    var loader: Loader = try .init(loaders.Group{
+        .sleep = .fromMilliseconds(0),
+    }, "Initialized");
     try loader.require(&texture_loader);
     try loader.require(&font_loader);
 
@@ -944,22 +943,22 @@ pub fn runGame() anyerror!void {
     };
 
     // add input management event handlers
-    try events.EventManager.instance.registerListener(input_events.EventWindowResize, windowResize);
-    try events.EventManager.instance.registerListener(input_events.EventMouseScroll, mouseScroll);
-    try events.EventManager.instance.registerListener(input_events.EventMouseMove, mouseMove);
-    try events.EventManager.instance.registerListener(input_events.EventMouseClick, mouseClick);
-    try events.EventManager.instance.registerListener(input_events.EventKeyDown, keyDown);
-    try events.EventManager.instance.registerListener(input_events.EventKeyChar, keyChar);
-    try events.EventManager.instance.registerListener(input_events.EventKeyUp, keyUp);
+    events.EventManager.event_display_resize.attach(displayResize);
+    events.EventManager.event_mouse_scroll.attach(mouseScroll);
+    events.EventManager.event_mouse_move.attach(mouseMove);
+    events.EventManager.event_mouse_click.attach(mouseClick);
+    events.EventManager.event_key_down.attach(keyDown);
+    events.EventManager.event_key_up.attach(keyUp);
+    events.EventManager.event_key_char.attach(keyChar);
+    events.EventManager.event_clipboard_copy.attach(copy);
+    events.EventManager.event_clipboard_paste.attach(paste);
 
     // add system event handlers
-    try events.EventManager.instance.registerListener(system_events.EventSetSetting, settingSet);
-    try events.EventManager.instance.registerListener(system_events.EventStateChange, changeState);
-    try events.EventManager.instance.registerListener(window_events.EventNotification, notification);
-    try events.EventManager.instance.registerListener(system_events.EventRunCmd, runCmdEvent);
-    try events.EventManager.instance.registerListener(system_events.EventPaste, paste);
-    try events.EventManager.instance.registerListener(system_events.EventCopy, copy);
-    try events.EventManager.instance.registerListener(system_events.EventSys, syscall);
+    events.EventManager.event_setting_set.attach(settingSet);
+    events.EventManager.event_state_change.attach(stateChange);
+    events.EventManager.event_notification_send.attach(notificationSend);
+    events.EventManager.event_cmd_run.attach(cmdRunEvent);
+    events.EventManager.event_syscall_run.attach(syscallRunEvent);
 
     // setup game states
     game_states.set(.Disks, states.GameState.init(&gs_disks));
@@ -1077,9 +1076,6 @@ pub fn runGame() anyerror!void {
 
     // deinit sb
     SpriteBatch.global.deinit();
-
-    // deinit events
-    events.EventManager.deinit();
 
     // deinit textures
     TextureManager.instance.deinit();

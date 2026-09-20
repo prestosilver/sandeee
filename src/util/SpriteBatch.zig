@@ -19,6 +19,10 @@ const graphics = util.Graphics;
 
 const Self = @This();
 
+pub const Error = std.mem.Allocator.Error || std.Io.Cancelable || error{
+    TextureMissing,
+};
+
 const DrawerTextureKind = enum {
     none,
     atlas,
@@ -40,7 +44,7 @@ const DrawerTexture = union(DrawerTextureKind) {
         };
     }
 
-    pub fn dupe(self: *const DrawerTexture) !DrawerTexture {
+    pub fn dupe(self: *const DrawerTexture) Error!DrawerTexture {
         return switch (self.*) {
             .none => .none,
             .atlas => .{ .atlas = try allocator.dupe(u8, self.atlas) },
@@ -66,28 +70,28 @@ pub fn Drawer(comptime T: type) type {
         texture: DrawerTexture,
         data: T,
 
-        pub inline fn blank(data: T) DrawerSelf {
+        pub fn blank(data: T) DrawerSelf {
             return .{
                 .texture = .none,
                 .data = data,
             };
         }
 
-        pub inline fn override(texture: Texture, data: T) DrawerSelf {
+        pub fn override(texture: Texture, data: T) DrawerSelf {
             return .{
                 .texture = .{ .texture = texture },
                 .data = data,
             };
         }
 
-        pub inline fn atlas(texture: []const u8, data: T) DrawerSelf {
+        pub fn atlas(texture: []const u8, data: T) DrawerSelf {
             return .{
                 .texture = .{ .atlas = texture },
                 .data = data,
             };
         }
 
-        pub inline fn getVerts(self: *const DrawerSelf, pos: Vec3) !VertArray {
+        pub fn getVerts(self: *const DrawerSelf, pos: Vec3) Error!VertArray {
             return self.data.getVerts(pos);
         }
     };
@@ -139,7 +143,7 @@ const quadVerts = [_]zgl.Float{
     1.0, 1.0,
 };
 
-pub fn draw(sb: *Self, comptime T: type, drawer: *const T, shader: *Shader, pos: Vec3) !void {
+pub fn draw(sb: *Self, comptime T: type, drawer: *const T, shader: *Shader, pos: Vec3) Error!void {
     const entry: QueueEntry = .{
         .texture = drawer.texture,
         .verts = try drawer.getVerts(pos),
@@ -149,7 +153,7 @@ pub fn draw(sb: *Self, comptime T: type, drawer: *const T, shader: *Shader, pos:
     try sb.addEntry(&entry);
 }
 
-pub fn addEntry(sb: *Self, entry: *const QueueEntry) !void {
+pub fn addEntry(sb: *Self, entry: *const QueueEntry) Error!void {
     var new_entry = entry.*;
     new_entry.scissor = sb.scissor;
 
@@ -173,7 +177,7 @@ pub fn addEntry(sb: *Self, entry: *const QueueEntry) !void {
     }
 }
 
-pub fn render(sb: *Self) !void {
+pub fn render(sb: *Self) Error!void {
     zgl.enable(.blend);
     zgl.blendFunc(.src_alpha, .one_minus_src_alpha);
 
@@ -327,7 +331,7 @@ pub fn render(sb: *Self) !void {
     try sb.clear();
 }
 
-pub fn clear(sb: *Self) !void {
+pub fn clear(sb: *Self) Error!void {
     try sb.queue_lock.lock(util.io);
     defer sb.queue_lock.unlock(util.io);
 

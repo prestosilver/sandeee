@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const system = @import("../system.zig");
 
@@ -29,35 +30,35 @@ pub const SettingManager = struct {
 
         try self.*.settings.put(try allocator.dupe(u8, setting), try allocator.dupe(u8, value));
 
-        try events.EventManager.instance.sendEvent(system_events.EventSetSetting{
+        try events.EventManager.event_setting_set.send(.{
             .setting = setting,
             .value = value,
         });
     }
 
-    pub inline fn get(self: *SettingManager, setting: []const u8) ?[]const u8 {
+    pub fn get(self: *SettingManager, setting: []const u8) ?[]const u8 {
         return self.*.settings.get(setting);
     }
 
-    pub inline fn setBool(self: *SettingManager, setting: []const u8, value: bool) !void {
+    pub fn setBool(self: *SettingManager, setting: []const u8, value: bool) !void {
         return self.set(setting, if (value) "yes" else "no");
     }
 
-    pub inline fn getBool(self: *SettingManager, setting: []const u8) ?bool {
+    pub fn getBool(self: *SettingManager, setting: []const u8) ?bool {
         if (self.get(setting)) |val|
             return std.ascii.eqlIgnoreCase(val, "yes")
         else
             return null;
     }
 
-    pub inline fn getFloat(self: *SettingManager, setting: []const u8) ?f32 {
+    pub fn getFloat(self: *SettingManager, setting: []const u8) ?f32 {
         if (self.get(setting)) |val|
             return std.fmt.parseFloat(f32, val) catch null
         else
             return null;
     }
 
-    pub inline fn getInt(self: *SettingManager, setting: []const u8) ?i64 {
+    pub fn getInt(self: *SettingManager, setting: []const u8) ?i64 {
         if (self.get(setting)) |val|
             return std.fmt.parseInt(i64, val, 0) catch null
         else
@@ -65,6 +66,8 @@ pub const SettingManager = struct {
     }
 
     pub fn save(self: *SettingManager) !void {
+        if (builtin.is_test) return;
+
         var iter = self.settings.keyIterator();
         var out: std.array_list.Managed(u8) = .init(allocator);
         defer out.deinit();
@@ -94,3 +97,19 @@ pub const SettingManager = struct {
         instance.settings.deinit();
     }
 };
+
+test "Setting overwrite" {
+    const instance = &SettingManager.instance;
+
+    instance.* = .{};
+    defer SettingManager.deinit();
+
+    try instance.set("a", "fdsa");
+    try std.testing.expectEqualStrings(instance.get("a") orelse return error.ExpectedSome, "fdsa");
+
+    try instance.set("b", "joe");
+    try std.testing.expectEqualStrings(instance.get("b") orelse return error.ExpectedSome, "joe");
+
+    try instance.set("a", "joe");
+    try std.testing.expectEqualStrings(instance.get("a") orelse return error.ExpectedSome, "joe");
+}

@@ -34,12 +34,14 @@ var outline_sprites = [_]Sprite{
     }),
 };
 
+const SubmitError = std.mem.Allocator.Error || system.files.FileError;
+
 pub const PopupConfirm = struct {
     const Self = @This();
 
     pub const ConfirmButton = struct {
         text: []const u8,
-        calls: *const fn (*const anyopaque) anyerror!void,
+        calls: *const fn (*const anyopaque) SubmitError!void,
     };
 
     pub fn initButtonsFromStruct(comptime T: anytype) []const ConfirmButton {
@@ -141,9 +143,7 @@ pub const PopupConfirm = struct {
         if (idx > self.buttons.len) return;
 
         try self.buttons[idx].calls(self.data);
-        try events.EventManager.instance.sendEvent(window_events.EventClosePopup{
-            .popup_conts = self,
-        });
+        try events.EventManager.event_popup_close.send(.{ .popup_conts = self });
     }
 
     pub fn deinit(self: *Self) void {

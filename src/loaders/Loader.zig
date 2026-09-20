@@ -1,6 +1,9 @@
 const std = @import("std");
+const glfw = @import("glfw");
+const zgl = @import("zgl");
 
 const util = @import("../util.zig");
+const system = @import("../system.zig");
 
 const allocator = util.allocator;
 const graphics = util.graphics;
@@ -9,8 +12,14 @@ const log = util.log;
 
 const Self = @This();
 
+pub const LoaderError = std.mem.Allocator.Error || glfw.GLFWError ||
+    util.Shader.ShaderError || std.Io.Cancelable || system.files.DiskError || error{
+    InvalidCharacter,
+    Overflow,
+};
+
 const Vtable = struct {
-    load: *const fn (*const anyopaque) anyerror!void,
+    load: *const fn (*const anyopaque) LoaderError!void,
     unload: *const fn (*const anyopaque) void,
 };
 

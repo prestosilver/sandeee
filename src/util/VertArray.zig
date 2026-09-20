@@ -24,11 +24,11 @@ pub const Vert = struct {
     b: zgl.Float,
     a: zgl.Float,
 
-    pub inline fn array(v: Vert) [9]f32 {
+    pub fn array(v: Vert) [9]f32 {
         return [_]f32{ v.x, v.y, v.z, v.u, v.v, v.r, v.g, v.b, v.a };
     }
 
-    pub inline fn getHash(v: Vert) u8 {
+    pub fn getHash(v: Vert) u8 {
         const casted = std.mem.asBytes(&[_]f32{ v.x, v.y, v.u, v.v, v.r, v.g, v.b });
         var hash: u8 = 128;
         for (casted) |ch| {
@@ -63,35 +63,35 @@ qarray: std.array_list.Managed(Quad),
 
 pub const none: VertArray = .{ .array = .init(allocator), .qarray = .init(allocator) };
 
-pub inline fn init(cap: usize) !VertArray {
+pub fn init(cap: usize) !VertArray {
     return VertArray{
         .array = try .initCapacity(allocator, cap),
         .qarray = try .initCapacity(allocator, cap),
     };
 }
 
-pub inline fn deinit(va: *const VertArray) void {
+pub fn deinit(va: *const VertArray) void {
     va.array.deinit();
     va.qarray.deinit();
 }
 
-pub inline fn items(va: *const VertArray) []const Vert {
+pub fn items(va: *const VertArray) []const Vert {
     return va.array.items;
 }
 
-pub inline fn quads(va: *const VertArray) []const Quad {
+pub fn quads(va: *const VertArray) []const Quad {
     return va.qarray.items;
 }
 
-pub inline fn hashLen(va: *const VertArray) usize {
+pub fn hashLen(va: *const VertArray) usize {
     return va.array.items.len / 6;
 }
 
-pub inline fn setLen(va: *VertArray, len: usize) void {
+pub fn setLen(va: *VertArray, len: usize) void {
     va.array.shrinkRetainingCapacity(len);
 }
 
-pub inline fn setQuadLen(va: *VertArray, len: usize) void {
+pub fn setQuadLen(va: *VertArray, len: usize) void {
     va.qarray.shrinkRetainingCapacity(len);
 }
 
@@ -104,7 +104,7 @@ const UiQuadParams = struct {
     borders: Border = .{},
 };
 
-pub inline fn appendUiQuad(va: *VertArray, pos: Rect, params: UiQuadParams) !void {
+pub fn appendUiQuad(va: *VertArray, pos: Rect, params: UiQuadParams) !void {
     const starts = .{
         .x = [3]f32{ pos.x, pos.x + params.draw_scale * params.borders.l, pos.x + pos.w - params.draw_scale * params.borders.r },
         .y = [3]f32{ pos.y, pos.y + params.draw_scale * params.borders.t, pos.y + pos.h - params.draw_scale * params.borders.b },
@@ -146,7 +146,7 @@ const QuadParams = struct {
     flip_y: bool = false,
 };
 
-pub inline fn appendQuad(va: *VertArray, dest: Rect, src: Rect, params: QuadParams) !void {
+pub fn appendQuad(va: *VertArray, dest: Rect, src: Rect, params: QuadParams) !void {
     try va.qarray.append(.{
         .sxo = src.x,
         .syo = src.y,
@@ -165,7 +165,7 @@ pub inline fn appendQuad(va: *VertArray, dest: Rect, src: Rect, params: QuadPara
     });
 }
 
-pub inline fn append(va: *VertArray, pos: Vec3, uv: Vec2, color: Color) !void {
+pub fn append(va: *VertArray, pos: Vec3, uv: Vec2, color: Color) !void {
     try va.array.append(Vert{
         .x = pos.x,
         .y = pos.y,

@@ -54,7 +54,7 @@ pub const Telem = packed struct {
                 .active = true,
             });
 
-            events.EventManager.instance.sendEvent(window_events.EventCreateWindow{ .window = update_window, .center = true }) catch return;
+            events.EventManager.event_window_create.send(.{ .window = update_window, .center = true }) catch return;
         }
     }
 

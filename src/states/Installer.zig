@@ -235,9 +235,7 @@ pub fn update(self: *GSInstaller, dt: f32) !void {
         if (self.timer < 0) {
             self.timer = 0;
 
-            try events.EventManager.instance.sendEvent(system_events.EventStateChange{
-                .target_state = .Disks,
-            });
+            try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
         }
     }
 }

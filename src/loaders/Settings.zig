@@ -13,7 +13,7 @@ const Self = @This();
 
 path: []const u8,
 
-pub fn load(self: *const Self) anyerror!void {
+pub fn load(self: *const Self) !void {
     config.SettingManager.instance = .{};
 
     const root = try files.FolderLink.resolve(.root);

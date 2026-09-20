@@ -103,7 +103,7 @@ pub const ExplorerData = struct {
     }
 
     pub const ErrorData = struct {
-        pub fn ok(_: *align(@alignOf(Self)) const anyopaque) anyerror!void {}
+        pub fn ok(_: *align(@alignOf(Self)) const anyopaque) !void {}
     };
 
     pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
@@ -258,7 +258,7 @@ pub const ExplorerData = struct {
                             .shader = self.shader,
                         };
 
-                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                        try events.EventManager.event_popup_create.send(.{
                             .popup = .atlas("win", .{
                                 .title = "Error",
                                 .source = .{ .w = 1, .h = 1 },
@@ -284,7 +284,7 @@ pub const ExplorerData = struct {
     }
 
     pub const confirmData = struct {
-        pub fn yes(popup_data: *align(@alignOf(Self)) const anyopaque) anyerror!void {
+        pub fn yes(popup_data: *align(@alignOf(Self)) const anyopaque) !void {
             const self = @as(*const Self, @ptrCast(popup_data));
 
             const shell_root = try self.shell.root.resolve();
@@ -297,7 +297,7 @@ pub const ExplorerData = struct {
             };
         }
 
-        pub fn no(_: *align(@alignOf(Self)) const anyopaque) anyerror!void {}
+        pub fn no(_: *align(@alignOf(Self)) const anyopaque) !void {}
     };
 
     pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
@@ -317,7 +317,7 @@ pub const ExplorerData = struct {
                         .shader = self.shader,
                     };
 
-                    try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                    try events.EventManager.event_popup_create.send(.{
                         .popup = .atlas("win", .{
                             .title = "File Picker",
                             .source = .{ .w = 1.0, .h = 1.0 },

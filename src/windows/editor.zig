@@ -441,7 +441,7 @@ pub const EditorData = struct {
                             .submit = &submitOpen,
                         };
 
-                        try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                        try events.EventManager.event_popup_create.send(.{
                             .popup = .atlas("win", .{
                                 .title = "Open",
                                 .source = .{ .w = 1, .h = 1 },
@@ -567,7 +567,9 @@ pub const EditorData = struct {
         return try result.toOwnedSlice();
     }
 
-    pub fn save(self: *Self) !void {
+    const SaveError = system.files.FileError;
+
+    pub fn save(self: *Self) SaveError!void {
         if (self.buffer) |buffer| {
             if (self.file) |file| {
                 var buff = std.array_list.Managed(u8).init(allocator);
@@ -593,7 +595,7 @@ pub const EditorData = struct {
                     .data = self,
                 };
 
-                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                try events.EventManager.event_popup_create.send(.{
                     .popup = .atlas("win", .{
                         .title = "Save As",
                         .source = .{ .w = 1, .h = 1 },
@@ -751,9 +753,7 @@ pub const EditorData = struct {
                     const sel = try self.getSel();
                     defer allocator.free(sel);
 
-                    try events.EventManager.instance.sendEvent(system_events.EventCopy{
-                        .value = sel,
-                    });
+                    try events.EventManager.event_clipboard_copy.send(.{ .value = sel });
 
                     return;
                 }

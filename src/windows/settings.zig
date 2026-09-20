@@ -158,7 +158,7 @@ const SettingsData = struct {
         try SpriteBatch.global.draw(Sprite, &self.back_button, self.shader, .{ .x = bnds.x + 2, .y = bnds.y + 2 });
     }
 
-    pub fn submit(val: []u8, popup_data: *anyopaque) !void {
+    pub fn submit(val: []const u8, popup_data: *anyopaque) !void {
         const self: *Self = @ptrCast(@alignCast(popup_data));
         try config.SettingManager.instance.set(self.value, val);
         try config.SettingManager.instance.save();
@@ -199,7 +199,7 @@ const SettingsData = struct {
 
                                 self.value = item.key;
 
-                                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                                try events.EventManager.event_popup_create.send(.{
                                     .popup = .atlas("win", .{
                                         .title = "Text Picker",
                                         .source = .{ .w = 1, .h = 1 },
@@ -221,7 +221,7 @@ const SettingsData = struct {
 
                                 self.value = item.key;
 
-                                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                                try events.EventManager.event_popup_create.send(.{
                                     .popup = .atlas("win", .{
                                         .title = "Text Picker",
                                         .source = .{ .w = 1.0, .h = 1.0 },
@@ -243,7 +243,7 @@ const SettingsData = struct {
 
                                 self.value = item.key;
 
-                                try events.EventManager.instance.sendEvent(window_events.EventCreatePopup{
+                                try events.EventManager.event_popup_create.send(.{
                                     .popup = .atlas("win", .{
                                         .title = "Text Picker",
                                         .source = .{ .w = 1.0, .h = 1.0 },

@@ -16,11 +16,11 @@ pub const cyan: Color = .{ .r = 0.0, .g = 1.0, .b = 1.0 };
 pub const blue: Color = .{ .r = 0.0, .g = 0.0, .b = 1.0 };
 pub const magenta: Color = .{ .r = 1.0, .g = 0.0, .b = 1.0 };
 
-pub inline fn gray(pc: f32) Color {
+pub fn gray(pc: f32) Color {
     return .{ .r = pc, .g = pc, .b = pc };
 }
 
-pub inline fn mix(a: Color, b: Color, pc: f32) Color {
+pub fn mix(a: Color, b: Color, pc: f32) Color {
     return .{
         .r = a.r + (b.r - a.r) * pc,
         .g = a.g + (b.g - a.g) * pc,
@@ -29,7 +29,7 @@ pub inline fn mix(a: Color, b: Color, pc: f32) Color {
     };
 }
 
-pub inline fn parseColor(color: [6]u8) !Color {
+pub fn parseColor(color: [6]u8) !Color {
     const hex = try std.fmt.parseInt(u24, &color, 16);
 
     return .{
@@ -40,7 +40,7 @@ pub inline fn parseColor(color: [6]u8) !Color {
     };
 }
 
-pub inline fn contrast(c: Color) Color {
+pub fn contrast(c: Color) Color {
     const gamma = 2.2;
     const luma = 0.2126 * std.math.pow(f32, c.r, gamma) + 0.7152 * std.math.pow(f32, c.g, gamma) + 0.0722 * std.math.pow(f32, c.b, gamma);
 

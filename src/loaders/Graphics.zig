@@ -14,7 +14,7 @@ const Self = @This();
 fullscreen: bool,
 real_fullscreen: bool,
 
-pub fn load(self: *const Self) anyerror!void {
+pub fn load(self: *const Self) !void {
     // init texture manager
     TextureManager.instance = .{};
 

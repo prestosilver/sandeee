@@ -20,7 +20,7 @@ data: union(enum) {
 },
 output: *Font,
 
-pub fn load(self: *const Self) anyerror!void {
+pub fn load(self: *const Self) !void {
     switch (self.data) {
         .path => |p| {
             const path = config.SettingManager.instance.get(p) orelse p;

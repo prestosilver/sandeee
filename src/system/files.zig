@@ -75,7 +75,7 @@ pub const FolderLink = union(LinkKind) {
 pub var root_out: ?[]const u8 = null;
 pub var enable_extr = false;
 
-pub inline fn getExtrPath() ?[]const u8 {
+pub fn getExtrPath() ?[]const u8 {
     if (!enable_extr)
         return null;
 
@@ -96,10 +96,15 @@ pub const FileError = error{
     FolderExists,
     FileExists,
 
+    NotAFile,
+    BadFile,
+
     WindowLimitReached,
 
     OutOfMemory,
-} || std.Io.File.StatError || std.Io.File.SeekError || std.Io.Reader.Error || std.Io.Writer.Error || error{StreamTooLong};
+} || std.Io.File.StatError || std.Io.File.SeekError || std.Io.File.Reader.Error || std.Io.File.Writer.Error ||
+    std.Io.Reader.Error || std.Io.Writer.Error ||
+    error{StreamTooLong} || util.SpriteBatch.Error || std.Io.File.OpenError;
 
 pub const DiskError = error{
     BadDiskSize,
@@ -177,7 +182,7 @@ pub const File = struct {
         }
     }
 
-    pub inline fn write(self: *File, contents: []const u8, vm_instance: ?*Vm) FileError!void {
+    pub fn write(self: *File, contents: []const u8, vm_instance: ?*Vm) FileError!void {
         try self.lock.lock(util.io);
         defer self.lock.unlock(util.io);
 
@@ -196,7 +201,7 @@ pub const File = struct {
         }
     }
 
-    pub inline fn read(self: *File, vm_instance: ?*Vm) FileError![]const u8 {
+    pub fn read(self: *File, vm_instance: ?*Vm) FileError![]const u8 {
         try self.lock.lock(util.io);
         defer self.lock.unlock(util.io);
 
@@ -307,7 +312,7 @@ pub const Folder = struct {
         }
     };
 
-    pub inline fn fromFolderItemArray(name: []const u8, comptime items: []const FolderItem) !*Folder {
+    pub fn fromFolderItemArray(name: []const u8, comptime items: []const FolderItem) !*Folder {
         const root = try allocator.create(Folder);
         errdefer root.deinit();
 

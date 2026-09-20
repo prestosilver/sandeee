@@ -12,8 +12,8 @@ pub const Self = @This();
 
 disk: []const u8,
 
-pub fn load(self: *const Self) anyerror!void {
-    try files.Folder.init(self.disk);
+pub fn load(self: *const Self) !void {
+    files.Folder.init(self.disk) catch return error.OutOfMemory;
 
     log.debug("Loaded disk file {s}", .{self.disk});
 }
