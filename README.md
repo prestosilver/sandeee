@@ -49,37 +49,35 @@ Jokes aside, SandEEE is a programming game meant to be as immersive as possible.
 
 ## Repo structure overview
 
-## Important docs and quick-links
+### Important docs and quick-links
 
-* [Build system documentation](assets/docs/build.md)
 * [Rolling Bug/Todo List](assets/docs/todo.md)
-* [Lore sheet & reference](assets/docs/lore.md)
-* [Important asset listing](assets/docs/asset_index.md)
+* [Asset listing](assets/docs/asset_index.md)
 * [Content asset listing](assets/docs/content_index.md)
-* [The meta-documentation](assets/docs/meta.md)
-* [Trailer plans (GPT Generated)](assets/docs/gpt/gpt_trailer.md)
-* [Various **low pri** optimization ideas](assets/docs/opt_ideas.md)
+* [Lore sheet & reference](assets/docs/lore.md)
 * [The release checklist](assets/docs/release_checklist.md)
 
 ### Repo root
 
 | Path                               | Purpose                                                                                                          |
 |------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| [assets/](assets/)                 | All the assets for the game, this is stuff out of the builds                                                     |
-| [assets/docs/](assets/docs/)       | Internal documentation                                                                                           |
-| [assets/disks/](assets/disks/)     | Disk image backups                                                                                               |
-| [assets/steam/](assets/steam/)     | Steam related images                                                                                             |
-| [deps/](deps/)                     | Some dependencies, I might not use them all.                                                                     |
-| [docs/](docs/)                     | The User facing docs, unprocessed zig build www builds                                                           |
-| [src/](src/)                       | The Source code                                                                                                  |
-| [fake_steam/](fake_steam/)         | Files used for the fake Steamworks                                                                               |
-| [steam/](steam/)                   | A small custom steam library for zig                                                                             |
-| [tests/](tests/)                   | Tests for in game (non zig) code                                                                                 |
-| [build/](build/)                   | Some zig tools for converting file formats and stuffs                                                            |
-| [www/](www/)                       | A submodule that is hosted on [SandEEE website](http://sandeee.prestosilver.info)                                |
+| [assets/](assets/)                 | All the assets for the game, this is stuff not used for builds |
+| [assets/docs/](assets/docs/)       | Internal documentation |
+| [assets/disks/](assets/disks/)     | Disk image backups |
+| [assets/steam/](assets/steam/)     | Steam related images |
+| [build/](build/)                   | Some zig tools for converting file formats and stuffs |
+| [content/](content/)               | All the content of the game, this is the non code stuff used for builds |
+| [deps/](deps/)                     | Some dependencies, I might not use them all. |
+| [docs/](docs/)                     | The User facing docs, unprocessed zig build www builds |
+| [fake_steam/](fake_steam/)         | Files used for the fake Steamworks library |
+| [src/](src/)                       | The Source code |
+| [tests/](tests/)                   | Tests for in game (non zig) code |
+| [www/](www/)                       | A submodule that is hosted on [SandEEE website](http://sandeee.prestosilver.info) |
+| [build.zig](build.zig)<br/>[build.zig.zon](build.zig.zon) | SandEEE's build system. |
+| [README.md](README.md)             | This file! |
 | [steam_appid.txt](steam_appid.txt) | A steam appid file for quick testing, if this is removed I will have to cd into zig-out/bin to run steam builds. |
-| [VERSION](VERSION)                 | A file with the current version, used for changelog generation.                                                  |
-| build.zig<br/>build.zig.zon        | SandEEE's build system.                                                                                          |
+| [steam_appid_debug.txt](steam_appid_debug.txt) | A steam debug appid file for quick testing, I ocasionally copy this to steam_appid.txt to test debugging. |
+| [VERSION](VERSION)                 | A file with the current version, used for changelog generation. |
 
 ## Legal stuffs & notices
 

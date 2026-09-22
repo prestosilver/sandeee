@@ -13,6 +13,7 @@
 |File|Desc|
 |----|----|
 |[asset_index.md](../docs/asset_index.md)|This list|
+|[glossary.md](../docs/glossary.md)|A list of terms and definitions|
 |[content_index.md](../docs/content_index.md)|A list of all content in /content|
 |[lore.md](../docs/lore.md)|A writeup of SandEEE's lore|
 |[meta.md](../docs/meta.md)|Documentation on how SandEEE will be documented|
@@ -21,9 +22,11 @@
 |[todo.md](../docs/todo.md)|A rolling todo list of repo wide todos|
 |[trailer_devlog.md](../docs/trailer_devlog.md)|A draft for a devlog about the trailer|
 |[eee_org.md](../docs/eee_org.md)|The EEE org chart.|
+|[build.md](../docs/build.md)|Documentation of the build system.|
 |[disk_update.md](../docs/disk_update.md)|Plans for the disk format update.|
 |[characters.md](../docs/characters.md)|Character sheets.|
 |[eon_change.md](../docs/eon_change.md)|A breif history of eon.|
+|[horizontal.md](../docs/horizontal.md)|The plan to get from vertical to horizontal slice.|
 
 ## Presentations
 

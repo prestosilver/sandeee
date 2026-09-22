@@ -38,7 +38,6 @@
         },
     },
     .paths = .{
-        "tools",
         "build",
         "content",
         "deps",

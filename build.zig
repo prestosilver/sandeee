@@ -1109,7 +1109,7 @@ pub fn build(b: *std.Build) !void {
 
     {
         // Steam build
-        const steam_vdf_game_conts = @embedFile("steam/upload_4124360.vdf");
+        const steam_vdf_game_conts = @embedFile("build/steam/upload_4124360.vdf");
         const steam_vdf_game_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_game_conts, "// END TEMPLATE") orelse steam_vdf_game_conts.len;
         _ = steam_directory_step.add("upload_4124360.vdf", b.fmt(
             \\{s}
@@ -1213,7 +1213,7 @@ pub fn build(b: *std.Build) !void {
 
     {
         // Steam demo build
-        const steam_vdf_demo_conts = @embedFile("steam/upload_4124370.vdf");
+        const steam_vdf_demo_conts = @embedFile("build/steam/upload_4124370.vdf");
         const steam_vdf_demo_semi_idx = std.mem.lastIndexOf(u8, steam_vdf_demo_conts, "// END TEMPLATE") orelse steam_vdf_demo_conts.len;
         _ = steam_directory_step.add("upload_4124370.vdf", b.fmt(
             \\{s}
