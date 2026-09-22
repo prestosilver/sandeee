@@ -1,1 +1,28 @@
-id ICON "../images/icon.ico"
+#include <winver.h>
+
+IDI_ICON1 ICON "../images/icon.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS__WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        // 040904b0 means US English, Unicode charset
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      "prestosilver"
+            VALUE "FileDescription",  "The SandEEE VM"
+            VALUE "InternalName",     "SandEEE"
+            VALUE "OriginalFilename", "SandEEE.exe"
+            VALUE "ProductName",      "SandEEE"
+            VALUE "ProductVersion",   "1.0.0.0"
+            VALUE "FileVersion",      "1.0.0.0"
+        END
+    END
+END
