@@ -16,6 +16,8 @@
 
 - SandEEE is an opinionated recreation of DunEEE made by Epsilon.
   - SandEEE is advertised as a leak with corporate docs, however these docs are fake/modified/untrustworthy.
+- Sys 255 is not part of DunEEE, instead added by Epsilon to let him import DunEEE disks, it uses the actually secure DunEEE encryption algorithm (Problaby RSA)
+  - Epsilon decrypted and reencrypted using SandEEE's decryption (rc4).
 
 ## Implementation plans, order, and progress
 
@@ -28,14 +30,16 @@
 
 ### Lore drop 1
 
-- Base story, should feel too neat will not be too heavy on contradictions, mostly focusing on epsilon as an imfamous whistle blower, bringing down the all greedy EEE
+- Base story, should feel too neat will not be too heavy on contradictions, mostly focusing on epsilon as an imfamous whistle blower, bringing down the all greedy EEE.
+- eventually leads to joe moes resignition letter, leaking his password to the alt disk. This was missed by epsilon while making SandEEE, and throws a huge gap into SandEEE's neat lore.
 
 ### Lore drop 2
 
 - New recovery disk for DunEEE
-  - Its publically considered a "fake" image, an attempt to cover up the whistle blow. but is more real than SandEEE.
   - Game will have a way to decript update images with a key.
     - Encrypted with rsa.
+  - Its publically considered a "fake" image, an attempt to cover up the whistle blow. but is more real than SandEEE, and was made by joe moe.
+    - Important to know that this is still opionated, joe took out stuff remotely incriminating.
 - Epsilon starts to feel off, hes an ass in this disk.
 - The disk is so focused on Epsilon it feels fake, theres no way a junior was the talk of the company.
   - In reality, he was infact on everyones head everyone thought he was a prodigy.
