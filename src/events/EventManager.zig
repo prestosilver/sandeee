@@ -5,21 +5,19 @@ const events = @import("../events.zig");
 
 const allocator = util.allocator;
 
-const MAX_EVENTS = 8;
-
-// TODO: really this should be a linked list and stored by event
+const MAX_LISTENERS = 4;
 
 fn Event(comptime T: type) type {
     return struct {
         const Handler = *const fn (T) T.Error!void;
 
-        events: [MAX_EVENTS]Handler = undefined,
+        events: [MAX_LISTENERS]Handler = undefined,
         count: usize = 0,
 
         const Self = @This();
 
         pub fn attach(self: *Self, handler: Handler) void {
-            if (self.count == MAX_EVENTS)
+            if (self.count == MAX_LISTENERS)
                 @panic("Max events attached");
 
             for (self.events[0..self.count]) |event| {
@@ -51,10 +49,10 @@ fn Event(comptime T: type) type {
     };
 }
 
-pub var event_mouse_move: Event(events.input.EventMouseMove) = .{};
 pub var event_key_down: Event(events.input.EventKeyDown) = .{};
 pub var event_key_up: Event(events.input.EventKeyUp) = .{};
 pub var event_key_char: Event(events.input.EventKeyChar) = .{};
+pub var event_mouse_move: Event(events.input.EventMouseMove) = .{};
 pub var event_mouse_click: Event(events.input.EventMouseClick) = .{};
 pub var event_mouse_scroll: Event(events.input.EventMouseScroll) = .{};
 pub var event_display_resize: Event(events.input.EventDisplayResize) = .{};
