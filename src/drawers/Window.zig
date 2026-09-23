@@ -33,16 +33,16 @@ pub const WindowData = struct {
     const RESIZE_PAD: f32 = 10;
 
     pub const DragMode = enum {
-        None,
-        Move,
-        Close,
-        Full,
-        Min,
-        ResizeL,
-        ResizeR,
-        ResizeB,
-        ResizeLB,
-        ResizeRB,
+        none,
+        move,
+        close,
+        full,
+        min,
+        resize_left,
+        resize_right,
+        resize_bottom,
+        resize_bottom_left,
+        resize_bottom_right,
     };
 
     pub fn scroll_mul() f32 {
@@ -379,7 +379,7 @@ pub const WindowData = struct {
     const PADDING = 25;
 
     pub fn getDragMode(self: *WindowData, mousepos: Vec2) DragMode {
-        if (self.min) return DragMode.None;
+        if (self.min) return .none;
 
         const close = Rect{
             .x = self.pos.x + self.pos.w - 64 + 64 - PADDING,
@@ -388,7 +388,7 @@ pub const WindowData = struct {
             .h = PADDING,
         };
         if (close.contains(mousepos)) {
-            return DragMode.Close;
+            return .close;
         }
         const full = Rect{
             .x = self.pos.x + self.pos.w - 86 + 64 - PADDING,
@@ -398,9 +398,9 @@ pub const WindowData = struct {
         };
         if (full.contains(mousepos)) {
             if (self.contents.props.size.max == null)
-                return DragMode.Full
+                return .full
             else
-                return DragMode.None;
+                return .none;
         }
         const min = Rect{
             .x = self.pos.x + self.pos.w - 108 + 64 - PADDING,
@@ -409,7 +409,7 @@ pub const WindowData = struct {
             .h = PADDING,
         };
         if (min.contains(mousepos)) {
-            return DragMode.Min;
+            return .min;
         }
 
         const move = Rect{
@@ -419,17 +419,17 @@ pub const WindowData = struct {
             .h = 32,
         };
         if (move.contains(mousepos)) {
-            return DragMode.Move;
+            return .move;
         }
 
         // cant resize fullscreen
-        if (self.full) return DragMode.None;
+        if (self.full) return .none;
         if (self.contents.props.size.max) |max_size| {
             const min_size = self.contents.props.size.min;
             if (max_size.x == min_size.x and
                 max_size.y == min_size.y)
             {
-                return DragMode.None;
+                return .none;
             }
         }
 
@@ -450,9 +450,9 @@ pub const WindowData = struct {
         };
         if (left.contains(mousepos)) {
             if (bot) {
-                return DragMode.ResizeLB;
+                return .resize_bottom_left;
             } else {
-                return DragMode.ResizeL;
+                return .resize_left;
             }
         }
 
@@ -464,16 +464,16 @@ pub const WindowData = struct {
         };
         if (right.contains(mousepos)) {
             if (bot) {
-                return DragMode.ResizeRB;
+                return .resize_bottom_right;
             } else {
-                return DragMode.ResizeR;
+                return .resize_right;
             }
         }
 
         if (bot) {
-            return DragMode.ResizeB;
+            return .resize_bottom;
         } else {
-            return DragMode.None;
+            return .none;
         }
     }
 

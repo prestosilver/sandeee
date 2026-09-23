@@ -54,7 +54,7 @@ const Loader = loaders.Loader;
 
 const GSWindowed = @This();
 
-dragging_mode: Window.Data.DragMode = .None,
+dragging_mode: Window.Data.DragMode = .none,
 dragging_start: Vec2 = .{},
 dragging_window: ?*Window = null,
 dragging_popup: ?*Popup = null,
@@ -444,28 +444,28 @@ pub fn update(self: *GSWindowed, dt: f32) !void {
         if (pos.contains(self.mousepos)) {
             const mode = self.windows.items[idx].data.getDragMode(self.mousepos);
             self.cursor.data.flip = switch (mode) {
-                .None => false,
-                .Move => false,
-                .Close => false,
-                .Full => false,
-                .Min => false,
-                .ResizeL => false,
-                .ResizeR => true,
-                .ResizeB => false,
-                .ResizeLB => false,
-                .ResizeRB => true,
+                .none => false,
+                .move => false,
+                .close => false,
+                .full => false,
+                .min => false,
+                .resize_left => false,
+                .resize_right => true,
+                .resize_bottom => false,
+                .resize_bottom_left => false,
+                .resize_bottom_right => true,
             };
             self.cursor.data.index = switch (mode) {
-                .None => 0,
-                .Move => 3,
-                .Close => 0,
-                .Full => 0,
-                .Min => 0,
-                .ResizeL => 1,
-                .ResizeR => 1,
-                .ResizeB => 2,
-                .ResizeLB => 4,
-                .ResizeRB => 4,
+                .none => 0,
+                .move => 3,
+                .close => 0,
+                .full => 0,
+                .min => 0,
+                .resize_left => 1,
+                .resize_right => 1,
+                .resize_bottom => 2,
+                .resize_bottom_left => 4,
+                .resize_bottom_right => 4,
             };
         }
     }
@@ -572,22 +572,22 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
 
     if (self.popups.items.len != 0) popup: {
         switch (try self.popups.getLast().data.click(self.mousepos)) {
-            .Contents => {},
-            .Close => {
+            .contents => {},
+            .close => {
                 if (kind == .single) {
                     try events.EventManager.event_popup_close.send(.{ .popup_conts = self.popups.getLast().data.contents.ptr });
                 }
             },
-            .Move => {
+            .move => {
                 if (kind == .down) {
                     self.dragging_popup = self.popups.getLast();
-                    self.dragging_mode = .Move;
+                    self.dragging_mode = .move;
 
                     const start = self.dragging_popup.?.data.pos;
                     self.dragging_start = .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y };
                 }
             },
-            .None => break :popup,
+            .none => break :popup,
         }
 
         if (kind != .up)
@@ -714,16 +714,16 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
                                     const dragging_window = self.windows.items[self.windows.items.len - 1];
                                     const start = dragging_window.data.pos;
                                     self.dragging_start = switch (self.dragging_mode) {
-                                        .None => break :drag,
-                                        .Close => break :drag,
-                                        .Full => .{},
-                                        .Min => break :drag,
-                                        .Move => .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y },
-                                        .ResizeR => .{ .x = start.w - self.mousepos.x },
-                                        .ResizeB => .{ .y = start.h - self.mousepos.y },
-                                        .ResizeL => .{ .x = start.w + start.x },
-                                        .ResizeRB => .{ .x = start.w - self.mousepos.x, .y = start.h - self.mousepos.y },
-                                        .ResizeLB => .{ .x = start.w + start.x, .y = start.h - self.mousepos.y },
+                                        .none => break :drag,
+                                        .close => break :drag,
+                                        .full => .{},
+                                        .min => break :drag,
+                                        .move => .{ .x = start.x - self.mousepos.x, .y = start.y - self.mousepos.y },
+                                        .resize_left => .{ .x = start.w + start.x },
+                                        .resize_right => .{ .x = start.w - self.mousepos.x },
+                                        .resize_bottom => .{ .y = start.h - self.mousepos.y },
+                                        .resize_bottom_left => .{ .x = start.w + start.x, .y = start.h - self.mousepos.y },
+                                        .resize_bottom_right => .{ .x = start.w - self.mousepos.x, .y = start.h - self.mousepos.y },
                                     };
                                     self.dragging_window = dragging_window;
 
@@ -779,11 +779,11 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
         const winpos = self.mousepos.add(self.dragging_start);
 
         switch (self.dragging_mode) {
-            .None => {},
-            .Close => {},
-            .Full => {},
-            .Min => {},
-            .Move => {
+            .none => {},
+            .close => {},
+            .full => {},
+            .min => {},
+            .move => {
                 if (self.mousepos.y < 10) {
                     if (!dragging.data.full) {
                         // dont need to update dragging pos here bc its unnoticable to user
@@ -810,21 +810,21 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
                     }
                 }
             },
-            .ResizeR => {
+            .resize_right => {
                 dragging.data.pos.w = winpos.x;
             },
-            .ResizeL => {
+            .resize_left => {
                 dragging.data.pos.x = self.mousepos.x;
                 dragging.data.pos.w = self.dragging_start.x - self.mousepos.x;
             },
-            .ResizeB => {
+            .resize_bottom => {
                 dragging.data.pos.h = winpos.y;
             },
-            .ResizeRB => {
+            .resize_bottom_right => {
                 dragging.data.pos.w = winpos.x;
                 dragging.data.pos.h = winpos.y;
             },
-            .ResizeLB => {
+            .resize_bottom_left => {
                 dragging.data.pos.x = self.mousepos.x;
                 dragging.data.pos.w = self.dragging_start.x - self.mousepos.x;
                 dragging.data.pos.h = winpos.y;

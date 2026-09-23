@@ -185,7 +185,7 @@ pub fn build(b: *std.Build) !void {
     const disable_audio = b.option(bool, "no_audio", "Disables audio") orelse false;
     const is_demo = b.option(bool, "demo", "Makes SandEEE build a demo build") orelse false;
     const disable_email = b.option(bool, "no_email_app", "Disables adding the email app into the vm") orelse false;
-    const steam_mode = b.option(enum { Off, On, Fake }, "steam", "Makes SandEEE build a steam build") orelse .Off;
+    const steam_mode = b.option(enum { off, on, fake }, "steam", "Makes SandEEE build a steam build") orelse .off;
     const default_panic = b.option(bool, "default_panic", "Force the default zig panic handler") orelse false;
     const random_tests = b.option(usize, "random", "Makes SandEEE write some random files") orelse 0;
     const version_suffix = switch (optimize) {
@@ -306,8 +306,8 @@ pub fn build(b: *std.Build) !void {
     options.addOption([]const u8, "VERSION_TEXT", version_text);
     options.addOption(bool, "disable_audio", disable_audio);
     options.addOption(bool, "is_demo", is_demo);
-    options.addOption(bool, "is_steam", steam_mode != .Off);
-    options.addOption(bool, "fake_steam", steam_mode == .Fake);
+    options.addOption(bool, "is_steam", steam_mode != .off);
+    options.addOption(bool, "fake_steam", steam_mode == .fake);
     options.addOption(bool, "default_panic", default_panic);
     options.addOption(bool, "enable_email", !disable_email);
     const options_module = options.createModule();
@@ -774,7 +774,7 @@ pub fn build(b: *std.Build) !void {
     full_debug_disk_image_step.addArg("--disk");
     full_debug_disk_image_step.addFileArg(debug_image_path);
 
-    if (steam_mode != .Off) {
+    if (steam_mode != .off) {
         full_base_disk_image_step.addFileInput(steam_image_path);
         full_base_disk_image_step.addArg("--disk");
         full_base_disk_image_step.addFileArg(steam_image_path);
@@ -809,7 +809,7 @@ pub fn build(b: *std.Build) !void {
         exe.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
     }
 
-    if (steam_mode == .On) {
+    if (steam_mode == .on) {
         if (target.result.os.tag == .windows)
             exe.root_module.linkSystemLibrary("steam_api64", .{})
         else
@@ -866,15 +866,15 @@ pub fn build(b: *std.Build) !void {
         b.installFile("deps/dll/libopenal.dll", "bin/OpenAL32.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
-        if (steam_mode == .On)
+        if (steam_mode == .on)
             b.installFile("deps/dll/steam_api64.dll", "bin/steam_api64.dll");
     } else if (target.result.os.tag == .linux) {
         b.installFile("content/scripts/runSandEEE", "bin/runSandEEE");
-        if (steam_mode == .On)
+        if (steam_mode == .on)
             b.installFile("deps/lib/libsteam_api.so", "bin/lib/libsteam_api.so");
     }
 
-    if (steam_mode == .On) {
+    if (steam_mode == .on) {
         if (optimize == .Debug)
             b.installFile("steam_appid_debug.txt", "bin/steam_appid.txt")
         else

@@ -23,32 +23,32 @@ const Operation = Vm.Operation;
 const Rope = util.Rope;
 
 const SyscallId = enum(u64) {
-    Print = 0,
-    Quit = 1,
-    Create = 2,
-    Open = 3,
-    Read = 4,
-    Write = 5,
-    Flush = 6,
-    Close = 7,
-    Arg = 8,
-    Time = 9,
-    CheckFunc = 10,
-    GetFunc = 11,
-    RegFunc = 12,
-    ClearFunc = 13,
-    ResizeHeap = 14,
-    ReadHeap = 15,
-    WriteHeap = 16,
-    Yield = 17,
-    Error = 18,
-    Size = 19,
-    RSP = 20,
-    Spawn = 21,
-    Status = 22,
-    DeleteFile = 23,
-    Steam = 24,
-    Last = 25,
+    print = 0,
+    quit = 1,
+    create = 2,
+    open = 3,
+    read = 4,
+    write = 5,
+    flush = 6,
+    close = 7,
+    arg = 8,
+    time = 9,
+    check_func = 10,
+    get_func = 11,
+    reg_func = 12,
+    clear_func = 13,
+    resize_heap = 14,
+    read_heap = 15,
+    write_heap = 16,
+    yield = 17,
+    error = 18,
+    size = 19,
+    rsp = 20,
+    spawn = 21,
+    status = 22,
+    delete_file = 23,
+    steam = 24,
+    last = 25,
 };
 
 pub var main_font: *Font = undefined;
@@ -59,46 +59,46 @@ pub const SysCall = struct {
     const SYS_CALLS = std.EnumArray(SyscallId, Self).init(
         .{
             // System ops
-            .Print = .{ .run_fn = sysPrint },
-            .Quit = .{ .run_fn = sysQuit },
+            .print = .{ .run_fn = sysPrint },
+            .quit = .{ .run_fn = sysQuit },
 
             // File ops
-            .Create = .{ .run_fn = sysCreate },
-            .Open = .{ .run_fn = sysOpen },
-            .Read = .{ .run_fn = sysRead },
-            .Write = .{ .run_fn = sysWrite },
-            .Flush = .{ .run_fn = sysFlush },
-            .Close = .{ .run_fn = sysClose },
+            .create = .{ .run_fn = sysCreate },
+            .open = .{ .run_fn = sysOpen },
+            .read = .{ .run_fn = sysRead },
+            .write = .{ .run_fn = sysWrite },
+            .flush = .{ .run_fn = sysFlush },
+            .close = .{ .run_fn = sysClose },
 
             // more system ops
-            .Arg = .{ .run_fn = sysArg },
-            .Time = .{ .run_fn = sysTime },
+            .arg = .{ .run_fn = sysArg },
+            .time = .{ .run_fn = sysTime },
 
             // function ops
-            .CheckFunc = .{ .run_fn = sysCheckFunc },
-            .GetFunc = .{ .run_fn = sysGetFunc },
-            .RegFunc = .{ .run_fn = sysRegFunc },
-            .ClearFunc = .{ .run_fn = sysClearFunc },
+            .check_func = .{ .run_fn = sysCheckFunc },
+            .get_func = .{ .run_fn = sysGetFunc },
+            .reg_func = .{ .run_fn = sysRegFunc },
+            .clear_func = .{ .run_fn = sysClearFunc },
 
             // heap ops
-            .ResizeHeap = .{ .run_fn = sysResizeHeap },
-            .ReadHeap = .{ .run_fn = sysReadHeap },
-            .WriteHeap = .{ .run_fn = sysWriteHeap },
+            .resize_heap = .{ .run_fn = sysResizeHeap },
+            .read_heap = .{ .run_fn = sysReadHeap },
+            .write_heap = .{ .run_fn = sysWriteHeap },
 
             // more system ops
-            .Yield = .{ .run_fn = sysYield },
-            .Error = .{ .run_fn = sysError },
+            .yield = .{ .run_fn = sysYield },
+            .error = .{ .run_fn = sysError },
 
             // more file ops
-            .Size = .{ .run_fn = sysSize },
+            .size = .{ .run_fn = sysSize },
 
             // more system ops
-            .RSP = .{ .run_fn = sysRSP },
-            .Spawn = .{ .run_fn = sysSpawn },
-            .Status = .{ .run_fn = sysStatus },
-            .DeleteFile = .{ .run_fn = sysDelete },
-            .Steam = .{ .run_fn = sysSteam },
-            .Last = .{ .run_fn = lastErr },
+            .rsp = .{ .run_fn = sysRSP },
+            .spawn = .{ .run_fn = sysSpawn },
+            .status = .{ .run_fn = sysStatus },
+            .delete_file = .{ .run_fn = sysDelete },
+            .steam = .{ .run_fn = sysSteam },
+            .last = .{ .run_fn = lastErr },
         },
     );
 
@@ -110,7 +110,7 @@ pub const SysCall = struct {
         sys_mutex.lock(util.io) catch unreachable;
         defer sys_mutex.unlock(util.io);
 
-        if (index < @intFromEnum(SyscallId.Last)) {
+        if (index < @intFromEnum(SyscallId.last)) {
             return SYS_CALLS.get(@enumFromInt(index)).run_fn(self);
         }
 

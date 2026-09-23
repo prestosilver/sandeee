@@ -190,10 +190,10 @@ pub const PopupData = struct {
     }
 
     pub const ClickKind = enum {
-        Contents,
-        Close,
-        Move,
-        None,
+        contents,
+        close,
+        move,
+        none,
     };
 
     const PADDING = 26;
@@ -206,19 +206,19 @@ pub const PopupData = struct {
             .h = PADDING,
         };
         if (close.contains(mousepos)) {
-            return .Close;
+            return .close;
         }
 
         const click_pos = mousepos.sub(self.pos.location());
 
-        if (click_pos.x < 0) return .None;
-        if (click_pos.x > self.pos.w or click_pos.y > self.pos.h) return .None;
+        if (click_pos.x < 0) return .none;
+        if (click_pos.x > self.pos.w or click_pos.y > self.pos.h) return .none;
 
-        if (click_pos.y < 34 and click_pos.y > 0) return .Move;
+        if (click_pos.y < 34 and click_pos.y > 0) return .move;
 
         try self.contents.click(click_pos);
 
-        return .Contents;
+        return .contents;
     }
 
     pub fn scissor(self: *const PopupData) Rect {
