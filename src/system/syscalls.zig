@@ -41,7 +41,7 @@ const SyscallId = enum(u64) {
     read_heap = 15,
     write_heap = 16,
     yield = 17,
-    error = 18,
+    err = 18,
     size = 19,
     rsp = 20,
     spawn = 21,
@@ -87,7 +87,7 @@ pub const SysCall = struct {
 
             // more system ops
             .yield = .{ .run_fn = sysYield },
-            .error = .{ .run_fn = sysError },
+            .err = .{ .run_fn = sysError },
 
             // more file ops
             .size = .{ .run_fn = sysSize },
