@@ -4,7 +4,7 @@
 
 List priority goes Bugs->Fixes->Todo
 
-Though this is listed by priority, I do order by difficulty aswell. My logic has alwasy been along the lines of "Why waist time fix one big bug when you can fix 20 small ones while thinking about whats causes it". If an issue/task is stopped ill take a break and get it done when I know I can schmoove through it. For a list organized by date/implementation order see [The release checklist](release_checklist.md).
+Though this is listed by priority, I do order by difficulty aswell. My logic has alwasy been along the lines of "Why waist the time fixing one big bug when you can fix 20 small ones while internally fixing the big one". If an issue/task is stopped ill take a break and get it done when I know I can schmoove through it. For a list organized by date/implementation order see [The release checklist](release_checklist.md).
 
 ## Known Bugs
 
@@ -22,8 +22,6 @@ These are fixes for behaviours that are implemented wrong.
 - [X] Possible crash on email VM calls
 - [X] Web slighty cuts off paragraphs
 - [X] Wth is up with popups!!
-- [X] Web threads crash on windows
-    - Wine only
 - [ ] Windows get mouse move event when covered.
 - [ ] Wordwrap in console
 - [ ] Disks files are unordered everywhere, sort on save
@@ -37,10 +35,12 @@ These are fixes for behaviours that are implemented wrong.
 - [ ] Notification text can cut off
 - [ ] _*_meta files should not copy to disk on install
 - [ ] Crash screen should display relative paths
+- [ ] Web threads crash on windows
+    - [ ] Wine only
 
 ## Minor non bug fixes
 
-These are tasks that dont fix existing behaviour, but improve accessability for any demograhic (Including everyone).
+These are tasks that dont fix existing behaviour, but improve accessibility for any demographic (Including everyone).
 
 - [X] Error when web content type is not either "application/octet-stream" or "text/eeedocument"
 - [X] Unify double click
@@ -53,6 +53,9 @@ These are tasks that dont fix existing behaviour, but improve accessability for 
 - [ ] Accessibility wizard
   - [ ] In BootEEE
   - [ ] On first boot
+- [ ] Windowed mode
+  - [X] Cli arg
+  - [ ] BIOS setting
 - [ ] Consistent color parsing
   - [ ] Design new format
 - [ ] <=> in font should not connect at all
@@ -81,6 +84,7 @@ These are tasks that only affect the codebase.
   - [ ] ui namespace
   - [ ] switch apps
   - [ ] switch bar, desktop icons, and start menu
+- [ ] Move embed files inside build.zig
 - [ ] zig test should check www for dead links
 - [ ] Add consistent id+iota type utility
 - [ ] Rework popups to be owned by windows instead of state
@@ -88,7 +92,7 @@ These are tasks that only affect the codebase.
 - [ ] zig build steam_changelog
 - [ ] zig build itch_changelog
 
-## General tentative todo
+## General todo
 
 These are tasks that include adding new features to the game, or arent covered by the other two lists.
 
@@ -96,13 +100,17 @@ These are tasks that include adding new features to the game, or arent covered b
 - [X] Double check wording in demo emails
 - [X] Workshop previews
 - [X] EDS Background color
-- [ ] Workshop favorites
-    - [X] Show in list
-    - [ ] Dedicated list
 - [X] Fix program names and versions
   - [X] Merge BootEEE
   - [X] Breakout other versions to `strings.zig`
+- [ ] New email system
+- [ ] Add joe disk image
+- [ ] Sys 255 impl
+  - [ ] File encrypted flag
+  - [ ] Rsa/Rc4 decide on how itll work.
+- [ ] Recovery image encryption
+- [ ] Workshop favorites
+    - [X] Show in list
+    - [ ] Dedicated list
 - [ ] Add a about SandEEE app with creator credits
-- [ ] Inter email box conditions
-- [ ] Embed file fix
-- [ ] Update email content
+- [ ] Figure out music
