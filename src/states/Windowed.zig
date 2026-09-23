@@ -630,7 +630,7 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
                 }
 
                 switch (mode) {
-                    .Move => blk: {
+                    .move => blk: {
                         if (swap.data.contents.props.size.max) |max_size| {
                             const min_size = swap.data.contents.props.size.min;
 
@@ -676,7 +676,7 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
 
                         const mode = swap.data.getDragMode(self.mousepos);
                         switch (mode) {
-                            .Close => {
+                            .close => {
                                 if (swap.data.contents.props.no_close)
                                     try self.windows.append(swap)
                                 else {
@@ -687,7 +687,7 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
                                     return;
                                 }
                             },
-                            .Full => {
+                            .full => {
                                 if (swap.data.full) {
                                     swap.data.pos = swap.data.oldpos;
                                 } else {
@@ -699,7 +699,7 @@ pub fn mousepress(self: *GSWindowed, btn: c_int, kind: ClickKind) !void {
 
                                 try self.windows.append(swap);
                             },
-                            .Min => {
+                            .min => {
                                 if (!swap.data.contents.props.no_min) {
                                     swap.data.min = !swap.data.min;
                                 }
@@ -766,7 +766,7 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
         const winpos = self.mousepos.add(self.dragging_start);
 
         switch (self.dragging_mode) {
-            .Move => {
+            .move => {
                 dragging.data.pos.x = winpos.x;
                 dragging.data.pos.y = winpos.y;
             },
