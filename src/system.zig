@@ -9,10 +9,12 @@ pub const telem = @import("system/telem.zig");
 pub const files = @import("system/files.zig");
 pub const mail = @import("system/mail.zig");
 pub const pseudo = @import("system/pseudo.zig");
+pub const Disk = @import("system/Disk.zig");
 
 test {
     _ = headless;
     _ = Shell;
     _ = Vm;
     _ = config;
+    _ = Disk;
 }
