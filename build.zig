@@ -259,18 +259,6 @@ pub fn build(b: *std.Build) !void {
     });
     const zgl_host_module = zgl_host_dependency.module("zgl");
 
-    const network_dependency = b.dependency("network", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const network_module = network_dependency.module("network");
-
-    const network_host_dependency = b.dependency("network", .{
-        .target = b.graph.host,
-        .optimize = .Debug,
-    });
-    const network_host_module = network_host_dependency.module("network");
-
     const zigimg_host_dependency = b.dependency("zigimg", .{
         .target = b.graph.host,
         .optimize = .Debug,
@@ -328,7 +316,6 @@ pub fn build(b: *std.Build) !void {
     const options_host_module = options_host.createModule();
 
     exe_module.addImport("options", options_module);
-    exe_module.addImport("network", network_module);
     exe_module.addImport("glfw", glfw_module);
     exe_module.addImport("flags", flags_module);
     exe_module.addImport("zgl", zgl_module);
@@ -337,7 +324,6 @@ pub fn build(b: *std.Build) !void {
 
     exe_host_module.addImport("openal", openal_host_module);
     exe_host_module.addImport("options", options_host_module);
-    exe_host_module.addImport("network", network_host_module);
     exe_host_module.addImport("glfw", glfw_host_module);
     exe_host_module.addImport("flags", flags_host_module);
     exe_host_module.addImport("zgl", zgl_host_module);
@@ -1148,7 +1134,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.addImport("options", public_options_module);
-        exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
@@ -1177,7 +1162,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.addImport("options", public_options_module);
-        exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
         exe_mod_pub_windows.addImport("win32", win32_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
@@ -1252,7 +1236,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.addImport("options", public_options_module);
-        exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
@@ -1281,7 +1264,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.addImport("options", public_options_module);
-        exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
@@ -1354,7 +1336,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.addImport("options", public_options_module);
-        exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
@@ -1382,7 +1363,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.addImport("options", public_options_module);
-        exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
@@ -1457,7 +1437,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.addImport("options", public_options_module);
-        exe_mod_pub_linux.addImport("network", network_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
@@ -1485,7 +1464,6 @@ pub fn build(b: *std.Build) !void {
         });
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.addImport("options", public_options_module);
-        exe_mod_pub_windows.addImport("network", network_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);

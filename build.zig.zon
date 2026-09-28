@@ -4,10 +4,6 @@
     .minimum_zig_version = "0.15.2",
     .fingerprint = 0x235618a7935966bd,
     .dependencies = .{
-        .network = .{
-            .url = "git+https://github.com/ikskuh/zig-network#7947237eec317d9458897f82089f343a05450c2b",
-            .hash = "network-0.1.0-Pm-Agl8xAQBmkwohveGOfTk4zQnuqDs0Ptfbms4KP5Ce",
-        },
         .zigimg = .{
             .url = "git+https://github.com/zigimg/zigimg.git#a7440df3fc41cde7df078b1c5829646c13056d49",
             .hash = "zigimg-0.1.0-8_eo2sPVFwAm8y-DVfaCHNKQIpv9oHl_mbcKbGQZRLrK",
