@@ -65,7 +65,7 @@
     - [X] Run `zig build www`
     - [X] Push www submodule to github
 
-## os:seed#11 - A big accessibility update
+## os:seed#11 - A big lore update
 
 - [ ] Planned features
   - [X] #10_588
@@ -74,14 +74,16 @@
     - [X] Fix email bug?
     - [X] Reword README
     - [X] Fix steam upload bugs
+  - [X] Fix program names and versions
+  - [ ] New disk system
+  - [ ] New email system
   - [ ] Accessibility wizard
   - [ ] Control the dithering, and crt of the shader separately
-  - [ ] Add actual pickers to settings ui
-  - [ ] Consistent color parsing
-  - [ ] Fix program names and versions
-  - [ ] Add a about SandEEE app
+  - [ ] Add an about SandEEE app
   - [ ] Fix Wordwrap in console
   - [ ] Fix disk ordering
+  - [ ] Add joe disk image
+  - [ ] Sys 255 impl
 - [ ] Going into release day
   - [ ] Grammar
     - [ ] Check spelling in all emails

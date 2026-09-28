@@ -19,8 +19,9 @@ After a bit of thought though, the layout should be like a toc, offset*entrys, t
 
 Heres a protype of this in action
 ```eon
-group Example is a,b,c;
-// fetch a
+contract Example has (a,b,c);
+
+// fetch c
 var tmp = new Example;
 print(tmp.Example:c);
 // emits as:
@@ -35,7 +36,7 @@ print(tmp.Example:c);
 //     if it werent I would do that here 
 // print
 
-// assignments are a bit wacky ill have to reconstruct the object
+// assignments are a bit wacky since ill have to reconstruct the object
 tmp.Example:b = "5";
 // emits as:
 // dup [tmp]
@@ -56,7 +57,7 @@ tmp.Example:b = "5";
 
 This would look something like this for a structure like tables
 ```eon
-group TableEntry is key,value,next;
+contract TableEntry has (key,value,next);
 
 fn TableCreate() {
     return new TableEntry;
@@ -100,9 +101,9 @@ This system shouldnt be too hard to implement in the zig->eon compiler. And sinc
 
 Something that comes up with this is how child objects are set
 ```eon
-group Foo is bar;
-group Bar is baz;
-group Baz is a;
+contract Foo has (bar);
+contract Bar has (baz);
+contract Baz has (a);
 
 var foo = new Foo; // good so far
 foo.Foo:bar = new Bar; // ok.

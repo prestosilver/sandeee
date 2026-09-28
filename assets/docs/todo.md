@@ -22,12 +22,13 @@ These are fixes for behaviours that are implemented wrong.
 - [X] Possible crash on email VM calls
 - [X] Web slighty cuts off paragraphs
 - [X] Wth is up with popups!!
+- [X] ~~Disks files are unordered everywhere, sort on save~~ Fixed with new system
+- [X] ~~Crash dosent save sometimes~~ Fixed with new system
 - [ ] Windows get mouse move event when covered.
 - [ ] Wordwrap in console
-- [ ] Disks files are unordered everywhere, sort on save
-- [ ] Crash dosent save sometimes
 - [ ] VMS don't stop on crash, meaning they can lag the crash state.
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
+  - Will be fixed by new audio system
 - [ ] Restoring and installing a disk drops frames
 - [ ] Task manager can fullscreen and renders wrong
 - [ ] Steam in web can lag the game
@@ -36,7 +37,8 @@ These are fixes for behaviours that are implemented wrong.
 - [ ] _*_meta files should not copy to disk on install
 - [ ] Crash screen should display relative paths
 - [ ] Web threads crash on windows
-    - [ ] Wine only
+  - [ ] Add tests
+  - [ ] Wine only
 
 ## Minor non bug fixes
 
@@ -48,6 +50,11 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [X] Fix random mem leak on tests
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
+- [ ] New disk system
+  - [ ] Initial impl (Started)
+  - [ ] Switch APIs
+  - [ ] Pseudo files
+  - [ ] Old disk upgrading
 - [ ] Add actual pickers to settings ui
 - [ ] Control the dithering, and crt of the shader separately
 - [ ] Accessibility wizard
@@ -112,5 +119,12 @@ These are tasks that include adding new features to the game, or arent covered b
 - [ ] Workshop favorites
     - [X] Show in list
     - [ ] Dedicated list
-- [ ] Add a about SandEEE app with creator credits
+- [ ] Add an about SandEEE app with creator credits
 - [ ] Figure out music
+  - [ ] Trevor?
+
+## Bad idea bin
+
+- Replaced bios with a .eep
+- Windowed headless mode 
+  - Requires removal of dependence on the global graphics instance & global spritebatch

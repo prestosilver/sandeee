@@ -27,6 +27,7 @@
 |[characters.md](../docs/characters.md)|Character sheets.|
 |[eon_change.md](../docs/eon_change.md)|A breif history of eon.|
 |[horizontal.md](../docs/horizontal.md)|The plan to get from vertical to horizontal slice.|
+|[audio_update.md](../docs/audio_update.md)|A spec for updating the audio engine.|
 
 ## Presentations
 

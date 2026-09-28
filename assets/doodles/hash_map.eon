@@ -1,4 +1,4 @@
-contract TableEntry :: (key,value,next);
+contract TableEntry has (key,value,next);
 
 const TABLE_SIZE = 1000;
 

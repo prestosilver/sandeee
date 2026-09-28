@@ -3,7 +3,7 @@
 Eon has gone through many changes throughout the years. Since it initially was only meant for internal use the team didnt often worry about full syntactical refactors.
 
 ## Early eon
-Initially eon was untyped, and looked alot like js
+Initially eon was untyped, and looked alot like js without types
 
 ```eon
 #include "/libs/incl/sys.eon"
@@ -38,7 +38,7 @@ After a while, the eon devs noticed structs from c were quite nice. They riffed 
 ```eon
 #import "/libs/sys.ell"
 
-contract Person :: (age, name);
+contract Person has (age, name);
 
 function PersonToString(person) {
     return person.Person:name & " " & person.Person:age & "years old";
@@ -62,13 +62,14 @@ Later they realized it might be nice to force types to avoid repetition.
 ```eon
 #import "/libs/sys.ell"
 
-contract Person :: (age, name) where
-    name: any,
-    age: number;
+contract Person has (age, name) where {
+    name is any,
+    age is number;
 
-function PersonToString(person) -> any where
-    person: Person {
-    return person.name & " " & person.age & "years old";
+    function PersonToString(person) -> any where
+        person is Person {
+        return person.name & " " & person.age & "years old";
+    }
 }
 
 function main() {
@@ -84,17 +85,17 @@ function main() {
 
 ## Methods
 
-They also realized it may be nice to associate functions with contracts. There was some restructuring with that but that finished eons base syntax up, and it was never changed since.
+They also realized it may be nice to associate functions with groups. There was some restructuring with that but that finished eons base syntax up, and it was never changed since.
 
 ```eon
 #import "/libs/sys.ell"
 
-contract Person :: (age, name) where {
-    age: number;
-    name: stirng;
+contract Person has (age, name) where {
+    age is number,
+    name is string,
 
     function toString(person) -> any where
-        person: Person {
+        person is Person {
         return person.name & " " & person.age & "years old";
     }
 }
