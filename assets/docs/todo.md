@@ -88,6 +88,7 @@ These are tasks that only affect the codebase.
 - [ ] Magic number cleanup
   - [X] Colors
   - [ ] Sizes
+- [ ] Automatically deploy to gh pages
 - [ ] Breakout UI for consistency!!!
   - [ ] data/sizes.zig
   - [ ] ui namespace
