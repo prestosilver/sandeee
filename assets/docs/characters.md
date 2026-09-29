@@ -135,3 +135,20 @@ Signoff: `-- Epsilon Frees All --`
 - Plot points
     - The "antagonist"
     - Works for Unnamed
+
+# SandEEE Company sheets
+
+## EEE
+
+- Traits
+    - The company publically disproves of OSS
+        - However they support "modding" and have an open api for reworking huge portions of their os.
+    - Heavy focus on simplicity, "low surface area means less attack vectors"
+    - Went ouf of buisness
+
+## Unnamed
+
+- Traits
+    - Publically antagonistic, similar roots to EEE but took a different route
+    - They blew up really fast via viral marketing, they memed on their lack of ethics, while bringing people what they wanted.
+    - The company is literally named "Unnamed"

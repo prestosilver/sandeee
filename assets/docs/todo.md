@@ -52,7 +52,7 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [X] Separate build for demo bc different appids!
 - [ ] New disk system
   - [ ] Initial impl (Started)
-  - [ ] Switch APIs
+  - [ ] Switch APIs (Started)
   - [ ] Pseudo files
   - [ ] Old disk upgrading
 - [ ] Add actual pickers to settings ui
@@ -89,6 +89,11 @@ These are tasks that only affect the codebase.
   - [X] Colors
   - [ ] Sizes
 - [ ] Automatically deploy to gh pages
+  - [ ] Deploy
+  - [ ] Combine www into repo
+  - [ ] Add new generation
+  - [ ] Release branch
+  - [ ] Update debug builds to go to /alpha endpoint
 - [ ] Breakout UI for consistency!!!
   - [ ] data/sizes.zig
   - [ ] ui namespace
