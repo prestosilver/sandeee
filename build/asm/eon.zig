@@ -1,5 +1,7 @@
 const std = @import("std");
 
+// TODO: this should use allocating writer
+
 var lib_path: []const u8 = undefined;
 
 const TokenKind = enum {
@@ -321,7 +323,7 @@ const Expression = struct {
                         if (std.mem.eql(u8, mapvar.name, self.op.?.value)) {
                             const adds = try std.fmt.allocPrint(allocator, "    copy {}\n", .{idx.* - 1 - mapvar.idx});
                             defer allocator.free(adds);
-                            
+
                             idx.* += 1;
 
                             try result.appendSlice(adds);
@@ -366,29 +368,33 @@ const Statement = struct {
     blks: ?[][]Statement,
 
     fn toAsm(self: *Statement, allocator: std.mem.Allocator, map: *VarMap, heap: *const std.array_list.Managed([]const u8), idx: *usize) ![]const u8 {
+        var result: std.array_list.Managed(u8) = .init(allocator);
+        defer result.deinit();
+
         switch (self.kind) {
             .STMT_INVALID => {
                 return try std.fmt.allocPrint(allocator, "    nop\n", .{});
             },
             .STMT_DECLARE => {
-                var result = try allocator.alloc(u8, 0);
-
                 if (self.exprs != null) {
                     const adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                     defer allocator.free(adds);
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
+                    
+                    try result.appendSlice(adds);
                 } else {
-                    result = try std.fmt.allocPrint(allocator, "    push 0\n", .{});
+                    const adds = try std.fmt.allocPrint(allocator, "    push 0\n", .{});
+                    defer allocator.free(adds);
+
+                    try result.appendSlice(adds);
                     idx.* += 1;
                 }
+
                 map.vars = try allocator.realloc(map.vars, map.vars.len + 1);
                 map.vars[map.vars.len - 1] = .{
                     .name = self.name.?,
                     .idx = idx.* - 1,
                 };
-                return result;
+                return result.toOwnedSlice();
             },
             .STMT_COND => {
                 const start = idx.*;
@@ -396,27 +402,19 @@ const Statement = struct {
                 const map_start = try allocator.dupe(Var, map.vars);
                 block_id += 1;
 
-                var result = try allocator.alloc(u8, 0);
-
                 var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                 defer allocator.free(adds);
-                var start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jz block_{}_alt\n", .{block});
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
                 idx.* -= 1;
 
                 for (self.blks.?[0]) |*stmt| {
                     allocator.free(adds);
                     adds = try stmt.toAsm(allocator, map, heap, idx);
-                    start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
+                    try result.appendSlice(adds);
                 }
 
                 {
@@ -430,25 +428,19 @@ const Statement = struct {
                     if (count > 0) {
                         allocator.free(adds);
                         adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
-                        start_res = result.len;
-                        result = try allocator.realloc(result, result.len + adds.len);
-                        @memcpy(result[start_res..], adds);
+                        try result.appendSlice(adds);
                     }
                 }
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jmp block_{}_end\nblock_{}_alt:\n", .{ block, block });
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 if (self.blks.?.len > 1) {
                     for (self.blks.?[1]) |*stmt| {
                         allocator.free(adds);
                         adds = try stmt.toAsm(allocator, map, heap, idx);
-                        start_res = result.len;
-                        result = try allocator.realloc(result, result.len + adds.len);
-                        @memcpy(result[start_res..], adds);
+                        try result.appendSlice(adds);
                     }
 
                     {
@@ -462,31 +454,23 @@ const Statement = struct {
                         if (count > 0) {
                             allocator.free(adds);
                             adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
-                            start_res = result.len;
-                            result = try allocator.realloc(result, result.len + adds.len);
-                            @memcpy(result[start_res..], adds);
+                            try result.appendSlice(adds);
                         }
                     }
                 }
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "block_{}_end:\n", .{block});
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 map.vars = map_start;
 
                 return result;
             },
             .STMT_RETURN => {
-                var result = try allocator.alloc(u8, 0);
-
                 var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                 defer allocator.free(adds);
-                var start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 idx.* -= 1;
 
@@ -500,18 +484,14 @@ const Statement = struct {
                     if (count > 0) {
                         allocator.free(adds);
                         adds = try std.fmt.allocPrint(allocator, "    push 1\n    ndisc {}\n", .{count});
-                        start_res = result.len;
-                        result = try allocator.realloc(result, result.len + adds.len);
-                        @memcpy(result[start_res..], adds);
+                        try result.appendSlice(adds);
                     }
                 }
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    ret\n", .{});
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
-                return result;
+                try result.appendSlice(adds);
+                return result.toOwnedSlice();
             },
             .STMT_WHILE => {
                 const start = idx.*;
@@ -519,40 +499,28 @@ const Statement = struct {
                 const map_start = try allocator.dupe(Var, map.vars);
                 block_id += 1;
 
-                var result = try allocator.alloc(u8, 0);
-
                 var adds: []const u8 = try std.fmt.allocPrint(allocator, "block_{}_loop:\n", .{block});
                 defer allocator.free(adds);
-                var start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 allocator.free(adds);
                 adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jz block_{}_end\n", .{block});
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
                 idx.* -= 1;
 
                 for (self.blks.?[0]) |*stmt| {
                     allocator.free(adds);
                     adds = try stmt.toAsm(allocator, map, heap, idx);
-                    start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
+                    try result.appendSlice(adds);
                 }
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 {
                     var count: usize = 0;
@@ -565,15 +533,13 @@ const Statement = struct {
                     if (count > 0) {
                         allocator.free(adds);
                         adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
-                        start_res = result.len;
-                        result = try allocator.realloc(result, result.len + adds.len);
-                        @memcpy(result[start_res..], adds);
+                        try result.appendSlice(adds);
                     }
                 }
 
                 map.vars = map_start;
 
-                return result;
+                return result.toOwnedSlice();
             },
             .STMT_FOR => {
                 const start = idx.*;
@@ -581,52 +547,36 @@ const Statement = struct {
                 const block = block_id;
                 block_id += 1;
 
-                var result = try allocator.alloc(u8, 0);
-
                 var adds = try self.blks.?[0][0].toAsm(allocator, map, heap, idx);
                 defer allocator.free(adds);
-                var start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "block_{}_loop:\n", .{block});
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 allocator.free(adds);
                 adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    jz block_{}_end\n", .{block});
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
                 idx.* -= 1;
 
                 for (self.blks.?[1]) |*stmt| {
                     allocator.free(adds);
                     adds = try stmt.toAsm(allocator, map, heap, idx);
-                    start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
                 }
 
                 allocator.free(adds);
                 adds = try self.exprs.?[1].toAsm(allocator, map, heap, idx);
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 allocator.free(adds);
                 adds = try std.fmt.allocPrint(allocator, "    disc 0\n    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
-                start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
                 idx.* -= 1;
 
                 {
@@ -641,40 +591,35 @@ const Statement = struct {
                     if (count > 0) {
                         allocator.free(adds);
                         adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
-                        start_res = result.len;
-                        result = try allocator.realloc(result, result.len + adds.len);
-                        @memcpy(result[start_res..], adds);
+                        try result.appendSlice(adds);
                     }
                 }
 
                 map.vars = map_start;
 
-                return result;
+                return result.toOwnedSlice();
             },
             .STMT_ASM => {
-                const result = std.fmt.allocPrint(allocator, "    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
-                return result;
+                const adds = std.fmt.allocPrint(allocator, "    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
+                try result.appendSlice(adds);
+
+                return result.toOwnedSlice();
             },
             .STMT_EXP => {
-                var result = try allocator.alloc(u8, 0);
                 const start = idx.*;
 
                 var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                 defer allocator.free(adds);
-                var start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
 
                 for (start..idx.*) |_| {
                     allocator.free(adds);
                     adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
-                    start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
+                    try result.appendSlice(adds);
                     idx.* -= 1;
                 }
 
-                return result;
+                return result.toOwnedSlice();
             },
             else => {
                 std.log.info("{}", .{self.kind});
