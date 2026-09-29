@@ -465,7 +465,7 @@ const Statement = struct {
 
                 map.vars = map_start;
 
-                return result;
+                return result.toOwnedSlice();
             },
             .STMT_RETURN => {
                 var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
