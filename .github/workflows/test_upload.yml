@@ -164,3 +164,56 @@ jobs:
       - name: Summary results
         run: |
           cat zig-out/changelog.edf >> $GITHUB_STEP_SUMMARY
+
+  upload_www:
+    runs-on: ubuntu-latest
+    name: Generate www
+    needs: [gen-changelog]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+      - name: Cache zig build
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-zig
+        with:
+          path: |
+            ${{github.workspace}}/.cache/zig
+            ${{github.workspace}}/.zig-cache
+            ${{github.workspace}}/zig-pkg
+          key: zig-build-www-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
+          restore-keys: |
+            zig-build-www-${{ runner.os }}-
+            zig-build-www-
+            zig-build-
+            zig-
+
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.16.0
+      - name: Generate www
+        run: |
+          zig build www
+      - name: Upload to gh pages
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: zig-out
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      id-token: write
+      pages: write
+    runs-on: ubuntu-latest
+    needs: upload_www
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
