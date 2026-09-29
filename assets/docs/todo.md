@@ -83,6 +83,8 @@ These are tasks that only affect the codebase.
 - [X] Move runSandEEE to a subfolder somewhere (in repo)
 - [X] Github actions doesnt test `-Dsteam=On`
 - [X] Remove anyerror
+- [X] Move embed files inside build.zig
+- [X] Reorganize shaders
 - [ ] Magic number cleanup
   - [X] Colors
   - [ ] Sizes
@@ -91,7 +93,6 @@ These are tasks that only affect the codebase.
   - [ ] ui namespace
   - [ ] switch apps
   - [ ] switch bar, desktop icons, and start menu
-- [ ] Move embed files inside build.zig
 - [ ] zig test should check www for dead links
 - [ ] Add consistent id+iota type utility
 - [ ] Rework popups to be owned by windows instead of state
@@ -125,6 +126,15 @@ These are tasks that include adding new features to the game, or arent covered b
 
 ## Bad idea bin
 
-- Replaced bios with a .eep
+This here is scope creep central, anti ideas if you may. They may never be added.
+
+- Replace BootEEE with a .eep
+  - Syscall for loading a disk
+  - Syscall for installing a disk
+  - Syscall for listing disks
 - Windowed headless mode 
   - Requires removal of dependence on the global graphics instance & global spritebatch
+- Multi monitor support
+- Discord RPC support
+- Mascott
+  - Crt monitor pixar lamp with cat memes

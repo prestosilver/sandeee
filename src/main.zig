@@ -99,17 +99,17 @@ pub const steam_options = steam.Options{
 };
 
 // embed shaders
-const VERT_SHADER = @embedFile("shaders/vert.glsl");
-const FRAG_SHADER = @embedFile("shaders/frag.glsl");
+const FRAG_SHADER = @embedFile("shaders/default.frag");
+const VERT_SHADER = @embedFile("shaders/default.vert");
 
-const FONT_VERT_SHADER = @embedFile("shaders/vert.glsl");
-const FONT_FRAG_SHADER = @embedFile("shaders/ffrag.glsl");
+const FONT_FRAG_SHADER = @embedFile("shaders/font.frag");
+const FONT_VERT_SHADER = @embedFile("shaders/font.vert");
 
-const CRT_FRAG_SHADER = @embedFile("shaders/crtfrag.glsl");
-const CRT_VERT_SHADER = @embedFile("shaders/crtvert.glsl");
+const CRT_FRAG_SHADER = @embedFile("shaders/crt.frag");
+const CRT_VERT_SHADER = @embedFile("shaders/crt.vert");
 
-const CLEAR_FRAG_SHADER = @embedFile("shaders/clearfrag.glsl");
-const CLEAR_VERT_SHADER = @embedFile("shaders/vert.glsl");
+const CLEAR_FRAG_SHADER = @embedFile("shaders/clear.frag");
+const CLEAR_VERT_SHADER = @embedFile("shaders/clear.vert");
 
 // embed images
 const LOGO_IMAGE = @embedFile("logo.eia");
