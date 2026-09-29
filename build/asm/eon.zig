@@ -91,14 +91,14 @@ const Expression = struct {
     b: []Expression,
 
     fn toAsm(self: *Expression, allocator: std.mem.Allocator, map: *VarMap, heap: *const std.array_list.Managed([]const u8), idx: *usize) ![]const u8 {
-        var result: []u8 = try allocator.alloc(u8, 0);
+        var result: std.array_list.Managed(u8) = .init(allocator);
+        defer result.deinit();
+
         if (self.op != null and self.op.?.kind == .TOKEN_OPEN_PAREN) {
             const start = idx.*;
             for (self.a) |*item| {
                 const adds = try item.toAsm(allocator, map, heap, idx);
-                const start_res = result.len;
-                result = try allocator.realloc(result, result.len + adds.len);
-                @memcpy(result[start_res..], adds);
+                try result.appendSlice(adds);
             }
 
             idx.* = start + 1;
@@ -114,45 +114,40 @@ const Expression = struct {
                 }
             }
             defer allocator.free(adds);
-            const start_res = result.len;
-            result = try allocator.realloc(result, result.len + adds.len);
-            @memcpy(result[start_res..], adds);
-            return result;
+            try result.appendSlice(adds);
+            
+            return result.toOwnedSlice();
         }
 
         for (self.a, 0..) |_, index| {
             const adds = try self.a[index].toAsm(allocator, map, heap, idx);
             defer allocator.free(adds);
-            const start_res = result.len;
-            result = try allocator.realloc(result, result.len + adds.len);
-            @memcpy(result[start_res..], adds);
+            try result.appendSlice(adds);
         }
+
         for (self.b, 0..) |_, index| {
             const adds = try self.b[index].toAsm(allocator, map, heap, idx);
             defer allocator.free(adds);
-            const start_res = result.len;
-            result = try allocator.realloc(result, result.len + adds.len);
-            @memcpy(result[start_res..], adds);
+            try result.appendSlice(adds);
         }
+
         if (self.op != null) {
             switch (self.op.?.kind) {
                 .TOKEN_INT_LIT => {
                     idx.* += 1;
                     const adds = try std.fmt.allocPrint(allocator, "    push {s}\n", .{self.op.?.value});
                     defer allocator.free(adds);
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                    
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_STRING_LIT => {
                     idx.* += 1;
                     const adds = try std.fmt.allocPrint(allocator, "    push {s}\n", .{self.op.?.value});
                     defer allocator.free(adds);
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                    
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_SUBREL => {
                     idx.* -= 1;
@@ -161,53 +156,46 @@ const Expression = struct {
                         "    sub\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                    
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_NEG => {
                     if (self.a.len != 0) {
                         idx.* -= 1;
                         const adds = "    sub\n";
-                        const start_res = result.len;
-                        result = try allocator.realloc(result, result.len + adds.len);
-                        @memcpy(result[start_res..], adds);
-                        return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                     }
                     const adds = "    neg\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_BIT_NOT => {
                     const adds = "    not\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_NOT => {
                     const adds = "    push 1\n    xor\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_AT => {
                     const adds = "    getb\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_HEAP_READ => {
                     const adds = "    sys 15\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_ADDREL => {
                     idx.* -= 1;
@@ -216,58 +204,51 @@ const Expression = struct {
                         "    add\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_ADD => {
                     idx.* -= 1;
                     const adds = "    add\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_MUL => {
                     idx.* -= 1;
                     const adds = "    mul\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_DIV => {
                     idx.* -= 1;
                     const adds = "    div\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_MOD => {
                     idx.* -= 1;
                     const adds = "    mod\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_AND => {
                     idx.* -= 1;
                     const adds = "    and\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_OR => {
                     idx.* -= 1;
                     const adds = "    or\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_CATREL => {
                     idx.* -= 1;
@@ -276,95 +257,82 @@ const Expression = struct {
                         "    cat\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_CAT => {
                     idx.* -= 1;
                     const adds = "    cat\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_HEAP_ASSIGN => {
                     idx.* -= 1;
                     const adds = "    sys 16\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_ASSIGN => {
                     idx.* -= 1;
                     const adds = "    set\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_GT => {
                     idx.* -= 1;
                     const adds = "    gt\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_LT => {
                     idx.* -= 1;
                     const adds = "    lt\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_NEQ => {
                     idx.* -= 1;
                     const adds = "    eq\n    not\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_EQ => {
                     idx.* -= 1;
                     const adds = "    eq\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_KEYWORD_NEW => {
                     const adds = "    create\n    zero\n";
-                    const start_res = result.len;
-                    result = try allocator.realloc(result, result.len + adds.len);
-                    @memcpy(result[start_res..], adds);
-                    return result;
+                        
+                    try result.appendSlice(adds);
+                    return result.toOwnedSlice();
                 },
                 .TOKEN_IDENT => {
                     for (map.vars) |mapvar| {
                         if (std.mem.eql(u8, mapvar.name, self.op.?.value)) {
                             const adds = try std.fmt.allocPrint(allocator, "    copy {}\n", .{idx.* - 1 - mapvar.idx});
-                            const start_res = result.len;
-                            result = try allocator.realloc(result, result.len + adds.len);
-                            @memcpy(result[start_res..], adds);
-                            idx.* += 1;
-
-                            return result;
+                            defer allocator.free(adds);
+                            
+                            try result.appendSlice(adds);
+                            return result.toOwnedSlice();
                         }
                     }
                     for (heap.items, 0..) |entry, i| {
                         if (std.mem.eql(u8, entry, self.op.?.value)) {
                             const adds = try std.fmt.allocPrint(allocator, "    push {}\n", .{i});
-                            const start_res = result.len;
-                            result = try allocator.realloc(result, result.len + adds.len);
-                            @memcpy(result[start_res..], adds);
-                            idx.* += 1;
-
-                            return result;
+                            defer allocator.free(adds);
+                        
+                            try result.appendSlice(adds);
+                            return result.toOwnedSlice();
                         }
                     }
 
@@ -372,7 +340,7 @@ const Expression = struct {
                     return error.UnknownIdent;
                 },
                 .TOKEN_CLOSE_PAREN => {
-                    return result;
+                    return result.toOwnedSlice();
                 },
                 else => {
                     std.log.info("{}", .{self.op.?.kind});
@@ -381,7 +349,7 @@ const Expression = struct {
                 //TODO MOAR
             }
         }
-        return result;
+        return result.toOwnedSlice();
     }
 };
 
