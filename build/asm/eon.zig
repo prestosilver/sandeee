@@ -600,7 +600,7 @@ const Statement = struct {
                 return result.toOwnedSlice();
             },
             .STMT_ASM => {
-                const adds = std.fmt.allocPrint(allocator, "    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
+                const adds = try std.fmt.allocPrint(allocator, "    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
                 try result.appendSlice(adds);
 
                 return result.toOwnedSlice();
