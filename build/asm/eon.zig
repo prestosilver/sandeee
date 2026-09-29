@@ -322,6 +322,8 @@ const Expression = struct {
                             const adds = try std.fmt.allocPrint(allocator, "    copy {}\n", .{idx.* - 1 - mapvar.idx});
                             defer allocator.free(adds);
                             
+                            idx.* += 1;
+
                             try result.appendSlice(adds);
                             return result.toOwnedSlice();
                         }
@@ -331,6 +333,8 @@ const Expression = struct {
                             const adds = try std.fmt.allocPrint(allocator, "    push {}\n", .{i});
                             defer allocator.free(adds);
                         
+                            idx.* += 1;
+
                             try result.appendSlice(adds);
                             return result.toOwnedSlice();
                         }
