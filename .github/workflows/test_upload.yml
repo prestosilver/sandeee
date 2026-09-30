@@ -201,7 +201,7 @@ jobs:
         id: deployment
         uses: actions/upload-pages-artifact@v3
         with:
-          path: www
+          path: zig-out/www
 
   # Deployment job
   deploy:

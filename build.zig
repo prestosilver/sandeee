@@ -287,7 +287,7 @@ pub fn build(b: *std.Build) !void {
 
     const content_path = b.path("content");
 
-    const www_path: std.Build.InstallDir = .{ .custom = "../www" };
+    const www_path: std.Build.InstallDir = .{ .custom = "www" };
 
     const options = b.addOptions();
     options.addOption(Version, "SANDEEE_VERSION", version);
@@ -883,7 +883,7 @@ pub fn build(b: *std.Build) !void {
     const docs_step = b.addRunArtifact(docs_builder_exe);
     docs_step.addArg("@/docs/");
     docs_step.addDirectoryArg(b.path("docs"));
-    docs_step.addDirectoryArg(b.path("www/docs"));
+    docs_step.addDirectoryArg(b.path("zig-out/www/docs"));
 
     const wood_wallpaper_step = b.addRunArtifact(eia_builder_exe);
     wood_wallpaper_step.addFileInput(content_path.path(b, "images/wood.png"));
@@ -1010,7 +1010,10 @@ pub fn build(b: *std.Build) !void {
     const install_downloads = b.addInstallFileWithDir(downloads_file_path, www_path, "downloads.edf");
     const install_downloads_dir = b.addInstallDirectory(.{ .source_dir = downloads_dir_path, .install_dir = www_path, .install_subdir = "downloads" });
 
+    const public_step = b.addInstallDirectory(.{ .source_dir = content_path.path(b, "assets/web/public"), .install_dir = www_path, .install_subdir = "" });
+
     const www_step = b.step("www", "Build the website");
+    www_step.dependOn(&public_step.step);
     www_step.dependOn(&docs_step.step);
     www_step.dependOn(&install_downloads.step);
     www_step.dependOn(&install_downloads_dir.step);

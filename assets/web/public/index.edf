@@ -1,0 +1,12 @@
+#Style @/style.eds
+
+:logo: [@/logo.eia]
+
+:center: -- Home --
+
+:biglink: > Changelog: @/changelog.edf
+:biglink: > Downloads: @/downloads.edf
+:biglink: > Docs: @/docs/index.edf
+:biglink: > About: @/about.edf
+
+:center: --- EEE Sees all ---
