@@ -214,7 +214,7 @@ jobs:
       - name: Generate test www
         run: |
           zig build www
-          cp -r zig-out/www www/tests
+          cp -r zig-out/www www/alpha
       - name: Upload to gh pages
         id: deployment
         uses: actions/upload-pages-artifact@v3

@@ -64,7 +64,7 @@ pub fn main(init: std.process.Init) !void {
     try file_writer.interface.writeAll(LOG_HEADER);
 
     var child = try std.process.spawn(init.io, .{
-        .argv = &.{ "git", "log", "master", "--pretty=format:%h" },
+        .argv = &.{ "git", "log", "--pretty=format:%h" },
         .stdout = .pipe,
     });
 
