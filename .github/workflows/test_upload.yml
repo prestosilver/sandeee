@@ -206,8 +206,8 @@ jobs:
       - name: Generate release www
         run: |
           zig build www
-          mkdir www
-          cp -r zig-out/www/* www/
+          mkdir ../www
+          cp -r zig-out/www/* ../www/
           rm -rf zig-out/www
       - uses: actions/checkout@v3
         with:
@@ -215,13 +215,13 @@ jobs:
       - name: Generate test www
         run: |
           zig build www
-          mkdir -p www/alpha
-          cp -r zig-out/www/* www/alpha/
+          mkdir -p ../www/alpha
+          cp -r zig-out/www/* ../www/alpha/
       - name: Upload to gh pages
         id: deployment
         uses: actions/upload-pages-artifact@v3
         with:
-          path: www
+          path: ../www
 
   # Deployment job
   deploy:
