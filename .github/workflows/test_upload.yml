@@ -215,7 +215,7 @@ jobs:
       - name: Generate test www
         run: |
           zig build www
-          mkdir www/alpha
+          mkdir -p www/alpha
           cp -r zig-out/www/* www/alpha/
       - name: Upload to gh pages
         id: deployment
