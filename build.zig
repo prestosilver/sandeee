@@ -903,7 +903,7 @@ pub fn build(b: *std.Build) !void {
     const capy_wallpaper_step = b.addRunArtifact(eia_builder_exe);
     capy_wallpaper_step.addFileInput(content_path.path(b, "images/capy.png"));
     capy_wallpaper_step.addFileArg(content_path.path(b, "images/capy.png"));
-    const capy_wallpaper_path = capy_wallpaper_step.addOutputFileArg("wood.eia");
+    const capy_wallpaper_path = capy_wallpaper_step.addOutputFileArg("capy.eia");
 
     const pong_app_step = b.addRunArtifact(epk_builder_exe);
     const pong_app_file_path = pong_app_step.addOutputFileArg("pong.epk");

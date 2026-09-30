@@ -65,6 +65,7 @@ Jokes aside, SandEEE is a programming game meant to be as immersive as possible.
 | [assets/docs/](assets/docs/)       | Internal documentation |
 | [assets/disks/](assets/disks/)     | Disk image backups |
 | [assets/steam/](assets/steam/)     | Steam related images |
+| [assets/web/](assets/web/)         | Web assets |
 | [build/](build/)                   | Some zig tools for converting file formats and stuffs |
 | [content/](content/)               | All the content of the game, this is the non code stuff used for builds |
 | [deps/](deps/)                     | Some dependencies, I might not use them all. |
@@ -72,7 +73,6 @@ Jokes aside, SandEEE is a programming game meant to be as immersive as possible.
 | [fake_steam/](fake_steam/)         | Files used for the fake Steamworks library |
 | [src/](src/)                       | The Source code |
 | [tests/](tests/)                   | Tests for in game (non zig) code |
-| [www/](www/)                       | A submodule that is hosted on [SandEEE website](http://sandeee.prestosilver.info) |
 | [build.zig](build.zig)<br/>[build.zig.zon](build.zig.zon) | SandEEE's build system. |
 | [README.md](README.md)             | This file! |
 | [steam_appid.txt](steam_appid.txt) | A steam appid file for quick testing, if this is removed I will have to cd into zig-out/bin to run steam builds. |
