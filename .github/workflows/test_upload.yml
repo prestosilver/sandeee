@@ -183,6 +183,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.latest_tag.outputs.tag }}
+          fetch-depth: 0
       - name: Cache zig build
         uses: actions/cache@v4
         env:
