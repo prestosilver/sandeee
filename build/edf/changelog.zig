@@ -122,20 +122,6 @@ pub fn main(init: std.process.Init) !void {
         const version = std.mem.trim(u8, ver[0..idx], &std.ascii.whitespace);
 
         if (!std.mem.eql(u8, version, "")) {
-            if (!std.mem.eql(u8, last, version)) {
-                if (!std.mem.eql(u8, current[0..current_len], version)) {
-                    if (!std.mem.eql(u8, last, "")) {
-                        try file_writer.interface.print(
-                            \\
-                            \\-- {s} --
-                            \\
-                        , .{last});
-                    }
-                }
-                init.gpa.free(last);
-                last = try init.gpa.dupe(u8, version);
-            }
-
             const change_line = if (ignore_list.get(line)) |new_name|
                 new_name.?
             else blk: {
@@ -159,6 +145,20 @@ pub fn main(init: std.process.Init) !void {
             defer init.gpa.free(lower_line);
 
             if (!std.mem.eql(u8, change_line, "")) {
+                if (!std.mem.eql(u8, last, version)) {
+                    if (!std.mem.eql(u8, current[0..current_len], version)) {
+                        if (!std.mem.eql(u8, last, "")) {
+                            try file_writer.interface.print(
+                                \\
+                                \\-- {s} --
+                                \\
+                            , .{last});
+                        }
+                    }
+                    init.gpa.free(last);
+                    last = try init.gpa.dupe(u8, version);
+                }
+
                 var ch: [2]u8 = .{ '|', '*' };
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "add")) ch[1] = '+';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "impl")) ch[1] = '+';
