@@ -867,6 +867,8 @@ pub fn build(b: *std.Build) !void {
             b.installFile("steam_appid.txt", "bin/steam_appid.txt");
     }
 
+    const public_step = b.addInstallDirectory(.{ .source_dir = b.path("assets/web/public"), .install_dir = www_path, .install_subdir = "" });
+
     const changelog_step = b.addRunArtifact(changelog_builder_exe);
     changelog_step.addFileInput(b.path("VERSION"));
     changelog_step.addFileArg(b.path("VERSION"));
@@ -879,11 +881,13 @@ pub fn build(b: *std.Build) !void {
 
     const install_changelog = b.addInstallFileWithDir(changelog_file_path, www_path, "changelog.edf");
     const install_changelog_out = b.addInstallFile(changelog_file_path, "changelog.edf");
+    install_changelog.step.dependOn(&public_step.step);
 
     const docs_step = b.addRunArtifact(docs_builder_exe);
     docs_step.addArg("@/docs/");
     docs_step.addDirectoryArg(b.path("docs"));
     docs_step.addDirectoryArg(b.path("zig-out/www/docs"));
+    docs_step.step.dependOn(&public_step.step);
 
     const wood_wallpaper_step = b.addRunArtifact(eia_builder_exe);
     wood_wallpaper_step.addFileInput(content_path.path(b, "images/wood.png"));
@@ -1010,10 +1014,10 @@ pub fn build(b: *std.Build) !void {
     const install_downloads = b.addInstallFileWithDir(downloads_file_path, www_path, "downloads.edf");
     const install_downloads_dir = b.addInstallDirectory(.{ .source_dir = downloads_dir_path, .install_dir = www_path, .install_subdir = "downloads" });
 
-    const public_step = b.addInstallDirectory(.{ .source_dir = b.path("assets/web/public"), .install_dir = www_path, .install_subdir = "" });
+    install_downloads.step.dependOn(&public_step.step);
+    install_downloads_dir.step.dependOn(&public_step.step);
 
     const www_step = b.step("www", "Build the website");
-    www_step.dependOn(&public_step.step);
     www_step.dependOn(&docs_step.step);
     www_step.dependOn(&install_downloads.step);
     www_step.dependOn(&install_downloads_dir.step);
