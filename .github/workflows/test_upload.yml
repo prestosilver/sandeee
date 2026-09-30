@@ -207,7 +207,7 @@ jobs:
         run: |
           zig build www
           mkdir www
-          cp -r zig-out/www www
+          cp -r zig-out/www/* www/
           rm -rf zig-out/www
       - uses: actions/checkout@v3
         with:
