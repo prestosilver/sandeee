@@ -170,9 +170,19 @@ jobs:
     name: Generate www
     needs: [tests]
     steps:
-      - uses: actions/checkout@v3
+      - name: Find the latest release tag
+        # Source: https://github.com/marketplace/actions/find-latest-tag
+        uses: oprypin/find-latest-tag@v1
+        id: latest_tag
         with:
-          fetch-depth: 0
+          repository: ${{ github.repository }}
+          releases-only: true  # Ensures it grabs an official GitHub release, ignoring draft tags
+
+      - name: Checkout latest release
+        # Source: https://github.com/actions/checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.latest_tag.outputs.tag }}
       - name: Cache zig build
         uses: actions/cache@v4
         env:
@@ -188,19 +198,28 @@ jobs:
             zig-build-www-
             zig-build-
             zig-
-
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
           zig-version: 0.16.0
-      - name: Generate www
+      - name: Generate release www
         run: |
           zig build www
+          mkdir www
+          cp -r zig-out/www www
+          rm zig-out/www
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Generate test www
+        run: |
+          zig build www
+          cp -r zig-out/www www/tests
       - name: Upload to gh pages
         id: deployment
         uses: actions/upload-pages-artifact@v3
         with:
-          path: zig-out/www
+          path: www
 
   # Deployment job
   deploy:
