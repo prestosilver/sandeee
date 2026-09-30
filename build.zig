@@ -1010,7 +1010,7 @@ pub fn build(b: *std.Build) !void {
     const install_downloads = b.addInstallFileWithDir(downloads_file_path, www_path, "downloads.edf");
     const install_downloads_dir = b.addInstallDirectory(.{ .source_dir = downloads_dir_path, .install_dir = www_path, .install_subdir = "downloads" });
 
-    const public_step = b.addInstallDirectory(.{ .source_dir = content_path.path(b, "assets/web/public"), .install_dir = www_path, .install_subdir = "" });
+    const public_step = b.addInstallDirectory(.{ .source_dir = b.path("assets/web/public"), .install_dir = www_path, .install_subdir = "" });
 
     const www_step = b.step("www", "Build the website");
     www_step.dependOn(&public_step.step);
