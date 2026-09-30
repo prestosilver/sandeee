@@ -883,11 +883,17 @@ pub fn build(b: *std.Build) !void {
     const install_changelog_out = b.addInstallFile(changelog_file_path, "changelog.edf");
     install_changelog.step.dependOn(&public_step.step);
 
+    // Ideally I would use b.addOutputDirectoryArg
+    const docs_mkdir = b.addSystemCommand(&.{ "mkdir"});
+    docs_mkdir.addArg("-p");
+    docs_mkdir.addDirectoryArg(b.path("zig-out/www/docs"));
+
     const docs_step = b.addRunArtifact(docs_builder_exe);
     docs_step.addArg("@/docs/");
     docs_step.addDirectoryArg(b.path("docs"));
     docs_step.addDirectoryArg(b.path("zig-out/www/docs"));
     docs_step.step.dependOn(&public_step.step);
+    docs_step.step.dependOn(&docs_mkdir.step);
 
     const wood_wallpaper_step = b.addRunArtifact(eia_builder_exe);
     wood_wallpaper_step.addFileInput(content_path.path(b, "images/wood.png"));
