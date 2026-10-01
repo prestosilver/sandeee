@@ -89,11 +89,11 @@ These are tasks that only affect the codebase.
   - [X] Colors
   - [ ] Sizes
 - [ ] Automatically deploy to gh pages
-  - [ ] Deploy
-  - [ ] Combine www into repo
-  - [ ] Add new generation
-  - [ ] Release branch
-  - [ ] Update debug builds to go to /alpha endpoint
+  - [X] Deploy
+  - [X] Combine www into repo
+  - [X] Add new generation
+  - [X] Release tags
+  - [ ] Update debug builds to go to /alpha endpoint as homepage
 - [ ] Breakout UI for consistency!!!
   - [ ] data/sizes.zig
   - [ ] ui namespace
