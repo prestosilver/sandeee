@@ -6,7 +6,7 @@
     .dependencies = .{
         .zigimg = .{
             .url = "git+https://github.com/zigimg/zigimg.git#c701c9f99779d7ddf594dcc6da8f858fd277d61f",
-            .hash = "zigimg-0.1.0-8_eo2sPVFwAm8y-DVfaCHNKQIpv9oHl_mbcKbGQZRLrK",
+            .hash = "zigimg-0.1.0-8_eo2ri_FwBqF5UYiggLz4IGjHJO_n9-B6gT9Ayqg8G4",
         },
         .zgl = .{
             .url = "git+https://github.com/ziglibs/zgl#6ee54c287f3c4f176bd05a92746828bb791a1ad0",
@@ -26,7 +26,7 @@
         },
         .flags = .{
             .url = "git+https://github.com/prestosilver/flags#e33d977b6be87b4124e01bdaaa4102d58913a8c9",
-            .hash = "flags-0.10.0-a_9h3hJxAADvp60jORCTQ9XfFQPjdzJjhsJ5MNS7QLaM",
+            .hash = "flags-0.10.0-a_9h3iFxAAC-U5Pm0W9s99fy4WQ7GEEum3uHoFMm9gvt",
         },
         .win32 = .{
             .url = "git+https://github.com/marlersoft/zigwin32#9f15c276b4e9d05afd34a10d8662a7dfc34647ea",
