@@ -25,7 +25,7 @@
             .hash = "zig_steamworks_fake-0.0.0-3i7XFjR9AAA2K2k0BoftHWhwqrFJGtZCmjaMAqzf3lhN",
         },
         .flags = .{
-            .url = "git+https://github.com/EnzyZero/flags#547932a6a9d6d4b640cb1c915c7feec268d9199d",
+            .url = "git+https://github.com/prestosilver/flags#65ee36a5178b4223113733cfe742bdd99afd790d",
             .hash = "flags-0.10.0-a_9h3iFxAABV7KdWNJPcsNrvQeSw2Ui_hm3CvTdNCSqU",
         },
         .win32 = .{
