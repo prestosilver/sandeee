@@ -33,7 +33,7 @@ pub fn main(init: std.process.Init) !void {
     var reader_buffer: [1024]u8 = undefined;
 
     {
-        const version_convert_file = try std.Io.Dir.openFileAbsolute(init.io, version_convert_path, .{});
+        const version_convert_file = try std.Io.Dir.cwd().openFile(init.io, version_convert_path, .{});
         defer version_convert_file.close(init.io);
 
         var reader = version_convert_file.reader(init.io, &reader_buffer);
@@ -45,7 +45,7 @@ pub fn main(init: std.process.Init) !void {
     }
 
     {
-        const changelog_ignore_file = try std.Io.Dir.openFileAbsolute(init.io, changelog_ignore_path, .{});
+        const changelog_ignore_file = try std.Io.Dir.cwd().openFile(init.io, changelog_ignore_path, .{});
         defer changelog_ignore_file.close(init.io);
 
         var reader = changelog_ignore_file.reader(init.io, &reader_buffer);
@@ -57,7 +57,7 @@ pub fn main(init: std.process.Init) !void {
         }
     }
 
-    var file = try std.Io.Dir.createFileAbsolute(init.io, output_file, .{});
+    var file = try std.Io.Dir.cwd().createFile(init.io, output_file, .{});
     defer file.close(init.io);
 
     var file_writer = file.writer(init.io, &.{});
@@ -81,7 +81,7 @@ pub fn main(init: std.process.Init) !void {
 
     var current: [128]u8 = undefined;
 
-    const version_file = try std.Io.Dir.openFileAbsolute(init.io, version_path, .{});
+    const version_file = try std.Io.Dir.cwd().openFile(init.io, version_path, .{});
     defer version_file.close(init.io);
 
     var reader = version_file.reader(init.io, &.{});

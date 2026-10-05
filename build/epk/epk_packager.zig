@@ -9,7 +9,7 @@ pub fn main(init: std.process.Init) !void {
 
     const output_file_path = args.next() orelse return error.MissingOutputFile;
 
-    var output_file = try std.Io.Dir.createFileAbsolute(init.io, output_file_path, .{});
+    var output_file = try std.Io.Dir.cwd().createFile(init.io, output_file_path, .{});
     var output_writer = output_file.writer(init.io, &.{});
 
     try output_writer.interface.writeAll("epak");

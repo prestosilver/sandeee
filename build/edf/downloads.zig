@@ -7,8 +7,8 @@ pub fn main(init: std.process.Init) !void {
     const output_file = args.next() orelse return error.MissingOutputFile;
     const output_path = args.next() orelse return error.MissingOutputPath;
 
-    var out_file = std.Io.Dir.createFileAbsolute(init.io, output_file, .{ .exclusive = true }) catch |err| switch (err) {
-        error.PathAlreadyExists => try std.Io.Dir.openFileAbsolute(init.io, output_file, .{}),
+    var out_file = std.Io.Dir.cwd().createFile(init.io, output_file, .{ .exclusive = true }) catch |err| switch (err) {
+        error.PathAlreadyExists => try std.Io.Dir.cwd().openFile(init.io, output_file, .{}),
         else => |e| return e,
     };
     defer out_file.close(init.io);
@@ -35,7 +35,7 @@ pub fn main(init: std.process.Init) !void {
             const targ_path = try std.fmt.allocPrint(init.gpa, "{s}/{s}/", .{ output_path, section_folder });
             defer init.gpa.free(targ_path);
 
-            try std.Io.Dir.createDirAbsolute(init.io, targ_path, .default_dir);
+            try std.Io.Dir.cwd().createDir(init.io, targ_path, .default_dir);
 
             try writer.interface.print(":hs: {s}\n\n", .{section_name});
         } else if (std.mem.eql(u8, kind, "--file")) {
@@ -46,7 +46,7 @@ pub fn main(init: std.process.Init) !void {
             const targ_path = try std.fmt.allocPrint(init.gpa, "{s}/{s}", .{ section_folder, file_path[slash_index + 1 ..] });
             defer init.gpa.free(targ_path);
 
-            try std.Io.Dir.cwd().copyFile(file_path, try std.Io.Dir.openDirAbsolute(init.io, output_path, .{}), targ_path, init.io, .{});
+            try std.Io.Dir.cwd().copyFile(file_path, try std.Io.Dir.cwd().openDir(init.io, output_path, .{}), targ_path, init.io, .{});
 
             try writer.interface.print(":biglink: > {s}: @/downloads/{s}/{s}\n", .{ file_name, section_folder, file_path[slash_index + 1 ..] });
         } else return error.UnknownArg;

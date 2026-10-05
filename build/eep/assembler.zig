@@ -26,7 +26,7 @@ pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: 
     defer inreader.close(io);
     try inreader.sync(io);
 
-    var file = try std.Io.Dir.createFileAbsolute(io, output_file, .{});
+    var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
 
     var writer = file.writer(io, &.{});
@@ -176,7 +176,7 @@ pub fn compile_library(allocator: std.mem.Allocator, io: std.Io, input_file: []c
     defer inreader.close(io);
     try inreader.sync(io);
 
-    var file = try std.Io.Dir.createFileAbsolute(io, output_file, .{});
+    var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
 
     var writer = file.writer(io, &.{});

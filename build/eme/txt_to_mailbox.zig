@@ -44,7 +44,7 @@ pub fn main(init: std.process.Init) !void {
 
     const appends = try mail.EmailManager.instance.exportData();
 
-    var file = try std.Io.Dir.createFileAbsolute(init.io, output_file, .{});
+    var file = try std.Io.Dir.cwd().createFile(init.io, output_file, .{});
     defer file.close(init.io);
 
     var writer = file.writer(init.io, &.{});

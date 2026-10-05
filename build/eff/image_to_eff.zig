@@ -22,12 +22,12 @@ pub fn main(init: std.process.Init) !void {
     const input_file = args.next() orelse return error.MissingInputFile;
     const output_file = args.next() orelse return error.MissingOutputFile;
 
-    var file = try std.Io.Dir.createFileAbsolute(init.io, output_file, .{});
+    var file = try std.Io.Dir.cwd().createFile(init.io, output_file, .{});
     defer file.close(init.io);
 
     var writer = file.writer(init.io, &.{});
 
-    var tmp_file = try std.Io.Dir.openFileAbsolute(init.io, input_file, .{});
+    var tmp_file = try std.Io.Dir.cwd().openFile(init.io, input_file, .{});
     defer tmp_file.close(init.io);
 
     var reader_buffer: [1024]u8 = undefined;

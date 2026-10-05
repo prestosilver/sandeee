@@ -9,7 +9,7 @@ pub fn main(init: std.process.Init) !void {
     const input_file = args.next() orelse return error.MissingInputFile;
     const output_file = args.next() orelse return error.MissingOutputFile;
 
-    var file = try std.Io.Dir.createFileAbsolute(init.io, output_file, .{});
+    var file = try std.Io.Dir.cwd().createFile(init.io, output_file, .{});
     defer file.close(init.io);
 
     var writer = file.writer(init.io, &.{});

@@ -21,15 +21,15 @@ pub fn main(init: std.process.Init) !void {
     const output_path = args.next() orelse return error.MissingOutputPath;
 
     {
-        const output_dir = try std.Io.Dir.openDirAbsolute(init.io, output_path, .{});
+        const output_dir = try std.Io.Dir.cwd().openDir(init.io, output_path, .{});
         defer output_dir.close(init.io);
 
         output_dir.deleteTree(init.io, output_path) catch {};
     }
 
-    try std.Io.Dir.createDirAbsolute(init.io, output_path, .default_dir);
+    try std.Io.Dir.cwd().createDir(init.io, output_path, .default_dir);
 
-    var walker = try std.Io.Dir.openDirAbsolute(init.io, input_path, .{
+    var walker = try std.Io.Dir.cwd().openDir(init.io, input_path, .{
         .iterate = true,
     });
     defer walker.close(init.io);

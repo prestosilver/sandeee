@@ -693,7 +693,7 @@ const VarMap = struct {
 };
 
 pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) !std.array_list.Managed(Token) {
-    var f = try std.Io.Dir.openFileAbsolute(io, in, .{});
+    var f = try std.Io.Dir.cwd().openFile(io, in, .{});
     defer f.close(io);
 
     var reader_buff: [1024]u8 = undefined;
@@ -1516,7 +1516,7 @@ pub fn compile_executable(io: std.Io, allocator: std.mem.Allocator, input_file: 
 
     var prog = try parseProgram(allocator, &fn_prefix, tokens.items);
 
-    var file = try std.Io.Dir.createFileAbsolute(io, output_file, .{});
+    var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
 
     var writer = file.writer(io, &.{});
@@ -1533,7 +1533,7 @@ pub fn compile_library(io: std.Io, allocator: std.mem.Allocator, input_file: []c
 
     var prog = try parseProgram(allocator, &fn_prefix, tokens.items);
 
-    var file = try std.Io.Dir.createFileAbsolute(io, output_file, .{});
+    var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
 
     var writer = file.writer(io, &.{});

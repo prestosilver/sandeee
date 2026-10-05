@@ -26,7 +26,7 @@ pub fn main(init: std.process.Init) !void {
     while (args.next()) |kind| {
         if (std.mem.eql(u8, kind, "--overlay")) {
             const overlay_path = args.next() orelse return error.MissingDirectory;
-            var dir = std.Io.Dir.openDirAbsolute(init.io, overlay_path, .{ .iterate = true }) catch unreachable;
+            var dir = std.Io.Dir.cwd().openDir(init.io, overlay_path, .{ .iterate = true }) catch unreachable;
             defer dir.close(init.io);
 
             var iter = dir.walk(b.allocator) catch unreachable;
@@ -57,7 +57,7 @@ pub fn main(init: std.process.Init) !void {
         } else if (std.mem.eql(u8, kind, "--skeleton")) {
             const flag = args.next() orelse return error.MissingFlag;
             const skel_path = args.next() orelse return error.MissingFile;
-            const skel_file = try std.Io.Dir.openFileAbsolute(init.io, skel_path, .{});
+            const skel_file = try std.Io.Dir.cwd().openFile(init.io, skel_path, .{});
             defer skel_file.close(init.io);
 
             var buffer: [512]u8 = undefined;
