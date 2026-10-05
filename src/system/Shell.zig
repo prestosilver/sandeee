@@ -239,7 +239,7 @@ fn runFile(self: *Shell, cmd: []const u8, param: *Params) !Result {
     return error.CommandNotFound;
 }
 
-fn todo(name: []const u8) std.meta.Tuple(&.{ []const u8, ShellCommand }) {
+fn todo(name: []const u8) struct { []const u8, ShellCommand } {
     return .{
         name,
         .{
