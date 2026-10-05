@@ -56,7 +56,7 @@ pub const WebData = struct {
             .Steam => {
                 if (options.is_steam) {
                     const root = url.domain;
-                    const sub = try allocator.dupeZ(u8, url.path);
+                    const sub = try allocator.dupeSentinel(u8, url.path, 0);
                     defer allocator.free(sub);
                     if (std.mem.startsWith(u8, root, STEAM_LIST_NAME) and root.len != STEAM_LIST_NAME.len) {
                         const page_idx = try std.fmt.parseInt(u32, root[4..], 0);

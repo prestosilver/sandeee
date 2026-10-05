@@ -325,7 +325,7 @@ pub fn copy(event: input_events.EventClipboardCopy) !void {
     const to_copy = try strings.encode(event.value, .eeech, .unicode);
     defer allocator.free(to_copy);
 
-    const to_copyz = try allocator.dupeZ(u8, to_copy);
+    const to_copyz = try allocator.dupeSentinel(u8, to_copy, 0);
     defer allocator.free(to_copyz);
 
     glfw.setClipboardString(graphics.Context.instance.window, to_copyz);

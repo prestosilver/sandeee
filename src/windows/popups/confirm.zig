@@ -52,8 +52,8 @@ pub const PopupConfirm = struct {
         const len: usize = comptime blk: {
             var len: usize = 0;
 
-            for (type_info.@"struct".decls) |decl| {
-                const info = @typeInfo(@TypeOf(@field(T, decl.name)));
+            for (type_info.@"struct".decl_names) |name| {
+                const info = @typeInfo(@TypeOf(@field(T, name)));
                 if (info != .@"fn") {
                     continue;
                 }
@@ -68,16 +68,16 @@ pub const PopupConfirm = struct {
 
             var idx = 0;
 
-            for (type_info.@"struct".decls) |decl| {
-                const info = @typeInfo(@TypeOf(@field(T, decl.name)));
+            for (type_info.@"struct".decl_names) |name| {
+                const info = @typeInfo(@TypeOf(@field(T, name)));
                 if (info != .@"fn")
                     continue;
 
-                const text = std.fmt.comptimePrint("{c}{s}", .{ std.ascii.toUpper(decl.name[0]), decl.name[1..] });
+                const text = std.fmt.comptimePrint("{c}{s}", .{ std.ascii.toUpper(name[0]), name[1..] });
 
                 res[idx] = .{
                     .text = text,
-                    .calls = @ptrCast(&@field(T, decl.name)),
+                    .calls = @ptrCast(&@field(T, name)),
                 };
 
                 idx += 1;

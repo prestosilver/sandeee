@@ -550,7 +550,7 @@ fn sysSteam(self: *Vm) VmError!void {
             });
 
             if (std.mem.eql(u8, prop, "title")) {
-                const title = try self.allocator.dupeZ(u8, value);
+                const title = try self.allocator.dupeSentinel(u8, value, 0);
                 defer self.allocator.free(title);
 
                 const update = try item.startUpdate(.this_app);
@@ -562,7 +562,7 @@ fn sysSteam(self: *Vm) VmError!void {
             }
 
             if (std.mem.eql(u8, prop, "description")) {
-                const desc = try self.allocator.dupeZ(u8, value);
+                const desc = try self.allocator.dupeSentinel(u8, value, 0);
                 defer self.allocator.free(desc);
 
                 const update = try item.startUpdate(.this_app);
@@ -722,7 +722,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
             var path_buffer: [256]u8 = undefined;
             if (meta_folder.realPathFile(util.io, "preview.png", &path_buffer)) |preview_path| {
-                const preview_file = try self.allocator.dupeZ(u8, path_buffer[0..preview_path]);
+                const preview_file = try self.allocator.dupeSentinel(u8, path_buffer[0..preview_path], 0);
                 defer self.allocator.free(preview_file);
 
                 try update.setPreview(preview_file);
