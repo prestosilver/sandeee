@@ -57,21 +57,8 @@ pub fn addEmails(
     var email_step = b.addRunArtifact(eme_builder_exe);
     const email_file_path = email_step.addOutputFileArg("mail.eme");
 
-    const mail_path = content_path.path(b, box_path);
-
-    var root = try std.Io.Dir.cwd().openDir(b.graph.io, mail_path.getPath(b), .{ .iterate = true });
-    var walker = try root.walk(b.allocator);
-
-    while (try walker.next(b.graph.io)) |file| {
-        switch (file.kind) {
-            .file => {
-                email_step.addArg("--file");
-                email_step.addFileInput(mail_path.path(b, file.path));
-                email_step.addFileArg(mail_path.path(b, file.path));
-            },
-            else => {},
-        }
-    }
+    email_step.addArg("--dir");
+    email_step.addDirectoryArg(content_path.path(box_path));
 
     disk_image_step.addArg("--file");
     disk_image_step.addFileInput(email_file_path);

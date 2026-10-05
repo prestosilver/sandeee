@@ -20,6 +20,22 @@ pub fn main(init: std.process.Init) !void {
             var f = try std.Io.Dir.cwd().openFile(init.io, file_path, .{});
             defer f.close(init.io);
             try mail.EmailManager.instance.append(try mail.EmailManager.Email.parseTxt(f));
+        } else if (std.mem.eql(u8, kind, "--dir")) {
+            const mail_path = args.next() orelse return error.MissingDir;
+
+            var root = try std.Io.Dir.cwd().openDir(init.io, mail_path, .{ .iterate = true });
+            var walker = try root.walk(b.allocator);
+
+            while (try walker.next(init.io)) |file| {
+                switch (file.kind) {
+                    .file => {
+                        var f = try std.Io.Dir.cwd().openFile(init.io, file_path, .{});
+                        defer f.close(init.io);
+                        try mail.EmailManager.instance.append(try mail.EmailManager.Email.parseTxt(file.path));
+                    },
+                    else => {},
+                }
+            }
         } else {
             std.log.info("{s}", .{kind});
             return error.UnknownArg;
