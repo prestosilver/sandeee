@@ -816,9 +816,7 @@ pub fn build(b: *std.Build) !void {
     run_cmd.step.dependOn(b.getInstallStep());
     run_cmd.addArgs(&[_][]const u8{"--cwd"});
     run_cmd.addFileArg(b.path("zig-out/bin/"));
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    run_cmd.addPassthruArgs();
 
     // TODO: no dependOn, just a --cwd b.Directory step
     const headless_cmd = b.addRunArtifact(exe);
@@ -826,9 +824,7 @@ pub fn build(b: *std.Build) !void {
     headless_cmd.addArgs(&[_][]const u8{"--cwd"});
     headless_cmd.addFileArg(b.path("zig-out/bin/"));
     headless_cmd.addArg("--headless");
-    if (b.args) |args| {
-        headless_cmd.addArgs(args);
-    }
+    headless_cmd.addPassthruArgs();
 
     if (target.result.os.tag == .windows) {
         b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
