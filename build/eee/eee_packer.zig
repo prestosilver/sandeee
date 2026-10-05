@@ -29,7 +29,7 @@ pub fn main(init: std.process.Init) !void {
             var dir = std.Io.Dir.cwd().openDir(init.io, overlay_path, .{ .iterate = true }) catch unreachable;
             defer dir.close(init.io);
 
-            var iter = dir.walk(b.allocator) catch unreachable;
+            var iter = dir.walk(init.gpa) catch unreachable;
             while (iter.next(init.io) catch unreachable) |path| {
                 switch (path.kind) {
                     .file => {

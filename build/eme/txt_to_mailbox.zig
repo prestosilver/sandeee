@@ -24,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
             const mail_path = args.next() orelse return error.MissingDir;
 
             var root = try std.Io.Dir.cwd().openDir(init.io, mail_path, .{ .iterate = true });
-            var walker = try root.walk(b.allocator);
+            var walker = try root.walk(init.gpa);
 
             while (try walker.next(init.io)) |file| {
                 switch (file.kind) {

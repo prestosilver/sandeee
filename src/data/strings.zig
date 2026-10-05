@@ -90,7 +90,7 @@ pub const COLOR_CYAN = "\xFD";
 pub const COLOR_BLUE = "\xFE";
 pub const COLOR_MAGENTA = "\xFF";
 
-pub const EEE = E ** 3;
+pub const EEE = E ++ E ++ E;
 
 const CharReplacement = struct {
     pub const StringKind = enum { eeech, ansi, unicode, ascii };

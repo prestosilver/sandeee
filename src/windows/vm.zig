@@ -38,7 +38,7 @@ const WindowId = u8;
 pub const VMData = struct {
     const Self = @This();
 
-    pub var used_ids = [_]?*VMData{null} ** std.math.maxInt(WindowId);
+    pub var used_ids: [std.math.maxInt(WindowId)]?*VMData = @splat(null);
     var last_id: WindowId = 0;
 
     texture: Texture,

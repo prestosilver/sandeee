@@ -231,12 +231,12 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         .stats = try Vm.Manager.instance.getStats(),
         .render_graph = .atlas("white", .{
             .size = .{ .x = 100, .y = 100 },
-            .data = try allocator.dupe(f32, &(.{0} ** 20)),
+            .data = try allocator.dupe(f32, &@as([20]f32, @splat(0.0))),
             .color = .mix(.black, .red, 0.5),
         }),
         .vm_graph = .atlas("white", .{
             .size = .{ .x = 100, .y = 100 },
-            .data = try allocator.dupe(f32, &(.{0} ** 20)),
+            .data = try allocator.dupe(f32, &@as([20]f32, @splat(0.0))),
             .color = .mix(.white, .red, 0.5),
         }),
     };
