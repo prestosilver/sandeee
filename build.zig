@@ -14,7 +14,7 @@ pub inline fn addConvertFile(
     b: *std.Build,
     disk_steps: []const *std.Build.Step.Run,
     converters: []const *std.Build.Step.Compile,
-    comptime args: anytype,
+    args: anytype,
     input: std.Build.LazyPath,
     disk_path: []const u8,
 ) void {
