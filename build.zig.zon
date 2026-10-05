@@ -26,7 +26,7 @@
         },
         .flags = .{
             .url = "git+https://github.com/prestosilver/flags#65ee36a5178b4223113733cfe742bdd99afd790d",
-            .hash = "flags-0.10.0-a_9h3iFxAABV7KdWNJPcsNrvQeSw2Ui_hm3CvTdNCSqU",
+            .hash = "flags-0.10.0-a_9h3hJxAADvp60jORCTQ9XfFQPjdzJjhsJ5MNS7QLaM",
         },
         .win32 = .{
             .url = "git+https://github.com/marlersoft/zigwin32#9f15c276b4e9d05afd34a10d8662a7dfc34647ea",
