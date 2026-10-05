@@ -23,12 +23,10 @@ pub inline fn addConvertFile(
     inline for (converters, args, 0..) |converter, arg, idx| {
         const new_step = b.addRunArtifact(converter);
         inline for (arg) |a| {
-            if (@TypeOf(a) == []const u8)
-                new_step.addArg(a)
-            else if (@TypeOf(a) == std.Build.LazyPath) {
+            if (@TypeOf(a) == std.Build.LazyPath) {
                 new_step.addFileArg(a);
                 new_step.addFileInput(a);
-            }
+            } else new_step.addArg(a);
         }
         new_step.addFileArg(current_file);
         new_step.addFileInput(current_file);
