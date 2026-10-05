@@ -24,8 +24,8 @@ pub inline fn addConvertFile(
         const new_step = b.addRunArtifact(converter);
         inline for (arg) |a| {
             if (@TypeOf(a) == std.Build.LazyPath) {
-                new_step.addFileArg(a);
-                new_step.addFileInput(a);
+                // TODO: This should not be hardcoded to a dir
+                new_step.addDirectoryArg(a);
             } else new_step.addArg(a);
         }
         new_step.addFileArg(current_file);
