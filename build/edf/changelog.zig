@@ -145,20 +145,6 @@ pub fn main(init: std.process.Init) !void {
             defer init.gpa.free(lower_line);
 
             if (!std.mem.eql(u8, change_line, "")) {
-                if (!std.mem.eql(u8, last, version)) {
-                    if (!std.mem.eql(u8, current[0..current_len], version)) {
-                        if (!std.mem.eql(u8, last, "")) {
-                            try file_writer.interface.print(
-                                \\
-                                \\-- {s} --
-                                \\
-                            , .{last});
-                        }
-                    }
-                    init.gpa.free(last);
-                    last = try init.gpa.dupe(u8, version);
-                }
-
                 var ch: [2]u8 = .{ '|', '*' };
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "add")) ch[1] = '+';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "impl")) ch[1] = '+';
@@ -176,6 +162,20 @@ pub fn main(init: std.process.Init) !void {
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "merge branch")) ch[1] = ' ';
 
                 if (ch[1] != ' ') {
+                    if (!std.mem.eql(u8, last, version)) {
+                        if (!std.mem.eql(u8, current[0..current_len], version)) {
+                            if (!std.mem.eql(u8, last, "")) {
+                                try file_writer.interface.print(
+                                    \\
+                                    \\-- {s} --
+                                    \\
+                                , .{last});
+                            }
+                        }
+                        init.gpa.free(last);
+                        last = try init.gpa.dupe(u8, version);
+                    }
+
                     try file_writer.interface.writeAll(&ch);
                     try file_writer.interface.writeAll(" ");
                     try file_writer.interface.writeAll(change_line);

@@ -76,7 +76,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.16.0
+          zig-version: 0.17.0
       - name: Install glfw
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -110,7 +110,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.16.0
+          zig-version: 0.17.0
       - name: Install glfw
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -145,7 +145,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.16.0
+          zig-version: 0.17.0
       - name: Install glfw
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -183,7 +183,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.16.0
+          zig-version: 0.17.0
       - name: Install glfw
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -224,7 +224,7 @@ jobs:
       - name: Setup Zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.16.0
+          zig-version: 0.17.0
       - name: Generate changelog
         run: |
           zig build changelog
