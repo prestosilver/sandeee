@@ -773,7 +773,7 @@ pub fn build(b: *std.Build) !void {
         exe.root_module.addLibraryPath(b.path("deps/dll"));
         exe.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe.root_module.addImport("win32", win32_module);
-        exe.subsystem = .Windows;
+        exe.subsystem = .windows;
     } else {
         exe.root_module.addLibraryPath(b.path("deps/lib"));
         exe.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
@@ -1178,7 +1178,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.root_module.addObjectFile(rc_file);
         exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
-        exe_pub_windows.subsystem = .Windows;
+        exe_pub_windows.subsystem = .windows;
 
         exe_pub_windows.root_module.linkSystemLibrary("steam_api64", .{});
 
@@ -1279,7 +1279,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.root_module.addObjectFile(rc_file);
         exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
-        exe_pub_windows.subsystem = .Windows;
+        exe_pub_windows.subsystem = .windows;
 
         exe_pub_windows.root_module.linkSystemLibrary("steam_api64", .{});
 
@@ -1379,7 +1379,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.root_module.addObjectFile(rc_file);
         exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
-        exe_pub_windows.subsystem = .Windows;
+        exe_pub_windows.subsystem = .windows;
 
         _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows/SandEEE.exe");
 
@@ -1480,7 +1480,7 @@ pub fn build(b: *std.Build) !void {
         exe_pub_windows.root_module.addObjectFile(rc_file);
         exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
         exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
-        exe_pub_windows.subsystem = .Windows;
+        exe_pub_windows.subsystem = .windows;
 
         _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows-demo/SandEEE.exe");
 
