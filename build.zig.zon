@@ -5,7 +5,7 @@
     .fingerprint = 0x235618a7935966bd,
     .dependencies = .{
         .zigimg = .{
-            .url = "git+https://github.com/zigimg/zigimg.git#a7440df3fc41cde7df078b1c5829646c13056d49",
+            .url = "git+https://github.com/zigimg/zigimg.git#c701c9f99779d7ddf594dcc6da8f858fd277d61f",
             .hash = "zigimg-0.1.0-8_eo2sPVFwAm8y-DVfaCHNKQIpv9oHl_mbcKbGQZRLrK",
         },
         .zgl = .{
@@ -25,7 +25,7 @@
             .hash = "zig_steamworks_fake-0.0.0-3i7XFjR9AAA2K2k0BoftHWhwqrFJGtZCmjaMAqzf3lhN",
         },
         .flags = .{
-            .url = "git+https://github.com/prestosilver/flags#65ee36a5178b4223113733cfe742bdd99afd790d",
+            .url = "git+https://github.com/prestosilver/flags#e33d977b6be87b4124e01bdaaa4102d58913a8c9",
             .hash = "flags-0.10.0-a_9h3hJxAADvp60jORCTQ9XfFQPjdzJjhsJ5MNS7QLaM",
         },
         .win32 = .{

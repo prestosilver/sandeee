@@ -19,7 +19,7 @@ const LogData = struct {
     data: ?[]const u8 = null,
 };
 
-pub var logs: [HIST_LEN]LogData = @splat(.{}};
+pub var logs: [HIST_LEN]LogData = @splat(.{});
 pub var last_log: usize = 0;
 pub var total_logs: usize = 0;
 
