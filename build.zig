@@ -10,23 +10,6 @@ var version: Version = .{
 const INTERNAL_IMAGE_FILES = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const INTERNAL_SOUND_FILES = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 
-pub inline fn addOverlay(
-    b: *std.Build,
-    disk_steps: []const *std.Build.Step.Run,
-    overlay_path: std.Build.LazyPath,
-) void {
-    var dir = std.Io.Dir.openDirAbsolute(b.graph.io, overlay_path.getPath(b), .{ .iterate = true }) catch unreachable;
-    defer dir.close(b.graph.io);
-
-    var iter = dir.walk(b.allocator) catch unreachable;
-    while (iter.next(b.graph.io) catch unreachable) |path| {
-        switch (path.kind) {
-            .file => addConvertFile(b, disk_steps, &.{}, .{}, overlay_path.path(b, path.path), b.fmt("/{s}", .{path.path})),
-            else => {},
-        }
-    }
-}
-
 pub inline fn addConvertFile(
     b: *std.Build,
     disk_steps: []const *std.Build.Step.Run,
@@ -529,56 +512,60 @@ pub fn build(b: *std.Build) !void {
 
     {
         const paths_file = content_path.path(b, "overlays/paths.txt");
-        demo_image_step.addFileInput(paths_file);
-        disk_image_step.addFileInput(paths_file);
+
+        debug_image_step.addArg("--skeleton");
+        debug_image_step.addArg("debug");
+        debug_image_step.addFileArg(paths_file);
         debug_image_step.addFileInput(paths_file);
+
+        steam_image_step.addArg("--skeleton");
+        steam_image_step.addArg("steam");
+        steam_image_step.addFileArg(paths_file);
         steam_image_step.addFileInput(paths_file);
 
-        // TODO: "--skeleton flag file" in eee_packer
-        const skel_file = try std.Io.Dir.openFileAbsolute(b.graph.io, paths_file.getPath(b), .{});
-        defer skel_file.close(b.graph.io);
+        demo_image_step.addArg("--skeleton");
+        demo_image_step.addArg("demo");
+        demo_image_step.addFileArg(paths_file);
+        demo_image_step.addFileInput(paths_file);
 
-        var buffer: [512]u8 = undefined;
-        var reader = skel_file.reader(b.graph.io, &buffer);
-        while (try reader.interface.takeDelimiter('\n')) |line| {
-            if (line.len == 0)
-                continue;
+        disk_image_step.addArg("--skeleton");
+        disk_image_step.addArg("base");
+        disk_image_step.addFileArg(paths_file);
+        disk_image_step.addFileInput(paths_file);
 
-            const first_space = std.mem.indexOf(u8, line, " ") orelse continue;
+        demo_image_step.addArg("--skeleton");
+        demo_image_step.addArg("base");
+        demo_image_step.addFileArg(paths_file);
+        demo_image_step.addFileInput(paths_file);
 
-            if (std.mem.eql(u8, line[0..first_space], "debug")) {
-                debug_image_step.addArg("--dir");
-                debug_image_step.addArg(line[first_space + 1 ..]);
-            } else if (std.mem.eql(u8, line[0..first_space], "steam")) {
-                steam_image_step.addArg("--dir");
-                steam_image_step.addArg(line[first_space + 1 ..]);
-            } else if (std.mem.eql(u8, line[0..first_space], "demo")) {
-                demo_image_step.addArg("--dir");
-                demo_image_step.addArg(line[first_space + 1 ..]);
-            } else if (std.mem.eql(u8, line[0..first_space], "base")) {
-                disk_image_step.addArg("--dir");
-                disk_image_step.addArg(line[first_space + 1 ..]);
+        disk_image_step.addArg("--skeleton");
+        disk_image_step.addArg("all");
+        disk_image_step.addFileArg(paths_file);
+        disk_image_step.addFileInput(paths_file);
 
-                demo_image_step.addArg("--dir");
-                demo_image_step.addArg(line[first_space + 1 ..]);
-            } else if (std.mem.eql(u8, line[0..first_space], "all")) {
-                disk_image_step.addArg("--dir");
-                disk_image_step.addArg(line[first_space + 1 ..]);
+        demo_image_step.addArg("--skeleton");
+        demo_image_step.addArg("all");
+        demo_image_step.addFileArg(paths_file);
+        demo_image_step.addFileInput(paths_file);
 
-                demo_image_step.addArg("--dir");
-                demo_image_step.addArg(line[first_space + 1 ..]);
+        debug_image_step.addArg("--skeleton");
+        debug_image_step.addArg("all");
+        debug_image_step.addFileArg(paths_file);
+        debug_image_step.addFileInput(paths_file);
 
-                debug_image_step.addArg("--dir");
-                debug_image_step.addArg(line[first_space + 1 ..]);
+        steam_image_step.addArg("--skeleton");
+        steam_image_step.addArg("all");
+        steam_image_step.addFileArg(paths_file);
+        steam_image_step.addFileInput(paths_file);
 
-                steam_image_step.addArg("--dir");
-                steam_image_step.addArg(line[first_space + 1 ..]);
-            } else return error.UnknownDisk;
-        }
+        disk_image_step.addArg("--overlay");
+        disk_image_step.addDirectoryArg(overlays_path.path(b, "base"));
+
+        demo_image_step.addArg("--overlay");
+        demo_image_step.addDirectoryArg(overlays_path.path(b, "base"));
+        demo_image_step.addArg("--overlay");
+        demo_image_step.addDirectoryArg(overlays_path.path(b, "demo"));
     }
-
-    addOverlay(b, &.{ disk_image_step, demo_image_step }, overlays_path.path(b, "base"));
-    addOverlay(b, &.{demo_image_step}, overlays_path.path(b, "demo"));
 
     // debug files
     addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/eep/asm/hello.eep");
@@ -683,7 +670,8 @@ pub fn build(b: *std.Build) !void {
     // demo only emails
     try addEmails(b, eme_builder_exe, email_demo_image_step, content_path, "mail/demo", "/cont/mail/demo.eme");
 
-    addOverlay(b, &.{steam_image_step}, overlays_path.path(b, "steam"));
+    steam_image_step.addArg("--overlay");
+    steam_image_step.addDirectoryArg(overlays_path.path(b, "steam"));
 
     const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s" }), &std.ascii.whitespace);
     const steam_desc = if (std.ascii.startsWithIgnoreCase(steam_desc_raw, "meta"))
@@ -783,7 +771,8 @@ pub fn build(b: *std.Build) !void {
     disk_step.dependOn(&install_disk.step);
     b.getInstallStep().dependOn(disk_step);
 
-    addOverlay(b, &.{debug_image_step}, overlays_path.path(b, "debug"));
+    debug_image_step.addArg("--overlay");
+    debug_image_step.addDirectoryArg(overlays_path.path(b, "debug"));
 
     const resFileStep = b.addSystemCommand(&.{"x86_64-w64-mingw32-windres"});
     resFileStep.addFileInput(content_path.path(b, "data/app.rc"));

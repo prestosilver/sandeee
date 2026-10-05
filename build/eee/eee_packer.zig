@@ -24,7 +24,59 @@ pub fn main(init: std.process.Init) !void {
 
     var count: usize = 0;
     while (args.next()) |kind| {
-        if (std.mem.eql(u8, kind, "--dir")) {
+        if (std.mem.eql(u8, kind, "--overlay")) {
+            const overlay_path = args.next() orelse return error.MissingDirectory;
+            var dir = std.Io.Dir.openDirAbsolute(init.io, overlay_path, .{ .iterate = true }) catch unreachable;
+            defer dir.close(init.io);
+
+            var iter = dir.walk(b.allocator) catch unreachable;
+            while (iter.next(init.io) catch unreachable) |path| {
+                switch (path.kind) {
+                    .file => {
+                        var path_buf: [128]u8 = undefined;
+                        const disk_path = try std.fmt.bufPrint(&path_buf, "/{s}", .{path.path});
+
+                        files_root.newFile(disk_path) catch |err| switch (err) {
+                            error.FileExists => {},
+                            else => |e| return e,
+                        };
+
+                        const file = try dir.openFile(init.io, path.path, .{});
+                        defer file.close(init.io);
+
+                        var tmp_buffer: [512]u8 = undefined;
+                        var reader = file.reader(init.io, &tmp_buffer);
+                        const content_len = try reader.interface.readSliceShort(&content);
+
+                        try files_root.writeFile(disk_path, content[0..content_len], null);
+                        count += 1;
+                    },
+                    else => {},
+                }
+            }
+        } else if (std.mem.eql(u8, kind, "--skeleton")) {
+            const flag = args.next() orelse return error.MissingFlag;
+            const skel_path = args.next() orelse return error.MissingFile;
+            const skel_file = try std.Io.Dir.openFileAbsolute(init.io, skel_path, .{});
+            defer skel_file.close(init.io);
+
+            var buffer: [512]u8 = undefined;
+            var reader = skel_file.reader(init.io, &buffer);
+            while (try reader.interface.takeDelimiter('\n')) |line| {
+                if (line.len == 0)
+                    continue;
+
+                const first_space = std.mem.indexOf(u8, line, " ") orelse continue;
+
+                if (std.mem.eql(u8, line[0..first_space], flag)) {
+                    const folder_path = line[first_space + 1 ..];
+                    files_root.newFolder(folder_path, true) catch |err| switch (err) {
+                        error.FolderExists => {},
+                        else => |e| return e,
+                    };
+                }
+            }
+        } else if (std.mem.eql(u8, kind, "--dir")) {
             const folder_path = args.next() orelse return error.MissingDirectory;
             files_root.newFolder(folder_path, true) catch |err| switch (err) {
                 error.FolderExists => {},
