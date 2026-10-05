@@ -13,7 +13,7 @@ const INTERNAL_SOUND_FILES = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 pub inline fn addConvertFile(
     b: *std.Build,
     disk_steps: []const *std.Build.Step.Run,
-    comptime converters: []const *std.Build.Step.Compile,
+    converters: []const *std.Build.Step.Compile,
     comptime args: anytype,
     input: std.Build.LazyPath,
     disk_path: []const u8,
