@@ -58,7 +58,7 @@ pub fn addEmails(
     const email_file_path = email_step.addOutputFileArg("mail.eme");
 
     email_step.addArg("--dir");
-    email_step.addDirectoryArg(content_path.path(box_path));
+    email_step.addDirectoryArg(content_path.path(b, box_path));
 
     disk_image_step.addArg("--file");
     disk_image_step.addFileInput(email_file_path);
