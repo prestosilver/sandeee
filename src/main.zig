@@ -91,7 +91,7 @@ pub const steam_options = steam.Options{
     .fake_steam = options.fake_steam,
     .app_id = if (options.is_demo)
         4124370
-    else if (builtin.mode == .Debug)
+    else if (builtin.mode == .debug)
         4401090
     else
         4124360,
@@ -1014,7 +1014,7 @@ pub fn runGame() !void {
             try state.refresh();
 
             // Make sure this dosent run on release, a print every frame problaby has overhead
-            if (builtin.mode == .Debug) {
+            if (builtin.mode == .debug) {
                 const counter = struct {
                     var idx: usize = 0;
                 };

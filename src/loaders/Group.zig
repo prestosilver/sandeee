@@ -5,7 +5,7 @@ const util = @import("../util.zig");
 
 const Self = @This();
 
-sleep: std.Io.Duration = if (builtin.mode == .Debug)
+sleep: std.Io.Duration = if (builtin.mode == .debug)
     .fromMilliseconds(0)
 else
     .fromMilliseconds(100),

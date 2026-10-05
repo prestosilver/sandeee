@@ -53,7 +53,7 @@ pub fn sandEEELogFn(
     };
 
     // Print the message to stderr, silently ignoring any errors
-    if (@import("builtin").mode == .Debug) {
+    if (@import("builtin").mode == .debug) {
         const writer = util.io.lockStderr(&.{}, null) catch unreachable;
         defer util.io.unlockStderr();
 

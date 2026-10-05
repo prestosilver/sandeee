@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const builtin = @import("builtin");
-pub const useclib = builtin.mode != .Debug;
+pub const useclib = builtin.mode != .debug;
 
 pub var gpa = std.heap.DebugAllocator(.{ .stack_trace_frames = 10 }){};
 pub const allocator = if (builtin.is_test)

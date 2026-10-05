@@ -147,13 +147,13 @@ pub fn build(b: *std.Build) !void {
 
     const glfw_host = b.dependency("glfw", .{
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
     });
 
     const exe_host_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     exe_host_module.linkLibrary(glfw_host.artifact("glfw"));
@@ -167,7 +167,7 @@ pub fn build(b: *std.Build) !void {
     const default_panic = b.option(bool, "default_panic", "Force the default zig panic handler") orelse false;
     const random_tests = b.option(usize, "random", "Makes SandEEE write some random files") orelse 0;
     const version_suffix = switch (optimize) {
-        .Debug => if (is_demo) "DFD" else "FFD",
+        .debug => if (is_demo) "DFD" else "FFD",
         else => if (is_demo) "DFR" else "FFR",
     };
 
@@ -193,7 +193,7 @@ pub fn build(b: *std.Build) !void {
     const openal_host_source = b.addTranslateC(.{
         .root_source_file = b.path("deps/include/AL/root.h"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
     });
     openal_host_source.addIncludePath(b.path("deps/include"));
     const openal_host_module = openal_host_source.createModule();
@@ -209,7 +209,7 @@ pub fn build(b: *std.Build) !void {
 
     const flags_host_dependency = b.dependency("flags", .{
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
     });
     const flags_host_module = flags_host_dependency.module("flags");
 
@@ -221,7 +221,7 @@ pub fn build(b: *std.Build) !void {
 
     const glfw_host_dependency = b.dependency("zglfw", .{
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
     });
     const glfw_host_module = glfw_host_dependency.module("glfw");
 
@@ -233,13 +233,13 @@ pub fn build(b: *std.Build) !void {
 
     const zgl_host_dependency = b.dependency("zgl", .{
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
     });
     const zgl_host_module = zgl_host_dependency.module("zgl");
 
     const zigimg_host_dependency = b.dependency("zigimg", .{
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
     });
     const zigimg_host_module = zigimg_host_dependency.module("zigimg");
 
@@ -257,7 +257,7 @@ pub fn build(b: *std.Build) !void {
 
     const steam_host_dependency = b.dependency("zig_steamworks_fake", .{
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
     });
     const steam_host_module = steam_host_dependency.module("steam");
 
@@ -311,7 +311,7 @@ pub fn build(b: *std.Build) !void {
     const image_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/eee/eee_packer.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     image_builder_mod.addImport("sandeee", exe_host_module);
@@ -324,7 +324,7 @@ pub fn build(b: *std.Build) !void {
     const eme_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/eme/txt_to_mailbox.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     eme_builder_mod.addImport("sandeee", exe_host_module);
@@ -337,7 +337,7 @@ pub fn build(b: *std.Build) !void {
     const eon_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/asm/eon.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     eon_builder_mod.addImport("sandeee", exe_host_module);
@@ -350,7 +350,7 @@ pub fn build(b: *std.Build) !void {
     const asm_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/eep/assembler.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     asm_builder_mod.addAnonymousImport("sandeee_operation", .{
@@ -365,7 +365,7 @@ pub fn build(b: *std.Build) !void {
     const random_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/eep/random_program.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     random_builder_mod.addImport("sandeee", exe_host_module);
@@ -378,7 +378,7 @@ pub fn build(b: *std.Build) !void {
     const eia_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/eia/image_to_eia.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     eia_builder_mod.addImport("sandeee", exe_host_module);
@@ -395,7 +395,7 @@ pub fn build(b: *std.Build) !void {
     const epk_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/epk/epk_packager.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     epk_builder_mod.addImport("sandeee", exe_host_module);
@@ -409,7 +409,7 @@ pub fn build(b: *std.Build) !void {
     const eff_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/eff/image_to_eff.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     eff_builder_mod.addImport("sandeee", exe_host_module);
@@ -426,7 +426,7 @@ pub fn build(b: *std.Build) !void {
     const era_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/era/wav_to_era.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     era_builder_mod.addImport("sandeee", exe_host_module);
@@ -439,7 +439,7 @@ pub fn build(b: *std.Build) !void {
     const changelog_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/edf/changelog.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     changelog_builder_mod.addImport("sandeee", exe_host_module);
@@ -452,7 +452,7 @@ pub fn build(b: *std.Build) !void {
     const downloads_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/edf/downloads.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     downloads_builder_mod.addImport("sandeee", exe_host_module);
@@ -465,7 +465,7 @@ pub fn build(b: *std.Build) !void {
     const docs_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/edf/docs.zig"),
         .target = b.graph.host,
-        .optimize = .Debug,
+        .optimize = .debug,
         .link_libc = true,
     });
     docs_builder_mod.addImport("sandeee", exe_host_module);
@@ -752,7 +752,7 @@ pub fn build(b: *std.Build) !void {
         full_debug_disk_image_step.addFileArg(steam_image_path);
     }
 
-    if (optimize == .Debug)
+    if (optimize == .debug)
         disk_step.dependOn(&install_debug_disk.step);
 
     disk_step.dependOn(&install_disk.step);
@@ -845,7 +845,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     if (steam_mode == .on) {
-        if (optimize == .Debug)
+        if (optimize == .debug)
             b.installFile("steam_appid_debug.txt", "bin/steam_appid.txt")
         else
             b.installFile("steam_appid.txt", "bin/steam_appid.txt");
@@ -1084,12 +1084,12 @@ pub fn build(b: *std.Build) !void {
 
     const glfw_pub_linux = b.dependency("glfw", .{
         .target = target,
-        .optimize = .ReleaseFast,
+        .optimize = .fast,
     });
 
     const glfw_pub_windows = b.dependency("glfw", .{
         .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
-        .optimize = .ReleaseFast,
+        .optimize = .fast,
     });
 
     {
@@ -1127,7 +1127,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_linux = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
-            .optimize = .ReleaseFast,
+            .optimize = .fast,
             .link_libc = true,
             .error_tracing = true,
         });
@@ -1155,7 +1155,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_windows = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
-            .optimize = .ReleaseFast,
+            .optimize = .fast,
             .link_libc = true,
             .error_tracing = true,
         });
@@ -1229,7 +1229,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_linux = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
-            .optimize = .ReleaseFast,
+            .optimize = .fast,
             .link_libc = true,
             .error_tracing = true,
         });
@@ -1257,7 +1257,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_windows = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
-            .optimize = .ReleaseFast,
+            .optimize = .fast,
             .link_libc = true,
             .error_tracing = true,
         });
@@ -1329,7 +1329,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_linux = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
-            .optimize = .ReleaseFast,
+            .optimize = .fast,
             .link_libc = true,
             .error_tracing = true,
         });
@@ -1356,7 +1356,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_windows = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
-            .optimize = .ReleaseFast,
+            .optimize = .fast,
             .link_libc = true,
             .error_tracing = true,
         });
@@ -1430,7 +1430,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_linux = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
-            .optimize = .ReleaseFast,
+            .optimize = .fast,
             .link_libc = true,
             .error_tracing = true,
         });
@@ -1457,7 +1457,7 @@ pub fn build(b: *std.Build) !void {
         const exe_mod_pub_windows = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
-            .optimize = .ReleaseFast,
+            .optimize = .fast,
             .link_libc = true,
             .error_tracing = true,
         });

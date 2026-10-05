@@ -197,7 +197,7 @@ pub fn updateVmThread(vm_instance: *Vm, frame_end: u64) !void {
         return;
     }
 
-    _ = vm_instance.runTime(frame_end - time, builtin.mode == .Debug) catch |err| {
+    _ = vm_instance.runTime(frame_end - time, builtin.mode == .debug) catch |err| {
         vm_instance.stopped = true;
         vm_instance.errored = true;
 

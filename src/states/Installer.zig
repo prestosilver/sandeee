@@ -31,7 +31,7 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
-const INSTALL_TIME = if (builtin.mode == .Debug) 0.0 else 1.5;
+const INSTALL_TIME = if (builtin.mode == .debug) 0.0 else 1.5;
 
 const GSInstaller = @This();
 
@@ -219,7 +219,7 @@ pub fn update(self: *GSInstaller, dt: f32) !void {
         self.timer -= dt / INSTALL_TIME;
         if (self.timer < 0) {
             self.timer =
-                if (builtin.mode == .Debug)
+                if (builtin.mode == .debug)
                     0
                 else
                     3;

@@ -205,7 +205,7 @@ const EmailData = struct {
                     if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
                 } else if (email.box != self.box) continue;
                 var color: Color = .black;
-                if (builtin.mode == .Debug) {
+                if (builtin.mode == .debug) {
                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) color.a = 0.5;
                 } else {
                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
@@ -699,7 +699,7 @@ const EmailData = struct {
                             if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
                         } else if (email.box != self.box) continue;
 
-                        if (builtin.mode != .Debug) {
+                        if (builtin.mode != .debug) {
                             if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
                         }
 
