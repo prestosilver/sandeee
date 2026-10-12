@@ -213,7 +213,8 @@ pub fn blit() !void {
     }
 
     if (show_fps and bios_font.setup) {
-        const text = try std.fmt.allocPrint(allocator, "{s}FPS: {}\n{s}VMS: {}\n{s}VMT: {}%\nSTA: {}", .{
+        var text_buf: [1024]u8 = undefined;
+        const text = try std.mem.print(&text_buf, "{s}FPS: {}\n{s}VMS: {}\n{s}VMT: {}%\nSTA: {}", .{
             if (final_fps < graphics.Context.instance.refresh_rate - 6.0)
                 strings.COLOR_RED
             else
@@ -226,10 +227,8 @@ pub fn blit() !void {
             Vm.Manager.instance.vms.count(),
             strings.COLOR_WHITE,
             @as(u8, @intFromFloat(Vm.Manager.vm_time * 100)),
-            @intFromEnum(current_state),
+            @backingInt(current_state),
         });
-        defer allocator.free(text);
-
         try bios_font.draw(.{
             .text = text,
             .shader = &font_shader,
@@ -497,11 +496,11 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
 
     SpriteBatch.global.scissor = null;
 
-    error_state = @intFromEnum(current_state);
+    error_state = @backingInt(current_state);
 
     // panic log asap
     const st = panic_handler.log(msg, first_trace_addr);
-    error_message = std.fmt.allocPrint(allocator, "{s}\n{s}\n", .{ msg, st }) catch {
+    error_message = allocator.print("{s}\n{s}\n", .{ msg, st }) catch {
         std.process.exit(1);
     };
 

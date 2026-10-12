@@ -20,6 +20,7 @@ pub const http = @import("util/http.zig");
 pub const log = @import("util/log.zig").log;
 pub const TextureManager = @import("util/TextureManager.zig");
 pub const SpriteBatch = @import("util/SpriteBatch.zig");
+pub const DiskSorter = @import("util/DiskSorter.zig");
 pub const Allocator = @import("util/Allocator.zig");
 pub const VertArray = @import("util/VertArray.zig");
 pub const Shader = @import("util/Shader.zig");

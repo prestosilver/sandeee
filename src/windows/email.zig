@@ -112,7 +112,10 @@ const EmailData = struct {
             });
 
             {
-                const text = try std.fmt.allocPrint(allocator, "{s}{s}", .{ self.login_text[1], if (self.login_input != null and self.login_input.? == .Password) "|" else "" });
+                const text = try std.mem.concat(allocator, u8, &.{
+                    self.login_text[1],
+                    if (self.login_input != null and self.login_input.? == .Password) "|" else "",
+                });
                 defer allocator.free(text);
 
                 try font.draw(.{
@@ -138,7 +141,10 @@ const EmailData = struct {
             });
 
             {
-                const text = try std.fmt.allocPrint(allocator, "{s}{s}", .{ self.login_text[0], if (self.login_input != null and self.login_input.? == .Username) "|" else "" });
+                const text = try std.mem.concat(allocator, u8, &.{
+                    self.login_text[0],
+                    if (self.login_input != null and self.login_input.? == .Username) "|" else "",
+                });
                 defer allocator.free(text);
 
                 try font.draw(.{
@@ -211,7 +217,7 @@ const EmailData = struct {
                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
                 }
 
-                const text = try std.fmt.allocPrint(allocator, "{s} - {s}", .{ email.from, email.subject });
+                const text = try allocator.print("{s} - {s}", .{ email.from, email.subject });
                 defer allocator.free(text);
 
                 if (email.is_complete or inbox) {
@@ -256,7 +262,7 @@ const EmailData = struct {
 
             const email = self.viewing.?;
 
-            const from = try std.fmt.allocPrint(allocator, "from: {s}", .{email.from});
+            const from = try allocator.print("from: {s}", .{email.from});
             defer allocator.free(from);
             try font.draw(.{
                 .shader = font_shader,
@@ -264,11 +270,11 @@ const EmailData = struct {
                 .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 },
             });
 
-            const text = try std.fmt.allocPrint(allocator, "subject: {s}", .{email.subject});
-            defer allocator.free(text);
+            const subject = try allocator.print("subject: {s}", .{email.subject});
+            defer allocator.free(subject);
             try font.draw(.{
                 .shader = font_shader,
-                .text = text,
+                .text = subject,
                 .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 + font.size },
             });
 
@@ -299,7 +305,7 @@ const EmailData = struct {
 
         for (mail.EmailManager.instance.boxes.items, 0..) |box, idx| {
             if (idx == self.box) {
-                const text = try std.fmt.allocPrint(allocator, "{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
+                const text = try allocator.print("{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
                 defer allocator.free(text);
 
                 try font.draw(.{
@@ -545,10 +551,10 @@ const EmailData = struct {
                                     defer allocator.free(result_string);
                                     if (result.data().* == .value) {
                                         allocator.free(result_string);
-                                        result_string = try std.fmt.allocPrint(allocator, "{}", .{result.data().value});
+                                        result_string = try allocator.print("{}", .{result.data().value});
                                     } else if (result.data().* == .string) {
                                         allocator.free(result_string);
-                                        result_string = try std.fmt.allocPrint(allocator, "{f}", .{result.data().string});
+                                        result_string = try allocator.print("{f}", .{result.data().string});
                                     }
 
                                     good = good and std.ascii.eqlIgnoreCase(result_string, runs.conts);

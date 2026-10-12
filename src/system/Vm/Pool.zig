@@ -23,18 +23,18 @@ pub const ObjectRef = enum(usize) {
     _,
 
     pub fn id(self: ObjectRef) usize {
-        return @intFromEnum(self);
+        return @backingInt(self);
     }
 
     pub fn new(value: usize) ObjectRef {
-        return @enumFromInt(value);
+        return @fromBackingInt(@intCast(value));
     }
 
     pub fn data(self: ObjectRef) *ObjectData {
         const result = &objects.items[self.id()].data;
 
         if (result.* == .free) {
-            const msg = std.fmt.allocPrint(allocator, "bad data {}", .{self}) catch "bad data ?";
+            const msg = allocator.print("Bad object data {}", .{self}) catch "Bad object data ?";
             @panic(msg);
         }
 

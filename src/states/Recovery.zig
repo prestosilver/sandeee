@@ -13,6 +13,7 @@ const math = @import("../math.zig");
 const Sprite = drawers.Sprite;
 
 const SpriteBatch = util.SpriteBatch;
+const DiskSorter = util.DiskSorter;
 const Shader = util.Shader;
 const Font = util.Font;
 const allocator = util.allocator;
@@ -53,27 +54,8 @@ recovery_choices: std.array_list.Managed(RecoveryChoice) = .init(allocator),
 const DISK_LIST = "0123456789ABCDEF";
 const TEXT_COLOR = Color{ .r = 1, .g = 1, .b = 1 };
 
-pub fn getDate(name: []const u8) std.Io.Timestamp {
-    const bad = std.Io.Clock.real.now(util.io);
-
-    const path = std.fmt.allocPrint(allocator, "disks/{s}", .{name}) catch return bad;
-    defer allocator.free(path);
-
-    // return is fine here as this is used to sort
-    const file = std.Io.Dir.cwd().openFile(util.io, path, .{}) catch return bad;
-    defer file.close(util.io);
-
-    return (file.stat(util.io) catch return bad).mtime;
-}
-
 pub fn sortRecoveryLt(_: void, a: RecoveryChoice, b: RecoveryChoice) bool {
     return std.mem.lessThan(u8, a.name, b.name);
-}
-
-pub fn sortDisksLt(_: void, a: []const u8, b: []const u8) bool {
-
-    // TODO .compare here is better but not in zig 0.16.0. ty future me
-    return getDate(a).toSeconds() < getDate(b).toSeconds();
 }
 
 pub fn setup(self: *GSRecovery) !void {
@@ -85,12 +67,12 @@ pub fn setup(self: *GSRecovery) !void {
 
     // setup disk list
     {
-        var dir = try std.Io.Dir.cwd().openDir(util.io, "disks", .{
+        var disks_dir = try std.Io.Dir.cwd().openDir(util.io, "disks", .{
             .iterate = true,
         });
-        defer dir.close(util.io);
+        defer disks_dir.close(util.io);
 
-        var iter = dir.iterate();
+        var iter = disks_dir.iterate();
 
         while (try iter.next(util.io)) |item| {
             if (!std.mem.endsWith(u8, item.name, ".eee")) continue;
@@ -100,13 +82,15 @@ pub fn setup(self: *GSRecovery) !void {
             try self.disks.append(entry);
         }
 
-        std.sort.insertion([]const u8, self.disks.items, {}, sortDisksLt);
+        std.sort.insertion([]const u8, self.disks.items, DiskSorter{
+            .disks_dir = &disks_dir,
+        }, DiskSorter.sort);
 
         for (self.disks.items, 0..) |_, idx| {
             const copy = self.disks.items[idx];
             defer allocator.free(copy);
 
-            self.disks.items[idx] = try std.fmt.allocPrint(allocator, "{c} {s}", .{ DISK_LIST[idx], copy });
+            self.disks.items[idx] = try allocator.print("{c} {s}", .{ DISK_LIST[idx], copy });
         }
 
         self.disks.items.len = @min(self.disks.items.len, DISK_LIST.len);
@@ -165,7 +149,7 @@ pub fn setup(self: *GSRecovery) !void {
             const copy = self.recovery_choices.items[idx].name;
             defer allocator.free(copy);
 
-            self.recovery_choices.items[idx].name = try std.fmt.allocPrint(allocator, "{c} {s}", .{ DISK_LIST[idx], copy });
+            self.recovery_choices.items[idx].name = try allocator.print("{c} {s}", .{ DISK_LIST[idx], copy });
         }
 
         try self.recovery_choices.append(.{ .name = "D Delete Disk" });
@@ -194,8 +178,7 @@ const CONFIRM = [_][*:0]const u8{
 pub fn draw(self: *GSRecovery, _: Vec2) !void {
     var y: f32 = 100;
 
-    const title_text = try std.fmt.allocPrint(allocator, "BootEEE v_{s}", .{strings.BOOTEEE_VERSION_TEXT});
-    defer allocator.free(title_text);
+    const title_text = "BootEEE v_" ++ strings.BOOTEEE_VERSION_TEXT;
     try self.face.draw(.{
         .shader = self.font_shader,
         .text = title_text,
@@ -230,8 +213,8 @@ pub fn draw(self: *GSRecovery, _: Vec2) !void {
         y += self.face.size * 1;
 
         const lines: [2][]u8 = .{
-            try std.fmt.allocPrint(allocator, "  {s}", .{CONFIRM[0]}),
-            try std.fmt.allocPrint(allocator, "  {s}", .{CONFIRM[1]}),
+            try allocator.print("  {s}", .{CONFIRM[0]}),
+            try allocator.print("  {s}", .{CONFIRM[1]}),
         };
 
         const idx: usize = if (confirm_sel) 0 else 1;
@@ -251,7 +234,7 @@ pub fn draw(self: *GSRecovery, _: Vec2) !void {
         }
     } else if (self.sub_sel) |sub_sel| {
         for (self.recovery_choices.items, 0..) |choice, idx| {
-            const line = try std.fmt.allocPrint(allocator, "  {s}", .{choice.name});
+            const line = try allocator.print("  {s}", .{choice.name});
             defer allocator.free(line);
 
             if (idx == sub_sel) {
@@ -268,7 +251,7 @@ pub fn draw(self: *GSRecovery, _: Vec2) !void {
         }
     } else if (self.disks.items.len != 0) {
         for (self.disks.items, 0..) |disk, idx| {
-            const line = try std.fmt.allocPrint(allocator, "  {s}", .{disk});
+            const line = try allocator.print("  {s}", .{disk});
             defer allocator.free(line);
 
             if (idx == self.sel) {
@@ -303,7 +286,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                 if (self.confirm_sel) |confirm| {
                     if (confirm) {
                         if (sub_sel == self.recovery_choices.items.len - 2) {
-                            const path = try std.fmt.allocPrint(allocator, "disks/{s}", .{self.disks.items[self.sel][2..]});
+                            const path = try allocator.print("disks/{s}", .{self.disks.items[self.sel][2..]});
                             defer allocator.free(path);
 
                             self.status = "Deleted";
@@ -394,7 +377,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                 _ = sub_sel;
                 switch (std.ascii.toUpper(name[0])) {
                     'D' => {
-                        const path = try std.fmt.allocPrint(allocator, "disks/{s}", .{self.disks.items[self.sel][2..]});
+                        const path = try allocator.print("disks/{s}", .{self.disks.items[self.sel][2..]});
                         defer allocator.free(path);
 
                         self.status = "Deleted";

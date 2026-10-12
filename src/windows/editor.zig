@@ -79,7 +79,7 @@ pub const EditorData = struct {
         pub fn getRenderLine(self: *const Row) ![]const u8 {
             return if (self.render) |render|
                 if (self.err) |e|
-                    try std.fmt.allocPrint(allocator, STRING_ERROR, .{ render, e })
+                    try allocator.print(STRING_ERROR, .{ render, e })
                 else
                     try allocator.dupe(u8, render)
             else
@@ -228,7 +228,7 @@ pub const EditorData = struct {
             const file_name = if (self.file) |file| file.name else "[New File]";
 
             const idx = if (std.mem.lastIndexOf(u8, file_name, "/")) |idx| idx + 1 else 0;
-            const title = try std.fmt.allocPrint(allocator, strings.EEE ++ "DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
+            const title = try allocator.print(strings.EEE ++ "DT-{s}{s}", .{ file_name[idx..], if (self.modified) "*" else "" });
             defer allocator.free(title);
 
             try props.setTitle(title);
@@ -311,8 +311,9 @@ pub const EditorData = struct {
                     .maxlines = 1,
                 });
 
-                const linenr = try std.fmt.allocPrint(allocator, "{}", .{lineidx + 1});
-                defer allocator.free(linenr);
+                var linenr_buf: [32]u8 = undefined;
+                const linenr = try std.mem.print(&linenr_buf, "{}", .{lineidx + 1});
+
                 try font.draw(.{
                     .shader = shader,
                     .text = linenr,

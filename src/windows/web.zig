@@ -60,32 +60,31 @@ pub const WebData = struct {
                     defer allocator.free(sub);
                     if (std.mem.startsWith(u8, root, STEAM_LIST_NAME) and root.len != STEAM_LIST_NAME.len) {
                         const page_idx = try std.fmt.parseInt(u32, root[4..], 0);
-                        return try steamList(page_idx, false, sub);
+                        return steamList(page_idx, false, sub);
                     } else if (std.mem.startsWith(u8, root, STEAM_MINE_NAME) and root.len != STEAM_MINE_NAME.len) {
                         const page_idx = try std.fmt.parseInt(u32, root[4..], 0);
-                        return try steamList(page_idx, true, sub);
+                        return steamList(page_idx, true, sub);
                     } else if (std.mem.startsWith(u8, root, STEAM_ITEM_NAME) and root.len != STEAM_ITEM_NAME.len) {
-                        const page_idx = std.fmt.parseInt(u64, root[4..], 10) catch {
-                            return try allocator.dupe(u8, "Error: Invalid item page");
-                        };
+                        const page_idx = std.fmt.parseInt(u64, root[4..], 10) catch
+                            return allocator.print("Error: Invalid item page", .{});
 
-                        return self.steamItem(@enumFromInt(page_idx), url) catch |err|
-                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
+                        return self.steamItem(@fromBackingInt(@intCast(page_idx)), url) catch |err|
+                            allocator.print("Error: {s}", .{@errorName(err)});
                     } else {
-                        return try allocator.dupe(u8, "Error: Bad steam link");
+                        return allocator.print("Error: Bad steam link", .{});
                     }
                 } else {
-                    return try allocator.dupe(u8, "Error: Steam is not enabled");
+                    return allocator.print("Error: Steam is not enabled", .{});
                 }
             },
             .Local => {
                 const root = try files.FolderLink.resolve(.root);
                 const file = try root.getFile(url.path);
-                return try allocator.dupe(u8, try file.read(null));
+                return allocator.dupe(u8, try file.read(null));
             },
             .Web => {
                 if (url.domain.len == 0)
-                    return try allocator.dupe(u8, "Error: Bad Remote");
+                    return allocator.print("Error: Bad Remote", .{});
 
                 var map = util.env.createMap(allocator) catch unreachable;
                 defer map.deinit();
@@ -96,11 +95,10 @@ pub const WebData = struct {
                 defer client.deinit();
 
                 const uri = std.Uri{
-                    .scheme = "http",
+                    .scheme = "https",
                     .user = null,
                     .password = null,
                     .host = .{ .raw = url.domain },
-                    .port = 80,
                     .path = .{ .raw = url.path },
                     .query = null,
                     .fragment = null,
@@ -111,40 +109,40 @@ pub const WebData = struct {
 
                 {
                     var req = client.request(.GET, uri, .{
-                        .redirect_behavior = @enumFromInt(3),
+                        .redirect_behavior = @fromBackingInt(@intCast(3)),
                         .headers = .{
                             .user_agent = .{ .override = "SandEEE/0.0" },
                             .connection = .{ .override = "Close" },
                         },
                     }) catch |err|
                         return if (err == error.TemporaryNameServerFailure)
-                            try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
+                            try allocator.print("Error: No Internet Connection", .{})
                         else
-                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
+                            try allocator.print("Error: {s}", .{@errorName(err)});
                     defer req.deinit();
 
                     req.sendBodiless() catch |err|
                         return if (err == error.TemporaryNameServerFailure)
-                            try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
+                            try allocator.print("Error: No Internet Connection", .{})
                         else
-                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
+                            try allocator.print("Error: {s}", .{@errorName(err)});
 
                     const redirect_buffer: []u8 = try allocator.alloc(u8, 8 * 1024);
                     defer allocator.free(redirect_buffer);
 
                     var response = req.receiveHead(redirect_buffer) catch |err|
                         return if (err == error.TemporaryNameServerFailure)
-                            try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
+                            allocator.print("Error: No Internet Connection", .{})
                         else
-                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
+                            allocator.print("Error: {s}", .{@errorName(err)});
 
                     if (response.head.status != .ok) {
-                        return try std.fmt.allocPrint(allocator, "Error: {} - {s}", .{ @intFromEnum(response.head.status), @tagName(response.head.status) });
+                        return allocator.print("Error: {} - {s}", .{ @backingInt(response.head.status), @tagName(response.head.status) });
                     }
 
                     if (response.head.content_type) |content_type|
                         if (!std.mem.eql(u8, content_type, "application/octet-stream") and !std.mem.eql(u8, content_type, "text/eeedocumentfile"))
-                            return try std.fmt.allocPrint(allocator, "Error: Invalid content type {s}", .{content_type});
+                            return allocator.print("Error: Invalid content type {s}", .{content_type});
 
                     const decompress_buffer: []u8 = switch (response.head.content_encoding) {
                         .identity => &.{},
@@ -160,12 +158,12 @@ pub const WebData = struct {
 
                     _ = reader.streamRemaining(&body_writer.writer) catch |err|
                         return if (err == error.TemporaryNameServerFailure)
-                            try std.fmt.allocPrint(allocator, "Error: No Internet Connection", .{})
+                            allocator.print("Error: No Internet Connection", .{})
                         else
-                            try std.fmt.allocPrint(allocator, "Error: {s}", .{@errorName(err)});
+                            allocator.print("Error: {s}", .{@errorName(err)});
                 }
 
-                return try allocator.dupe(u8, body_writer.written());
+                return body_writer.toOwnedSlice();
             },
             .Log => {
                 const log_import = @import("../util/log.zig");
@@ -210,7 +208,7 @@ pub const WebData = struct {
                 return result;
             },
             _ => {
-                return try allocator.dupe(u8, "Error: Invalid Url protocol");
+                return allocator.print("Error: Invalid Url protocol", .{});
             },
         }
     }
@@ -316,7 +314,7 @@ pub const WebData = struct {
         const query_result = try handle.getResult(steam.callback.UGCQueryCompleted);
 
         var details: steam.UGC.ItemDetails = undefined;
-        details.result = @enumFromInt(0);
+        details.result = @fromBackingInt(@intCast(0));
 
         var conts_writer: std.Io.Writer.Allocating = .init(allocator);
         errdefer conts_writer.deinit();
@@ -347,7 +345,7 @@ pub const WebData = struct {
                     details.titleSlice(),
                     if (state.subscribed) "Favorite " ++ strings.SMILE else "",
                     details.descSlice(),
-                    @intFromEnum(details.file_id),
+                    @backingInt(details.file_id),
                 });
             }
 
@@ -381,12 +379,11 @@ pub const WebData = struct {
 
         {
             const state = id.getItemState();
-            log.debug("Steam item {} has state {}", .{ @intFromEnum(id), state });
+            log.debug("Steam item {} has state {}", .{ @backingInt(id), state });
         }
 
-        if (!id.download(true)) {
-            return try std.fmt.allocPrint(allocator, "Error: Failed to start steam download.", .{});
-        }
+        if (!id.download(true))
+            return allocator.print("Error: Failed to start steam download.", .{});
 
         while (true) {
             const state = id.getItemState();
@@ -407,7 +404,7 @@ pub const WebData = struct {
 
         const folder_pointer = std.mem.span(@as([*:0]u8, @ptrCast(&folder)));
 
-        const file_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ folder_pointer, url.path });
+        const file_path = try allocator.print("{s}/{s}", .{ folder_pointer, url.path });
         defer allocator.free(file_path);
 
         log.debug("Rendering steam item path {s}", .{file_path});
@@ -450,18 +447,18 @@ pub const WebData = struct {
         var iter = walker.iterate();
 
         var conts = if (std.mem.eql(u8, url.path, ""))
-            try std.fmt.allocPrint(allocator, "Contents of $item{}:/", .{@intFromEnum(id)})
+            try allocator.print("Contents of $item{}:/", .{@backingInt(id)})
         else
-            try std.fmt.allocPrint(allocator, "Contents of $item{}:{s}", .{ @intFromEnum(id), url.path });
+            try allocator.print("Contents of $item{}:{s}", .{ @backingInt(id), url.path });
 
         while (try iter.next(util.io)) |item| {
             const old = conts;
             defer allocator.free(old);
 
             conts = if (url.path.len > 0 and url.path[0] == '/')
-                try std.fmt.allocPrint(allocator, "{s}\n> {s}: @{s}/{s}", .{ old, item.name, url.path, item.name })
+                try allocator.print("{s}\n> {s}: @{s}/{s}", .{ old, item.name, url.path, item.name })
             else
-                try std.fmt.allocPrint(allocator, "{s}\n> {s}: @/{s}", .{ old, item.name, item.name });
+                try allocator.print("{s}\n> {s}: @/{s}", .{ old, item.name, item.name });
         }
 
         // Returns a handle
@@ -947,7 +944,7 @@ pub const WebData = struct {
             try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = bnds.x + 72, .y = bnds.y + 2 });
             try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = bnds.x + 74, .y = bnds.y + 4 });
 
-            const text = try std.fmt.allocPrint(allocator, "{c}{s}:{s}", .{ @as(u8, @intFromEnum(self.path.kind)), self.path.domain, self.path.path });
+            const text = try allocator.print("{c}{s}:{s}", .{ @backingInt(self.path.kind), self.path.domain, self.path.path });
             defer allocator.free(text);
 
             const tmp = SpriteBatch.global.scissor;

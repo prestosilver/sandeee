@@ -65,24 +65,28 @@ pub const EmailManager = struct {
             debug,
 
             pub fn toString(self: *const Self) ![]const u8 {
-                const result = switch (self.*) {
-                    .none, .view, .debug => try allocator.dupe(u8, ""),
-                    .submit_contains => |r| try std.fmt.allocPrint(allocator, "{s}", .{r.conts}),
-                    .shell_run => |r| try std.fmt.allocPrint(allocator, "{s}", .{r.cmd}),
-                    .submit_runs => |r| if (r.input) |input|
-                        try std.fmt.allocPrint(allocator, ">{s}||{s}", .{ input, r.conts })
-                    else
-                        try std.fmt.allocPrint(allocator, "{s}", .{r.conts}),
-                    .submit_lib => |r| if (r.input) |input|
-                        try std.fmt.allocPrint(allocator, ">{s}||{s}||{s}", .{ input, r.libfn, r.conts })
-                    else
-                        try std.fmt.allocPrint(allocator, "{s}||{s}", .{ r.libfn, r.conts }),
-                    .logins => |r| try std.fmt.allocPrint(allocator, "{}", .{r.count}),
-                    .sys_call => |r| try std.fmt.allocPrint(allocator, "{}", .{r.id}),
-                };
-                defer allocator.free(result);
+                var result: std.array_list.Managed(u8) = .init(allocator);
+                defer result.deinit();
 
-                return std.fmt.allocPrint(allocator, "{c}{s}", .{ @intFromEnum(self.*), result });
+                try result.append(@backingInt(self.*));
+
+                switch (self.*) {
+                    .none, .view, .debug => {},
+                    .submit_contains => |r| try result.print("{s}", .{r.conts}),
+                    .shell_run => |r| try result.print("{s}", .{r.cmd}),
+                    .submit_runs => |r| if (r.input) |input|
+                        try result.print(">{s}||{s}", .{ input, r.conts })
+                    else
+                        try result.print("{s}", .{r.conts}),
+                    .submit_lib => |r| if (r.input) |input|
+                        try result.print(">{s}||{s}||{s}", .{ input, r.libfn, r.conts })
+                    else
+                        try result.print("{s}||{s}", .{ r.libfn, r.conts }),
+                    .logins => |r| try result.print("{}", .{r.count}),
+                    .sys_call => |r| try result.print("{}", .{r.id}),
+                }
+
+                return result.toOwnedSlice();
             }
 
             pub fn deinit(self: *const Self) void {
@@ -503,7 +507,7 @@ pub const EmailManager = struct {
                 self.emails.items[idx].condition = try allocator.alloc(Email.Condition, conds_length);
 
                 for (0..conds_length) |cond_idx| {
-                    const cond_kind: Email.ConditionKind = @enumFromInt(conts[fidx]);
+                    const cond_kind: Email.ConditionKind = @fromBackingInt(@intCast(conts[fidx]));
                     fidx += 1;
 
                     var data = std.array_list.Managed(u8).init(allocator);

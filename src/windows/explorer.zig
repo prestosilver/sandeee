@@ -117,9 +117,7 @@ pub const ExplorerData = struct {
 
         const shell_root = try self.shell.root.resolve();
 
-        const title = try std.fmt.allocPrint(allocator, "{s}", .{shell_root.name});
-        defer allocator.free(title);
-        try props.setTitle(title);
+        try props.setTitle(shell_root.name);
 
         if (self.shell.vm != null) {
             const result = self.shell.getVMResult() catch null;
@@ -248,7 +246,7 @@ pub const ExplorerData = struct {
                     self.selected = null;
                 } else {
                     _ = self.shell.runBg(self.icon_data[hover_idx].launches) catch |err| {
-                        const message = try std.fmt.allocPrint(allocator, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
+                        const message = try allocator.print("Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
                         const adds = try allocator.create(popups.confirm.PopupConfirm);
                         adds.* = .{

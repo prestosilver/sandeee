@@ -115,7 +115,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
     if (!builtin.is_test)
         _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
-    const alloc_path = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{disk});
+    const alloc_path = try allocator.print(root_prefix ++ "disks/{s}", .{disk});
     defer allocator.free(alloc_path);
 
     const diskpath = try storage.getContentPath(alloc_path);
@@ -153,8 +153,8 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
                 raw.lflag.ECHO = false;
                 raw.lflag.ICANON = false;
 
-                raw.cc[@intFromEnum(std.posix.system.V.TIME)] = 0;
-                raw.cc[@intFromEnum(std.posix.system.V.MIN)] = 1;
+                raw.cc[@backingInt(std.posix.system.V.TIME)] = 0;
+                raw.cc[@backingInt(std.posix.system.V.MIN)] = 1;
             }
 
             try std.posix.tcsetattr(stdin_file.handle, .NOW, raw);

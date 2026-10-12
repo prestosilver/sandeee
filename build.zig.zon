@@ -25,8 +25,8 @@
             .hash = "zig_steamworks_fake-0.0.0-3i7XFjR9AAA2K2k0BoftHWhwqrFJGtZCmjaMAqzf3lhN",
         },
         .flags = .{
-            .url = "git+https://github.com/prestosilver/flags#e33d977b6be87b4124e01bdaaa4102d58913a8c9",
-            .hash = "flags-0.10.0-a_9h3iFxAAC-U5Pm0W9s99fy4WQ7GEEum3uHoFMm9gvt",
+            .url = "git+https://github.com/prestosilver/flags#d9dc1df661b099559d633dc5fd7e4faa5c5535aa",
+            .hash = "flags-0.10.0-a_9h3oNyAADqQ5kgo4EcWUpvPTbT2KFiZZm9fYtTu-pV",
         },
         .win32 = .{
             .url = "git+https://github.com/marlersoft/zigwin32#9f15c276b4e9d05afd34a10d8662a7dfc34647ea",

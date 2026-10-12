@@ -130,7 +130,7 @@ pub const DeskData = struct {
                     const cmd = file.name[index + 1 ..];
 
                     self.shell.runBg(cmd) catch |err| {
-                        const message = try std.fmt.allocPrint(allocator, "Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
+                        const message = try allocator.print("Couldnt not launch the VM.\n    {s}", .{@errorName(err)});
 
                         const adds = try allocator.create(popups.confirm.PopupConfirm);
                         adds.* = .{

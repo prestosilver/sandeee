@@ -96,8 +96,9 @@ pub const CMDData = struct {
 
             defer allocator.free(shell_prompt);
 
-            const prompt = try std.fmt.allocPrint(allocator, "{s}{s}", .{ shell_prompt, self.input_buffer[0..self.input_len] });
+            const prompt = try std.mem.concat(allocator, u8, &.{ shell_prompt, self.input_buffer[0..self.input_len] });
             defer allocator.free(prompt);
+
             try font.draw(.{
                 .shader = shader,
                 .text = prompt,
@@ -220,7 +221,7 @@ pub const CMDData = struct {
                 const shell_prompt = try self.shell.getPrompt();
                 defer allocator.free(shell_prompt);
 
-                const prompt = try std.fmt.allocPrint(allocator, "\n{s}{s}\n", .{ shell_prompt, self.input_buffer[0..self.input_len] });
+                const prompt = try std.mem.concat(allocator, u8, &.{ "\n", shell_prompt, self.input_buffer[0..self.input_len], "\n" });
                 defer allocator.free(prompt);
 
                 try self.bt.appendSlice(prompt);
@@ -329,7 +330,7 @@ pub fn init() !Window.Data.WindowContents {
     self.* = .{
         .bt = .fromOwnedSlice(
             allocator,
-            try std.fmt.allocPrint(allocator, "Welcome to Sh" ++ strings.EEE ++ "l\nUse help to list possible commands\n", .{}),
+            try allocator.dupe(u8, "Welcome to Sh" ++ strings.EEE ++ "l\nUse help to list possible commands\n"),
         ),
         .history = try .initCapacity(allocator, 32),
         .shell = .{

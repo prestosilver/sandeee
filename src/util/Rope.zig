@@ -105,7 +105,7 @@ pub fn subString(rope: *const Rope, start: usize, end: ?usize) !Rope {
             },
     }
 
-    const string = try std.fmt.allocPrint(allocator, "{f}", .{rope});
+    const string = try allocator.print("{f}", .{rope});
     defer allocator.free(string);
 
     const start_idx = @min(start, string.len);
@@ -182,7 +182,7 @@ const Iterator = struct {
 
         return switch (self.rope.data.data) {
             .string => |str| self.index >= str.len,
-            .ref => |_| false,
+            .ref => false,
         } and self.rope.data.next == null;
     }
 };

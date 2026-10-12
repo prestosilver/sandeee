@@ -126,8 +126,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
     var y: f32 = 100 - self.offset;
     defer self.offset = @max(@as(f32, 0), (y + self.offset) - (size.y - 100));
 
-    const title_text = try std.fmt.allocPrint(allocator, "BootEEE Installer v_{s}", .{strings.BOOTEEE_VERSION_TEXT});
-    defer allocator.free(title_text);
+    const title_text = "BootEEE Installer v_" ++ strings.BOOTEEE_VERSION_TEXT;
     try self.face.draw(.{
         .shader = self.font_shader,
         .text = title_text,
@@ -151,12 +150,12 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
         .color = .{ .r = 1, .b = 1, .g = 1 },
     });
 
-    if (@intFromEnum(self.status) < @intFromEnum(Status.Settings)) return;
+    if (@backingInt(self.status) < @backingInt(Status.Settings)) return;
 
     y += self.face.size * 2;
     for (0..self.setting_id + 1) |idx| {
         if (idx > SETTINGS.len) return;
-        const text = try std.fmt.allocPrint(allocator, "{s}?\n  [Def: {s}] {s}", .{
+        const text = try allocator.print("{s}?\n  [Def: {s}] {s}", .{
             SETTINGS[idx][0],
             SETTINGS[idx][2],
             self.setting_values[idx].items,
@@ -177,7 +176,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
         }).y;
     }
 
-    if (@intFromEnum(self.status) < @intFromEnum(Status.Installing)) return;
+    if (@backingInt(self.status) < @backingInt(Status.Installing)) return;
 
     y += self.face.size * 2;
     try self.face.draw(.{
@@ -192,7 +191,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
     if (self.status == .Installing) self.load_sprite.data.size.x *= 1 - self.timer;
     try SpriteBatch.global.draw(Sprite, &self.load_sprite, self.shader, .{ .x = 100, .y = y });
 
-    if (@intFromEnum(self.status) < @intFromEnum(Status.Done)) return;
+    if (@backingInt(self.status) < @backingInt(Status.Done)) return;
 
     y += self.face.size * 2;
     try self.face.draw(.{
@@ -203,7 +202,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
     });
     y += self.face.size * 1;
 
-    const reboot_text = try std.fmt.allocPrint(allocator, "Rebooting in {}", .{@as(u32, @intFromFloat(0.5 + self.timer))});
+    const reboot_text = try allocator.print("Rebooting in {}", .{@as(u32, @intFromFloat(0.5 + self.timer))});
     defer allocator.free(reboot_text);
 
     try self.face.draw(.{

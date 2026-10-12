@@ -43,7 +43,7 @@ pub inline fn addConvertFile(
     }
 }
 
-// TODO: The email builder should do this iteration with a --dir flag 
+// TODO: The email builder should do this iteration with a --dir flag
 pub fn addEmails(
     b: *std.Build,
     eme_builder_exe: *std.Build.Step.Compile,
@@ -862,7 +862,7 @@ pub fn build(b: *std.Build) !void {
     install_changelog.step.dependOn(&public_step.step);
 
     // Ideally I would use b.addOutputDirectoryArg
-    const docs_mkdir = b.addSystemCommand(&.{ "mkdir"});
+    const docs_mkdir = b.addSystemCommand(&.{"mkdir"});
     docs_mkdir.addArg("-p");
     docs_mkdir.addDirectoryArg(b.path("zig-out/www/docs"));
 
@@ -915,8 +915,7 @@ pub fn build(b: *std.Build) !void {
 
         const pong_eon_step = b.addRunArtifact(eon_builder_exe);
         pong_eon_step.addArg("exe");
-        pong_eon_step.addFileInput(eon_lib_path);
-        pong_eon_step.addFileArg(eon_lib_path);
+        pong_eon_step.addDirectoryArg(eon_lib_path);
         pong_eon_step.addFileInput(content_path.path(b, "eon/exec/pong.eon"));
         pong_eon_step.addFileArg(content_path.path(b, "eon/exec/pong.eon"));
         const pong_asm_file = pong_eon_step.addOutputFileArg("pong.eon");
@@ -959,8 +958,7 @@ pub fn build(b: *std.Build) !void {
 
         const paint_eon_step = b.addRunArtifact(eon_builder_exe);
         paint_eon_step.addArg("exe");
-        paint_eon_step.addFileInput(eon_lib_path);
-        paint_eon_step.addFileArg(eon_lib_path);
+        paint_eon_step.addDirectoryArg(eon_lib_path);
         paint_eon_step.addFileInput(content_path.path(b, "eon/exec/paint.eon"));
         paint_eon_step.addFileArg(content_path.path(b, "eon/exec/paint.eon"));
         const paint_asm_file = paint_eon_step.addOutputFileArg("paint.eon");
@@ -1507,6 +1505,7 @@ pub fn build(b: *std.Build) !void {
     const pub_step = b.step("pub", "Build all public builds");
     pub_step.dependOn(steam_step);
     pub_step.dependOn(itch_step);
+    pub_step.dependOn(www_step);
 
     // upload step
     const upload_step = b.step("upload", "Uploads a build to all platforms");

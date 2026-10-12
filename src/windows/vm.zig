@@ -120,7 +120,7 @@ pub const VMData = struct {
             if (self.texture.size.x != self.size.x or
                 self.texture.size.y != self.size.y)
             {
-                const old_renderbuffer: zgl.Renderbuffer = @enumFromInt(zgl.getInteger(.renderbuffer_binding));
+                const old_renderbuffer: zgl.Renderbuffer = @fromBackingInt(@intCast(zgl.getInteger(.renderbuffer_binding)));
                 defer old_renderbuffer.bind(.buffer);
 
                 self.renderbuffer.bind(.buffer);
@@ -132,7 +132,7 @@ pub const VMData = struct {
                 self.texture.size = self.size;
             }
 
-            const old_framebuffer: zgl.Framebuffer = @enumFromInt(zgl.getInteger(.draw_framebuffer_binding));
+            const old_framebuffer: zgl.Framebuffer = @fromBackingInt(@intCast(zgl.getInteger(.draw_framebuffer_binding)));
             defer old_framebuffer.bind(.buffer);
 
             self.framebuffer.bind(.buffer);
@@ -221,14 +221,15 @@ pub const VMData = struct {
         if (self.debug) {
             var y: f32 = 0;
 
+            var val_buf: [64]u8 = undefined;
+
             {
-                const val = try std.fmt.allocPrint(allocator, "BNDS: {}x{}+{}+{}", .{
+                const val = try std.mem.print(&val_buf, "BNDS: {}x{}+{}+{}", .{
                     @as(i32, @intFromFloat(bnds.w)),
                     @as(i32, @intFromFloat(bnds.h)),
                     @as(i32, @intFromFloat(bnds.x)),
                     @as(i32, @intFromFloat(bnds.y)),
                 });
-                defer allocator.free(val);
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -240,8 +241,7 @@ pub const VMData = struct {
             }
 
             {
-                const val = try std.fmt.allocPrint(allocator, "FRAME: {}", .{self.total_counter});
-                defer allocator.free(val);
+                const val = try std.mem.print(&val_buf, "FRAME: {}", .{self.total_counter});
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -253,8 +253,7 @@ pub const VMData = struct {
             }
 
             {
-                const val = try std.fmt.allocPrint(allocator, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
-                defer allocator.free(val);
+                const val = try std.mem.print(&val_buf, "FPS: {}", .{@as(i32, @intFromFloat(self.fps))});
 
                 try font.draw(.{
                     .shader = font_shader,
@@ -339,7 +338,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         errdefer rbo.delete();
 
         {
-            const old_renderbuffer: zgl.Renderbuffer = @enumFromInt(zgl.getInteger(.renderbuffer_binding));
+            const old_renderbuffer: zgl.Renderbuffer = @fromBackingInt(@intCast(zgl.getInteger(.renderbuffer_binding)));
             defer old_renderbuffer.bind(.buffer);
 
             rbo.storage(.buffer, .depth_stencil, DEFAULT_SIZE.x, DEFAULT_SIZE.y);
@@ -349,7 +348,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         errdefer fbo.delete();
 
         {
-            const old_framebuffer: zgl.Framebuffer = @enumFromInt(zgl.getInteger(.draw_framebuffer_binding));
+            const old_framebuffer: zgl.Framebuffer = @fromBackingInt(@intCast(zgl.getInteger(.draw_framebuffer_binding)));
             defer old_framebuffer.bind(.buffer);
 
             fbo.texture2D(.buffer, .color0, .@"2d", texture, 0);

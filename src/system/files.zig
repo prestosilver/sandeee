@@ -256,7 +256,7 @@ pub const File = struct {
         const clone = try allocator.create(File);
         clone.* = .{
             .parent = .link(target),
-            .name = try std.fmt.allocPrint(allocator, "{s}{s}", .{ target.name, name }),
+            .name = try std.mem.concat(allocator, u8, &.{ target.name, name }),
             .data = .{
                 .disk = try allocator.dupe(u8, self.data.disk),
             },
@@ -454,31 +454,29 @@ pub const Folder = struct {
 
         try conf.write(settings_out, null);
 
-        const out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{disk_name});
-        defer allocator.free(out);
+        const disks_dir = try std.Io.Dir.cwd().openDir(util.io, root_prefix ++ "disks", .{});
+        defer disks_dir.close(util.io);
 
-        const file = try std.Io.Dir.cwd().createFile(util.io, out, .{});
+        const file = try disks_dir.createFile(util.io, disk_name, .{});
         defer file.close(util.io);
 
         try root.write(file);
     }
 
     pub fn recoverDisk(disk_name: []const u8, source_disk: []const u8, override_settings: bool) !void {
-        const cwd: std.Io.Dir = .cwd();
+        const disks_dir = try std.Io.Dir.cwd().openDir(util.io, root_prefix ++ "disks", .{});
+        defer disks_dir.close(util.io);
 
-        const out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{disk_name});
-        defer allocator.free(out);
-
-        const out_file = try cwd.openFile(util.io, out, .{ .mode = .read_write });
+        const out_file = try disks_dir.openFile(util.io, disk_name, .{ .mode = .read_write });
         defer out_file.close(util.io);
 
         var root_disk = try loadDisk(out_file);
         defer root_disk.deinit();
 
-        const source_disk_path = try std.fmt.allocPrint(allocator, root_prefix ++ "content/{s}", .{source_disk});
-        defer allocator.free(source_disk_path);
+        const content_dir = try std.Io.Dir.cwd().openDir(util.io, root_prefix ++ "content", .{});
+        defer content_dir.close(util.io);
 
-        const recovery = try cwd.openFile(util.io, source_disk_path, .{});
+        const recovery = try content_dir.openFile(util.io, source_disk, .{});
         defer recovery.close(util.io);
 
         var rec_disk = try loadDisk(recovery);
@@ -529,30 +527,30 @@ pub const Folder = struct {
         try telem.Telem.load();
 
         telem.Telem.instance.version = .{
-            .major = @intFromEnum(options.SANDEEE_VERSION.phase),
+            .major = @backingInt(options.SANDEEE_VERSION.phase),
             .index = options.SANDEEE_VERSION.index,
         };
 
         telem.Telem.save() catch |err|
             log.err("telem save failed {}", .{err});
 
-        const file = try std.Io.Dir.cwd().createFile(util.io, out, .{});
+        const file = try disks_dir.createFile(util.io, disk_name, .{});
         defer file.close(util.io);
 
         try root_disk.write(file);
     }
 
-    pub fn init(input_disk_path: ?[]const u8) !void {
+    pub fn init(disk_name: ?[]const u8) !void {
         if (root_out) |out| {
             allocator.free(out);
             root_out = null;
         }
 
-        if (input_disk_path) |diskPath| {
-            const user_disk_out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{diskPath});
-            defer allocator.free(user_disk_out);
+        const disks_dir = try std.Io.Dir.cwd().openDir(util.io, root_prefix ++ "disks", .{});
+        defer disks_dir.close(util.io);
 
-            var user_disk = try std.Io.Dir.cwd().openFile(util.io, user_disk_out, .{});
+        if (disk_name) |disk_path| {
+            var user_disk = try disks_dir.openFile(util.io, disk_path, .{});
             defer user_disk.close(util.io);
 
             var root = try loadDisk(user_disk);
@@ -567,7 +565,7 @@ pub const Folder = struct {
 
             root.folders = fake_root;
 
-            root_out = try std.fmt.allocPrint(allocator, root_prefix ++ "disks/{s}", .{diskPath});
+            root_out = try allocator.print(root_prefix ++ "disks/{s}", .{disk_path});
 
             if (root.getFolder(strings.PROF_PATH) catch null) |folder| {
                 named_paths.set(.home, folder);
@@ -647,7 +645,7 @@ pub const Folder = struct {
             var iter = dir.iterate();
 
             while (iter.next(util.io) catch null) |file| {
-                const fullname = try std.fmt.allocPrint(allocator, "{s}{s}", .{ self.name, file.name });
+                const fullname = try std.mem.concat(allocator, u8, &.{ self.name, file.name });
                 defer allocator.free(fullname);
 
                 switch (file.kind) {
@@ -694,7 +692,7 @@ pub const Folder = struct {
             var iter = dir.iterate();
 
             while (iter.next(util.io) catch null) |file| {
-                const fullname = try std.fmt.allocPrint(allocator, "{s}{s}/", .{ self.name, file.name });
+                const fullname = try std.mem.concat(allocator, u8, &.{ self.name, file.name, "/" });
                 defer allocator.free(fullname);
 
                 switch (file.kind) {
@@ -781,9 +779,9 @@ pub const Folder = struct {
         const folder = if (last) |li| try self.getFolder(name[0..li]) else self;
 
         const fullname = if (last) |li|
-            try std.fmt.allocPrint(allocator, "{s}{s}", .{ folder.name, name[li + 1 ..] })
+            try std.mem.concat(allocator, u8, &.{ folder.name, name[li + 1 ..] })
         else
-            try std.fmt.allocPrint(allocator, "{s}{s}", .{ folder.name, name });
+            try std.mem.concat(allocator, u8, &.{ folder.name, name });
         errdefer allocator.free(fullname);
 
         var file_node = folder.files;
@@ -839,7 +837,7 @@ pub const Folder = struct {
             } else return error.FolderNotFound;
         }
 
-        const fullname = try std.fmt.allocPrint(allocator, "{s}{s}/", .{ self.name, name });
+        const fullname = try std.mem.concat(allocator, u8, &.{ self.name, name, "/" });
         errdefer allocator.free(fullname);
 
         var subfolder_node = self.folders;
@@ -894,7 +892,7 @@ pub const Folder = struct {
             return error.FolderNotFound;
         }
 
-        const fullname = try std.fmt.allocPrint(allocator, "{s}{s}", .{ self.name, name });
+        const fullname = try std.mem.concat(allocator, u8, &.{ self.name, name });
         defer allocator.free(fullname);
 
         var subfile_node = &self.files;
@@ -963,7 +961,7 @@ pub const Folder = struct {
             return error.FolderNotFound;
         }
 
-        const fullname = try std.fmt.allocPrint(allocator, "{s}{s}", .{ self.name, name });
+        const fullname = try std.mem.concat(allocator, u8, &.{ self.name, name });
         defer allocator.free(fullname);
 
         if (self.ext) |os_folder| {
@@ -1050,7 +1048,7 @@ pub const Folder = struct {
             return error.FolderNotFound;
         }
 
-        const fullname = try std.fmt.allocPrint(allocator, "{s}{s}/", .{ self.name, name });
+        const fullname = try std.mem.concat(allocator, u8, &.{ self.name, name, "/" });
         defer allocator.free(fullname);
 
         var subfolder_node = self.folders;
@@ -1157,7 +1155,7 @@ pub fn write() void {
 
         if (FolderLink.resolve(.root)) |root|
             root.write(file) catch |err| {
-                @panic(std.fmt.allocPrint(allocator, "Failed to save game {}", .{err}) catch "");
+                @panic(allocator.print("Failed to save game {}", .{err}) catch "");
             }
         else |_|
             log.warn("Disk root is null on write", .{});

@@ -309,7 +309,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
             if (b.data().* != .string) return error.StringMissing;
 
             const old_rope = b.data().string;
-            const old = try std.fmt.allocPrint(self.allocator, "{f}", .{old_rope});
+            const old = try self.allocator.print("{f}", .{old_rope});
             defer self.allocator.free(old);
 
             const new = try self.allocator.alloc(u8, @intCast(a.data().value));
@@ -421,7 +421,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
                                     if (pass.data().* != .string) return error.StringMissing;
 
-                                    const input = try std.fmt.allocPrint(self.allocator, "{f}", .{pass.data().string});
+                                    const input = try self.allocator.print("{f}", .{pass.data().string});
                                     defer self.allocator.free(input);
 
                                     if (std.mem.eql(u8, input, "Hi")) {
@@ -715,7 +715,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
             self.return_stack[self.return_rsp].function = self.inside_fn;
             self.pc = 0;
 
-            const name_value = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
+            const name_value = try self.allocator.print("{f}", .{name.data().string});
             defer self.allocator.free(name_value);
 
             if (self.functions.getEntry(name_value)) |entry| {
@@ -903,7 +903,7 @@ pub fn stringToOps(self: *Vm, conts: []const u8) VmError![]const Operation {
         }
     }
 
-    return try ops.toOwnedSlice();
+    return ops.toOwnedSlice();
 }
 
 pub fn loadString(self: *Vm, conts: []const u8) !void {
@@ -919,12 +919,12 @@ pub fn done(self: *Vm) bool {
 
 pub fn backtrace(self: *Vm, i: u8) ![]const u8 {
     if (i == 0)
-        return try std.fmt.allocPrint(self.allocator, "{}: {s} {}", .{ i, self.inside_fn orelse MAIN_NAME, self.pc });
+        return self.allocator.print("{}: {s} {}", .{ i, self.inside_fn orelse MAIN_NAME, self.pc });
 
     const bt = try self.backtrace(i - 1);
     defer self.allocator.free(bt);
 
-    return try std.fmt.allocPrint(self.allocator, "{}: {s} {}\n{s}", .{ i, self.return_stack[i - 1].function orelse MAIN_NAME, self.return_stack[i - 1].location, bt });
+    return self.allocator.print("{}: {s} {}\n{s}", .{ i, self.return_stack[i - 1].function orelse MAIN_NAME, self.return_stack[i - 1].location, bt });
 }
 
 pub fn getOp(self: *Vm) ![]u8 {
@@ -935,8 +935,7 @@ pub fn getOp(self: *Vm) ![]u8 {
         if (self.functions.getPtr(inside)) |func|
             func.*.ops[self.pc - 1]
         else {
-            return try std.fmt.allocPrint(
-                self.allocator,
+            return self.allocator.print(
                 "In function '{s}?' @ {}:\n  Operation: ?\n\n{s}",
                 .{ self.inside_fn orelse MAIN_NAME, self.pc, bt },
             );
@@ -949,8 +948,7 @@ pub fn getOp(self: *Vm) ![]u8 {
     else
         Operation{ .code = .Nop };
 
-    return try std.fmt.allocPrint(
-        self.allocator,
+    return self.allocator.print(
         "In function '{s}' @ {}:\n  Operation: {f}\n{s}",
         .{ self.inside_fn orelse MAIN_NAME, self.pc, oper, bt },
     );

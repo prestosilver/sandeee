@@ -76,8 +76,8 @@ pub fn draw(self: *GSCrash, size: Vec2) !void {
         .scale = 0.5,
     }).y;
 
-    const state_text = try std.fmt.allocPrint(allocator, "State: {}", .{self.prev_state.*});
-    defer allocator.free(state_text);
+    var state_buf: [32]u8 = undefined;
+    const state_text = try std.mem.print(&state_buf, "State: {}", .{self.prev_state.*});
 
     try self.face.draw(.{
         .shader = self.font_shader,

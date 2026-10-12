@@ -37,7 +37,7 @@ pub fn sandEEELogFn(
 
     const scope_prefix = "(" ++ switch (scope) {
         .SandEEE, .Steam, .OpenGL, std.log.default_log_scope => @tagName(scope),
-        else => if (@intFromEnum(level) <= @intFromEnum(std.log.Level.err))
+        else => if (@backingInt(level) <= @backingInt(std.log.Level.err))
             @tagName(scope)
         else
             return,
@@ -77,7 +77,7 @@ pub fn sandEEELogFn(
     if (total_logs < HIST_LEN) {
         logs[last_log] = .{
             .level = level,
-            .data = std.fmt.allocPrint(allocator, prefix ++ format ++ "\n", args) catch return,
+            .data = allocator.print(prefix ++ format ++ "\n", args) catch return,
         };
 
         last_log += 1;
@@ -85,7 +85,7 @@ pub fn sandEEELogFn(
     } else {
         logs[last_log] = .{
             .level = level,
-            .data = std.fmt.allocPrint(allocator, prefix ++ format ++ "\n", args) catch return,
+            .data = allocator.print(prefix ++ format ++ "\n", args) catch return,
         };
 
         last_log += 1;

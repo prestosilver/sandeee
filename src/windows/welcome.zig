@@ -100,7 +100,7 @@ pub const WelcomeData = struct {
             const remaining: f32 = @floatFromInt(std.Io.Clock.real.now(util.io).durationTo(self.stop_time).toSeconds());
             if (remaining < 0) @panic("Trial Over");
 
-            const demo_text = try std.fmt.allocPrint(allocator, "Trial ends in {}m", .{@as(usize, @intFromFloat(remaining / 60.0))});
+            const demo_text = try allocator.print("Trial ends in {}m", .{@as(usize, @intFromFloat(remaining / 60.0))});
             defer allocator.free(demo_text);
 
             try font.draw(.{
@@ -132,8 +132,7 @@ pub const WelcomeData = struct {
             });
         }
 
-        const version_text = try std.fmt.allocPrint(allocator, "(" ++ strings.SANDEEE_VERSION_TEXT ++ ")", .{});
-        defer allocator.free(version_text);
+        const version_text = "(" ++ strings.SANDEEE_VERSION_TEXT ++ ")";
 
         try font.draw(.{
             .shader = font_shader,

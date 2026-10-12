@@ -52,7 +52,7 @@ pub const PopupTextPick = struct {
         }).x);
 
         const text = if (self.text.items.len > maxlen)
-            try std.fmt.allocPrint(allocator, strings.DOTS ++ "{s}", .{self.text.items[self.text.items.len - maxlen + 1 ..]})
+            try std.mem.concat(allocator, u8, &.{ strings.DOTS, self.text.items[self.text.items.len - maxlen + 1 ..] })
         else
             try allocator.dupe(u8, self.text.items);
         defer allocator.free(text);

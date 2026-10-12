@@ -110,8 +110,8 @@ pub const SysCall = struct {
         sys_mutex.lock(util.io) catch unreachable;
         defer sys_mutex.unlock(util.io);
 
-        if (index < @intFromEnum(SyscallId.last)) {
-            return SYS_CALLS.get(@enumFromInt(index)).run_fn(self);
+        if (index < @backingInt(SyscallId.last)) {
+            return SYS_CALLS.get(@fromBackingInt(@intCast(index))).run_fn(self);
         }
 
         return error.InvalidSys;
@@ -131,10 +131,7 @@ fn sysPrint(self: *Vm) VmError!void {
         if (headless.is_headless)
             self.yield = true;
     } else if (a.data().* == .value) {
-        const str = try std.fmt.allocPrint(self.allocator, "{}", .{a.data().value});
-        defer self.allocator.free(str);
-
-        try self.out.appendSlice(str);
+        try self.out.print("{}", .{a.data().value});
 
         if (headless.is_headless)
             self.yield = true;
@@ -166,7 +163,7 @@ fn sysCreate(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    const path_str = try std.fmt.allocPrint(self.allocator, "{f}", .{path.data().string});
+    const path_str = try self.allocator.print("{f}", .{path.data().string});
     defer self.allocator.free(path_str);
 
     if (path_str.len > 0 and path_str[0] == '/') {
@@ -183,7 +180,7 @@ fn sysOpen(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    const path_str = try std.fmt.allocPrint(self.allocator, "{f}", .{path.data().string});
+    const path_str = try self.allocator.print("{f}", .{path.data().string});
     defer self.allocator.free(path_str);
 
     const root = try self.root.resolve();
@@ -284,7 +281,7 @@ fn sysCheckFunc(self: *Vm) VmError!void {
 
     if (name.data().* != .string) return error.StringMissing;
 
-    const name_str = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
+    const name_str = try self.allocator.print("{f}", .{name.data().string});
     defer self.allocator.free(name_str);
 
     const val: u64 = if (self.functions.contains(name_str)) 1 else 0;
@@ -299,7 +296,7 @@ fn sysGetFunc(self: *Vm) VmError!void {
 
     var val: []const u8 = "";
 
-    const name_str = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
+    const name_str = try self.allocator.print("{f}", .{name.data().string});
     defer self.allocator.free(name_str);
 
     if (self.functions.get(name_str)) |newVal| val = newVal.string;
@@ -314,14 +311,14 @@ fn sysRegFunc(self: *Vm) VmError!void {
     if (func.data().* != .string) return error.StringMissing;
     if (name.data().* != .string) return error.StringMissing;
 
-    const dup = try std.fmt.allocPrint(self.allocator, "{f}", .{func.data().string});
+    const dup = try self.allocator.print("{f}", .{func.data().string});
 
     const ops = try self.stringToOps(dup);
 
     // TODO: this should free children too
     errdefer self.allocator.free(ops);
 
-    const final_name = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
+    const final_name = try self.allocator.print("{f}", .{name.data().string});
 
     if (self.functions.fetchRemove(final_name)) |entry| {
         self.allocator.free(entry.key);
@@ -340,7 +337,7 @@ fn sysClearFunc(self: *Vm) VmError!void {
 
     if (name.data().* != .string) return error.StringMissing;
 
-    const name_str = try std.fmt.allocPrint(self.allocator, "{f}", .{name.data().string});
+    const name_str = try self.allocator.print("{f}", .{name.data().string});
     defer self.allocator.free(name_str);
 
     if (self.functions.fetchRemove(name_str)) |entry| {
@@ -424,7 +421,7 @@ fn sysSize(self: *Vm) VmError!void {
 
     if (path.data().* != .string) return error.StringMissing;
 
-    const path_str = try std.fmt.allocPrint(self.allocator, "{f}", .{path.data().string});
+    const path_str = try self.allocator.print("{f}", .{path.data().string});
     defer self.allocator.free(path_str);
 
     if (path_str.len == 0) return error.FileMissing;
@@ -459,7 +456,7 @@ fn sysSpawn(self: *Vm) VmError!void {
 
     if (exec.data().* != .string) return error.StringMissing;
 
-    const path = try std.fmt.allocPrint(self.allocator, "{f}", .{exec.data().string});
+    const path = try self.allocator.print("{f}", .{exec.data().string});
     defer self.allocator.free(path);
 
     const root = try self.root.resolve();
@@ -468,7 +465,7 @@ fn sysSpawn(self: *Vm) VmError!void {
 
     const handle = try Vm.Manager.instance.spawn(self.root, path, conts[4..]);
 
-    try self.pushStackI(@intFromEnum(handle));
+    try self.pushStackI(@backingInt(handle));
 }
 
 fn sysStatus(self: *Vm) VmError!void {
@@ -484,7 +481,7 @@ fn sysDelete(self: *Vm) VmError!void {
 
     if (file.data().* != .string) return error.StringMissing;
 
-    const path = try std.fmt.allocPrint(self.allocator, "{f}", .{file.data().string});
+    const path = try self.allocator.print("{f}", .{file.data().string});
     defer self.allocator.free(path);
 
     const root = try self.root.resolve();
@@ -497,7 +494,7 @@ const SteamYieldCreate = struct {
     pub fn check(self: *SteamYieldCreate, vm_instance: *Vm) VmError!bool {
         if (!self.handle.isComplete()) return false;
         const result = try self.handle.getResult(steam.callback.CreateItem);
-        try vm_instance.pushStackI(@intFromEnum(result.file_id));
+        try vm_instance.pushStackI(@backingInt(result.file_id));
 
         return true;
     }
@@ -526,7 +523,7 @@ fn sysSteam(self: *Vm) VmError!void {
 
     if (file.data().* != .string) return error.StringMissing;
 
-    const data = try std.fmt.allocPrint(self.allocator, "{f}", .{file.data().string});
+    const data = try self.allocator.print("{f}", .{file.data().string});
     defer self.allocator.free(data);
 
     if (data.len == 0) {
@@ -543,11 +540,11 @@ fn sysSteam(self: *Vm) VmError!void {
 
             if (split.next() != null) break :set_data;
 
-            const item: steam.UGC.PublishedFile = @enumFromInt(std.fmt.parseInt(usize, item_str, 10) catch {
+            const item: steam.UGC.PublishedFile = @fromBackingInt(@intCast(std.fmt.parseInt(usize, item_str, 10) catch {
                 log.warn("Bad steam metadata id {s} in set", .{data[1..]});
 
                 return error.UnknownError;
-            });
+            }));
 
             if (std.mem.eql(u8, prop, "title")) {
                 const title = try self.allocator.dupeSentinel(u8, value, 0);
@@ -687,11 +684,11 @@ fn sysSteam(self: *Vm) VmError!void {
                 }
             }
 
-            const item: steam.UGC.PublishedFile = @enumFromInt(std.fmt.parseInt(usize, item_str, 10) catch {
+            const item: steam.UGC.PublishedFile = @fromBackingInt(@intCast(std.fmt.parseInt(usize, item_str, 10) catch {
                 log.warn("Bad steam upload files id {s}", .{data[1..]});
 
                 return error.UnknownError;
-            });
+            }));
 
             const window_path = try std.mem.concat(self.allocator, u8, &.{ "//:", folder.name, "index.edf" });
             defer self.allocator.free(window_path);

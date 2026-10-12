@@ -21,6 +21,7 @@ const Vec3 = math.Vec3;
 const Sprite = drawers.Sprite;
 
 const SpriteBatch = util.SpriteBatch;
+const DiskSorter = util.DiskSorter;
 const Shader = util.Shader;
 const Font = util.Font;
 const allocator = util.allocator;
@@ -58,10 +59,6 @@ auto: bool = true,
 disks: std.array_list.Managed([]const u8) = .init(allocator),
 start: usize = 0,
 
-pub fn sortDisksLt(_: u0, a: []const u8, b: []const u8) bool {
-    return Recovery.getDate(b).toSeconds() < Recovery.getDate(a).toSeconds();
-}
-
 pub fn setup(self: *GSDisks) !void {
     graphics.Context.instance.color = .black;
 
@@ -70,12 +67,12 @@ pub fn setup(self: *GSDisks) !void {
     self.remaining = 10;
     self.disks.clearAndFree();
 
-    var dir = try std.Io.Dir.cwd().openDir(util.io, "disks", .{
+    var disks_dir = try std.Io.Dir.cwd().openDir(util.io, "disks", .{
         .iterate = true,
     });
-    defer dir.close(util.io);
+    defer disks_dir.close(util.io);
 
-    var iter = dir.iterate();
+    var iter = disks_dir.iterate();
     while (try iter.next(util.io)) |item| {
         if (!std.mem.endsWith(u8, item.name, ".eee")) continue;
 
@@ -84,9 +81,9 @@ pub fn setup(self: *GSDisks) !void {
         try self.disks.append(entry);
     }
 
-    const dat: u0 = 0;
-
-    std.sort.insertion([]const u8, self.disks.items, dat, sortDisksLt);
+    std.sort.insertion([]const u8, self.disks.items, DiskSorter{
+        .disks_dir = &disks_dir,
+    }, DiskSorter.sort);
 
     for (self.disks.items, 0..) |_, idx| {
         const copy = self.disks.items[idx];
@@ -94,7 +91,7 @@ pub fn setup(self: *GSDisks) !void {
 
         const ch = if (idx < DISK_LIST.len) DISK_LIST[idx] else ' ';
 
-        self.disks.items[idx] = try std.fmt.allocPrint(allocator, "{c} {s}", .{ ch, copy });
+        self.disks.items[idx] = try allocator.print("{c} {s}", .{ ch, copy });
     }
 
     try self.disks.append("N New Disk");
@@ -158,29 +155,30 @@ pub fn update(self: *GSDisks, dt: f32) !void {
 pub fn draw(self: *GSDisks, _: Vec2) !void {
     var pos = Vec2{ .x = 100, .y = 100 };
 
-    var line: []u8 = &.{};
+    var line_buf: [256]u8 = undefined;
 
     try SpriteBatch.global.draw(Sprite, &self.logo_sprite, self.shader, .{ .x = pos.x, .y = pos.y });
     pos.y += self.logo_sprite.data.size.y;
 
-    if (self.auto) {
-        line = try std.fmt.allocPrint(allocator, "{s}\nFor SandEEE v_{s}\nBooting to default in {}s", .{ strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT, @as(i32, @intFromFloat(self.remaining + 0.5)) });
-    } else {
-        line = try std.fmt.allocPrint(allocator, "{s}\nFor SandEEE v_{s}\nAutoboot canceled", .{ strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT });
+    {
+        const line = if (self.auto)
+            try std.mem.print(&line_buf, "{s}\nFor SandEEE v_{s}\nBooting to default in {}s", .{ strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT, @as(i32, @intFromFloat(self.remaining + 0.5)) })
+        else
+            try std.mem.print(&line_buf, "{s}\nFor SandEEE v_{s}\nAutoboot canceled", .{ strings.BOOTEEE_VERSION_TEXT, strings.SANDEEE_VERSION_TEXT });
+
+        try self.face.draw(.{
+            .shader = self.font_shader,
+            .text = line,
+            .wrap = graphics.Context.instance.size.x - 200,
+            .pos = pos,
+            .color = TEXT_COLOR,
+        });
+
+        pos.y += self.face.sizeText(.{
+            .text = line,
+            .wrap = graphics.Context.instance.size.x - 200,
+        }).y;
     }
-
-    try self.face.draw(.{
-        .shader = self.font_shader,
-        .text = line,
-        .wrap = graphics.Context.instance.size.x - 200,
-        .pos = pos,
-        .color = TEXT_COLOR,
-    });
-
-    pos.y += self.face.sizeText(.{
-        .text = line,
-        .wrap = graphics.Context.instance.size.x - 200,
-    }).y;
 
     try self.face.draw(.{
         .shader = self.font_shader,
@@ -192,9 +190,7 @@ pub fn draw(self: *GSDisks, _: Vec2) !void {
 
     if (self.disks.items.len != 0) {
         for (self.disks.items[self.start..@min(self.start + TOTAL_LINES, self.disks.items.len)], self.start..) |disk, idx| {
-            allocator.free(line);
-
-            line = try std.fmt.allocPrint(allocator, "  {s}", .{disk});
+            const line = try std.mem.print(&line_buf, "  {s}", .{disk});
             if (idx == self.sel) {
                 line[0] = '>';
             }
@@ -208,7 +204,6 @@ pub fn draw(self: *GSDisks, _: Vec2) !void {
             pos.y += self.face.size * 1;
         }
     }
-    allocator.free(line);
 }
 
 pub fn keypress(self: *GSDisks, key: c_int, _: c_int, down: bool) !void {

@@ -59,7 +59,7 @@ pub const BarData = struct {
         const ts = std.Io.Clock.real.now(util.io).toSeconds();
         const hours = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_hour)) - (config.SettingManager.instance.getInt("hours_offset") orelse 0);
         const mins = @as(i64, @intCast(@as(u64, @intCast(ts)) / std.time.s_per_min)) - (config.SettingManager.instance.getInt("minutes_offset") orelse 0);
-        const clock_text = try std.fmt.allocPrint(allocator, "{d: >2}:{d:0>2}", .{
+        const clock_text = try allocator.print("{d: >2}:{d:0>2}", .{
             @as(u8, @intCast(@rem(hours, 24))),
             @as(u8, @intCast(@rem(mins, 60))),
         });
@@ -144,7 +144,7 @@ pub const BarData = struct {
         defer result.deinit();
 
         while (iter.next()) |eln_name| {
-            const file_name = try std.fmt.allocPrint(allocator, "{s}.eln", .{eln_name});
+            const file_name = try std.mem.concat(allocator, u8, &.{ eln_name, ".eln" });
             defer allocator.free(file_name);
 
             const eln_file = apps.getFile(file_name) catch continue;

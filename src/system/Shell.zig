@@ -166,7 +166,7 @@ fn runFileInFolder(self: *Shell, root: files.FolderLink, cmd: []const u8, param:
     const file = folder.getFile(cmd) catch |err| {
         if (std.mem.endsWith(u8, cmd, ".eep")) return err;
 
-        const cmdeep = try std.fmt.allocPrint(allocator, "{s}.eep", .{cmd});
+        const cmdeep = try std.mem.concat(allocator, u8, &.{ cmd, ".eep" });
         defer allocator.free(cmdeep);
 
         return self.runFileInFolder(root, cmdeep, param);
@@ -335,7 +335,7 @@ pub const ShellCommand = struct {
 
             if (std.mem.eql(u8, param[1..], "help")) {
                 return .{
-                    .data = try std.fmt.allocPrint(allocator, "{s} - {s}\n\n{s}", .{ self.name, self.desc, self.help }),
+                    .data = try allocator.print("{s} - {s}\n\n{s}", .{ self.name, self.desc, self.help }),
                 };
             }
         }

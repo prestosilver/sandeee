@@ -28,15 +28,15 @@ pub const Handle = enum(u32) {
     _,
 
     pub fn inc(self: Handle) Handle {
-        const id = @intFromEnum(self);
-        return @enumFromInt(id +% 1);
+        const id = @backingInt(self);
+        return @fromBackingInt(@intCast(id +% 1));
     }
 };
 
 threads: std.array_list.Managed(std.Thread) = .init(allocator),
 vms: std.AutoHashMap(Handle, Vm) = .init(allocator),
 results: std.AutoHashMap(Handle, VMResult) = .init(allocator),
-vm_index: Handle = @enumFromInt(0),
+vm_index: Handle = @fromBackingInt(@intCast(0)),
 
 pub const VMResult = struct {
     data: ?std.array_list.Managed(u8) = null,
@@ -174,7 +174,7 @@ pub fn spawn(self: *Self, root: files.FolderLink, params: []const u8, code: []co
 
     try self.vms.put(id, vm_instance);
 
-    log.debug("Spawned vm #{}", .{@intFromEnum(id)});
+    log.debug("Spawned vm #{}", .{@backingInt(id)});
 
     return id;
 }
@@ -184,9 +184,9 @@ pub fn destroy(self: *Self, handle: Handle) void {
         entry.deinit();
         _ = self.vms.remove(handle);
 
-        log.debug("Destroy vm #{}", .{@intFromEnum(handle)});
+        log.debug("Destroy vm #{}", .{@backingInt(handle)});
     } else {
-        log.warn("Failed to destroy empty vm #{}", .{@intFromEnum(handle)});
+        log.warn("Failed to destroy empty vm #{}", .{@backingInt(handle)});
     }
 }
 
@@ -201,7 +201,7 @@ pub fn updateVmThread(vm_instance: *Vm, frame_end: u64) !void {
         vm_instance.stopped = true;
         vm_instance.errored = true;
 
-        const error_string = try std.fmt.allocPrint(allocator, "Error: {s}\n", .{@errorName(err)});
+        const error_string = try allocator.print("Error: {s}\n", .{@errorName(err)});
         defer allocator.free(error_string);
 
         try vm_instance.out.appendSlice(error_string);
