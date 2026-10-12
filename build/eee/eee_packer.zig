@@ -30,6 +30,8 @@ pub fn main(init: std.process.Init) !void {
             defer dir.close(init.io);
 
             var iter = dir.walk(init.gpa) catch unreachable;
+            defer iter.deinit();
+
             while (iter.next(init.io) catch unreachable) |path| {
                 switch (path.kind) {
                     .file => {

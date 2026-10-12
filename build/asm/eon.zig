@@ -1,7 +1,5 @@
 const std = @import("std");
 
-// TODO: this should use allocating writer
-
 var lib_path: []const u8 = undefined;
 
 const TokenKind = enum {
@@ -105,19 +103,16 @@ const Expression = struct {
 
             idx.* = start + 1;
 
-            var adds: []const u8 = undefined;
             if (std.mem.eql(u8, self.op.?.value, "dup")) {
-                adds = try std.fmt.allocPrint(allocator, "    dup 0\n    disc 1\n", .{});
+                try result.print("    dup 0\n    disc 1\n", .{});
             } else {
                 if (self.op.?.value[0] == '_') {
-                    adds = try std.fmt.allocPrint(allocator, "    call \"{s}\"\n", .{self.op.?.value[1..]});
+                    try result.print("    call \"{s}\"\n", .{self.op.?.value[1..]});
                 } else {
-                    adds = try std.fmt.allocPrint(allocator, "    call {s}\n", .{self.op.?.value});
+                    try result.print("    call {s}\n", .{self.op.?.value});
                 }
             }
-            defer allocator.free(adds);
-            try result.appendSlice(adds);
-            
+
             return result.toOwnedSlice();
         }
 
@@ -137,18 +132,16 @@ const Expression = struct {
             switch (self.op.?.kind) {
                 .TOKEN_INT_LIT => {
                     idx.* += 1;
-                    const adds = try std.fmt.allocPrint(allocator, "    push {s}\n", .{self.op.?.value});
-                    defer allocator.free(adds);
-                    
-                    try result.appendSlice(adds);
+
+                    try result.print("    push {s}\n", .{self.op.?.value});
+
                     return result.toOwnedSlice();
                 },
                 .TOKEN_STRING_LIT => {
                     idx.* += 1;
-                    const adds = try std.fmt.allocPrint(allocator, "    push {s}\n", .{self.op.?.value});
-                    defer allocator.free(adds);
-                    
-                    try result.appendSlice(adds);
+
+                    try result.print("    push {s}\n", .{self.op.?.value});
+
                     return result.toOwnedSlice();
                 },
                 .TOKEN_SUBREL => {
@@ -158,7 +151,7 @@ const Expression = struct {
                         "    sub\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                    
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
@@ -166,36 +159,36 @@ const Expression = struct {
                     if (self.a.len != 0) {
                         idx.* -= 1;
                         const adds = "    sub\n";
-                        
-                    try result.appendSlice(adds);
-                    return result.toOwnedSlice();
+
+                        try result.appendSlice(adds);
+                        return result.toOwnedSlice();
                     }
                     const adds = "    neg\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_BIT_NOT => {
                     const adds = "    not\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_NOT => {
                     const adds = "    push 1\n    xor\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_AT => {
                     const adds = "    getb\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_HEAP_READ => {
                     const adds = "    sys 15\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
@@ -206,49 +199,49 @@ const Expression = struct {
                         "    add\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_ADD => {
                     idx.* -= 1;
                     const adds = "    add\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_MUL => {
                     idx.* -= 1;
                     const adds = "    mul\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_DIV => {
                     idx.* -= 1;
                     const adds = "    div\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_MOD => {
                     idx.* -= 1;
                     const adds = "    mod\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_AND => {
                     idx.* -= 1;
                     const adds = "    and\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_OR => {
                     idx.* -= 1;
                     const adds = "    or\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
@@ -259,85 +252,81 @@ const Expression = struct {
                         "    cat\n" ++
                         "    disc 1\n" ++
                         "    set\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_CAT => {
                     idx.* -= 1;
                     const adds = "    cat\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_HEAP_ASSIGN => {
                     idx.* -= 1;
                     const adds = "    sys 16\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_ASSIGN => {
                     idx.* -= 1;
                     const adds = "    set\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_GT => {
                     idx.* -= 1;
                     const adds = "    gt\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_LT => {
                     idx.* -= 1;
                     const adds = "    lt\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_NEQ => {
                     idx.* -= 1;
                     const adds = "    eq\n    not\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_EQ => {
                     idx.* -= 1;
                     const adds = "    eq\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_KEYWORD_NEW => {
                     const adds = "    create\n    zero\n";
-                        
+
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
                 .TOKEN_IDENT => {
                     for (map.vars) |mapvar| {
                         if (std.mem.eql(u8, mapvar.name, self.op.?.value)) {
-                            const adds = try std.fmt.allocPrint(allocator, "    copy {}\n", .{idx.* - 1 - mapvar.idx});
-                            defer allocator.free(adds);
+                            try result.print("    copy {}\n", .{idx.* - 1 - mapvar.idx});
 
                             idx.* += 1;
 
-                            try result.appendSlice(adds);
                             return result.toOwnedSlice();
                         }
                     }
                     for (heap.items, 0..) |entry, i| {
                         if (std.mem.eql(u8, entry, self.op.?.value)) {
-                            const adds = try std.fmt.allocPrint(allocator, "    push {}\n", .{i});
-                            defer allocator.free(adds);
-                        
+                            try result.print("    push {}\n", .{i});
+
                             idx.* += 1;
 
-                            try result.appendSlice(adds);
                             return result.toOwnedSlice();
                         }
                     }
@@ -373,19 +362,19 @@ const Statement = struct {
 
         switch (self.kind) {
             .STMT_INVALID => {
-                return try std.fmt.allocPrint(allocator, "    nop\n", .{});
+                try result.print("    nop\n", .{});
+
+                return result.toOwnedSlice();
             },
             .STMT_DECLARE => {
                 if (self.exprs != null) {
                     const adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
                     defer allocator.free(adds);
-                    
-                    try result.appendSlice(adds);
-                } else {
-                    const adds = try std.fmt.allocPrint(allocator, "    push 0\n", .{});
-                    defer allocator.free(adds);
 
                     try result.appendSlice(adds);
+                } else {
+                    try result.print("    push 0\n", .{});
+
                     idx.* += 1;
                 }
 
@@ -402,18 +391,20 @@ const Statement = struct {
                 const map_start = try allocator.dupe(Var, map.vars);
                 block_id += 1;
 
-                var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
-                defer allocator.free(adds);
-                try result.appendSlice(adds);
+                {
+                    const adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
+                    try result.appendSlice(adds);
+                }
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    jz block_{}_alt\n", .{block});
-                try result.appendSlice(adds);
+                try result.print("    jz block_{}_alt\n", .{block});
+
                 idx.* -= 1;
 
                 for (self.blks.?[0]) |*stmt| {
-                    allocator.free(adds);
-                    adds = try stmt.toAsm(allocator, map, heap, idx);
+                    const adds = try stmt.toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
+
                     try result.appendSlice(adds);
                 }
 
@@ -425,21 +416,17 @@ const Statement = struct {
                         idx.* -= 1;
                     }
 
-                    if (count > 0) {
-                        allocator.free(adds);
-                        adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
-                        try result.appendSlice(adds);
-                    }
+                    if (count > 0)
+                        try result.print("    push 0\n    ndisc {}\n", .{count});
                 }
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    jmp block_{}_end\nblock_{}_alt:\n", .{ block, block });
-                try result.appendSlice(adds);
+                try result.print("    jmp block_{}_end\nblock_{}_alt:\n", .{ block, block });
 
                 if (self.blks.?.len > 1) {
                     for (self.blks.?[1]) |*stmt| {
-                        allocator.free(adds);
-                        adds = try stmt.toAsm(allocator, map, heap, idx);
+                        const adds = try stmt.toAsm(allocator, map, heap, idx);
+                        defer allocator.free(adds);
+
                         try result.appendSlice(adds);
                     }
 
@@ -452,25 +439,24 @@ const Statement = struct {
                         }
 
                         if (count > 0) {
-                            allocator.free(adds);
-                            adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
-                            try result.appendSlice(adds);
+                            try result.print("    push 0\n    ndisc {}\n", .{count});
                         }
                     }
                 }
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "block_{}_end:\n", .{block});
-                try result.appendSlice(adds);
+                try result.print("block_{}_end:\n", .{block});
 
                 map.vars = map_start;
 
                 return result.toOwnedSlice();
             },
             .STMT_RETURN => {
-                var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
-                defer allocator.free(adds);
-                try result.appendSlice(adds);
+                {
+                    const adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
+
+                    try result.appendSlice(adds);
+                }
 
                 idx.* -= 1;
 
@@ -482,15 +468,12 @@ const Statement = struct {
                     }
 
                     if (count > 0) {
-                        allocator.free(adds);
-                        adds = try std.fmt.allocPrint(allocator, "    push 1\n    ndisc {}\n", .{count});
-                        try result.appendSlice(adds);
+                        try result.print("    push 1\n    ndisc {}\n", .{count});
                     }
                 }
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    ret\n", .{});
-                try result.appendSlice(adds);
+                try result.print("    ret\n", .{});
+
                 return result.toOwnedSlice();
             },
             .STMT_WHILE => {
@@ -499,28 +482,26 @@ const Statement = struct {
                 const map_start = try allocator.dupe(Var, map.vars);
                 block_id += 1;
 
-                var adds: []const u8 = try std.fmt.allocPrint(allocator, "block_{}_loop:\n", .{block});
-                defer allocator.free(adds);
-                try result.appendSlice(adds);
+                try result.print("block_{}_loop:\n", .{block});
 
-                allocator.free(adds);
-                adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
-                try result.appendSlice(adds);
+                {
+                    const adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    jz block_{}_end\n", .{block});
-                try result.appendSlice(adds);
-                idx.* -= 1;
-
-                for (self.blks.?[0]) |*stmt| {
-                    allocator.free(adds);
-                    adds = try stmt.toAsm(allocator, map, heap, idx);
                     try result.appendSlice(adds);
                 }
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
-                try result.appendSlice(adds);
+                try result.print("    jz block_{}_end\n", .{block});
+                idx.* -= 1;
+
+                for (self.blks.?[0]) |*stmt| {
+                    const adds = try stmt.toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
+
+                    try result.appendSlice(adds);
+                }
+
+                try result.print("    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
 
                 {
                     var count: usize = 0;
@@ -531,9 +512,7 @@ const Statement = struct {
                     }
 
                     if (count > 0) {
-                        allocator.free(adds);
-                        adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
-                        try result.appendSlice(adds);
+                        try result.print("    push 0\n    ndisc {}\n", .{count});
                     }
                 }
 
@@ -547,36 +526,41 @@ const Statement = struct {
                 const block = block_id;
                 block_id += 1;
 
-                var adds = try self.blks.?[0][0].toAsm(allocator, map, heap, idx);
-                defer allocator.free(adds);
-                try result.appendSlice(adds);
+                {
+                    const adds = try self.blks.?[0][0].toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "block_{}_loop:\n", .{block});
-                try result.appendSlice(adds);
+                    try result.appendSlice(adds);
+                }
 
-                allocator.free(adds);
-                adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
-                try result.appendSlice(adds);
+                try result.print("block_{}_loop:\n", .{block});
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    jz block_{}_end\n", .{block});
-                try result.appendSlice(adds);
+                {
+                    const adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
+                    try result.appendSlice(adds);
+                }
+
+                try result.print("    jz block_{}_end\n", .{block});
+
                 idx.* -= 1;
 
                 for (self.blks.?[1]) |*stmt| {
-                    allocator.free(adds);
-                    adds = try stmt.toAsm(allocator, map, heap, idx);
-                try result.appendSlice(adds);
+                    const adds = try stmt.toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
+
+                    try result.appendSlice(adds);
                 }
 
-                allocator.free(adds);
-                adds = try self.exprs.?[1].toAsm(allocator, map, heap, idx);
-                try result.appendSlice(adds);
+                {
+                    const adds = try self.exprs.?[1].toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
 
-                allocator.free(adds);
-                adds = try std.fmt.allocPrint(allocator, "    disc 0\n    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
-                try result.appendSlice(adds);
+                    try result.appendSlice(adds);
+                }
+
+                try result.print("    disc 0\n    jmp block_{}_loop\nblock_{}_end:\n", .{ block, block });
+
                 idx.* -= 1;
 
                 {
@@ -588,11 +572,8 @@ const Statement = struct {
                         idx.* -= 1;
                     }
 
-                    if (count > 0) {
-                        allocator.free(adds);
-                        adds = try std.fmt.allocPrint(allocator, "    push 0\n    ndisc {}\n", .{count});
-                        try result.appendSlice(adds);
-                    }
+                    if (count > 0)
+                        try result.print("    push 0\n    ndisc {}\n", .{count});
                 }
 
                 map.vars = map_start;
@@ -600,22 +581,23 @@ const Statement = struct {
                 return result.toOwnedSlice();
             },
             .STMT_ASM => {
-                const adds = try std.fmt.allocPrint(allocator, "    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
-                try result.appendSlice(adds);
+                try result.print("    {s}\n", .{self.name.?[1 .. self.name.?.len - 1]});
 
                 return result.toOwnedSlice();
             },
             .STMT_EXP => {
                 const start = idx.*;
 
-                var adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
-                defer allocator.free(adds);
-                try result.appendSlice(adds);
+                {
+                    const adds = try self.exprs.?[0].toAsm(allocator, map, heap, idx);
+                    defer allocator.free(adds);
+
+                    try result.appendSlice(adds);
+                }
 
                 for (start..idx.*) |_| {
-                    allocator.free(adds);
-                    adds = try std.fmt.allocPrint(allocator, "    disc 0\n", .{});
-                    try result.appendSlice(adds);
+                    try result.print("    disc 0\n", .{});
+
                     idx.* -= 1;
                 }
 
@@ -640,9 +622,16 @@ const FunctionDecl = struct {
     stmts: []Statement,
 
     fn toAsm(self: *FunctionDecl, allocator: std.mem.Allocator, heap: *const std.array_list.Managed([]const u8), lib: bool) ![]const u8 {
+        var result: std.array_list.Managed(u8) = .init(allocator);
+        defer result.deinit();
+
         const prefix = if (lib) "_" else "";
-        var result = try std.fmt.allocPrint(allocator, "{s}{s}:\n", .{ prefix, self.ident });
-        var map = VarMap{ .vars = try allocator.alloc(Var, self.params.len) };
+
+        try result.print("{s}{s}:\n", .{ prefix, self.ident });
+
+        var map = VarMap{
+            .vars = try allocator.alloc(Var, self.params.len),
+        };
         for (self.params, 0..) |param, idx| {
             map.vars[idx] = .{
                 .name = param.name,
@@ -651,16 +640,14 @@ const FunctionDecl = struct {
         }
 
         var idx = self.params.len;
-
         for (self.stmts) |*stmt| {
             const adds = try stmt.toAsm(allocator, &map, heap, &idx);
             defer allocator.free(adds);
-            const start_res = result.len;
-            result = try allocator.realloc(result, result.len + adds.len);
-            @memcpy(result[start_res..], adds);
+
+            try result.appendSlice(adds);
         }
 
-        return result;
+        return result.toOwnedSlice();
     }
 };
 
@@ -669,17 +656,26 @@ const Program = struct {
     heap: std.array_list.Managed([]const u8),
 
     fn toAsm(self: *Program, allocator: std.mem.Allocator, lib: bool) ![]const u8 {
-        var result =
-            if (!lib) try std.fmt.allocPrint(allocator, "    push {}\n    sys 14\n    call main\n    sys 1\n", .{self.heap.items.len}) else try std.fmt.allocPrint(allocator, "", .{});
+        var result: std.array_list.Managed(u8) = .init(allocator);
+        defer result.deinit();
+
+        if (!lib)
+            try result.print(
+                \\    push {}
+                \\    sys 14
+                \\    call main
+                \\    sys 1
+                \\
+            , .{self.heap.items.len});
 
         for (self.funcs) |*func| {
             const adds = try func.toAsm(allocator, &self.heap, lib);
             defer allocator.free(adds);
-            const start_res = result.len;
-            result = try allocator.realloc(result, result.len + adds.len);
-            @memcpy(result[start_res..], adds);
+
+            try result.appendSlice(adds);
         }
-        return result;
+
+        return result.toOwnedSlice();
     }
 };
 
@@ -692,17 +688,19 @@ const VarMap = struct {
     vars: []Var,
 };
 
-pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) !std.array_list.Managed(Token) {
+pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) ![]Token {
     var f = try std.Io.Dir.cwd().openFile(io, in, .{});
     defer f.close(io);
 
     var reader_buff: [1024]u8 = undefined;
     var reader = f.reader(io, &reader_buff);
 
-    var result = std.array_list.Managed(Token).init(allocator);
+    var result: std.array_list.Managed(Token) = .init(allocator);
+    defer result.deinit();
+
     var buff: [1]u8 = undefined;
     var prev: u8 = '\n';
-    var code = try allocator.alloc(u8, 0);
+    var code: []u8 = &.{};
     while (true) {
         const size = try reader.interface.readSliceShort(&buff);
         if (size == 0) break;
@@ -727,16 +725,14 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) !std.ar
             var stmt = (try reader.interface.takeDelimiter('\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
-                const path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ lib_path, stmt[10 .. stmt.len - 1] });
+                const path = try allocator.print("{s}/{s}", .{ lib_path, stmt[10 .. stmt.len - 1] });
 
                 var toks = try lexFile(io, allocator, path);
-                defer toks.deinit();
+                defer allocator.free(toks);
 
-                _ = toks.pop();
-
-                try result.appendSlice(toks.items);
+                try result.appendSlice(toks[0 .. toks.len - 1]);
             }
-            code = try allocator.alloc(u8, 0);
+            code = &.{};
 
             continue;
         }
@@ -1032,7 +1028,7 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) !std.ar
                         .value = "EOF",
                     });
 
-                    return result;
+                    return result.toOwnedSlice();
                 },
                 else => |e| return e,
             };
@@ -1049,7 +1045,7 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) !std.ar
         .value = "EOF",
     });
 
-    return result;
+    return result.toOwnedSlice();
 }
 
 const EMPTY_EXPR = [_]Expression{};
@@ -1432,7 +1428,7 @@ pub fn parseFunctionDecl(allocator: std.mem.Allocator, fnPrefix: *[]const u8, to
     if (tokens[idx.*].kind != .TOKEN_KEYWORD_FN) return error.ExpectedType;
     idx.* += 1;
     if (tokens[idx.*].kind != .TOKEN_IDENT) return error.ExpectedIdent;
-    result.ident = try std.fmt.allocPrint(allocator, "{s}{s}", .{ fnPrefix.*, tokens[idx.*].value });
+    result.ident = try allocator.print("{s}{s}", .{ fnPrefix.*, tokens[idx.*].value });
     idx.* += 1;
     if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
     idx.* += 1;
@@ -1480,7 +1476,7 @@ pub fn parseProgram(allocator: std.mem.Allocator, fn_prefix: *[]const u8, tokens
             if (tokens[idx].kind != .TOKEN_IDENT) return error.ExpectedIdent;
             const old_prefix = fn_prefix.*;
             defer allocator.free(old_prefix);
-            fn_prefix.* = try std.fmt.allocPrint(allocator, "{s}.", .{tokens[idx].value});
+            fn_prefix.* = try allocator.print("{s}.", .{tokens[idx].value});
             idx += 1;
             if (tokens[idx].kind != .TOKEN_OPEN_BRACE) return error.ExpectedIdent;
             idx += 1;
@@ -1498,7 +1494,7 @@ pub fn parseProgram(allocator: std.mem.Allocator, fn_prefix: *[]const u8, tokens
 
     if (tokens[idx].kind != .TOKEN_EOF) {
         for (tokens[idx..]) |tok|
-            std.log.info("toks: {} '{s}'", .{ @intFromEnum(tok.kind), tok.value });
+            std.log.info("toks: {} '{s}'", .{ @backingInt(tok.kind), tok.value });
 
         return error.ExpectedEOF;
     }
@@ -1511,10 +1507,10 @@ pub fn parseProgram(allocator: std.mem.Allocator, fn_prefix: *[]const u8, tokens
 pub fn compile_executable(io: std.Io, allocator: std.mem.Allocator, input_file: []const u8, output_file: []const u8) !void {
     var fn_prefix: []const u8 = "";
 
-    var tokens = try lexFile(io, allocator, input_file);
-    defer tokens.deinit();
+    const tokens = try lexFile(io, allocator, input_file);
+    defer allocator.free(tokens);
 
-    var prog = try parseProgram(allocator, &fn_prefix, tokens.items);
+    var prog = try parseProgram(allocator, &fn_prefix, tokens);
 
     var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
@@ -1528,10 +1524,10 @@ pub fn compile_executable(io: std.Io, allocator: std.mem.Allocator, input_file: 
 pub fn compile_library(io: std.Io, allocator: std.mem.Allocator, input_file: []const u8, output_file: []const u8) !void {
     var fn_prefix: []const u8 = "";
 
-    var tokens = try lexFile(io, allocator, input_file);
-    defer tokens.deinit();
+    const tokens = try lexFile(io, allocator, input_file);
+    defer allocator.free(tokens);
 
-    var prog = try parseProgram(allocator, &fn_prefix, tokens.items);
+    var prog = try parseProgram(allocator, &fn_prefix, tokens);
 
     var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);

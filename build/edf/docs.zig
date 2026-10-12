@@ -27,34 +27,31 @@ pub fn main(init: std.process.Init) !void {
         output_dir.deleteTree(init.io, output_path) catch {};
     }
 
-    try std.Io.Dir.cwd().createDir(init.io, output_path, .default_dir);
+    std.Io.Dir.cwd().createDir(init.io, output_path, .default_dir) catch |err| switch (err) {
+        error.PathAlreadyExists => {},
+        else => return err,
+    };
 
-    var walker = try std.Io.Dir.cwd().openDir(init.io, input_path, .{
+    const output_dir = try std.Io.Dir.cwd().openDir(init.io, output_path, .{});
+    defer output_dir.close(init.io);
+
+    var input_dir = try std.Io.Dir.cwd().openDir(init.io, input_path, .{
         .iterate = true,
     });
-    defer walker.close(init.io);
+    defer input_dir.close(init.io);
 
-    var iter = try walker.walk(init.gpa);
+    var iter = try input_dir.walk(init.gpa);
     defer iter.deinit();
 
     while (try iter.next(init.io)) |path| {
         switch (path.kind) {
             .directory => {
-                const dir_path = try std.fmt.allocPrint(init.gpa, "{s}/{s}", .{ output_path, path.path });
-                defer init.gpa.free(dir_path);
-
-                try std.Io.Dir.cwd().createDirPath(init.io, dir_path);
+                try output_dir.createDirPath(init.io, path.path);
             },
             .file => {
-                const input_file_path = try std.fmt.allocPrint(init.gpa, "{s}/{s}", .{ input_path, path.path });
-                defer init.gpa.free(input_file_path);
-
-                const output_file_path = try std.fmt.allocPrint(init.gpa, "{s}/{s}", .{ output_path, path.path });
-                defer init.gpa.free(output_file_path);
-
-                const input_file = try std.Io.Dir.cwd().openFile(init.io, input_file_path, .{ .mode = .read_only });
+                const input_file = try input_dir.openFile(init.io, path.path, .{ .mode = .read_only });
                 defer input_file.close(init.io);
-                const output_file = try std.Io.Dir.cwd().createFile(init.io, output_file_path, .{});
+                const output_file = try output_dir.createFile(init.io, path.path, .{});
                 defer output_file.close(init.io);
 
                 var reader_buffer: [1024]u8 = undefined;

@@ -25,13 +25,14 @@ pub fn main(init: std.process.Init) !void {
 
             var root = try std.Io.Dir.cwd().openDir(init.io, mail_path, .{ .iterate = true });
             var walker = try root.walk(init.gpa);
+            defer walker.deinit();
 
             while (try walker.next(init.io)) |file| {
                 switch (file.kind) {
                     .file => {
-                        var f = try std.Io.Dir.cwd().openFile(init.io, file_path, .{});
+                        var f = try root.openFile(init.io, file.path, .{});
                         defer f.close(init.io);
-                        try mail.EmailManager.instance.append(try mail.EmailManager.Email.parseTxt(file.path));
+                        try mail.EmailManager.instance.append(try mail.EmailManager.Email.parseTxt(f));
                     },
                     else => {},
                 }

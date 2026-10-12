@@ -47,7 +47,7 @@ pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: 
             continue;
         }
         if (l[l.len - 1] == ':') {
-            const key = try std.fmt.allocPrint(allocator, "{s}", .{l[0 .. l.len - 1]});
+            const key = try allocator.dupe(u8, l[0 .. l.len - 1]);
 
             try consts.put(key, idx);
         } else {
@@ -122,7 +122,7 @@ pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: 
             std.log.info("{s}", .{op});
             return error.UnknownOp;
         }
-        try writer.interface.writeAll(&.{@as(u8, @intFromEnum(code))});
+        try writer.interface.writeAll(&.{@as(u8, @backingInt(code))});
 
         if (std.mem.eql(u8, op, l)) {
             try writer.interface.writeAll("\x00");
@@ -205,11 +205,11 @@ pub fn compile_library(allocator: std.mem.Allocator, io: std.Io, input_file: []c
             if (l[0] == '_') {
                 idx = 0;
                 toc_count += 1;
-                const key = try std.fmt.allocPrint(allocator, "{s}", .{l[1 .. l.len - 1]});
+                const key = try allocator.dupe(u8, l[1 .. l.len - 1]);
                 try funcs.append(key);
             }
 
-            const key = try std.fmt.allocPrint(allocator, "{s}", .{l[0 .. l.len - 1]});
+            const key = try allocator.dupe(u8, l[0 .. l.len - 1]);
 
             try consts.put(key, idx);
         } else {
@@ -300,7 +300,7 @@ pub fn compile_library(allocator: std.mem.Allocator, io: std.Io, input_file: []c
             std.log.info("{s}", .{op});
             return error.UnknownOp;
         }
-        try data.append(@as(u8, @intFromEnum(code)));
+        try data.append(@as(u8, @backingInt(code)));
 
         if (std.mem.eql(u8, op, l)) {
             try data.appendSlice("\x00");

@@ -46,11 +46,8 @@ const INSTRUCTION_TYPES = [_]InstructionData{
     .{ .stack_out = 0, .stack_in = 0, .params = .{ false, true, false } }, // seed
 };
 
-pub var gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 10 }){};
-pub const allocator = gpa.allocator();
-
-pub fn main() !void {
-    var args = try std.process.argsWithAllocator(allocator);
+pub fn main(init: std.process.Init) !void {
+    var args = init.minimal.args.iterate();
     _ = args.next();
 
     const mode = args.next() orelse return error.MissingMode;
@@ -60,24 +57,24 @@ pub fn main() !void {
         const count_value = args.next() orelse return error.MissingOutputFile;
         const count = try std.fmt.parseInt(usize, count_value, 10);
 
-        return genScript(output_file_path, count);
+        return genScript(init.io, output_file_path, count);
     } else if (std.mem.eql(u8, mode, "--rand")) {
-        return genFile(output_file_path);
+        return genFile(init.io, output_file_path);
     } else return error.InvalidMode;
 }
 
-pub fn genFile(output: []const u8) !void {
-    const output_file = try std.fs.createFileAbsolute(output, .{});
-    defer output_file.close();
+pub fn genFile(io: std.Io, output: []const u8) !void {
+    const output_file = try std.Io.Dir.createFileAbsolute(io, output, .{});
+    defer output_file.close(io);
 
-    var writer = output_file.writer(&.{});
+    var writer = output_file.writer(io, &.{});
 
     try writer.interface.writeAll("EEEp");
 
     var buffer: [1020]u8 = undefined;
 
     var idx: usize = 0;
-    var rnd = std.Random.DefaultPrng.init(@intCast(std.time.microTimestamp()));
+    var rnd = std.Random.DefaultPrng.init(@intCast(std.Io.Clock.real.now(io).toMicroseconds()));
     var stack: usize = 0;
     var cstack: usize = 0;
 
@@ -133,16 +130,13 @@ pub fn genFile(output: []const u8) !void {
     try writer.interface.writeAll(buffer[0..idx]);
 }
 
-pub fn genScript(output: []const u8, count: usize) !void {
-    const output_file = try std.fs.createFileAbsolute(output, .{});
-    defer output_file.close();
+pub fn genScript(io: std.Io, output: []const u8, count: usize) !void {
+    const output_file = try std.Io.Dir.createFileAbsolute(io, output, .{});
+    defer output_file.close(io);
 
-    var writer = output_file.writer(&.{});
+    var writer = output_file.writer(io, &.{});
 
     for (0..count) |idx| {
-        const text = try std.fmt.allocPrint(allocator, "{}.eep\n", .{idx});
-        defer allocator.free(text);
-
-        try writer.interface.writeAll(text);
+        try writer.interface.print("{}.eep\n", .{idx});
     }
 }
