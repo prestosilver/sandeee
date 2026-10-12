@@ -1,5 +1,6 @@
 const std = @import("std");
 const files = @import("sandeee").system.files;
+const Disk = @import("sandeee").system.Disk;
 const strings = @import("sandeee").data.strings;
 const util = @import("sandeee").util;
 
@@ -12,32 +13,35 @@ pub fn main(init: std.process.Init) !void {
 
     util.io = init.io;
 
-    const files_root = try init.gpa.create(files.Folder);
-    defer init.gpa.destroy(files_root);
+    {
+        var file = try std.Io.Dir.cwd().createFile(init.io, output_file, .{});
+        defer file.close(init.io);
 
-    files_root.* = .{
-        .parent = null,
-        .name = strings.ROOT_PATH,
-    };
+        var buf: [1024]u8 = undefined;
+        var writer = file.writer(init.io, &buf);
+        try writer.interface.writeAll(&std.mem.toBytes(Disk.BLANK_DISK));
+    }
 
+    var disk_file = try std.Io.Dir.cwd().openFile(init.io, output_file, .{ .mode = .read_write });
+    defer disk_file.close(init.io);
+
+    files.disk = try .init(init.io, init.gpa, disk_file);
+    defer files.disk.deinit();
+
+    const files_root = files.disk.root();
     files.named_paths.set(.root, files_root);
 
     var count: usize = 0;
     while (args.next()) |kind| {
         if (std.mem.eql(u8, kind, "--dir")) {
             const folder_path = args.next() orelse return error.MissingDirectory;
-            files_root.newFolder(folder_path, true) catch |err| switch (err) {
-                error.FolderExists => {},
-                else => |e| return e,
-            };
+            _ = files_root.createFolder(folder_path);
         } else if (std.mem.eql(u8, kind, "--file")) {
             const input_path = args.next() orelse return error.MissingFile;
             const disk_path = args.next() orelse return error.MissingPath;
 
-            files_root.newFile(disk_path) catch |err| switch (err) {
-                error.FileExists => {},
-                else => |e| return e,
-            };
+            var created_file = files_root.createFile(disk_path);
+            defer created_file.deinit();
 
             const file = try std.Io.Dir.cwd().openFile(init.io, input_path, .{});
             defer file.close(init.io);
@@ -46,49 +50,44 @@ pub fn main(init: std.process.Init) !void {
             var reader = file.reader(init.io, &tmp_buffer);
             const content_len = try reader.interface.readSliceShort(&content);
 
-            try files_root.writeFile(disk_path, content[0..content_len], null);
+            try created_file.write(content[0..content_len], null);
             count += 1;
         } else if (std.mem.eql(u8, kind, "--disk")) {
             const input_path = args.next() orelse return error.MissingFile;
 
-            const recovery = try std.Io.Dir.cwd().openFile(init.io, input_path, .{});
+            const recovery = try std.Io.Dir.cwd().openFile(init.io, input_path, .{ .mode = .read_write });
             defer recovery.close(init.io);
 
-            var overlay_disk = try files.Folder.loadDisk(recovery);
+            var overlay_disk: Disk = try .init(init.io, init.gpa, recovery);
             defer overlay_disk.deinit();
 
-            var folder_list = std.array_list.Managed(*const files.Folder).init(init.gpa);
-            defer folder_list.deinit();
-            try overlay_disk.getFoldersRec(&folder_list, false);
+            // var folder_list = std.array_list.Managed(*const files.Folder).init(init.gpa);
+            // defer folder_list.deinit();
+            // try overlay_disk.getFoldersRec(&folder_list, false);
+            //
+            // for (folder_list.items) |folder| {
+            //     files_root.newFolder(folder.name, true) catch |err| switch (err) {
+            //         error.FolderExists => {},
+            //         else => |e| return e,
+            //     };
+            // }
+            //
+            // var file_list = std.array_list.Managed(*files.File).init(init.gpa);
+            // defer file_list.deinit();
+            // try overlay_disk.getFilesRec(&file_list, false);
 
-            for (folder_list.items) |folder| {
-                files_root.newFolder(folder.name, true) catch |err| switch (err) {
-                    error.FolderExists => {},
-                    else => |e| return e,
-                };
-            }
+            // for (file_list.items) |file| {
+            //     if (file.data != .disk) continue;
 
-            var file_list = std.array_list.Managed(*files.File).init(init.gpa);
-            defer file_list.deinit();
-            try overlay_disk.getFilesRec(&file_list, false);
-
-            for (file_list.items) |file| {
-                if (file.data != .disk) continue;
-
-                files_root.newFile(file.name) catch |err| switch (err) {
-                    error.FileExists => {},
-                    else => |e| return e,
-                };
-                try files_root.writeFile(file.name, file.data.disk, null);
-            }
+            //     files_root.newFile(file.name) catch |err| switch (err) {
+            //         error.FileExists => {},
+            //         else => |e| return e,
+            //     };
+            //     try files_root.writeFile(file.name, file.data.disk, null);
+            // }
         } else {
             std.log.info("{s}", .{kind});
             return error.UnknownArg;
         }
     }
-
-    try std.Io.Dir.cwd().writeFile(init.io, .{
-        .sub_path = output_file,
-        .data = (try files.toStr()).items,
-    });
 }

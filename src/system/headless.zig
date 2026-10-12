@@ -121,13 +121,15 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
     const diskpath = try storage.getContentPath(alloc_path);
     defer diskpath.deinit();
 
-    std.Io.Dir.cwd().access(util.io, diskpath.items, .{}) catch {
-        try files.Folder.setupDisk(disk, "");
-    };
+    const disk_dir = std.Io.Dir.cwd().openDir(util.io, diskpath.items, .{}) catch
+        try std.Io.Dir.cwd().createDirPathOpen(util.io, diskpath.items, .{});
+    defer disk_dir.close(util.io);
 
-    try files.Folder.init(disk);
+    var disk_file = try disk_dir.openFile(util.io, disk, .{ .mode = .read_write });
+    defer disk_file.close(util.io);
 
-    defer files.deinit();
+    files.disk = try .init(util.io, util.allocator, disk_file);
+    defer files.disk.deinit();
 
     var main_shell = Shell{ .root = .home, .headless = true };
     defer main_shell.deinit();

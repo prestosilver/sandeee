@@ -27,12 +27,17 @@ fn MaxLength(comptime size: usize, comptime Header: type, comptime Data: type) t
         header: Header,
         data: [data_len]Data = undefined,
 
+        const LENGTH: usize = data_len;
+
         const Self = @This();
 
         pub fn init(comptime header: Header, comptime data: []const Data) Self {
             var tmp: Self = .{ .header = header };
-            inline for (data, 0..) |item, idx| {
-                tmp.data[idx] = item;
+            inline for (&tmp.data, 0..) |*item, idx| {
+                if (idx < data.len)
+                    item.* = data[idx]
+                else
+                    item.* = .{};
             }
 
             return tmp;
@@ -46,18 +51,18 @@ const FatOffset = i32;
 const Block = extern union {
     meta: extern struct {
         full_name: [128]u8,
+        full_path: [256]u8,
         created: usize = 0,
         modified: usize = 0,
 
         const MetaBlock = @This();
 
         pub fn init(comptime name: anytype) MetaBlock {
-            var result: MetaBlock = .{ .full_name = undefined };
-            for (name, 0..) |ch, idx| {
-                result.full_name[idx] = ch;
-            }
-
+            var result: MetaBlock = .{ .full_name = undefined, .full_path = undefined };
+            @memcpy(result.full_name[0..name.len], name);
+            @memcpy(result.full_path[0..name.len], name);
             result.full_name[name.len] = 0;
+            result.full_path[name.len] = 0;
 
             return result;
         }
@@ -85,8 +90,8 @@ const Block = extern union {
                 padding: u5 = undefined,
             },
             item_name: [16]u8 = undefined,
-            meta_offset: FatOffset = undefined,
-            data_offset: FatOffset = undefined,
+            meta_offset: FatOffset = 0,
+            data_offset: FatOffset = 0,
         },
     ),
     file: MaxLength(
@@ -94,7 +99,7 @@ const Block = extern union {
         enum(FatOffset) { eof = 0, _ },
         extern struct {
             data: FatOffset = 0,
-            data_len: u32 = 0,
+            data_len: u16 = 0,
         },
     ),
     data: [BLOCK_SIZE]u8,
@@ -103,7 +108,7 @@ const Block = extern union {
 const CacheIdx = u6;
 const CacheBlockIdx = u10;
 
-const CACHE_LEN = std.math.maxInt(CacheIdx);
+const CACHE_LEN = std.math.maxInt(CacheIdx) + 1;
 
 const CacheMeta = packed struct {
     valid: bool = false,
@@ -114,7 +119,7 @@ const CacheMeta = packed struct {
 allocator: std.mem.Allocator,
 io: std.Io,
 cache_meta: [CACHE_LEN]CacheMeta = [_]CacheMeta{.{}} ** CACHE_LEN,
-cache_data: [std.math.maxInt(CacheIdx)]Block align(BLOCK_SIZE) = undefined,
+cache_data: [CACHE_LEN]Block align(BLOCK_SIZE) = undefined,
 disk_file: std.Io.File,
 
 /// A folder object
@@ -125,16 +130,26 @@ pub const Folder = struct {
     disk: *Disk,
 
     /// gathers pointers to the blocks in a file and returns it
-    pub fn openFile(self: *const Folder, path: []const u8) !File {
+    pub fn openFile(self: *const Folder, file_name: []const u8) !File {
+        const internal_name = file_name[0..@min(15, file_name.len)];
+
         var iter = self.iterator();
         while (iter.next()) |item| {
             if (item == .file) {
-                if (std.mem.eql(u8, path, strSlice(&item.file.name)))
-                    return item.file;
+                const tmp_name = strSlice(&item.file.name);
+
+                if (std.mem.eql(u8, internal_name, tmp_name[0..@min(15, tmp_name.len)])) {
+                    if (file_name.len < 16)
+                        return item.file;
+
+                    const meta = item.file.getMeta();
+                    if (std.mem.eql(u8, strSlice(&meta.meta.full_name), file_name))
+                        return item.file;
+                }
             }
         }
 
-        return error.FolderNotFound;
+        return error.FileNotFound;
     }
 
     /// searches for a folder and opens it
@@ -196,6 +211,7 @@ pub const Folder = struct {
         meta.meta.full_name[file_name.len + 1] = 0;
 
         const block = self.disk.getBlock(block_idx);
+        block.file.header = .eof;
         for (&block.file.data) |*data| {
             data.data = 0;
         }
@@ -219,7 +235,7 @@ pub const Folder = struct {
                     .name = name,
                     .data_block = block_idx,
                     .meta_block = block_idx + 1,
-                    .cont_blocks = &.{},
+                    .cont_blocks = .empty,
                 };
             }
         }
@@ -300,6 +316,7 @@ pub const Folder = struct {
         disk: *Disk,
         data_block: ?usize,
         data_block_entry: usize = 0,
+        previous: ?Entry = null,
 
         const Entry = union(enum) {
             file: File,
@@ -307,6 +324,15 @@ pub const Folder = struct {
         };
 
         pub fn next(self: *Iterator) ?Entry {
+            if (self.previous) |prev| {
+                switch (prev) {
+                    .file => self.previous.?.file.deinit(),
+                    .folder => {},
+                }
+
+                self.previous = null;
+            }
+
             const data_block = self.data_block orelse return null;
 
             const block = self.disk.getBlock(data_block).folder;
@@ -328,7 +354,7 @@ pub const Folder = struct {
                 return self.next();
 
             if (entry.tags.is_folder) {
-                return .{
+                const result: Entry = .{
                     .folder = .{
                         .meta_block = @as(usize, @intCast(entry.meta_offset)) + data_block,
                         .data_block = @as(usize, @intCast(entry.data_offset)) + data_block,
@@ -336,9 +362,12 @@ pub const Folder = struct {
                         .disk = self.disk,
                     },
                 };
+                self.previous = result;
+
+                return result;
             }
 
-            return .{
+            const result: Entry = .{
                 .file = .init(
                     self.disk,
                     entry.item_name,
@@ -346,6 +375,8 @@ pub const Folder = struct {
                     @as(usize, @intCast(entry.meta_offset)) + data_block,
                 ),
             };
+            self.previous = result;
+            return result;
         }
     };
 
@@ -370,7 +401,7 @@ pub const File = struct {
     name: [16]u8,
     meta_block: usize,
     data_block: usize,
-    cont_blocks: []usize,
+    cont_blocks: std.ArrayList(usize),
     disk: *Disk,
 
     pub fn init(disk: *Disk, name: [16]u8, data_block_idx: usize, meta_block_idx: usize) File {
@@ -396,7 +427,7 @@ pub const File = struct {
         return .{
             .meta_block = meta_block_idx,
             .data_block = data_block_idx,
-            .cont_blocks = cont_blocks.toOwnedSlice(disk.allocator) catch unreachable,
+            .cont_blocks = cont_blocks,
             .disk = disk,
             .name = name,
         };
@@ -410,8 +441,61 @@ pub const File = struct {
         return self.disk.getBlock(self.meta_block);
     }
 
-    pub fn deinit(self: *const File) void {
-        self.disk.allocator.free(self.cont_blocks);
+    pub fn deinit(self: *File) void {
+        self.cont_blocks.deinit(self.disk.allocator);
+    }
+
+    pub fn write(self: *File, conts: []const u8, vm: anytype) !void {
+        _ = vm;
+
+        const req_len = std.math.divCeil(usize, conts.len, 4096) catch unreachable;
+
+        if (self.cont_blocks.items.len < req_len) {
+            const to_add = req_len - self.cont_blocks.items.len;
+            const first_block_idx = self.disk.allocBlocks(to_add);
+            for (first_block_idx..first_block_idx + to_add) |idx|
+                try self.cont_blocks.append(self.disk.allocator, idx);
+        }
+
+        const FileBlock = @typeInfo(Block).@"union".fields[
+            std.meta.fieldIndex(Block, "file") orelse @compileError("Field file not found")
+        ].type;
+        const file_block_len = FileBlock.LENGTH;
+
+        var data_block = self.data_block;
+        var current_index: usize = 0;
+        var remaining_len = conts.len;
+        var idx: usize = 0;
+        for (self.cont_blocks.items) |block_idx| {
+            const block_len = @min(4096, remaining_len);
+            defer remaining_len -= block_len;
+            defer current_index += block_len;
+
+            self.disk.getBlock(data_block).file.data[idx].data = @intCast(@as(isize, @intCast(block_idx)) - @as(isize, @intCast(data_block)));
+            self.disk.getBlock(data_block).file.data[idx].data_len = block_len;
+
+            @memcpy(self.disk.getBlock(block_idx).data[0..block_len], conts[current_index .. current_index + block_len]);
+
+            idx += 1;
+            if (idx >= file_block_len) {
+                idx = 0;
+                const file_block = self.disk.getBlock(data_block);
+                const next = file_block.file.header;
+                if (next == .eof) {
+                    const next_block = self.disk.allocBlocks(1);
+                    file_block.file.header = @enumFromInt(next_block - data_block);
+                    data_block = next_block;
+                    self.disk.getBlock(next_block).file = .init(.eof, .{});
+                } else data_block += @intCast(@intFromEnum(next));
+            }
+        }
+    }
+
+    pub fn read(self: *const File, vm: anytype) ![]const u8 {
+        _ = self;
+        _ = vm;
+
+        @panic("Todo");
     }
 };
 
@@ -495,7 +579,7 @@ pub fn deinit(self: *Disk) void {
 }
 
 /// an empty disk object, for fast creation
-const BLANK_DISK = [_]Block{
+pub const BLANK_DISK = [_]Block{
     .{
         .root = .{
             .root_meta = 1,

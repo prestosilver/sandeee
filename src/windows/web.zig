@@ -667,7 +667,7 @@ pub const WebData = struct {
         const root = try files.FolderLink.resolve(.root);
         try root.newFile(file);
 
-        const target = try root.getFile(file);
+        const target = try root.openFile(file);
         try target.write(conts.*, null);
 
         allocator.free(conts.*);
