@@ -87,6 +87,4 @@ In early 2024 I was using AI a bit to aid with time planning. In mid-late 2025 f
 
 ### License
 
-All of SandEEE's code, art, and other non audio files are under the MIT License,
-see [the license file](assets/licenses/CODE_LICENSE.md) for the full text. Any
-audio files are to be used only within SandEEE. All images within assets/web/public/imgs/linkring are not mine, and are here with proper permission from their owners.
+All of SandEEE's code, art, and other non audio files are under the MIT License, see [the license file](assets/licenses/CODE_LICENSE.md) for the full text. Any audio files are to be used only within SandEEE. All images within `assets/web/public/imgs/linkring` are not mine, they are here with proper permission from their owners.
