@@ -85,6 +85,7 @@ These are tasks that only affect the codebase.
 - [X] Remove anyerror
 - [X] Move embed files inside build.zig
 - [X] Reorganize shaders
+- [X] Zig 0.17
 - [ ] Magic number cleanup
   - [X] Colors
   - [ ] Sizes

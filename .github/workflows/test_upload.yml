@@ -34,11 +34,13 @@ jobs:
       - name: Run tests
         run: |
           zig build -Doptimize=${{ matrix.optimize }} -Dsteam=${{ matrix.steam }} test
+      - name: Upload Results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-s${{ matrix.steam }}-o${{ matrix.optimize }}.md
+          path: zig-out/test_output.md
+          archive: false
 
-      - name: Summary results
-        if: always()
-        run: |
-          cat zig-out/test_output.md >> $GITHUB_STEP_SUMMARY
   steam-upload:
     runs-on: ubuntu-latest
     name: Steam Upload
@@ -161,9 +163,12 @@ jobs:
         run: |
           zig build changelog
 
-      - name: Summary results
-        run: |
-          cat zig-out/changelog.edf >> $GITHUB_STEP_SUMMARY
+      - name: Upload Results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog.edf
+          path: zig-out/changelog.edf
+          archive: false
 
   upload_www:
     runs-on: ubuntu-latest
