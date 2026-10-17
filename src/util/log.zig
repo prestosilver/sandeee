@@ -47,9 +47,9 @@ pub fn sandEEELogFn(
 
     const color = switch (level) {
         .err => "\x1b[31m",
-        .warn => "\x1b[93m",
+        .warn => "\x1b[90m",
         .info => "\x1b[97m",
-        .debug => "\x1b[90m",
+        .debug => "\x1b[92m",
     };
 
     // Print the message to stderr, silently ignoring any errors
