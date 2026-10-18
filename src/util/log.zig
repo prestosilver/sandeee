@@ -47,7 +47,7 @@ pub fn sandEEELogFn(
 
     const color = switch (level) {
         .err => "\x1b[31m",
-        .warn => "\x1b[90m",
+        .warn => "\x1b[93m",
         .info => "\x1b[97m",
         .debug => "\x1b[92m",
     };

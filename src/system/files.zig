@@ -20,7 +20,7 @@ const fake = system.pseudo;
 
 pub var named_paths: std.EnumArray(NamedPath, ?*Folder) = .initFill(null);
 
-const root_prefix = if (builtin.is_test)
+pub const root_prefix = if (builtin.is_test)
     "zig-out/bin/"
 else
     "";

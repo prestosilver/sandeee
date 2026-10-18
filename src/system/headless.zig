@@ -18,11 +18,6 @@ const USE_POSIX = builtin.os.tag == .linux;
 
 // TODO: Should not use std.Io.File.Writer here rather Std.Io.Terminal
 
-const root_prefix = if (builtin.is_test)
-    "zig-out/bin/"
-else
-    "";
-
 pub fn write_console(stdout: *std.Io.File.Writer, input: []const u8) !void {
     const text = try sandeee_data.strings.encode(input, .eeech, .ansi);
     defer allocator.free(text);
@@ -33,7 +28,8 @@ pub fn write_console(stdout: *std.Io.File.Writer, input: []const u8) !void {
 pub var is_headless = false;
 
 pub var input_mutex: std.Io.Mutex = .init;
-pub var input_queue: std.array_list.Managed(u8) = .init(allocator);
+var input_ch_buffer: [32]u8 = undefined;
+var input_queue: std.Deque(u8) = .initBuffer(&input_ch_buffer);
 pub var last_input: usize = 0;
 pub var last_processed_input: usize = 0;
 pub var disk: []const u8 = "headless.eee";
@@ -42,33 +38,33 @@ pub fn pushInput(input: u8) !void {
     try input_mutex.lock(util.io);
     defer input_mutex.unlock(util.io);
 
-    try input_queue.append(input);
+    try input_queue.pushFront(allocator, input);
 }
 
 pub fn popInput() ?u8 {
     input_mutex.lock(util.io) catch unreachable;
     defer input_mutex.unlock(util.io);
 
-    return input_queue.pop();
+    return input_queue.popBack();
 }
 
 fn inputLoop() noreturn {
     var stdin_file: std.Io.File = .stdin();
-    var t: [1]u8 = undefined;
 
-    var reader = stdin_file.reader(util.io, &.{});
+    var reader_buf: [64]u8 = undefined;
+    var reader = stdin_file.reader(util.io, &reader_buf);
 
     while (true) {
-        const c = reader.interface.takeByte() catch unreachable;
+        var c = reader.interface.takeByte() catch unreachable;
         if (c == 0) {
-            std.Io.sleep(util.io, .fromMilliseconds(100), .awake) catch unreachable;
+            std.Io.sleep(util.io, .fromMilliseconds(10), .awake) catch unreachable;
             continue;
         }
 
-        if (t[0] == '\x7f')
-            t[0] = strings.UNDO[0];
+        if (c == '\x7f')
+            c = strings.UNDO[0];
 
-        pushInput(t[0]) catch @panic("bad input");
+        pushInput(c) catch @panic("bad input");
     }
 }
 
@@ -115,18 +111,16 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
     if (!builtin.is_test)
         _ = try std.Thread.spawn(.{}, inputLoop, .{});
 
-    const alloc_path = try allocator.print(root_prefix ++ "disks/{s}", .{disk});
-    defer allocator.free(alloc_path);
+    const diskpath = try allocator.print(files.root_prefix ++ "disks/{s}", .{disk});
+    defer allocator.free(diskpath);
 
-    const diskpath = try storage.getContentPath(alloc_path);
-    defer diskpath.deinit();
-
-    std.Io.Dir.cwd().access(util.io, diskpath.items, .{}) catch {
+    std.Io.Dir.cwd().access(util.io, diskpath, .{}) catch {
         try files.Folder.setupDisk(disk, "");
     };
 
-    try files.Folder.init(disk);
+    std.log.info("diskpath: {s}", .{diskpath});
 
+    try files.Folder.init(disk);
     defer files.deinit();
 
     var main_shell = Shell{ .root = .home, .headless = true };
@@ -244,7 +238,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
                             try stdout.interface.print("\\X{X:02}", .{ch});
                             try input_buffer.append(ch);
                         } else {
-                            try write_console(stdout, &.{ch});
+                            //try write_console(stdout, &.{ch});
                             try stdout.interface.print("{c}", .{ch});
                             try input_buffer.append(ch);
                         }
@@ -261,7 +255,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
 
         const command = std.mem.trim(u8, first, &std.ascii.whitespace);
 
-        if (command.len != 0) {
+        if (command.len != 0) write_result: {
             if (!got_input)
                 try stdout.interface.print("{s}\n", .{command});
 
@@ -271,7 +265,7 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
 
                 if (exit_fail) return err;
 
-                continue;
+                break :write_result;
             };
 
             defer allocator.free(result.data);
