@@ -61,12 +61,12 @@ string: ?[]const u8 = null,
 value: ?u64 = null,
 
 pub fn format(self: Operation, writer: anytype) !void {
-    const code = if (@intFromEnum(self.code) < @intFromEnum(Code.Last)) @tagName(self.code) else "UnknownOp";
+    const code = if (@backingInt(self.code) < @backingInt(Code.Last)) @tagName(self.code) else "UnknownOp";
 
     if (self.string) |string| {
-        return writer.print("{s} \"{f}\"", .{ code, std.ascii.hexEscape(string, .lower) });
+        return writer.print("{s} \"{f}\"", .{ @tagName(self.code), std.ascii.hexEscape(string, .lower) });
     } else if (self.value) |value| {
-        return writer.print("{s} {}", .{ code, value });
+        return writer.print("{s} {}", .{ @tagName(self.code), value });
     } else {
         return writer.print("{s}", .{code});
     }

@@ -17,6 +17,7 @@ pub const logger = @import("util/log.zig");
 pub const panic = @import("util/panic.zig");
 pub const audio = @import("util/audio.zig");
 pub const http = @import("util/http.zig");
+pub const meta = @import("util/meta.zig");
 pub const log = @import("util/log.zig").log;
 pub const TextureManager = @import("util/TextureManager.zig");
 pub const SpriteBatch = @import("util/SpriteBatch.zig");

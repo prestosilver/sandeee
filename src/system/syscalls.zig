@@ -48,7 +48,6 @@ const SyscallId = enum(u64) {
     status = 22,
     delete_file = 23,
     steam = 24,
-    last = 25,
 };
 
 pub var main_font: *Font = undefined;
@@ -98,7 +97,6 @@ pub const SysCall = struct {
             .status = .{ .run_fn = sysStatus },
             .delete_file = .{ .run_fn = sysDelete },
             .steam = .{ .run_fn = sysSteam },
-            .last = .{ .run_fn = lastErr },
         },
     );
 
@@ -110,15 +108,10 @@ pub const SysCall = struct {
         sys_mutex.lock(util.io) catch unreachable;
         defer sys_mutex.unlock(util.io);
 
-        if (index < @backingInt(SyscallId.last)) {
-            return SYS_CALLS.get(@fromBackingInt(@intCast(index))).run_fn(self);
-        }
+        const syscall_id = std.enums.fromInt(SyscallId, index) orelse
+            return error.InvalidSys;
 
-        return error.InvalidSys;
-    }
-
-    fn lastErr(_: *Vm) VmError!void {
-        return error.InvalidSys;
+        return SYS_CALLS.get(syscall_id).run_fn(self);
     }
 };
 
