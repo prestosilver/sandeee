@@ -723,24 +723,28 @@ pub fn runGame() !void {
     var base_shader_loader: Loader = try .init(loaders.Shader{
         .files = SHADER_FILES,
         .out = &shader,
+        .name = "base",
     }, null);
     try base_shader_loader.require(&graphics_loader);
 
     var font_shader_loader: Loader = try .init(loaders.Shader{
         .files = FONT_SHADER_FILES,
         .out = &font_shader,
+        .name = "font",
     }, null);
     try font_shader_loader.require(&graphics_loader);
 
     var crt_shader_loader: Loader = try .init(loaders.Shader{
         .files = CRT_SHADER_FILES,
         .out = &crt_shader,
+        .name = "crt",
     }, null);
     try crt_shader_loader.require(&graphics_loader);
 
     var clear_shader_loader: Loader = try .init(loaders.Shader{
         .files = CLEAR_SHADER_FILES,
         .out = &clear_shader,
+        .name = "clear",
     }, null);
     try clear_shader_loader.require(&graphics_loader);
 
@@ -756,6 +760,7 @@ pub fn runGame() !void {
     var font_loader: Loader = try .init(loaders.Font{
         .data = .{ .mem = BIOS_FONT_DATA },
         .output = &bios_font,
+        .name = "bios",
     }, null);
     try font_loader.require(&graphics_loader);
 

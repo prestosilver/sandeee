@@ -10,6 +10,7 @@ const Self = @This();
 
 files: [2]Shader.ShaderFile,
 out: *Shader,
+name: []const u8,
 
 pub fn load(self: *const Self) !void {
     graphics.Context.makeCurrent();
@@ -18,7 +19,7 @@ pub fn load(self: *const Self) !void {
     self.out.* = try Shader.init(2, self.files);
     try graphics.Context.regShader(self.out.*);
 
-    log.debug("Loaded a shader", .{});
+    log.debug("Loaded the {s} shader", .{self.name});
 }
 
 pub fn unload(self: *const Self) void {
@@ -28,5 +29,5 @@ pub fn unload(self: *const Self) void {
     // deinit the shader
     self.out.deinit();
 
-    log.debug("Unloaded a shader", .{});
+    log.debug("Unloaded the {s} shader", .{self.name});
 }

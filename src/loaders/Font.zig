@@ -19,6 +19,7 @@ data: union(enum) {
     mem: []const u8,
 },
 output: *Font,
+name: []const u8,
 
 pub fn load(self: *const Self) !void {
     switch (self.data) {
@@ -29,26 +30,20 @@ pub fn load(self: *const Self) !void {
             defer graphics.Context.makeNotCurrent();
 
             self.output.* = try .init(path);
-
-            log.debug("Loaded font {s}", .{p});
         },
         .mem => |m| {
             graphics.Context.makeCurrent();
             defer graphics.Context.makeNotCurrent();
 
             self.output.* = try .initMem(m);
-
-            log.debug("Loaded font from memory", .{});
         },
     }
+
+    log.debug("Loaded font {s}", .{self.name});
 }
 
 pub fn unload(self: *const Self) void {
     // deinit font
     self.output.deinit();
-
-    switch (self.data) {
-        .path => |p| log.debug("Unloaded font {s}", .{p}),
-        .mem => log.debug("Unloaded font from memory", .{}),
-    }
+    log.debug("Unloaded font {s}", .{self.name});
 }

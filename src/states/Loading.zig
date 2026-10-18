@@ -128,6 +128,7 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
                     .path = font_path,
                 },
                 .output = self.face,
+                .name = "ui",
             }, null);
 
             try face.require(&settings);
