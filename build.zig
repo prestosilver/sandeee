@@ -891,9 +891,9 @@ pub fn build(b: *std.Build) !void {
     wood_wallpaper_step.addFileArg(content_path.path(b, "images/wood.ase"));
     const wood_wallpaper_path = wood_wallpaper_step.addOutputFileArg("wood.eia");
 
-    const capy_wallpaper_step = b.addRunArtifact(ase_eia_builder_exe);
-    capy_wallpaper_step.addFileInput(content_path.path(b, "images/capy.ase"));
-    capy_wallpaper_step.addFileArg(content_path.path(b, "images/capy.ase"));
+    const capy_wallpaper_step = b.addRunArtifact(eia_builder_exe);
+    capy_wallpaper_step.addFileInput(content_path.path(b, "images/capy.png"));
+    capy_wallpaper_step.addFileArg(content_path.path(b, "images/capy.png"));
     const capy_wallpaper_path = capy_wallpaper_step.addOutputFileArg("capy.eia");
 
     const pong_app_step = b.addRunArtifact(epk_builder_exe);
