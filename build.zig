@@ -373,6 +373,19 @@ pub fn build(b: *std.Build) !void {
         .root_module = random_builder_mod,
     });
 
+    const ase_eia_builder_mod = b.createModule(.{
+        .root_source_file = b.path("build/eia/ase_to_eia.zig"),
+        .target = b.graph.host,
+        .optimize = .debug,
+        .link_libc = true,
+    });
+    ase_eia_builder_mod.addImport("sandeee", exe_host_module);
+    ase_eia_builder_mod.addImport("options", options_host_module);
+    const ase_eia_builder_exe = b.addExecutable(.{
+        .name = "ase_eia_builder",
+        .root_module = ase_eia_builder_mod,
+    });
+
     const eia_builder_mod = b.createModule(.{
         .root_source_file = b.path("build/eia/image_to_eia.zig"),
         .target = b.graph.host,
@@ -574,32 +587,32 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/exec/eon.eon"), "/prof/tests/src/eon/eon.eon");
     addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/libs/eon.eon"), "/prof/tests/src/eon/eon_lib.eon");
     addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/exec/pix.eon"), "/prof/tests/src/eon/pix.eon");
-    addConvertFile(b, &.{debug_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/debug.png"), "/cont/icns/debug.eia");
+    addConvertFile(b, &.{debug_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/debug.ase"), "/cont/icns/debug.eia");
     addConvertFile(b, &.{debug_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/redbone.wav"), "/cont/snds/redbone.era");
 
     addConvertFile(b, &.{steam_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/steamtool.eon"), "/exec/steamtool.eep");
 
     // base images
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/email-logo.png"), "/cont/imgs/email-logo.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons.png"), "/cont/imgs/icons.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/ui.png"), "/cont/imgs/ui.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/bar.png"), "/cont/imgs/bar.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/iconsBig.png"), "/cont/imgs/iconsBig.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/window.png"), "/cont/imgs/window.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall1.png"), "/cont/imgs/wall1.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall2.png"), "/cont/imgs/wall2.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall3.png"), "/cont/imgs/wall3.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/barlogo.png"), "/cont/imgs/barlogo.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/cursor.png"), "/cont/imgs/cursor.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/web.png"), "/cont/icns/web.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/settings.png"), "/cont/icns/settings.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/logout.png"), "/cont/icns/logout.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/launch.png"), "/cont/icns/launch.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/cmd.png"), "/cont/icns/cmd.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/email.png"), "/cont/icns/email.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/folder.png"), "/cont/icns/folder.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/tasks.png"), "/cont/icns/tasks.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/eeedt.png"), "/cont/icns/eeedt.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/email-logo.ase"), "/cont/imgs/email-logo.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons.ase"), "/cont/imgs/icons.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/ui.ase"), "/cont/imgs/ui.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/bar.ase"), "/cont/imgs/bar.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/iconsBig.ase"), "/cont/imgs/iconsBig.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/window.ase"), "/cont/imgs/window.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall1.ase"), "/cont/imgs/wall1.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall2.ase"), "/cont/imgs/wall2.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall3.ase"), "/cont/imgs/wall3.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/barlogo.ase"), "/cont/imgs/barlogo.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/cursor.ase"), "/cont/imgs/cursor.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/web.ase"), "/cont/icns/web.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/settings.ase"), "/cont/icns/settings.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/logout.ase"), "/cont/icns/logout.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/launch.ase"), "/cont/icns/launch.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/cmd.ase"), "/cont/icns/cmd.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/email.ase"), "/cont/icns/email.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/folder.ase"), "/cont/icns/folder.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/tasks.ase"), "/cont/icns/tasks.eia");
+    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/eeedt.ase"), "/cont/icns/eeedt.eia");
 
     // base audio
     addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/login.wav"), "/cont/snds/login.era");
@@ -873,31 +886,31 @@ pub fn build(b: *std.Build) !void {
     docs_step.step.dependOn(&public_step.step);
     docs_step.step.dependOn(&docs_mkdir.step);
 
-    const wood_wallpaper_step = b.addRunArtifact(eia_builder_exe);
-    wood_wallpaper_step.addFileInput(content_path.path(b, "images/wood.png"));
-    wood_wallpaper_step.addFileArg(content_path.path(b, "images/wood.png"));
+    const wood_wallpaper_step = b.addRunArtifact(ase_eia_builder_exe);
+    wood_wallpaper_step.addFileInput(content_path.path(b, "images/wood.ase"));
+    wood_wallpaper_step.addFileArg(content_path.path(b, "images/wood.ase"));
     const wood_wallpaper_path = wood_wallpaper_step.addOutputFileArg("wood.eia");
 
-    const capy_wallpaper_step = b.addRunArtifact(eia_builder_exe);
-    capy_wallpaper_step.addFileInput(content_path.path(b, "images/capy.png"));
-    capy_wallpaper_step.addFileArg(content_path.path(b, "images/capy.png"));
+    const capy_wallpaper_step = b.addRunArtifact(ase_eia_builder_exe);
+    capy_wallpaper_step.addFileInput(content_path.path(b, "images/capy.ase"));
+    capy_wallpaper_step.addFileArg(content_path.path(b, "images/capy.ase"));
     const capy_wallpaper_path = capy_wallpaper_step.addOutputFileArg("capy.eia");
 
     const pong_app_step = b.addRunArtifact(epk_builder_exe);
     const pong_app_file_path = pong_app_step.addOutputFileArg("pong.epk");
     {
-        const pong_image_step = b.addRunArtifact(eia_builder_exe);
-        pong_image_step.addFileInput(content_path.path(b, "images/pong.png"));
-        pong_image_step.addFileArg(content_path.path(b, "images/pong.png"));
+        const pong_image_step = b.addRunArtifact(ase_eia_builder_exe);
+        pong_image_step.addFileInput(content_path.path(b, "images/pong.ase"));
+        pong_image_step.addFileArg(content_path.path(b, "images/pong.ase"));
         const pong_image_file = pong_image_step.addOutputFileArg("pong.eia");
 
         pong_app_step.addArgs(&.{ "--file", "/cont/imgs/pong.eia" });
         pong_app_step.addFileInput(pong_image_file);
         pong_app_step.addFileArg(pong_image_file);
 
-        const pong_icon_step = b.addRunArtifact(eia_builder_exe);
-        pong_icon_step.addFileInput(content_path.path(b, "images/icons/pong.png"));
-        pong_icon_step.addFileArg(content_path.path(b, "images/icons/pong.png"));
+        const pong_icon_step = b.addRunArtifact(ase_eia_builder_exe);
+        pong_icon_step.addFileInput(content_path.path(b, "images/icons/pong.ase"));
+        pong_icon_step.addFileArg(content_path.path(b, "images/icons/pong.ase"));
         const pong_icon_file = pong_icon_step.addOutputFileArg("pong.eia");
 
         pong_app_step.addArgs(&.{ "--file", "/cont/icns/pong.eia" });
@@ -938,18 +951,18 @@ pub fn build(b: *std.Build) !void {
     const paint_app_step = b.addRunArtifact(epk_builder_exe);
     const paint_app_file_path = paint_app_step.addOutputFileArg("paint.epk");
     {
-        const paint_timage_step = b.addRunArtifact(eia_builder_exe);
-        paint_timage_step.addFileInput(content_path.path(b, "images/transparent.png"));
-        paint_timage_step.addFileArg(content_path.path(b, "images/transparent.png"));
+        const paint_timage_step = b.addRunArtifact(ase_eia_builder_exe);
+        paint_timage_step.addFileInput(content_path.path(b, "images/transparent.ase"));
+        paint_timage_step.addFileArg(content_path.path(b, "images/transparent.ase"));
         const paint_timage_file = paint_timage_step.addOutputFileArg("transparent.eia");
 
         paint_app_step.addArgs(&.{ "--file", "/cont/imgs/transparent.eia" });
         paint_app_step.addFileInput(paint_timage_file);
         paint_app_step.addFileArg(paint_timage_file);
 
-        const paint_icon_step = b.addRunArtifact(eia_builder_exe);
-        paint_icon_step.addFileInput(content_path.path(b, "images/icons/paint.png"));
-        paint_icon_step.addFileArg(content_path.path(b, "images/icons/paint.png"));
+        const paint_icon_step = b.addRunArtifact(ase_eia_builder_exe);
+        paint_icon_step.addFileInput(content_path.path(b, "images/icons/paint.ase"));
+        paint_icon_step.addFileArg(content_path.path(b, "images/icons/paint.ase"));
         const paint_icon_file = paint_icon_step.addOutputFileArg("paint.eia");
 
         paint_app_step.addArgs(&.{ "--file", "/cont/icns/paint.eia" });
