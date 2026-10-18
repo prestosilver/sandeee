@@ -129,17 +129,17 @@ pub fn fetch(self: *HttpClient, url: []const u8) ![]const u8 {
                 req.response.skip = true;
                 std.debug.assert( // we're skipping, no buffer is necessary
                     transfer_read: {
-                    if (req.response.parser.done) break :transfer_read 0;
+                        if (req.response.parser.done) break :transfer_read 0;
 
-                    var index: usize = 0;
-                    while (index == 0) {
-                        const amt = try req.response.parser.read(req.connection.?, &.{}, req.response.skip);
-                        if (amt == 0 and req.response.parser.done) break;
-                        index += amt;
-                    }
+                        var index: usize = 0;
+                        while (index == 0) {
+                            const amt = try req.response.parser.read(req.connection.?, &.{}, req.response.skip);
+                            if (amt == 0 and req.response.parser.done) break;
+                            index += amt;
+                        }
 
-                    break :transfer_read index;
-                } == 0);
+                        break :transfer_read index;
+                    } == 0);
 
                 if (req.redirect_behavior == .not_allowed) return error.TooManyHttpRedirects;
 

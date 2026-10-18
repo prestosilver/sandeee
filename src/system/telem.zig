@@ -37,14 +37,14 @@ pub const Telem = packed struct {
         major: u2,
         index: u30,
     } = .{
-        .major = @intFromEnum(options.SANDEEE_VERSION.phase),
+        .major = @backingInt(options.SANDEEE_VERSION.phase),
         .index = options.SANDEEE_VERSION.index,
     },
 
     pub fn checkVersion() void {
         if (builtin.is_test) return;
 
-        if (instance.version.major != @intFromEnum(options.SANDEEE_VERSION.phase) or
+        if (instance.version.major != @backingInt(options.SANDEEE_VERSION.phase) or
             instance.version.index != options.SANDEEE_VERSION.index)
         {
             const update_window: Window = .atlas("win", .{

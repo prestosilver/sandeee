@@ -30,7 +30,7 @@ pub const HELP = "cls [:help]";
 pub fn cls(shell: *Shell, params: *Shell.Params) !Shell.Result {
     _ = shell;
     _ = params;
-    
+
     return .{
         .data = &.{},
         .clear = true,

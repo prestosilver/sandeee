@@ -31,13 +31,13 @@ pub fn parse(path: []const u8) Error!Self {
             return error.InvalidUrl;
 
         return .{
-            .kind = @as(UrlKind, @enumFromInt(path[0])),
+            .kind = @as(UrlKind, @fromBackingInt(@intCast(path[0]))),
             .domain = try allocator.dupe(u8, path[1..colon_index]),
             .path = try allocator.dupe(u8, path[(colon_index + 1)..]),
         };
     }
 
-    if (path.len != 0 and @as(UrlKind, @enumFromInt(path[0])) == .Local)
+    if (path.len != 0 and @as(UrlKind, @fromBackingInt(@intCast(path[0]))) == .Local)
         return .{
             .kind = .Local,
             .domain = try allocator.dupe(u8, "/"),
@@ -49,7 +49,7 @@ pub fn parse(path: []const u8) Error!Self {
 
 pub fn child(self: *const Self, path: []const u8) Error!Self {
     // for compat
-    if (path.len > 1 and @as(UrlKind, @enumFromInt(path[0])) == .Web)
+    if (path.len > 1 and @as(UrlKind, @fromBackingInt(@intCast(path[0]))) == .Web)
         return self.child(path[1..]);
 
     if (std.mem.indexOf(u8, path, ":")) |_|

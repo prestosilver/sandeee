@@ -17,7 +17,7 @@ pub const HELP = "stop [:help] id";
 pub fn stop(_: *Shell, params: *Shell.Params) !Shell.Result {
     if (params.next()) |id_string| {
         const id = try std.fmt.parseInt(u8, id_string, 16);
-        Vm.Manager.instance.destroy(@enumFromInt(id));
+        Vm.Manager.instance.destroy(@fromBackingInt(@intCast(id)));
 
         return .{
             .data = try allocator.dupe(u8, "Stopped"),

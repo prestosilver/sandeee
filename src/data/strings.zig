@@ -25,7 +25,7 @@ pub const DOWN = "\x87";
 
 const SANDEEE_VERSION = Version{
     .program = options.SANDEEE_VERSION.program,
-    .phase = @enumFromInt(@intFromEnum(options.SANDEEE_VERSION.phase)),
+    .phase = @fromBackingInt(@intCast(@backingInt(options.SANDEEE_VERSION.phase))),
     .index = options.SANDEEE_VERSION.index,
     .meta = options.SANDEEE_VERSION.meta,
 };
