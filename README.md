@@ -56,6 +56,7 @@ Jokes aside, SandEEE is a programming game meant to be as immersive as possible.
 * [Content asset listing](assets/docs/content_index.md)
 * [Lore sheet & reference](assets/docs/lore.md)
 * [The release checklist](assets/docs/release_checklist.md)
+* [SandEEE's Homepage](https://sandeee.prestosilver.info)
 
 ### Repo root
 

@@ -95,6 +95,17 @@ These are tasks that only affect the codebase.
   - [X] Add new generation
   - [X] Release tags
   - [ ] Update debug builds to go to /alpha endpoint as homepage
+    - [X] Impl
+    - [ ] Fix paths
+- [ ] Remove duplicated assets from Ases
+  - [X] ASE parser
+  - [ ] Automatically export [icon.ico](../../content/images/icon.ico)
+  - [ ] Automatically export in game assets
+  - [ ] Create .zig files from images with position data
+  - [ ] Create theme docs from images according to [meta.md](meta.md)
+  - [ ] Font from ASE
+    - [ ] Move ASE format parser to a lib
+    - [ ] Label chars
 - [ ] Breakout UI for consistency!!!
   - [ ] data/sizes.zig
   - [ ] ui namespace
