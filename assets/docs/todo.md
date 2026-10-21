@@ -112,6 +112,7 @@ These are tasks that only affect the codebase.
   - [ ] ui namespace
   - [ ] switch apps
   - [ ] switch bar, desktop icons, and start menu
+- [ ] Get compile working on windows for streamlined testing
 - [ ] zig test should check www for dead links
 - [ ] Add consistent id+iota type utility
 - [ ] Rework popups to be owned by windows instead of state
@@ -155,6 +156,7 @@ This here is scope creep central, anti ideas if you may. They may never be added
 - Windowed headless mode 
   - Requires removal of dependence on the global graphics instance & global spritebatch
 - Multi monitor support
+- Try WIO library
 - Discord RPC support
 - Mascott
   - Crt monitor pixar lamp with cat memes

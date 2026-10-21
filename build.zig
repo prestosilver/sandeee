@@ -794,11 +794,16 @@ pub fn build(b: *std.Build) !void {
     debug_image_step.addArg("--overlay");
     debug_image_step.addDirectoryArg(overlays_path.path(b, "debug"));
 
-    // This call being inside the `if` means `resinator` will only be fetched when it's used.
     const rc_dep = b.dependency("rc", .{});
 
+    const rc_directory_step = b.addWriteFiles();
+    const rc_file = rc_directory_step.add("app.rc", b.fmt(
+        @embedFile("content/data/app.rc"),
+        .{ version, version },
+    ));
+
     var rc_compiler: rc.Compiler = .init(rc_dep, .{
-        .rc_files = &.{b.path("content/data/app.rc")},
+        .rc_files = &.{rc_file},
         .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
         .optimize = .fast,
     });
