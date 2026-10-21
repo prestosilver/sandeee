@@ -60,24 +60,21 @@ pub fn main(init: std.process.Init) !void {
             const tmp_out = try init.gpa.alloc(u8, section.len / format.channels / (format.bits / 8));
             defer init.gpa.free(tmp_out);
 
-            for (0.., tmp_out) |idx, *sample| {
-                var in_sample: f32 = 0;
-                var max_sample: f32 = 0;
-                var min_sample: f32 = 0;
+            inline for (.{ i32, i24, i16, u8 }) |SampleT| {
+                if (@bitSizeOf(SampleT) == format.bits) {
+                    for (0.., tmp_out) |idx, *sample| {
+                        const in_sample: f32 = @floatFromInt(@as(*align(1) SampleT, @ptrCast(&section[idx * @sizeOf(SampleT) * format.channels])).*);
+                        const max_sample: f32 = @floatFromInt(std.math.maxInt(SampleT));
+                        const min_sample: f32 = @floatFromInt(std.math.minInt(SampleT));
 
-                inline for (.{ i32, i24, i16, u8 }) |SampleT| {
-                    if (@bitSizeOf(SampleT) == format.bits) {
-                        in_sample = @floatFromInt(@as(*align(1) SampleT, @ptrCast(&section[idx * @sizeOf(SampleT) * format.channels])).*);
-                        max_sample = @floatFromInt(std.math.maxInt(SampleT));
-                        min_sample = @floatFromInt(std.math.minInt(SampleT));
-                        break;
+                        const normalized_sample = @min((in_sample - min_sample) / (max_sample - min_sample), 255);
+
+                        sample.* = @intFromFloat(normalized_sample * 255);
                     }
-                } else return error.InvalidFormat;
 
-                const normalized_sample = @min((in_sample - min_sample) / (max_sample - min_sample), 255);
-
-                sample.* = @intFromFloat(normalized_sample * 255);
-            }
+                    break;
+                }
+            } else return error.InvalidFormat;
 
             try writer.interface.writeAll(tmp_out);
         } else if (std.mem.eql(u8, &name, "LIST")) {} else if (std.mem.eql(u8, &name, "RIFF")) {} else return error.BadSection;
