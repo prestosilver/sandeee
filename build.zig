@@ -797,6 +797,7 @@ pub fn build(b: *std.Build) !void {
     const rc_dep = b.dependency("rc", .{});
 
     const rc_directory_step = b.addWriteFiles();
+    _ = rc_directory_step.addCopyFile(b.path("content/images/icon.ico"), "icon.ico");
     const rc_src_file = rc_directory_step.add("app.rc", b.fmt(
         @embedFile("content/data/app.rc"),
         .{ version, version },
