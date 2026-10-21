@@ -799,8 +799,8 @@ pub fn build(b: *std.Build) !void {
 
     var rc_compiler: rc.Compiler = .init(rc_dep, .{
         .rc_files = &.{b.path("data/app.rc")},
-        .target = target,
-        .optimize = optimize,
+        .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
+        .optimize = .fast,
     });
     const rc_file = rc_compiler.getObjectFile();
 
