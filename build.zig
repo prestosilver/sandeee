@@ -797,13 +797,13 @@ pub fn build(b: *std.Build) !void {
     const rc_dep = b.dependency("rc", .{});
 
     const rc_directory_step = b.addWriteFiles();
-    const rc_file = rc_directory_step.add("app.rc", b.fmt(
+    const rc_src_file = rc_directory_step.add("app.rc", b.fmt(
         @embedFile("content/data/app.rc"),
         .{ version, version },
     ));
 
     var rc_compiler: rc.Compiler = .init(rc_dep, .{
-        .rc_files = &.{rc_file},
+        .rc_files = &.{rc_src_file},
         .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
         .optimize = .fast,
     });
