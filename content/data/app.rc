@@ -21,8 +21,8 @@ BEGIN
             VALUE "InternalName",     "SandEEE"
             VALUE "OriginalFilename", "SandEEE.exe"
             VALUE "ProductName",      "SandEEE"
-            VALUE "ProductVersion",   "1.0.0.0"
-            VALUE "FileVersion",      "1.0.0.0"
+            VALUE "ProductVersion",   "<<VERSION>>"
+            VALUE "FileVersion",      "<<VERSION>>"
         END
     END
 END

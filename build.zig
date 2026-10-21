@@ -1,4 +1,5 @@
 const std = @import("std");
+const rc = @import("rc");
 const Version = @import("src/data/version.zig");
 
 var version: Version = .{
@@ -793,10 +794,15 @@ pub fn build(b: *std.Build) !void {
     debug_image_step.addArg("--overlay");
     debug_image_step.addDirectoryArg(overlays_path.path(b, "debug"));
 
-    const resFileStep = b.addSystemCommand(&.{"x86_64-w64-mingw32-windres"});
-    resFileStep.addFileInput(content_path.path(b, "data/app.rc"));
-    resFileStep.addFileArg(content_path.path(b, "data/app.rc"));
-    const rc_file = resFileStep.addOutputFileArg("app.rc.o");
+    // This call being inside the `if` means `resinator` will only be fetched when it's used.
+    const rc_dep = b.dependency("rc", .{});
+
+    var rc_compiler: rc.Compiler = .init(rc_dep, .{
+        .rc_files = &.{b.path("data/app.rc")},
+        .target = target,
+        .optimize = optimize,
+    });
+    const rc_file = rc_compiler.getObjectFile();
 
     // Includes
     if (target.result.os.tag == .windows) {
