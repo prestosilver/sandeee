@@ -30,7 +30,6 @@ pub inline fn addConvertFile(
             } else new_step.addArg(a);
         }
         new_step.addFileArg(current_file);
-        new_step.addFileInput(current_file);
 
         const slash = if (std.mem.lastIndexOf(u8, disk_path, "/")) |i| i + 1 else 0;
         current_file = new_step.addOutputFileArg(b.fmt("{s}_{}", .{ disk_path[slash..], idx }));
@@ -38,7 +37,6 @@ pub inline fn addConvertFile(
 
     for (disk_steps) |disk_step| {
         disk_step.addArg("--file");
-        disk_step.addFileInput(current_file);
         disk_step.addFileArg(current_file);
         disk_step.addArg(disk_path);
     }
@@ -60,7 +58,6 @@ pub fn addEmails(
     email_step.addDirectoryArg(content_path.path(b, box_path));
 
     disk_image_step.addArg("--file");
-    disk_image_step.addFileInput(email_file_path);
     disk_image_step.addFileArg(email_file_path);
     disk_image_step.addArg(disk_path);
 }
@@ -80,7 +77,6 @@ pub fn addFileImports(
         const eiaf = file ++ ".eia";
 
         const builder = b.addRunArtifact(eia_builder_exe);
-        builder.addFileInput(pngf);
         builder.addFileArg(pngf);
 
         const output_file = builder.addOutputFileArg(eiaf);
@@ -97,7 +93,6 @@ pub fn addFileImports(
         const eraf = file ++ ".era";
 
         const builder = b.addRunArtifact(era_builder_exe);
-        builder.addFileInput(wavf);
         builder.addFileArg(wavf);
         const output_file = builder.addOutputFileArg(eraf);
 
@@ -110,7 +105,6 @@ pub fn addFileImports(
         const bios_font_path = image_path.path(b, "SandEEESans2x.png");
 
         const builder = b.addRunArtifact(eff_builder_exe);
-        builder.addFileInput(bios_font_path);
         builder.addFileArg(bios_font_path);
         const output_file = builder.addOutputFileArg("bios.eff");
 
@@ -536,47 +530,38 @@ pub fn build(b: *std.Build) !void {
         debug_image_step.addArg("--skeleton");
         debug_image_step.addArg("debug");
         debug_image_step.addFileArg(paths_file);
-        debug_image_step.addFileInput(paths_file);
 
         steam_image_step.addArg("--skeleton");
         steam_image_step.addArg("steam");
         steam_image_step.addFileArg(paths_file);
-        steam_image_step.addFileInput(paths_file);
 
         demo_image_step.addArg("--skeleton");
         demo_image_step.addArg("demo");
         demo_image_step.addFileArg(paths_file);
-        demo_image_step.addFileInput(paths_file);
 
         disk_image_step.addArg("--skeleton");
         disk_image_step.addArg("base");
         disk_image_step.addFileArg(paths_file);
-        disk_image_step.addFileInput(paths_file);
 
         demo_image_step.addArg("--skeleton");
         demo_image_step.addArg("base");
         demo_image_step.addFileArg(paths_file);
-        demo_image_step.addFileInput(paths_file);
 
         disk_image_step.addArg("--skeleton");
         disk_image_step.addArg("all");
         disk_image_step.addFileArg(paths_file);
-        disk_image_step.addFileInput(paths_file);
 
         demo_image_step.addArg("--skeleton");
         demo_image_step.addArg("all");
         demo_image_step.addFileArg(paths_file);
-        demo_image_step.addFileInput(paths_file);
 
         debug_image_step.addArg("--skeleton");
         debug_image_step.addArg("all");
         debug_image_step.addFileArg(paths_file);
-        debug_image_step.addFileInput(paths_file);
 
         steam_image_step.addArg("--skeleton");
         steam_image_step.addArg("all");
         steam_image_step.addFileArg(paths_file);
-        steam_image_step.addFileInput(paths_file);
 
         disk_image_step.addArg("--overlay");
         disk_image_step.addDirectoryArg(overlays_path.path(b, "base"));
@@ -706,7 +691,6 @@ pub fn build(b: *std.Build) !void {
             \\menu_option = Restore default image
         );
         disk_image_step.addArg("--file");
-        disk_image_step.addFileInput(base_meta_file);
         disk_image_step.addFileArg(base_meta_file);
         disk_image_step.addArg("/_recovery_meta");
 
@@ -714,7 +698,6 @@ pub fn build(b: *std.Build) !void {
             \\menu_option = Restore debug image
         );
         debug_image_step.addArg("--file");
-        debug_image_step.addFileInput(debug_meta_file);
         debug_image_step.addFileArg(debug_meta_file);
         debug_image_step.addArg("/_recovery_meta");
 
@@ -722,7 +705,6 @@ pub fn build(b: *std.Build) !void {
             \\menu_option = Restore demo image
         );
         demo_image_step.addArg("--file");
-        demo_image_step.addFileInput(demo_meta_file);
         demo_image_step.addFileArg(demo_meta_file);
         demo_image_step.addArg("/_recovery_meta");
     }
@@ -738,49 +720,38 @@ pub fn build(b: *std.Build) !void {
     const install_disk = b.addInstallFile(full_base_disk_image_path, "bin/content/recovery.eee");
     const install_debug_disk = b.addInstallFile(full_debug_disk_image_path, "bin/content/recovery_debug.eee");
 
-    full_base_disk_image_step.addFileInput(disk_image_path);
     full_base_disk_image_step.addArg("--disk");
     full_base_disk_image_step.addFileArg(disk_image_path);
-    full_debug_disk_image_step.addFileInput(disk_image_path);
     full_debug_disk_image_step.addArg("--disk");
     full_debug_disk_image_step.addFileArg(disk_image_path);
 
     if (!disable_email) {
-        full_base_disk_image_step.addFileInput(email_image_path);
         full_base_disk_image_step.addArg("--disk");
         full_base_disk_image_step.addFileArg(email_image_path);
-        full_debug_disk_image_step.addFileInput(email_image_path);
         full_debug_disk_image_step.addArg("--disk");
         full_debug_disk_image_step.addFileArg(email_image_path);
 
         if (is_demo) {
-            full_base_disk_image_step.addFileInput(email_demo_image_path);
             full_base_disk_image_step.addArg("--disk");
             full_base_disk_image_step.addFileArg(email_demo_image_path);
-            full_debug_disk_image_step.addFileInput(email_demo_image_path);
             full_debug_disk_image_step.addArg("--disk");
             full_debug_disk_image_step.addFileArg(email_demo_image_path);
         }
     }
 
     if (is_demo) {
-        full_base_disk_image_step.addFileInput(demo_image_path);
         full_base_disk_image_step.addArg("--disk");
         full_base_disk_image_step.addFileArg(demo_image_path);
-        full_debug_disk_image_step.addFileInput(demo_image_path);
         full_debug_disk_image_step.addArg("--disk");
         full_debug_disk_image_step.addFileArg(demo_image_path);
     }
 
-    full_debug_disk_image_step.addFileInput(debug_image_path);
     full_debug_disk_image_step.addArg("--disk");
     full_debug_disk_image_step.addFileArg(debug_image_path);
 
     if (steam_mode != .off) {
-        full_base_disk_image_step.addFileInput(steam_image_path);
         full_base_disk_image_step.addArg("--disk");
         full_base_disk_image_step.addFileArg(steam_image_path);
-        full_debug_disk_image_step.addFileInput(steam_image_path);
         full_debug_disk_image_step.addArg("--disk");
         full_debug_disk_image_step.addFileArg(steam_image_path);
     }
@@ -838,7 +809,6 @@ pub fn build(b: *std.Build) !void {
             const random_file = random_step.addOutputFileArg(b.fmt("random_{}.eep", .{idx}));
 
             debug_image_step.addArg("--file");
-            debug_image_step.addFileInput(random_file);
             debug_image_step.addFileArg(random_file);
             debug_image_step.addArg(b.fmt("/prof/tests/rand/{}.eep", .{idx}));
         }
@@ -849,7 +819,6 @@ pub fn build(b: *std.Build) !void {
         random_step.addArg(b.fmt("{}", .{random_tests}));
 
         debug_image_step.addArg("--file");
-        debug_image_step.addFileInput(random_file);
         debug_image_step.addFileArg(random_file);
         debug_image_step.addArg("/prof/tests/rand/random.esh");
     }
@@ -893,12 +862,9 @@ pub fn build(b: *std.Build) !void {
     const public_step = b.addInstallDirectory(.{ .source_dir = b.path("assets/web/public"), .install_dir = www_path, .install_subdir = "" });
 
     const changelog_step = b.addRunArtifact(changelog_builder_exe);
-    changelog_step.addFileInput(b.path("VERSION"));
     changelog_step.addFileArg(b.path("VERSION"));
 
-    changelog_step.addFileInput(content_path.path(b, "data/os_versions.csv"));
     changelog_step.addFileArg(content_path.path(b, "data/os_versions.csv"));
-    changelog_step.addFileInput(content_path.path(b, "data/changelog_ignore.txt"));
     changelog_step.addFileArg(content_path.path(b, "data/changelog_ignore.txt"));
     const changelog_file_path = changelog_step.addOutputFileArg("changelog.edf");
 
@@ -919,12 +885,10 @@ pub fn build(b: *std.Build) !void {
     docs_step.step.dependOn(&docs_mkdir.step);
 
     const wood_wallpaper_step = b.addRunArtifact(ase_eia_builder_exe);
-    wood_wallpaper_step.addFileInput(content_path.path(b, "images/wood.ase"));
     wood_wallpaper_step.addFileArg(content_path.path(b, "images/wood.ase"));
     const wood_wallpaper_path = wood_wallpaper_step.addOutputFileArg("wood.eia");
 
     const capy_wallpaper_step = b.addRunArtifact(eia_builder_exe);
-    capy_wallpaper_step.addFileInput(content_path.path(b, "images/capy.png"));
     capy_wallpaper_step.addFileArg(content_path.path(b, "images/capy.png"));
     const capy_wallpaper_path = capy_wallpaper_step.addOutputFileArg("capy.eia");
 
@@ -932,51 +896,41 @@ pub fn build(b: *std.Build) !void {
     const pong_app_file_path = pong_app_step.addOutputFileArg("pong.epk");
     {
         const pong_image_step = b.addRunArtifact(ase_eia_builder_exe);
-        pong_image_step.addFileInput(content_path.path(b, "images/pong.ase"));
         pong_image_step.addFileArg(content_path.path(b, "images/pong.ase"));
         const pong_image_file = pong_image_step.addOutputFileArg("pong.eia");
 
         pong_app_step.addArgs(&.{ "--file", "/cont/imgs/pong.eia" });
-        pong_app_step.addFileInput(pong_image_file);
         pong_app_step.addFileArg(pong_image_file);
 
         const pong_icon_step = b.addRunArtifact(ase_eia_builder_exe);
-        pong_icon_step.addFileInput(content_path.path(b, "images/icons/pong.ase"));
         pong_icon_step.addFileArg(content_path.path(b, "images/icons/pong.ase"));
         const pong_icon_file = pong_icon_step.addOutputFileArg("pong.eia");
 
         pong_app_step.addArgs(&.{ "--file", "/cont/icns/pong.eia" });
-        pong_app_step.addFileInput(pong_icon_file);
         pong_app_step.addFileArg(pong_icon_file);
 
         const pong_blip_step = b.addRunArtifact(era_builder_exe);
-        pong_blip_step.addFileInput(content_path.path(b, "audio/pong-blip.wav"));
         pong_blip_step.addFileArg(content_path.path(b, "audio/pong-blip.wav"));
         const pong_blip_file = pong_blip_step.addOutputFileArg("pong-blip.era");
 
         pong_app_step.addArgs(&.{ "--file", "/cont/snds/pong-blip.era" });
-        pong_app_step.addFileInput(pong_blip_file);
         pong_app_step.addFileArg(pong_blip_file);
 
         const pong_eon_step = b.addRunArtifact(eon_builder_exe);
         pong_eon_step.addArg("exe");
         pong_eon_step.addDirectoryArg(eon_lib_path);
-        pong_eon_step.addFileInput(content_path.path(b, "eon/exec/pong.eon"));
         pong_eon_step.addFileArg(content_path.path(b, "eon/exec/pong.eon"));
         const pong_asm_file = pong_eon_step.addOutputFileArg("pong.eon");
 
         const pong_asm_step = b.addRunArtifact(asm_builder_exe);
         pong_asm_step.addArg("exe");
-        pong_asm_step.addFileInput(pong_asm_file);
         pong_asm_step.addFileArg(pong_asm_file);
         const pong_exec_file = pong_asm_step.addOutputFileArg("pong.eep");
 
         pong_app_step.addArgs(&.{ "--file", "/exec/pong.eep" });
-        pong_app_step.addFileInput(pong_exec_file);
         pong_app_step.addFileArg(pong_exec_file);
 
         pong_app_step.addArgs(&.{ "--file", "/conf/apps/Pong.eln" });
-        pong_app_step.addFileInput(content_path.path(b, "elns/Pong.eln"));
         pong_app_step.addFileArg(content_path.path(b, "elns/Pong.eln"));
     }
 
@@ -984,42 +938,34 @@ pub fn build(b: *std.Build) !void {
     const paint_app_file_path = paint_app_step.addOutputFileArg("paint.epk");
     {
         const paint_timage_step = b.addRunArtifact(ase_eia_builder_exe);
-        paint_timage_step.addFileInput(content_path.path(b, "images/transparent.ase"));
         paint_timage_step.addFileArg(content_path.path(b, "images/transparent.ase"));
         const paint_timage_file = paint_timage_step.addOutputFileArg("transparent.eia");
 
         paint_app_step.addArgs(&.{ "--file", "/cont/imgs/transparent.eia" });
-        paint_app_step.addFileInput(paint_timage_file);
         paint_app_step.addFileArg(paint_timage_file);
 
         const paint_icon_step = b.addRunArtifact(ase_eia_builder_exe);
-        paint_icon_step.addFileInput(content_path.path(b, "images/icons/paint.ase"));
         paint_icon_step.addFileArg(content_path.path(b, "images/icons/paint.ase"));
         const paint_icon_file = paint_icon_step.addOutputFileArg("paint.eia");
 
         paint_app_step.addArgs(&.{ "--file", "/cont/icns/paint.eia" });
-        paint_app_step.addFileInput(paint_icon_file);
         paint_app_step.addFileArg(paint_icon_file);
 
         const paint_eon_step = b.addRunArtifact(eon_builder_exe);
         paint_eon_step.addArg("exe");
         paint_eon_step.addDirectoryArg(eon_lib_path);
-        paint_eon_step.addFileInput(content_path.path(b, "eon/exec/paint.eon"));
         paint_eon_step.addFileArg(content_path.path(b, "eon/exec/paint.eon"));
         const paint_asm_file = paint_eon_step.addOutputFileArg("paint.eon");
 
         const paint_asm_step = b.addRunArtifact(asm_builder_exe);
         paint_asm_step.addArg("exe");
-        paint_asm_step.addFileInput(paint_asm_file);
         paint_asm_step.addFileArg(paint_asm_file);
         const paint_exec_file = paint_asm_step.addOutputFileArg("paint.eep");
 
         paint_app_step.addArgs(&.{ "--file", "/exec/paint.eep" });
-        paint_app_step.addFileInput(paint_exec_file);
         paint_app_step.addFileArg(paint_exec_file);
 
         paint_app_step.addArgs(&.{ "--file", "/conf/apps/Paint.eln" });
-        paint_app_step.addFileInput(content_path.path(b, "elns/Paint.eln"));
         paint_app_step.addFileArg(content_path.path(b, "elns/Paint.eln"));
     }
 
@@ -1066,10 +1012,8 @@ pub fn build(b: *std.Build) !void {
 
     var install_disk_image_step = b.addRunArtifact(image_builder_exe);
     const install_disk_image_path = install_disk_image_step.addOutputFileArg("disk_full.eee");
-    install_disk_image_step.addFileInput(disk_image_path);
     install_disk_image_step.addArg("--disk");
     install_disk_image_step.addFileArg(disk_image_path);
-    install_disk_image_step.addFileInput(debug_image_path);
     install_disk_image_step.addArg("--disk");
     install_disk_image_step.addFileArg(debug_image_path);
 
@@ -1088,31 +1032,23 @@ pub fn build(b: *std.Build) !void {
 
     var steam_install_disk_image_step = b.addRunArtifact(image_builder_exe);
     const steam_install_disk_image_path = steam_install_disk_image_step.addOutputFileArg("disk_steam_full.eee");
-    steam_install_disk_image_step.addFileInput(disk_image_path);
     steam_install_disk_image_step.addArg("--disk");
     steam_install_disk_image_step.addFileArg(disk_image_path);
-    steam_install_disk_image_step.addFileInput(steam_image_path);
     steam_install_disk_image_step.addArg("--disk");
     steam_install_disk_image_step.addFileArg(steam_image_path);
-    steam_install_disk_image_step.addFileInput(email_image_path);
     steam_install_disk_image_step.addArg("--disk");
     steam_install_disk_image_step.addFileArg(email_image_path);
 
     var steam_demo_install_disk_image_step = b.addRunArtifact(image_builder_exe);
     const steam_demo_install_disk_image_path = steam_demo_install_disk_image_step.addOutputFileArg("disk_steam_demo_full.eee");
-    steam_demo_install_disk_image_step.addFileInput(disk_image_path);
     steam_demo_install_disk_image_step.addArg("--disk");
     steam_demo_install_disk_image_step.addFileArg(disk_image_path);
-    steam_demo_install_disk_image_step.addFileInput(demo_image_path);
     steam_demo_install_disk_image_step.addArg("--disk");
     steam_demo_install_disk_image_step.addFileArg(demo_image_path);
-    steam_demo_install_disk_image_step.addFileInput(steam_image_path);
     steam_demo_install_disk_image_step.addArg("--disk");
     steam_demo_install_disk_image_step.addFileArg(steam_image_path);
-    steam_demo_install_disk_image_step.addFileInput(email_image_path);
     steam_demo_install_disk_image_step.addArg("--disk");
     steam_demo_install_disk_image_step.addFileArg(email_image_path);
-    steam_demo_install_disk_image_step.addFileInput(email_demo_image_path);
     steam_demo_install_disk_image_step.addArg("--disk");
     steam_demo_install_disk_image_step.addFileArg(email_demo_image_path);
 
@@ -1337,7 +1273,6 @@ pub fn build(b: *std.Build) !void {
 
         var itch_install_disk_image_step = b.addRunArtifact(image_builder_exe);
         const itch_install_disk_image_path = itch_install_disk_image_step.addOutputFileArg("disk_itch_full.eee");
-        itch_install_disk_image_step.addFileInput(disk_image_path);
         itch_install_disk_image_step.addArg("--disk");
         itch_install_disk_image_step.addFileArg(disk_image_path);
 
@@ -1436,10 +1371,8 @@ pub fn build(b: *std.Build) !void {
         var itch_install_disk_image_step = b.addRunArtifact(image_builder_exe);
         const itch_install_disk_image_path = itch_install_disk_image_step.addOutputFileArg("disk_itch_full.eee");
         itch_install_disk_image_step.addArg("--disk");
-        itch_install_disk_image_step.addFileInput(disk_image_path);
         itch_install_disk_image_step.addFileArg(disk_image_path);
         itch_install_disk_image_step.addArg("--disk");
-        itch_install_disk_image_step.addFileInput(demo_image_path);
         itch_install_disk_image_step.addFileArg(demo_image_path);
 
         _ = itch_directory_step.addCopyFile(itch_install_disk_image_path, "linux-demo/content/recovery.eee");
@@ -1558,10 +1491,8 @@ pub fn build(b: *std.Build) !void {
 
     const steamcmd_step = b.addSystemCommand(&.{ "steamcmd", "+login", "preston3410" });
     steamcmd_step.addArgs(&.{ "+run_app_build", "-desc", steam_desc });
-    steamcmd_step.addFileInput(b.path("zig-out/pub/steam/upload_4124360.vdf"));
     steamcmd_step.addFileArg(b.path("zig-out/pub/steam/upload_4124360.vdf"));
     steamcmd_step.addArgs(&.{ "+run_app_build", "-desc", steam_desc });
-    steamcmd_step.addFileInput(b.path("zig-out/pub/steam/upload_4124370.vdf"));
     steamcmd_step.addFileArg(b.path("zig-out/pub/steam/upload_4124370.vdf"));
     steamcmd_step.addArg("+quit");
 
@@ -1571,25 +1502,21 @@ pub fn build(b: *std.Build) !void {
     upload_step.dependOn(upload_steam_step);
 
     const butler_linux_step = b.addSystemCommand(&.{ "butler", "push" });
-    butler_linux_step.addFileInput(iversion_file);
     butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_linux_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux"));
     butler_linux_step.addArg(b.fmt("prestosilver/sandeee-os:linux-nightly", .{}));
 
     const butler_windows_step = b.addSystemCommand(&.{ "butler", "push" });
-    butler_windows_step.addFileInput(iversion_file);
     butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_windows_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows"));
     butler_windows_step.addArg(b.fmt("prestosilver/sandeee-os:win-nightly", .{}));
 
     const butler_linux_demo_step = b.addSystemCommand(&.{ "butler", "push" });
-    butler_linux_demo_step.addFileInput(iversion_file);
     butler_linux_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_linux_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux-demo"));
     butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-os:linux-demo-nightly", .{}));
 
     const butler_windows_demo_step = b.addSystemCommand(&.{ "butler", "push" });
-    butler_windows_demo_step.addFileInput(iversion_file);
     butler_windows_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     butler_windows_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows-demo"));
     butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-os:win-demo-nightly", .{}));
@@ -1605,25 +1532,21 @@ pub fn build(b: *std.Build) !void {
     upload_step.dependOn(upload_itch_step);
 
     const rel_butler_linux_step = b.addSystemCommand(&.{ "butler", "push" });
-    rel_butler_linux_step.addFileInput(iversion_file);
     rel_butler_linux_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_linux_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux"));
     rel_butler_linux_step.addArg(b.fmt("prestosilver/sandeee-os:linux", .{}));
 
     const rel_butler_windows_step = b.addSystemCommand(&.{ "butler", "push" });
-    rel_butler_windows_step.addFileInput(iversion_file);
     rel_butler_windows_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_windows_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows"));
     rel_butler_windows_step.addArg(b.fmt("prestosilver/sandeee-os:win", .{}));
 
     const rel_butler_linux_demo_step = b.addSystemCommand(&.{ "butler", "push" });
-    rel_butler_linux_demo_step.addFileInput(iversion_file);
     rel_butler_linux_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_linux_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "linux-demo"));
     rel_butler_linux_demo_step.addArg(b.fmt("prestosilver/sandeee-os:linux-demo-three", .{}));
 
     const rel_butler_windows_demo_step = b.addSystemCommand(&.{ "butler", "push" });
-    rel_butler_windows_demo_step.addFileInput(iversion_file);
     rel_butler_windows_demo_step.addPrefixedFileArg("--userversion-file=", iversion_file);
     rel_butler_windows_demo_step.addDirectoryArg(itch_directory_step.getDirectory().path(b, "windows-demo"));
     rel_butler_windows_demo_step.addArg(b.fmt("prestosilver/sandeee-os:win-demo-three", .{}));
