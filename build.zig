@@ -128,33 +128,10 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const exe_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-        .link_libc = true,
-        .error_tracing = true,
-    });
-    exe_module.linkLibrary(glfw.artifact("glfw"));
-
-    const exe = b.addExecutable(.{
-        .name = "SandEEE",
-        .root_module = exe_module,
-        .use_llvm = true,
-    });
-
     const glfw_host = b.dependency("glfw", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
-
-    const exe_host_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    exe_host_module.linkLibrary(glfw_host.artifact("glfw"));
 
     var commit = b.run(&.{ "git", "rev-list", "HEAD", "--count" });
 
@@ -291,58 +268,88 @@ pub fn build(b: *std.Build) !void {
     options_host.addOption(bool, "enable_email", false);
     const options_host_module = options_host.createModule();
 
-    exe_module.addImport("options", options_module);
-    exe_module.addImport("glfw", glfw_module);
-    exe_module.addImport("flags", flags_module);
-    exe_module.addImport("zgl", zgl_module);
-    exe_module.addImport("steam", steam_module);
-    exe_module.addImport("zigimg", zigimg_module);
+    const exe_module = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+        .error_tracing = true,
+        .imports = &.{
+            .{ .name = "openal", .module = openal_module },
+            .{ .name = "options", .module = options_module },
+            .{ .name = "glfw", .module = glfw_module },
+            .{ .name = "flags", .module = flags_module },
+            .{ .name = "zgl", .module = zgl_module },
+            .{ .name = "steam", .module = steam_module },
+            .{ .name = "zigimg", .module = zigimg_module },
+        },
+    });
 
-    exe_host_module.addImport("openal", openal_host_module);
-    exe_host_module.addImport("options", options_host_module);
-    exe_host_module.addImport("glfw", glfw_host_module);
-    exe_host_module.addImport("flags", flags_host_module);
-    exe_host_module.addImport("zgl", zgl_host_module);
-    exe_host_module.addImport("steam", steam_host_module);
-    exe_host_module.addImport("zigimg", zigimg_host_module);
+    exe_module.linkLibrary(glfw.artifact("glfw"));
 
-    const image_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/eee/eee_packer.zig"),
+    const exe = b.addExecutable(.{
+        .name = "SandEEE",
+        .root_module = exe_module,
+        .use_llvm = true,
+    });
+
+    const exe_host_module = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
         .target = b.graph.host,
         .optimize = .debug,
         .link_libc = true,
+        .imports = &.{
+            .{ .name = "openal", .module = openal_host_module },
+            .{ .name = "options", .module = options_host_module },
+            .{ .name = "glfw", .module = glfw_host_module },
+            .{ .name = "flags", .module = flags_host_module },
+            .{ .name = "zgl", .module = zgl_host_module },
+            .{ .name = "steam", .module = steam_host_module },
+            .{ .name = "zigimg", .module = zigimg_host_module },
+        },
     });
-    image_builder_mod.addImport("sandeee", exe_host_module);
-    image_builder_mod.addImport("options", options_host_module);
+    exe_host_module.linkLibrary(glfw_host.artifact("glfw"));
+
     const image_builder_exe = b.addExecutable(.{
         .name = "eee_builder",
-        .root_module = image_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/eee/eee_packer.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
-    const eme_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/eme/txt_to_mailbox.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    eme_builder_mod.addImport("sandeee", exe_host_module);
-    eme_builder_mod.addImport("options", options_host_module);
     const eme_builder_exe = b.addExecutable(.{
         .name = "eme_builder",
-        .root_module = eme_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/eme/txt_to_mailbox.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
-    const eon_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/asm/eon.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    eon_builder_mod.addImport("sandeee", exe_host_module);
-    eon_builder_mod.addImport("options", options_host_module);
     const eon_builder_exe = b.addExecutable(.{
         .name = "eon_builder",
-        .root_module = eon_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/asm/eon.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
     const asm_builder_mod = b.createModule(.{
@@ -350,140 +357,154 @@ pub fn build(b: *std.Build) !void {
         .target = b.graph.host,
         .optimize = .debug,
         .link_libc = true,
+        .imports = &.{
+            .{ .name = "options", .module = options_host_module },
+        },
     });
     asm_builder_mod.addAnonymousImport("sandeee_operation", .{
         .root_source_file = b.path("src/system/Vm/Operation.zig"),
     });
-    asm_builder_mod.addImport("options", options_host_module);
     const asm_builder_exe = b.addExecutable(.{
         .name = "asm_builder",
         .root_module = asm_builder_mod,
     });
 
-    const random_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/eep/random_program.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    random_builder_mod.addImport("sandeee", exe_host_module);
-    random_builder_mod.addImport("options", options_host_module);
     const random_builder_exe = b.addExecutable(.{
         .name = "random_builder",
-        .root_module = random_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/eep/random_program.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
-    const ase_eia_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/eia/ase_to_eia.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    ase_eia_builder_mod.addImport("sandeee", exe_host_module);
-    ase_eia_builder_mod.addImport("options", options_host_module);
     const ase_eia_builder_exe = b.addExecutable(.{
         .name = "ase_eia_builder",
-        .root_module = ase_eia_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/eia/ase_to_eia.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
-    const eia_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/eia/image_to_eia.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    eia_builder_mod.addImport("sandeee", exe_host_module);
-    eia_builder_mod.addImport("zigimg", zigimg_host_module);
-    eia_builder_mod.addImport("options", options_host_module);
     const eia_builder_exe = b.addExecutable(.{
         .name = "eia_builder",
-        .root_module = eia_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/eia/image_to_eia.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+                .{ .name = "zigimg", .module = zigimg_host_module },
+            },
+        }),
 
         // Workaround: https://github.com/zigimg/zigimg/issues/318
         .use_llvm = true,
     });
 
-    const epk_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/epk/epk_packager.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    epk_builder_mod.addImport("sandeee", exe_host_module);
-    epk_builder_mod.addImport("zigimg", zigimg_host_module);
-    epk_builder_mod.addImport("options", options_host_module);
     const epk_builder_exe = b.addExecutable(.{
         .name = "epk_builder",
-        .root_module = epk_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/epk/epk_packager.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
-    const eff_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/eff/image_to_eff.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    eff_builder_mod.addImport("sandeee", exe_host_module);
-    eff_builder_mod.addImport("zigimg", zigimg_host_module);
-    eff_builder_mod.addImport("options", options_host_module);
     const eff_builder_exe = b.addExecutable(.{
         .name = "eff_builder",
-        .root_module = eff_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/eff/image_to_eff.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+                .{ .name = "zigimg", .module = zigimg_host_module },
+            },
+        }),
 
         // Workaround: https://github.com/zigimg/zigimg/issues/318
         .use_llvm = true,
     });
 
-    const era_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/era/wav_to_era.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    era_builder_mod.addImport("sandeee", exe_host_module);
-    era_builder_mod.addImport("options", options_host_module);
     const era_builder_exe = b.addExecutable(.{
         .name = "era_builder",
-        .root_module = era_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/era/wav_to_era.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
-    const changelog_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/edf/changelog.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    changelog_builder_mod.addImport("sandeee", exe_host_module);
-    changelog_builder_mod.addImport("options", options_host_module);
     const changelog_builder_exe = b.addExecutable(.{
         .name = "changelog_builder",
-        .root_module = changelog_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/edf/changelog.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
-    const downloads_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/edf/downloads.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    downloads_builder_mod.addImport("sandeee", exe_host_module);
-    downloads_builder_mod.addImport("options", options_host_module);
     const downloads_builder_exe = b.addExecutable(.{
         .name = "downloads_builder",
-        .root_module = downloads_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/edf/downloads.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+        
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
-    const docs_builder_mod = b.createModule(.{
-        .root_source_file = b.path("build/edf/docs.zig"),
-        .target = b.graph.host,
-        .optimize = .debug,
-        .link_libc = true,
-    });
-    docs_builder_mod.addImport("sandeee", exe_host_module);
-    docs_builder_mod.addImport("options", options_host_module);
     const docs_builder_exe = b.addExecutable(.{
         .name = "docs_builder",
-        .root_module = docs_builder_mod,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("build/edf/docs.zig"),
+            .target = b.graph.host,
+            .optimize = .debug,
+            .link_libc = true,
+        
+            .imports = &.{
+                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "options", .module = options_host_module },
+            },
+        }),
     });
 
     addFileImports(b, exe_module, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
@@ -778,7 +799,6 @@ pub fn build(b: *std.Build) !void {
     const rc_file = resFileStep.addOutputFileArg("app.rc.o");
 
     // Includes
-    exe.root_module.addImport("openal", openal_module);
     if (target.result.os.tag == .windows) {
         exe.root_module.addObjectFile(rc_file);
         exe.root_module.addLibraryPath(b.path("deps/dll"));

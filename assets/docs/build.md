@@ -15,7 +15,7 @@ Though this has nothing to do with contributors, for completeness uploading requ
 
 SandEEEs build system will package default disks with all debug info on debug builds. Release builds will have a seperate disk named `debug_recovery.eee` which has the debug data overlayed on it.
 
-Debug builds with `-Doptimize=Debug` (the default) are always slower and larger, as of right now release builds are not shipped with symbols. The crash screen does not always show when the game crashes. When a segfault occurs, a release build will crash. This means debug builds are the only way to debug this. Along with this debug builds also log errors into the web log, so that they can be used for print debugging.
+Debug builds with `-Doptimize=debug` (the default) are always slower and larger, as of right now release builds are not shipped with symbols. The crash screen does not always show when the game crashes. When a segfault occurs, a release build will crash. This means debug builds are the only way to debug this. Along with this debug builds also log errors into the web log, so that they can be used for print debugging.
 
 There is also the `-Drandom=[number]` which will pack any number of randomly generated programs into SandEEE. These are cached but take a while to generate, so use it for testing, not for prototyping. This has helped me find alot of bugs, especially with things like lag in the file explorer.
 

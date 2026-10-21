@@ -14,7 +14,7 @@ const files = system.files;
 
 const strings = sandeee_data.strings;
 
-const USE_POSIX = builtin.os.tag == .linux;
+const USE_POSIX = builtin.target.os.tag == .linux;
 
 // TODO: Should not use std.Io.File.Writer here rather Std.Io.Terminal
 

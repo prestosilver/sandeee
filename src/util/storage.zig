@@ -8,7 +8,7 @@ const allocator = util.allocator;
 pub fn getContentPath(file: []const u8) !std.array_list.Managed(u8) {
     var result = std.array_list.Managed(u8).init(allocator);
 
-    if (builtin.os.tag == .windows) {
+    if (builtin.target.os.tag == .windows) {
         try std.array_list.Managed(u8).appendSlice(&result, file);
         try std.array_list.Managed(u8).appendSlice(&result, "\x00");
 

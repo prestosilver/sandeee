@@ -60,6 +60,7 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [ ] Accessibility wizard
   - [ ] In BootEEE
   - [ ] On first boot
+- [ ] Task bar sucks
 - [ ] Windowed mode
   - [X] Cli arg
   - [ ] BIOS setting
@@ -81,7 +82,7 @@ These are tasks that only affect the codebase.
 - [X] zig build upload_itch_release
 - [X] Zig 0.16
 - [X] Move runSandEEE to a subfolder somewhere (in repo)
-- [X] Github actions doesnt test `-Dsteam=On`
+- [X] Github actions doesnt test `-Dsteam=on`
 - [X] Remove anyerror
 - [X] Move embed files inside build.zig
 - [X] Reorganize shaders
@@ -141,6 +142,7 @@ These are tasks that include adding new features to the game, or arent covered b
 - [ ] Add an about SandEEE app with creator credits
 - [ ] Figure out music
   - [ ] Trevor?
+- [ ] Video file format
 
 ## Bad idea bin
 
