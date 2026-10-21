@@ -34,7 +34,7 @@
         },
         .rc = .{
             .url = "git+https://codeberg.org/ziglang/rc#b315438c5a49f7252aa69f4e9e825c859a27252c",
-            .hash = "rc",
+            .hash = "rc-preview-mX5pFS564gPTezZn4v3TMxRnfJUrZNx1B_F2p2HKXOeG",
         },
     },
     .paths = .{
