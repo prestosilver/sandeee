@@ -5,10 +5,10 @@ const util = @import("../util.zig");
 const allocator = util.allocator;
 
 pub const UrlKind = enum(u8) {
-    Steam = '$',
-    Web = '@',
-    Local = '/',
-    Log = '#',
+    steam = '$',
+    web = '@',
+    local = '/',
+    log = '#',
     _,
 };
 
@@ -37,9 +37,9 @@ pub fn parse(path: []const u8) Error!Self {
         };
     }
 
-    if (path.len != 0 and @as(UrlKind, @fromBackingInt(@intCast(path[0]))) == .Local)
+    if (path.len != 0 and @as(UrlKind, @fromBackingInt(@intCast(path[0]))) == .local)
         return .{
-            .kind = .Local,
+            .kind = .local,
             .domain = try allocator.dupe(u8, "/"),
             .path = try allocator.dupe(u8, path[1..]),
         };
@@ -49,11 +49,18 @@ pub fn parse(path: []const u8) Error!Self {
 
 pub fn child(self: *const Self, path: []const u8) Error!Self {
     // for compat
-    if (path.len > 1 and @as(UrlKind, @fromBackingInt(@intCast(path[0]))) == .Web)
+    if (path.len > 1 and @as(UrlKind, @fromBackingInt(@intCast(path[0]))) == .web)
         return self.child(path[1..]);
 
     if (std.mem.indexOf(u8, path, ":")) |_|
         return parse(path);
+
+    if (path.len == 0)
+        return .{
+            .kind = self.kind,
+            .domain = try allocator.dupe(u8, self.domain),
+            .path = try allocator.dupe(u8, self.path),
+        };
 
     if (self.path.len == 0)
         return .{
@@ -117,13 +124,15 @@ test "Url parse fuzzing" {
             const input_len = smith.slice(&input_buf);
             const input = input_buf[0..input_len];
 
-            for (input, 0..) |_, i| {
-                const url = Self.parse(input[0..i]) catch continue;
-                defer url.deinit();
+            const url = Self.parse(input) catch return;
+            defer url.deinit();
 
-                const child_url = url.child(input[i..]) catch continue;
-                defer child_url.deinit();
-            }
+            var child_buf: [1024]u8 = undefined;
+            const child_len = smith.slice(&child_buf);
+            const child_val = child_buf[0..child_len];
+
+            const child_url = url.child(child_val) catch return;
+            defer child_url.deinit();
         }
     };
 

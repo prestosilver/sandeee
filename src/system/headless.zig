@@ -118,8 +118,6 @@ pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Wr
         try files.Folder.setupDisk(disk, "");
     };
 
-    std.log.info("diskpath: {s}", .{diskpath});
-
     try files.Folder.init(disk);
     defer files.deinit();
 

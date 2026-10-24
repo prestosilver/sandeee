@@ -64,12 +64,12 @@ pub const PopupQuit = struct {
         if (self.done) |rets| {
             switch (rets) {
                 0 => {
-                    LogoutState.target = .Bios;
-                    try events.EventManager.event_state_change.send(.{ .target_state = .Logout });
+                    LogoutState.target = .bios;
+                    try events.EventManager.event_state_change.send(.{ .target_state = .logout });
                 },
                 1 => {
-                    LogoutState.target = .Quit;
-                    try events.EventManager.event_state_change.send(.{ .target_state = .Logout });
+                    LogoutState.target = .quit;
+                    try events.EventManager.event_state_change.send(.{ .target_state = .logout });
                 },
                 else => return,
             }

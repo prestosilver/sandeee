@@ -6,14 +6,14 @@ const system = @import("../system.zig");
 const Sprite = drawers.Sprite;
 
 pub const State = enum {
-    Disks,
-    Loading,
-    Installer,
-    Recovery,
-    Windowed,
-    Logout,
+    disks,
+    loading,
+    installer,
+    recovery,
+    windowed,
+    logout,
 
-    Crash,
+    crash,
 };
 
 const SystemEventError = std.mem.Allocator.Error || system.files.FileError;

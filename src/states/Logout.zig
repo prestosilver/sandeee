@@ -32,7 +32,7 @@ const Unloader = loaders.Unloader;
 const Vm = system.Vm;
 const files = system.files;
 
-pub var target: enum { Quit, Bios, Update } = .Quit;
+pub var target: enum { quit, bios, update } = .quit;
 pub var target_file: []const u8 = "";
 
 const GSLogout = @This();
@@ -76,7 +76,7 @@ pub fn draw(self: *GSLogout, size: Vec2) !void {
 
     try SpriteBatch.global.draw(Sprite, &clear_sprite, self.clear_shader, .{});
 
-    const text = if (target == .Update) "Updating" else "Logging Out";
+    const text = if (target == .update) "Updating" else "Logging Out";
 
     const logout_size = self.face.sizeText(.{
         .text = text,
@@ -97,15 +97,15 @@ pub fn update(self: *GSLogout, dt: f32) !void {
 
     if (self.time < 0) {
         switch (target) {
-            .Quit => {
+            .quit => {
                 glfw.setWindowShouldClose(graphics.Context.instance.window, true);
             },
-            .Bios => {
-                try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
+            .bios => {
+                try events.EventManager.event_state_change.send(.{ .target_state = .disks });
             },
-            .Update => {
+            .update => {
                 try files.Folder.recoverDisk(target_file, "recovery.eee", false);
-                try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
+                try events.EventManager.event_state_change.send(.{ .target_state = .disks });
 
                 allocator.free(target_file);
                 target_file = "";

@@ -114,7 +114,7 @@ pub fn update(self: *GSDisks, dt: f32) !void {
     if (autoload_disk) |load| {
         self.disk.* = try allocator.dupe(u8, load);
 
-        try events.EventManager.event_state_change.send(.{ .target_state = .Loading });
+        try events.EventManager.event_state_change.send(.{ .target_state = .loading });
 
         return;
     }
@@ -135,15 +135,15 @@ pub fn update(self: *GSDisks, dt: f32) !void {
             if (self.sel == self.disks.items.len - 1) {
                 glfw.setWindowShouldClose(graphics.Context.instance.window, true);
             } else if (self.sel == self.disks.items.len - 2) {
-                try events.EventManager.event_state_change.send(.{ .target_state = .Recovery });
+                try events.EventManager.event_state_change.send(.{ .target_state = .recovery });
             } else if (self.sel == self.disks.items.len - 3) {
-                try events.EventManager.event_state_change.send(.{ .target_state = .Installer });
+                try events.EventManager.event_state_change.send(.{ .target_state = .installer });
             } else {
-                try events.EventManager.event_state_change.send(.{ .target_state = .Loading });
+                try events.EventManager.event_state_change.send(.{ .target_state = .loading });
             }
         } else {
             if (self.sel == 0) {
-                try events.EventManager.event_state_change.send(.{ .target_state = .Installer });
+                try events.EventManager.event_state_change.send(.{ .target_state = .installer });
             } else {
                 glfw.setWindowShouldClose(graphics.Context.instance.window, true);
             }

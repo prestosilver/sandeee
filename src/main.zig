@@ -157,7 +157,7 @@ var state_refresh_rate: std.Io.Duration = .fromMilliseconds(500);
 
 // misc state data
 var game_states: std.EnumArray(system_events.State, GameState) = .initUndefined();
-var current_state: system_events.State = .Disks;
+var current_state: system_events.State = .disks;
 
 // create some fonts
 var bios_font: Font = undefined;
@@ -346,22 +346,22 @@ pub fn paste(_: input_events.EventClipboardPaste) !void {
 
 pub fn settingSet(event: system_events.EventSettingSet) !void {
     if (std.mem.eql(u8, event.setting, "wallpaper_mode")) {
-        wallpaper.data.mode = .Color;
+        wallpaper.data.mode = .color;
 
         if (std.ascii.eqlIgnoreCase(event.value, "tile")) {
-            wallpaper.data.mode = .Tile;
+            wallpaper.data.mode = .tile;
         }
 
         if (std.ascii.eqlIgnoreCase(event.value, "center")) {
-            wallpaper.data.mode = .Center;
+            wallpaper.data.mode = .center;
         }
 
         if (std.ascii.eqlIgnoreCase(event.value, "stretch")) {
-            wallpaper.data.mode = .Stretch;
+            wallpaper.data.mode = .stretch;
         }
 
         if (std.ascii.eqlIgnoreCase(event.value, "fill")) {
-            wallpaper.data.mode = .Fill;
+            wallpaper.data.mode = .fill;
         }
 
         return;
@@ -518,16 +518,16 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
     input_events.setup(graphics.Context.instance.window, true);
 
     // update game state
-    current_state = .Crash;
+    current_state = .crash;
 
     // run setup
-    game_states.getPtr(.Crash).setup() catch {};
+    game_states.getPtr(.crash).setup() catch {};
 
     SpriteBatch.global.clear() catch {};
 
     while (graphics.Context.poll()) {
         // get crash state
-        const state = game_states.getPtr(.Crash);
+        const state = game_states.getPtr(.crash);
 
         state.update(1.0 / graphics.Context.instance.refresh_rate) catch |err| {
             log.log.err("The crash state failed to update {}", .{err});
@@ -834,7 +834,7 @@ pub fn runGame() !void {
 
     wallpaper = .atlas("wall", .{
         .dims = &graphics.Context.instance.size,
-        .mode = .Center,
+        .mode = .center,
     });
 
     // disks state
@@ -965,16 +965,16 @@ pub fn runGame() !void {
     events.EventManager.event_syscall_run.attach(syscallRunEvent);
 
     // setup game states
-    game_states.set(.Disks, states.GameState.init(&gs_disks));
-    game_states.set(.Loading, states.GameState.init(&gs_loading));
-    game_states.set(.Windowed, states.GameState.init(&gs_windowed));
-    game_states.set(.Crash, states.GameState.init(gs_crash));
-    game_states.set(.Logout, states.GameState.init(&gs_logout));
-    game_states.set(.Recovery, states.GameState.init(&gsRecovery));
-    game_states.set(.Installer, states.GameState.init(&gs_install));
+    game_states.set(.disks, states.GameState.init(&gs_disks));
+    game_states.set(.loading, states.GameState.init(&gs_loading));
+    game_states.set(.windowed, states.GameState.init(&gs_windowed));
+    game_states.set(.crash, states.GameState.init(gs_crash));
+    game_states.set(.logout, states.GameState.init(&gs_logout));
+    game_states.set(.recovery, states.GameState.init(&gsRecovery));
+    game_states.set(.installer, states.GameState.init(&gs_install));
 
     // run setup
-    try game_states.getPtr(.Disks).setup();
+    try game_states.getPtr(.disks).setup();
     input_events.setup(graphics.Context.instance.window, true);
 
     // setup state machine

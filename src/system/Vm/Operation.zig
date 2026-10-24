@@ -3,56 +3,55 @@ const std = @import("std");
 const Operation = @This();
 
 pub const Code = enum(u8) {
-    Nop,
-    Sys,
+    nop,
+    sys,
 
-    Push,
-    Add,
-    Sub,
-    Copy,
+    push,
+    add,
+    sub,
+    copy,
 
-    Jmp,
-    Jz,
-    Jnz,
-    Jmpf,
+    jmp,
+    jz,
+    jnz,
+    jmpf,
 
-    Mul,
-    Div,
+    mul,
+    div,
 
-    And,
-    Or,
-    Not,
-    Eq,
+    land,
+    lor,
+    lnot,
+    eq,
 
-    Getb,
+    getb,
 
-    Ret,
-    Call,
+    ret,
+    call,
 
-    Neg,
-    Xor,
-    Disc,
-    Asign,
-    Dup,
+    neg,
+    xor,
+    disc,
+    asign,
+    dup,
 
-    Less,
-    Greater,
+    less,
+    greater,
 
-    Cat,
-    Mod,
-    Create,
-    Size,
-    Len,
+    cat,
+    mod,
+    create,
+    size,
+    len,
 
-    Sin,
-    Cos,
-    Random,
-    Seed,
-    Zero,
-    Mem,
-    DiscN,
+    sin,
+    cos,
+    random,
+    seed,
+    zero,
+    mem,
+    disc_at,
 
-    Last,
     _,
 };
 
@@ -61,12 +60,12 @@ string: ?[]const u8 = null,
 value: ?u64 = null,
 
 pub fn format(self: Operation, writer: anytype) !void {
-    const code = if (@backingInt(self.code) < @backingInt(Code.Last)) @tagName(self.code) else "UnknownOp";
+    const code = std.enums.tagName(Code, self.code) orelse "UnknownOp";
 
     if (self.string) |string| {
-        return writer.print("{s} \"{f}\"", .{ @tagName(self.code), std.ascii.hexEscape(string, .lower) });
+        return writer.print("{s} \"{f}\"", .{ code, std.ascii.hexEscape(string, .lower) });
     } else if (self.value) |value| {
-        return writer.print("{s} {}", .{ @tagName(self.code), value });
+        return writer.print("{s} {}", .{ code, value });
     } else {
         return writer.print("{s}", .{code});
     }

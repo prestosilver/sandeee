@@ -53,7 +53,7 @@ pub const WebData = struct {
 
     pub fn getConts(self: *Self, url: Url) ![]const u8 {
         switch (url.kind) {
-            .Steam => {
+            .steam => {
                 if (options.is_steam) {
                     const root = url.domain;
                     const sub = try allocator.dupeSentinel(u8, url.path, 0);
@@ -77,12 +77,12 @@ pub const WebData = struct {
                     return allocator.print("Error: Steam is not enabled", .{});
                 }
             },
-            .Local => {
+            .local => {
                 const root = try files.FolderLink.resolve(.root);
                 const file = try root.getFile(url.path);
                 return allocator.dupe(u8, try file.read(null));
             },
-            .Web => {
+            .web => {
                 if (url.domain.len == 0)
                     return allocator.print("Error: Bad Remote", .{});
 
@@ -165,7 +165,7 @@ pub const WebData = struct {
 
                 return body_writer.toOwnedSlice();
             },
-            .Log => {
+            .log => {
                 const log_import = @import("../util/log.zig");
                 const debug_mode = std.mem.eql(u8, url.path, "all");
 
@@ -215,9 +215,9 @@ pub const WebData = struct {
 
     // TODO: loading bar?
     // pub const LoadState = enum {
-    //     Fetch,
-    //     Images,
-    //     Links,
+    //     fetch,
+    //     images,
+    //     links,
     // };
 
     pub const WebLink = struct {
@@ -227,12 +227,12 @@ pub const WebData = struct {
 
     pub const Style = struct {
         pub const Align = enum {
-            Left,
-            Center,
-            Right,
+            left,
+            center,
+            right,
         };
 
-        ali: Align = .Left,
+        ali: Align = .left,
         scale: f32 = 1.0,
         color: Color = .{ .r = 0, .g = 0, .b = 0 },
         background: Color = .{ .r = 1, .g = 1, .b = 1 },
@@ -573,12 +573,12 @@ pub const WebData = struct {
             const prop_value = std.mem.trim(u8, comment_line[colon_index + 1 ..], &std.ascii.whitespace);
 
             if (std.mem.eql(u8, prop_name, "align")) {
-                if (std.ascii.eqlIgnoreCase(prop_value, "center")) {
-                    current_style.ali = .Center;
-                } else if (std.ascii.eqlIgnoreCase(prop_value, "left")) {
-                    current_style.ali = .Left;
+                if (std.ascii.eqlIgnoreCase(prop_value, "left")) {
+                    current_style.ali = .left;
+                } else if (std.ascii.eqlIgnoreCase(prop_value, "center")) {
+                    current_style.ali = .center;
                 } else if (std.ascii.eqlIgnoreCase(prop_value, "right")) {
-                    current_style.ali = .Right;
+                    current_style.ali = .right;
                 } else {
                     log.warn("Unknown align style value `{s}`", .{prop_value});
                     continue;
@@ -779,7 +779,7 @@ pub const WebData = struct {
                     try SpriteBatch.global.draw(Sprite, &self.white_box, self.shader, .{ .x = bnds.x, .y = bnds.y + 6 + pos.y });
 
                     switch (style.ali) {
-                        .Center => {
+                        .center => {
                             const x = (web_width - size.x) / 2;
 
                             try SpriteBatch.global.draw(Sprite, &.atlas(&texid, .{
@@ -789,7 +789,7 @@ pub const WebData = struct {
                             texid[4] += 1;
                             pos.y += size.y;
                         },
-                        .Left => {
+                        .left => {
                             try SpriteBatch.global.draw(Sprite, &.atlas(&texid, .{
                                 .source = .{ .w = 1, .h = 1 },
                                 .size = size,
@@ -797,7 +797,7 @@ pub const WebData = struct {
                             texid[4] += 1;
                             pos.y += size.y;
                         },
-                        .Right => {
+                        .right => {
                             const x = web_width - size.x;
 
                             try SpriteBatch.global.draw(Sprite, &.atlas(&texid, .{
@@ -808,6 +808,7 @@ pub const WebData = struct {
                             pos.y += size.y;
                         },
                     }
+
                     continue;
                 }
 
@@ -831,14 +832,14 @@ pub const WebData = struct {
                         defer self.link_lock.unlock(util.io);
 
                         switch (style.ali) {
-                            .Left => {
+                            .left => {
                                 const link = WebData.WebLink{
                                     .url = url,
                                     .pos = .{ .x = pos.x, .y = 2 + pos.y + props.scroll.?.value, .w = size.x + 4, .h = size.y + 2 },
                                 };
                                 try self.links.append(link);
                             },
-                            .Center => {
+                            .center => {
                                 const x = (web_width - size.x) / 2;
 
                                 const link = WebData.WebLink{
@@ -847,7 +848,7 @@ pub const WebData = struct {
                                 };
                                 try self.links.append(link);
                             },
-                            .Right => {
+                            .right => {
                                 const x = (web_width - size.x) - 7;
 
                                 const link = WebData.WebLink{
@@ -875,7 +876,7 @@ pub const WebData = struct {
 
                 if (pos.y > 0 and pos.y - 20 < bnds.h) {
                     switch (style.ali) {
-                        .Left => {
+                        .left => {
                             try font.draw(.{
                                 .shader = font_shader,
                                 .text = aline,
@@ -885,7 +886,7 @@ pub const WebData = struct {
                                 .wrap = web_width,
                             });
                         },
-                        .Center => {
+                        .center => {
                             const x = (web_width - size.x) / 2;
 
                             try font.draw(.{
@@ -897,7 +898,7 @@ pub const WebData = struct {
                                 .wrap = web_width,
                             });
                         },
-                        .Right => {
+                        .right => {
                             const x = (web_width - size.x);
 
                             try font.draw(.{
@@ -1324,17 +1325,17 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
     web_idx += 1;
 
     try self.styles.put("center", .{
-        .ali = .Center,
+        .ali = .center,
         .locked = true,
     });
 
     try self.styles.put("left", .{
-        .ali = .Left,
+        .ali = .left,
         .locked = true,
     });
 
     try self.styles.put("right", .{
-        .ali = .Right,
+        .ali = .right,
         .locked = true,
     });
 

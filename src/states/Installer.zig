@@ -35,12 +35,7 @@ const INSTALL_TIME = if (builtin.mode == .debug) 0.0 else 1.5;
 
 const GSInstaller = @This();
 
-const Status = enum(u8) {
-    Naming,
-    Settings,
-    Installing,
-    Done,
-};
+const Status = enum { naming, settings, installing, done };
 
 const SETTINGS = [_][3][]const u8{
     .{ "What is the current Hour", "", "00" },
@@ -62,7 +57,7 @@ setting_buffers: [SETTINGS.len][MAX_VALUE_LEN]u8 = undefined,
 setting_id: usize = 0,
 
 timer: f32 = 1,
-status: Status = .Naming,
+status: Status = .naming,
 disk_name: std.ArrayList(u8) = undefined,
 // 4 bytes for the .eee
 disk_buffer: [MAX_VALUE_LEN + 4]u8 = undefined,
@@ -93,7 +88,7 @@ pub fn setup(self: *GSInstaller) !void {
     self.setting_id = 0;
     self.offset = 0;
     self.timer = 1;
-    self.status = .Naming;
+    self.status = .naming;
     self.load_sprite.data.color.b = 0;
 }
 
@@ -150,7 +145,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
         .color = .{ .r = 1, .b = 1, .g = 1 },
     });
 
-    if (@backingInt(self.status) < @backingInt(Status.Settings)) return;
+    if (@backingInt(self.status) < @backingInt(Status.settings)) return;
 
     y += self.face.size * 2;
     for (0..self.setting_id + 1) |idx| {
@@ -176,7 +171,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
         }).y;
     }
 
-    if (@backingInt(self.status) < @backingInt(Status.Installing)) return;
+    if (@backingInt(self.status) < @backingInt(Status.installing)) return;
 
     y += self.face.size * 2;
     try self.face.draw(.{
@@ -188,10 +183,10 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
     y += self.face.size * 2;
 
     self.load_sprite.data.size.x = (size.x - 200);
-    if (self.status == .Installing) self.load_sprite.data.size.x *= 1 - self.timer;
+    if (self.status == .installing) self.load_sprite.data.size.x *= 1 - self.timer;
     try SpriteBatch.global.draw(Sprite, &self.load_sprite, self.shader, .{ .x = 100, .y = y });
 
-    if (@backingInt(self.status) < @backingInt(Status.Done)) return;
+    if (@backingInt(self.status) < @backingInt(Status.done)) return;
 
     y += self.face.size * 2;
     try self.face.draw(.{
@@ -214,7 +209,7 @@ pub fn draw(self: *GSInstaller, size: Vec2) !void {
 }
 
 pub fn update(self: *GSInstaller, dt: f32) !void {
-    if (self.status == .Installing) {
+    if (self.status == .installing) {
         self.timer -= dt / INSTALL_TIME;
         if (self.timer < 0) {
             self.timer =
@@ -222,19 +217,19 @@ pub fn update(self: *GSInstaller, dt: f32) !void {
                     0
                 else
                     3;
-            self.status = .Done;
+            self.status = .done;
 
             const vals = try self.updateSettingsVals();
             defer allocator.free(vals);
 
             try files.Folder.setupDisk(self.disk_name.items, vals);
         }
-    } else if (self.status == .Done) {
+    } else if (self.status == .done) {
         self.timer -= dt;
         if (self.timer < 0) {
             self.timer = 0;
 
-            try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
+            try events.EventManager.event_state_change.send(.{ .target_state = .disks });
         }
     }
 }
@@ -242,11 +237,11 @@ pub fn update(self: *GSInstaller, dt: f32) !void {
 // TODO: fuzz this
 pub fn appendChar(self: *GSInstaller, char: []const u8) !void {
     switch (self.status) {
-        .Naming => {
+        .naming => {
             if (self.disk_name.items.len < MAX_VALUE_LEN)
                 self.disk_name.appendSliceAssumeCapacity(char);
         },
-        .Settings => {
+        .settings => {
             // just ignore the input if the array is full
             if (self.setting_values[self.setting_id].items.len < MAX_VALUE_LEN)
                 self.setting_values[self.setting_id].appendSliceAssumeCapacity(char);
@@ -257,10 +252,10 @@ pub fn appendChar(self: *GSInstaller, char: []const u8) !void {
 
 pub fn removeChar(self: *GSInstaller) !void {
     switch (self.status) {
-        .Naming => {
+        .naming => {
             _ = self.disk_name.pop();
         },
-        .Settings => {
+        .settings => {
             _ = self.setting_values[self.setting_id].pop();
         },
         else => {},
@@ -275,7 +270,7 @@ pub fn keypress(self: *GSInstaller, keycode: c_int, _: c_int, down: bool) !void 
         },
         glfw.KeyEnter => {
             switch (self.status) {
-                .Naming => {
+                .naming => {
                     try audio.instance.playSound(self.select_sound.*);
 
                     if (self.disk_name.items.len == 0) return;
@@ -285,9 +280,9 @@ pub fn keypress(self: *GSInstaller, keycode: c_int, _: c_int, down: bool) !void 
                         // The other append always has 4 bytes free
                         self.disk_name.appendSliceAssumeCapacity(".eee");
                     }
-                    self.status = .Settings;
+                    self.status = .settings;
                 },
-                .Settings => {
+                .settings => {
                     try audio.instance.playSound(self.select_sound.*);
 
                     if (self.setting_values[self.setting_id].items.len == 0) {
@@ -296,7 +291,7 @@ pub fn keypress(self: *GSInstaller, keycode: c_int, _: c_int, down: bool) !void 
 
                     self.setting_id += 1;
                     if (self.setting_id >= SETTINGS.len) {
-                        self.status = .Installing;
+                        self.status = .installing;
                         self.setting_id -= 1;
                     }
                 },

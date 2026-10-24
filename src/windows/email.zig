@@ -43,7 +43,7 @@ pub var notif: Sprite = undefined;
 const EmailData = struct {
     const Self = @This();
 
-    const LoginInput = enum { Username, Password };
+    const LoginInput = enum { username, password };
 
     backbg: Sprite,
     reply: Sprite,
@@ -114,7 +114,7 @@ const EmailData = struct {
             {
                 const text = try std.mem.concat(allocator, u8, &.{
                     self.login_text[1],
-                    if (self.login_input != null and self.login_input.? == .Password) "|" else "",
+                    if (self.login_input != null and self.login_input.? == .password) "|" else "",
                 });
                 defer allocator.free(text);
 
@@ -143,7 +143,7 @@ const EmailData = struct {
             {
                 const text = try std.mem.concat(allocator, u8, &.{
                     self.login_text[0],
-                    if (self.login_input != null and self.login_input.? == .Username) "|" else "",
+                    if (self.login_input != null and self.login_input.? == .username) "|" else "",
                 });
                 defer allocator.free(text);
 
@@ -361,11 +361,11 @@ const EmailData = struct {
             if (keycode == glfw.KeyTab) {
                 self.login_input = if (self.login_input) |li|
                     switch (li) {
-                        .Username => .Password,
-                        .Password => .Username,
+                        .username => .password,
+                        .password => .username,
                     }
                 else
-                    .Username;
+                    .username;
             }
 
             if (keycode == glfw.KeyEnter) {
@@ -375,7 +375,7 @@ const EmailData = struct {
             if (keycode == glfw.KeyBackspace) {
                 if (self.login_input) |input|
                     switch (input) {
-                        .Username => {
+                        .username => {
                             if (self.login_text[0].len == 0) return;
 
                             self.login_text[0] = try allocator.realloc(
@@ -383,7 +383,7 @@ const EmailData = struct {
                                 self.login_text[0].len - 1,
                             );
                         },
-                        .Password => {
+                        .password => {
                             if (self.login_text[1].len == 0) return;
 
                             self.login_text[1] = try allocator.realloc(
@@ -641,7 +641,7 @@ const EmailData = struct {
                 };
 
                 if (box_bounds.contains(mousepos)) {
-                    self.login_input = .Password;
+                    self.login_input = .password;
                     return;
                 }
             }
@@ -655,7 +655,7 @@ const EmailData = struct {
                 };
 
                 if (box_bounds.contains(mousepos)) {
-                    self.login_input = .Username;
+                    self.login_input = .username;
                     return;
                 }
             }
@@ -761,7 +761,7 @@ const EmailData = struct {
         if (self.login == null) {
             if (self.login_input) |input|
                 switch (input) {
-                    .Username => {
+                    .username => {
                         const old = self.login_text[0];
                         defer allocator.free(old);
                         self.login_text[0] = try std.mem.concat(allocator, u8, &.{
@@ -769,7 +769,7 @@ const EmailData = struct {
                             char_string,
                         });
                     },
-                    .Password => {
+                    .password => {
                         const old = self.login_text[1];
                         defer allocator.free(old);
                         self.login_text[1] = try std.mem.concat(allocator, u8, &.{

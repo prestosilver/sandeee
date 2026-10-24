@@ -17,16 +17,16 @@ const Font = util.font;
 
 pub const WallData = struct {
     pub const Mode = enum {
-        Color,
-        Tile,
-        Center,
-        Stretch,
-        Fill,
-        Zoom,
+        color,
+        tile,
+        center,
+        stretch,
+        fill,
+        zoom,
     };
 
     dims: *Vec2,
-    mode: Mode = .Center,
+    mode: Mode = .center,
 
     pub fn getVerts(self: *const WallData, _: Vec3) !VertArray {
         var result = try VertArray.init(6);
@@ -35,8 +35,8 @@ pub const WallData = struct {
         const size = (TextureManager.instance.textures.get(par.texture.atlas) orelse return result).size;
 
         switch (self.mode) {
-            .Color => {},
-            .Fill => {
+            .color => {},
+            .fill => {
                 const x_ratio: f32 = self.dims.x / size.x;
                 const y_ratio: f32 = self.dims.y / size.y;
                 const max_ratio: f32 = @max(x_ratio, y_ratio);
@@ -51,7 +51,7 @@ pub const WallData = struct {
                     .y = (self.dims.y - h) / 2,
                 }, .{ .w = 1, .h = 1 }, .{});
             },
-            .Tile => {
+            .tile => {
                 try result.appendQuad(.{
                     .w = self.dims.x,
                     .h = self.dims.y,
@@ -62,7 +62,7 @@ pub const WallData = struct {
                     .h = self.dims.y / size.y,
                 }, .{});
             },
-            .Center => {
+            .center => {
                 try result.appendQuad(.{
                     .w = size.x,
                     .h = size.y,
@@ -70,7 +70,7 @@ pub const WallData = struct {
                     .y = (self.dims.y - size.y) / 2,
                 }, .{ .w = 1, .h = 1 }, .{});
             },
-            .Stretch => {
+            .stretch => {
                 try result.appendQuad(.{
                     .w = self.dims.x,
                     .h = self.dims.y,

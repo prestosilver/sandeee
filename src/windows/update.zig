@@ -91,8 +91,8 @@ pub const UpdateData = struct {
         if (self.focused_link) {
             const idx = std.mem.lastIndexOf(u8, files.root_out.?, "/") orelse unreachable;
             LogoutState.target_file = try allocator.dupe(u8, files.root_out.?[idx + 1 ..]);
-            LogoutState.target = .Update;
-            try events.EventManager.event_state_change.send(.{ .target_state = .Logout });
+            LogoutState.target = .update;
+            try events.EventManager.event_state_change.send(.{ .target_state = .logout });
         }
     }
 

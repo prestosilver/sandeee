@@ -256,8 +256,8 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
     self.pc += 1;
 
     switch (op.code) {
-        .Nop => {},
-        .Push => {
+        .nop => {},
+        .push => {
             if (op.string) |string| {
                 try self.pushStackS(try .init(string));
             } else if (op.value) |value| {
@@ -266,7 +266,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return error.NotImplemented;
             }
         },
-        .Add => {
+        .add => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -284,7 +284,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return;
             }
         },
-        .Sub => {
+        .sub => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -301,7 +301,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return;
             }
         },
-        .Size => {
+        .size => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -322,7 +322,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Len => {
+        .len => {
             const a = try self.popStack();
 
             if (a.data().* != .string) return error.StringMissing;
@@ -331,14 +331,14 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Copy => {
+        .copy => {
             if (op.value == null) return error.ValueMissing;
 
             const a = try self.findStack(op.value.?);
 
             try self.pushStack(a);
         },
-        .Dup => {
+        .dup => {
             if (op.value == null) return error.ValueMissing;
 
             const a = try self.findStack(op.value.?);
@@ -353,13 +353,13 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return;
             }
         },
-        .Jmp => {
+        .jmp => {
             if (op.value == null) return error.ValueMissing;
 
             self.pc = @as(usize, @intCast(op.value.?));
             return;
         },
-        .Jz => {
+        .jz => {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
@@ -376,7 +376,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return;
             }
         },
-        .Jnz => {
+        .jnz => {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
@@ -393,7 +393,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return;
             }
         },
-        .Sys => {
+        .sys => {
             if (op.value) |index| {
                 syscalls.SysCall.run(self, index) catch |err| {
                     switch (err) {
@@ -463,14 +463,14 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return;
             } else return error.ValueMissing;
         },
-        .Jmpf => {
+        .jmpf => {
             if (op.value == null) return error.ValueMissing;
 
             self.pc += @as(usize, @intCast(op.value.?));
 
             return;
         },
-        .Mul => {
+        .mul => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -481,7 +481,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Div => {
+        .div => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -494,7 +494,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Mod => {
+        .mod => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -507,7 +507,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .And => {
+        .land => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -518,7 +518,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Or => {
+        .lor => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -529,7 +529,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Neg => {
+        .neg => {
             const a = try self.popStack();
 
             if (a.data().* != .value) return error.ValueMissing;
@@ -538,7 +538,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Xor => {
+        .xor => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -549,7 +549,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Not => {
+        .lnot => {
             const a = try self.popStack();
 
             if (a.data().* != .value) return error.ValueMissing;
@@ -560,7 +560,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Sin => {
+        .sin => {
             const a = try self.popStack();
 
             if (a.data().* != .value) return error.ValueMissing;
@@ -571,7 +571,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Cos => {
+        .cos => {
             const a = try self.popStack();
 
             if (a.data().* != .value) return error.ValueMissing;
@@ -582,7 +582,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Asign => {
+        .asign => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -592,7 +592,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             return;
         },
-        .Disc => {
+        .disc => {
             if (op.value == null) return error.ValueMissing;
             if (op.value.? > self.rsp) return error.StackUnderflow;
 
@@ -608,7 +608,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 },
             }
         },
-        .Eq => {
+        .eq => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -636,7 +636,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 }
             }
         },
-        .Less => {
+        .less => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -647,7 +647,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
             try self.pushStackI(val);
             return;
         },
-        .Greater => {
+        .greater => {
             const a = try self.popStack();
             const b = try self.popStack();
 
@@ -658,7 +658,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
             try self.pushStackI(val);
             return;
         },
-        .Getb => {
+        .getb => {
             const a = try self.popStack();
 
             if (a.data().* == .string) {
@@ -677,7 +677,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return;
             }
         },
-        .Ret => {
+        .ret => {
             if (self.return_rsp == 0) return error.CallStackUnderflow;
 
             self.return_rsp -= 1;
@@ -685,7 +685,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
             self.inside_fn = self.return_stack[self.return_rsp].function;
             return;
         },
-        .Call => {
+        .call => {
             if (self.return_rsp >= self.return_stack.len - 1) return error.CallStackOverflow;
 
             if (op.string) |string| {
@@ -724,7 +724,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             self.return_rsp += 1;
         },
-        .Cat => {
+        .cat => {
             const b = try self.popStack();
             const a = try self.popStack();
 
@@ -741,7 +741,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 try self.pushStackS(try a.data().string.cat(b_item));
             }
         },
-        .Create => {
+        .create => {
             const b = try self.popStack();
 
             if (b.data().* != .value) return error.ValueMissing;
@@ -753,19 +753,19 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             try self.pushStackS(try .init(adds));
         },
-        .Random => {
+        .random => {
             const val: u64 = self.rnd.random().int(u64);
 
             try self.pushStackI(val);
         },
-        .Seed => {
+        .seed => {
             const seed = try self.popStack();
 
             if (seed.data().* != .value) return error.ValueMissing;
 
             self.rnd.seed(seed.data().value);
         },
-        .Zero => {
+        .zero => {
             const b = try self.findStack(0);
 
             if (b.data().* != .string) return error.ValueMissing;
@@ -777,7 +777,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
 
             try self.pushStackS(try .init(adds));
         },
-        .Mem => {
+        .mem => {
             const a = try self.popStack();
 
             if (a.data().* != .value) return error.ValueMissing;
@@ -788,7 +788,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
                 return error.InvalidAddr;
             }
         },
-        .DiscN => {
+        .disc_at => {
             if (op.value == null) return error.ValueMissing;
             if (op.value.? > self.rsp) return error.StackUnderflow;
 
@@ -806,7 +806,6 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
             std.mem.copyForwards(Pool.ObjectRef, self.stack[self.rsp .. self.rsp + items.len], items);
             self.rsp += items.len;
         },
-        .Last => return error.InvalidOp,
         _ => return error.InvalidOp,
     }
 }
@@ -944,9 +943,9 @@ pub fn getOp(self: *Vm) ![]u8 {
         if (self.pc != 0)
             code[self.pc - 1]
         else
-            Operation{ .code = .Nop }
+            Operation{ .code = .nop }
     else
-        Operation{ .code = .Nop };
+        Operation{ .code = .nop };
 
     return self.allocator.print(
         "In function '{s}' @ {}:\n  Operation: {f}\n{s}",
@@ -958,7 +957,7 @@ pub fn getOper(self: *Vm) !?Operation {
     if (self.inside_fn) |inside| {
         if (self.functions.getPtr(inside)) |func| {
             if (func.*.ops.len <= self.pc) return .{
-                .code = .Ret,
+                .code = .ret,
             };
 
             return func.*.ops[self.pc];
@@ -1099,3 +1098,5 @@ test "Vm input fuzzing" {
 
     try std.testing.fuzz(Context{ .vm = &vm }, Context.testStringToOps, .{});
 }
+
+// TODO: vm operation fuzzing

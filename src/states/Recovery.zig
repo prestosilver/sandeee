@@ -279,7 +279,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
             else if (self.sub_sel != null)
                 self.sub_sel = null
             else
-                try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
+                try events.EventManager.event_state_change.send(.{ .target_state = .disks });
         },
         glfw.KeyEnter => {
             if (self.sub_sel) |sub_sel| {
@@ -300,7 +300,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                             self.sel = 0;
 
                             if (self.disks.items.len == 1) {
-                                try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
+                                try events.EventManager.event_state_change.send(.{ .target_state = .disks });
                                 try audio.instance.playSound(self.select_sound.*);
                             }
 
@@ -328,7 +328,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                     try audio.instance.playSound(self.select_sound.*);
                 }
             } else if (self.sel == self.disks.items.len - 1) {
-                try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
+                try events.EventManager.event_state_change.send(.{ .target_state = .disks });
                 try audio.instance.playSound(self.select_sound.*);
             } else {
                 self.sub_sel = 0;
@@ -371,7 +371,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                     return;
                 }
 
-                try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
+                try events.EventManager.event_state_change.send(.{ .target_state = .disks });
                 try audio.instance.playSound(self.select_sound.*);
             } else if (self.sub_sel) |sub_sel| {
                 _ = sub_sel;
@@ -390,7 +390,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                         self.sel = 0;
 
                         if (self.disks.items.len == 1) {
-                            try events.EventManager.event_state_change.send(.{ .target_state = .Disks });
+                            try events.EventManager.event_state_change.send(.{ .target_state = .disks });
                             try audio.instance.playSound(self.select_sound.*);
 
                             return;
