@@ -103,14 +103,14 @@ test "Url steam works" {
     const url = try Self.parse("$list0:");
     defer url.deinit();
 
-    try std.testing.expectEqual(url.kind, .Steam);
+    try std.testing.expectEqual(url.kind, .steam);
     try std.testing.expectEqualStrings(url.domain, "list0");
     try std.testing.expectEqualStrings(url.path, "");
 
     const child_url = try url.child("$list1:");
     defer child_url.deinit();
 
-    try std.testing.expectEqual(child_url.kind, .Steam);
+    try std.testing.expectEqual(child_url.kind, .steam);
     try std.testing.expectEqualStrings(child_url.domain, "list1");
     try std.testing.expectEqualStrings(child_url.path, "");
 }
