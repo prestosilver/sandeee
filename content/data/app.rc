@@ -16,13 +16,18 @@ BEGIN
         // 040904b0 means US English, Unicode charset
         BLOCK "040904B0"
         BEGIN
-            VALUE "CompanyName",      "prestosilver"
-            VALUE "FileDescription",  "The SandEEE VM"
-            VALUE "InternalName",     "SandEEE"
-            VALUE "OriginalFilename", "SandEEE.exe"
-            VALUE "ProductName",      "SandEEE"
-            VALUE "ProductVersion",   "{f}"
-            VALUE "FileVersion",      "{f}"
+            VALUE "CompanyName",      "prestosilver\0"
+            VALUE "FileDescription",  "The SandEEE VM\0"
+            VALUE "FileVersion",      "{f}\0"
+            VALUE "InternalName",     "SandEEE\0"
+            VALUE "LegalCopyright",   "\0"
+            VALUE "OriginalFilename", "SandEEE.exe\0"
+            VALUE "ProductName",      "SandEEE\0"
+            VALUE "ProductVersion",   "{f}\0"
         END
     END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END 
 END
