@@ -69,7 +69,7 @@ fn inputLoop() noreturn {
 }
 
 pub fn main(cmd: []const u8, comptime exit_fail: bool, logging: ?*std.Io.File.Writer) !void {
-    if (!USE_POSIX) {
+    if (!USE_POSIX and !builtin.is_test) {
         const windows = @import("win32");
 
         // Try to attach to parent console; if that fails, allocate a new one.

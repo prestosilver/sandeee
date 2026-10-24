@@ -3,8 +3,11 @@ const std = @import("std");
 const Operation = @import("sandeee_operation");
 
 pub fn main(init: std.process.Init) !void {
-    var args = init.minimal.args.iterate();
+    var args = try init.minimal.args.iterateAllocator(init.gpa);
+    defer args.deinit();
+
     _ = args.next();
+
     const mode = args.next() orelse return error.MissingMode;
     const input_file = args.next() orelse return error.MissingInputFile;
 
@@ -22,48 +25,54 @@ pub fn main(init: std.process.Init) !void {
 }
 
 pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: []const u8, output_file: []const u8) !void {
-    var inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
-    defer inreader.close(io);
-    try inreader.sync(io);
+    var consts = std.StringHashMap(u64).init(allocator);
 
-    var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
+    {
+        var inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
+        defer inreader.close(io);
+
+        var reader_buffer: [1024]u8 = undefined;
+        var reader_stream = inreader.reader(io, &reader_buffer);
+
+        var idx: u64 = 0;
+
+        while (try reader_stream.interface.takeDelimiter('\n')) |in_line| {
+            const line = std.mem.trim(u8, in_line, &std.ascii.whitespace);
+
+            var no_comment = std.mem.splitScalar(u8, line, ';');
+            var l = no_comment.first();
+            if (l.len == 0) continue;
+            while (l.len != 0 and l[0] == ' ') l = l[1..];
+            while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
+            if (l.len == 0) {
+                continue;
+            }
+            if (l[l.len - 1] == ':') {
+                const key = try allocator.dupe(u8, l[0 .. l.len - 1]);
+
+                try consts.put(key, idx);
+            } else {
+                idx += 1;
+            }
+        }
+    }
+
+    const file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
 
     var writer = file.writer(io, &.{});
 
+    const in_file = try std.Io.Dir.cwd().openFile(io, input_file, .{});
+    defer in_file.close(io);
+
     var reader_buffer: [1024]u8 = undefined;
-    var reader_stream = inreader.reader(io, &reader_buffer);
-
-    var consts = std.StringHashMap(u64).init(allocator);
-    var idx: u64 = 0;
-
-    while (try reader_stream.interface.takeDelimiter('\n')) |line| {
-        var no_comment = std.mem.splitScalar(u8, line, ';');
-        var l = no_comment.first();
-        if (l.len == 0) continue;
-        while (l.len != 0 and l[0] == ' ') l = l[1..];
-        while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
-        if (l.len == 0) {
-            continue;
-        }
-        if (l[l.len - 1] == ':') {
-            const key = try allocator.dupe(u8, l[0 .. l.len - 1]);
-
-            try consts.put(key, idx);
-        } else {
-            idx += 1;
-        }
-    }
-
-    inreader.close(io);
-    inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
-    try inreader.sync(io);
-
-    reader_stream = inreader.reader(io, &reader_buffer);
+    var reader_stream = in_file.reader(io, &reader_buffer);
 
     try writer.interface.writeAll("EEEp");
 
-    while (try reader_stream.interface.takeDelimiter('\n')) |line| {
+    while (try reader_stream.interface.takeDelimiter('\n')) |in_line| {
+        const line = std.mem.trim(u8, in_line, &std.ascii.whitespace);
+
         var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;
@@ -172,63 +181,69 @@ pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: 
 }
 
 pub fn compile_library(allocator: std.mem.Allocator, io: std.Io, input_file: []const u8, output_file: []const u8) !void {
-    var inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
-    defer inreader.close(io);
-    try inreader.sync(io);
+    var toc = std.array_list.Managed(u8).init(allocator);
+    var data = std.array_list.Managed(u8).init(allocator);
+    var funcs = std.array_list.Managed([]const u8).init(allocator);
+
+    var consts = std.StringHashMap(u64).init(allocator);
+
+    var toc_count: u8 = 0;
+
+    {
+        var inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
+        defer inreader.close(io);
+
+        var reader_buffer: [1024]u8 = undefined;
+        var reader_stream = inreader.reader(io, &reader_buffer);
+
+        var idx: u64 = 0;
+
+        while (try reader_stream.interface.takeDelimiter('\n')) |in_line| {
+            const line = std.mem.trim(u8, in_line, &std.ascii.whitespace);
+
+            var no_comment = std.mem.splitScalar(u8, line, ';');
+            var l = no_comment.first();
+            if (l.len == 0) continue;
+            while (l.len != 0 and l[0] == ' ') l = l[1..];
+            while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
+            if (l.len == 0) {
+                continue;
+            }
+            if (l[l.len - 1] == ':') {
+                if (l[0] == '_') {
+                    idx = 0;
+                    toc_count += 1;
+                    const key = try allocator.dupe(u8, l[1 .. l.len - 1]);
+                    try funcs.append(key);
+                }
+
+                const key = try allocator.dupe(u8, l[0 .. l.len - 1]);
+
+                try consts.put(key, idx);
+            } else {
+                idx += 1;
+            }
+        }
+    }
 
     var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
 
     var writer = file.writer(io, &.{});
 
-    var toc = std.array_list.Managed(u8).init(allocator);
-    var data = std.array_list.Managed(u8).init(allocator);
-    var funcs = std.array_list.Managed([]const u8).init(allocator);
-
-    var reader_buffer: [1024]u8 = undefined;
-    var reader_stream = inreader.reader(io, &reader_buffer);
-
-    var consts = std.StringHashMap(u64).init(allocator);
-    var idx: u64 = 0;
-    var toc_count: u8 = 0;
-
-    while (try reader_stream.interface.takeDelimiter('\n')) |line| {
-        var no_comment = std.mem.splitScalar(u8, line, ';');
-        var l = no_comment.first();
-        if (l.len == 0) continue;
-        while (l.len != 0 and l[0] == ' ') l = l[1..];
-        while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
-        if (l.len == 0) {
-            continue;
-        }
-        if (l[l.len - 1] == ':') {
-            if (l[0] == '_') {
-                idx = 0;
-                toc_count += 1;
-                const key = try allocator.dupe(u8, l[1 .. l.len - 1]);
-                try funcs.append(key);
-            }
-
-            const key = try allocator.dupe(u8, l[0 .. l.len - 1]);
-
-            try consts.put(key, idx);
-        } else {
-            idx += 1;
-        }
-    }
-
     try toc.append(@as(u8, @intCast(toc_count)));
 
-    inreader.close(io);
-    inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
-    try inreader.sync(io);
+    var reader_buffer: [1024]u8 = undefined;
+    const inreader = try std.Io.Dir.cwd().openFile(io, input_file, .{});
+    defer inreader.close(io);
 
-    reader_stream = inreader.reader(io, &reader_buffer);
+    var reader_stream = inreader.reader(io, &reader_buffer);
     var prev_toc: usize = 0;
 
     try writer.interface.writeAll("elib");
 
-    while (try reader_stream.interface.takeDelimiter('\n')) |line| {
+    while (try reader_stream.interface.takeDelimiter('\n')) |in_line| {
+        const line = std.mem.trim(u8, in_line, &std.ascii.whitespace);
         var no_comment = std.mem.splitScalar(u8, line, ';');
         var l = no_comment.first();
         if (l.len == 0) continue;

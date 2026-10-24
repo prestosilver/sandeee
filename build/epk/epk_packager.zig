@@ -4,7 +4,9 @@ var data: [100_000_000]u8 = undefined;
 
 // converts a eep to a epk
 pub fn main(init: std.process.Init) !void {
-    var args = init.minimal.args.iterate();
+    var args = try init.minimal.args.iterateAllocator(init.gpa);
+    defer args.deinit();
+
     _ = args.next();
 
     const output_file_path = args.next() orelse return error.MissingOutputFile;

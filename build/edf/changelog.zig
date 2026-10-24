@@ -19,7 +19,9 @@ const LOG_FOOTER: []const u8 =
 ;
 
 pub fn main(init: std.process.Init) !void {
-    var args = init.minimal.args.iterate();
+    var args = try init.minimal.args.iterateAllocator(init.gpa);
+    defer args.deinit();
+
     _ = args.next();
 
     var version_table: std.StringHashMap([]const u8) = .init(init.gpa);

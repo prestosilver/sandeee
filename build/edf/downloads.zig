@@ -1,7 +1,9 @@
 const std = @import("std");
 
 pub fn main(init: std.process.Init) !void {
-    var args = init.minimal.args.iterate();
+    var args = try init.minimal.args.iterateAllocator(init.gpa);
+    defer args.deinit();
+
     _ = args.next();
 
     const output_file = args.next() orelse return error.MissingOutputFile;

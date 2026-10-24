@@ -147,7 +147,9 @@ const Frame = struct {
 
 // converts a png to a eia
 pub fn main(init: std.process.Init) !void {
-    var args = init.minimal.args.iterate();
+    var args = try init.minimal.args.iterateAllocator(init.gpa);
+    defer args.deinit();
+
     _ = args.next();
 
     const input_path = args.next() orelse return error.MissingInputFile;

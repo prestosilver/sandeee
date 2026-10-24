@@ -725,7 +725,15 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) ![]Toke
             var stmt = (try reader.interface.takeDelimiter('\n')).?;
 
             if (std.mem.eql(u8, stmt[0..8], "include ")) {
-                const path = try allocator.print("{s}/{s}", .{ lib_path, stmt[10 .. stmt.len - 1] });
+                const eon_path = stmt[10 .. stmt.len - 1];
+
+                const path_size = std.mem.replacementSize(u8, eon_path, "/", &.{std.fs.path.sep});
+                const path_buf = try allocator.alloc(u8, path_size);
+                defer allocator.free(path_buf);
+
+                _ = std.mem.replace(u8, eon_path, "/", &.{std.fs.path.sep}, path_buf);
+
+                const path = try std.fs.path.join(allocator, &.{ lib_path, path_buf});
 
                 var toks = try lexFile(io, allocator, path);
                 defer allocator.free(toks);
@@ -1539,8 +1547,11 @@ pub fn compile_library(io: std.Io, allocator: std.mem.Allocator, input_file: []c
 }
 
 pub fn main(init: std.process.Init) !void {
-    var args = init.minimal.args.iterate();
+    var args = try init.minimal.args.iterateAllocator(init.gpa);
+    defer args.deinit();
+
     _ = args.next();
+
     const mode = args.next() orelse return error.MissingMode;
     lib_path = args.next() orelse return error.MissingLibPath;
     const input_file = args.next() orelse return error.MissingInputFile;

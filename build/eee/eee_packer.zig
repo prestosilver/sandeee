@@ -6,8 +6,11 @@ const util = @import("sandeee").util;
 var content: [100_000_000]u8 = undefined;
 
 pub fn main(init: std.process.Init) !void {
-    var args = init.minimal.args.iterate();
+    var args = try init.minimal.args.iterateAllocator(init.gpa);
+    defer args.deinit();
+    
     _ = args.next();
+
     const output_file = args.next() orelse return error.MissingOutputFile;
 
     util.io = init.io;
@@ -36,7 +39,9 @@ pub fn main(init: std.process.Init) !void {
                 switch (path.kind) {
                     .file => {
                         var path_buf: [128]u8 = undefined;
-                        const disk_path = try std.fmt.bufPrint(&path_buf, "/{s}", .{path.path});
+                        path_buf[0] = '/';
+                        _ = std.mem.replace(u8, path.path, &.{ std.fs.path.sep }, "/", path_buf[1..]);
+                        const disk_path = path_buf[0..path.path.len + 1];
 
                         files_root.newFile(disk_path) catch |err| switch (err) {
                             error.FileExists => {},
@@ -64,7 +69,9 @@ pub fn main(init: std.process.Init) !void {
 
             var buffer: [512]u8 = undefined;
             var reader = skel_file.reader(init.io, &buffer);
-            while (try reader.interface.takeDelimiter('\n')) |line| {
+            while (try reader.interface.takeDelimiter('\n')) |in_line| {
+                const line = std.mem.trim(u8, in_line, &std.ascii.whitespace);
+
                 if (line.len == 0)
                     continue;
 

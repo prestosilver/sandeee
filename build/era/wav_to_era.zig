@@ -20,7 +20,9 @@ const FormatSection = struct {
 
 // Converts a wav file to a era file
 pub fn main(init: std.process.Init) !void {
-    var args = init.minimal.args.iterate();
+    var args = try init.minimal.args.iterateAllocator(init.gpa);
+    defer args.deinit();
+
     _ = args.next();
 
     const input_file = args.next() orelse return error.MissingInputFile;
