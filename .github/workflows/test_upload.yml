@@ -30,7 +30,7 @@ jobs:
             zig-
 
       - name: Setup Zig
-        uses: https://codeberg.org/mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@v2
         with:
           version: 0.17.0
       - name: Copy steam dll
@@ -74,7 +74,7 @@ jobs:
             zig-build-
             zig-
       - name: Setup Zig
-        uses: https://codeberg.org/mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@v2
         with:
           version: 0.17.0
       - name: Install mingw
@@ -120,7 +120,7 @@ jobs:
             zig-build-
             zig-
       - name: Setup Zig
-        uses: https://codeberg.org/mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@v2
         with:
           version: 0.17.0
       - name: Install butler
@@ -161,7 +161,7 @@ jobs:
             zig-
 
       - name: Setup Zig
-        uses: https://codeberg.org/mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@v2
         with:
           version: 0.17.0
       - name: Generate changelog
@@ -210,7 +210,7 @@ jobs:
             zig-build-
             zig-
       - name: Setup Zig
-        uses: https://codeberg.org/mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@v2
         with:
           version: 0.17.0
       - name: Generate release www
