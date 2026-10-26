@@ -226,6 +226,7 @@ jobs:
           zig build www
           mkdir -p ../www/alpha
           cp -r zig-out/www/* ../www/alpha/
+          cp www/alpha/changelog.edf www/changelog.edf
       - name: Upload to gh pages
         id: deployment
         uses: actions/upload-pages-artifact@v3
