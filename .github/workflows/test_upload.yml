@@ -30,9 +30,9 @@ jobs:
             zig-
 
       - name: Setup Zig
-        uses: korandoru/setup-zig@v1
+        uses: https://codeberg.org/mlugg/setup-zig@v2
         with:
-          zig-version: 0.17.0
+          version: 0.17.0
       - name: Copy steam dll
         run: |
           cp deps/dll/steam_api64.dll ./steam_api64.dll
@@ -74,9 +74,9 @@ jobs:
             zig-build-
             zig-
       - name: Setup Zig
-        uses: korandoru/setup-zig@v1
+        uses: https://codeberg.org/mlugg/setup-zig@v2
         with:
-          zig-version: 0.17.0
+          version: 0.17.0
       - name: Install mingw
         run: sudo apt-get install gcc-mingw-w64 binutils-mingw-w64-x86-64
         shell: bash
@@ -120,9 +120,9 @@ jobs:
             zig-build-
             zig-
       - name: Setup Zig
-        uses: korandoru/setup-zig@v1
+        uses: https://codeberg.org/mlugg/setup-zig@v2
         with:
-          zig-version: 0.17.0
+          version: 0.17.0
       - name: Install butler
         uses: remarkablegames/setup-butler@v2
       - name: Install mingw
@@ -161,9 +161,9 @@ jobs:
             zig-
 
       - name: Setup Zig
-        uses: korandoru/setup-zig@v1
+        uses: https://codeberg.org/mlugg/setup-zig@v2
         with:
-          zig-version: 0.17.0
+          version: 0.17.0
       - name: Generate changelog
         run: |
           zig build changelog
@@ -210,9 +210,9 @@ jobs:
             zig-build-
             zig-
       - name: Setup Zig
-        uses: korandoru/setup-zig@v1
+        uses: https://codeberg.org/mlugg/setup-zig@v2
         with:
-          zig-version: 0.17.0
+          version: 0.17.0
       - name: Generate release www
         run: |
           zig build www
