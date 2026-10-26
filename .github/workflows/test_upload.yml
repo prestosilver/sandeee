@@ -18,10 +18,7 @@ jobs:
         env:
           cache-name: cache-zig
         with:
-          path: |
-            ${{github.workspace}}/.cache/zig
-            ${{github.workspace}}/.zig-cache
-            ${{github.workspace}}/zig-pkg
+          path: ${{github.workspace}}/.zig-cache
           key: zig-tests-${{ matrix.steam }}${{ matrix.optimize }}-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-tests-${{ matrix.steam }}${{ matrix.optimize }}-${{ runner.os }}-
@@ -63,10 +60,7 @@ jobs:
         env:
           cache-name: cache-zig
         with:
-          path: |
-            ${{github.workspace}}/.cache/zig
-            ${{github.workspace}}/.zig-cache
-            ${{github.workspace}}/zig-pkg
+          path: ${{github.workspace}}/.zig-cache
           key: zig-build-steam-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-steam-${{ runner.os }}-
@@ -109,10 +103,7 @@ jobs:
         env:
           cache-name: cache-zig
         with:
-          path: |
-            ${{github.workspace}}/.cache/zig
-            ${{github.workspace}}/.zig-cache
-            ${{github.workspace}}/zig-pkg
+          path: ${{github.workspace}}/.zig-cache
           key: zig-build-itch-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-itch-${{ runner.os }}-
@@ -149,10 +140,7 @@ jobs:
         env:
           cache-name: cache-zig
         with:
-          path: |
-            ${{github.workspace}}/.cache/zig
-            ${{github.workspace}}/.zig-cache
-            ${{github.workspace}}/zig-pkg
+          path: ${{github.workspace}}/.zig-cache
           key: zig-build-changelog-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-changelog-${{ runner.os }}-
@@ -199,10 +187,7 @@ jobs:
         env:
           cache-name: cache-zig
         with:
-          path: |
-            ${{github.workspace}}/.cache/zig
-            ${{github.workspace}}/.zig-cache
-            ${{github.workspace}}/zig-pkg
+          path: ${{github.workspace}}/.zig-cache
           key: zig-build-www-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-www-${{ runner.os }}-

@@ -17,10 +17,7 @@ jobs:
         env:
           cache-name: cache-zig
         with:
-          path: |
-            ${{github.workspace}}/.cache/zig
-            ${{github.workspace}}/.zig-cache
-            ${{github.workspace}}/zig-pkg
+          path: ${{github.workspace}}/.zig-cache
           key: zig-tests-dbg-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-tests-${{ matrix.optimize }}-${{ runner.os }}-
@@ -54,9 +51,7 @@ jobs:
         env:
           cache-name: cache-zig
         with:
-          path: |
-            ${{github.workspace}}/.cache/zig
-            ${{github.workspace}}/.zig-cache
+          path: ${{github.workspace}}/.zig-cache
           key: zig-build-itch-rel-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
             zig-build-itch-rel-${{ runner.os }}-
