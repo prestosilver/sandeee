@@ -160,3 +160,4 @@ This here is scope creep central, anti ideas if you may. They may never be added
 - Discord RPC support
 - Mascott
   - Crt monitor pixar lamp with cat memes
+- Make main state machine comptime polymorphic to avoid that layer of indirection.

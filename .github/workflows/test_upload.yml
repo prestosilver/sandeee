@@ -85,14 +85,12 @@ jobs:
           zig build steam
       - name: Upload to steam (release)
         uses: RageAgainstThePixel/upload-steam@v2
-        continue-on-error: true
         with:
             username: preston3410
             password: ${{ secrets.STEAM_PASSWORD }}
             app_build: ${{github.workspace}}/zig-out/pub/steam/upload_4124360.vdf
       - name: Upload to steam (demo)
         uses: RageAgainstThePixel/upload-steam@v2
-        continue-on-error: true
         with:
             username: preston3410
             password: ${{ secrets.STEAM_PASSWORD }}
