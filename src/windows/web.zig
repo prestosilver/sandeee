@@ -1199,17 +1199,17 @@ pub fn renderFrame(path: []const u8, shader: *Shader, font_shader: *Shader, font
     web_idx += 1;
 
     try self.styles.put("center", .{
-        .ali = .Center,
+        .ali = .center,
         .locked = true,
     });
 
     try self.styles.put("left", .{
-        .ali = .Left,
+        .ali = .left,
         .locked = true,
     });
 
     try self.styles.put("right", .{
-        .ali = .Right,
+        .ali = .right,
         .locked = true,
     });
 
