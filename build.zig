@@ -118,12 +118,12 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    const glfw = try b.dependencyLazy("glfw", .{
+    const glfw = b.dependency("glfw", .{
         .target = target,
         .optimize = optimize,
     });
 
-    const glfw_host = try b.dependencyLazy("glfw", .{
+    const glfw_host = b.dependency("glfw", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
@@ -168,52 +168,52 @@ pub fn build(b: *std.Build) !void {
     openal_host_source.addIncludePath(b.path("deps/include"));
     const openal_host_module = openal_host_source.createModule();
 
-    const win32_dependency = try b.dependencyLazy("win32", .{});
+    const win32_dependency = b.dependency("win32", .{});
     const win32_module = win32_dependency.module("win32");
 
-    const flags_dependency = try b.dependencyLazy("flags", .{
+    const flags_dependency = b.dependency("flags", .{
         .target = target,
         .optimize = optimize,
     });
     const flags_module = flags_dependency.module("flags");
 
-    const flags_host_dependency = try b.dependencyLazy("flags", .{
+    const flags_host_dependency = b.dependency("flags", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
     const flags_host_module = flags_host_dependency.module("flags");
 
-    const glfw_dependency = try b.dependencyLazy("zglfw", .{
+    const glfw_dependency = b.dependency("zglfw", .{
         .target = target,
         .optimize = optimize,
     });
     const glfw_module = glfw_dependency.module("glfw");
 
-    const glfw_host_dependency = try b.dependencyLazy("zglfw", .{
+    const glfw_host_dependency = b.dependency("zglfw", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
     const glfw_host_module = glfw_host_dependency.module("glfw");
 
-    const zgl_dependency = try b.dependencyLazy("zgl", .{
+    const zgl_dependency = b.dependency("zgl", .{
         .target = target,
         .optimize = optimize,
     });
     const zgl_module = zgl_dependency.module("zgl");
 
-    const zgl_host_dependency = try b.dependencyLazy("zgl", .{
+    const zgl_host_dependency = b.dependency("zgl", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
     const zgl_host_module = zgl_host_dependency.module("zgl");
 
-    const zigimg_host_dependency = try b.dependencyLazy("zigimg", .{
+    const zigimg_host_dependency = b.dependency("zigimg", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
     const zigimg_host_module = zigimg_host_dependency.module("zigimg");
 
-    const zigimg_dependency = try b.dependencyLazy("zigimg", .{
+    const zigimg_dependency = b.dependency("zigimg", .{
         .target = target,
         .optimize = optimize,
     });
@@ -1055,12 +1055,12 @@ pub fn build(b: *std.Build) !void {
     const steam_directory_step = b.addWriteFiles();
     const itch_directory_step = b.addWriteFiles();
 
-    const glfw_pub_linux = try b.dependencyLazy("glfw", .{
+    const glfw_pub_linux = b.dependency("glfw", .{
         .target = target,
         .optimize = .fast,
     });
 
-    const glfw_pub_windows = try b.dependencyLazy("glfw", .{
+    const glfw_pub_windows = b.dependency("glfw", .{
         .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
         .optimize = .fast,
     });
