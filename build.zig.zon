@@ -27,7 +27,6 @@
         .zig_steamworks_fake = .{
             .url = "git+https://github.com/prestosilver/zig-steamworks-fake#9fd48422c8932e184027de220e6e3093a861b307",
             .hash = "zig_steamworks_fake-0.0.0-3i7XFjR9AAA2K2k0BoftHWhwqrFJGtZCmjaMAqzf3lhN",
-            .lazy = true,
         },
         .flags = .{
             .url = "git+https://github.com/prestosilver/flags#d9dc1df661b099559d633dc5fd7e4faa5c5535aa",

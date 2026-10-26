@@ -219,13 +219,13 @@ pub fn build(b: *std.Build) !void {
     });
     const zigimg_module = zigimg_dependency.module("zigimg");
 
-    const steam_dependency = try b.dependencyLazy("zig_steamworks_fake", .{
+    const steam_dependency = b.dependency("zig_steamworks_fake", .{
         .target = target,
         .optimize = optimize,
     });
     const steam_module = steam_dependency.module("steam");
 
-    const steam_host_dependency = try b.dependencyLazy("zig_steamworks_fake", .{
+    const steam_host_dependency = b.dependency("zig_steamworks_fake", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
