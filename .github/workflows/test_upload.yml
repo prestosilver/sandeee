@@ -19,10 +19,11 @@ jobs:
           cache-name: cache-zig
         with:
           path: ${{github.workspace}}/.zig-cache
-          key: zig-tests-${{ matrix.steam }}${{ matrix.optimize }}-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
+          key: zig-tests-${{ matrix.optimize }}-${{ matrix.steam }}-${{ runner.os }}-${{hashFiles('**/*.zig','content')}}
           restore-keys: |
-            zig-tests-${{ matrix.steam }}${{ matrix.optimize }}-${{ runner.os }}-
-            zig-tests-${{ matrix.steam }}${{ matrix.optimize }}-
+            zig-tests-${{ matrix.optimize }}-${{ matrix.steam }}-${{ runner.os }}-
+            zig-tests-${{ matrix.optimize }}-${{ matrix.steam }}-
+            zig-tests-${{ matrix.optimize }}-
             zig-tests-
             zig-
 
