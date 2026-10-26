@@ -118,12 +118,12 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    const glfw = b.dependencyLazy("glfw", .{
+    const glfw = try b.dependencyLazy("glfw", .{
         .target = target,
         .optimize = optimize,
     });
 
-    const glfw_host = b.dependencyLazy("glfw", .{
+    const glfw_host = try b.dependencyLazy("glfw", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
