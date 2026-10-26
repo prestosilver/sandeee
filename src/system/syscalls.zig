@@ -466,7 +466,7 @@ fn sysStatus(self: *Vm) VmError!void {
 
     if (handle.data().* != .value) return error.ValueMissing;
 
-    return error.Todo;
+    return error.Unimplemented;
 }
 
 fn sysDelete(self: *Vm) VmError!void {

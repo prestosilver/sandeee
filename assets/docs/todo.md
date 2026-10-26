@@ -37,8 +37,10 @@ These are fixes for behaviours that are implemented wrong.
 - [ ] _*_meta files should not copy to disk on install
 - [ ] Crash screen should display relative paths
 - [ ] Web threads crash on windows
+  - [X] Fix on windows
   - [ ] Add tests
   - [ ] Wine only
+- [ ] Debug builds on windows dont end on close
 
 ## Minor non bug fixes
 
@@ -61,6 +63,8 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
   - [ ] In BootEEE
   - [ ] On first boot
 - [ ] Task bar sucks
+  - [ ] Overflow support
+  - [ ] Dedicated time area
 - [ ] Windowed mode
   - [X] Cli arg
   - [ ] BIOS setting
@@ -70,6 +74,8 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [ ] All buttons should look disabled when disabled
 - [ ] Workshop item SandEEE version tags
 - [ ] Translation system
+  - [ ] Asset files
+  - [ ] In game text
 - [ ] Show load progress on web
 - [ ] Auto fix capitalization in changelog gen
 - [ ] SandEEE install disk cli flags
@@ -87,6 +93,7 @@ These are tasks that only affect the codebase.
 - [X] Move embed files inside build.zig
 - [X] Reorganize shaders
 - [X] Zig 0.17
+- [X] Get compile working on windows for streamlined testing
 - [ ] Magic number cleanup
   - [X] Colors
   - [ ] Sizes
@@ -98,6 +105,7 @@ These are tasks that only affect the codebase.
   - [ ] Update debug builds to go to /alpha endpoint as homepage
     - [X] Impl
     - [ ] Fix paths
+    - [ ] rename /alpha to /nightly for consistency
 - [ ] Remove duplicated assets from Ases
   - [X] ASE parser
   - [ ] Automatically export [icon.ico](../../content/images/icon.ico)
@@ -107,18 +115,20 @@ These are tasks that only affect the codebase.
   - [ ] Font from ASE
     - [ ] Move ASE format parser to a lib
     - [ ] Label chars
+- [ ] Preallocate fixed buffers like vm windows, iter on create not use
 - [ ] Breakout UI for consistency!!!
   - [ ] data/sizes.zig
   - [ ] ui namespace
   - [ ] switch apps
   - [ ] switch bar, desktop icons, and start menu
-- [ ] Get compile working on windows for streamlined testing
 - [ ] zig test should check www for dead links
+- [ ] zig test should check that browser dosent immediately crash 
 - [ ] Add consistent id+iota type utility
 - [ ] Rework popups to be owned by windows instead of state
 - [ ] Separate build for debug bc different appids!
-- [ ] zig build steam_changelog
-- [ ] zig build itch_changelog
+- [ ] Better changelog generation
+  - [ ] zig build steam_changelog
+  - [ ] zig build itch_changelog
 
 ## General todo
 
@@ -131,12 +141,20 @@ These are tasks that include adding new features to the game, or arent covered b
 - [X] Fix program names and versions
   - [X] Merge BootEEE
   - [X] Breakout other versions to `strings.zig`
+- [ ] New audio system
+  - [ ] Switch to zaudio
+  - [ ] Remove openal bindings
+  - [ ] Remove openal dlls
+  - [ ] Per vm sources
 - [ ] New email system
 - [ ] Add joe disk image
 - [ ] Sys 255 impl
   - [ ] File encrypted flag
   - [ ] Rsa/Rc4 decide on how itll work.
 - [ ] Recovery image encryption
+- [ ] Switch to EEEch
+  - [ ] Ascii to EEEch text converter
+  - [ ] Converter will also use translations
 - [ ] Workshop favorites
     - [X] Show in list
     - [ ] Dedicated list
@@ -161,3 +179,6 @@ This here is scope creep central, anti ideas if you may. They may never be added
 - Mascott
   - Crt monitor pixar lamp with cat memes
 - Make main state machine comptime polymorphic to avoid that layer of indirection.
+- Switch to wio as a window library
+- Give vms multi window support
+- changelog.html link

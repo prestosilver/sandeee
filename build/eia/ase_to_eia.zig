@@ -259,7 +259,7 @@ pub fn main(init: std.process.Init) !void {
                                 }
                             }
                         },
-                        else => return error.TODO,
+                        else => return error.Unimplemented,
                     }
                 },
 

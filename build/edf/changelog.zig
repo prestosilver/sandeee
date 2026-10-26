@@ -185,9 +185,14 @@ pub fn main(init: std.process.Init) !void {
                         last = try init.gpa.dupe(u8, version);
                     }
 
+                    // Auto capital first word
+                    lower_line[0] = std.ascii.toUpper(lower_line[0]);
+
+                    // TODO: Capitalize proper nouns like SandEEE and Steam
+
                     try file_writer.interface.writeAll(&ch);
                     try file_writer.interface.writeAll(" ");
-                    try file_writer.interface.writeAll(change_line);
+                    try file_writer.interface.writeAll(lower_line);
                     try file_writer.interface.writeAll("\n");
                 }
             }

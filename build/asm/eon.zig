@@ -605,7 +605,7 @@ const Statement = struct {
             },
             else => {
                 std.log.info("{}", .{self.kind});
-                return error.NotImplemented;
+                return error.Unimplemented;
             },
         }
     }

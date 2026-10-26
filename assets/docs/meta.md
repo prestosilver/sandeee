@@ -605,6 +605,7 @@ fn main() {
 ## Versioning
 
 - EEE uses a system called EEEvolution to document versions
+  - It is designed to promote EEE's standards for how a programs life cycle should occur.
 - Every version starts with a codeword for the program its representing
   - This is lowercase
 - This is followed by a colon(`:`)
@@ -614,19 +615,26 @@ fn main() {
   - Tree shall be used for releases that are fully functional but not feature complete
   - Tree shall be used for releases that are feature complete, subsequent trees are security or major updates.
   - Ash shall be used to specify an application is sunset and will not recieve even security updates.
+    - Important to note, ash updates can occur while the developers are still preparing future use.
 - Finally there is a hashtag(`#`) followed by the current public build, and a underscore(`_`) for the build number
 - On a major increment seed->sapling the number resets
 - Bug fixes shall not increment the version, but they shall increment the build
 - Build numbers never reset, but are up to the program to document what it means and how its increment
+  - Not every version has to update the build number
+  - Nightly branches shall update for *EVERY* build number change
+  - A build is newer than another iff its build number is larger
 
 Examples:
 
-```text
-os:seed#3_542     -> Development build 542 of third public seed build
-os:sapling#0_1034 -> First sapling release (reset)
-os:tree#0_30545   -> Initial stable release
-os:ash#0_543825   -> A sunsetting release
-```
+examples of SandEEE versons from old (at the top) to new (at the bottom)
+|Version              | Reads as |
+|---------------------|----------|
+| `os:seed#3_542`     | Development build 542 of third public seed build |
+| `os:sapling#0_1034` | First sapling release (reset)      |
+| `os:tree#0_30545`   | Initial stable release             |
+| `os:tree#1_60545`   | A major update to a stable release |
+| `os:tree#2_60546`   | A patch update to a stable release |
+| `os:ash#0_543825`   | A sunsetting release               |
 
 ### Programs internal ids
 

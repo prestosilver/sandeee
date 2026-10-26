@@ -48,6 +48,7 @@ pub const VmError = error{
     ValueMissing,
     StringMissing,
     FunctionMissing,
+    PushEmpty,
 
     DivZero,
 
@@ -58,10 +59,8 @@ pub const VmError = error{
     InvalidAsm,
     InvalidAddr,
 
-    NotImplemented,
+    Unimplemented,
     UnknownFunction,
-
-    Todo,
 } || Stream.StreamError || if (options.is_steam) steam.Error else error{};
 
 const StackEntryKind = enum {
@@ -263,7 +262,7 @@ pub fn runOp(self: *Vm, op: Operation) VmError!void {
             } else if (op.value) |value| {
                 try self.pushStackI(value);
             } else {
-                return error.NotImplemented;
+                return error.PushEmpty;
             }
         },
         .add => {
