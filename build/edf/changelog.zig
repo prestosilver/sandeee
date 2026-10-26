@@ -148,8 +148,12 @@ pub fn main(init: std.process.Init) !void {
 
             if (!std.mem.eql(u8, change_line, "")) {
                 var ch: [2]u8 = .{ '|', '*' };
+                
+                if (std.mem.containsAtLeast(u8, lower_line, 1, "better")) ch[1] = '!';
+
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "add")) ch[1] = '+';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "impl")) ch[1] = '+';
+                if (std.mem.containsAtLeast(u8, lower_line, 1, "can now")) ch[1] = '+';
 
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "rem")) ch[1] = '-';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "delete")) ch[1] = '-';
@@ -157,6 +161,9 @@ pub fn main(init: std.process.Init) !void {
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "fix")) ch[1] = '!';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "update")) ch[1] = '!';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "reimpl")) ch[1] = '!';
+                if (std.mem.containsAtLeast(u8, lower_line, 1, "are now")) ch[1] = '!';
+                if (std.mem.containsAtLeast(u8, lower_line, 1, "rework")) ch[1] = '!';
+                if (std.mem.containsAtLeast(u8, lower_line, 1, "speed up")) ch[1] = '!';
 
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "bump")) ch[1] = ' ';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "meta")) ch[1] = ' ';
