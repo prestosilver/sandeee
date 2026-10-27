@@ -8,9 +8,10 @@
 | 04/07/2000  | Desktop release | EEE finishes their machine, and decide to make it public, it gains wide support.
 | 03/03/2003  | Operating system | EEE announces work on DunEEE A desktop operating system for their machines.
 | 05/03/2004  | Epsilon hired | Epsilon is hired by EEE
-| 08/01/2009  | Epsilon leaks | Epsilon "leaks" a modified build of SandEEE to make himself look like a whistle blower. EEE is framed for greed, they wanted to accept donations but Epsilon made it look mandatory.
-| 08/01/2004 | EEE hated | Many articles suspiciously report immediately on EEE's unverified "Wrongdoings", the public hates them it balloons and they can really get their own thoughts out.
-| 08/06/2005 | EEE dies | EEE Files bankruptcy
+| 08/01/2004 | Epsilon leaks | Epsilon "leaks" a modified build of SandEEE to make himself look like a whistle blower. EEE is framed for greed, they wanted to accept donations but Epsilon made it look mandatory.
+| 08/02/2004 | EEE hated | Overnight articles suspiciously report immediately on EEE's unverified "Wrongdoings", the public hates them it balloons and they can really get their own thoughts out.
+| 08/06/2005 | EEE dies | After not even a week, public outcry is so high EEE is forced to file bankruptcy.
+| 08/06/2010 | EEE is forgotten | By now no one remembers much of EEE, much like other companies left to die. Only mentioned in the niche books you'll never read, and the rare resurface of `recovery.eee`.
 
 ## Key concepts
 
@@ -18,6 +19,12 @@
   - SandEEE is advertised as a leak with corporate docs, however these docs are fake/modified/untrustworthy.
 - Sys 255 is not part of DunEEE, instead added by Epsilon to let him import DunEEE disks, it uses the actually secure DunEEE encryption algorithm (Problaby RSA)
   - Epsilon decrypted and reencrypted using SandEEE's decryption (rc4).
+- SandEEE started as a unfinished release build, it should be similar feeling to windows Longhorn/Whistler builds.
+  - I have to be deliberate about what features I omit, SandEEE should feel incomplete yes, but it should be a logical incomplete.
+    - Places the developers spend more time should be further ahead
+    - while lesser used programs still have obvious WIP.
+  - It was highly edited by epsilon.
+    - Epsilon also likely finished some unfinished features to make EEE look bad, for example maybe a WIP payment processing in EEEmail.
 
 ## Implementation plans, order, and progress
 

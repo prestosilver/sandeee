@@ -116,7 +116,6 @@ These are tasks that only affect the codebase.
   - [ ] Font from ASE
     - [ ] Move ASE format parser to a lib
     - [ ] Label chars
-- [ ] Preallocate fixed buffers like vm windows, iter on create not use
 - [ ] Breakout UI for consistency!!!
   - [ ] data/sizes.zig
   - [ ] ui namespace
@@ -146,7 +145,8 @@ These are tasks that include adding new features to the game, or arent covered b
   - [X] Switch to zaudio
   - [X] Remove openal bindings
   - [X] Remove openal dlls
-  - [ ] Per vm sources
+  - [ ] new syscalls for `new`, `play`, and `destroy`
+  - [ ] Tag vm with sources to free
 - [ ] New email system
 - [ ] Add joe disk image
 - [ ] Sys 255 impl
@@ -166,13 +166,13 @@ These are tasks that include adding new features to the game, or arent covered b
 
 ## Bad idea bin
 
-This here is scope creep central, anti ideas if you may. They may never be added.
+This here is scope creep central, anti ideas if you may. They problaby should never be added (unless noted otherwise), hence why there are no check boxes.
 
 - Replace BootEEE with a .eep
   - Syscall for loading a disk
   - Syscall for installing a disk
   - Syscall for listing disks
-- Windowed headless mode 
+- Windowed headless mode
   - Requires removal of dependence on the global graphics instance & global spritebatch
 - Multi monitor support
 - Try WIO library
@@ -183,3 +183,14 @@ This here is scope creep central, anti ideas if you may. They may never be added
 - Switch to wio as a window library
 - Give vms multi window support
 - changelog.html link
+- Macos support
+  - need a xcode license
+  - Honestly, if the game does well and I somehow make enough money from it to afford this it wont be hard to add.
+- Android support
+  - Touch input
+  - Android build target (problaby already been done, but hard)
+  - Update google play dev account info (Problaby wont happen)
+  - This is the same deal as macos, if theres a demand and I can afford it Ill support it.
+- Mic input
+  - Yeah would be nice since I have an audio file format
+  - Need a way to stream from a pseudo file, maybe change the length with write.

@@ -1,8 +1,8 @@
 # The EEE org chart
 
 > [!NOTE]
-> This is still highly up to change
-> Actually actually ATM its completly deprecated, see [characters.md](characters.md) instead
+> This is still highly up to change.
+> Actually it is now completly deprecated, see [characters.md](characters.md) instead.
 
 ```mermaid
 graph TD

@@ -2,9 +2,9 @@
 
 ## General info
 
-SandEEE completly uses zigs build system to build, however there are some caveats to this. Currently there is no support for macos or android, though this is a possibility in the future depending on how much I wanna brag about the project.
+SandEEE completly uses zigs build system to build, however there are some "caveats" to this. Currently there is no support for macos or android, though this is a possibility in the future depending on how much I wanna brag about the project.
 
-It should be able to build on any machine that has zig, (and mingw if you are building windows on linux, standart stuff). As of October 2026 I have builds working on Windows, this allows CI to catch my fatal crashes sooner. I also plan to eventually support 32 bit platforms so I can use windows xp machines at exhibitions. Though this is currently a low pri task.
+It should be able to build on any machine that has zig, (and mingw if you are building windows on linux, standard stuff). As of October 2026 I have builds working on Windows, this allows CI to catch my fatal crashes sooner. I also plan to eventually support 32 bit platforms so I can use windows xp machines at exhibitions. Though this is currently a low pri task.
 
 Though this has nothing to do with the general public, for completeness of this document uploading requires steamcmd, and itch's butler depending on the platform you are uploading to.
 

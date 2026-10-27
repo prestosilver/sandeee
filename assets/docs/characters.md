@@ -1,5 +1,8 @@
 # SandEEE Character sheets
 
+> [!NOTE]
+> To emphasise the "Stuck in time" feel of SandEEE no character developments will occur at all. This does not mean the story dosent develop, just that only software, and corperations can develop, not personalities.
+
 ## Eric Laine
 
 Email: `ERIC_L@eee.org`

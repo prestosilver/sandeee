@@ -4,7 +4,7 @@ SandEEE has had a pretty strong vertical slice for a while as the demo. This doc
 
 ## Divide and conquer
 
-Since sandeee has a "correct" route will split this route into segments at the most important parts of this, fleshing those out first. I will then fill out the space in between by splitting those.
+Since sandeee has a "correct" route I will split this route into segments at the most important parts of it, fleshing those out as vertical slices first. I will then fill out the space in between by splitting those, and making more vertical slices, eventually ill have enough vertical slices that ive effectively fleshed out the full game.
 
 First split will be the seperate disk upgrades, see `Implementation plans, order, and progress` inside [lore.md](lore.md). Currently the game does not implement disk encryption, so itll be important to flag these inside build.zig.
 

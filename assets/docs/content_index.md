@@ -1,5 +1,7 @@
 # Listing of SandEEE content
 
+This will eventually note what files were edited by Epsilon.
+
 |path|Desc|
 |----|---:|
 |[content/](../../content/)|All content that can appear in game|
