@@ -52,10 +52,9 @@ Jokes aside, SandEEE is a programming game meant to be as immersive as possible.
 ### Important docs and quick-links
 
 * [Rolling Bug/Todo List](assets/docs/todo.md)
+* [The current release checklist](assets/docs/release_checklist.md)
 * [Asset listing](assets/docs/asset_index.md)
 * [Content asset listing](assets/docs/content_index.md)
-* [Lore sheet & reference](assets/docs/lore.md)
-* [The release checklist](assets/docs/release_checklist.md)
 * [SandEEE's Homepage](https://sandeee.prestosilver.info)
 
 ### Repo root

@@ -3,6 +3,7 @@
 ## DunEEE
 
 Description: An OS made by EEE
+
 Internal name: `base`
 
 - Lore
@@ -11,6 +12,7 @@ Internal name: `base`
 ## SandEEE
 
 Description: Was made by Epsilon, not a real program, based off DunEEE
+
 Internal name: `os`
 
 - Lore
@@ -19,6 +21,7 @@ Internal name: `os`
 ## BootEEE
 
 Description: The SandEEE bootloader, installer, and recovery program
+
 Internal name: `boot`
 
 - Lore
@@ -27,6 +30,7 @@ Internal name: `boot`
 ## MailEEE
 
 Description: The EEE email app, modified in SandEEE to decrypt messages
+
 Internal name: `mail`
 
 - Lore
@@ -35,6 +39,7 @@ Internal name: `mail`
 ## DiscoverEEE
 
 Description: The EEE web app, can also view .edf files
+
 Internal name: `web`
 
 - Lore
@@ -42,6 +47,7 @@ Internal name: `web`
 ## OrganizeEEE
 
 Description: The EEE file manager
+
 Internal name: `files`
 
 - Lore
@@ -49,6 +55,7 @@ Internal name: `files`
 ## ShEEEll
 
 Description: The EEE shell application
+
 Internal name: `shell`
 
 - Lore
@@ -56,6 +63,7 @@ Internal name: `shell`
 ## LaunchEEE
 
 Description: The EEE program launcher
+
 Internal name: `launch`
 
 - Lore
