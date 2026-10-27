@@ -49,7 +49,7 @@ time: f32 = 0,
 pub var unloader: ?Unloader = null;
 
 pub fn setup(self: *GSLogout) !void {
-    try audio.instance.playSound(self.logout_sound.*);
+    try self.logout_sound.play();
     try Vm.Manager.logout();
     self.time = 3;
 

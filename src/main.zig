@@ -176,8 +176,8 @@ var disk: ?[]u8 = null;
 var wallpaper: Wall = undefined;
 
 // sounds
-var message_snd: audio.Sound = undefined;
-var logout_snd: audio.Sound = undefined;
+var message_sound: audio.Sound = .{};
+var logout_sound: audio.Sound = .{};
 
 // for panic
 var error_message: []const u8 = "Error: Unknown Error";
@@ -317,7 +317,7 @@ pub fn mouseScroll(event: input_events.EventMouseScroll) !void {
 }
 
 pub fn notificationSend(_: system_events.EventNotificationSend) !void {
-    try audio.instance.playSound(message_snd);
+    try message_sound.play();
 }
 
 pub fn copy(event: input_events.EventClipboardCopy) !void {
@@ -374,13 +374,17 @@ pub fn settingSet(event: system_events.EventSettingSet) !void {
     }
 
     if (std.mem.eql(u8, event.setting, "sound_volume")) {
-        audio.instance.volume = @as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0;
+        audio.instance.setVolume(@as(f32, @floatFromInt(std.fmt.parseInt(i32, event.value, 0) catch 100)) / 100.0) catch |err| {
+            log.log.warn("Failed to set volume {s} ({s})", .{ event.value, @errorName(err) });
+        };
 
         return;
     }
 
     if (std.mem.eql(u8, event.setting, "sound_muted")) {
-        audio.instance.muted = std.ascii.eqlIgnoreCase("yes", event.value);
+        audio.instance.setMuted(std.ascii.eqlIgnoreCase("yes", event.value)) catch |err| {
+            log.log.warn("Failed to set volume {s} ({s})", .{ event.value, @errorName(err) });
+        };
 
         return;
     }
@@ -702,6 +706,8 @@ pub fn runGame() !void {
     log.log.info("SandEEE " ++ strings.SANDEEE_VERSION_TEXT, .{});
 
     try audio.AudioManager.init();
+    defer audio.instance.deinit();
+
     system.syscalls.main_font = &main_font;
     system.Shell.font_shader = &font_shader;
     system.Shell.shader = &shader;
@@ -716,8 +722,24 @@ pub fn runGame() !void {
     bios_font.setup = false;
     main_font.setup = false;
 
-    var blip_sound: audio.Sound = .init(BLIP_SOUND_DATA);
-    var select_sound: audio.Sound = .init(SELECT_SOUND_DATA);
+    var blip_sound: audio.Sound = undefined;
+    var select_sound: audio.Sound = undefined;
+
+    var blip_sound_loader: Loader = try .init(loaders.Sound{
+        .data = .{ .mem = BLIP_SOUND_DATA[4..] },
+        .output = &blip_sound,
+    }, null);
+
+    var select_sound_loader: Loader = try .init(loaders.Sound{
+        .data = .{ .mem = SELECT_SOUND_DATA[4..] },
+        .output = &select_sound,
+    }, null);
+
+    var sound_loader: Loader = try .init(loaders.Group{
+        .sleep = .fromMilliseconds(0),
+    }, null);
+    try sound_loader.require(&blip_sound_loader);
+    try sound_loader.require(&select_sound_loader);
 
     // create the loaders queue
     var base_shader_loader: Loader = try .init(loaders.Shader{
@@ -748,13 +770,13 @@ pub fn runGame() !void {
     }, null);
     try clear_shader_loader.require(&graphics_loader);
 
-    var texture_loader: Loader = try .init(loaders.Group{
+    var shader_loader: Loader = try .init(loaders.Group{
         .sleep = .fromMilliseconds(0),
     }, null);
-    try texture_loader.require(&base_shader_loader);
-    try texture_loader.require(&font_shader_loader);
-    try texture_loader.require(&crt_shader_loader);
-    try texture_loader.require(&clear_shader_loader);
+    try shader_loader.require(&base_shader_loader);
+    try shader_loader.require(&font_shader_loader);
+    try shader_loader.require(&crt_shader_loader);
+    try shader_loader.require(&clear_shader_loader);
 
     // fonts
     var font_loader: Loader = try .init(loaders.Font{
@@ -767,7 +789,8 @@ pub fn runGame() !void {
     var loader: Loader = try .init(loaders.Group{
         .sleep = .fromMilliseconds(0),
     }, "Initialized");
-    try loader.require(&texture_loader);
+    try loader.require(&sound_loader);
+    try loader.require(&shader_loader);
     try loader.require(&font_loader);
 
     // load bios
@@ -854,8 +877,8 @@ pub fn runGame() !void {
     // loading state
     var gs_loading = LoadingState{
         .face = &main_font,
-        .logout_snd = &logout_snd,
-        .message_snd = &message_snd,
+        .logout_sound = &logout_sound,
+        .message_sound = &message_sound,
         .logo_sprite = .atlas("logo", .{
             .source = .{ .w = 1, .h = 1 },
             .size = .{ .x = 320, .y = 64 },
@@ -932,7 +955,7 @@ pub fn runGame() !void {
         .shader = &shader,
         .font_shader = &font_shader,
         .face = &bios_font,
-        .logout_sound = &logout_snd,
+        .logout_sound = &logout_sound,
         .wallpaper = &wallpaper,
         .clear_shader = &clear_shader,
     };

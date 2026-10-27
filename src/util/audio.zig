@@ -1,6 +1,6 @@
 const std = @import("std");
 const options = @import("options");
-const al = @import("openal");
+const zaudio = @import("zaudio");
 
 const util = @import("../util.zig");
 const sandeee_data = @import("../data.zig");
@@ -9,137 +9,111 @@ const no_audio = options.disable_audio;
 
 const log = util.log;
 
+const allocator = util.allocator;
+
 const sizes = sandeee_data.sizes;
 
 pub const AudioErrors = error{
     AudioInit,
 };
 
-pub var instance: AudioManager = .{};
-
-pub const Sound = struct {
-    buffer: ?al.ALuint = null,
-
-    pub fn init(data: []const u8) Sound {
-        if (no_audio) return .{};
-
-        if (data.len == 0) return Sound{ .buffer = null };
-
-        var buffer: al.ALuint = 0;
-
-        al.alGenBuffers(1, &buffer);
-        al.alBufferData(buffer, al.AL_FORMAT_MONO8, &data[0], @as(c_int, @intCast(data.len)), 44100);
-
-        log.debug("Load sound data with length {0}", .{data.len});
-
-        return .{
-            .buffer = buffer,
-        };
-    }
-
-    pub fn deinit(self: *const Sound) void {
-        if (no_audio) return;
-
-        if (self.buffer) |buffer| {
-            al.alDeleteBuffers(1, &buffer);
-        }
-    }
-};
+pub var instance: AudioManager = undefined;
 
 const background_sound = @embedFile("bg.era");
 
-pub const AudioManager = struct {
-    sources: [sizes.AUDIO_SOURCES]al.ALuint = std.mem.zeroes([sizes.AUDIO_SOURCES]al.ALuint),
-    next: usize = 0,
-    device: ?*al.ALCdevice = null,
-    context: ?*al.ALCcontext = null,
-    volume: f32 = 1.0,
-    muted: bool = false,
-    bg: al.ALuint = 0,
+pub const Sound = struct {
+    valid: bool = false,
+    buffer: *zaudio.AudioBuffer = undefined,
+    sound: *zaudio.Sound = undefined,
 
-    const eff = al.EFXEAXREVERBPROPERTIES{
-        .flDensity = 0.4287,
-        .flDiffusion = 1.0000,
-        .flGain = 0.3162,
-        .flGainHF = 0.5929,
-        .flGainLF = 1.0000,
-        .flDecayTime = 0.4000,
-        .flDecayHFRatio = 0.8300,
-        .flDecayLFRatio = 1.0000,
-        .flReflectionsGain = 0.1503,
-        .flReflectionsDelay = 0.0020,
-        .flReflectionsPan = .{ 0.0000, 0.0000, 0.0000 },
-        .flLateReverbGain = 1.0629,
-        .flLateReverbDelay = 0.0030,
-        .flLateReverbPan = .{ 0.0000, 0.0000, 0.0000 },
-        .flEchoTime = 0.2500,
-        .flEchoDepth = 0.1,
-        .flModulationTime = 0.2500,
-        .flModulationDepth = 0.0000,
-        .flAirAbsorptionGainHF = 0.9943,
-        .flHFReference = 5000.0000,
-        .flLFReference = 250.0000,
-        .flRoomRolloffFactor = 0.0000,
-        .iDecayHFLimit = 0x1,
-    };
+    pub fn init(manager: AudioManager, data: []const u8) !Sound {
+        if (no_audio) return undefined;
+
+        const buf = zaudio.AudioBuffer.create(.init(
+            .unsigned8,
+            1,
+            data.len,
+            data.ptr,
+        )) catch return error.Unimplemented;
+        //defer audio_buffer.destroy();
+
+        const snd = manager.engine.createSoundFromDataSource(buf.asDataSourceMut(), .{}, null) catch return error.Unimplemented;
+        return .{
+            .valid = true,
+            .buffer = buf,
+            .sound = snd,
+        };
+    }
+
+    pub fn deinit(self: *Sound) void {
+        if (no_audio) return;
+
+        self.valid = false;
+        self.sound.stop() catch {};
+        self.sound.destroy();
+        self.buffer.destroy();
+    }
+
+    pub fn play(self: *const Sound) !void {
+        if (no_audio) return;
+        if (!self.valid) return;
+
+        self.sound.start() catch return error.Unimplemented;
+    }
+};
+
+pub const AudioManager = struct {
+    engine: *zaudio.Engine,
+    bg: Sound,
+    mute: bool = false,
 
     pub fn init() !void {
         if (no_audio) return;
 
-        const device_name = al.alGetString(al.ALC_DEFAULT_DEVICE_SPECIFIER);
+        zaudio.init(allocator);
+        errdefer zaudio.deinit();
 
-        const device = al.alcOpenDevice(device_name);
+        var engine_config = zaudio.Engine.Config.init();
+        engine_config.channels = 1;
+        engine_config.sample_rate = 44100;
 
-        const context = al.alcCreateContext(device, null);
-
-        if (al.alcMakeContextCurrent(context) == 0) return error.AudioInit;
-
-        const background_data = Sound.init(background_sound);
-
-        var sources = std.mem.zeroes([sizes.AUDIO_SOURCES]al.ALuint);
-
-        // generate sources for sfx
-        al.alGenSources(sizes.AUDIO_SOURCES, &sources);
-
-        var bg: al.ALuint = 0;
-
-        // generate bg sound
-        al.alGenSources(1, &bg);
-
-        // set bg properties
-        al.alSourcei(bg, al.AL_LOOPING, al.AL_TRUE);
-        al.alSourcef(bg, al.AL_GAIN, 0.25);
-
-        if (background_data.buffer) |buffer|
-            al.alSourcei(bg, al.AL_BUFFER, @intCast(buffer));
-
-        al.alSourcePlay(bg);
+        const engine = zaudio.Engine.create(engine_config) catch return error.AudioInit;
+        errdefer engine.destroy();
 
         instance = .{
-            .device = device,
-            .context = context,
-            .bg = bg,
-            .sources = sources,
+            .engine = engine,
+            .bg = undefined,
         };
+
+        instance.bg = try Sound.init(instance, background_sound[4..]);
+        instance.bg.sound.setLooping(true);
+        instance.bg.sound.setVolume(0.25);
+
+        try instance.bg.play();
+        try instance.setVolume(0.5);
     }
 
-    pub fn playSound(self: *AudioManager, snd: Sound) !void {
+    pub fn deinit(self: *AudioManager) void {
         if (no_audio) return;
 
-        if (self.muted) return;
-        if (snd.buffer) |buffer| {
-            var source_state: al.ALint = 0;
+        self.bg.sound.stop() catch {};
+        self.bg.deinit();
+        self.engine.destroy();
+        zaudio.deinit();
+    }
 
-            al.alGetSourcei(self.sources[self.next], al.AL_SOURCE_STATE, &source_state);
-            if (source_state != al.AL_PLAYING) {
-                al.alSourcei(self.sources[self.next], al.AL_BUFFER, @as(c_int, @intCast(buffer)));
-                al.alSourcef(self.sources[self.next], al.AL_GAIN, self.volume);
+    pub fn setVolume(self: *AudioManager, volume: f32) !void {
+        if (!self.mute)
+            try self.engine.setVolume(volume);
+    }
 
-                al.alSourcePlay(self.sources[self.next]);
-            }
-            self.next += 1;
+    pub fn setMuted(self: *AudioManager, mute: bool) !void {
+        self.mute = mute;
 
-            if (self.next == sizes.AUDIO_SOURCES) self.next = 0;
-        }
+        if (!self.mute)
+            try self.engine.setVolume(0.5);
+
+        if (self.mute)
+            try self.engine.setVolume(0);
     }
 };

@@ -122,7 +122,7 @@ pub fn update(self: *GSDisks, dt: f32) !void {
     if (self.auto) self.remaining -= dt;
 
     if (self.remaining <= 0) {
-        try audio.instance.playSound(self.select_sound.*);
+        try self.select_sound.play();
         self.disk.* = null;
 
         if (self.disks.items.len > 2) {
@@ -220,7 +220,7 @@ pub fn keypress(self: *GSDisks, key: c_int, _: c_int, down: bool) !void {
                     self.start += 1;
                 }
                 self.sel += 1;
-                try audio.instance.playSound(self.blip_sound.*);
+                try self.blip_sound.play();
             }
         },
         glfw.KeyUp => {
@@ -231,7 +231,7 @@ pub fn keypress(self: *GSDisks, key: c_int, _: c_int, down: bool) !void {
                 }
 
                 self.sel -= 1;
-                try audio.instance.playSound(self.blip_sound.*);
+                try self.blip_sound.play();
             }
         },
         else => if (glfw.getKeyName(key, 0)) |name| {

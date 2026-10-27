@@ -142,9 +142,9 @@ These are tasks that include adding new features to the game, or arent covered b
   - [X] Merge BootEEE
   - [X] Breakout other versions to `strings.zig`
 - [ ] New audio system
-  - [ ] Switch to zaudio
-  - [ ] Remove openal bindings
-  - [ ] Remove openal dlls
+  - [X] Switch to zaudio
+  - [X] Remove openal bindings
+  - [X] Remove openal dlls
   - [ ] Per vm sources
 - [ ] New email system
 - [ ] Add joe disk image

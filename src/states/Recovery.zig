@@ -301,39 +301,39 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
 
                             if (self.disks.items.len == 1) {
                                 try events.EventManager.event_state_change.send(.{ .target_state = .disks });
-                                try audio.instance.playSound(self.select_sound.*);
+                                try self.select_sound.play();
                             }
 
                             return;
                         } else if (sub_sel < self.recovery_choices.items.len - 2) {
                             try files.Folder.recoverDisk(self.disks.items[self.sel][2..], self.recovery_choices.items[sub_sel].disk, false);
                             self.status = "Reinstalled";
-                            try audio.instance.playSound(self.select_sound.*);
+                            try self.select_sound.play();
                         }
                     }
 
                     self.confirm_sel = null;
 
-                    try audio.instance.playSound(self.select_sound.*);
+                    try self.select_sound.play();
 
                     self.sub_sel = 0;
                     self.sel = 0;
 
                     return;
                 } else if (sub_sel == self.recovery_choices.items.len - 1) {
+                    try self.select_sound.play();
                     self.sub_sel = null;
-                    try audio.instance.playSound(self.select_sound.*);
                 } else {
+                    try self.select_sound.play();
                     self.confirm_sel = true;
-                    try audio.instance.playSound(self.select_sound.*);
                 }
             } else if (self.sel == self.disks.items.len - 1) {
                 try events.EventManager.event_state_change.send(.{ .target_state = .disks });
-                try audio.instance.playSound(self.select_sound.*);
+                try self.select_sound.play();
             } else {
                 self.sub_sel = 0;
 
-                try audio.instance.playSound(self.select_sound.*);
+                try self.select_sound.play();
             }
         },
         glfw.KeyDown => {
@@ -342,11 +342,11 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
             } else if (self.sub_sel) |*sub_sel| {
                 if (sub_sel.* < self.recovery_choices.items.len - 1) {
                     sub_sel.* += 1;
-                    try audio.instance.playSound(self.blip_sound.*);
+                    try self.blip_sound.play();
                 }
             } else if (self.sel < self.disks.items.len - 1) {
                 self.sel += 1;
-                try audio.instance.playSound(self.blip_sound.*);
+                try self.blip_sound.play();
             }
         },
         glfw.KeyUp => {
@@ -355,11 +355,11 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
             } else if (self.sub_sel) |*sub_sel| {
                 if (sub_sel.* != 0) {
                     sub_sel.* -= 1;
-                    try audio.instance.playSound(self.blip_sound.*);
+                    try self.blip_sound.play();
                 }
             } else if (self.sel != 0) {
                 self.sel -= 1;
-                try audio.instance.playSound(self.blip_sound.*);
+                try self.blip_sound.play();
             }
         },
         else => if (glfw.getKeyName(key, 0)) |name| {
@@ -367,12 +367,12 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                 if (self.sub_sel) |_| {
                     self.sub_sel = null;
 
-                    try audio.instance.playSound(self.select_sound.*);
+                    try self.select_sound.play();
                     return;
                 }
 
                 try events.EventManager.event_state_change.send(.{ .target_state = .disks });
-                try audio.instance.playSound(self.select_sound.*);
+                try self.select_sound.play();
             } else if (self.sub_sel) |sub_sel| {
                 _ = sub_sel;
                 switch (std.ascii.toUpper(name[0])) {
@@ -391,12 +391,12 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
 
                         if (self.disks.items.len == 1) {
                             try events.EventManager.event_state_change.send(.{ .target_state = .disks });
-                            try audio.instance.playSound(self.select_sound.*);
+                            try self.select_sound.play();
 
                             return;
                         }
 
-                        try audio.instance.playSound(self.select_sound.*);
+                        try self.select_sound.play();
                     },
                     else => {},
                 }
@@ -406,7 +406,7 @@ pub fn keypress(self: *GSRecovery, key: c_int, _: c_int, down: bool) !void {
                         self.sel = idx;
                         self.sub_sel = 0;
 
-                        try audio.instance.playSound(self.select_sound.*);
+                        try self.select_sound.play();
                     }
                 }
             }

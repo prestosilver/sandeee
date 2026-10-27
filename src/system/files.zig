@@ -102,6 +102,7 @@ pub const FileError = error{
     WindowLimitReached,
 
     OutOfMemory,
+    Unimplemented,
 } || std.Io.File.StatError || std.Io.File.SeekError || std.Io.File.Reader.Error || std.Io.File.Writer.Error ||
     std.Io.Reader.Error || std.Io.Writer.Error ||
     error{StreamTooLong} || util.SpriteBatch.Error || std.Io.File.OpenError;

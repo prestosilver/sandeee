@@ -26,6 +26,8 @@ pub fn main(init: std.process.Init) !void {
 
     var version_table: std.StringHashMap([]const u8) = .init(init.gpa);
     var ignore_list: std.StringHashMap(?[]const u8) = .init(init.gpa);
+    defer version_table.deinit();
+    defer ignore_list.deinit();
 
     const version_path = args.next() orelse return error.MissingVersionFile;
     const version_convert_path = args.next() orelse return error.MissingConvFile;
@@ -41,8 +43,9 @@ pub fn main(init: std.process.Init) !void {
         var reader = version_convert_file.reader(init.io, &reader_buffer);
         while (try reader.interface.takeDelimiter('\n')) |raw_line| {
             const comma_idx = std.mem.indexOf(u8, raw_line, ",") orelse continue;
-            const line = try init.gpa.dupe(u8, raw_line);
-            try version_table.put(line[0..comma_idx], line[comma_idx + 1 ..]);
+            const key = try init.gpa.dupe(u8, raw_line[0..comma_idx]);
+            const value = try init.gpa.dupe(u8, raw_line[comma_idx + 1 ..]);
+            try version_table.put(key, value);
         }
     }
 
@@ -56,6 +59,22 @@ pub fn main(init: std.process.Init) !void {
                 try ignore_list.put(try init.gpa.dupe(u8, raw_line[0..space_idx]), try init.gpa.dupe(u8, raw_line[space_idx + 1 ..]))
             else
                 try ignore_list.put(try init.gpa.dupe(u8, raw_line), null);
+        }
+    }
+    defer {
+        var iter = ignore_list.iterator();
+        while (iter.next()) |item| {
+            init.gpa.free(item.key_ptr.*);
+            if (item.value_ptr.*) |i|
+                init.gpa.free(i);
+        }
+    }
+
+    defer {
+        var iter = version_table.iterator();
+        while (iter.next()) |item| {
+            init.gpa.free(item.key_ptr.*);
+            init.gpa.free(item.value_ptr.*);
         }
     }
 
@@ -90,6 +109,7 @@ pub fn main(init: std.process.Init) !void {
     const current_len = try reader.interface.readSliceShort(&current);
 
     var last: []const u8 = try init.gpa.alloc(u8, 0);
+    defer init.gpa.free(last);
 
     while (lines.next()) |line| {
         if (ignore_list.get(line)) |new_name|
@@ -125,7 +145,7 @@ pub fn main(init: std.process.Init) !void {
 
         if (!std.mem.eql(u8, version, "")) {
             const change_line = if (ignore_list.get(line)) |new_name|
-                new_name.?
+                try init.gpa.dupe(u8, new_name.?)
             else blk: {
                 var log_child = try std.process.spawn(init.io, .{
                     .argv = &.{ "git", "log", "-1", "--pretty=format:%s", line },
@@ -142,13 +162,14 @@ pub fn main(init: std.process.Init) !void {
 
                 break :blk change_line;
             };
+            defer init.gpa.free(change_line);
 
             const lower_line = try std.ascii.allocLowerString(init.gpa, change_line);
             defer init.gpa.free(lower_line);
 
             if (!std.mem.eql(u8, change_line, "")) {
                 var ch: [2]u8 = .{ '|', '*' };
-                
+
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "better")) ch[1] = '!';
 
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "add")) ch[1] = '+';
@@ -169,6 +190,7 @@ pub fn main(init: std.process.Init) !void {
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "meta")) ch[1] = ' ';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "githide")) ch[1] = ' ';
                 if (std.mem.containsAtLeast(u8, lower_line, 1, "merge branch")) ch[1] = ' ';
+                if (std.mem.containsAtLeast(u8, lower_line, 1, "merge pull")) ch[1] = ' ';
 
                 if (ch[1] != ' ') {
                     if (!std.mem.eql(u8, last, version)) {

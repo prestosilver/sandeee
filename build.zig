@@ -152,21 +152,17 @@ pub fn build(b: *std.Build) !void {
     const version_write = b.addInstallFile(version_file, "../VERSION");
     const iversion_write = b.addInstallFile(iversion_file, "../IVERSION");
 
-    const openal_source = b.addTranslateC(.{
-        .root_source_file = b.path("deps/include/AL/root.h"),
+    const zaudio_dependency = b.dependency("zaudio", .{
         .target = target,
         .optimize = optimize,
     });
-    openal_source.addIncludePath(b.path("deps/include"));
-    const openal_module = openal_source.createModule();
+    const zaudio_module = zaudio_dependency.module("root");
 
-    const openal_host_source = b.addTranslateC(.{
-        .root_source_file = b.path("deps/include/AL/root.h"),
+    const zaudio_host_dependency = b.dependency("zaudio", .{
         .target = b.graph.host,
         .optimize = .debug,
     });
-    openal_host_source.addIncludePath(b.path("deps/include"));
-    const openal_host_module = openal_host_source.createModule();
+    const zaudio_host_module = zaudio_host_dependency.module("root");
 
     const win32_dependency = b.dependency("win32", .{});
     const win32_module = win32_dependency.module("win32");
@@ -270,7 +266,7 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
         .error_tracing = true,
         .imports = &.{
-            .{ .name = "openal", .module = openal_module },
+            .{ .name = "zaudio", .module = zaudio_module },
             .{ .name = "options", .module = options_module },
             .{ .name = "glfw", .module = glfw_module },
             .{ .name = "flags", .module = flags_module },
@@ -280,6 +276,7 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
+    exe_module.linkLibrary(zaudio_dependency.artifact("miniaudio"));
     exe_module.linkLibrary(glfw.artifact("glfw"));
 
     const exe = b.addExecutable(.{
@@ -294,7 +291,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = .debug,
         .link_libc = true,
         .imports = &.{
-            .{ .name = "openal", .module = openal_host_module },
+            .{ .name = "zaudio", .module = zaudio_host_module },
             .{ .name = "options", .module = options_host_module },
             .{ .name = "glfw", .module = glfw_host_module },
             .{ .name = "flags", .module = flags_host_module },
@@ -303,6 +300,7 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "zigimg", .module = zigimg_host_module },
         },
     });
+    exe_host_module.linkLibrary(zaudio_host_dependency.artifact("miniaudio"));
     exe_host_module.linkLibrary(glfw_host.artifact("glfw"));
 
     const image_builder_exe = b.addExecutable(.{
@@ -479,7 +477,7 @@ pub fn build(b: *std.Build) !void {
             .target = b.graph.host,
             .optimize = .debug,
             .link_libc = true,
-        
+
             .imports = &.{
                 .{ .name = "sandeee", .module = exe_host_module },
                 .{ .name = "options", .module = options_host_module },
@@ -494,7 +492,7 @@ pub fn build(b: *std.Build) !void {
             .target = b.graph.host,
             .optimize = .debug,
             .link_libc = true,
-        
+
             .imports = &.{
                 .{ .name = "sandeee", .module = exe_host_module },
                 .{ .name = "options", .module = options_host_module },
@@ -684,6 +682,9 @@ pub fn build(b: *std.Build) !void {
     else
         steam_desc_raw;
 
+    var joe_disk_image_step = b.addRunArtifact(image_builder_exe);
+    const joe_disk_image_path = joe_disk_image_step.addOutputFileArg("disk_full.eee");
+
     var disk_meta_step = b.addWriteFiles();
 
     {
@@ -707,6 +708,13 @@ pub fn build(b: *std.Build) !void {
         demo_image_step.addArg("--file");
         demo_image_step.addFileArg(demo_meta_file);
         demo_image_step.addArg("/_recovery_meta");
+
+        const joe_meta_file = disk_meta_step.add("joe_meta",
+            \\menu_option = Restore joe image
+        );
+        joe_disk_image_step.addArg("--file");
+        joe_disk_image_step.addFileArg(joe_meta_file);
+        joe_disk_image_step.addArg("/_recovery_meta");
     }
 
     const disk_step = b.step("disk", "Builds the disk image");
@@ -719,6 +727,7 @@ pub fn build(b: *std.Build) !void {
 
     const install_disk = b.addInstallFile(full_base_disk_image_path, "bin/content/recovery.eee");
     const install_debug_disk = b.addInstallFile(full_debug_disk_image_path, "bin/content/recovery_debug.eee");
+    const install_joe_disk = b.addInstallFile(joe_disk_image_path, "bin/content/recovery_joe.eee");
 
     full_base_disk_image_step.addArg("--disk");
     full_base_disk_image_step.addFileArg(disk_image_path);
@@ -760,6 +769,7 @@ pub fn build(b: *std.Build) !void {
         disk_step.dependOn(&install_debug_disk.step);
 
     disk_step.dependOn(&install_disk.step);
+    disk_step.dependOn(&install_joe_disk.step);
     b.getInstallStep().dependOn(disk_step);
 
     debug_image_step.addArg("--overlay");
@@ -785,12 +795,10 @@ pub fn build(b: *std.Build) !void {
     if (target.result.os.tag == .windows) {
         exe.root_module.addObjectFile(rc_file);
         exe.root_module.addLibraryPath(b.path("deps/dll"));
-        exe.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe.root_module.addImport("win32", win32_module);
         exe.subsystem = .windows;
     } else {
         exe.root_module.addLibraryPath(b.path("deps/lib"));
-        exe.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
     }
 
     if (steam_mode == .on) {
@@ -841,7 +849,6 @@ pub fn build(b: *std.Build) !void {
     if (target.result.os.tag == .windows) {
         b.installFile("deps/dll/libgcc_s_seh-1.dll", "bin/libgcc_s_seh-1.dll");
         b.installFile("deps/dll/libstdc++-6.dll", "bin/libstdc++-6.dll");
-        b.installFile("deps/dll/libopenal.dll", "bin/OpenAL32.dll");
         b.installFile("deps/dll/libssp-0.dll", "bin/libssp-0.dll");
         b.installFile("deps/dll/libwinpthread-1.dll", "bin/libwinpthread-1.dll");
         if (steam_mode == .on)
@@ -1065,6 +1072,16 @@ pub fn build(b: *std.Build) !void {
         .optimize = .fast,
     });
 
+    const zaudio_pub_linux = b.dependency("zaudio", .{
+        .target = target,
+        .optimize = .fast,
+    });
+
+    const zaudio_pub_windows = b.dependency("zaudio", .{
+        .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
+        .optimize = .fast,
+    });
+
     {
         // Steam build
         const steam_vdf_game_conts = @embedFile("build/steam/upload_4124360.vdf");
@@ -1104,24 +1121,23 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
+        exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
+        exe_mod_pub_linux.linkSystemLibrary("steam_api", .{});
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
+        exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
         exe_mod_pub_linux.addImport("zigimg", zigimg_module);
+        exe_mod_pub_linux.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Steam Linux)",
             .root_module = exe_mod_pub_linux,
-            .use_llvm = true,
         });
-        exe_pub_linux.root_module.addImport("openal", openal_module);
-        exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
-        exe_pub_linux.root_module.linkSystemLibrary("steam_api", .{});
 
         _ = steam_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux/SandEEE");
 
@@ -1132,7 +1148,11 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
+        exe_mod_pub_windows.addObjectFile(rc_file);
+        exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
+        exe_mod_pub_windows.linkSystemLibrary("steam_api64", .{});
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
+        exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
         exe_mod_pub_windows.addImport("win32", win32_module);
@@ -1140,27 +1160,20 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
         exe_mod_pub_windows.addImport("zigimg", zigimg_module);
+        exe_mod_pub_windows.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Steam Windows)",
             .root_module = exe_mod_pub_windows,
         });
-
-        exe_pub_windows.root_module.addImport("openal", openal_module);
-        exe_pub_windows.root_module.addObjectFile(rc_file);
-        exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .windows;
-
-        exe_pub_windows.root_module.linkSystemLibrary("steam_api64", .{});
 
         _ = steam_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows/SandEEE.exe");
 
         _ = steam_directory_step.addCopyFile(b.path("content/scripts/runSandEEE"), "linux/runSandEEE");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows/libgcc_s_seh-1.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows/libstdc++-6.dll");
-        _ = steam_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows/OpenAL32.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libssp-0.dll"), "windows/libssp-0.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libwinpthread-1.dll"), "windows/libwinpthread-1.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/steam_api64.dll"), "windows/steam_api64.dll");
@@ -1206,24 +1219,23 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
+        exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
+        exe_mod_pub_linux.linkSystemLibrary("steam_api", .{});
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
+        exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
         exe_mod_pub_linux.addImport("zigimg", zigimg_module);
+        exe_mod_pub_linux.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE Demo (Steam Linux)",
             .root_module = exe_mod_pub_linux,
-            .use_llvm = true,
         });
-        exe_pub_linux.root_module.addImport("openal", openal_module);
-        exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
-        exe_pub_linux.root_module.linkSystemLibrary("steam_api", .{});
 
         _ = steam_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux_demo/SandEEE");
 
@@ -1234,34 +1246,32 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
+        exe_mod_pub_windows.addObjectFile(rc_file);
+        exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
+        exe_mod_pub_windows.linkSystemLibrary("steam_api64", .{});
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
+        exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("win32", win32_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
-        exe_mod_pub_windows.addImport("win32", win32_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
         exe_mod_pub_windows.addImport("zigimg", zigimg_module);
+        exe_mod_pub_windows.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE Demo (Steam Windows)",
             .root_module = exe_mod_pub_windows,
         });
-        exe_pub_windows.root_module.addImport("openal", openal_module);
-        exe_pub_windows.root_module.addObjectFile(rc_file);
-        exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .windows;
-
-        exe_pub_windows.root_module.linkSystemLibrary("steam_api64", .{});
 
         _ = steam_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows_demo/SandEEE.exe");
 
         _ = steam_directory_step.addCopyFile(b.path("content/scripts/runSandEEE"), "linux_demo/runSandEEE");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows_demo/libgcc_s_seh-1.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows_demo/libstdc++-6.dll");
-        _ = steam_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows_demo/OpenAL32.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libssp-0.dll"), "windows_demo/libssp-0.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/libwinpthread-1.dll"), "windows_demo/libwinpthread-1.dll");
         _ = steam_directory_step.addCopyFile(b.path("deps/dll/steam_api64.dll"), "windows_demo/steam_api64.dll");
@@ -1305,23 +1315,22 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
+        exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
+        exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
         exe_mod_pub_linux.addImport("zigimg", zigimg_module);
+        exe_mod_pub_linux.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Itch Linux)",
             .root_module = exe_mod_pub_linux,
-            .use_llvm = true,
         });
-        exe_pub_linux.root_module.addImport("openal", openal_module);
-        exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
 
         _ = itch_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux/SandEEE");
 
@@ -1332,25 +1341,24 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
+        exe_mod_pub_windows.addObjectFile(rc_file);
+        exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
+        exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("win32", win32_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
         exe_mod_pub_windows.addImport("zigimg", zigimg_module);
-        exe_mod_pub_windows.addImport("win32", win32_module);
+        exe_mod_pub_windows.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Itch Windows)",
             .root_module = exe_mod_pub_windows,
-            .use_llvm = true,
         });
-        exe_pub_windows.root_module.addImport("openal", openal_module);
-        exe_pub_windows.root_module.addObjectFile(rc_file);
-        exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .windows;
 
         _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows/SandEEE.exe");
@@ -1358,7 +1366,6 @@ pub fn build(b: *std.Build) !void {
         _ = itch_directory_step.addCopyFile(b.path("content/scripts/runSandEEE"), "linux/runSandEEE");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows/libgcc_s_seh-1.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows/libstdc++-6.dll");
-        _ = itch_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows/OpenAL32.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libssp-0.dll"), "windows/libssp-0.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libwinpthread-1.dll"), "windows/libwinpthread-1.dll");
 
@@ -1404,23 +1411,22 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
+        exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
+        exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
         exe_mod_pub_linux.addImport("options", public_options_module);
         exe_mod_pub_linux.addImport("glfw", glfw_module);
         exe_mod_pub_linux.addImport("flags", flags_module);
         exe_mod_pub_linux.addImport("zgl", zgl_module);
         exe_mod_pub_linux.addImport("steam", steam_module);
         exe_mod_pub_linux.addImport("zigimg", zigimg_module);
+        exe_mod_pub_linux.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Itch Linux)",
             .root_module = exe_mod_pub_linux,
-            .use_llvm = true,
         });
-        exe_pub_linux.root_module.addImport("openal", openal_module);
-        exe_pub_linux.root_module.addLibraryPath(b.path("deps/lib"));
-        exe_pub_linux.root_module.addObjectFile(b.path("deps/lib/libopenal.so"));
 
         _ = itch_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux-demo/SandEEE");
 
@@ -1431,25 +1437,24 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
             .error_tracing = true,
         });
+        exe_mod_pub_windows.addObjectFile(rc_file);
+        exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
+        exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
         exe_mod_pub_windows.addImport("options", public_options_module);
         exe_mod_pub_windows.addImport("glfw", glfw_module);
+        exe_mod_pub_windows.addImport("win32", win32_module);
         exe_mod_pub_windows.addImport("flags", flags_module);
         exe_mod_pub_windows.addImport("zgl", zgl_module);
         exe_mod_pub_windows.addImport("steam", steam_module);
         exe_mod_pub_windows.addImport("zigimg", zigimg_module);
-        exe_mod_pub_windows.addImport("win32", win32_module);
+        exe_mod_pub_windows.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Itch Windows)",
             .root_module = exe_mod_pub_windows,
-            .use_llvm = true,
         });
-        exe_pub_windows.root_module.addImport("openal", openal_module);
-        exe_pub_windows.root_module.addObjectFile(rc_file);
-        exe_pub_windows.root_module.addLibraryPath(b.path("deps/dll"));
-        exe_pub_windows.root_module.addObjectFile(b.path("deps/dll/libopenal.dll"));
         exe_pub_windows.subsystem = .windows;
 
         _ = itch_directory_step.addCopyFile(exe_pub_windows.getEmittedBin(), "windows-demo/SandEEE.exe");
@@ -1457,7 +1462,6 @@ pub fn build(b: *std.Build) !void {
         _ = itch_directory_step.addCopyFile(b.path("content/scripts/runSandEEE"), "linux-demo/runSandEEE");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libgcc_s_seh-1.dll"), "windows-demo/libgcc_s_seh-1.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libstdc++-6.dll"), "windows-demo/libstdc++-6.dll");
-        _ = itch_directory_step.addCopyFile(b.path("deps/dll/libopenal.dll"), "windows-demo/OpenAL32.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libssp-0.dll"), "windows-demo/libssp-0.dll");
         _ = itch_directory_step.addCopyFile(b.path("deps/dll/libwinpthread-1.dll"), "windows-demo/libwinpthread-1.dll");
     }

@@ -32,9 +32,9 @@ pub const play = struct {
     pub fn write(data: []const u8, _: ?*Vm) !void {
         if (data.len == 0) return;
 
-        const snd = audio.Sound.init(data);
-        defer snd.deinit();
+        const snd = try audio.Sound.init(audio.instance, data);
+        //defer snd.deinit();
 
-        try audio.instance.playSound(snd);
+        try snd.play();
     }
 };

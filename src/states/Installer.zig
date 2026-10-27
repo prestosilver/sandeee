@@ -271,7 +271,7 @@ pub fn keypress(self: *GSInstaller, keycode: c_int, _: c_int, down: bool) !void 
         glfw.KeyEnter => {
             switch (self.status) {
                 .naming => {
-                    try audio.instance.playSound(self.select_sound.*);
+                    try self.select_sound.play();
 
                     if (self.disk_name.items.len == 0) return;
                     if (std.mem.containsAtLeast(u8, self.disk_name.items, 1, ".")) {
@@ -283,7 +283,7 @@ pub fn keypress(self: *GSInstaller, keycode: c_int, _: c_int, down: bool) !void 
                     self.status = .settings;
                 },
                 .settings => {
-                    try audio.instance.playSound(self.select_sound.*);
+                    try self.select_sound.play();
 
                     if (self.setting_values[self.setting_id].items.len == 0) {
                         self.setting_values[self.setting_id].appendSliceAssumeCapacity(SETTINGS[self.setting_id][2]);

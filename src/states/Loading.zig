@@ -70,12 +70,12 @@ pub var no_load_thread: bool = false;
 
 wait: f32 = LOAD_WAIT,
 load_progress: f32 = 0,
-login_snd: audio.Sound = .{},
+login_sound: audio.Sound = undefined,
 load_done: std.atomic.Value(bool) = undefined,
 anim_done: std.atomic.Value(bool) = undefined,
 load_error: ?[]const u8 = null,
-logout_snd: *audio.Sound,
-message_snd: *audio.Sound,
+logout_sound: *audio.Sound,
+message_sound: *audio.Sound,
 
 face: *Font,
 
@@ -138,23 +138,23 @@ fn loadThread(in_self: *GSLoading, load_error: *?[]const u8) void {
             var sounds: Loader = try .init(loaders.Group{}, "Loaded sounds");
 
             var login_sound_load: Loader = try .init(loaders.Sound{
-                .path = login_sound_path,
-                .output = &self.login_snd,
+                .data = .{ .path = login_sound_path },
+                .output = &self.login_sound,
             }, null);
 
             try sounds.require(&login_sound_load);
 
             var logout_sound_load: Loader = try .init(loaders.Sound{
-                .path = logout_sound_path,
-                .output = self.logout_snd,
+                .data = .{ .path = logout_sound_path },
+                .output = self.logout_sound,
             }, null);
 
             try logout_sound_load.require(&settings);
             try sounds.require(&logout_sound_load);
 
             var message_sound_load: Loader = try .init(loaders.Sound{
-                .path = message_sound_path,
-                .output = self.message_snd,
+                .data = .{ .path = message_sound_path },
+                .output = self.message_sound,
             }, null);
 
             try sounds.require(&message_sound_load);
@@ -223,7 +223,7 @@ pub fn update(self: *GSLoading, dt: f32) !void {
     try events.EventManager.event_state_change.send(.{ .target_state = .windowed });
 
     // play login sound
-    try audio.instance.playSound(self.login_snd);
+    try self.login_sound.play();
 }
 
 pub fn draw(self: *GSLoading, size: Vec2) !void {
