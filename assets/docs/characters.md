@@ -25,7 +25,7 @@ Signoff: `ERIC WUZ HERE!!!`
     - Loves Eon
     - Super informal
 - Plot points
-    - Taught Robert Rowel eon
+    - Taught Robert Rowle eon
 
 ## Robert Rowle
 
