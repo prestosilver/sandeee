@@ -35,7 +35,7 @@ These are fixes for behaviours that are implemented wrong.
 - [ ] Steam upload can lag game
 - [ ] Notification text can cut off
 - [ ] _*_meta files should not copy to disk on install
-- [ ] Crash screen should display relative paths
+- [ ] Game logs in headless mode.
 - [ ] Web threads crash on windows
   - [X] Fix on windows
   - [ ] Add tests
@@ -80,6 +80,7 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [ ] Auto fix capitalization in changelog gen
 - [ ] SandEEE install disk cli flags
 - [ ] Steam tool transfer from demo.
+- [ ] Crash screen should display relative paths
 
 ## Refactor todo
 
