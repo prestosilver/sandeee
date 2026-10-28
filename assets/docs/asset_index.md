@@ -18,15 +18,17 @@
 |[lore.md](../docs/lore.md)|A writeup of SandEEE's lore|
 |[meta.md](../docs/meta.md)|Documentation on how SandEEE will be documented|
 |[opt_ideas.md](../docs/opt_ideas.md)|Sone random ideas for optimization in the future|
-|[software.md](../docs/software.md)|A list of all EEE programs|
+|[software.md](../docs/software.md)|A list of all EEE programs with traits and notes|
 |[todo.md](../docs/todo.md)|A rolling todo list of repo wide todos|
 |[trailer_devlog.md](../docs/trailer_devlog.md)|A draft for a devlog about the trailer|
 |[eee_org.md](../docs/eee_org.md)|The EEE org chart.|
 |[build.md](../docs/build.md)|Documentation of the build system.|
 |[disk_update.md](../docs/disk_update.md)|Plans for the disk format update.|
 |[characters.md](../docs/characters.md)|Character sheets.|
+|[eon_boring.md](../docs/eon_boring.md)|A plan to improve eon.|
 |[eon_change.md](../docs/eon_change.md)|A breif history of eon.|
 |[horizontal.md](../docs/horizontal.md)|The plan to get from vertical to horizontal slice.|
+|[release_checklist.md](../docs/release_checklist.md)|A checklist that must be completed on release.|
 
 ## Presentations
 

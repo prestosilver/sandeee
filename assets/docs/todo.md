@@ -175,7 +175,6 @@ This here is scope creep central, anti ideas if you may. They problaby should ne
 - Windowed headless mode
   - Requires removal of dependence on the global graphics instance & global spritebatch
 - Multi monitor support
-- Try WIO library
 - Discord RPC support
 - Mascott
   - Crt monitor pixar lamp with cat memes

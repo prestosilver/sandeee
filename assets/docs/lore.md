@@ -51,6 +51,7 @@
 - The disk is so focused on Epsilon it feels fake, theres no way a junior was the talk of the company.
   - In reality, he was infact on everyones head everyone thought he was a prodigy.
   - He is super manipulative, and is always going behind peoples back.
+- Introduces Unnamed, but dosent implicate them as negative. Internal private emails chatting about the company.
 
 ### Lore drop 3
 

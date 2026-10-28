@@ -26,6 +26,8 @@ Signoff: `ERIC WUZ HERE!!!`
     - Super informal
 - Plot points
     - Taught Robert Rowle eon
+    - Was great friends with Epsilon
+        - Refuses to believe that he did anything wrong
 
 ## Robert Rowle
 
@@ -136,7 +138,8 @@ Signoff: `-- Epsilon Frees All --`
 - Common Swaps
     - Hi -> Hia
 - Plot points
-    - The "antagonist"
+    - The face of the "antagonist"
+        - Not actually bad, Unnamed kept him as a figure head for the operation to avoid liability.
     - Works for Unnamed
 
 # SandEEE Company sheets
@@ -148,10 +151,12 @@ Signoff: `-- Epsilon Frees All --`
         - However they support "modding" and have an open api for reworking huge portions of their os.
     - Heavy focus on simplicity, "low surface area means less attack vectors"
     - Went ouf of buisness
+    - Grug philosophy
+        - Software should just work, now, in the past, and forever.
 
 ## Unnamed
 
 - Traits
-    - Publically antagonistic, similar roots to EEE but took a different route
+    - Publically antagonistic, similar goal to EEE (Be a people company) but took a different route
     - They blew up really fast via viral marketing, they memed on their lack of ethics, while bringing people what they wanted.
     - The company is literally named "Unnamed"

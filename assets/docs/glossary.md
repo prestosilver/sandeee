@@ -9,8 +9,20 @@
 ### EEE
 > **Definition:** A now defunct software company
 
+### EEEasm
+> **Definition:** An assembly language made for Metabytes
+
+### EEEch
+> **Definition:** EEE's character encoding format.
+
+### EEEvolution
+> **Definition:** EEE's versioning format
+
 ### Eon
-> **Definition:** A now defunct software company
+> **Definition:** The primary language used by EEE
+
+### Metabyte
+> **Definition:** A storage unit made by EEE, can store a 64 bit integer or a string of any length.
 
 ### SandEEE
 > **Definition:** A recreation of DunEEE made by epsilon
@@ -19,4 +31,4 @@
 > **Definition:** The recovery.eee leaked by epsilon
 
 ### SandEEE VM
-> **Definition:** The recovery.eee leaked by epsilon
+> **Definition:** Software made to run SandEEE OS on standard machines

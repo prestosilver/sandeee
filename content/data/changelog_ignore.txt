@@ -1,59 +1,53 @@
-116ec7a
-993cae9
-5f42c3b
-59f5032
-45f5b8b
-dbb2823
+116ec7a meta Clean caches deletes again
+993cae9 meta Fix while end condition
+5f42c3b meta Switch while
+59f5032 meta Add character sheets
+45f5b8b meta test
+dbb2823 meta Switch to github warning quote
 283ed40 Rework strings in the heap
 a8c8422 Remove 60fps limiter
-8df48c0
-10b1073
-83f3d29
-c257f66
-295004f
-ac9b305
-6ec7ea2
-4584b4f
-4974a58
-13a8310
-c78850b
-1c539ec
-c637226
-c129ed3
-5acaa81
-41cc7d2
-8f60605
-757acb5
-097c4e9
-6668e57
-dfda2e8
-7c2c201
-01ba696
-0429e01
-3409f10
-28824cc
-b2453af
-db63912
-c2edbf7
-97da260
-9336cde
-71d308f
+8df48c0 meta Fix typo
+10b1073 meta Update org to contain more plans, and direction
+83f3d29 meta Add initial EEE org chart
+c257f66 meta Update steamworks to use generated vdfs
+295004f meta Add test cache of steam login
+ac9b305 meta Relint and fix more typos
+6ec7ea2 meta Update Linux steam library
+4584b4f meta Add new windows steam dll
+4974a58 meta add steam api .so
+13a8310 meta Add emails back in
+c78850b meta Disable email app for now
+1c539ec meta Switch to proper glfw
+c637226 meta Fix steam api .so name
+c129ed3 meta Update demo buildss
+5acaa81 meta Refactor GitHub Actions workflow for Zig tests
+41cc7d2 meta Refactor GitHub Actions workflow for Zig tests
+8f60605 meta A little moving
+757acb5 meta Fix appid things
+097c4e9 meta Demo builds are now debug for better error reporting
+dfda2e8 meta Add --disk parameter to cli
+0429e01 meta Try and fix infiinte loop
+3409f10 meta Move upload job
+28824cc meta Fix tests
+b2453af meta Add tests yaml
+c2edbf7 meta try and fix deck
+71d308f meta rework to prefered build.zig
 e0d5b4a Fix various typos
-ed3328b
-b37e595
-df55045
+ed3328b meta Start versioning system switch
+b37e595 meta Start steamtool downloader
+df55045 meta See if this fixes tests stopping
 bde344e Add /fake/gfx/row for faster rle image compression
-5808cf7
-45b458a
-8da4d03
-1b12f16
-362a6cc
-b9f29bb
-11f5d81
+5808cf7 meta organize a bit
+8da4d03 meta Update lore docs again
+1b12f16 meta Update lore docs
+362a6cc meta Add some testing disks
+b9f29bb meta Full refactor
+11f5d81 meta Cleanup
 41202e7 Release on steam
-0eb6569
-26796c7
-e67fd96
-4cb30bf
-de9a9c6
-62ab0ea
+0eb6569 meta Clairify licensing
+26796c7 meta Cleaup build scripts
+e67fd96 meta Add www to git
+4cb30bf meta Update flags version
+de9a9c6 meta Remove ** usage
+62ab0ea meta Create CNAME
+ac88c08 meta Fix some wording boo-boos
