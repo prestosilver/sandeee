@@ -6,10 +6,12 @@ pub var io: std.Io = if (builtin.is_test)
 else
     undefined;
 
-pub var allocator: *const std.mem.Allocator = if (builtin.is_test)
+var allocator_value: std.mem.Allocator = if (builtin.is_test)
     std.testing.allocator
 else
     undefined;
+
+pub const allocator: *std.mem.Allocator = &allocator_value;
 
 pub var env: *const std.process.Environ = if (builtin.is_test)
     &.empty
