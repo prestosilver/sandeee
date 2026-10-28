@@ -6,7 +6,7 @@ pub var io: std.Io = if (builtin.is_test)
 else
     undefined;
 
-pub var allocator: std.mem.Allocator = if (builtin.is_test)
+pub var allocator: *const std.mem.Allocator = if (builtin.is_test)
     std.testing.allocator
 else
     undefined;
