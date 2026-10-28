@@ -560,13 +560,10 @@ var fullscreen_mode: enum { disabled, enabled, real } = .enabled;
 
 pub fn main(init: std.process.Init) void {
     util.io = init.io;
+    util.allocator = init.allocator;
     util.env = &init.minimal.environ;
 
-    defer {
-        log.deinit();
-
-        util.deinitAllocator();
-    }
+    defer log.deinit();
 
     // setup the headless command
     var headless_cmd: ?[]const u8 = null;
