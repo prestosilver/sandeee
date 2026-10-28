@@ -6,17 +6,15 @@ pub var io: std.Io = if (builtin.is_test)
 else
     undefined;
 
-var allocator_value: std.mem.Allocator = if (builtin.is_test)
-    std.testing.allocator
-else
-    undefined;
-
-pub const allocator: *std.mem.Allocator = &allocator_value;
-
 pub var env: *const std.process.Environ = if (builtin.is_test)
     &.empty
 else
     undefined;
+    
+pub const allocator = if (builtin.is_test)
+    std.testing.allocator
+else
+    Allocator.allocator;
 
 pub const graphics = @import("util/graphics.zig");
 pub const storage = @import("util/storage.zig");
@@ -38,6 +36,13 @@ pub const Rope = @import("util/RopeOld.zig");
 pub const Font = @import("util/Font.zig");
 pub const Url = @import("util/Url.zig");
 pub const Eln = @import("util/Eln.zig");
+
+
+pub inline fn deinitAllocator() void {
+    if (!builtin.link_libc or !Allocator.useclib) {
+        std.debug.assert(Allocator.gpa.deinit() == .ok);
+    }
+}
 
 test {
     _ = Eln;
