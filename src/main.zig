@@ -666,7 +666,7 @@ pub fn main(init: std.process.Init) void {
     runGame() catch |err| {
         const name = switch (err) {
             error.FramebufferSetupFail, error.ShaderCompileError, error.APIUnavailable => "Your GPU might not support SandEEE.",
-            error.AudioInit, error.NoDevice => "Your audio hardware might not support SandEEE.",
+            error.NoDevice => "Your audio hardware might not support SandEEE.",
             error.WrongSize, error.TextureMissing => "Failed to load an internal texture.",
             error.ThreadQuotaExceeded => "Your cpu does not support sandEEE",
             error.LockedMemoryLimitExceeded, error.OutOfMemory => "You do not have enough memory for sandeee",
@@ -701,9 +701,6 @@ pub fn runGame() !void {
 
     log.log.info("SandEEE " ++ strings.SANDEEE_VERSION_TEXT, .{});
 
-    try audio.AudioManager.init();
-    defer audio.instance.deinit();
-
     system.syscalls.main_font = &main_font;
     system.Shell.font_shader = &font_shader;
     system.Shell.shader = &shader;
@@ -718,18 +715,22 @@ pub fn runGame() !void {
     bios_font.setup = false;
     main_font.setup = false;
 
+    var audio_loader: Loader = try .init(loaders.Audio{}, null);
+
     var blip_sound: audio.Sound = undefined;
     var select_sound: audio.Sound = undefined;
 
     var blip_sound_loader: Loader = try .init(loaders.Sound{
-        .data = .{ .mem = BLIP_SOUND_DATA[4..] },
+        .data = .{ .mem = BLIP_SOUND_DATA },
         .output = &blip_sound,
     }, null);
+    try blip_sound_loader.require(&audio_loader);
 
     var select_sound_loader: Loader = try .init(loaders.Sound{
-        .data = .{ .mem = SELECT_SOUND_DATA[4..] },
+        .data = .{ .mem = SELECT_SOUND_DATA },
         .output = &select_sound,
     }, null);
+    try select_sound_loader.require(&audio_loader);
 
     var sound_loader: Loader = try .init(loaders.Group{
         .sleep = .fromMilliseconds(0),

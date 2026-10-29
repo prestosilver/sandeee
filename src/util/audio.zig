@@ -13,11 +13,9 @@ const allocator = util.allocator;
 
 const sizes = sandeee_data.sizes;
 
-pub const AudioErrors = error{
-    AudioInit,
-};
+pub const Error = zaudio.Error;
 
-pub var instance: AudioManager = undefined;
+pub var instance: Context = undefined;
 
 const background_sound = @embedFile("bg.era");
 
@@ -26,18 +24,17 @@ pub const Sound = struct {
     buffer: *zaudio.AudioBuffer = undefined,
     sound: *zaudio.Sound = undefined,
 
-    pub fn init(manager: AudioManager, data: []const u8) !Sound {
+    pub fn init(manager: Context, data: []const u8) Error!Sound {
         if (no_audio) return undefined;
 
-        const buf = zaudio.AudioBuffer.create(.init(
+        const buf = try zaudio.AudioBuffer.create(.init(
             .unsigned8,
             1,
             data.len,
             data.ptr,
-        )) catch return error.Unimplemented;
-        //defer audio_buffer.destroy();
+        ));
 
-        const snd = manager.engine.createSoundFromDataSource(buf.asDataSourceMut(), .{}, null) catch return error.Unimplemented;
+        const snd = try manager.engine.createSoundFromDataSource(buf.asDataSourceMut(), .{}, null);
         return .{
             .valid = true,
             .buffer = buf,
@@ -54,20 +51,20 @@ pub const Sound = struct {
         self.buffer.destroy();
     }
 
-    pub fn play(self: *const Sound) !void {
+    pub fn play(self: *const Sound) Error!void {
         if (no_audio) return;
         if (!self.valid) return;
 
-        self.sound.start() catch return error.Unimplemented;
+        try self.sound.start();
     }
 };
 
-pub const AudioManager = struct {
+pub const Context = struct {
     engine: *zaudio.Engine,
     bg: Sound,
     mute: bool = false,
 
-    pub fn init() !void {
+    pub fn init() Error!void {
         if (no_audio) return;
 
         zaudio.init(allocator);
@@ -77,7 +74,7 @@ pub const AudioManager = struct {
         engine_config.channels = 1;
         engine_config.sample_rate = 44100;
 
-        const engine = zaudio.Engine.create(engine_config) catch return error.AudioInit;
+        const engine = try zaudio.Engine.create(engine_config);
         errdefer engine.destroy();
 
         instance = .{
@@ -85,7 +82,7 @@ pub const AudioManager = struct {
             .bg = undefined,
         };
 
-        instance.bg = try Sound.init(instance, background_sound[4..]);
+        instance.bg = try Sound.init(instance, background_sound);
         instance.bg.sound.setLooping(true);
         instance.bg.sound.setVolume(0.25);
 
@@ -93,21 +90,21 @@ pub const AudioManager = struct {
         try instance.setVolume(0.5);
     }
 
-    pub fn deinit(self: *AudioManager) void {
+    pub fn deinit() void {
         if (no_audio) return;
 
-        self.bg.sound.stop() catch {};
-        self.bg.deinit();
-        self.engine.destroy();
+        instance.bg.sound.stop() catch {};
+        instance.bg.deinit();
+        instance.engine.destroy();
         zaudio.deinit();
     }
 
-    pub fn setVolume(self: *AudioManager, volume: f32) !void {
+    pub fn setVolume(self: *Context, volume: f32) Error!void {
         if (!self.mute)
             try self.engine.setVolume(volume);
     }
 
-    pub fn setMuted(self: *AudioManager, mute: bool) !void {
+    pub fn setMuted(self: *Context, mute: bool) Error!void {
         self.mute = mute;
 
         if (!self.mute)

@@ -11,3 +11,4 @@ pub const Settings = @import("loaders/Settings.zig");
 pub const Texture = @import("loaders/Texture.zig");
 pub const Sound = @import("loaders/Sound.zig");
 pub const Graphics = @import("loaders/Graphics.zig");
+pub const Audio = @import("loaders/Audio.zig");

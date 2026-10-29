@@ -104,7 +104,7 @@ pub const FileError = error{
     OutOfMemory,
     Unimplemented,
 } || std.Io.File.StatError || std.Io.File.SeekError || std.Io.File.Reader.Error || std.Io.File.Writer.Error ||
-    std.Io.Reader.Error || std.Io.Writer.Error ||
+    std.Io.Reader.Error || std.Io.Writer.Error || util.audio.Error ||
     error{StreamTooLong} || util.SpriteBatch.Error || std.Io.File.OpenError;
 
 pub const DiskError = error{
