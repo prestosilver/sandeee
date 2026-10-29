@@ -665,10 +665,10 @@ pub fn build(b: *std.Build) !void {
     addConvertFile(b, &.{disk_image_step}, &.{}, .{}, content_path.path(b, "asm/libs/incl/libload.asm"), "/libs/incl/libload.asm");
 
     // base emails
-    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/inbox", "/cont/mail/inbox.eme");
-    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/private", "/cont/mail/private.eme");
-    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/spam", "/cont/mail/spam.eme");
-    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/work", "/cont/mail/work.eme");
+    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/act1/inbox", "/cont/mail/inbox.eme");
+    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/act1/private", "/cont/mail/private.eme");
+    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/act1/spam", "/cont/mail/spam.eme");
+    try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/act1/work", "/cont/mail/work.eme");
 
     // demo only emails
     try addEmails(b, eme_builder_exe, email_demo_image_step, content_path, "mail/demo", "/cont/mail/demo.eme");

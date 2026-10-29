@@ -715,11 +715,10 @@ pub fn runGame() !void {
     bios_font.setup = false;
     main_font.setup = false;
 
-    var audio_loader: Loader = try .init(loaders.Audio{}, null);
-
     var blip_sound: audio.Sound = undefined;
     var select_sound: audio.Sound = undefined;
 
+    var audio_loader: Loader = try .init(loaders.Audio{}, null);
     var blip_sound_loader: Loader = try .init(loaders.Sound{
         .data = .{ .mem = BLIP_SOUND_DATA },
         .output = &blip_sound,
