@@ -1,12 +1,11 @@
 const std = @import("std");
 
 const builtin = @import("builtin");
-pub const useclib = builtin.mode != .debug;
 
 pub var gpa = std.heap.DebugAllocator(.{}){};
 pub const allocator = if (builtin.is_test)
     std.testing.allocator
-else if (builtin.link_libc and useclib)
-    std.heap.c_allocator
+else if (builtin.mode == .debug)
+    gpa.allocator()
 else
-    gpa.allocator();
+    std.heap.smp_allocator;

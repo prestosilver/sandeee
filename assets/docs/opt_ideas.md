@@ -10,3 +10,4 @@ These are all time consuming and non trivial but offer benefit. I am tracking th
 - File listeners via Event members
 - Better streams that dont preallocate
 - Preallocate fixed buffers like vm windows, iter on create not use
+- Per frame temp allocator

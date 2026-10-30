@@ -263,7 +263,6 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
         .error_tracing = true,
         .imports = &.{
             .{ .name = "zaudio", .module = zaudio_module },
@@ -289,7 +288,6 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("src/main.zig"),
         .target = b.graph.host,
         .optimize = .debug,
-        .link_libc = true,
         .imports = &.{
             .{ .name = "zaudio", .module = zaudio_host_module },
             .{ .name = "options", .module = options_host_module },
@@ -1118,7 +1116,6 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = .fast,
-            .link_libc = true,
             .error_tracing = true,
         });
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
@@ -1145,7 +1142,6 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .fast,
-            .link_libc = true,
             .error_tracing = true,
         });
         exe_mod_pub_windows.addObjectFile(rc_file);
@@ -1216,7 +1212,6 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = .fast,
-            .link_libc = true,
             .error_tracing = true,
         });
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
@@ -1243,7 +1238,6 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .fast,
-            .link_libc = true,
             .error_tracing = true,
         });
         exe_mod_pub_windows.addObjectFile(rc_file);
@@ -1312,7 +1306,6 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = .fast,
-            .link_libc = true,
             .error_tracing = true,
         });
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
@@ -1338,7 +1331,6 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .fast,
-            .link_libc = true,
             .error_tracing = true,
         });
         exe_mod_pub_windows.addObjectFile(rc_file);
@@ -1408,7 +1400,6 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = .fast,
-            .link_libc = true,
             .error_tracing = true,
         });
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
@@ -1434,7 +1425,6 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .fast,
-            .link_libc = true,
             .error_tracing = true,
         });
         exe_mod_pub_windows.addObjectFile(rc_file);
