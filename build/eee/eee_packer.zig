@@ -8,7 +8,7 @@ var content: [100_000_000]u8 = undefined;
 pub fn main(init: std.process.Init) !void {
     var args = try init.minimal.args.iterateAllocator(init.gpa);
     defer args.deinit();
-    
+
     _ = args.next();
 
     const output_file = args.next() orelse return error.MissingOutputFile;
@@ -40,8 +40,8 @@ pub fn main(init: std.process.Init) !void {
                     .file => {
                         var path_buf: [128]u8 = undefined;
                         path_buf[0] = '/';
-                        _ = std.mem.replace(u8, path.path, &.{ std.fs.path.sep }, "/", path_buf[1..]);
-                        const disk_path = path_buf[0..path.path.len + 1];
+                        _ = std.mem.replace(u8, path.path, &.{std.fs.path.sep}, "/", path_buf[1..]);
+                        const disk_path = path_buf[0 .. path.path.len + 1];
 
                         files_root.newFile(disk_path) catch |err| switch (err) {
                             error.FileExists => {},

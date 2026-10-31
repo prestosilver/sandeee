@@ -2,66 +2,132 @@ const std = @import("std");
 
 var lib_path: []const u8 = undefined;
 
-const TokenKind = enum {
-    TOKEN_OPEN_BRACE,
-    TOKEN_CLOSE_BRACE,
-    TOKEN_OPEN_PAREN,
-    TOKEN_CLOSE_PAREN,
-    TOKEN_SEMI_COLON,
-    TOKEN_KEYWORD_VAR,
-    TOKEN_KEYWORD_FN,
-    TOKEN_KEYWORD_RETURN,
-    TOKEN_KEYWORD_ASM,
-    TOKEN_KEYWORD_IF,
-    TOKEN_KEYWORD_ELSE,
+const TokenKind = enum {};
 
-    TOKEN_KEYWORD_FOR,
-    TOKEN_KEYWORD_WHILE,
-    TOKEN_KEYWORD_DO,
-    TOKEN_KEYWORD_BREAK,
-    TOKEN_KEYWORD_CONTINUE,
-    TOKEN_KEYWORD_NEW,
+const Token = struct {
+    const Kind = enum {
+        open_brace,
+        close_brace,
+        open_paren,
+        close_paren,
+        semi_colon,
+        keyword_var,
+        keyword_fn,
+        keyword_return,
+        keyword_asm,
+        keyword_if,
+        keyword_else,
 
-    TOKEN_KEYWORD_FNSET,
+        keyword_for,
+        keyword_while,
+        keyword_do,
+        keyword_break,
+        keyword_continue,
+        keyword_new,
 
-    TOKEN_IDENT,
-    TOKEN_INT_LIT,
-    TOKEN_STRING_LIT,
-    TOKEN_NEG,
+        keyword_fnset,
 
-    TOKEN_BIT_NOT,
-    TOKEN_NOT,
+        ident,
+        int_literal,
+        string_literal,
 
-    TOKEN_SUBREL,
-    TOKEN_ADDREL,
-    TOKEN_MULREL,
-    TOKEN_DIVREL,
-    TOKEN_MODREL,
-    TOKEN_CATREL,
+        bit_not,
+        not,
+        at,
 
-    TOKEN_ADD,
-    TOKEN_MUL,
-    TOKEN_DIV,
-    TOKEN_MOD,
-    TOKEN_CAT,
-    TOKEN_AT,
+        sub_equals,
+        add_equals,
+        mul_equals,
+        div_equals,
+        mod_equals,
+        cat_equals,
 
-    TOKEN_AND,
-    TOKEN_OR,
-    TOKEN_EQ,
-    TOKEN_NEQ,
-    TOKEN_LT,
-    TOKEN_LTE,
-    TOKEN_GT,
-    TOKEN_GTE,
+        sub,
+        add,
+        mul,
+        div,
+        mod,
+        cat,
 
-    TOKEN_COMMA,
+        and_op,
+        or_op,
+        eq,
+        not_eq,
+        lt,
+        lt_eq,
+        gt,
+        gt_eq,
 
-    TOKEN_ASSIGN,
-    TOKEN_HEAP_ASSIGN,
-    TOKEN_HEAP_READ,
+        comma,
 
-    TOKEN_EOF,
+        assign,
+        heap_assign,
+        heap_read,
+
+        eof,
+    };
+
+    const KIND_NAMES: std.StaticStringMap(Kind) = .initComptime(.{
+        .{ "{", .open_brace },
+        .{ "}", .close_brace },
+        .{ "(", .open_paren },
+        .{ ")", .close_paren },
+        .{ ";", .semi_colon },
+
+        .{ "var", .keyword_var },
+        .{ "fn", .keyword_fn },
+        .{ "return", .keyword_return },
+        .{ "asm", .keyword_asm },
+        .{ "if", .keyword_if },
+        .{ "else", .keyword_else },
+
+        .{ "for", .keyword_for },
+        .{ "while", .keyword_while },
+        .{ "do", .keyword_do },
+        .{ "break", .keyword_break },
+        .{ "continue", .keyword_continue },
+        .{ "new", .keyword_new },
+
+        .{ "fnset", .keyword_fnset },
+
+        .{ "~", .bit_not },
+        //.{ "!", .not },
+        .{ "@", .at },
+
+        .{ "-=", .sub_equals },
+        .{ "+=", .add_equals },
+        .{ "*=", .mul_equals },
+        .{ "/=", .div_equals },
+        .{ "%=", .mod_equals },
+        .{ "&=", .cat_equals },
+
+        .{ "-", .sub },
+        .{ "+", .add },
+        .{ "*", .mul },
+        .{ "/", .div },
+        .{ "%", .mod },
+        .{ "&", .cat },
+
+        .{ "&&", .and_op },
+        .{ "||", .or_op },
+        .{ "==", .eq },
+        .{ "!=", .not_eq },
+
+        .{ "<", .lt },
+        .{ "<=", .lt_eq },
+        .{ ">", .gt },
+        .{ ">=", .gt_eq },
+
+        .{ ",", .comma },
+
+        .{ "=", .assign },
+
+        .{ ":=", .heap_assign },
+        .{ "$", .heap_read },
+    });
+
+    kind: Kind,
+    value: []const u8,
 };
 
 const StatementKind = enum {
@@ -80,11 +146,6 @@ const StatementKind = enum {
     STMT_CALL,
 };
 
-const Token = struct {
-    kind: TokenKind,
-    value: []const u8,
-};
-
 const Expression = struct {
     a: []Expression,
     op: ?*Token,
@@ -94,7 +155,7 @@ const Expression = struct {
         var result: std.array_list.Managed(u8) = .init(allocator);
         defer result.deinit();
 
-        if (self.op != null and self.op.?.kind == .TOKEN_OPEN_PAREN) {
+        if (self.op != null and self.op.?.kind == .open_paren) {
             const start = idx.*;
             for (self.a) |*item| {
                 const adds = try item.toAsm(allocator, map, heap, idx);
@@ -130,21 +191,21 @@ const Expression = struct {
 
         if (self.op != null) {
             switch (self.op.?.kind) {
-                .TOKEN_INT_LIT => {
+                .int_literal => {
                     idx.* += 1;
 
                     try result.print("    push {s}\n", .{self.op.?.value});
 
                     return result.toOwnedSlice();
                 },
-                .TOKEN_STRING_LIT => {
+                .string_literal => {
                     idx.* += 1;
 
                     try result.print("    push {s}\n", .{self.op.?.value});
 
                     return result.toOwnedSlice();
                 },
-                .TOKEN_SUBREL => {
+                .sub_equals => {
                     idx.* -= 1;
                     const adds = "    copy 1\n" ++
                         "    copy 1\n" ++
@@ -155,7 +216,7 @@ const Expression = struct {
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_NEG => {
+                .sub => {
                     if (self.a.len != 0) {
                         idx.* -= 1;
                         const adds = "    sub\n";
@@ -168,31 +229,31 @@ const Expression = struct {
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_BIT_NOT => {
+                .bit_not => {
                     const adds = "    not\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_NOT => {
+                .not => {
                     const adds = "    push 1\n    xor\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_AT => {
+                .at => {
                     const adds = "    getb\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_HEAP_READ => {
+                .heap_read => {
                     const adds = "    sys 15\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_ADDREL => {
+                .add_equals => {
                     idx.* -= 1;
                     const adds = "    copy 1\n" ++
                         "    copy 1\n" ++
@@ -203,49 +264,49 @@ const Expression = struct {
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_ADD => {
+                .add => {
                     idx.* -= 1;
                     const adds = "    add\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_MUL => {
+                .mul => {
                     idx.* -= 1;
                     const adds = "    mul\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_DIV => {
+                .div => {
                     idx.* -= 1;
                     const adds = "    div\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_MOD => {
+                .mod => {
                     idx.* -= 1;
                     const adds = "    mod\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_AND => {
+                .and_op => {
                     idx.* -= 1;
                     const adds = "    and\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_OR => {
+                .or_op => {
                     idx.* -= 1;
                     const adds = "    or\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_CATREL => {
+                .cat_equals => {
                     idx.* -= 1;
                     const adds = "    copy 1\n" ++
                         "    copy 1\n" ++
@@ -256,62 +317,62 @@ const Expression = struct {
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_CAT => {
+                .cat => {
                     idx.* -= 1;
                     const adds = "    cat\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_HEAP_ASSIGN => {
+                .heap_assign => {
                     idx.* -= 1;
                     const adds = "    sys 16\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_ASSIGN => {
+                .assign => {
                     idx.* -= 1;
                     const adds = "    set\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_GT => {
+                .gt => {
                     idx.* -= 1;
                     const adds = "    gt\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_LT => {
+                .lt => {
                     idx.* -= 1;
                     const adds = "    lt\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_NEQ => {
+                .not_eq => {
                     idx.* -= 1;
                     const adds = "    eq\n    not\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_EQ => {
+                .eq => {
                     idx.* -= 1;
                     const adds = "    eq\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_KEYWORD_NEW => {
+                .keyword_new => {
                     const adds = "    create\n    zero\n";
 
                     try result.appendSlice(adds);
                     return result.toOwnedSlice();
                 },
-                .TOKEN_IDENT => {
+                .ident => {
                     for (map.vars) |mapvar| {
                         if (std.mem.eql(u8, mapvar.name, self.op.?.value)) {
                             try result.print("    copy {}\n", .{idx.* - 1 - mapvar.idx});
@@ -334,7 +395,7 @@ const Expression = struct {
                     std.log.info("udefined: {s}", .{self.op.?.value});
                     return error.UnknownIdent;
                 },
-                .TOKEN_CLOSE_PAREN => {
+                .close_paren => {
                     return result.toOwnedSlice();
                 },
                 else => {
@@ -733,7 +794,7 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) ![]Toke
 
                 _ = std.mem.replace(u8, eon_path, "/", &.{std.fs.path.sep}, path_buf);
 
-                const path = try std.fs.path.join(allocator, &.{ lib_path, path_buf});
+                const path = try std.fs.path.join(allocator, &.{ lib_path, path_buf });
 
                 var toks = try lexFile(io, allocator, path);
                 defer allocator.free(toks);
@@ -746,244 +807,22 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) ![]Toke
         }
 
         if (code.len != 0 and (std.mem.indexOf(u8, " @${}();,\t\n~![]", char_string) != null or std.mem.indexOf(u8, " $@{}();,\t\n~![]", code[code.len - 1 ..]) != null)) {
-            if (std.mem.eql(u8, code, "{")) {
+            if (Token.KIND_NAMES.get(code)) |kind| {
                 try result.append(.{
-                    .kind = .TOKEN_OPEN_BRACE,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "}")) {
-                try result.append(.{
-                    .kind = .TOKEN_CLOSE_BRACE,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "(")) {
-                try result.append(.{
-                    .kind = .TOKEN_OPEN_PAREN,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, ")")) {
-                try result.append(.{
-                    .kind = .TOKEN_CLOSE_PAREN,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, ";")) {
-                try result.append(.{
-                    .kind = .TOKEN_SEMI_COLON,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "var")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_VAR,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "fnset")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_FNSET,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "fn")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_FN,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "return")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_RETURN,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "asm")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_ASM,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "if")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_IF,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "else")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_ELSE,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "for")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_FOR,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "while")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_WHILE,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "do")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_DO,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "break")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_BREAK,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "continue")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_CONTINUE,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "new")) {
-                try result.append(.{
-                    .kind = .TOKEN_KEYWORD_NEW,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "&&")) {
-                try result.append(.{
-                    .kind = .TOKEN_AND,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "||")) {
-                try result.append(.{
-                    .kind = .TOKEN_OR,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "+=")) {
-                try result.append(.{
-                    .kind = .TOKEN_ADDREL,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "+")) {
-                try result.append(.{
-                    .kind = .TOKEN_ADD,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "-=")) {
-                try result.append(.{
-                    .kind = .TOKEN_SUBREL,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "-")) {
-                try result.append(.{
-                    .kind = .TOKEN_NEG,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "*")) {
-                try result.append(.{
-                    .kind = .TOKEN_MUL,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "/")) {
-                try result.append(.{
-                    .kind = .TOKEN_DIV,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "%")) {
-                try result.append(.{
-                    .kind = .TOKEN_MOD,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "<")) {
-                try result.append(.{
-                    .kind = .TOKEN_LT,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, ">")) {
-                try result.append(.{
-                    .kind = .TOKEN_GT,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, ",")) {
-                try result.append(.{
-                    .kind = .TOKEN_COMMA,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "&")) {
-                try result.append(.{
-                    .kind = .TOKEN_CAT,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "&=")) {
-                try result.append(.{
-                    .kind = .TOKEN_CATREL,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "@")) {
-                try result.append(.{
-                    .kind = .TOKEN_AT,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "$")) {
-                try result.append(.{
-                    .kind = .TOKEN_HEAP_READ,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, ":=")) {
-                try result.append(.{
-                    .kind = .TOKEN_HEAP_ASSIGN,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "=")) {
-                try result.append(.{
-                    .kind = .TOKEN_ASSIGN,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "==")) {
-                try result.append(.{
-                    .kind = .TOKEN_EQ,
-                    .value = code,
-                });
-                code = try allocator.alloc(u8, 0);
-            } else if (std.mem.eql(u8, code, "!=")) {
-                try result.append(.{
-                    .kind = .TOKEN_NEQ,
+                    .kind = kind,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
             } else if (code.len > 1 and code.len != 0 and code[0] == '"' and code[code.len - 1] == '"') {
                 try result.append(.{
-                    .kind = .TOKEN_STRING_LIT,
+                    .kind = .string_literal,
                     .value = code,
                 });
                 code = try allocator.alloc(u8, 0);
             } else if (!std.mem.eql(u8, code, "\"")) {
                 if (code[0] == '-' and code.len != 1) {
                     try result.append(.{
-                        .kind = .TOKEN_NEG,
+                        .kind = .sub,
                         .value = code[0..1],
                     });
                     code = code[1..];
@@ -999,7 +838,7 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) ![]Toke
                 }
                 if (is_ident) {
                     try result.append(.{
-                        .kind = .TOKEN_IDENT,
+                        .kind = .ident,
                         .value = code,
                     });
                     code = try allocator.alloc(u8, 0);
@@ -1014,7 +853,7 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) ![]Toke
                     }
                     if (is_digit) {
                         try result.append(.{
-                            .kind = .TOKEN_INT_LIT,
+                            .kind = .int_literal,
                             .value = code,
                         });
                         code = try allocator.alloc(u8, 0);
@@ -1032,7 +871,7 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) ![]Toke
             _ = reader.interface.discardDelimiterInclusive('\n') catch |err| switch (err) {
                 error.EndOfStream => {
                     try result.append(.{
-                        .kind = .TOKEN_EOF,
+                        .kind = .eof,
                         .value = "EOF",
                     });
 
@@ -1049,7 +888,7 @@ pub fn lexFile(io: std.Io, allocator: std.mem.Allocator, in: []const u8) ![]Toke
     }
 
     try result.append(.{
-        .kind = .TOKEN_EOF,
+        .kind = .eof,
         .value = "EOF",
     });
 
@@ -1065,12 +904,12 @@ pub fn parseFactor(allocator: std.mem.Allocator, tokens: []Token, heap: *std.arr
         .b = &EMPTY_EXPR,
     };
 
-    if (tokens[idx.*].kind == .TOKEN_OPEN_PAREN) {
+    if (tokens[idx.*].kind == .open_paren) {
         idx.* += 1;
         var a = try allocator.alloc(Expression, 1);
         a[0] = try parseExpression(allocator, tokens, heap, idx);
 
-        if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
+        if (tokens[idx.*].kind != .close_paren) return error.NoClose;
         idx.* += 1;
 
         result = .{
@@ -1080,13 +919,13 @@ pub fn parseFactor(allocator: std.mem.Allocator, tokens: []Token, heap: *std.arr
         };
 
         return result;
-    } else if (tokens[idx.*].kind == .TOKEN_INT_LIT or
-        tokens[idx.*].kind == .TOKEN_STRING_LIT or
-        tokens[idx.*].kind == .TOKEN_IDENT)
+    } else if (tokens[idx.*].kind == .int_literal or
+        tokens[idx.*].kind == .string_literal or
+        tokens[idx.*].kind == .ident)
     {
-        if (tokens[idx.* + 1].kind == .TOKEN_MUL or
-            tokens[idx.* + 1].kind == .TOKEN_DIV or
-            tokens[idx.* + 1].kind == .TOKEN_MOD)
+        if (tokens[idx.* + 1].kind == .mul or
+            tokens[idx.* + 1].kind == .div or
+            tokens[idx.* + 1].kind == .mod)
         {
             const op = &tokens[idx.* + 1];
             var a = try allocator.alloc(Expression, 1);
@@ -1105,21 +944,21 @@ pub fn parseFactor(allocator: std.mem.Allocator, tokens: []Token, heap: *std.arr
                 .b = b,
             };
             return result;
-        } else if (tokens[idx.* + 1].kind == .TOKEN_OPEN_PAREN) {
-            if (tokens[idx.*].kind != .TOKEN_IDENT) return error.NoIdent;
+        } else if (tokens[idx.* + 1].kind == .open_paren) {
+            if (tokens[idx.*].kind != .ident) return error.NoIdent;
             var ident = &tokens[idx.*];
             idx.* += 2;
             var b = try allocator.alloc(Expression, 0);
             while (parseExpression(allocator, tokens, heap, idx) catch null) |expr| {
                 b = try allocator.realloc(b, b.len + 1);
                 b[b.len - 1] = expr;
-                if (tokens[idx.*].kind != .TOKEN_COMMA) break;
+                if (tokens[idx.*].kind != .comma) break;
                 idx.* += 1;
             }
-            if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
+            if (tokens[idx.*].kind != .close_paren) return error.NoClose;
             idx.* += 1;
 
-            ident.kind = .TOKEN_OPEN_PAREN;
+            ident.kind = .open_paren;
 
             result = .{
                 .a = b,
@@ -1136,7 +975,7 @@ pub fn parseFactor(allocator: std.mem.Allocator, tokens: []Token, heap: *std.arr
             idx.* += 1;
             return result;
         }
-    } else if (tokens[idx.*].kind == .TOKEN_NEG) {
+    } else if (tokens[idx.*].kind == .sub) {
         const ident = &tokens[idx.*];
         idx.* += 1;
         var b = try allocator.alloc(Expression, 1);
@@ -1148,9 +987,9 @@ pub fn parseFactor(allocator: std.mem.Allocator, tokens: []Token, heap: *std.arr
             .b = b,
         };
         return result;
-    } else if (tokens[idx.*].kind == .TOKEN_AT or
-        tokens[idx.*].kind == .TOKEN_HEAP_READ or
-        tokens[idx.*].kind == .TOKEN_KEYWORD_NEW)
+    } else if (tokens[idx.*].kind == .at or
+        tokens[idx.*].kind == .heap_read or
+        tokens[idx.*].kind == .keyword_new)
     {
         const ident = &tokens[idx.*];
         idx.* += 1;
@@ -1177,9 +1016,9 @@ pub fn parseSum(allocator: std.mem.Allocator, tokens: []Token, heap: *std.array_
     var a = try allocator.alloc(Expression, 1);
     a[0] = try parseFactor(allocator, tokens, heap, idx);
 
-    if (tokens[idx.*].kind == .TOKEN_ADD or
-        tokens[idx.*].kind == .TOKEN_CAT or
-        tokens[idx.*].kind == .TOKEN_NEG)
+    if (tokens[idx.*].kind == .add or
+        tokens[idx.*].kind == .cat or
+        tokens[idx.*].kind == .sub)
     {
         const op = &tokens[idx.*];
         idx.* += 1;
@@ -1211,17 +1050,17 @@ pub fn parseExpression(allocator: std.mem.Allocator, tokens: []Token, heap: *std
     var a = try allocator.alloc(Expression, 1);
     a[0] = try parseSum(allocator, tokens, heap, idx);
 
-    if (tokens[idx.*].kind == .TOKEN_AND or
-        tokens[idx.*].kind == .TOKEN_OR or
-        tokens[idx.*].kind == .TOKEN_LT or
-        tokens[idx.*].kind == .TOKEN_GT or
-        tokens[idx.*].kind == .TOKEN_EQ or
-        tokens[idx.*].kind == .TOKEN_NEQ or
-        tokens[idx.*].kind == .TOKEN_ASSIGN or
-        tokens[idx.*].kind == .TOKEN_HEAP_ASSIGN or
-        tokens[idx.*].kind == .TOKEN_ADDREL or
-        tokens[idx.*].kind == .TOKEN_CATREL or
-        tokens[idx.*].kind == .TOKEN_SUBREL)
+    if (tokens[idx.*].kind == .and_op or
+        tokens[idx.*].kind == .or_op or
+        tokens[idx.*].kind == .lt or
+        tokens[idx.*].kind == .gt or
+        tokens[idx.*].kind == .eq or
+        tokens[idx.*].kind == .not_eq or
+        tokens[idx.*].kind == .assign or
+        tokens[idx.*].kind == .heap_assign or
+        tokens[idx.*].kind == .add_equals or
+        tokens[idx.*].kind == .cat_equals or
+        tokens[idx.*].kind == .sub_equals)
     {
         const op = &tokens[idx.*];
         idx.* += 1;
@@ -1251,9 +1090,9 @@ pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.
         .exprs = null,
         .blks = null,
     };
-    if (tokens[idx.*].kind == .TOKEN_KEYWORD_VAR) {
+    if (tokens[idx.*].kind == .keyword_var) {
         idx.* += 1;
-        if (tokens[idx.*].kind != .TOKEN_IDENT) return error.ExpectedIdent;
+        if (tokens[idx.*].kind != .ident) return error.ExpectedIdent;
 
         result = .{
             .kind = .STMT_DECLARE,
@@ -1264,18 +1103,18 @@ pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.
 
         idx.* += 1;
 
-        if (tokens[idx.*].kind == .TOKEN_ASSIGN) {
+        if (tokens[idx.*].kind == .assign) {
             idx.* += 1;
             var b = try allocator.alloc(Expression, 1);
             b[0] = try parseExpression(allocator, tokens, heap, idx);
 
             result.exprs = b;
         }
-        if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.ExpectedSC;
+        if (tokens[idx.*].kind != .semi_colon) return error.ExpectedSC;
         idx.* += 1;
 
         return result;
-    } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_RETURN) {
+    } else if (tokens[idx.*].kind == .keyword_return) {
         idx.* += 1;
         var b = try allocator.alloc(Expression, 1);
         b[0] = try parseExpression(allocator, tokens, heap, idx);
@@ -1286,13 +1125,13 @@ pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.
             .exprs = b,
             .blks = null,
         };
-        if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.ExpectedSC;
+        if (tokens[idx.*].kind != .semi_colon) return error.ExpectedSC;
         idx.* += 1;
 
         return result;
-    } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_ASM) {
+    } else if (tokens[idx.*].kind == .keyword_asm) {
         idx.* += 1;
-        if (tokens[idx.*].kind != .TOKEN_STRING_LIT) return error.ExpectedSC;
+        if (tokens[idx.*].kind != .string_literal) return error.ExpectedSC;
 
         result = .{
             .kind = .STMT_ASM,
@@ -1301,23 +1140,23 @@ pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.
             .blks = null,
         };
         idx.* += 1;
-        if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.ExpectedSC;
+        if (tokens[idx.*].kind != .semi_colon) return error.ExpectedSC;
         idx.* += 1;
 
         return result;
-    } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_FOR) {
+    } else if (tokens[idx.*].kind == .keyword_for) {
         idx.* += 1;
-        if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
+        if (tokens[idx.*].kind != .open_paren) return error.ExpectedParen;
         idx.* += 1;
         var exprs = try allocator.alloc(Expression, 2);
         var blks = try allocator.alloc([]Statement, 2);
         blks[0] = try allocator.alloc(Statement, 1);
         blks[0][0] = try parseStatement(allocator, tokens, heap, idx);
         exprs[0] = try parseExpression(allocator, tokens, heap, idx);
-        if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.Semi;
+        if (tokens[idx.*].kind != .semi_colon) return error.Semi;
         idx.* += 1;
         exprs[1] = try parseExpression(allocator, tokens, heap, idx);
-        if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
+        if (tokens[idx.*].kind != .close_paren) return error.NoClose;
         idx.* += 1;
         blks[1] = try parseBlock(allocator, tokens, heap, idx);
 
@@ -1329,13 +1168,13 @@ pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.
         };
 
         return result;
-    } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_WHILE) {
+    } else if (tokens[idx.*].kind == .keyword_while) {
         idx.* += 1;
-        if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
+        if (tokens[idx.*].kind != .open_paren) return error.ExpectedParen;
         idx.* += 1;
         var exprs = try allocator.alloc(Expression, 1);
         exprs[0] = try parseExpression(allocator, tokens, heap, idx);
-        if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
+        if (tokens[idx.*].kind != .close_paren) return error.NoClose;
         idx.* += 1;
         var blks = try allocator.alloc([]Statement, 1);
         blks[0] = try parseBlock(allocator, tokens, heap, idx);
@@ -1348,21 +1187,21 @@ pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.
         };
 
         return result;
-    } else if (tokens[idx.*].kind == .TOKEN_KEYWORD_IF) {
+    } else if (tokens[idx.*].kind == .keyword_if) {
         idx.* += 1;
-        if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
+        if (tokens[idx.*].kind != .open_paren) return error.ExpectedParen;
         idx.* += 1;
 
         var s = try allocator.alloc(Expression, 1);
         s[0] = try parseExpression(allocator, tokens, heap, idx);
 
-        if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
+        if (tokens[idx.*].kind != .close_paren) return error.NoClose;
         idx.* += 1;
 
         var b = try allocator.alloc([]Statement, 1);
         b[0] = try parseBlock(allocator, tokens, heap, idx);
 
-        if (tokens[idx.*].kind == .TOKEN_KEYWORD_ELSE) {
+        if (tokens[idx.*].kind == .keyword_else) {
             idx.* += 1;
             b = try allocator.realloc(b, 2);
             b[1] = try parseBlock(allocator, tokens, heap, idx);
@@ -1387,7 +1226,7 @@ pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.
             .blks = null,
         };
 
-        if (tokens[idx.*].kind != .TOKEN_SEMI_COLON) return error.ExpectedSC;
+        if (tokens[idx.*].kind != .semi_colon) return error.ExpectedSC;
         idx.* += 1;
 
         return result;
@@ -1399,7 +1238,7 @@ pub fn parseStatement(allocator: std.mem.Allocator, tokens: []Token, heap: *std.
 pub fn parseBlock(allocator: std.mem.Allocator, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) anyerror![]Statement {
     var result: []Statement = undefined;
 
-    if (tokens[idx.*].kind != .TOKEN_OPEN_BRACE) {
+    if (tokens[idx.*].kind != .open_brace) {
         result = try allocator.alloc(Statement, 1);
         result[0] = try parseStatement(allocator, tokens, heap, idx);
 
@@ -1413,7 +1252,7 @@ pub fn parseBlock(allocator: std.mem.Allocator, tokens: []Token, heap: *std.arra
         result[result.len - 1] = stmt;
     }
 
-    if (tokens[idx.*].kind != .TOKEN_CLOSE_BRACE) return error.NoClose;
+    if (tokens[idx.*].kind != .close_brace) return error.NoClose;
     idx.* += 1;
 
     return result;
@@ -1424,7 +1263,7 @@ pub fn parseFunctionParam(tokens: []Token, idx: *usize) !FunctionParam {
         .name = "",
     };
 
-    if (tokens[idx.*].kind != .TOKEN_IDENT) return error.ExpectedValue;
+    if (tokens[idx.*].kind != .ident) return error.ExpectedValue;
     result.name = tokens[idx.*].value;
     idx.* += 1;
 
@@ -1433,22 +1272,22 @@ pub fn parseFunctionParam(tokens: []Token, idx: *usize) !FunctionParam {
 
 pub fn parseFunctionDecl(allocator: std.mem.Allocator, fnPrefix: *[]const u8, tokens: []Token, heap: *std.array_list.Managed([]const u8), idx: *usize) !FunctionDecl {
     var result: FunctionDecl = undefined;
-    if (tokens[idx.*].kind != .TOKEN_KEYWORD_FN) return error.ExpectedType;
+    if (tokens[idx.*].kind != .keyword_fn) return error.ExpectedType;
     idx.* += 1;
-    if (tokens[idx.*].kind != .TOKEN_IDENT) return error.ExpectedIdent;
+    if (tokens[idx.*].kind != .ident) return error.ExpectedIdent;
     result.ident = try allocator.print("{s}{s}", .{ fnPrefix.*, tokens[idx.*].value });
     idx.* += 1;
-    if (tokens[idx.*].kind != .TOKEN_OPEN_PAREN) return error.ExpectedParen;
+    if (tokens[idx.*].kind != .open_paren) return error.ExpectedParen;
     idx.* += 1;
-    if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) {
+    if (tokens[idx.*].kind != .close_paren) {
         result.params = try allocator.alloc(FunctionParam, 0);
         while (parseFunctionParam(tokens, idx) catch null) |param| {
             result.params = try allocator.realloc(result.params, result.params.len + 1);
             result.params[result.params.len - 1] = param;
-            if (tokens[idx.*].kind != .TOKEN_COMMA) break;
+            if (tokens[idx.*].kind != .comma) break;
             idx.* += 1;
         }
-        if (tokens[idx.*].kind != .TOKEN_CLOSE_PAREN) return error.NoClose;
+        if (tokens[idx.*].kind != .close_paren) return error.NoClose;
         idx.* += 1;
     } else {
         result.params = &[_]FunctionParam{};
@@ -1471,24 +1310,24 @@ pub fn parseProgram(allocator: std.mem.Allocator, fn_prefix: *[]const u8, tokens
         if (parseFunctionDecl(allocator, fn_prefix, tokens, &result.heap, &idx) catch null) |func| {
             result.funcs = try allocator.realloc(result.funcs, result.funcs.len + 1);
             result.funcs[result.funcs.len - 1] = func;
-        } else if (tokens[idx].kind == .TOKEN_KEYWORD_VAR) {
+        } else if (tokens[idx].kind == .keyword_var) {
             idx += 1;
-            if (tokens[idx].kind != .TOKEN_IDENT) return error.ExpectedIdent;
+            if (tokens[idx].kind != .ident) return error.ExpectedIdent;
             try result.heap.append(tokens[idx].value);
             idx += 1;
 
-            if (tokens[idx].kind != .TOKEN_SEMI_COLON) return error.ExpectedIdent;
+            if (tokens[idx].kind != .semi_colon) return error.ExpectedIdent;
             idx += 1;
-        } else if (tokens[idx].kind == .TOKEN_KEYWORD_FNSET) {
+        } else if (tokens[idx].kind == .keyword_fnset) {
             idx += 1;
-            if (tokens[idx].kind != .TOKEN_IDENT) return error.ExpectedIdent;
+            if (tokens[idx].kind != .ident) return error.ExpectedIdent;
             const old_prefix = fn_prefix.*;
             defer allocator.free(old_prefix);
             fn_prefix.* = try allocator.print("{s}.", .{tokens[idx].value});
             idx += 1;
-            if (tokens[idx].kind != .TOKEN_OPEN_BRACE) return error.ExpectedIdent;
+            if (tokens[idx].kind != .open_brace) return error.ExpectedIdent;
             idx += 1;
-        } else if (tokens[idx].kind == .TOKEN_CLOSE_BRACE) {
+        } else if (tokens[idx].kind == .close_brace) {
             idx += 1;
             const dotidx = if (std.mem.lastIndexOf(u8, fn_prefix.*[0 .. fn_prefix.*.len - 1], ".")) |ind| ind + 1 else 0;
 
@@ -1500,9 +1339,9 @@ pub fn parseProgram(allocator: std.mem.Allocator, fn_prefix: *[]const u8, tokens
 
     if (fn_prefix.len != 0) return error.POOPIE;
 
-    if (tokens[idx].kind != .TOKEN_EOF) {
+    if (tokens[idx].kind != .eof) {
         for (tokens[idx..]) |tok|
-            std.log.info("toks: {} '{s}'", .{ @backingInt(tok.kind), tok.value });
+            std.log.info("toks: {s} '{s}'", .{ @tagName(tok.kind), tok.value });
 
         return error.ExpectedEOF;
     }

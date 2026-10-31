@@ -61,6 +61,7 @@ pub fn main(init: std.process.Init) !void {
 
                 var writer_buffer: [1024]u8 = undefined;
                 var writer = output_file.writer(init.io, &writer_buffer);
+                defer writer.flush() catch {};
 
                 _ = try writer.interface.write(DOC_HEADER);
 
@@ -68,14 +69,13 @@ pub fn main(init: std.process.Init) !void {
                     if (std.mem.containsAtLeast(u8, line, 1, "> ")) {
                         const link_index = std.mem.indexOf(u8, line, "> ") orelse unreachable;
                         const index = link_index + 2 + (std.mem.indexOf(u8, line[link_index..], ": ") orelse 0);
-                        try writer.interface.writeAll(line[0..index]);
-                        try writer.interface.writeAll(root_name);
-                        try writer.interface.writeAll(line[index..]);
-                    } else {
-                        try writer.interface.writeAll(line);
-                    }
 
-                    try writer.interface.writeAll("\n");
+                        try writer.interface.print("{s}{s}{s}\n", .{
+                            line[0..index],
+                            root_name,
+                            line[index..],
+                        });
+                    } else try writer.interface.print("{s}\n", .{line});
                 }
 
                 try writer.interface.writeAll(DOC_FOOTER);

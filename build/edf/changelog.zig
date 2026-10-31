@@ -81,7 +81,10 @@ pub fn main(init: std.process.Init) !void {
     var file = try std.Io.Dir.cwd().createFile(init.io, output_file, .{});
     defer file.close(init.io);
 
-    var file_writer = file.writer(init.io, &.{});
+    var writer_buf: [1024]u8 = undefined;
+    var file_writer = file.writer(init.io, &writer_buf);
+    defer file_writer.flush() catch {};
+
     try file_writer.interface.writeAll(LOG_HEADER);
 
     var child = try std.process.spawn(init.io, .{
@@ -212,10 +215,9 @@ pub fn main(init: std.process.Init) !void {
 
                     // TODO: Capitalize proper nouns like SandEEE and Steam
 
-                    try file_writer.interface.writeAll(&ch);
-                    try file_writer.interface.writeAll(" ");
-                    try file_writer.interface.writeAll(lower_line);
-                    try file_writer.interface.writeAll("\n");
+                    try file_writer.interface.print("{s} {s}\n", .{
+                        &ch, lower_line,
+                    });
                 }
             }
         }

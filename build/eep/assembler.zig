@@ -18,13 +18,129 @@ pub fn main(init: std.process.Init) !void {
     const output_file = args.next() orelse return error.MissingOutputFile;
 
     if (std.mem.eql(u8, mode, "exe")) {
-        try compile_executable(alloc, init.io, input_file, output_file);
+        try compileExecutable(alloc, init.io, input_file, output_file);
     } else if (std.mem.eql(u8, mode, "lib")) {
         try compile_library(alloc, init.io, input_file, output_file);
     } else return error.BadBuildMode;
 }
 
-pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: []const u8, output_file: []const u8) !void {
+pub fn addNumber(list: *std.array_list.Managed(u8), number: u64) !void {
+    if (number > 255) {
+        try list.print("\x01{s}", .{&std.mem.toBytes(number)});
+    } else {
+        try list.print("\x03{s}", .{&std.mem.toBytes(@as(u8, @intCast(number)))});
+    }
+}
+
+pub fn addString(list: *std.array_list.Managed(u8), allocator: std.mem.Allocator, string: []const u8) !void {
+    if (string.len <= 2) {
+        try list.appendSlice("\x02\x00");
+    } else {
+        const target_tmp = try std.zig.string_literal.parseAlloc(allocator, string);
+        defer allocator.free(target_tmp);
+
+        try list.print("\x02{s}\x00", .{target_tmp});
+    }
+}
+
+pub fn binFromLine(
+    allocator: std.mem.Allocator,
+    consts: *std.StringHashMap(u64),
+    funcs: *std.array_list.Managed([]const u8),
+    line: []const u8,
+) ![]const u8 {
+    var result: std.array_list.Managed(u8) = .init(allocator);
+    defer result.deinit();
+
+    var no_comment = std.mem.splitScalar(u8, line, ';');
+    var l = no_comment.first();
+    if (l.len == 0) return "";
+    while (l.len != 0 and l[0] == ' ') l = l[1..];
+    while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
+    if (l.len == 0 or l[l.len - 1] == ':')
+        return "";
+
+    var op = l;
+    if (std.mem.indexOf(u8, l, " ") != null)
+        op = l[0..std.mem.indexOf(u8, l, " ").?];
+
+    var code: ?Operation.Code = null;
+
+    if (std.mem.eql(u8, op, "nop")) code = .nop;
+    if (std.mem.eql(u8, op, "sys")) code = .sys;
+    if (std.mem.eql(u8, op, "push")) code = .push;
+    if (std.mem.eql(u8, op, "add")) code = .add;
+    if (std.mem.eql(u8, op, "sub")) code = .sub;
+    if (std.mem.eql(u8, op, "copy")) code = .copy;
+    if (std.mem.eql(u8, op, "jmp")) code = .jmp;
+    if (std.mem.eql(u8, op, "jz")) code = .jz;
+    if (std.mem.eql(u8, op, "jnz")) code = .jnz;
+    if (std.mem.eql(u8, op, "jmpf")) code = .jmpf;
+    if (std.mem.eql(u8, op, "mul")) code = .mul;
+    if (std.mem.eql(u8, op, "div")) code = .div;
+    if (std.mem.eql(u8, op, "and")) code = .land;
+    if (std.mem.eql(u8, op, "or")) code = .lor;
+    if (std.mem.eql(u8, op, "not")) code = .lnot;
+    if (std.mem.eql(u8, op, "eq")) code = .eq;
+    if (std.mem.eql(u8, op, "getb")) code = .getb;
+    if (std.mem.eql(u8, op, "ret")) code = .ret;
+    if (std.mem.eql(u8, op, "call")) code = .call;
+    if (std.mem.eql(u8, op, "neg")) code = .neg;
+    if (std.mem.eql(u8, op, "xor")) code = .xor;
+    if (std.mem.eql(u8, op, "disc")) code = .disc;
+    if (std.mem.eql(u8, op, "set")) code = .asign;
+    if (std.mem.eql(u8, op, "dup")) code = .dup;
+    if (std.mem.eql(u8, op, "lt")) code = .less;
+    if (std.mem.eql(u8, op, "gt")) code = .greater;
+    if (std.mem.eql(u8, op, "cat")) code = .cat;
+    if (std.mem.eql(u8, op, "mod")) code = .mod;
+    if (std.mem.eql(u8, op, "create")) code = .create;
+    if (std.mem.eql(u8, op, "size")) code = .size;
+    if (std.mem.eql(u8, op, "len")) code = .len;
+    if (std.mem.eql(u8, op, "sin")) code = .sin;
+    if (std.mem.eql(u8, op, "cos")) code = .cos;
+    if (std.mem.eql(u8, op, "rand")) code = .random;
+    if (std.mem.eql(u8, op, "seed")) code = .seed;
+    if (std.mem.eql(u8, op, "zero")) code = .zero;
+    if (std.mem.eql(u8, op, "mem")) code = .mem;
+    if (std.mem.eql(u8, op, "ndisc")) code = .disc_at;
+
+    if (code == null) {
+        std.log.info("{s}", .{op});
+        return error.UnknownOp;
+    }
+    try result.appendSlice(&.{@as(u8, @backingInt(code.?))});
+
+    if (std.mem.eql(u8, op, l)) {
+        try result.appendSlice("\x00");
+    } else if (std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0)) |int| {
+        try addNumber(&result, int);
+    } else |_| {
+        var target = l[op.len + 1 ..];
+        while (target[0] == ' ') target = target[1..];
+        while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
+        if (target[0] == '"' and target[target.len - 1] == '"') {
+            try addString(&result, allocator, target);
+        } else {
+            if (consts.contains(target)) {
+                const value = consts.get(target).?;
+                try addNumber(&result, value);
+            } else for (funcs.items) |func| {
+                if (std.mem.eql(u8, func, target)) {
+                    try result.print("\x02{s}\x00", .{target});
+                    break;
+                }
+            } else {
+                std.log.info("{s}", .{target});
+                return error.UnknownConst;
+            }
+        }
+    }
+
+    return result.toOwnedSlice();
+}
+
+pub fn compileExecutable(allocator: std.mem.Allocator, io: std.Io, input_file: []const u8, output_file: []const u8) !void {
     var consts = std.StringHashMap(u64).init(allocator);
 
     {
@@ -60,7 +176,9 @@ pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: 
     const file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
 
-    var writer = file.writer(io, &.{});
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(io, &writer_buffer);
+    defer writer.flush() catch {};
 
     const in_file = try std.Io.Dir.cwd().openFile(io, input_file, .{});
     defer in_file.close(io);
@@ -70,113 +188,14 @@ pub fn compile_executable(allocator: std.mem.Allocator, io: std.Io, input_file: 
 
     try writer.interface.writeAll("EEEp");
 
+    var funcs = std.array_list.Managed([]const u8).init(allocator);
+
     while (try reader_stream.interface.takeDelimiter('\n')) |in_line| {
         const line = std.mem.trim(u8, in_line, &std.ascii.whitespace);
+        const bin = try binFromLine(allocator, &consts, &funcs, line);
+        defer allocator.free(bin);
 
-        var no_comment = std.mem.splitScalar(u8, line, ';');
-        var l = no_comment.first();
-        if (l.len == 0) continue;
-        while (l.len != 0 and l[0] == ' ') l = l[1..];
-        while (l[l.len - 1] == ' ') l = l[0 .. l.len - 1];
-        if (l.len == 0 or l[l.len - 1] == ':') {
-            continue;
-        }
-
-        var op = l;
-        if (std.mem.indexOf(u8, l, " ") != null) {
-            op = l[0..std.mem.indexOf(u8, l, " ").?];
-        }
-        var code: ?Operation.Code = null;
-
-        if (std.mem.eql(u8, op, "nop")) code = .nop;
-        if (std.mem.eql(u8, op, "sys")) code = .sys;
-        if (std.mem.eql(u8, op, "push")) code = .push;
-        if (std.mem.eql(u8, op, "add")) code = .add;
-        if (std.mem.eql(u8, op, "sub")) code = .sub;
-        if (std.mem.eql(u8, op, "copy")) code = .copy;
-        if (std.mem.eql(u8, op, "jmp")) code = .jmp;
-        if (std.mem.eql(u8, op, "jz")) code = .jz;
-        if (std.mem.eql(u8, op, "jnz")) code = .jnz;
-        if (std.mem.eql(u8, op, "jmpf")) code = .jmpf;
-        if (std.mem.eql(u8, op, "mul")) code = .mul;
-        if (std.mem.eql(u8, op, "div")) code = .div;
-        if (std.mem.eql(u8, op, "and")) code = .land;
-        if (std.mem.eql(u8, op, "or")) code = .lor;
-        if (std.mem.eql(u8, op, "not")) code = .lnot;
-        if (std.mem.eql(u8, op, "eq")) code = .eq;
-        if (std.mem.eql(u8, op, "getb")) code = .getb;
-        if (std.mem.eql(u8, op, "ret")) code = .ret;
-        if (std.mem.eql(u8, op, "call")) code = .call;
-        if (std.mem.eql(u8, op, "neg")) code = .neg;
-        if (std.mem.eql(u8, op, "xor")) code = .xor;
-        if (std.mem.eql(u8, op, "disc")) code = .disc;
-        if (std.mem.eql(u8, op, "set")) code = .asign;
-        if (std.mem.eql(u8, op, "dup")) code = .dup;
-        if (std.mem.eql(u8, op, "lt")) code = .less;
-        if (std.mem.eql(u8, op, "gt")) code = .greater;
-        if (std.mem.eql(u8, op, "cat")) code = .cat;
-        if (std.mem.eql(u8, op, "mod")) code = .mod;
-        if (std.mem.eql(u8, op, "create")) code = .create;
-        if (std.mem.eql(u8, op, "size")) code = .size;
-        if (std.mem.eql(u8, op, "len")) code = .len;
-        if (std.mem.eql(u8, op, "sin")) code = .sin;
-        if (std.mem.eql(u8, op, "cos")) code = .cos;
-        if (std.mem.eql(u8, op, "rand")) code = .random;
-        if (std.mem.eql(u8, op, "seed")) code = .seed;
-        if (std.mem.eql(u8, op, "zero")) code = .zero;
-        if (std.mem.eql(u8, op, "mem")) code = .mem;
-        if (std.mem.eql(u8, op, "ndisc")) code = .disc_at;
-
-        if (code == null) {
-            std.log.info("{s}", .{op});
-            return error.UnknownOp;
-        }
-        try writer.interface.writeAll(&.{@as(u8, @backingInt(code.?))});
-
-        if (std.mem.eql(u8, op, l)) {
-            try writer.interface.writeAll("\x00");
-        } else {
-            const int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
-                var target = l[op.len + 1 ..];
-                while (target[0] == ' ') target = target[1..];
-                while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
-                if (target[0] == '"' and target[target.len - 1] == '"') {
-                    if (target.len <= 2) {
-                        try writer.interface.writeAll("\x02");
-                        try writer.interface.writeAll("\x00");
-                    } else {
-                        const target_tmp = try std.zig.string_literal.parseAlloc(allocator, target);
-
-                        try writer.interface.writeAll("\x02");
-                        try writer.interface.writeAll(target_tmp);
-                        try writer.interface.writeAll("\x00");
-                    }
-                } else {
-                    if (!consts.contains(target)) {
-                        std.log.info("{s}", .{target});
-                        return error.UnknownConst;
-                    } else {
-                        const value = consts.get(target).?;
-                        if (value > 255) {
-                            try writer.interface.writeAll("\x01");
-                            try writer.interface.writeAll(&std.mem.toBytes(value));
-                        } else {
-                            try writer.interface.writeAll("\x03");
-                            try writer.interface.writeAll(&std.mem.toBytes(@as(u8, @intCast(value))));
-                        }
-                    }
-                }
-
-                continue;
-            };
-            if (int > 255) {
-                try writer.interface.writeAll("\x01");
-                try writer.interface.writeAll(&std.mem.toBytes(int));
-            } else {
-                try writer.interface.writeAll("\x03");
-                try writer.interface.writeAll(&std.mem.toBytes(@as(u8, @intCast(int))));
-            }
-        }
+        try writer.interface.writeAll(bin);
     }
 }
 
@@ -229,7 +248,9 @@ pub fn compile_library(allocator: std.mem.Allocator, io: std.Io, input_file: []c
     var file = try std.Io.Dir.cwd().createFile(io, output_file, .{});
     defer file.close(io);
 
-    var writer = file.writer(io, &.{});
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = file.writer(io, &writer_buffer);
+    defer writer.flush() catch {};
 
     try toc.append(@as(u8, @intCast(toc_count)));
 
@@ -266,108 +287,10 @@ pub fn compile_library(allocator: std.mem.Allocator, io: std.Io, input_file: []c
             continue;
         }
 
-        var op = l;
-        if (std.mem.indexOf(u8, l, " ") != null) {
-            op = l[0..std.mem.indexOf(u8, l, " ").?];
-        }
-        var code: ?Operation.Code = null;
+        const bin = try binFromLine(allocator, &consts, &funcs, line);
+        defer allocator.free(bin);
 
-        if (std.mem.eql(u8, op, "nop")) code = .nop;
-        if (std.mem.eql(u8, op, "sys")) code = .sys;
-        if (std.mem.eql(u8, op, "push")) code = .push;
-        if (std.mem.eql(u8, op, "add")) code = .add;
-        if (std.mem.eql(u8, op, "sub")) code = .sub;
-        if (std.mem.eql(u8, op, "copy")) code = .copy;
-        if (std.mem.eql(u8, op, "jmp")) code = .jmp;
-        if (std.mem.eql(u8, op, "jz")) code = .jz;
-        if (std.mem.eql(u8, op, "jnz")) code = .jnz;
-        if (std.mem.eql(u8, op, "jmpf")) code = .jmpf;
-        if (std.mem.eql(u8, op, "mul")) code = .mul;
-        if (std.mem.eql(u8, op, "div")) code = .div;
-        if (std.mem.eql(u8, op, "and")) code = .land;
-        if (std.mem.eql(u8, op, "or")) code = .lor;
-        if (std.mem.eql(u8, op, "not")) code = .lnot;
-        if (std.mem.eql(u8, op, "eq")) code = .eq;
-        if (std.mem.eql(u8, op, "getb")) code = .getb;
-        if (std.mem.eql(u8, op, "ret")) code = .ret;
-        if (std.mem.eql(u8, op, "call")) code = .call;
-        if (std.mem.eql(u8, op, "neg")) code = .neg;
-        if (std.mem.eql(u8, op, "xor")) code = .xor;
-        if (std.mem.eql(u8, op, "disc")) code = .disc;
-        if (std.mem.eql(u8, op, "set")) code = .asign;
-        if (std.mem.eql(u8, op, "dup")) code = .dup;
-        if (std.mem.eql(u8, op, "lt")) code = .less;
-        if (std.mem.eql(u8, op, "gt")) code = .greater;
-        if (std.mem.eql(u8, op, "cat")) code = .cat;
-        if (std.mem.eql(u8, op, "mod")) code = .mod;
-        if (std.mem.eql(u8, op, "create")) code = .create;
-        if (std.mem.eql(u8, op, "size")) code = .size;
-        if (std.mem.eql(u8, op, "len")) code = .len;
-        if (std.mem.eql(u8, op, "sin")) code = .sin;
-        if (std.mem.eql(u8, op, "cos")) code = .cos;
-        if (std.mem.eql(u8, op, "rand")) code = .random;
-        if (std.mem.eql(u8, op, "seed")) code = .seed;
-        if (std.mem.eql(u8, op, "zero")) code = .zero;
-        if (std.mem.eql(u8, op, "mem")) code = .mem;
-        if (std.mem.eql(u8, op, "ndisc")) code = .disc_at;
-
-        if (code == null) {
-            std.log.info("{s}", .{op});
-            return error.UnknownOp;
-        }
-        try data.append(@as(u8, @backingInt(code.?)));
-
-        if (std.mem.eql(u8, op, l)) {
-            try data.appendSlice("\x00");
-        } else {
-            const int: u64 = std.fmt.parseUnsigned(u64, l[op.len + 1 ..], 0) catch {
-                var target = l[op.len + 1 ..];
-                while (target[0] == ' ') target = target[1..];
-                while (target[target.len - 1] == ' ') target = target[0 .. target.len - 1];
-                if (target[0] == '"' and target[target.len - 1] == '"') {
-                    const target_tmp = try std.zig.string_literal.parseAlloc(allocator, target);
-
-                    try data.appendSlice("\x02");
-                    try data.appendSlice(target_tmp);
-                    try data.appendSlice("\x00");
-                } else {
-                    if (!consts.contains(target)) {
-                        var good = false;
-                        for (funcs.items) |item| {
-                            if (std.mem.eql(u8, item, target)) {
-                                try data.appendSlice("\x02");
-                                try data.appendSlice(target);
-                                try data.appendSlice("\x00");
-                                good = true;
-                                break;
-                            }
-                        }
-                        if (!good) {
-                            std.log.info("{s}", .{target});
-                            return error.UnknownConst;
-                        }
-                    } else {
-                        const value = consts.get(target).?;
-                        if (value > 255) {
-                            try data.appendSlice("\x01");
-                            try data.appendSlice(&std.mem.toBytes(value));
-                        } else {
-                            try data.appendSlice("\x03");
-                            try data.appendSlice(&std.mem.toBytes(@as(u8, @intCast(value))));
-                        }
-                    }
-                }
-
-                continue;
-            };
-            if (int > 255) {
-                try data.appendSlice("\x01");
-                try data.appendSlice(&std.mem.toBytes(int));
-            } else {
-                try data.appendSlice("\x03");
-                try data.appendSlice(&std.mem.toBytes(@as(u8, @intCast(int))));
-            }
-        }
+        try data.appendSlice(bin);
     }
     const len = data.items.len - prev_toc + 1;
     try toc.append(@as(u8, @intCast(len / 256)));

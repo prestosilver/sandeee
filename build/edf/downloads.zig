@@ -15,11 +15,19 @@ pub fn main(init: std.process.Init) !void {
     };
     defer out_file.close(init.io);
 
-    var writer = out_file.writer(init.io, &.{});
+    var writer_buffer: [1024]u8 = undefined;
+    var writer = out_file.writer(init.io, &writer_buffer);
+    defer writer.flush() catch {};
 
-    try writer.interface.writeAll("#Style @/style.eds\n\n");
-    try writer.interface.writeAll(":logo: [@/logo.eia]\n\n");
-    try writer.interface.writeAll(":center: -- Downloads --\n\n");
+    try writer.interface.writeAll(
+        \\ Style @/style.eds
+        \\
+        \\:logo: [@/logo.eia]
+        \\
+        \\:center: -- Downloads --
+        \\
+        \\
+    );
     var section_folder: []const u8 = "";
     defer init.gpa.free(section_folder);
 
@@ -54,5 +62,7 @@ pub fn main(init: std.process.Init) !void {
         } else return error.UnknownArg;
     }
 
-    try writer.interface.writeAll("\n:center: --- EEE Sees all ---");
+    try writer.interface.writeAll(
+        \\:center: --- EEE Sees all ---
+    );
 }
