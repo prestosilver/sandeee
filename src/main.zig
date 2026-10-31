@@ -588,6 +588,7 @@ pub fn main(init: std.process.Init) void {
                 .windowed = "Force windowed mode",
                 .cwd = "Set the working directory before loading anything.",
                 .disk = "Automatically load a disk.",
+                .recover = "Automatically recover from a disk.",
                 .extr_files = "Enable extr file system (Unsandboxed).",
                 .headless = "Enable headless mode.",
                 .headless_script = "Automatically run a script in headless mode.",
@@ -599,6 +600,7 @@ pub fn main(init: std.process.Init) void {
             windowed: bool,
             cwd: ?[]const u8,
             disk: ?[]const u8,
+            recover: ?[]const u8,
             extr_files: bool,
             headless: bool,
             headless_script: ?[]const u8,
@@ -616,6 +618,10 @@ pub fn main(init: std.process.Init) void {
     if (cli.disk) |new_disk| {
         headless.disk = new_disk;
         DiskState.autoload_disk = new_disk;
+    }
+
+    if (cli.recover) |recover_disk| {
+        DiskState.autorecover_disk = recover_disk;
     }
 
     if (cli.cwd) |new_cwd| {

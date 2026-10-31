@@ -20,6 +20,8 @@ const Vec3 = math.Vec3;
 
 const Sprite = drawers.Sprite;
 
+const files = system.files;
+
 const SpriteBatch = util.SpriteBatch;
 const DiskSorter = util.DiskSorter;
 const Shader = util.Shader;
@@ -44,6 +46,7 @@ const TOTAL_LINES = 10;
 const DISK_LIST = "0123456789ABCDEF";
 
 pub var autoload_disk: ?[]const u8 = null;
+pub var autorecover_disk: ?[]const u8 = null;
 
 face: *Font,
 font_shader: *Shader,
@@ -112,6 +115,10 @@ pub fn deinit(self: *GSDisks) void {
 
 pub fn update(self: *GSDisks, dt: f32) !void {
     if (autoload_disk) |load| {
+        if (autorecover_disk) |recover| {
+            try files.Folder.recoverDisk(load, recover, false);
+        }
+
         self.disk.* = try allocator.dupe(u8, load);
 
         try events.EventManager.event_state_change.send(.{ .target_state = .loading });
