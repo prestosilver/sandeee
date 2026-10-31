@@ -7,14 +7,14 @@ const glfw = @import("glfw");
 const zgl = @import("zgl");
 const flags = @import("flags");
 
-pub const drawers = @import("drawers.zig");
-pub const loaders = @import("loaders.zig");
-pub const system = @import("system.zig");
-pub const events = @import("events.zig");
-pub const states = @import("states.zig");
-pub const math = @import("math.zig");
-pub const util = @import("util.zig");
-pub const data = @import("data.zig");
+const drawers = @import("drawers.zig");
+const loaders = @import("loaders.zig");
+const system = @import("system.zig");
+const events = @import("events.zig");
+const states = @import("states.zig");
+const math = @import("math.zig");
+const util = @import("util.zig");
+const data = @import("data.zig");
 
 // not-op programming lang
 const al = @import("al");

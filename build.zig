@@ -118,16 +118,6 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    const glfw = b.dependency("glfw", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const glfw_host = b.dependency("glfw", .{
-        .target = b.graph.host,
-        .optimize = .debug,
-    });
-
     var commit = b.run(&.{ "git", "rev-list", "HEAD", "--count" });
 
     const disable_audio = b.option(bool, "no_audio", "Disables audio") orelse false;
@@ -151,6 +141,11 @@ pub fn build(b: *std.Build) !void {
 
     const version_write = b.addInstallFile(version_file, "../VERSION");
     const iversion_write = b.addInstallFile(iversion_file, "../IVERSION");
+
+    const glfw = b.dependency("glfw", .{
+        .target = target,
+        .optimize = optimize,
+    });
 
     const zaudio_dependency = b.dependency("zaudio", .{
         .target = target,
@@ -284,8 +279,8 @@ pub fn build(b: *std.Build) !void {
         .use_llvm = true,
     });
 
-    const exe_host_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
+    const lib_module = b.createModule(.{
+        .root_source_file = b.path("src/root.zig"),
         .target = b.graph.host,
         .optimize = .debug,
         .imports = &.{
@@ -298,8 +293,6 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "zigimg", .module = zigimg_host_module },
         },
     });
-    exe_host_module.linkLibrary(zaudio_host_dependency.artifact("miniaudio"));
-    exe_host_module.linkLibrary(glfw_host.artifact("glfw"));
 
     const image_builder_exe = b.addExecutable(.{
         .name = "eee_builder",
@@ -309,10 +302,11 @@ pub fn build(b: *std.Build) !void {
             .optimize = .debug,
             .link_libc = true,
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const eme_builder_exe = b.addExecutable(.{
@@ -323,10 +317,11 @@ pub fn build(b: *std.Build) !void {
             .optimize = .debug,
             .link_libc = true,
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const eon_builder_exe = b.addExecutable(.{
@@ -337,10 +332,11 @@ pub fn build(b: *std.Build) !void {
             .optimize = .debug,
             .link_libc = true,
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const asm_builder_mod = b.createModule(.{
@@ -358,6 +354,7 @@ pub fn build(b: *std.Build) !void {
     const asm_builder_exe = b.addExecutable(.{
         .name = "asm_builder",
         .root_module = asm_builder_mod,
+        .use_llvm = true,
     });
 
     const random_builder_exe = b.addExecutable(.{
@@ -368,10 +365,11 @@ pub fn build(b: *std.Build) !void {
             .optimize = .debug,
             .link_libc = true,
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const ase_eia_builder_exe = b.addExecutable(.{
@@ -382,10 +380,11 @@ pub fn build(b: *std.Build) !void {
             .optimize = .debug,
             .link_libc = true,
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const eia_builder_exe = b.addExecutable(.{
@@ -396,7 +395,7 @@ pub fn build(b: *std.Build) !void {
             .optimize = .debug,
             .link_libc = true,
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
                 .{ .name = "zigimg", .module = zigimg_host_module },
             },
@@ -414,10 +413,11 @@ pub fn build(b: *std.Build) !void {
             .optimize = .debug,
             .link_libc = true,
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const eff_builder_exe = b.addExecutable(.{
@@ -428,7 +428,7 @@ pub fn build(b: *std.Build) !void {
             .optimize = .debug,
             .link_libc = true,
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
                 .{ .name = "zigimg", .module = zigimg_host_module },
             },
@@ -447,10 +447,11 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
 
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const changelog_builder_exe = b.addExecutable(.{
@@ -462,10 +463,11 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
 
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const downloads_builder_exe = b.addExecutable(.{
@@ -477,10 +479,11 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
 
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     const docs_builder_exe = b.addExecutable(.{
@@ -492,10 +495,11 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
 
             .imports = &.{
-                .{ .name = "sandeee", .module = exe_host_module },
+                .{ .name = "sandeee", .module = lib_module },
                 .{ .name = "options", .module = options_host_module },
             },
         }),
+        .use_llvm = true,
     });
 
     addFileImports(b, exe_module, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
@@ -877,17 +881,16 @@ pub fn build(b: *std.Build) !void {
     const install_changelog_out = b.addInstallFile(changelog_file_path, "changelog.edf");
     install_changelog.step.dependOn(&public_step.step);
 
-    // Ideally I would use b.addOutputDirectoryArg
-    const docs_mkdir = b.addSystemCommand(&.{"mkdir"});
-    docs_mkdir.addArg("-p");
-    docs_mkdir.addDirectoryArg(b.path("zig-out/www/docs"));
-
     const docs_step = b.addRunArtifact(docs_builder_exe);
     docs_step.addArg("@/docs/");
-    docs_step.addDirectoryArg(b.path("docs"));
-    docs_step.addDirectoryArg(b.path("zig-out/www/docs"));
-    docs_step.step.dependOn(&public_step.step);
-    docs_step.step.dependOn(&docs_mkdir.step);
+    try addDirectoryInputArg(b, docs_step, b.path("docs"));
+    const docs_gen_dir = docs_step.addOutputDirectoryArg("docs");
+
+    const install_docs = b.addInstallDirectory(.{
+        .source_dir = docs_gen_dir,
+        .install_dir = .{ .custom = "www" },
+        .install_subdir = "docs",
+    });
 
     const wood_wallpaper_step = b.addRunArtifact(ase_eia_builder_exe);
     wood_wallpaper_step.addFileArg(content_path.path(b, "images/wood.ase"));
@@ -998,7 +1001,7 @@ pub fn build(b: *std.Build) !void {
     install_downloads_dir.step.dependOn(&public_step.step);
 
     const www_step = b.step("www", "Build the website");
-    www_step.dependOn(&docs_step.step);
+    www_step.dependOn(&install_docs.step);
     www_step.dependOn(&install_downloads.step);
     www_step.dependOn(&install_downloads_dir.step);
     www_step.dependOn(&install_changelog.step);
@@ -1117,23 +1120,26 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = .fast,
             .error_tracing = true,
+            .imports = &.{
+                .{ .name = "zaudio", .module = zaudio_module },
+                .{ .name = "options", .module = public_options_module },
+                .{ .name = "glfw", .module = glfw_module },
+                .{ .name = "flags", .module = flags_module },
+                .{ .name = "zgl", .module = zgl_module },
+                .{ .name = "steam", .module = steam_module },
+                .{ .name = "zigimg", .module = zigimg_module },
+            },
         });
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_mod_pub_linux.linkSystemLibrary("steam_api", .{});
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
-        exe_mod_pub_linux.addImport("options", public_options_module);
-        exe_mod_pub_linux.addImport("glfw", glfw_module);
-        exe_mod_pub_linux.addImport("flags", flags_module);
-        exe_mod_pub_linux.addImport("zgl", zgl_module);
-        exe_mod_pub_linux.addImport("steam", steam_module);
-        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
-        exe_mod_pub_linux.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Steam Linux)",
             .root_module = exe_mod_pub_linux,
+            .use_llvm = true,
         });
 
         _ = steam_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux/SandEEE");
@@ -1143,25 +1149,28 @@ pub fn build(b: *std.Build) !void {
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .fast,
             .error_tracing = true,
+            .imports = &.{
+                .{ .name = "zaudio", .module = zaudio_module },
+                .{ .name = "options", .module = public_options_module },
+                .{ .name = "glfw", .module = glfw_module },
+                .{ .name = "flags", .module = flags_module },
+                .{ .name = "zgl", .module = zgl_module },
+                .{ .name = "steam", .module = steam_module },
+                .{ .name = "zigimg", .module = zigimg_module },
+                .{ .name = "win32", .module = win32_module },
+            },
         });
         exe_mod_pub_windows.addObjectFile(rc_file);
         exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_mod_pub_windows.linkSystemLibrary("steam_api64", .{});
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
-        exe_mod_pub_windows.addImport("options", public_options_module);
-        exe_mod_pub_windows.addImport("glfw", glfw_module);
-        exe_mod_pub_windows.addImport("win32", win32_module);
-        exe_mod_pub_windows.addImport("flags", flags_module);
-        exe_mod_pub_windows.addImport("zgl", zgl_module);
-        exe_mod_pub_windows.addImport("steam", steam_module);
-        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
-        exe_mod_pub_windows.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Steam Windows)",
             .root_module = exe_mod_pub_windows,
+            .use_llvm = true,
         });
         exe_pub_windows.subsystem = .windows;
 
@@ -1213,23 +1222,26 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = .fast,
             .error_tracing = true,
+            .imports = &.{
+                .{ .name = "zaudio", .module = zaudio_module },
+                .{ .name = "options", .module = public_options_module },
+                .{ .name = "glfw", .module = glfw_module },
+                .{ .name = "flags", .module = flags_module },
+                .{ .name = "zgl", .module = zgl_module },
+                .{ .name = "steam", .module = steam_module },
+                .{ .name = "zigimg", .module = zigimg_module },
+            },
         });
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_mod_pub_linux.linkSystemLibrary("steam_api", .{});
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
-        exe_mod_pub_linux.addImport("options", public_options_module);
-        exe_mod_pub_linux.addImport("glfw", glfw_module);
-        exe_mod_pub_linux.addImport("flags", flags_module);
-        exe_mod_pub_linux.addImport("zgl", zgl_module);
-        exe_mod_pub_linux.addImport("steam", steam_module);
-        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
-        exe_mod_pub_linux.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE Demo (Steam Linux)",
             .root_module = exe_mod_pub_linux,
+            .use_llvm = true,
         });
 
         _ = steam_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux_demo/SandEEE");
@@ -1239,25 +1251,28 @@ pub fn build(b: *std.Build) !void {
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .fast,
             .error_tracing = true,
+            .imports = &.{
+                .{ .name = "zaudio", .module = zaudio_module },
+                .{ .name = "options", .module = public_options_module },
+                .{ .name = "glfw", .module = glfw_module },
+                .{ .name = "flags", .module = flags_module },
+                .{ .name = "zgl", .module = zgl_module },
+                .{ .name = "steam", .module = steam_module },
+                .{ .name = "zigimg", .module = zigimg_module },
+                .{ .name = "win32", .module = win32_module },
+            },
         });
         exe_mod_pub_windows.addObjectFile(rc_file);
         exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_mod_pub_windows.linkSystemLibrary("steam_api64", .{});
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
-        exe_mod_pub_windows.addImport("options", public_options_module);
-        exe_mod_pub_windows.addImport("glfw", glfw_module);
-        exe_mod_pub_windows.addImport("win32", win32_module);
-        exe_mod_pub_windows.addImport("flags", flags_module);
-        exe_mod_pub_windows.addImport("zgl", zgl_module);
-        exe_mod_pub_windows.addImport("steam", steam_module);
-        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
-        exe_mod_pub_windows.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE Demo (Steam Windows)",
             .root_module = exe_mod_pub_windows,
+            .use_llvm = true,
         });
         exe_pub_windows.subsystem = .windows;
 
@@ -1307,22 +1322,25 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = .fast,
             .error_tracing = true,
+            .imports = &.{
+                .{ .name = "zaudio", .module = zaudio_module },
+                .{ .name = "options", .module = public_options_module },
+                .{ .name = "glfw", .module = glfw_module },
+                .{ .name = "flags", .module = flags_module },
+                .{ .name = "zgl", .module = zgl_module },
+                .{ .name = "steam", .module = steam_module },
+                .{ .name = "zigimg", .module = zigimg_module },
+            },
         });
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
-        exe_mod_pub_linux.addImport("options", public_options_module);
-        exe_mod_pub_linux.addImport("glfw", glfw_module);
-        exe_mod_pub_linux.addImport("flags", flags_module);
-        exe_mod_pub_linux.addImport("zgl", zgl_module);
-        exe_mod_pub_linux.addImport("steam", steam_module);
-        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
-        exe_mod_pub_linux.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Itch Linux)",
             .root_module = exe_mod_pub_linux,
+            .use_llvm = true,
         });
 
         _ = itch_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux/SandEEE");
@@ -1332,24 +1350,27 @@ pub fn build(b: *std.Build) !void {
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .fast,
             .error_tracing = true,
+            .imports = &.{
+                .{ .name = "zaudio", .module = zaudio_module },
+                .{ .name = "options", .module = public_options_module },
+                .{ .name = "glfw", .module = glfw_module },
+                .{ .name = "flags", .module = flags_module },
+                .{ .name = "zgl", .module = zgl_module },
+                .{ .name = "steam", .module = steam_module },
+                .{ .name = "zigimg", .module = zigimg_module },
+                .{ .name = "win32", .module = win32_module },
+            },
         });
         exe_mod_pub_windows.addObjectFile(rc_file);
         exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
-        exe_mod_pub_windows.addImport("options", public_options_module);
-        exe_mod_pub_windows.addImport("glfw", glfw_module);
-        exe_mod_pub_windows.addImport("win32", win32_module);
-        exe_mod_pub_windows.addImport("flags", flags_module);
-        exe_mod_pub_windows.addImport("zgl", zgl_module);
-        exe_mod_pub_windows.addImport("steam", steam_module);
-        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
-        exe_mod_pub_windows.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Itch Windows)",
             .root_module = exe_mod_pub_windows,
+            .use_llvm = true,
         });
         exe_pub_windows.subsystem = .windows;
 
@@ -1401,22 +1422,25 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = .fast,
             .error_tracing = true,
+            .imports = &.{
+                .{ .name = "zaudio", .module = zaudio_module },
+                .{ .name = "options", .module = public_options_module },
+                .{ .name = "glfw", .module = glfw_module },
+                .{ .name = "flags", .module = flags_module },
+                .{ .name = "zgl", .module = zgl_module },
+                .{ .name = "steam", .module = steam_module },
+                .{ .name = "zigimg", .module = zigimg_module },
+            },
         });
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
-        exe_mod_pub_linux.addImport("options", public_options_module);
-        exe_mod_pub_linux.addImport("glfw", glfw_module);
-        exe_mod_pub_linux.addImport("flags", flags_module);
-        exe_mod_pub_linux.addImport("zgl", zgl_module);
-        exe_mod_pub_linux.addImport("steam", steam_module);
-        exe_mod_pub_linux.addImport("zigimg", zigimg_module);
-        exe_mod_pub_linux.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Itch Linux)",
             .root_module = exe_mod_pub_linux,
+            .use_llvm = true,
         });
 
         _ = itch_directory_step.addCopyFile(exe_pub_linux.getEmittedBin(), "linux-demo/SandEEE");
@@ -1426,24 +1450,27 @@ pub fn build(b: *std.Build) !void {
             .target = b.resolveTargetQuery(.{ .os_tag = .windows, .abi = .gnu }),
             .optimize = .fast,
             .error_tracing = true,
+            .imports = &.{
+                .{ .name = "zaudio", .module = zaudio_module },
+                .{ .name = "options", .module = public_options_module },
+                .{ .name = "glfw", .module = glfw_module },
+                .{ .name = "flags", .module = flags_module },
+                .{ .name = "zgl", .module = zgl_module },
+                .{ .name = "steam", .module = steam_module },
+                .{ .name = "zigimg", .module = zigimg_module },
+                .{ .name = "win32", .module = win32_module },
+            },
         });
         exe_mod_pub_windows.addObjectFile(rc_file);
         exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
-        exe_mod_pub_windows.addImport("options", public_options_module);
-        exe_mod_pub_windows.addImport("glfw", glfw_module);
-        exe_mod_pub_windows.addImport("win32", win32_module);
-        exe_mod_pub_windows.addImport("flags", flags_module);
-        exe_mod_pub_windows.addImport("zgl", zgl_module);
-        exe_mod_pub_windows.addImport("steam", steam_module);
-        exe_mod_pub_windows.addImport("zigimg", zigimg_module);
-        exe_mod_pub_windows.addImport("zaudio", zaudio_module);
         addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Itch Windows)",
             .root_module = exe_mod_pub_windows,
+            .use_llvm = true,
         });
         exe_pub_windows.subsystem = .windows;
 
