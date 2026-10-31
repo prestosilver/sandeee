@@ -11,6 +11,29 @@ var version: Version = .{
 const INTERNAL_IMAGE_FILES = [_][]const u8{ "logo", "load", "sad", "bios", "error" };
 const INTERNAL_SOUND_FILES = [_][]const u8{ "bg", "bios-blip", "bios-select" };
 
+pub fn addDirectoryInputArg(
+    b: *std.Build,
+    step: *std.Build.Step.Run,
+    path: std.Build.LazyPath,
+) !void {
+    const path_string = b.fmt("{f}", .{path});
+
+    var dir = try b.root.root_dir.handle.openDir(b.graph.io, path_string, .{ .iterate = true });
+    defer dir.close(b.graph.io);
+
+    var walker = dir.walk(b.allocator) catch return;
+    defer walker.deinit();
+
+    while (walker.next(b.graph.io) catch null) |entry| {
+        // Skip subdirectories; we only want to track actual file content changes
+        if (entry.kind != .file) continue;
+
+        // This registers the file directly to the build system's dependency tracker
+        step.addFileInput(path.path(b, entry.path));
+    }
+    step.addDirectoryArg(path);
+}
+
 pub inline fn addConvertFile(
     b: *std.Build,
     disk_steps: []const *std.Build.Step.Run,
@@ -18,7 +41,7 @@ pub inline fn addConvertFile(
     args: anytype,
     input: std.Build.LazyPath,
     disk_path: []const u8,
-) void {
+) !void {
     var current_file = input;
 
     inline for (converters, args, 0..) |converter, arg, idx| {
@@ -26,7 +49,7 @@ pub inline fn addConvertFile(
         inline for (arg) |a| {
             if (@TypeOf(a) == std.Build.LazyPath) {
                 // TODO: This should not be hardcoded to a dir
-                new_step.addDirectoryArg(a);
+                try addDirectoryInputArg(b, new_step, a);
             } else new_step.addArg(a);
         }
         new_step.addFileArg(current_file);
@@ -55,11 +78,12 @@ pub fn addEmails(
     const email_file_path = email_step.addOutputFileArg("mail.eme");
 
     email_step.addArg("--dir");
-    email_step.addDirectoryArg(content_path.path(b, box_path));
+    try addDirectoryInputArg(b, email_step, content_path.path(b, box_path));
 
     disk_image_step.addArg("--file");
     disk_image_step.addFileArg(email_file_path);
     disk_image_step.addArg(disk_path);
+    disk_image_step.step.dependOn(&email_step.step);
 }
 
 pub fn addFileImports(
@@ -564,107 +588,108 @@ pub fn build(b: *std.Build) !void {
         steam_image_step.addFileArg(paths_file);
 
         disk_image_step.addArg("--overlay");
-        disk_image_step.addDirectoryArg(overlays_path.path(b, "base"));
+        try addDirectoryInputArg(b, disk_image_step, overlays_path.path(b, "base"));
 
         demo_image_step.addArg("--overlay");
-        demo_image_step.addDirectoryArg(overlays_path.path(b, "base"));
+        try addDirectoryInputArg(b, demo_image_step, overlays_path.path(b, "base"));
+
         demo_image_step.addArg("--overlay");
-        demo_image_step.addDirectoryArg(overlays_path.path(b, "demo"));
+        try addDirectoryInputArg(b, demo_image_step, overlays_path.path(b, "demo"));
     }
 
     // debug files
-    addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/eep/asm/hello.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/window.asm"), "/prof/tests/eep/asm/window.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/texture.asm"), "/prof/tests/eep/asm/texture.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/eep/asm/fib.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/arraytest.asm"), "/prof/tests/eep/asm/arraytest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/audiotest.asm"), "/prof/tests/eep/asm/audiotest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/tabletest.asm"), "/prof/tests/eep/asm/tabletest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/input.eon"), "/prof/tests/eep/eon/input.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/console.eon"), "/prof/tests/eep/eon/console.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/color.eon"), "/prof/tests/eep/eon/color.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/bugs.eon"), "/prof/tests/eep/eon/bugs.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/tabletest.eon"), "/prof/tests/eep/eon/tabletest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/heaptest.eon"), "/prof/tests/eep/eon/heaptest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/stringtest.eon"), "/prof/tests/eep/eon/stringtest.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/paren.eon"), "/prof/tests/eep/eon/paren.eep");
-    addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/src/asm/hello.asm");
-    addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/src/asm/fib.asm");
-    addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/tests/fib.eon"), "/prof/tests/src/eon/fib.eon");
-    addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/exec/eon.eon"), "/prof/tests/src/eon/eon.eon");
-    addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/libs/eon.eon"), "/prof/tests/src/eon/eon_lib.eon");
-    addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/exec/pix.eon"), "/prof/tests/src/eon/pix.eon");
-    addConvertFile(b, &.{debug_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/debug.ase"), "/cont/icns/debug.eia");
-    addConvertFile(b, &.{debug_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/redbone.wav"), "/cont/snds/redbone.era");
+    try addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/eep/asm/hello.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/window.asm"), "/prof/tests/eep/asm/window.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/texture.asm"), "/prof/tests/eep/asm/texture.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/eep/asm/fib.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/arraytest.asm"), "/prof/tests/eep/asm/arraytest.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/audiotest.asm"), "/prof/tests/eep/asm/audiotest.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/tests/tabletest.asm"), "/prof/tests/eep/asm/tabletest.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/input.eon"), "/prof/tests/eep/eon/input.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/console.eon"), "/prof/tests/eep/eon/console.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/color.eon"), "/prof/tests/eep/eon/color.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/bugs.eon"), "/prof/tests/eep/eon/bugs.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/tabletest.eon"), "/prof/tests/eep/eon/tabletest.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/heaptest.eon"), "/prof/tests/eep/eon/heaptest.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/stringtest.eon"), "/prof/tests/eep/eon/stringtest.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/tests/paren.eon"), "/prof/tests/eep/eon/paren.eep");
+    try addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "asm/tests/hello.asm"), "/prof/tests/src/asm/hello.asm");
+    try addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "asm/tests/fib.asm"), "/prof/tests/src/asm/fib.asm");
+    try addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/tests/fib.eon"), "/prof/tests/src/eon/fib.eon");
+    try addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/exec/eon.eon"), "/prof/tests/src/eon/eon.eon");
+    try addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/libs/eon.eon"), "/prof/tests/src/eon/eon_lib.eon");
+    try addConvertFile(b, &.{debug_image_step}, &.{}, .{}, content_path.path(b, "eon/exec/pix.eon"), "/prof/tests/src/eon/pix.eon");
+    try addConvertFile(b, &.{debug_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/debug.ase"), "/cont/icns/debug.eia");
+    try addConvertFile(b, &.{debug_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/redbone.wav"), "/cont/snds/redbone.era");
 
-    addConvertFile(b, &.{steam_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/steamtool.eon"), "/exec/steamtool.eep");
+    try addConvertFile(b, &.{steam_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/steamtool.eon"), "/exec/steamtool.eep");
 
     // base images
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/email-logo.ase"), "/cont/imgs/email-logo.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons.ase"), "/cont/imgs/icons.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/ui.ase"), "/cont/imgs/ui.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/bar.ase"), "/cont/imgs/bar.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/iconsBig.ase"), "/cont/imgs/iconsBig.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/window.ase"), "/cont/imgs/window.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall1.ase"), "/cont/imgs/wall1.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall2.ase"), "/cont/imgs/wall2.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall3.ase"), "/cont/imgs/wall3.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/barlogo.ase"), "/cont/imgs/barlogo.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/cursor.ase"), "/cont/imgs/cursor.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/web.ase"), "/cont/icns/web.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/settings.ase"), "/cont/icns/settings.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/logout.ase"), "/cont/icns/logout.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/launch.ase"), "/cont/icns/launch.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/cmd.ase"), "/cont/icns/cmd.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/email.ase"), "/cont/icns/email.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/folder.ase"), "/cont/icns/folder.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/tasks.ase"), "/cont/icns/tasks.eia");
-    addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/eeedt.ase"), "/cont/icns/eeedt.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/email-logo.ase"), "/cont/imgs/email-logo.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons.ase"), "/cont/imgs/icons.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/ui.ase"), "/cont/imgs/ui.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/bar.ase"), "/cont/imgs/bar.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/iconsBig.ase"), "/cont/imgs/iconsBig.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/window.ase"), "/cont/imgs/window.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall1.ase"), "/cont/imgs/wall1.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall2.ase"), "/cont/imgs/wall2.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/wall3.ase"), "/cont/imgs/wall3.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/barlogo.ase"), "/cont/imgs/barlogo.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/cursor.ase"), "/cont/imgs/cursor.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/web.ase"), "/cont/icns/web.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/settings.ase"), "/cont/icns/settings.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/logout.ase"), "/cont/icns/logout.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/launch.ase"), "/cont/icns/launch.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/cmd.ase"), "/cont/icns/cmd.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/email.ase"), "/cont/icns/email.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/folder.ase"), "/cont/icns/folder.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/tasks.ase"), "/cont/icns/tasks.eia");
+    try addConvertFile(b, &.{disk_image_step}, &.{ase_eia_builder_exe}, .{.{}}, content_path.path(b, "images/icons/eeedt.ase"), "/cont/icns/eeedt.eia");
 
     // base audio
-    addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/login.wav"), "/cont/snds/login.era");
-    addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/logout.wav"), "/cont/snds/logout.era");
-    addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/message.wav"), "/cont/snds/message.era");
+    try addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/login.wav"), "/cont/snds/login.era");
+    try addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/logout.wav"), "/cont/snds/logout.era");
+    try addConvertFile(b, &.{disk_image_step}, &.{era_builder_exe}, .{.{}}, content_path.path(b, "audio/message.wav"), "/cont/snds/message.era");
 
     // base fonts
-    addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, .{.{}}, content_path.path(b, "images/SandEEESans.png"), "/cont/fnts/SandEEESans.eff");
-    addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, .{.{}}, content_path.path(b, "images/SandEEESans2x.png"), "/cont/fnts/SandEEESans2x.eff");
-    addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, .{.{}}, content_path.path(b, "images/SandEEEJoke.png"), "/cont/fnts/SandEEEJoke.eff");
+    try addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, .{.{}}, content_path.path(b, "images/SandEEESans.png"), "/cont/fnts/SandEEESans.eff");
+    try addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, .{.{}}, content_path.path(b, "images/SandEEESans2x.png"), "/cont/fnts/SandEEESans2x.eff");
+    try addConvertFile(b, &.{disk_image_step}, &.{eff_builder_exe}, .{.{}}, content_path.path(b, "images/SandEEEJoke.png"), "/cont/fnts/SandEEEJoke.eff");
 
     // asm executables
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/libdump.asm"), "/exec/libdump.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/dump.asm"), "/exec/dump.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/time.asm"), "/exec/time.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/aplay.asm"), "/exec/aplay.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/echo.asm"), "/exec/echo.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/libdump.asm"), "/exec/libdump.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/dump.asm"), "/exec/dump.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/time.asm"), "/exec/time.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/aplay.asm"), "/exec/aplay.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/exec/echo.asm"), "/exec/echo.eep");
 
     // eon executables
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/epkman.eon"), "/exec/epkman.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/eon.eon"), "/exec/eon.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/stat.eon"), "/exec/stat.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/player.eon"), "/exec/player.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/asm.eon"), "/exec/asm.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/pix.eon"), "/exec/pix.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/elib.eon"), "/exec/elib.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/alib.eon"), "/exec/alib.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/epkman.eon"), "/exec/epkman.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/eon.eon"), "/exec/eon.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/stat.eon"), "/exec/stat.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/player.eon"), "/exec/player.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/asm.eon"), "/exec/asm.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/pix.eon"), "/exec/pix.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/elib.eon"), "/exec/elib.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "exe", eon_lib_path }, .{"exe"} }, content_path.path(b, "eon/exec/alib.eon"), "/exec/alib.eep");
 
     // libraries
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/ui.eon"), "/libs/ui.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/heap.eon"), "/libs/heap.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/table.eon"), "/libs/table.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/asm.eon"), "/libs/asm.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/eon.eon"), "/libs/eon.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/string.asm"), "/libs/string.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/window.asm"), "/libs/window.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/texture.asm"), "/libs/texture.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/sound.asm"), "/libs/sound.ell");
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/array.asm"), "/libs/array.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/ui.eon"), "/libs/ui.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/heap.eon"), "/libs/heap.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/table.eon"), "/libs/table.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/asm.eon"), "/libs/asm.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{ eon_builder_exe, asm_builder_exe }, .{ .{ "lib", eon_lib_path }, .{"lib"} }, content_path.path(b, "eon/libs/eon.eon"), "/libs/eon.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/string.asm"), "/libs/string.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/window.asm"), "/libs/window.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/texture.asm"), "/libs/texture.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/sound.asm"), "/libs/sound.ell");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"lib"}}, content_path.path(b, "asm/libs/array.asm"), "/libs/array.ell");
 
     // includable libs
-    addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/libs/libload.asm"), "/libs/libload.eep");
-    addConvertFile(b, &.{disk_image_step}, &.{}, .{}, content_path.path(b, "eon/libs/incl/sys.eon"), "/libs/incl/sys.eon");
-    addConvertFile(b, &.{disk_image_step}, &.{}, .{}, content_path.path(b, "eon/libs/incl/libload.eon"), "/libs/incl/libload.eon");
-    addConvertFile(b, &.{disk_image_step}, &.{}, .{}, content_path.path(b, "asm/libs/incl/libload.asm"), "/libs/incl/libload.asm");
+    try addConvertFile(b, &.{disk_image_step}, &.{asm_builder_exe}, .{.{"exe"}}, content_path.path(b, "asm/libs/libload.asm"), "/libs/libload.eep");
+    try addConvertFile(b, &.{disk_image_step}, &.{}, .{}, content_path.path(b, "eon/libs/incl/sys.eon"), "/libs/incl/sys.eon");
+    try addConvertFile(b, &.{disk_image_step}, &.{}, .{}, content_path.path(b, "eon/libs/incl/libload.eon"), "/libs/incl/libload.eon");
+    try addConvertFile(b, &.{disk_image_step}, &.{}, .{}, content_path.path(b, "asm/libs/incl/libload.asm"), "/libs/incl/libload.asm");
 
     // base emails
     try addEmails(b, eme_builder_exe, email_image_step, content_path, "mail/act1/inbox", "/cont/mail/inbox.eme");
@@ -676,7 +701,7 @@ pub fn build(b: *std.Build) !void {
     try addEmails(b, eme_builder_exe, email_demo_image_step, content_path, "mail/demo", "/cont/mail/demo.eme");
 
     steam_image_step.addArg("--overlay");
-    steam_image_step.addDirectoryArg(overlays_path.path(b, "steam"));
+    try addDirectoryInputArg(b, steam_image_step, overlays_path.path(b, "steam"));
 
     const steam_desc_raw = std.mem.trim(u8, b.run(&.{ "git", "show", "-s", "--format=%s" }), &std.ascii.whitespace);
     const steam_desc = if (std.ascii.startsWithIgnoreCase(steam_desc_raw, "meta"))
@@ -775,7 +800,7 @@ pub fn build(b: *std.Build) !void {
     b.getInstallStep().dependOn(disk_step);
 
     debug_image_step.addArg("--overlay");
-    debug_image_step.addDirectoryArg(overlays_path.path(b, "debug"));
+    try addDirectoryInputArg(b, debug_image_step, overlays_path.path(b, "debug"));
 
     const rc_dep = b.dependency("rc", .{});
 
@@ -926,7 +951,7 @@ pub fn build(b: *std.Build) !void {
 
         const pong_eon_step = b.addRunArtifact(eon_builder_exe);
         pong_eon_step.addArg("exe");
-        pong_eon_step.addDirectoryArg(eon_lib_path);
+        try addDirectoryInputArg(b, pong_eon_step, eon_lib_path);
         pong_eon_step.addFileArg(content_path.path(b, "eon/exec/pong.eon"));
         const pong_asm_file = pong_eon_step.addOutputFileArg("pong.eon");
 
@@ -961,7 +986,7 @@ pub fn build(b: *std.Build) !void {
 
         const paint_eon_step = b.addRunArtifact(eon_builder_exe);
         paint_eon_step.addArg("exe");
-        paint_eon_step.addDirectoryArg(eon_lib_path);
+        try addDirectoryInputArg(b, paint_eon_step, eon_lib_path);
         paint_eon_step.addFileArg(content_path.path(b, "eon/exec/paint.eon"));
         const paint_asm_file = paint_eon_step.addOutputFileArg("paint.eon");
 
