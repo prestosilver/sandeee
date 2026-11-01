@@ -1158,7 +1158,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.linkSystemLibrary("steam_api", .{});
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
-        addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+        addFileImports(b, exe_mod_pub_linux, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Steam Linux)",
@@ -1189,7 +1189,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.linkSystemLibrary("steam_api64", .{});
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
-        addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+        addFileImports(b, exe_mod_pub_windows, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Steam Windows)",
@@ -1260,7 +1260,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.linkSystemLibrary("steam_api", .{});
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
-        addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+        addFileImports(b, exe_mod_pub_linux, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE Demo (Steam Linux)",
@@ -1291,7 +1291,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.linkSystemLibrary("steam_api64", .{});
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
-        addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+        addFileImports(b, exe_mod_pub_windows, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE Demo (Steam Windows)",
@@ -1359,7 +1359,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
-        addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+        addFileImports(b, exe_mod_pub_linux, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Itch Linux)",
@@ -1389,7 +1389,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
-        addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+        addFileImports(b, exe_mod_pub_windows, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Itch Windows)",
@@ -1459,7 +1459,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_linux.addLibraryPath(b.path("deps/lib"));
         exe_mod_pub_linux.linkLibrary(glfw_pub_linux.artifact("glfw"));
         exe_mod_pub_linux.linkLibrary(zaudio_pub_linux.artifact("miniaudio"));
-        addFileImports(b, exe_mod_pub_linux, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+        addFileImports(b, exe_mod_pub_linux, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_linux = b.addExecutable(.{
             .name = "SandEEE (Itch Linux)",
@@ -1489,7 +1489,7 @@ pub fn build(b: *std.Build) !void {
         exe_mod_pub_windows.addLibraryPath(b.path("deps/dll"));
         exe_mod_pub_windows.linkLibrary(glfw_pub_windows.artifact("glfw"));
         exe_mod_pub_windows.linkLibrary(zaudio_pub_windows.artifact("miniaudio"));
-        addFileImports(b, exe_mod_pub_windows, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+        addFileImports(b, exe_mod_pub_windows, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
         const exe_pub_windows = b.addExecutable(.{
             .name = "SandEEE (Itch Windows)",
