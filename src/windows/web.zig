@@ -94,11 +94,19 @@ pub const WebData = struct {
 
                 defer client.deinit();
 
+                var domain = url.domain;
+                var scheme: []const u8 = "https";
+
+                if (url.domain[0] == 'r') {
+                    scheme = "http";
+                    domain = url.domain[1..];
+                }
+
                 const uri = std.Uri{
-                    .scheme = "https",
+                    .scheme = scheme,
                     .user = null,
                     .password = null,
-                    .host = .{ .raw = url.domain },
+                    .host = .{ .raw = domain },
                     .path = .{ .raw = url.path },
                     .query = null,
                     .fragment = null,
