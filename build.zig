@@ -90,19 +90,18 @@ pub fn addFileImports(
     b: *std.Build,
     exe_mod: *std.Build.Module,
     content_path: std.Build.LazyPath,
-    eia_builder_exe: *std.Build.Step.Compile,
+    ase_eia_builder_exe: *std.Build.Step.Compile,
     era_builder_exe: *std.Build.Step.Compile,
     eff_builder_exe: *std.Build.Step.Compile,
 ) void {
     const image_path = content_path.path(b, "images");
 
     inline for (INTERNAL_IMAGE_FILES) |file| {
-        const pngf = image_path.path(b, file ++ ".png");
+        const asef = image_path.path(b, file ++ ".ase");
         const eiaf = file ++ ".eia";
 
-        const builder = b.addRunArtifact(eia_builder_exe);
-        builder.addFileArg(pngf);
-
+        const builder = b.addRunArtifact(ase_eia_builder_exe);
+        builder.addFileArg(asef);
         const output_file = builder.addOutputFileArg(eiaf);
 
         exe_mod.addAnonymousImport(eiaf, .{
@@ -526,7 +525,7 @@ pub fn build(b: *std.Build) !void {
         .use_llvm = true,
     });
 
-    addFileImports(b, exe_module, content_path, eia_builder_exe, era_builder_exe, eff_builder_exe);
+    addFileImports(b, exe_module, content_path, ase_eia_builder_exe, era_builder_exe, eff_builder_exe);
 
     // Module setup done, remaining is disk image and final steps
     var skel_cmd: std.array_list.Managed([]const u8) = .init(b.allocator);
