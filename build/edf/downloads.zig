@@ -20,7 +20,7 @@ pub fn main(init: std.process.Init) !void {
     defer writer.flush() catch {};
 
     try writer.interface.writeAll(
-        \\ Style @/style.eds
+        \\#Style @/style.eds
         \\
         \\:logo: [@/logo.eia]
         \\
