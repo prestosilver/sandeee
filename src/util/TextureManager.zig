@@ -10,9 +10,13 @@ const Self = @This();
 
 pub var instance: Self = .{};
 
+lock: std.Io.Mutex = .init,
 textures: std.StringHashMap(*Texture) = .init(allocator),
 
 pub fn deinit(self: *Self) void {
+    self.lock.lock(util.io) catch @panic("TextureManager lock failed");
+    defer self.lock.unlock(util.io);
+
     var iter = self.textures.iterator();
 
     while (iter.next()) |entry| {
@@ -27,6 +31,9 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn remove(self: *Self, name: []const u8) void {
+    self.lock.lock(util.io) catch @panic("TextureManager lock failed");
+    defer self.lock.unlock(util.io);
+
     if (self.textures.fetchRemove(name)) |val| {
         allocator.free(val.key);
         val.value.deinit();
@@ -35,6 +42,9 @@ pub fn remove(self: *Self, name: []const u8) void {
 }
 
 pub fn put(self: *Self, name: []const u8, texture: Texture) !void {
+    self.lock.lock(util.io) catch @panic("TextureManager lock failed");
+    defer self.lock.unlock(util.io);
+
     if (self.textures.fetchRemove(name)) |val| {
         allocator.free(val.key);
         val.value.deinit();
@@ -51,6 +61,9 @@ pub fn put(self: *Self, name: []const u8, texture: Texture) !void {
 }
 
 pub fn putMem(self: *Self, name: []const u8, texture: []const u8) !void {
+    self.lock.lock(util.io) catch @panic("TextureManager lock failed");
+    defer self.lock.unlock(util.io);
+
     if (self.textures.fetchRemove(name)) |val| {
         allocator.free(val.key);
         val.value.deinit();
@@ -70,6 +83,9 @@ pub fn putMem(self: *Self, name: []const u8, texture: []const u8) !void {
 pub fn get(self: *Self, name: []const u8) ?*Texture {
     if (std.mem.eql(u8, name, ""))
         return null;
+
+    self.lock.lock(util.io) catch @panic("TextureManager lock failed");
+    defer self.lock.unlock(util.io);
 
     return self.textures.get(name);
 }
