@@ -1051,6 +1051,25 @@ pub fn build(b: *std.Build) !void {
 
     const install_disk_tests = b.addInstallFile(install_disk_image_path, "bin/content/recovery.eee");
 
+    const docs_test_options = b.addOptions();
+    docs_test_options.addOptionPathDirectory("www_path", docs_gen_dir);
+
+    const docs_test_options_module = docs_test_options.createModule();
+
+    const docs_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/docs.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "docs_options", .module = docs_test_options_module },
+            },
+        }),
+        .use_llvm = true,
+    });
+
+    const run_docs_tests = b.addRunArtifact(docs_tests);
+
     const exe_tests = b.addTest(.{
         .root_module = exe_module,
         .use_llvm = true,
@@ -1061,6 +1080,7 @@ pub fn build(b: *std.Build) !void {
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_exe_tests.step);
+    test_step.dependOn(&run_docs_tests.step);
 
     var steam_install_disk_image_step = b.addRunArtifact(image_builder_exe);
     const steam_install_disk_image_path = steam_install_disk_image_step.addOutputFileArg("disk_steam_full.eee");

@@ -302,7 +302,7 @@ test "Headless scripts" {
 
     var logging = logging_file.writer(std.testing.io, &.{});
 
-    var start_cwd = try std.Io.Dir.cwd().openDir(std.testing.io, "tests", .{
+    var start_cwd = try std.Io.Dir.cwd().openDir(std.testing.io, "tests/esh", .{
         .iterate = true,
     });
     defer start_cwd.close(std.testing.io);
