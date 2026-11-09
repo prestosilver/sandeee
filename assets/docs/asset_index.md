@@ -27,6 +27,7 @@
 |[characters.md](../docs/characters.md)|Character sheets.|
 |[eon_boring.md](../docs/eon_boring.md)|A plan to improve eon.|
 |[eon_change.md](../docs/eon_change.md)|A breif history of eon.|
+|[pros_cons.md](../docs/pros_cons.md)|Analysis of the pros and cons of large features.|
 |[horizontal.md](../docs/horizontal.md)|The plan to get from vertical to horizontal slice.|
 |[release_checklist.md](../docs/release_checklist.md)|A checklist that must be completed on release.|
 

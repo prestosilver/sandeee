@@ -28,7 +28,6 @@ These are fixes for behaviours that are implemented wrong.
 - [ ] Wordwrap in console
 - [ ] VMS don't stop on crash, meaning they can lag the crash state.
 - [ ] Audio keeps playing on logout, or in other cases where it should stop.
-  - Will be fixed by new audio system
 - [ ] Restoring and installing a disk drops frames
 - [ ] Task manager can fullscreen and renders wrong
 - [ ] Steam in web can lag the game
@@ -52,6 +51,7 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [X] Fix random mem leak on tests
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
+- [X] Auto fix capitalization in changelog gen
 - [ ] New disk system
   - [ ] Initial impl (Started)
   - [ ] Switch APIs (Started)
@@ -77,7 +77,6 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
   - [ ] Asset files
   - [ ] In game text
 - [ ] Show load progress on web
-- [ ] Auto fix capitalization in changelog gen
 - [ ] SandEEE install disk cli flags
 - [ ] Steam tool transfer from demo.
 - [ ] Crash screen should display relative paths
@@ -110,7 +109,7 @@ These are tasks that only affect the codebase.
 - [ ] Remove duplicated assets from Ases
   - [X] ASE parser
   - [ ] Automatically export [icon.ico](../../content/images/icon.ico)
-  - [ ] Automatically export in game assets
+  - [X] Automatically export in game assets
   - [ ] Create .zig files from images with position data
   - [ ] Create theme docs from images according to [meta.md](meta.md)
   - [ ] Font from ASE
@@ -148,7 +147,7 @@ These are tasks that include adding new features to the game, or arent covered b
   - [ ] new syscalls for `new`, `play`, and `destroy`
   - [ ] Tag vm with sources to free
 - [ ] New email system
-- [ ] Add joe disk image
+- [X] Add joe disk image
 - [ ] Sys 255 impl
   - [ ] File encrypted flag
   - [ ] Rsa/Rc4 decide on how itll work.
@@ -175,6 +174,7 @@ This here is scope creep central, anti ideas if you may. They problaby should ne
 - Windowed headless mode
   - Requires removal of dependence on the global graphics instance & global spritebatch
 - Multi monitor support
+  - Same reasoning as Windowed headless mode, if thats added this can be too
 - Discord RPC support
 - Mascott
   - Crt monitor pixar lamp with cat memes
@@ -193,3 +193,4 @@ This here is scope creep central, anti ideas if you may. They problaby should ne
 - Mic input
   - Yeah would be nice since I have an audio file format
   - Need a way to stream from a pseudo file, maybe change the length with write.
+- Metabyte file system

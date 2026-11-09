@@ -3,6 +3,9 @@
 > [!NOTE]
 > To emphasise the "Stuck in time" feel of SandEEE no character developments will occur at all. This does not mean the story dosent develop, just that only software, and corperations can develop, not personalities.
 
+> [!NOTE]
+> SandEEE is being super conservative on character counts, this keeps eee feeling like a family, and character interactions easy to maintain.
+
 ## Eric Laine
 
 Email: `ERIC_L@eee.org`
@@ -24,9 +27,12 @@ Signoff: `ERIC WUZ HERE!!!`
 - Traits
     - Loves Eon
     - Super informal
-- Plot points
+    - Represents that one coworker thats always way too informal
+- Events
     - Taught Robert Rowle eon
     - Was great friends with Epsilon
+        - Always defending him
+        - Reveal that they were friends in act 2 to recontextualize the character
         - Refuses to believe that he did anything wrong
 
 ## Robert Rowle
@@ -41,7 +47,7 @@ Signoff: N/A
     - N/A
 - Traits
     - Never sent an email
-- Plot points
+- Events
     - Insecure password leaked
 
 ## Joe Moe
@@ -61,7 +67,7 @@ Joe Moe
 - Traits
     - Formal
     - Feels manipulative, but isn't
-- Plot points
+- Events
     - The first persons emails you see.
     - Taught Robert Rowle the basics of shell stuff
     - Warns Robert Rowle to not get on epsilons "bad side"
@@ -80,9 +86,10 @@ Signoff: `- Stitcher`
     - `Spencer the String Stitcher`
     - Semi formal
     - Likes anecdotal fluff
+    - Represents that one coworker that immediately decides if they like you
 - Common swaps
     - Do you want to -> wanna
-- Plot points
+- Events
     - Sibling of Robert Rowle
     - Really likes strings, like to a weird degree
     - Trained Robert in advanced string usage
@@ -99,8 +106,10 @@ Signoff: `Jen Duncan`
     - Obsessed with Assembly
 - Traits
     - Absolutely hates the term "syscall", always says "SystemCall"
+    - Represents that one coworker that cant say no
 - Common swaps
-- Plot points
+    - syscall -> SystemCall
+- Events
     - Taught Robert Rowle assembly
 
 ## Julien Weber
@@ -113,11 +122,12 @@ Signoff: `Jules`
 
 - Giveaways
     - Sounds like a boomer, "woah this simple thing is insane"
+    - Represents that one coworker thats been there forever
 - Traits
     - Think the internet is the new cool thing
 - Common Swaps
     - You All -> Y'all
-- Plot points
+- Events
     - Taught Robert Rowle edf file format
 
 ## Epsilon
@@ -137,7 +147,7 @@ Signoff: `-- Epsilon Frees All --`
     - Not actually a bad guy, outside of following malicious demands.
 - Common Swaps
     - Hi -> Hia
-- Plot points
+- Events
     - The face of the "antagonist"
         - Not actually bad, Unnamed kept him as a figure head for the operation to avoid liability.
     - Works for Unnamed
