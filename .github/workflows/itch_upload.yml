@@ -4,10 +4,12 @@ on:
   workflow_dispatch:
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     name: Run tests 
     strategy:
+      fail-fast: false
       matrix:
+        runner: [ubuntu-latest, windows-latest]
         optimize: [fast, debug]
         steam: [off, on]
     steps:
@@ -16,19 +18,20 @@ jobs:
         uses: mlugg/setup-zig@v2
         with:
           version: 0.17.0
-          cache-key: itch
+          cache-key: tests-${{ matrix.optimize }}-${{ matrix.steam }}
+      - name: Copy steam dll
+        run: |
+          cp deps/dll/steam_api64.dll ./steam_api64.dll
       - name: Run tests
         run: |
           zig build -Doptimize=${{ matrix.optimize }} -Dsteam=${{ matrix.steam }} test
-
-      - name: Summary results
-        if: always()
+      - name: Upload Results artifact
         run: |
           cat zig-out/test_output.md >> $GITHUB_STEP_SUMMARY
   itch-upload:
     runs-on: ubuntu-latest
     name: Itch Upload
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/steam_upload' 
+    if: github.ref == 'refs/heads/master'
     needs: [tests]
     steps:
       - uses: actions/checkout@v3

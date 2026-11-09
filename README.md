@@ -3,7 +3,7 @@
 > [!WARNING]
 > Some of this repo contains spoilers for SandEEE, read docs outside of the README at your own risk.
 
-[![Test](https://github.com/prestosilver/sandeee/actions/workflows/test_upload.yml/badge.svg?branch=master)](https://github.com/prestosilver/sandeee/actions/workflows/test_upload.yml)
+[![Test](https://github.com/prestosilver/sandeee/actions/workflows/test_upload.yml/badge.svg?branch=master)](https://github.com/prestosilver/sandeee/actions/workflows/test_upload.yml) [![Itch upload](https://github.com/prestosilver/sandeee/actions/workflows/itch_upload.yml/badge.svg)](https://github.com/prestosilver/sandeee/actions/workflows/itch_upload.yml)
 
 ## What is SandEEE
 
@@ -78,6 +78,16 @@ Jokes aside, SandEEE is a programming game meant to be as immersive as possible.
 | [steam_appid.txt](steam_appid.txt) | A steam appid file for quick testing, if this is removed I will have to cd into zig-out/bin to run steam builds. |
 | [steam_appid_debug.txt](steam_appid_debug.txt) | A steam debug appid file for quick testing, I ocasionally copy this to steam_appid.txt to test debugging. |
 | [VERSION](VERSION)                 | A file with the current version, used for changelog generation. |
+
+### Fun graphs
+
+<a href="https://loc-history.com/?repos=prestosilver%2Fsandeee&style=sketch">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://loc-history.com/svg?repos=prestosilver%2Fsandeee&style=sketch&theme=dark">
+    <source media="(prefers-color-scheme: light)" srcset="https://loc-history.com/svg?repos=prestosilver%2Fsandeee&style=sketch&theme=light">
+    <img alt="Lines of Code History" src="https://loc-history.com/svg?repos=prestosilver%2Fsandeee&style=sketch&theme=light">
+  </picture>
+</a>
 
 ## Legal stuffs & notices
 
