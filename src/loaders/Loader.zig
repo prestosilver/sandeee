@@ -28,6 +28,8 @@ vtable: *const Vtable,
 loaded: bool = false,
 deps: std.array_list.Managed(*Self) = .init(allocator),
 name: []const u8,
+
+// TODO: switch this to a format function on the child type
 log_text: ?[]const u8,
 
 pub fn init(data: anytype, log_text: ?[]const u8) !Self {

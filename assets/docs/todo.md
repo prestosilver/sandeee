@@ -94,18 +94,13 @@ These are tasks that only affect the codebase.
 - [X] Reorganize shaders
 - [X] Zig 0.17
 - [X] Get compile working on windows for streamlined testing
+- [ ] Breakout UI for consistency!!!
+  - [ ] ui namespace
+  - [ ] switch apps
+  - [ ] switch bar, desktop icons, and start menu
 - [ ] Magic number cleanup
   - [X] Colors
   - [ ] Sizes
-- [ ] Automatically deploy to gh pages
-  - [X] Deploy
-  - [X] Combine www into repo
-  - [X] Add new generation
-  - [X] Release tags
-  - [ ] Update debug builds to go to /alpha endpoint as homepage
-    - [X] Impl
-    - [ ] Fix paths
-    - [ ] rename /alpha to /nightly for consistency
 - [ ] Remove duplicated assets from Ases
   - [X] ASE parser
   - [ ] Automatically export [icon.ico](../../content/images/icon.ico)
@@ -115,15 +110,24 @@ These are tasks that only affect the codebase.
   - [ ] Font from ASE
     - [ ] Move ASE format parser to a lib
     - [ ] Label chars
-- [ ] Breakout UI for consistency!!!
-  - [ ] data/sizes.zig
-  - [ ] ui namespace
-  - [ ] switch apps
-  - [ ] switch bar, desktop icons, and start menu
+- [ ] Add tests for files
+- [ ] Automatically deploy to gh pages
+  - [X] Deploy
+  - [X] Combine www into repo
+  - [X] Add new generation
+  - [X] Release tags
+  - [ ] Update debug builds to go to /alpha endpoint as homepage
+    - [X] Impl
+    - [ ] Fix paths
+    - [ ] rename /alpha to /nightly for consistency
 - [ ] zig test should check www for dead links
 - [ ] zig test should check that browser dosent immediately crash 
 - [ ] Add consistent id+iota type utility
 - [ ] Rework popups to be owned by windows instead of state
+- [ ] Cleanup web building
+  - [ ] Move `assets/web/public` eee format stuff to `content/web`, and manually add to build
+  - [ ] Dont push .ase files
+  - [ ] Make testing depend on a seperate tmp dir that has generated downloads pages and things
 - [ ] Separate build for debug bc different appids!
 - [ ] Better changelog generation
   - [ ] zig build steam_changelog
