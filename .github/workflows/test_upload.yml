@@ -146,7 +146,7 @@ jobs:
           fetch-depth: 0
       - name: Generate test www
         run: |
-          zig build www
+          zig build www -Dwww_root=/alpha
           mkdir -p ../www/alpha
           cp -r zig-out/www/* ../www/alpha/
           cp ../www/alpha/changelog.edf ../www/changelog.edf

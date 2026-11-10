@@ -62,7 +62,7 @@
   - No text shall be centered unless its the footer, header, image, or diagram.
 - All docs shall include the usual `:center: --- EEE Sees all ---` footer.  [TESTED]
 - All documents shall start with a `:center: -- Title --` style for the title.
-  - After this this style will never be reused, use heading 2 then 1, then restructure. `-- H2 --` -> `- H1 -` -> redesign layout to avoid over indent.
+  - After this the center H2 style will never be reused, use heading 2 then 1, then restructure. `-- H2 --` -> `- H1 -` -> redesign layout to avoid over indent.
 - Normal text (unstyled), shall have one empty line preceding it.
 - Code blocks shall be surrounded by blank lines
 - Code blocks shall always have a heading describing their use.

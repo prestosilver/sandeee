@@ -149,6 +149,7 @@ pub fn build(b: *std.Build) !void {
     const steam_mode = b.option(enum { off, on, fake }, "steam", "Makes SandEEE build a steam build") orelse .off;
     const default_panic = b.option(bool, "default_panic", "Force the default zig panic handler") orelse false;
     const random_tests = b.option(usize, "random", "Makes SandEEE write some random files") orelse 0;
+    const www_root_name = b.option([]const u8, "www_root", "The root folder for sandeee's www") orelse "";
     const version_suffix = switch (optimize) {
         .debug => if (is_demo) "DFD" else "FFD",
         else => if (is_demo) "DFR" else "FFR",
@@ -906,8 +907,9 @@ pub fn build(b: *std.Build) !void {
     install_changelog.step.dependOn(&public_step.step);
 
     const docs_step = b.addRunArtifact(docs_builder_exe);
-    docs_step.addArg("@/docs/");
-    try addDirectoryInputArg(b, docs_step, b.path("docs"));
+    const docs_root = b.fmt("@{s}/docs/", .{www_root_name});
+    docs_step.addArg(docs_root);
+    try addDirectoryInputArg(b, docs_step, content_path.path(b, "docs"));
     const docs_gen_dir = docs_step.addOutputDirectoryArg("docs");
 
     const install_docs = b.addInstallDirectory(.{
