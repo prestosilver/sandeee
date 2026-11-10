@@ -20,13 +20,14 @@
   - Reason: Documenting one thing twice can cause contradictions later, and this document is less formal than user docs.
 - No user-facing docs shall be generated with assistants such as chatgpt.
   - Reason: Since SandEEE is focused on a different yet familiar system, picked up without reading a doc. Forcing manual writing means the user will read the docs while writing them, ensuring nothing was made up/wrong.
+- Items in this document which are tested in doc tests shall be labeled with a [TESTED] tag.
 
 ## General structure & rules
 
 - All documentation shall be hosted on [sandeee.prestosilver.info](http://sandeee.prestosilver.info)
   - this will be moved to a full domain once I get it
 - All documentation shall be locally backed up in an alternative recovery image. if the user wants it in their image it can be copied in with a recovery script.
-- Documentation will include no hidden files, these are files starting with an underscore(`_`).
+- Documentation will include no hidden files, these are files starting with an underscore(`_`). [TESTED]
 - No dead links obviously, this shall be automatically checked.
 
 ### Syscalls
@@ -53,13 +54,13 @@
   - file extension docs are named after their extension.
   - Encoding docs are named after the encodings acronym/shortened form
   - libraries are named after their .ell file name
-- All docs shall include the main style sheet with `#style @www/docs/style.eds`
+- All docs shall include the main style sheet with `#style @www/docs/style.eds` [TESTED]
   - Code blocks are made with the `:code:`, `:code-edge:` and `:code-bad:` styles
     - Bad code is defined as: any line of code that, if left in place, will prevent that block of code from compiling.
     - :code: shall be wrapped in the :code-edge: style for compat.
     - :code-edge: lines have no text.
   - No text shall be centered unless its the footer, header, image, or diagram.
-- All docs shall include the usual `:center: --- EEE Sees all ---` footer.
+- All docs shall include the usual `:center: --- EEE Sees all ---` footer.  [TESTED]
 - All documents shall start with a `:center: -- Title --` style for the title.
   - After this this style will never be reused, use heading 2 then 1, then restructure. `-- H2 --` -> `- H1 -` -> redesign layout to avoid over indent.
 - Normal text (unstyled), shall have one empty line preceding it.
@@ -72,7 +73,7 @@
 
 ### Index pages
 
-- Index pages shall exist for every folder, **including** the root.
+- Index pages shall exist for every folder, **including** the root. [TESTED]
 - They shall have a list of all sibling files or subdirs, but never both ie. if a subdir is needed there can be no siblings.
 - Index files shall never be linked to, except in back-links, or the parent directory.
 

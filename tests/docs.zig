@@ -69,3 +69,23 @@ test "Docs have Indexes" {
         }
     }
 }
+
+test "Docs have no hidden entries" {
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    var input_dir = try std.Io.Dir.cwd().openDir(io, options.www_path, .{
+        .iterate = true,
+    });
+    defer input_dir.close(io);
+
+    var iter = try input_dir.walk(allocator);
+    defer iter.deinit();
+
+    while (try iter.next(io)) |path| {
+        if (std.mem.startsWith(u8, path.basename, "_")) {
+            std.log.err("{s}", .{path.path});
+            return error.HiddenItem;
+        }
+    }
+}
