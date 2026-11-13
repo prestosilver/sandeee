@@ -33,6 +33,7 @@ EricL --> JennyB
 ```
 
 Chaos diagram:
+
 ```mermaid
 mindmap
     root(<p style="font-size:30pt;">EEE</p>)

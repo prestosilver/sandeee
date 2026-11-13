@@ -1,5 +1,7 @@
 # SandEEE Internal Documentation
 
+<!-- markdownlint-disable MD033 MD060 -->
+
 ## Notes about this document
 
 - Things that shall happen are definite, while things that should happen are definite but only when applicable.
@@ -325,7 +327,7 @@ Adds 2 numbers
   - This shall be stored next to the image file, with the same name
 - Following that there shall be a summary section defining how the image is used.
 - Following that there shall be a more descriptive area for per sprite documentation
-- Sprite areas are 1 indexed rectangles with the format `X,Y WxH` followed by ` | Description`
+- Sprite areas are 1 indexed rectangles with the format `X,Y WxH` followed by a space, and then `| Description`
 
 Example:
 
@@ -628,6 +630,7 @@ fn main() {
 Examples:
 
 examples of SandEEE versons from old (at the top) to new (at the bottom)
+
 |Version              | Reads as |
 |---------------------|----------|
 | `os:seed#3_542`     | Development build 542 of third public seed build |

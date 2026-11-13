@@ -11,22 +11,23 @@ First split will be the seperate disk upgrades, see `Implementation plans, order
 After that there are some obvious splits containing important events:
 
 - SandEEEs as a story
-    - Phase 1: Initial disk
-        - Create save, important to reference joe moe for pt 2
-        - Epsilon leaks rob r's password in readme
-        - Demo, learn to decrypt
-        - Find Joe Moes password
-    - Phase 2: Factual upgrade
-        - Upgrade from disk 2, final demo should end here?
-        - Start logging into other peoples accounts
-        - Find epsilons password
-    - Phase 3: Epsilon personal disk
-        - Figure out how to use sys 255
-        - Start reading epsilons emails which were a common stopping point in the previous acts.
+  - Phase 1: Initial disk
+    - Create save, important to reference joe moe for pt 2
+    - Epsilon leaks rob r's password in readme
+    - Demo, learn to decrypt
+    - Find Joe Moes password
+  - Phase 2: Factual upgrade
+    - Upgrade from disk 2, final demo should end here?
+    - Start logging into other peoples accounts
+    - Find epsilons password
+  - Phase 3: Epsilon personal disk
+    - Figure out how to use sys 255
+    - Start reading epsilons emails which were a common stopping point in the previous acts.
 
 ## Reqs
 
 This implies a few future features not yet implemented are required for a MVP:
+
 - Disk encryption (Could be hardcoded for MVP)
 - New email system (Could be simulated for MVP)
 - Joe moes disk

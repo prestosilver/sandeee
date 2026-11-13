@@ -38,5 +38,14 @@
     ],
     "[eon]": {
       "editor.indentSize": 4,
-    }
+    },
+    "markdownlint.lintWorkspaceGlobs": [
+      "**/*.{md,mkd,mdwn,mdown,markdown,markdn,mdtxt,mdtext,workbook}",
+      "!**/*.code-search",
+      "!**/bower_components",
+      "!**/node_modules",
+      "!**/.git",
+      "!**/vendor",
+      "!**/gpt/**"
+    ]
 }

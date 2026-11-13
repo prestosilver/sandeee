@@ -3,6 +3,7 @@
 Eon has gone through many changes throughout the years. Since it initially was only meant for internal use the team didnt often worry about full syntactical refactors.
 
 ## Early eon
+
 Initially eon was untyped, and looked alot like js without types
 
 ```eon

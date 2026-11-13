@@ -121,7 +121,7 @@ These are tasks that only affect the codebase.
     - [ ] Fix paths
     - [ ] rename /alpha to /nightly for consistency
 - [ ] zig test should check www for dead links
-- [ ] zig test should check that browser dosent immediately crash 
+- [ ] zig test should check that browser dosent immediately crash
 - [ ] Add consistent id+iota type utility
 - [ ] Rework popups to be owned by windows instead of state
 - [ ] Cleanup web building
@@ -160,8 +160,8 @@ These are tasks that include adding new features to the game, or arent covered b
   - [ ] Ascii to EEEch text converter
   - [ ] Converter will also use translations
 - [ ] Workshop favorites
-    - [X] Show in list
-    - [ ] Dedicated list
+  - [X] Show in list
+  - [ ] Dedicated list
 - [ ] Add an about SandEEE app with creator credits
 - [ ] Figure out music
   - [ ] Trevor?

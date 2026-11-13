@@ -1,5 +1,7 @@
 # Listing of SandEEE content
 
+<!-- markdownlint-disable MD033 -->
+
 This will eventually note what files were edited by Epsilon.
 
 |path|Desc|

@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD033 MD060 -->
+
 # <img src="https://raw.githubusercontent.com/prestosilver/sandeee/master/assets/steam/logo.png" alt="SandEEE" width="300" />
 
 > [!WARNING]
