@@ -36,7 +36,4 @@ There are several tools for converting real world file formats to in game ones i
 
 ## The website
 
-> [!NOTE]
-> Currently SandEEE's build system cannot build the website on windows platforms.
-
 SandEEE's website is built into `zig-out/www` with `zig build www`. In the CI I push the current release tag to the websites root, and the nightly into `/alpha`.
