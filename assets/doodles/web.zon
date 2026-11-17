@@ -1,0 +1,75 @@
+.{
+    .name = "root",
+    .kind = .panel,
+
+    .props = .{
+        .direction = .column,
+    },
+
+    .children = .{
+        .{
+            .name = "menu_bar",
+            .kind = .panel,
+
+            .props = .{
+                .direction = .row,
+            },
+
+            .children = .{
+                .{
+                    .name = "btn_reload",
+                    .kind = .button,
+
+                    .props = .{
+                        .icon = .reload,
+                    },
+                },
+                .{
+                    .name = "btn_back",
+                    .kind = .button,
+
+                    .props = .{
+                        .icon = .back,
+                    },
+                },
+                .{
+                    .name = "btn_forward",
+                    .kind = .button,
+
+                    .props = .{
+                        .icon = .forward,
+                    },
+                },
+                .{
+                    .name = "input_text",
+                    .kind = .input,
+
+                    .props = .{
+                        .placeholder = "Enter url",
+                        .expand_h = true,
+                    },
+                },
+                .{
+                    .name = "favorite_btn",
+                    .kind = .button,
+
+                    .props = .{
+                        .icon = .star,
+                    },
+                },
+            },
+        },
+        .{
+            .name = "content",
+            .kind = .panel,
+
+            .props = .{
+                .direction = .column,
+            },
+
+            .children = .{
+                .{ .kind = .texture },
+            },
+        },
+    },
+}
