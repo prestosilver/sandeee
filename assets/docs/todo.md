@@ -96,12 +96,37 @@ These are tasks that only affect the codebase.
 - [X] Get compile working on windows for streamlined testing
 - [ ] Breakout UI for consistency!!!
   - [ ] ui namespace
+    - [ ] Basics
+    - [ ] Labels
+    - [ ] Buttons
+    - [ ] Scroll elements
+    - [ ] Themes
+    - [ ] Images
+    - [ ] Input boxes
+      - [ ] Password mode
+      - [ ] Directory filters
+    - [ ] Icon menu
+    - [ ] Dropdowns
+    - [ ] Canvases
   - [ ] switch apps
-  - [ ] switch bar, desktop icons, and start menu
-- [ ] Magic number cleanup
+    - [ ] Email
+    - [ ] Welcome
+    - [ ] Web
+    - [ ] App launcher
+    - [ ] Cmd
+    - [ ] Editor
+    - [ ] Files
+    - [ ] Settings
+    - [ ] Popups
+    - [ ] Updater
+  - [ ] switch game ui
+    - [ ] bar
+    - [ ] desktop icons
+    - [ ] start menu
+- [X] Magic number cleanup
   - [X] Colors
-  - [ ] Sizes
-- [ ] Remove duplicated assets from Ases
+  - [X] ~~Sizes~~ Included in ui
+- [ ] Remove duplicated assets from ase files
   - [X] ASE parser
   - [ ] Automatically export [icon.ico](../../content/images/icon.ico)
   - [X] Automatically export in game assets
