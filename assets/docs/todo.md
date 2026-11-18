@@ -52,10 +52,11 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [X] Recheck changelog items
 - [X] Separate build for demo bc different appids!
 - [X] Auto fix capitalization in changelog gen
+- [ ] Remove pseudo files
 - [ ] New disk system
   - [ ] Initial impl (Started)
   - [ ] Switch APIs (Started)
-  - [ ] Pseudo files
+  - ~~Pseudo files~~
   - [ ] Old disk upgrading
 - [ ] Add actual pickers to settings ui
 - [ ] Control the dithering, and crt of the shader separately
@@ -173,7 +174,7 @@ These are tasks that include adding new features to the game, or arent covered b
   - [X] Switch to zaudio
   - [X] Remove openal bindings
   - [X] Remove openal dlls
-  - [ ] new syscalls for `new`, `play`, and `destroy`
+  - [ ] new io entries for `new`, `play`, and `destroy`
   - [ ] Tag vm with sources to free
 - [ ] New email system
 - [X] Add joe disk image
@@ -221,5 +222,6 @@ This here is scope creep central, anti ideas if you may. They problaby should ne
   - This is the same deal as macos, if theres a demand and I can afford it Ill support it.
 - Mic input
   - Yeah would be nice since I have an audio file format
-  - Need a way to stream from a pseudo file, maybe change the length with write.
+  - ~~Need a way to stream from a pseudofile, maybe change the length with write.~~
+    - Not anymore
 - Metabyte file system
