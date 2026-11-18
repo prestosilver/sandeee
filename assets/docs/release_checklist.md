@@ -65,7 +65,7 @@
     - [X] Run `zig build www`
     - [X] Push www submodule to github
 
-## os:seed#11 - A big lore update
+## os:seed#11 - No clue anymore
 
 - [ ] Planned features
   - [X] #10_588
@@ -75,13 +75,13 @@
     - [X] Reword README
     - [X] Fix steam upload bugs
   - [X] Fix program names and versions
+  - [ ] New UI system
   - [ ] New disk system
   - [ ] New email system
   - [ ] Accessibility wizard
   - [ ] Control the dithering, and crt of the shader separately
   - [ ] Add an about SandEEE app
   - [ ] Fix Wordwrap in console
-  - [ ] Fix disk ordering
   - [ ] Add joe disk image
   - [ ] Sys 255 impl
 - [ ] Going into release day

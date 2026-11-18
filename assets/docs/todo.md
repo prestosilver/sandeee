@@ -53,6 +53,10 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [X] Separate build for demo bc different appids!
 - [X] Auto fix capitalization in changelog gen
 - [ ] Remove pseudo files
+  - [ ] Add new syscalls
+  - [ ] Copy old system behaviour to new
+  - [ ] Remove old system
+  - [ ] Fix broken libs
 - [ ] New disk system
   - [ ] Initial impl (Started)
   - [ ] Switch APIs (Started)
@@ -64,6 +68,7 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
   - [ ] In BootEEE
   - [ ] On first boot
 - [ ] Task bar sucks
+  - [ ] Switch to new UI
   - [ ] Overflow support
   - [ ] Dedicated time area
 - [ ] Windowed mode
@@ -72,8 +77,10 @@ These are tasks that dont fix existing behaviour, but improve accessibility for 
 - [ ] Consistent color parsing
   - [ ] Design new format
 - [ ] <=> in font should not connect at all
-- [ ] All buttons should look disabled when disabled
+- ~~All buttons should look disabled when disabled~~ (In new ui)
 - [ ] Workshop item SandEEE version tags
+  - [ ] On upload
+  - [ ] Check in browser, tag "Unsupported" on mismatch
 - [ ] Translation system
   - [ ] Asset files
   - [ ] In game text
@@ -109,7 +116,11 @@ These are tasks that only affect the codebase.
     - [ ] Icon menu
     - [ ] Dropdowns
     - [ ] Canvases
+    - [ ] Console
+    - [ ] Throbber
+    - [ ] Creation macro
   - [ ] switch apps
+    - [ ] Make UI window wrapper
     - [ ] Email
     - [ ] Welcome
     - [ ] Web
@@ -144,7 +155,7 @@ These are tasks that only affect the codebase.
   - [X] Release tags
   - [ ] Update debug builds to go to /alpha endpoint as homepage
     - [X] Impl
-    - [ ] Fix paths
+    - [X] Fix paths
     - [ ] rename /alpha to /nightly for consistency
 - [ ] zig test should check www for dead links
 - [ ] zig test should check that browser dosent immediately crash
@@ -211,7 +222,7 @@ This here is scope creep central, anti ideas if you may. They problaby should ne
 - Make main state machine comptime polymorphic to avoid that layer of indirection.
 - Switch to wio as a window library
 - Give vms multi window support
-- changelog.html link
+- changelog.html generation & link
 - Macos support
   - need a xcode license
   - Honestly, if the game does well and I somehow make enough money from it to afford this it wont be hard to add.
