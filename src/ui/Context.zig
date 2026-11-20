@@ -140,8 +140,8 @@ pub fn pushClip(self: *Context, clip: Rect) void {
     else if (self.clip_stack.items.len > 0) blk: {
         const x1 = @max(self.sprite_batch.scissor.?.x, clip.x + self.offset.x);
         const y1 = @max(self.sprite_batch.scissor.?.y, clip.y + self.offset.y);
-        const x2 = @max(self.sprite_batch.scissor.?.x + self.sprite_batch.scissor.?.w, clip.x + self.offset.x + clip.w);
-        const y2 = @max(self.sprite_batch.scissor.?.y + self.sprite_batch.scissor.?.h, clip.y + self.offset.y + clip.h);
+        const x2 = @min(self.sprite_batch.scissor.?.x + self.sprite_batch.scissor.?.w, clip.x + self.offset.x + clip.w);
+        const y2 = @min(self.sprite_batch.scissor.?.y + self.sprite_batch.scissor.?.h, clip.y + self.offset.y + clip.h);
 
         break :blk .{
             .x = x1,
