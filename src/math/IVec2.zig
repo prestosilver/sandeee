@@ -3,6 +3,7 @@ const std = @import("std");
 const math = @import("../math.zig");
 
 const Vec3 = math.Vec3;
+const Vec2 = math.Vec2;
 
 x: usize = 0.0,
 y: usize = 0.0,
@@ -71,5 +72,15 @@ pub fn setAngle(a: IVec2, angle: f32) f32 {
 }
 
 pub fn toVec3(self: IVec2) Vec3 {
-    return .{ .x = self.x, .y = self.y };
+    return .{
+        .x = @floatFromInt(self.x),
+        .y = @floatFromInt(self.y),
+    };
+}
+
+pub fn toVec2(self: IVec2) Vec2 {
+    return .{
+        .x = @floatFromInt(self.x),
+        .y = @floatFromInt(self.y),
+    };
 }

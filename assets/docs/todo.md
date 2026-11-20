@@ -104,13 +104,22 @@ These are tasks that only affect the codebase.
 - [X] Get compile working on windows for streamlined testing
 - [ ] Breakout UI for consistency!!!
   - [ ] ui namespace
-    - [ ] Basics
-    - [ ] Labels
-    - [ ] Buttons
+    - [X] Basics
+    - [X] Labels
+    - [X] Buttons
+    - [X] Images
+    - [ ] Check Boxes
+        - [X] Rendering/Sizing
+        - [ ] Clicking
     - [ ] Scroll elements
+        - [X] Rendering/Sizing
+        - [ ] Events
     - [ ] Themes
-    - [ ] Images
+        - [ ] Structure
+        - [ ] Switching
+        - [ ] Load IO Interface 
     - [ ] Input boxes
+      - [X] Impl
       - [ ] Password mode
       - [ ] Directory filters
     - [ ] Icon menu
@@ -120,9 +129,10 @@ These are tasks that only affect the codebase.
     - [ ] Throbber
     - [ ] Creation macro
   - [ ] switch apps
+    - [X] Welcome (To test new UI)
     - [ ] Make UI window wrapper
     - [ ] Email
-    - [ ] Welcome
+      - [ ] Started
     - [ ] Web
     - [ ] App launcher
     - [ ] Cmd
@@ -131,7 +141,7 @@ These are tasks that only affect the codebase.
     - [ ] Settings
     - [ ] Popups
     - [ ] Updater
-  - [ ] switch game ui
+  - [ ] switch game UI
     - [ ] bar
     - [ ] desktop icons
     - [ ] start menu

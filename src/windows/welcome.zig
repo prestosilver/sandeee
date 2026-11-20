@@ -8,6 +8,7 @@ const events = @import("../events.zig");
 const math = @import("../math.zig");
 const util = @import("../util.zig");
 const data = @import("../data.zig");
+const ui = @import("../ui.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -42,110 +43,48 @@ const DEMO_TIME: std.Io.Duration = .fromSeconds(30 * 60);
 pub const WelcomeData = struct {
     const Self = @This();
 
-    shell: Shell,
-    stop_time: std.Io.Timestamp,
-    check_box: [2]Sprite,
-    cb_pos: Rect = .{ .w = 0, .h = 0 },
-    shader: *Shader,
+    ui_context: ui.Context,
+    ui_root: ui.Panel,
+    ui_label: ui.Label,
+    ui_title: ui.Label,
+    ui_version: ui.Label,
+    ui_spacer: ui.Element,
+    ui_check: ui.CheckBox,
+    ui_bottom: ui.Panel,
 
     pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         props.no_min = true;
 
-        var y: f32 = 0;
+        self.ui_context.font_shader = font_shader;
+        self.ui_context.font = font;
 
-        try font.draw(.{
-            .shader = font_shader,
-            .text = "Welcome to Sand" ++ strings.EEE,
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
-            .scale = 2,
-        });
-        y += 3;
+        props.clear_color = .gray(0.75);
 
-        if (options.is_demo) {
-            try font.draw(.{
-                .shader = font_shader,
-                .text = "trial version",
-                .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
-                .scale = 1,
-            });
-        }
-        y += 2;
+        self.ui_context.arrange();
+        self.ui_context.draw(bnds.getCorner(.top_left));
+    }
 
-        try font.draw(.{
-            .shader = font_shader,
-            .text = "  " ++ strings.BULLET ++ " Open " ++ strings.EEE ++ "Mail to get started",
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
-            .scale = 1,
-        });
-        y += 2;
+    pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
+        self.ui_context.keyEvent(keycode, mods, down);
+    }
 
-        try font.draw(.{
-            .shader = font_shader,
-            .text = "  " ++ strings.BULLET ++ " You can open Xplore anytime for help",
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
-            .scale = 1,
-        });
-        y += 2;
+    pub fn move(self: *Self, x: f32, y: f32) void {
+        self.ui_context.mouseMove(.{ .x = x, .y = y });
+    }
 
-        try font.draw(.{
-            .shader = font_shader,
-            .text = "  " ++ strings.BULLET ++ " Remember " ++ strings.EEE ++ " is monitoring your activity",
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
-            .scale = 1,
-        });
-        y += 2;
-
-        if (options.is_demo) {
-            props.no_close = true;
-            const remaining: f32 = @floatFromInt(std.Io.Clock.real.now(util.io).durationTo(self.stop_time).toSeconds());
-            if (remaining < 0) @panic("Trial Over");
-
-            const demo_text = try allocator.print("Trial ends in {}m", .{@as(usize, @intFromFloat(remaining / 60.0))});
-            defer allocator.free(demo_text);
-
-            try font.draw(.{
-                .shader = font_shader,
-                .text = demo_text,
-                .pos = .{ .x = bnds.x + 6, .y = bnds.y + 26 + y * font.size },
-                .scale = 2,
-                .color = .red,
-            });
-
-            y += 3;
-        } else {
-            // draw checkbox
-            const cb: usize = if (config.SettingManager.instance.getBool("show_welcome") orelse true) 0 else 1;
-
-            self.cb_pos = Rect{
-                .x = 6,
-                .y = 80 + 10 * font.size,
-                .w = 20,
-                .h = 20,
-            };
-
-            try SpriteBatch.global.draw(Sprite, &self.check_box[cb], self.shader, .{ .x = bnds.x + 6, .y = bnds.y + 80 + 10 * font.size });
-
-            try font.draw(.{
-                .shader = font_shader,
-                .text = "Never show again.",
-                .pos = .{ .x = bnds.x + 20 + 6, .y = bnds.y + 80 + 10 * font.size },
-            });
-        }
-
-        const version_text = "(" ++ strings.SANDEEE_VERSION_TEXT ++ ")";
-
-        try font.draw(.{
-            .shader = font_shader,
-            .text = version_text,
-            .pos = .{ .x = bnds.x + 6, .y = bnds.y + bnds.h - 1.5 * font.size },
+    pub fn moveResize(self: *Self, bounds: Rect) void {
+        self.ui_context.resize(.{
+            .x = @intFromFloat(bounds.w + 12),
+            .y = @intFromFloat(bounds.h + 40),
         });
     }
 
-    pub fn click(self: *Self, _: Vec2, pos: Vec2, btn: i32, kind: events.input.ClickKind) !void {
-        if (btn == 0 and kind == .single and self.cb_pos.contains(pos)) {
-            const new_value: bool = config.SettingManager.instance.getBool("show_welcome") orelse true;
-            try config.SettingManager.instance.setBool("show_welcome", !new_value);
-        }
+    pub fn char(self: *Self, char_string: []const u8, _: i32) !void {
+        self.ui_context.textInput(char_string);
+    }
+
+    pub fn click(self: *Self, _: Vec2, _: Vec2, btn: i32, kind: events.input.ClickKind) !void {
+        self.ui_context.mouseClick(kind, btn);
     }
 
     pub fn deinit(self: *Self) void {
@@ -157,23 +96,81 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.create(WelcomeData);
 
     self.* = .{
-        .shell = .{
-            .root = .home,
-            .vm = null,
-        },
-        .check_box = .{
-            .atlas("ui", .{
-                .source = .{ .x = 4.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                .size = .{ .x = 20, .y = 20 },
+        .ui_title = .{
+            .base = .init(&self.ui_context, "root", ui.Label, .{
+                .focusable = false,
+                .margin = .{
+                    .bottom = 30,
+                },
             }),
-            .atlas("ui", .{
-                .source = .{ .x = 6.0 / 8.0, .y = 6.0 / 8.0, .w = 2.0 / 8.0, .h = 2.0 / 8.0 },
-                .size = .{ .x = 20, .y = 20 },
+            .scale = 2.0,
+            .text = "Welcome to Sand" ++ strings.EEE,
+        },
+        .ui_label = .{
+            .base = .init(&self.ui_context, "root", ui.Label, .{
+                .focusable = false,
+            }),
+            .text = "  " ++ strings.BULLET ++ " Open " ++ strings.EEE ++ "Mail to get started\n\n" ++
+                "  " ++ strings.BULLET ++ " You can open Xplore anytime for help\n\n" ++
+                "  " ++ strings.BULLET ++ " Remember " ++ strings.EEE ++ " is monitoring your activity",
+        },
+        .ui_version = .{
+            .base = .init(&self.ui_context, "version", ui.Label, .{
+                .focusable = false,
+            }),
+            .text = "(" ++ strings.SANDEEE_VERSION_TEXT ++ ")",
+        },
+        .ui_check = .{
+            .label = "Never show again.",
+            .base = .init(&self.ui_context, "root", ui.CheckBox, .{
+                .desired_size = .{ .w = 200, .h = 30 },
             }),
         },
-        .shader = shader,
-        .stop_time = std.Io.Clock.real.now(util.io).addDuration(DEMO_TIME),
+        .ui_spacer = .init(&self.ui_context, "root", ui.Panel, .{
+            .focusable = false,
+            .expand_h = true,
+        }),
+        .ui_bottom = .{
+            .base = .init(&self.ui_context, "root", ui.Panel, .{
+                .focusable = false,
+                .desired_size = .{ .w = 600, .h = 350 },
+                .padding = .all(20),
+            }),
+            .flags = .{
+                .justify = .space_between,
+                .direction = .row,
+                .wrap = true,
+            },
+        },
+        .ui_root = .{
+            .base = .init(&self.ui_context, "bottom", ui.Panel, .{
+                .focusable = false,
+                .padding = .{ .top = 20 },
+            }),
+            .flags = .{
+                .direction = .column,
+                .wrap = true,
+            },
+        },
+        .ui_context = .{
+            .sprite_batch = &SpriteBatch.global,
+            .shader = shader,
+            .font = undefined,
+            .font_shader = undefined,
+            .window_size = .{ .x = 640, .y = 480 },
+            .clip_stack = .initBuffer(&self.ui_context.clip_stack_buf),
+            .root = &self.ui_root.base,
+        },
     };
+
+    try self.ui_root.base.onEvent(.resize, ui.Element.Handlers.resize_with_max, undefined);
+    self.ui_root.base.addChild(&self.ui_title.base);
+    self.ui_root.base.addChild(&self.ui_label.base);
+    self.ui_root.base.addChild(&self.ui_spacer);
+    self.ui_root.base.addChild(&self.ui_bottom.base);
+
+    self.ui_bottom.base.addChild(&self.ui_check.base);
+    self.ui_bottom.base.addChild(&self.ui_version.base);
 
     var result = try Window.Data.WindowContents.init(self, "Welcome", "Welcome To Sand" ++ strings.EEE ++ if (options.is_demo) " (trial)" else "", .gray(0.75));
     result.props.size.min = .{ .x = 600, .y = 350 };

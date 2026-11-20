@@ -16,6 +16,15 @@ pub const cyan: Color = .{ .r = 0.0, .g = 1.0, .b = 1.0 };
 pub const blue: Color = .{ .r = 0.0, .g = 0.0, .b = 1.0 };
 pub const magenta: Color = .{ .r = 1.0, .g = 0.0, .b = 1.0 };
 
+pub fn withAlpha(self: Color, a: f32) Color {
+    return .{
+        .r = self.r,
+        .g = self.g,
+        .b = self.b,
+        .a = a,
+    };
+}
+
 pub fn gray(pc: f32) Color {
     return .{ .r = pc, .g = pc, .b = pc };
 }

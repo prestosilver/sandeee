@@ -9,6 +9,7 @@ const events = @import("../events.zig");
 const math = @import("../math.zig");
 const util = @import("../util.zig");
 const data = @import("../data.zig");
+const ui = @import("../ui.zig");
 
 const Window = drawers.Window;
 const Sprite = drawers.Sprite;
@@ -45,12 +46,20 @@ const EmailData = struct {
 
     const LoginInput = enum { username, password };
 
+    ui_root: ui.Panel,
+    ui_login_logo: ui.Icon,
+    ui_login_root: ui.Panel,
+    ui_submit_button: ui.Button,
+    ui_context: ui.Context,
+    ui_username: ui.Input,
+    ui_password: ui.Input,
+    ui_scroll: ui.Scroll,
+
     backbg: Sprite,
     reply: Sprite,
     divx: Sprite,
     dive: Sprite,
     back: Sprite,
-    logo: Sprite,
     sel: Sprite,
     text_box: [2]Sprite,
     button: [2]Sprite,
@@ -70,109 +79,19 @@ const EmailData = struct {
     login: ?[]const u8 = null,
     login_error: ?[]const u8 = null,
     login_input: ?LoginInput = null,
-    login_text: [2][]u8,
 
     pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         self.bnds = bnds.*;
 
+        self.ui_context.font_shader = font_shader;
+        self.ui_context.font = font;
+
+        props.clear_color = .gray(0.75);
+
+        self.ui_context.arrange();
+        self.ui_context.draw(bnds.getCorner(.top_left));
+
         if (self.login == null) {
-            props.clear_color = .gray(0.75);
-            if (self.login_error) |err| {
-                try font.draw(.{
-                    .shader = font_shader,
-                    .text = err,
-                    .pos = .{
-                        .x = bnds.x,
-                        .y = bnds.y,
-                    },
-                });
-            }
-
-            const center = bnds.x + @floor(bnds.w * 0.5 - 50.0);
-            const center_y = bnds.y + (bnds.h * 0.5) + 150;
-
-            self.login_pos = .{ .x = center - bnds.x, .y = center_y - bnds.y };
-
-            try SpriteBatch.global.draw(Sprite, &self.logo, self.shader, .{ .x = center - 26 - 50, .y = center_y - 250 });
-
-            self.text_box[0].data.size.x = 200;
-            self.text_box[1].data.size.x = 196;
-            self.button[0].data.size.x = 100;
-            self.button[1].data.size.x = 96;
-            try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 102 });
-            try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 100 });
-
-            try font.draw(.{
-                .shader = font_shader,
-                .text = "Password:",
-                .pos = .{
-                    .x = center - 100,
-                    .y = center_y - 100,
-                },
-            });
-
-            {
-                const text = try std.mem.concat(allocator, u8, &.{
-                    self.login_text[1],
-                    if (self.login_input != null and self.login_input.? == .password) "|" else "",
-                });
-                defer allocator.free(text);
-
-                try font.draw(.{
-                    .shader = font_shader,
-                    .text = text,
-                    .pos = .{
-                        .x = center + 5,
-                        .y = center_y - 100,
-                    },
-                });
-            }
-
-            try SpriteBatch.global.draw(Sprite, &self.text_box[0], self.shader, .{ .x = center, .y = center_y - 152 });
-            try SpriteBatch.global.draw(Sprite, &self.text_box[1], self.shader, .{ .x = center + 2, .y = center_y - 150 });
-
-            try font.draw(.{
-                .shader = font_shader,
-                .text = "Username:",
-                .pos = .{
-                    .x = center - 100,
-                    .y = center_y - 150,
-                },
-            });
-
-            {
-                const text = try std.mem.concat(allocator, u8, &.{
-                    self.login_text[0],
-                    if (self.login_input != null and self.login_input.? == .username) "|" else "",
-                });
-                defer allocator.free(text);
-
-                try font.draw(.{
-                    .shader = font_shader,
-                    .text = text,
-                    .pos = .{
-                        .x = center + 5,
-                        .y = center_y - 150,
-                    },
-                });
-            }
-
-            try SpriteBatch.global.draw(Sprite, &self.button[0], self.shader, .{ .x = center, .y = center_y - 52 });
-            try SpriteBatch.global.draw(Sprite, &self.button[1], self.shader, .{ .x = center + 2, .y = center_y - 50 });
-
-            const size = font.sizeText(.{
-                .text = "Login",
-            });
-
-            try font.draw(.{
-                .shader = font_shader,
-                .text = "Login",
-                .pos = .{
-                    .x = self.bnds.x + @floor((self.bnds.w - size.x) * 0.5),
-                    .y = center_y - 50,
-                },
-            });
-
             return;
         }
 
@@ -354,7 +273,9 @@ const EmailData = struct {
         });
     }
 
-    pub fn key(self: *Self, keycode: i32, _: i32, down: bool) !void {
+    pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
+        self.ui_context.keyEvent(keycode, mods, down);
+
         if (!down) return;
 
         if (self.login == null) {
@@ -370,28 +291,6 @@ const EmailData = struct {
 
             if (keycode == glfw.KeyEnter) {
                 self.onLogin();
-            }
-
-            if (keycode == glfw.KeyBackspace) {
-                if (self.login_input) |input|
-                    switch (input) {
-                        .username => {
-                            if (self.login_text[0].len == 0) return;
-
-                            self.login_text[0] = try allocator.realloc(
-                                self.login_text[0],
-                                self.login_text[0].len - 1,
-                            );
-                        },
-                        .password => {
-                            if (self.login_text[1].len == 0) return;
-
-                            self.login_text[1] = try allocator.realloc(
-                                self.login_text[1],
-                                self.login_text[1].len - 1,
-                            );
-                        },
-                    };
             }
 
             return;
@@ -612,11 +511,12 @@ const EmailData = struct {
 
     pub fn onLogin(self: *Self) void {
         for (data.email.LOGINS) |login| {
-            if (std.mem.eql(u8, self.login_text[0], login.user)) {
-                if (std.mem.eql(u8, self.login_text[1], login.password)) {
+            if (std.mem.eql(u8, self.ui_username.input.items, login.user)) {
+                if (std.mem.eql(u8, self.ui_password.input.items, login.password)) {
                     self.login = login.user;
                     self.login_error = "";
                     log.debug("Logged into email as `{s}`", .{login.user});
+                    self.ui_login_root.base.flags.visible = false;
                 } else {
                     self.login_error = "Invalid Password";
                 }
@@ -629,6 +529,8 @@ const EmailData = struct {
     }
 
     pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: i32, kind: ClickKind) !void {
+        self.ui_context.mouseClick(kind, btn);
+
         if (kind == .down or kind == .up) return;
 
         if (self.login == null) {
@@ -753,46 +655,112 @@ const EmailData = struct {
         }
     }
 
-    pub fn char(self: *Self, char_string: []const u8, _: i32) !void {
-        // TODO: better multi char support
-        if (std.mem.eql(u8, char_string, "\n")) return;
-        if (char_string.len > 1) return;
+    pub fn move(self: *Self, x: f32, y: f32) void {
+        self.ui_context.mouseMove(.{ .x = x, .y = y });
+    }
 
-        if (self.login == null) {
-            if (self.login_input) |input|
-                switch (input) {
-                    .username => {
-                        const old = self.login_text[0];
-                        defer allocator.free(old);
-                        self.login_text[0] = try std.mem.concat(allocator, u8, &.{
-                            self.login_text[0],
-                            char_string,
-                        });
-                    },
-                    .password => {
-                        const old = self.login_text[1];
-                        defer allocator.free(old);
-                        self.login_text[1] = try std.mem.concat(allocator, u8, &.{
-                            self.login_text[1],
-                            char_string,
-                        });
-                    },
-                };
-        }
+    pub fn moveResize(self: *Self, bounds: Rect) void {
+        self.ui_context.resize(.{
+            .x = @intFromFloat(bounds.w + 12),
+            .y = @intFromFloat(bounds.h + 40),
+        });
+    }
+
+    pub fn char(self: *Self, char_string: []const u8, _: i32) !void {
+        self.ui_context.textInput(char_string);
     }
 
     pub fn deinit(self: *Self) void {
-        for (self.login_text) |i|
-            allocator.free(i);
-
         allocator.destroy(self);
     }
 };
+
+fn clickLogin(_: *ui.Element, _: *ui.Context.Event, userdata: *anyopaque) bool {
+    const self: EmailData = @ptrCast(userdata);
+
+    self.onLogin();
+
+    return true;
+}
 
 pub fn init(shader: *Shader) !Window.Data.WindowContents {
     const self = try allocator.create(EmailData);
 
     self.* = .{
+        .ui_root = .{
+            .base = .init(&self.ui_context, "root", ui.Panel, .{
+                .focusable = false,
+                .desired_size = .{ .w = 600, .h = 400 },
+            }),
+            .flags = .{
+                .direction = .column,
+                .content_align = .center,
+                .wrap = true,
+                .justify = .center,
+            },
+        },
+        .ui_login_root = .{
+            .base = .init(&self.ui_context, "root", ui.Panel, .{
+                .focusable = false,
+                .desired_size = .{ .w = 600, .h = 400 },
+            }),
+            .flags = .{
+                .direction = .column,
+                .content_align = .center,
+                .wrap = true,
+                .justify = .center,
+            },
+        },
+        .ui_login_logo = .{
+            .base = .init(&self.ui_context, "logo", ui.Icon, .{
+                .focusable = false,
+            }),
+            .sprite = .atlas("email-logo", .{
+                .source = .{ .w = 1, .h = 1 },
+                .size = .{ .x = 256, .y = 72 },
+            }),
+        },
+        .ui_submit_button = .{
+            .base = .init(&self.ui_context, "submit", ui.Button, .{
+                .padding = .all(5),
+                .margin = .all(5),
+            }),
+            .label = "Login",
+        },
+        .ui_username = .{
+            .base = .init(&self.ui_context, "username", ui.Input, .{
+                .padding = .all(5),
+                .margin = .all(5),
+                .min_size = .{ .x = 300 },
+            }),
+            .placeholder = "username",
+            .input = .initBuffer(&self.ui_username.input_buf),
+        },
+        .ui_password = .{
+            .base = .init(&self.ui_context, "password", ui.Input, .{
+                .padding = .all(5),
+                .margin = .all(5),
+                .min_size = .{ .x = 300 },
+            }),
+            .password = true,
+            .placeholder = "password",
+            .input = .initBuffer(&self.ui_password.input_buf),
+        },
+        .ui_scroll = .{
+            .base = .init(&self.ui_context, "scroll", ui.Scroll, .{
+                .padding = .all(5),
+                .margin = .all(5),
+            }),
+        },
+        .ui_context = .{
+            .sprite_batch = &SpriteBatch.global,
+            .shader = shader,
+            .font = undefined,
+            .font_shader = undefined,
+            .window_size = .{ .x = 640, .y = 480 },
+            .clip_stack = .initBuffer(&self.ui_context.clip_stack_buf),
+            .root = &self.ui_root.base,
+        },
         .divx = .atlas("ui", .{
             .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
             .size = .{ .x = 2 },
@@ -800,10 +768,6 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         .dive = .atlas("ui", .{
             .source = .{ .x = 2.0 / 8.0, .y = 0.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
             .size = .{ .y = 2 },
-        }),
-        .logo = .atlas("email-logo", .{
-            .source = .{ .w = 1, .h = 1 },
-            .size = .{ .x = 256, .y = 72 },
         }),
         .sel = .atlas("ui", .{
             .source = .{ .x = 3.0 / 8.0, .y = 4.0 / 8.0, .w = 1.0 / 8.0, .h = 1.0 / 8.0 },
@@ -844,8 +808,27 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
             }),
         },
         .shader = shader,
-        .login_text = [2][]u8{ &.{}, &.{} },
     };
+
+    self.ui_username.addEvents();
+    self.ui_password.addEvents();
+
+    try self.ui_root.base.onEvent(.resize, ui.Element.Handlers.resize_with_max, undefined);
+
+    self.ui_root.base.addChild(&self.ui_login_root.base);
+
+    self.ui_login_root.base.addChild(&self.ui_login_logo.base);
+    self.ui_login_root.base.addChild(&self.ui_username.base);
+    self.ui_login_root.base.addChild(&self.ui_password.base);
+    self.ui_login_root.base.addChild(&self.ui_submit_button.base);
+
+    // self.ui_root.base.addChild(&self.ui_scroll.base);
+    // self.ui_scroll.content = &self.ui_login_root.base;
+
+    // self.ui_login_root.base.addChild(&self.ui_login_logo.base);
+    // self.ui_login_root.base.addChild(&self.ui_username.base);
+    // self.ui_login_root.base.addChild(&self.ui_password.base);
+    // self.ui_login_root.base.addChild(&self.ui_submit_button.base);
 
     return Window.Data.WindowContents.init(self, "email", strings.EEE ++ "Mail", .gray(0.75));
 }

@@ -866,12 +866,12 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
                 .y = window.data.pos.y + 36,
             }));
         }
-    } else {
-        for (self.windows.items) |window| {
-            if (window.data.min) continue;
+    }
 
-            try window.data.contents.move(self.mousepos.x - window.data.pos.x, self.mousepos.y - window.data.pos.y - 36);
-        }
+    for (self.windows.items) |window| {
+        if (window.data.min) continue;
+
+        try window.data.contents.move(self.mousepos.x - window.data.pos.x, self.mousepos.y - window.data.pos.y - 36);
     }
 }
 

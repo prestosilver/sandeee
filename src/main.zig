@@ -15,6 +15,7 @@ const states = @import("states.zig");
 const math = @import("math.zig");
 const util = @import("util.zig");
 const data = @import("data.zig");
+const ui = @import("ui.zig");
 
 // not-op programming lang
 const al = @import("al");
@@ -543,6 +544,7 @@ fn fullPanic(msg: []const u8, first_trace_addr: ?usize) noreturn {
 
             break;
         };
+
         blit() catch |err| {
             log.log.err("The crash state failed to blit {}", .{err});
 

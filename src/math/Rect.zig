@@ -49,6 +49,15 @@ pub fn location(self: Rect) Vec2 {
     return .{ .x = self.x, .y = self.y };
 }
 
+pub fn offset(self: Rect, add_offset: Vec2) Rect {
+    return .{
+        .x = self.x + add_offset.x,
+        .y = self.y + add_offset.y,
+        .w = self.w,
+        .h = self.h,
+    };
+}
+
 pub fn size(self: Rect) Vec2 {
     return .{ .x = self.w, .y = self.h };
 }
@@ -68,5 +77,14 @@ pub fn initCentered(parent: Rect, w: f32, h: f32) Rect {
         .y = parent.y + (parent.h - h) / 2,
         .w = w,
         .h = h,
+    };
+}
+
+pub fn expand(parent: Rect, border: f32) Rect {
+    return Rect{
+        .x = parent.x - border,
+        .y = parent.y - border,
+        .w = parent.w + 2 * border,
+        .h = parent.h + 2 * border,
     };
 }
