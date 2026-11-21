@@ -46,14 +46,21 @@ const EmailData = struct {
 
     const LoginInput = enum { username, password };
 
+    ui_context: ui.Context,
     ui_root: ui.Panel,
+
     ui_login_logo: ui.Icon,
     ui_login_root: ui.Panel,
-    ui_submit_button: ui.Button,
-    ui_context: ui.Context,
-    ui_username: ui.Input,
-    ui_password: ui.Input,
-    ui_scroll: ui.Scroll,
+    ui_login_error: ui.Label,
+    ui_login_submit: ui.Button,
+    ui_login_username: ui.Input,
+    ui_login_password: ui.Input,
+
+    ui_list_root: ui.Panel,
+    ui_list_scroll: ui.Scroll,
+    ui_list_scroll_root: ui.Panel,
+
+    ui_list_text: ui.Label,
 
     backbg: Sprite,
     reply: Sprite,
@@ -74,11 +81,7 @@ const EmailData = struct {
     rowsize: f32 = 0,
     bnds: Rect = .{ .w = 0, .h = 0 },
 
-    login_pos: Vec2 = .{ .x = 0, .y = 0 },
-
     login: ?[]const u8 = null,
-    login_error: ?[]const u8 = null,
-    login_input: ?LoginInput = null,
 
     pub fn draw(self: *Self, font_shader: *Shader, bnds: *Rect, font: *Font, props: *Window.Data.WindowContents.WindowProps) !void {
         self.bnds = bnds.*;
@@ -91,166 +94,166 @@ const EmailData = struct {
         self.ui_context.arrange();
         self.ui_context.draw(bnds.getCorner(.top_left));
 
-        if (self.login == null) {
-            return;
-        }
+        // if (self.login == null) {
+        //     return;
+        // }
 
-        props.clear_color = .white;
+        // props.clear_color = .white;
 
-        if (props.scroll == null) {
-            props.scroll = .{
-                .offset_start = 0,
-            };
-        }
+        // if (props.scroll == null) {
+        //     props.scroll = .{
+        //         .offset_start = 0,
+        //     };
+        // }
 
-        self.offset = &props.scroll.?.value;
+        // self.offset = &props.scroll.?.value;
 
-        if (self.scroll_top) {
-            props.scroll.?.value = 0;
-            self.scroll_top = false;
-        }
+        // if (self.scroll_top) {
+        //     props.scroll.?.value = 0;
+        //     self.scroll_top = false;
+        // }
 
-        props.scroll.?.offset_start = if (self.viewing == null) 0 else 38;
+        // props.scroll.?.offset_start = if (self.viewing == null) 0 else 38;
 
-        self.divx.data.size.y = bnds.h;
+        // self.divx.data.size.y = bnds.h;
 
-        try SpriteBatch.global.draw(Sprite, &self.divx, self.shader, .{ .x = bnds.x + 100, .y = bnds.y });
+        // try SpriteBatch.global.draw(Sprite, &self.divx, self.shader, .{ .x = bnds.x + 100, .y = bnds.y });
 
-        self.dive.data.size.x = bnds.w - 102;
+        // self.dive.data.size.x = bnds.w - 102;
 
-        if (self.viewing == null) {
-            var y: f32 = bnds.y + 4.0 - props.scroll.?.value;
+        // if (self.viewing == null) {
+        //     var y: f32 = bnds.y + 4.0 - props.scroll.?.value;
 
-            for (mail.EmailManager.instance.emails.items) |*email| {
-                var inbox = false;
+        //     for (mail.EmailManager.instance.emails.items) |*email| {
+        //         var inbox = false;
 
-                if (std.mem.eql(u8, email.from, self.login.?)) {
-                    inbox = true;
+        //         if (std.mem.eql(u8, email.from, self.login.?)) {
+        //             inbox = true;
 
-                    if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
-                } else if (email.box != self.box) continue;
-                var color: Color = .black;
-                if (builtin.mode == .debug) {
-                    if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) color.a = 0.5;
-                } else {
-                    if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
-                }
+        //             if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
+        //         } else if (email.box != self.box) continue;
+        //         var color: Color = .black;
+        //         if (builtin.mode == .debug) {
+        //             if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) color.a = 0.5;
+        //         } else {
+        //             if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
+        //         }
 
-                const text = try allocator.print("{s} - {s}", .{ email.from, email.subject });
-                defer allocator.free(text);
+        //         const text = try allocator.print("{s} - {s}", .{ email.from, email.subject });
+        //         defer allocator.free(text);
 
-                if (email.is_complete or inbox) {
-                    try font.draw(.{
-                        .shader = font_shader,
-                        .text = strings.CHECK,
-                        .pos = .{ .x = bnds.x + 108, .y = y - 2 },
-                        .color = .green,
-                    });
-                }
+        //         if (email.is_complete or inbox) {
+        //             try font.draw(.{
+        //                 .shader = font_shader,
+        //                 .text = strings.CHECK,
+        //                 .pos = .{ .x = bnds.x + 108, .y = y - 2 },
+        //                 .color = .green,
+        //             });
+        //         }
 
-                try font.draw(.{
-                    .shader = font_shader,
-                    .text = text,
-                    .pos = .{ .x = bnds.x + 108 + 20, .y = y - 2 },
-                    .color = color,
-                    .wrap = bnds.w - 108 - 20 - 20,
-                    .maxlines = 1,
-                });
+        //         try font.draw(.{
+        //             .shader = font_shader,
+        //             .text = text,
+        //             .pos = .{ .x = bnds.x + 108 + 20, .y = y - 2 },
+        //             .color = color,
+        //             .wrap = bnds.w - 108 - 20 - 20,
+        //             .maxlines = 1,
+        //         });
 
-                if (self.selected != null and email == self.selected.?) {
-                    self.sel.data.size.x = bnds.w - 102;
-                    self.sel.data.size.y = font.size + 8 - 2;
+        //         if (self.selected != null and email == self.selected.?) {
+        //             self.sel.data.size.x = bnds.w - 102;
+        //             self.sel.data.size.y = font.size + 8 - 2;
 
-                    try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 102, .y = y - 4 });
-                }
+        //             try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x + 102, .y = y - 4 });
+        //         }
 
-                try SpriteBatch.global.draw(Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = y + font.size + 2 });
+        //         try SpriteBatch.global.draw(Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = y + font.size + 2 });
 
-                y += font.size + 8;
-            }
+        //         y += font.size + 8;
+        //     }
 
-            self.rowsize = font.size + 8;
+        //     self.rowsize = font.size + 8;
 
-            props.scroll.?.maxy = y - bnds.y - bnds.h + props.scroll.?.value - 6;
-        } else {
-            self.backbg.data.size.x = bnds.w - 102;
+        //     props.scroll.?.maxy = y - bnds.y - bnds.h + props.scroll.?.value - 6;
+        // } else {
+        //     self.backbg.data.size.x = bnds.w - 102;
 
-            try SpriteBatch.global.draw(Sprite, &self.backbg, self.shader, .{ .x = bnds.x + 102, .y = bnds.y - 2 });
-            try SpriteBatch.global.draw(Sprite, &self.reply, self.shader, .{ .x = bnds.x + 104, .y = bnds.y });
-            try SpriteBatch.global.draw(Sprite, &self.back, self.shader, .{ .x = bnds.x + 144, .y = bnds.y });
+        //     try SpriteBatch.global.draw(Sprite, &self.backbg, self.shader, .{ .x = bnds.x + 102, .y = bnds.y - 2 });
+        //     try SpriteBatch.global.draw(Sprite, &self.reply, self.shader, .{ .x = bnds.x + 104, .y = bnds.y });
+        //     try SpriteBatch.global.draw(Sprite, &self.back, self.shader, .{ .x = bnds.x + 144, .y = bnds.y });
 
-            const email = self.viewing.?;
+        //     const email = self.viewing.?;
 
-            const from = try allocator.print("from: {s}", .{email.from});
-            defer allocator.free(from);
-            try font.draw(.{
-                .shader = font_shader,
-                .text = from,
-                .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 },
-            });
+        //     const from = try allocator.print("from: {s}", .{email.from});
+        //     defer allocator.free(from);
+        //     try font.draw(.{
+        //         .shader = font_shader,
+        //         .text = from,
+        //         .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 },
+        //     });
 
-            const subject = try allocator.print("subject: {s}", .{email.subject});
-            defer allocator.free(subject);
-            try font.draw(.{
-                .shader = font_shader,
-                .text = subject,
-                .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 + font.size },
-            });
+        //     const subject = try allocator.print("subject: {s}", .{email.subject});
+        //     defer allocator.free(subject);
+        //     try font.draw(.{
+        //         .shader = font_shader,
+        //         .text = subject,
+        //         .pos = .{ .x = bnds.x + 108, .y = bnds.y + 44 + font.size },
+        //     });
 
-            const y = bnds.y + 44 + font.size * 2 - props.scroll.?.value;
+        //     const y = bnds.y + 44 + font.size * 2 - props.scroll.?.value;
 
-            try SpriteBatch.global.draw(Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = bnds.y + 44 + font.size * 2 });
+        //     try SpriteBatch.global.draw(Sprite, &self.dive, self.shader, .{ .x = bnds.x + 102, .y = bnds.y + 44 + font.size * 2 });
 
-            {
-                const old_scissor = SpriteBatch.global.scissor;
-                defer SpriteBatch.global.scissor = old_scissor;
+        //     {
+        //         const old_scissor = SpriteBatch.global.scissor;
+        //         defer SpriteBatch.global.scissor = old_scissor;
 
-                SpriteBatch.global.scissor.?.y = bnds.y + 48 + font.size * 2;
-                SpriteBatch.global.scissor.?.h = bnds.h - 48 - font.size * 2;
+        //         SpriteBatch.global.scissor.?.y = bnds.y + 48 + font.size * 2;
+        //         SpriteBatch.global.scissor.?.h = bnds.h - 48 - font.size * 2;
 
-                try font.draw(.{
-                    .shader = font_shader,
-                    .text = email.contents,
-                    .pos = .{ .x = bnds.x + 108, .y = y + 2 },
-                    .wrap = bnds.w - 116.0 - 20,
-                });
-            }
+        //         try font.draw(.{
+        //             .shader = font_shader,
+        //             .text = email.contents,
+        //             .pos = .{ .x = bnds.x + 108, .y = y + 2 },
+        //             .wrap = bnds.w - 116.0 - 20,
+        //         });
+        //     }
 
-            props.scroll.?.maxy = font.sizeText(.{
-                .text = email.contents,
-                .wrap = bnds.w - 116.0 - 20,
-            }).y;
-        }
+        //     props.scroll.?.maxy = font.sizeText(.{
+        //         .text = email.contents,
+        //         .wrap = bnds.w - 116.0 - 20,
+        //     }).y;
+        // }
 
-        for (mail.EmailManager.instance.boxes.items, 0..) |box, idx| {
-            if (idx == self.box) {
-                const text = try allocator.print("{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
-                defer allocator.free(text);
+        // for (mail.EmailManager.instance.boxes.items, 0..) |box, idx| {
+        //     if (idx == self.box) {
+        //         const text = try allocator.print("{s} {d:0>3}%", .{ box[0..@min(3, box.len)], mail.EmailManager.instance.getPc(idx) });
+        //         defer allocator.free(text);
 
-                try font.draw(.{
-                    .shader = font_shader,
-                    .text = text,
-                    .pos = .{
-                        .x = bnds.x + 2,
-                        .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)),
-                    },
-                });
-            } else {
-                try font.draw(.{
-                    .shader = font_shader,
-                    .text = box,
-                    .pos = .{
-                        .x = bnds.x + 2,
-                        .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)),
-                    },
-                });
-            }
-        }
+        //         try font.draw(.{
+        //             .shader = font_shader,
+        //             .text = text,
+        //             .pos = .{
+        //                 .x = bnds.x + 2,
+        //                 .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)),
+        //             },
+        //         });
+        //     } else {
+        //         try font.draw(.{
+        //             .shader = font_shader,
+        //             .text = box,
+        //             .pos = .{
+        //                 .x = bnds.x + 2,
+        //                 .y = bnds.y + font.size * @as(f32, @floatFromInt(idx)),
+        //             },
+        //         });
+        //     }
+        // }
 
-        self.sel.data.size.x = 100;
-        self.sel.data.size.y = font.size;
+        // self.sel.data.size.x = 100;
+        // self.sel.data.size.y = font.size;
 
-        try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x, .y = bnds.y + font.size * @as(f32, @floatFromInt(self.box)) });
+        // try SpriteBatch.global.draw(Sprite, &self.sel, self.shader, .{ .x = bnds.x, .y = bnds.y + font.size * @as(f32, @floatFromInt(self.box)) });
     }
 
     pub fn submitFile(self: *Self) !void {
@@ -276,36 +279,21 @@ const EmailData = struct {
     pub fn key(self: *Self, keycode: i32, mods: i32, down: bool) !void {
         self.ui_context.keyEvent(keycode, mods, down);
 
-        if (!down) return;
+        // if (!down) return;
 
-        if (self.login == null) {
-            if (keycode == glfw.KeyTab) {
-                self.login_input = if (self.login_input) |li|
-                    switch (li) {
-                        .username => .password,
-                        .password => .username,
-                    }
-                else
-                    .username;
-            }
+        // if (self.login == null)
+        //     return;
 
-            if (keycode == glfw.KeyEnter) {
-                self.onLogin();
-            }
+        // if (keycode == glfw.KeyR) {
+        //     if (self.viewing) |viewing| {
+        //         for (viewing.condition) |condition| {
+        //             if (condition != .submit_contains and condition != .submit_runs and condition != .submit_lib) return;
 
-            return;
-        }
-
-        if (keycode == glfw.KeyR) {
-            if (self.viewing) |viewing| {
-                for (viewing.condition) |condition| {
-                    if (condition != .submit_contains and condition != .submit_runs and condition != .submit_lib) return;
-
-                    try self.submitFile();
-                    return;
-                }
-            }
-        }
+        //             try self.submitFile();
+        //             return;
+        //         }
+        //     }
+        // }
     }
 
     // TODO: reimplement old
@@ -511,148 +499,114 @@ const EmailData = struct {
 
     pub fn onLogin(self: *Self) void {
         for (data.email.LOGINS) |login| {
-            if (std.mem.eql(u8, self.ui_username.input.items, login.user)) {
-                if (std.mem.eql(u8, self.ui_password.input.items, login.password)) {
+            if (std.mem.eql(u8, self.ui_login_username.input.items, login.user)) {
+                if (std.mem.eql(u8, self.ui_login_password.input.items, login.password)) {
                     self.login = login.user;
-                    self.login_error = "";
+                    self.ui_login_error.setText("");
                     log.debug("Logged into email as `{s}`", .{login.user});
-                    self.ui_login_root.base.flags.visible = false;
+                    self.ui_login_root.base.setVisible(false);
+                    self.ui_list_root.base.setVisible(true);
                 } else {
-                    self.login_error = "Invalid Password";
+                    self.ui_login_error.setText("Invalid Password");
                 }
 
                 break;
             }
         } else {
-            self.login_error = "Account dosent exist";
+            std.log.info("Email does not exist: `{s}`", .{self.ui_login_username.input.items});
+            self.ui_login_error.setText("Account dosent exist");
         }
     }
 
     pub fn click(self: *Self, size: Vec2, mousepos: Vec2, btn: i32, kind: ClickKind) !void {
         self.ui_context.mouseClick(kind, btn);
 
-        if (kind == .down or kind == .up) return;
+        _ = size;
+        _ = mousepos;
 
-        if (self.login == null) {
-            {
-                const box_bounds = Rect{
-                    .x = self.login_pos.x,
-                    .y = self.login_pos.y - 102,
-                    .w = 200,
-                    .h = 32,
-                };
+        // if (kind == .down or kind == .up) return;
 
-                if (box_bounds.contains(mousepos)) {
-                    self.login_input = .password;
-                    return;
-                }
-            }
+        // if (self.login == null)
+        //     return;
 
-            {
-                const box_bounds = Rect{
-                    .x = self.login_pos.x,
-                    .y = self.login_pos.y - 150,
-                    .w = 200,
-                    .h = 32,
-                };
+        // switch (btn) {
+        //     0 => {
+        //         if (self.viewing) |_| {
+        //             if (kind == .single) {
+        //                 const reply_bnds = Rect{ .x = 104, .w = 32, .h = 32 };
+        //                 if (reply_bnds.contains(mousepos)) {
+        //                     try self.submitFile();
+        //                 }
 
-                if (box_bounds.contains(mousepos)) {
-                    self.login_input = .username;
-                    return;
-                }
-            }
+        //                 const back_bnds = Rect{ .x = 144, .w = 32, .h = 32 };
+        //                 if (back_bnds.contains(mousepos)) {
+        //                     self.viewing = null;
+        //                     return;
+        //                 }
+        //             }
+        //         }
 
-            {
-                const btn_bounds = Rect{
-                    .x = @floor((self.bnds.w - 100) * 0.5),
-                    .y = self.login_pos.y - 50,
-                    .w = 100,
-                    .h = 32,
-                };
+        //         const cont_bnds = Rect{ .x = 102, .w = size.x - 102, .h = size.y };
+        //         if (cont_bnds.contains(mousepos)) {
+        //             if (self.viewing != null) return;
 
-                if (btn_bounds.contains(mousepos)) {
-                    self.onLogin();
-                    return;
-                }
-            }
+        //             var y: i32 = 2 - @as(i32, @intFromFloat(self.offset.*));
 
-            return;
-        }
+        //             for (mail.EmailManager.instance.emails.items) |*email| {
+        //                 if (std.mem.eql(u8, email.from, self.login.?)) {
+        //                     if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
+        //                 } else if (email.box != self.box) continue;
 
-        switch (btn) {
-            0 => {
-                if (self.viewing) |_| {
-                    if (kind == .single) {
-                        const reply_bnds = Rect{ .x = 104, .w = 32, .h = 32 };
-                        if (reply_bnds.contains(mousepos)) {
-                            try self.submitFile();
-                        }
+        //                 if (builtin.mode != .debug) {
+        //                     if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
+        //                 }
 
-                        const back_bnds = Rect{ .x = 144, .w = 32, .h = 32 };
-                        if (back_bnds.contains(mousepos)) {
-                            self.viewing = null;
-                            return;
-                        }
-                    }
-                }
+        //                 const bnds = Rect{
+        //                     .x = 102,
+        //                     .y = @as(f32, @floatFromInt(y)),
+        //                     .w = size.x - 102,
+        //                     .h = self.rowsize,
+        //                 };
 
-                const cont_bnds = Rect{ .x = 102, .w = size.x - 102, .h = size.y };
-                if (cont_bnds.contains(mousepos)) {
-                    if (self.viewing != null) return;
+        //                 y += @intFromFloat(self.rowsize);
 
-                    var y: i32 = 2 - @as(i32, @intFromFloat(self.offset.*));
+        //                 if (bnds.contains(mousepos)) {
+        //                     if (kind == .double) {
+        //                         try mail.EmailManager.instance.viewEmail(email);
+        //                         self.selected = null;
+        //                         self.viewing = email;
+        //                         self.scroll_top = true;
+        //                     } else if (kind == .single) {
+        //                         self.selected = email;
+        //                     }
+        //                 }
+        //             }
+        //         } else {
+        //             const bnds = Rect{ .w = 102, .h = size.y };
+        //             if (bnds.contains(mousepos)) {
+        //                 const id = mousepos.y / 24.0;
 
-                    for (mail.EmailManager.instance.emails.items) |*email| {
-                        if (std.mem.eql(u8, email.from, self.login.?)) {
-                            if (self.box != mail.EmailManager.instance.boxes.items.len - 1) continue;
-                        } else if (email.box != self.box) continue;
+        //                 self.box = @as(u8, @intCast(@as(i32, @intFromFloat(id + 0.5))));
 
-                        if (builtin.mode != .debug) {
-                            if (!mail.EmailManager.instance.getEmailVisible(email, self.login.?)) continue;
-                        }
+        //                 self.viewing = null;
+        //                 self.scroll_top = true;
 
-                        const bnds = Rect{
-                            .x = 102,
-                            .y = @as(f32, @floatFromInt(y)),
-                            .w = size.x - 102,
-                            .h = self.rowsize,
-                        };
+        //                 if (kind == .single) {
+        //                     if (self.box < 0) {
+        //                         self.box = 0;
+        //                     } else if (self.box > mail.EmailManager.instance.boxes.items.len - 1) {
+        //                         self.box = mail.EmailManager.instance.boxes.items.len - 1;
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     },
+        //     else => {},
+        // }
+    }
 
-                        y += @intFromFloat(self.rowsize);
-
-                        if (bnds.contains(mousepos)) {
-                            if (kind == .double) {
-                                try mail.EmailManager.instance.viewEmail(email);
-                                self.selected = null;
-                                self.viewing = email;
-                                self.scroll_top = true;
-                            } else if (kind == .single) {
-                                self.selected = email;
-                            }
-                        }
-                    }
-                } else {
-                    const bnds = Rect{ .w = 102, .h = size.y };
-                    if (bnds.contains(mousepos)) {
-                        const id = mousepos.y / 24.0;
-
-                        self.box = @as(u8, @intCast(@as(i32, @intFromFloat(id + 0.5))));
-
-                        self.viewing = null;
-                        self.scroll_top = true;
-
-                        if (kind == .single) {
-                            if (self.box < 0) {
-                                self.box = 0;
-                            } else if (self.box > mail.EmailManager.instance.boxes.items.len - 1) {
-                                self.box = mail.EmailManager.instance.boxes.items.len - 1;
-                            }
-                        }
-                    }
-                }
-            },
-            else => {},
-        }
+    pub fn scroll(self: *Self, x: f32, y: f32) void {
+        self.ui_context.mouseWheel(.{ .x = x, .y = y });
     }
 
     pub fn move(self: *Self, x: f32, y: f32) void {
@@ -661,8 +615,8 @@ const EmailData = struct {
 
     pub fn moveResize(self: *Self, bounds: Rect) void {
         self.ui_context.resize(.{
-            .x = @intFromFloat(bounds.w + 12),
-            .y = @intFromFloat(bounds.h + 40),
+            .x = @intFromFloat(bounds.w - 12),
+            .y = @intFromFloat(bounds.h - 40),
         });
     }
 
@@ -676,7 +630,7 @@ const EmailData = struct {
 };
 
 fn clickLogin(_: *ui.Element, _: *ui.Context.Event, userdata: *anyopaque) bool {
-    const self: EmailData = @ptrCast(userdata);
+    const self: *EmailData = @ptrCast(@alignCast(userdata));
 
     self.onLogin();
 
@@ -689,7 +643,6 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
     self.* = .{
         .ui_root = .{
             .base = .init(&self.ui_context, "root", ui.Panel, .{
-                .focusable = false,
                 .desired_size = .{ .w = 600, .h = 400 },
             }),
             .flags = .{
@@ -700,10 +653,7 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
             },
         },
         .ui_login_root = .{
-            .base = .init(&self.ui_context, "root", ui.Panel, .{
-                .focusable = false,
-                .desired_size = .{ .w = 600, .h = 400 },
-            }),
+            .base = .init(&self.ui_context, "login_root", ui.Panel, .{}),
             .flags = .{
                 .direction = .column,
                 .content_align = .center,
@@ -712,31 +662,31 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
             },
         },
         .ui_login_logo = .{
-            .base = .init(&self.ui_context, "logo", ui.Icon, .{
-                .focusable = false,
-            }),
+            .base = .init(&self.ui_context, "logo", ui.Icon, .{}),
             .sprite = .atlas("email-logo", .{
                 .source = .{ .w = 1, .h = 1 },
                 .size = .{ .x = 256, .y = 72 },
             }),
         },
-        .ui_submit_button = .{
-            .base = .init(&self.ui_context, "submit", ui.Button, .{
+        .ui_login_error = .{
+            .base = .init(&self.ui_context, "error", ui.Label, .{
                 .padding = .all(5),
                 .margin = .all(5),
+                .min_size = .{ .y = 60 },
             }),
-            .label = "Login",
+            .text = "",
+            .color = .red,
         },
-        .ui_username = .{
+        .ui_login_username = .{
             .base = .init(&self.ui_context, "username", ui.Input, .{
                 .padding = .all(5),
                 .margin = .all(5),
                 .min_size = .{ .x = 300 },
             }),
             .placeholder = "username",
-            .input = .initBuffer(&self.ui_username.input_buf),
+            .input = .initBuffer(&self.ui_login_username.input_buf),
         },
-        .ui_password = .{
+        .ui_login_password = .{
             .base = .init(&self.ui_context, "password", ui.Input, .{
                 .padding = .all(5),
                 .margin = .all(5),
@@ -744,13 +694,47 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
             }),
             .password = true,
             .placeholder = "password",
-            .input = .initBuffer(&self.ui_password.input_buf),
+            .input = .initBuffer(&self.ui_login_password.input_buf),
         },
-        .ui_scroll = .{
-            .base = .init(&self.ui_context, "scroll", ui.Scroll, .{
+        .ui_login_submit = .{
+            .base = .init(&self.ui_context, "submit", ui.Button, .{
                 .padding = .all(5),
                 .margin = .all(5),
             }),
+            .label = "Login",
+        },
+        .ui_list_root = .{
+            .base = .init(&self.ui_context, "list_root", ui.Panel, .{
+                .visible = false,
+                .expand_w = true,
+                .expand_h = true,
+            }),
+            .flags = .{
+                .direction = .row,
+                .content_align = .center,
+                .wrap = true,
+                .justify = .center,
+            },
+        },
+        .ui_list_scroll = .{
+            .base = .init(&self.ui_context, "scroll", ui.Scroll, .{
+                .expand_w = true,
+                .expand_h = true,
+            }),
+            .flags = .{},
+        },
+        .ui_list_scroll_root = .{
+            .base = .init(&self.ui_context, "list_root", ui.Panel, .{}),
+            .flags = .{},
+        },
+        .ui_list_text = .{
+            .base = .init(&self.ui_context, "error", ui.Label, .{
+                .padding = .all(5),
+                .margin = .all(5),
+                .min_size = .{ .y = 600 },
+            }),
+            .text = "Test",
+            .color = .red,
         },
         .ui_context = .{
             .sprite_batch = &SpriteBatch.global,
@@ -810,17 +794,25 @@ pub fn init(shader: *Shader) !Window.Data.WindowContents {
         .shader = shader,
     };
 
-    self.ui_username.addEvents();
-    self.ui_password.addEvents();
+    try self.ui_root.base.onEvent(.resize, ui.Element.Handlers.resizeWithMax, undefined);
+    try self.ui_login_submit.base.onEvent(.mouse_click, clickLogin, self);
 
-    try self.ui_root.base.onEvent(.resize, ui.Element.Handlers.resize_with_max, undefined);
+    try self.ui_login_username.base.onEvent(.submit, clickLogin, self);
+    try self.ui_login_password.base.onEvent(.submit, clickLogin, self);
 
     self.ui_root.base.addChild(&self.ui_login_root.base);
+    self.ui_root.base.addChild(&self.ui_list_root.base);
 
     self.ui_login_root.base.addChild(&self.ui_login_logo.base);
-    self.ui_login_root.base.addChild(&self.ui_username.base);
-    self.ui_login_root.base.addChild(&self.ui_password.base);
-    self.ui_login_root.base.addChild(&self.ui_submit_button.base);
+    self.ui_login_root.base.addChild(&self.ui_login_error.base);
+    self.ui_login_root.base.addChild(&self.ui_login_username.base);
+    self.ui_login_root.base.addChild(&self.ui_login_password.base);
+    self.ui_login_root.base.addChild(&self.ui_login_submit.base);
+
+    self.ui_list_root.base.addChild(&self.ui_list_scroll.base);
+    self.ui_list_scroll.content = &self.ui_list_scroll_root.base;
+
+    self.ui_list_scroll_root.base.addChild(&self.ui_list_text.base);
 
     // self.ui_root.base.addChild(&self.ui_scroll.base);
     // self.ui_scroll.content = &self.ui_login_root.base;

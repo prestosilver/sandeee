@@ -1,0 +1,49 @@
+.{
+    .kind = "Panel",
+
+    .direction = .column,
+    .gap = 20,
+    .padding = 20,
+
+    .children = .{
+        .title = .{
+            .kind = "Label",
+            .scale = 2.0,
+
+            .text = "Welcome to Sand%E%E%E",
+        },
+        .label = .{
+            .kind = "Label",
+            .text =
+            \\  %B Open %E%E%EMail to get started
+            \\
+            \\  %B You can open Xplore anytime for help
+            \\
+            \\  %B Remember %E%E%E is monitoring your activity
+            ,
+        },
+        .spacer = .{
+            .kind = "Label",
+            .expand_h = true,
+        },
+        .bottom = .{
+            .kind = "Panel",
+            .desired_size = .{ .w = .fill },
+            .justify = .space_between,
+            .direction = .row,
+
+            .children = .{
+                .check = .{
+                    .kind = "CheckBox",
+
+                    .label = "Never show again",
+                },
+                .version = .{
+                    .kind = "Label",
+
+                    .text = "%%VERSION_TEXT%%",
+                },
+            },
+        },
+    },
+}

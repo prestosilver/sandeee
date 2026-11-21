@@ -32,6 +32,14 @@ border_color: Color = .black,
 
 has_shadow: bool = false,
 
+pub const FOCUSABLE: bool = false;
+
+pub fn init(self: *Panel, context: *ui.Context, name: []const u8) void {
+    self.* = .{
+        .base = .init(context, name, ui.Panel, .{}),
+    };
+}
+
 pub fn measure(element: *const Element, avail: Size) Size {
     const self: *const Panel = @fieldParentPtr("base", element);
 
@@ -45,15 +53,22 @@ pub fn measure(element: *const Element, avail: Size) Size {
         if (!child.flags.visible) continue;
         defer visible_count += 1;
 
-        const child_size = child.measure(avail);
+        const avail_child: Size = .{
+            .w = avail.w - element.padding.left - element.padding.right -
+                element.margin.left - element.margin.right,
+            .h = avail.h - element.padding.top - element.padding.bottom -
+                element.margin.top - element.margin.bottom,
+        };
+
+        const child_size = child.measure(avail_child);
 
         log.info("child {any}", .{child_size});
 
         const child_outer: Size = .{
-            .w = child_size.w + child.padding.left + child.margin.left +
-                child.padding.right + child.margin.right,
-            .h = child_size.h + child.padding.top + child.margin.top +
-                child.padding.bottom + child.margin.bottom,
+            .w = child_size.w + child.padding.left + child.padding.right +
+                child.margin.left + child.margin.right,
+            .h = child_size.h + child.padding.top + child.padding.bottom +
+                child.padding.top + child.margin.bottom,
         };
 
         if (self.flags.direction == .row) {

@@ -1095,8 +1095,12 @@ pub fn runGame() !void {
         }
     }
 
+    log.log.info("Exiting game", .{});
+
     // deinit vm manager
     Vm.Manager.instance.deinit();
+
+    log.log.debug("VmManager deinit", .{});
 
     // deinit the current state
     game_states.getPtr(current_state).deinit();
@@ -1106,16 +1110,22 @@ pub fn runGame() !void {
 
     LogoutState.unloader = null;
 
+    log.log.debug("LogoutState deinit", .{});
+
     // free crash state bc game can no longer crash
     allocator.destroy(gs_crash);
+
+    log.log.debug("Game crash deinit", .{});
 
     // deinit sb
     SpriteBatch.global.deinit();
 
+    log.log.debug("global SpriteBatch deinit", .{});
+
     // deinit textures
     TextureManager.instance.deinit();
 
-    log.log.info("Deinit succeeded", .{});
+    log.log.debug("TextureManager deinit", .{});
 }
 
 test {

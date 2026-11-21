@@ -148,7 +148,10 @@ fn spawnWindow(event: window_events.EventWindowCreate) !void {
 
     if (dragging_idx) |idx| global_self.dragging_window = global_self.windows.items[idx];
 
-    try global_self.windows.items[global_self.windows.items.len - 1].data.refresh();
+    const added = &global_self.windows.items[global_self.windows.items.len - 1].data;
+
+    try added.refresh();
+    try added.contents.moveResize(added.pos);
 }
 
 pub fn notification(event: system_events.EventNotificationSend) !void {
@@ -777,6 +780,8 @@ pub fn mousemove(self: *GSWindowed, pos: Vec2) !void {
     if (self.dragging_window) |dragging| {
         const old = dragging.data.pos;
         const winpos = self.mousepos.add(self.dragging_start);
+
+        defer dragging.data.contents.moveResize(dragging.data.pos) catch unreachable;
 
         switch (self.dragging_mode) {
             .none => {},

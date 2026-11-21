@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const util = @import("../util.zig");
 const math = @import("../math.zig");
@@ -17,12 +18,11 @@ const allocator = util.allocator;
 
 const Element = @This();
 
+const UI_DEBUG = true;
 const MAX_ITERATOR_DEPTH = 256;
 
 // This is based off of this blog
 // https://0xkiire.com/gui_guide/
-
-const Style = struct {};
 
 const Event = Context.Event;
 
@@ -30,7 +30,7 @@ const VTable = struct {
     measure: ?*const fn (*Element, Size) Size = null, // avail space
     arrange: ?*const fn (*Element, Rect) void = null, // bounds
     draw: ?*const fn (*Element) void = null,
-    event: ?*const fn (*Element, Event) void = null,
+    onEvent: ?*const fn (*Element, *Event, userdata: *anyopaque) bool = null,
     deinit: ?*const fn (*Element) void = null,
 };
 
@@ -42,7 +42,7 @@ const Flags = packed struct {
     focused: bool = false,
     dirty: bool = true,
     clip: bool = false,
-    focusable: bool = true,
+    focusable: bool = false,
     selected: bool = false,
     expand_w: bool = false,
     expand_h: bool = false,
@@ -64,11 +64,19 @@ const Insets = struct {
     }
 
     pub const none: Insets = .all(0);
+
+    pub fn fromCfg(value: anytype) Insets {
+        if (@TypeOf(value) == comptime_float or @TypeOf(value) == comptime_int) {
+            return .all(value);
+        }
+
+        @compileError("todo");
+    }
 };
 
 pub const Size = struct {
-    w: f32,
-    h: f32,
+    w: f32 = wrap,
+    h: f32 = wrap,
 
     pub fn toVec2(self: Size) Vec2 {
         return .{
@@ -77,9 +85,28 @@ pub const Size = struct {
         };
     }
 
-    const zero: Size = .{ .w = 0, .h = 0 };
-    const wrap: f32 = -1;
-    const fill: f32 = -2;
+    pub fn fromCfg(value: anytype) Size {
+        return .{
+            .w = if (@hasField(@TypeOf(value), "w"))
+                if (@TypeOf(value.w) == @EnumLiteral())
+                    @field(Size, @tagName(value.w))
+                else
+                    value.w
+            else
+                wrap,
+            .h = if (@hasField(@TypeOf(value), "h"))
+                if (@TypeOf(value.h) == @EnumLiteral())
+                    @field(Size, @tagName(value.h))
+                else
+                    value.h
+            else
+                wrap,
+        };
+    }
+
+    pub const zero: Size = .{ .w = 0, .h = 0 };
+    pub const wrap: f32 = -1;
+    pub const fill: f32 = -2;
 };
 
 const Iterator = struct {
@@ -142,9 +169,6 @@ content_size: Size = .{ .w = 0, .h = 0 },
 
 // state
 flags: Flags = .{},
-
-// style
-style: ?*Style = null,
 
 // event handlers
 handlers: ?*Event.Handler = null,
@@ -228,7 +252,7 @@ pub fn contentRect(self: *const Element) Rect {
     result.w = @max(result.w, 0);
     result.h = @max(result.h, 0);
 
-    return result;
+    return result.round();
 }
 
 pub fn measure(self: *Element, avail: Size) Size {
@@ -253,6 +277,12 @@ pub fn measure(self: *Element, avail: Size) Size {
 
     if (self.desired_size.h > 0)
         self.content_size.h = self.desired_size.h - self.padding.top - self.padding.bottom;
+
+    if (self.desired_size.w == Size.fill)
+        self.content_size.w = avail.w - self.padding.left - self.padding.right;
+
+    if (self.desired_size.h == Size.fill)
+        self.content_size.h = avail.h - self.padding.top - self.padding.bottom;
 
     var total_w = self.content_size.w + self.padding.left + self.padding.right;
     var total_h = self.content_size.h + self.padding.top + self.padding.bottom;
@@ -285,6 +315,10 @@ pub fn onEvent(self: *Element, kind: Event.Kind, handler: Event.HandlerFn, userd
 }
 
 pub fn dispatch(self: *Element, event: *Event) bool {
+    if (self.vtable.onEvent) |ev|
+        if (ev(self, event, undefined))
+            return true;
+
     var current = self.handlers;
     while (current) |handler| : (current = handler.next) {
         if (handler.kind == event.kind) {
@@ -322,14 +356,15 @@ pub fn init(context: *Context, name: []const u8, Child: type, flags: struct {
     max_size: Vec2 = .{ .x = std.math.inf(f32), .y = std.math.inf(f32) },
     expand_w: bool = false,
     expand_h: bool = false,
-    focusable: bool = true,
+    focusable: ?bool = null,
     enabled: bool = true,
+    visible: bool = true,
 }) Element {
     const gen = VTable{
         .measure = if (@hasDecl(Child, "measure")) Child.measure else null,
         .arrange = if (@hasDecl(Child, "arrange")) Child.arrange else null,
         .draw = if (@hasDecl(Child, "draw")) Child.draw else null,
-        .event = if (@hasDecl(Child, "event")) Child.event else null,
+        .onEvent = if (@hasDecl(Child, "onEvent")) Child.onEvent else null,
         .deinit = if (@hasDecl(Child, "deinit")) Child.deinit else null,
     };
     return .{
@@ -340,8 +375,9 @@ pub fn init(context: *Context, name: []const u8, Child: type, flags: struct {
         .flags = .{
             .expand_w = flags.expand_w,
             .expand_h = flags.expand_h,
-            .focusable = flags.focusable,
+            .focusable = flags.focusable orelse Child.FOCUSABLE,
             .enabled = flags.enabled,
+            .visible = flags.visible,
         },
         .desired_size = flags.desired_size,
         .margin = flags.margin,
@@ -359,6 +395,12 @@ pub fn draw(self: *Element) void {
 
     if (self.vtable.draw) |draw_impl|
         draw_impl(self);
+
+    if (UI_DEBUG) blk: {
+        if (self.bounds_abs.w == 0 or self.bounds_abs.h == 0) break :blk;
+        self.context.drawRectangleOutline(self.bounds_abs.round(), 3, .red);
+        self.context.drawRectangleOutline(self.contentRect().round(), 2, .green);
+    }
 
     var c = self.children.first;
     while (c) |child| : (c = child.next) {
@@ -384,7 +426,7 @@ pub fn hitTest(self: *Element, pos: Vec2) ?*Element {
 }
 
 pub const Handlers = struct {
-    pub fn resize_with_max(self: *Element, ev: *Event, _: *anyopaque) bool {
+    pub fn resizeWithMax(self: *Element, ev: *Event, _: *anyopaque) bool {
         self.desired_size.w = ev.data.resize.size.x;
         self.desired_size.h = ev.data.resize.size.y;
 

@@ -154,12 +154,12 @@ pub fn draw(self: *Font, params: drawParams) !void {
     var srect = Rect{ .w = 1, .h = 1 };
     var color = params.color;
 
-    pos.x = @round(pos.x);
-    pos.y = @round(pos.y);
+    pos.x = @floor(pos.x);
+    pos.y = @floor(pos.y);
 
     var start = params.pos;
-    start.x = @round(start.x);
-    start.y = @round(start.y);
+    start.x = @floor(start.x);
+    start.y = @floor(start.y);
 
     const startscissor = batch.scissor;
     defer batch.scissor = startscissor;

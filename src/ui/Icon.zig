@@ -27,6 +27,8 @@ sprite: Sprite,
 h_align: enum { left, center, right } = .left,
 v_align: enum { top, center, bottom } = .top,
 
+pub const FOCUSABLE: bool = false;
+
 pub fn measure(element: *const Element, _: Size) Size {
     const self: *const Label = @fieldParentPtr("base", element);
 

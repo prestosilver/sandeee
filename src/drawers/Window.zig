@@ -315,12 +315,7 @@ pub const WindowData = struct {
                     if (std.meta.hasMethod(child_t, "moveResize")) {
                         const self: Ptr = @ptrCast(@alignCast(pointer));
 
-                        return @call(.always_inline, ptr_info.pointer.child.moveResize, .{ self, Rect{
-                            .x = bnds.x + 6,
-                            .y = bnds.y + 34,
-                            .w = bnds.w - 12,
-                            .h = bnds.h - 40,
-                        } });
+                        return @call(.always_inline, ptr_info.pointer.child.moveResize, .{ self, bnds });
                     }
                 }
 

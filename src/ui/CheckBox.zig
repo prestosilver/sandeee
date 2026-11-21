@@ -18,16 +18,41 @@ const log = util.log;
 
 const Context = ui.Context;
 const Element = ui.Element;
+const Event = ui.Context.Event;
 const Size = ui.Element.Size;
 
 const CheckBox = @This();
 
 gap: f32 = 6,
 base: Element,
-label: []const u8,
+label: []const u8 = "",
 checked: bool = false,
 check_animation_timer: f32 = 0.0,
 border_width: f32 = 2,
+
+pub const FOCUSABLE: bool = true;
+
+pub fn init(self: *CheckBox, context: *ui.Context, name: []const u8) void {
+    self.* = .{
+        .base = .init(context, name, ui.CheckBox, .{}),
+    };
+}
+
+pub fn measure(element: *Element, _: Size) Size {
+    const self: *CheckBox = @fieldParentPtr("base", element);
+    const context = element.context;
+
+    const text_size: Vec2 = context.font.sizeText(.{
+        .text = self.label,
+    });
+
+    const box_size = text_size.y;
+
+    return .{
+        .w = text_size.x + self.gap + box_size,
+        .h = box_size,
+    };
+}
 
 pub fn draw(element: *Element) void {
     const self: *CheckBox = @fieldParentPtr("base", element);
@@ -41,21 +66,16 @@ pub fn draw(element: *Element) void {
         .h = box_size,
     };
 
-    const bg = if (self.checked)
-        (if (!element.flags.enabled)
-            context.theme.colors.accent_disabled
-        else if (element.flags.hovered)
-            context.theme.colors.accent_hover
-        else
-            context.theme.colors.accent)
-    else
-        (if (!element.flags.enabled)
+    const bg =
+        if (!element.flags.enabled)
             context.theme.colors.surface_disabled
+        else if (element.flags.hovered)
+            context.theme.colors.surface_hover
         else
-            context.theme.colors.surface);
+            context.theme.colors.surface_bg;
 
     context.drawRectangle(box, bg);
-    context.drawRectangleOutline(box, self.border_width, context.theme.colors.input_border);
+    context.drawRectangleOutline(box, self.border_width, context.theme.colors.border);
 
     // TODO: animate
     self.check_animation_timer = if (self.checked)
@@ -64,7 +84,7 @@ pub fn draw(element: *Element) void {
         0.0;
 
     if (self.check_animation_timer > 0.0) {
-        const check_color = context.theme.colors.accent_text.withAlpha(self.check_animation_timer);
+        const check_color = context.theme.colors.app_text.withAlpha(self.check_animation_timer);
 
         // TODO: render actual texture
         context.drawRectangle(box.expand(-self.border_width * 2), check_color);
@@ -92,4 +112,24 @@ pub fn draw(element: *Element) void {
             .text = self.label,
         }) catch unreachable;
     }
+}
+
+pub fn onEvent(element: *Element, event: *Event, _: *anyopaque) bool {
+    const self: *CheckBox = @fieldParentPtr("base", element);
+    const context = element.context;
+
+    switch (event.kind) {
+        .mouse_down => {
+            if (event.data.mouse.button == 0) {
+                if (!element.flags.enabled) return true;
+                self.checked = !self.checked;
+
+                // TODO: animate?
+                context.dispatchChange(&self.base, .{ .selected = self.checked });
+            }
+        },
+        else => {},
+    }
+
+    return false;
 }

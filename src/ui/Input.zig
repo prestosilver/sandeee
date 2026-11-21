@@ -33,13 +33,6 @@ sel_end: usize = 0,
 
 placeholder: []const u8,
 
-text_color: Color = .black,
-placeholder_color: Color = .gray(0.5),
-bg_color: Color = .white,
-disabled_color: Color = .gray(0.75),
-border_color: Color = .black,
-border_focus_color: Color = .black,
-selection_color: Color = .red,
 border_width: f32 = 2.0,
 
 scroll_x: f32 = 0.0,
@@ -50,21 +43,23 @@ caret_visible: bool = true,
 password: bool = false,
 max_chars: i32 = INPUT_BUF_CAP,
 
+pub const FOCUSABLE: bool = true;
+
 pub fn draw(element: *Element) void {
     const self: *Input = @fieldParentPtr("base", element);
     const context = element.context;
 
     const bg = if (element.flags.enabled)
-        self.bg_color
+        context.theme.colors.surface_bg
     else
-        self.disabled_color;
+        context.theme.colors.surface_disabled;
 
     context.drawRectangle(element.bounds_abs, bg);
 
     const border = if (element.flags.focused)
-        self.border_color
+        context.theme.colors.border
     else
-        self.border_focus_color;
+        context.theme.colors.border;
 
     context.drawRectangleOutline(element.bounds_abs, self.border_width, border);
 
@@ -92,7 +87,7 @@ pub fn draw(element: *Element) void {
                 .x = content_rect.x + self.scroll_x,
                 .y = content_rect.y + (content_rect.h - text_size.y) / 2.0,
             }),
-            .color = self.placeholder_color,
+            .color = context.theme.colors.placeholder_text,
         }) catch unreachable;
 
         return;
@@ -124,7 +119,7 @@ pub fn draw(element: *Element) void {
                 .y = content_rect.y,
                 .w = max_px - min_px,
                 .h = content_rect.h,
-            }, self.selection_color);
+            }, context.theme.colors.accent);
         }
     }
 
@@ -135,7 +130,7 @@ pub fn draw(element: *Element) void {
     context.font.draw(.{
         .shader = context.font_shader,
         .text = self.input.items,
-        .color = self.text_color,
+        .color = context.theme.colors.surface_text,
         .pos = .add(.{
             .x = content_rect.x - self.scroll_x,
             .y = content_rect.y + (content_rect.h - text_size.y) / 2.0,
@@ -195,7 +190,7 @@ fn delete(self: *Input, direction: enum { forward, backward }) void {
     }
 }
 
-fn onEvent(element: *Element, event: *Event, _: *anyopaque) bool {
+pub fn onEvent(element: *Element, event: *Event, _: *anyopaque) bool {
     const self: *Input = @fieldParentPtr("base", element);
     const context = element.context;
 
@@ -226,7 +221,7 @@ fn onEvent(element: *Element, event: *Event, _: *anyopaque) bool {
                 self.input.insertSliceBounded(self.cursor, event.data.text.text) catch return true;
                 self.cursor += event.data.text.text.len;
 
-                context.dispatchChange(&self.base);
+                context.dispatchChange(element, .{ .text = self.input.items });
             }
 
             return true;
@@ -287,16 +282,21 @@ fn onEvent(element: *Element, event: *Event, _: *anyopaque) bool {
                 glfw.KeyBackspace => {
                     if (element.flags.enabled) {
                         self.delete(.backward);
-                        context.dispatchChange(&self.base);
+                        context.dispatchChange(element, .{ .text = self.input.items });
                     }
                 },
                 glfw.KeyDelete => {
                     if (element.flags.enabled) {
                         self.delete(.forward);
-                        context.dispatchChange(&self.base);
+                        context.dispatchChange(element, .{ .text = self.input.items });
                     }
                 },
-                // TODO: key return
+                glfw.KeyEnter => {
+                    var ev: Event = .{
+                        .kind = .submit,
+                    };
+                    return context.dispatch(element, &ev);
+                },
                 glfw.KeyA => {
                     if (event.data.key.mods & glfw.ModifierControl != 0) {
                         self.sel_start = 0;
@@ -316,15 +316,6 @@ fn onEvent(element: *Element, event: *Event, _: *anyopaque) bool {
     return false;
 }
 
-pub fn addEvents(self: *Input) void {
-    self.base.onEvent(.focus_in, &onEvent, undefined) catch unreachable;
-    self.base.onEvent(.focus_out, &onEvent, undefined) catch unreachable;
-    self.base.onEvent(.text_input, &onEvent, undefined) catch unreachable;
-    self.base.onEvent(.mouse_down, &onEvent, undefined) catch unreachable;
-    self.base.onEvent(.mouse_move, &onEvent, undefined) catch unreachable;
-    self.base.onEvent(.key_down, &onEvent, undefined) catch unreachable;
-}
-
-pub fn measure(element: *const Element, _: Size) Size {
+pub fn measure(element: *Element, _: Size) Size {
     return .{ .w = 0, .h = element.context.font.size };
 }

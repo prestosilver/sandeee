@@ -29,6 +29,14 @@ const MAX_FONTS = 64;
 const Context = @This();
 
 pub const Event = struct {
+    pub const Change = union(enum) {
+        pressed: void,
+        selected: bool,
+        value: f32,
+        text: []u8,
+        index: usize,
+    };
+
     pub const Kind = enum {
         mouse_move,
         mouse_down,
@@ -74,11 +82,7 @@ pub const Event = struct {
         text: struct {
             text: []const u8,
         },
-        change: struct {
-            value: f32,
-            str_value: []u8,
-            index: usize,
-        },
+        change: Change,
         resize: struct {
             size: Vec2,
         },
@@ -135,13 +139,11 @@ last_tick: u32 = 0,
 delta_ms: f32 = 0,
 
 pub fn pushClip(self: *Context, clip: Rect) void {
-    const intersection: Rect = if (self.sprite_batch.scissor == null)
-        clip
-    else if (self.clip_stack.items.len > 0) blk: {
-        const x1 = @max(self.sprite_batch.scissor.?.x, clip.x + self.offset.x);
-        const y1 = @max(self.sprite_batch.scissor.?.y, clip.y + self.offset.y);
-        const x2 = @min(self.sprite_batch.scissor.?.x + self.sprite_batch.scissor.?.w, clip.x + self.offset.x + clip.w);
-        const y2 = @min(self.sprite_batch.scissor.?.y + self.sprite_batch.scissor.?.h, clip.y + self.offset.y + clip.h);
+    const intersection: Rect = if (self.sprite_batch.scissor) |scissor| blk: {
+        const x1 = @max(scissor.x, clip.x + self.offset.x);
+        const y1 = @max(scissor.y, clip.y + self.offset.y);
+        const x2 = @min(scissor.x + scissor.w, clip.x + self.offset.x + clip.w);
+        const y2 = @min(scissor.y + scissor.h, clip.y + self.offset.y + clip.h);
 
         break :blk .{
             .x = x1,
@@ -324,6 +326,23 @@ pub fn draw(self: *Context, offset: Vec2) void {
     root.draw();
 }
 
+pub fn mouseWheel(self: *Context, delta: Vec2) void {
+    const hovered = self.hovered orelse return;
+
+    std.log.info("fdsa", .{});
+
+    var event: Event = .{
+        .kind = .mouse_wheel,
+        .data = .{
+            .mouse = .{
+                .wheel = delta,
+            },
+        },
+    };
+
+    _ = self.dispatch(hovered, &event);
+}
+
 pub fn mouseMove(self: *Context, pos: Vec2) void {
     self.mouse_pos = pos;
 
@@ -471,8 +490,170 @@ pub fn textInput(self: *Context, char_string: []const u8) void {
     _ = self.dispatch(target, &event);
 }
 
-pub fn dispatchChange(self: *Context, element: *Element) void {
-    _ = self;
-    _ = element;
-    log.info("todo: dispatch change", .{});
+pub fn dispatchChange(self: *Context, target: *Element, change: Event.Change) void {
+    var event: Event = .{
+        .kind = .change,
+        .data = .{
+            .change = change,
+        },
+    };
+    _ = self.dispatch(target, &event);
+}
+
+fn getWrapperItems(comptime cfg: anytype) usize {
+    var result: usize = 1;
+    if (!@hasField(@TypeOf(cfg), "children")) return result;
+
+    const ChildrenT = @TypeOf(cfg.children);
+    const children_info = @typeInfo(ChildrenT);
+
+    inline for (children_info.@"struct".field_names) |child_name| {
+        const child = @field(cfg.children, child_name);
+        result += getWrapperItems(child);
+    }
+
+    return result;
+}
+
+fn getFieldNames(comptime cfg: anytype, comptime root: []const u8) [getWrapperItems(cfg)][]const u8 {
+    var result: [getWrapperItems(cfg)][]const u8 = undefined;
+    result[0] = root;
+
+    if (!@hasField(@TypeOf(cfg), "children")) return result;
+
+    const ChildrenT = @TypeOf(cfg.children);
+    const children_info = @typeInfo(ChildrenT);
+
+    var idx: usize = 1;
+    inline for (children_info.@"struct".field_names) |child_name| {
+        const child = @field(cfg.children, child_name);
+
+        const names = getFieldNames(child, root ++ "/" ++ child_name);
+        for (names) |name| {
+            result[idx] = name;
+            idx += 1;
+        }
+    }
+
+    std.debug.assert(idx == result.len);
+
+    return result;
+}
+
+fn getFieldTypes(comptime cfg: anytype) [getWrapperItems(cfg)]type {
+    var result: [getWrapperItems(cfg)]type = undefined;
+    result[0] = @field(ui, cfg.kind);
+
+    if (!@hasField(@TypeOf(cfg), "children")) return result;
+
+    const ChildrenT = @TypeOf(cfg.children);
+    const children_info = @typeInfo(ChildrenT);
+
+    var idx: usize = 1;
+    inline for (children_info.@"struct".field_names) |child_name| {
+        const child = @field(cfg.children, child_name);
+
+        const kinds = getFieldTypes(child);
+        for (kinds) |kind| {
+            result[idx] = kind;
+            idx += 1;
+        }
+    }
+
+    std.debug.assert(idx == result.len);
+
+    return result;
+}
+
+fn toValue(comptime T: type, comptime value: anytype) T {
+    if ((@typeInfo(T) == .@"struct" or @typeInfo(T) == .@"union" or @typeInfo(T) == .@"enum") and @hasDecl(T, "fromCfg"))
+        return .fromCfg(value);
+
+    return value;
+}
+
+fn setupChildren(self: *Context, wrapper: anytype, root_elem: *Element, comptime root_name: []const u8, comptime cfg: anytype) void {
+    const RootType = @field(ui, cfg.kind);
+    const elem: *RootType = @fieldParentPtr("base", root_elem);
+    elem.init(self, root_name);
+
+    const cfg_info = @typeInfo(@TypeOf(cfg));
+
+    inline for (cfg_info.@"struct".field_names) |name| {
+        if (comptime std.mem.eql(u8, name, "children") or std.mem.eql(u8, name, "kind"))
+            // processed outside
+            continue;
+
+        const root_flags = if (@hasField(RootType, "flags")) .{&elem.flags} else .{};
+
+        inline for (.{ &elem.base, &elem.base.flags, elem } ++ root_flags) |container| {
+            if (@hasField(@TypeOf(container.*), name)) {
+                @field(container.*, name) = toValue(
+                    @TypeOf(@field(container.*, name)),
+                    @field(cfg, name),
+                );
+                break;
+            }
+        } else @compileError("Unhandled field in ui config " ++ name);
+    }
+
+    if (!@hasField(@TypeOf(cfg), "children")) return;
+
+    const ChildrenT = @TypeOf(cfg.children);
+    const children_info = @typeInfo(ChildrenT);
+
+    inline for (children_info.@"struct".field_names) |child_name| {
+        const child_cfg = @field(cfg.children, child_name);
+        const child_name_full = root_name ++ "/" ++ child_name;
+
+        const child_data = wrapper.getElem(child_name_full);
+
+        self.setupChildren(wrapper, child_data, child_name_full, child_cfg);
+
+        root_elem.addChild(child_data);
+    }
+}
+
+pub fn Wrapper(comptime cfg: anytype) type {
+    const field_names = getFieldNames(cfg, "$");
+    const field_types = getFieldTypes(cfg);
+
+    const DataType = @Struct(
+        .auto,
+        null,
+        &field_names,
+        &field_types,
+        &@splat(.{}),
+    );
+
+    return struct {
+        context: Context,
+        elems: DataType,
+
+        const Self = @This();
+
+        pub fn getElem(self: *Self, comptime name: []const u8) *Element {
+            return &@field(self.elems, name).base;
+        }
+
+        pub fn init(
+            self: *Self,
+            sprite_batch: *SpriteBatch,
+            shader: *Shader,
+            font: *Font,
+            font_shader: *Shader,
+            window_size: IVec2,
+        ) void {
+            self.context = .{
+                .sprite_batch = sprite_batch,
+                .shader = shader,
+                .font = font,
+                .font_shader = font_shader,
+                .window_size = window_size,
+                .clip_stack = .initBuffer(&self.context.clip_stack_buf),
+                .root = self.getElem("$"),
+            };
+            self.context.setupChildren(self, self.getElem("$"), "$", cfg);
+        }
+    };
 }

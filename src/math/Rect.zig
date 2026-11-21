@@ -64,10 +64,10 @@ pub fn size(self: Rect) Vec2 {
 
 pub fn round(self: Rect) Rect {
     return .{
-        .x = @round(self.x),
-        .y = @round(self.y),
-        .w = @round(self.w),
-        .h = @round(self.h),
+        .x = @floor(self.x),
+        .y = @floor(self.y),
+        .w = @floor(self.w),
+        .h = @floor(self.h),
     };
 }
 

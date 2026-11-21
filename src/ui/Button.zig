@@ -1,4 +1,5 @@
 const std = @import("std");
+const glfw = @import("glfw");
 
 const drawers = @import("../drawers.zig");
 const math = @import("../math.zig");
@@ -18,6 +19,7 @@ const log = util.log;
 
 const Context = ui.Context;
 const Element = ui.Element;
+const Event = ui.Context.Event;
 const Size = ui.Element.Size;
 
 const Button = @This();
@@ -28,24 +30,13 @@ icon: ?Sprite = null,
 style: enum { filled, outlined, text, icon } = .filled,
 gap: f32 = 6,
 
-bg_normal: Color = .gray(0.75),
-bg_hover: Color = .gray(0.80),
-bg_pressed: Color = .gray(0.50),
-bg_disabled: Color = .red,
-
-fg_normal: Color = .black,
-fg_hover: Color = .black,
-fg_pressed: Color = .black,
-fg_disabled: Color = .black,
-
-border_normal: Color = .black,
-border_hover: Color = .black,
-
 border_width: f32 = 2,
 
 animation_timer: f32 = 0.0,
 bg_current: Color = .white,
 fg_current: Color = .white,
+
+pub const FOCUSABLE: bool = true;
 
 pub fn measure(element: *const Element, _: Size) Size {
     const self: *const Button = @fieldParentPtr("base", element);
@@ -77,24 +68,24 @@ pub fn draw(element: *Element) void {
     var fg: Color = undefined;
     var border: Color = undefined;
     if (!element.flags.enabled) {
-        bg = self.bg_disabled;
-        fg = self.fg_disabled;
-        border = self.border_normal;
+        bg = context.theme.colors.raised_disabled;
+        fg = context.theme.colors.raised_text;
+        border = context.theme.colors.border;
     } else if (element.flags.pressed) {
-        bg = self.bg_pressed;
-        fg = self.fg_pressed;
-        border = self.border_hover;
+        bg = context.theme.colors.lowered_bg;
+        fg = context.theme.colors.lowered_text;
+        border = context.theme.colors.border_hover;
     } else if (element.flags.hovered) {
         // bg = self.bg_normal.mix(self.bg_hover, self.animation_timer);
         // fg = self.fg_normal.mix(self.fg_hover, self.animation_timer);
-        bg = self.bg_hover;
-        fg = self.fg_hover;
-        border = self.border_hover;
+        bg = context.theme.colors.raised_hover;
+        fg = context.theme.colors.raised_text;
+        border = context.theme.colors.border_hover;
     } else {
         //bg = self.bg_hover.mix(self.bg_normal, 1.0 - self.animation_timer);
-        bg = self.bg_normal;
-        fg = self.fg_normal;
-        border = self.border_hover;
+        bg = context.theme.colors.raised_bg;
+        fg = context.theme.colors.raised_text;
+        border = context.theme.colors.border_hover;
     }
 
     switch (self.style) {
@@ -146,4 +137,24 @@ pub fn draw(element: *Element) void {
             .pos = pos.add(context.offset),
         }) catch unreachable;
     }
+}
+
+pub fn onEvent(element: *Element, event: *Event, _: *anyopaque) bool {
+    const context = element.context;
+
+    switch (event.kind) {
+        .key_down => {
+            if (event.data.key.key == glfw.KeySpace or
+                event.data.key.key == glfw.KeyEnter)
+                if (element.flags.enabled) {
+                    var ev: Event = .{
+                        .kind = .mouse_click,
+                    };
+                    return context.dispatch(element, &ev);
+                };
+        },
+        else => {},
+    }
+
+    return false;
 }

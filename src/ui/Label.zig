@@ -27,6 +27,14 @@ v_align: enum { top, center, bottom } = .top,
 scale: f32 = 1.0,
 wrap: ?f32 = null,
 
+pub const FOCUSABLE: bool = false;
+
+pub fn init(self: *Label, context: *ui.Context, name: []const u8) void {
+    self.* = .{
+        .base = .init(context, name, ui.Label, .{}),
+    };
+}
+
 pub fn measure(element: *const Element, _: Size) Size {
     const self: *const Label = @fieldParentPtr("base", element);
 
@@ -66,5 +74,11 @@ pub fn draw(element: *Element) void {
         .text = self.text,
         .wrap = self.wrap,
         .scale = self.scale,
+        .color = self.color,
     }) catch unreachable;
+}
+
+pub fn setText(self: *Label, text: []const u8) void {
+    self.text = text;
+    self.base.markDirty();
 }
